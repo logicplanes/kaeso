@@ -346,12 +346,10 @@
   "errors.ssoOtherAccount": "您在身份提供方以其他人的身份登录；请在那里以您本人身份登录。",
   "errors.ssoSignedInAsOther": "此浏览器已登录另一个账户；请先退出登录，然后重新登录。",
   "errors.ssoStaleSignIn": "身份提供方没有要求您重新登录；请重试或改用其他方式确认。",
-  "errors.ssoNameOrg": "请用 `org` 指定组织；此处有多个组织使用 SSO。",
   "errors.ssoNeedsDomain": "请至少指定一个通过此提供商登录的邮箱域名。",
   "errors.ssoNoOrg": "没有组织为此登录启用 SSO，请改用其他方式登录。",
   "errors.ssoNoOwners": "SSO 无法创建所有者，请选择其他角色。",
   "errors.ssoNoVerifiedDomain": "此组织的 SSO 还没有已验证的邮箱域名；请让管理员验证一个。",
-  "errors.ssoOff": "此实例已关闭 SSO 登录。",
   "errors.ssoOrgOrEmail": "请发送 `org` 或 `email` 之一。",
   "errors.ssoPublicMail": "{domain} 是公共邮箱域名；请填写贵组织自己的域名。",
   "errors.ssoRequiredStopFirst": "此组织要求使用 SSO，请先取消该要求。",
@@ -460,5 +458,6 @@
   "errors.timeoutStage.request": "请求",
   "errors.unpricedFeature.key": "此密钥有支出预算，无法为 `{feature}` 计价，请联系管理员。",
   "errors.unpricedFeature.member": "成员有支出预算，无法为 `{feature}` 计价，请联系管理员。",
-  "errors.unpricedFeature.project": "项目有支出预算，无法为 `{feature}` 计价，请联系管理员。"
+  "errors.unpricedFeature.project": "项目有支出预算，无法为 `{feature}` 计价，请联系管理员。",
+  "errors.ssoEnterEmail": "请输入您的邮箱以通过单点登录登录。"
 }

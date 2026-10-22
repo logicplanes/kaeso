@@ -5,7 +5,7 @@ const inFiveMinutes = () => new Date(Date.now() + 5 * 60_000).toISOString();
 const inThreeDays = () => new Date(Date.now() + 3 * 86_400_000).toISOString();
 
 export function methods(overrides: Partial<SignInMethodsView> = {}): SignInMethodsView {
-  return { password: true, magic_link: true, sso: false, sso_required: false, sign_up: false, set_up: false, ...overrides } as SignInMethodsView;
+  return { password: true, magic_link: true, sso_required: false, sign_up: false, set_up: false, ...overrides } as SignInMethodsView;
 }
 
 export function signedInReply(): SignedIn {

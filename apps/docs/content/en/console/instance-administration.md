@@ -48,7 +48,7 @@ Under **Logging**, **Request log retention** sets the defaults for new organizat
 
 Changing account creation, organization creation or the allowed domains needs a recent sign-in. The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
 
-Sign-in methods and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows the sign-in methods and **System** shows email, both read-only. **Send test email** on **System** checks that the gateway can send mail.
+Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
 
 ## Sync model data
 

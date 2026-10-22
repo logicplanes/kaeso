@@ -128,6 +128,12 @@ fn load_config(source: &dyn Source) -> Result<Config> {
 async fn run(command: Command) -> Result<()> {
     let config = load_config(&ProcessSource)?;
     kaeso_server::telemetry::init_logging(&config.log)?;
+    for variable in config::unknown_variables(&ProcessSource) {
+        tracing::warn!(
+            %variable,
+            "ignoring an environment variable that names no setting; see https://docs.kaeso.app/self-hosting/configuration"
+        );
+    }
     match command {
         Command::Serve => {
             let metrics = kaeso_server::telemetry::init_metrics()?;

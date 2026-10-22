@@ -17,12 +17,16 @@ const ORG_ID = /^org_[A-Za-z0-9]{1,64}$/;
 
 const text = (search: Record<string, unknown>, key: string) => (typeof search[key] === "string" ? { [key]: search[key] } : {});
 
-const signInSearch = (search: Record<string, unknown>): { next?: string; org?: string; done?: string; start?: string } => ({
+type SignInSearch = { next?: string; org?: string; done?: string; start?: string };
+
+const signInSearch = (search: Record<string, unknown>): SignInSearch => ({
   ...(typeof search.next === "string" && internalPath(search.next) ? { next: search.next } : {}),
   ...text(search, "org"),
   ...text(search, "done"),
   ...(search.start === "sso" ? { start: "sso" } : {}),
 });
+
+const startLinkOrg = (search: SignInSearch): string | undefined => (search.start === "sso" && search.org && ORG_ID.test(search.org) ? search.org : undefined);
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: signInSearch,
@@ -33,7 +37,7 @@ export const Route = createFileRoute("/sign-in")({
     );
     if (!current) return { signedInAs: null };
     const failed = new URLSearchParams(window.location.hash.slice(1)).get("sso_error");
-    if (!failed && search.org && ORG_ID.test(search.org)) return { signedInAs: current.user.email ?? current.user.name };
+    if (!failed && startLinkOrg(search)) return { signedInAs: current.user.email ?? current.user.name };
     const next = safeNext(search.next);
     throw redirect({ href: failed ? `${next}#sso_error=${encodeURIComponent(failed)}` : next, replace: true });
   },
@@ -42,7 +46,7 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignIn() {
   const search = Route.useSearch({ select: signInSearch, structuralSharing: true });
-  const org = search.org && ORG_ID.test(search.org) ? search.org : undefined;
+  const org = startLinkOrg(search);
   const done = search.done && Object.hasOwn(NOTICES, search.done) ? search.done : undefined;
   const [ssoError] = useState(() => takeFragment("sso_error"));
   const [quiet] = useState(() => ssoError !== null || done === "signed-out");
@@ -62,12 +66,11 @@ function SignIn() {
   return (
     <SignInPage
       next={search.next}
-      org={org}
       page={page}
       ssoError={ssoError}
       notice={done ? NOTICES[done]?.() : undefined}
       quiet={quiet}
-      startNow={search.start === "sso"}
+      startLink={org !== undefined}
       signedInAs={signedInAs}
     />
   );

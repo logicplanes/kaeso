@@ -19,8 +19,6 @@ pub struct SignInMethods {
     pub password: bool,
     #[doc = "Sign-in links sent by email."]
     pub magic_link: bool,
-    #[doc = "SSO."]
-    pub sso: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -93,7 +91,6 @@ fn view(state: &AppState, s: &InstanceSettings) -> SettingsView {
         sign_in: SignInMethods {
             password: c.auth.password,
             magic_link: c.auth.magic_link,
-            sso: c.auth.oidc,
         },
         mail: MailSettings {
             transport: match c.mail.transport {

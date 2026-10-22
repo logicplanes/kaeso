@@ -105,7 +105,7 @@ async fn setup_creates_the_first_admin_owner_and_works_once() {
     s.cleanup().await;
 }
 
-const SSO_ONLY: [(&str, &str); 2] = [
+const WITHOUT_PASSWORDS: [(&str, &str); 2] = [
     ("KAESO_AUTH_PASSWORD", "false"),
     ("KAESO_AUTH_MAGIC_LINK", "false"),
 ];
@@ -136,8 +136,8 @@ async fn setup_asks_for_a_password_only_while_passwords_sign_in() {
     );
     assert_eq!(r.body["error"]["message"], "`password` is required.");
 
-    let sso_only = App::start_with(&s, &SSO_ONLY).await;
-    let r = sso_only
+    let without_passwords = App::start_with(&s, &WITHOUT_PASSWORDS).await;
+    let r = without_passwords
         .post(
             "/auth/setup",
             json!({ "token": token, "email": "owner@example.com", "name": "Owner", "password": PASSWORD, "org_name": "Acme" }),
@@ -156,7 +156,7 @@ async fn setup_asks_for_a_password_only_while_passwords_sign_in() {
         "{:?}",
         r.body
     );
-    let r = sso_only
+    let r = without_passwords
         .post(
             "/auth/setup",
             json!({ "token": token, "email": "owner@example.com", "name": "Owner", "org_name": "Acme" }),
@@ -165,16 +165,16 @@ async fn setup_asks_for_a_password_only_while_passwords_sign_in() {
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     let cookie = r.cookie().unwrap();
-    let me = sso_only.get("/me", &cookie).await;
+    let me = without_passwords.get("/me", &cookie).await;
     assert_eq!(me.body["has_password"], false);
     let stored: Option<String> = sqlx::query_scalar("SELECT password_hash FROM users")
-        .fetch_one(&sso_only.state.pg)
+        .fetch_one(&without_passwords.state.pg)
         .await
         .unwrap();
     assert_eq!(stored, None);
     let audited: serde_json::Value =
         sqlx::query_scalar("SELECT after FROM audit_events WHERE action = 'instance.setup'")
-            .fetch_one(&sso_only.state.pg)
+            .fetch_one(&without_passwords.state.pg)
             .await
             .unwrap();
     assert_eq!(audited["has_password"], false);
@@ -187,7 +187,7 @@ async fn an_operator_sign_in_link_works_while_email_links_are_off() {
     use secrecy::ExposeSecret;
 
     let s = TestServices::start().await;
-    let app = App::start_with(&s, &SSO_ONLY).await;
+    let app = App::start_with(&s, &WITHOUT_PASSWORDS).await;
     let owner = app.setup().await;
     let link = |email: &'static str| {
         let app = &app;

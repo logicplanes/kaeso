@@ -1,21 +1,18 @@
 ---
 title: Sign-in and single sign-on
-description: Choose how people sign in, run an install on single sign-on alone, and get back in when nothing else works.
+description: Choose how people sign in, run an install without passwords, and get back in when nothing else works.
 order: 7
 ---
 
-People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Three [sign-in settings](configuration.md#sign-in) turn each method on or off for the whole install. An organization admin connects the identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)).
+People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Two [sign-in settings](configuration.md#sign-in) turn passwords and sign-in links on or off for the whole install. Single sign-on is set up per organization, not for the install: it works for an organization once its admin connects the identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)), and every organization can.
 
 ## The sign-in page
 
-The sign-in page asks for the email address first. It then offers what works for that address: a password, a sign-in link, and single sign-on when the address's domain belongs to an organization with an identity provider.
+The sign-in page always asks for the email address first. It then offers what works for that address: a password, a sign-in link, and single sign-on when the address is at a verified email domain of an organization with an identity provider ([verify your email domains](../console/organizations-and-projects.md#verify-your-email-domains)). An address at any other domain, or at a domain its organization hasn't verified yet, is never offered single sign-on.
 
-The page shows a provider's button right away in two cases:
+The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. When single sign-on is the address's only way in and the connection has **Start without a click** on, the page goes on to the provider right after the address, without the button. After someone signs out, or when the provider refused a sign-in, the page asks for the address again and shows the reason.
 
-- Passwords and sign-in links are off, and exactly one organization has an identity provider.
-- Someone opens the organization's sign-in link, such as `https://kaeso.example.com/sign-in?org=org_…`, which its **Security** page shows. While other methods are on, the page also offers **Sign in with your email instead**.
-
-The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. With **Start without a click** on, the page sends people to the provider at once when it is their only way in. It still waits for a click after someone signs out, or when the provider refused a sign-in, so the reason stays readable, and when the browser is signed in already.
+The only way to single sign-on without entering an email is the organization's own start link, and only while its connection has **Start without a click** on ([links that go straight to the provider](#links-that-go-straight-to-the-provider)).
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
@@ -25,13 +22,13 @@ A provider can also sign someone in with a session of its own from earlier, with
 
 ## Links that go straight to the provider
 
-A link to `/platform/v1/auth/oidc/start` sends a browser that isn't signed in straight to the identity provider, for a bookmark or an intranet page:
+An organization's start link, the **Sign-in link** on its **Security** page, sends a browser that isn't signed in straight to the identity provider, for a bookmark or an intranet page:
 
 ```text
 https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
 ```
 
-`org` names the organization, and you can leave it out while only one organization uses single sign-on. `next` is the console page to open afterwards. The link opens the organization's sign-in page, which names the organization and its provider and goes on to the provider at once.
+`org` names the organization, and `next` is the console page to open afterwards. While the organization's connection has **Start without a click** on, the link opens the organization's sign-in page, which names the organization and its provider and goes on to the provider at once. With it off, the link opens the sign-in page, which asks for the email address first and keeps `next`.
 
 When the browser is signed in to Kaeso already, the page asks first: it names the account that is signed in and waits for a click. Single sign-on never replaces another account's session. When the provider answers with another account, the browser stays signed in and the page says `signed_in_as_other`; to switch accounts, sign out first. So a link planted on another site can neither sign a browser out nor sign it in to someone else's account.
 
@@ -48,9 +45,9 @@ A sign-in through an organization's provider opens only that organization, and r
 
 A connection can't list a public mail provider's domain, such as `gmail.com`: every address there would sign in through one organization's provider.
 
-## Run on single sign-on alone
+## Run without passwords or sign-in links
 
-To sign in only through identity providers, turn the other methods off before the first start:
+To sign in only through organizations' identity providers, turn passwords and sign-in links off before the first start:
 
 ```yaml title="compose.override.yaml"
 services:
@@ -64,6 +61,8 @@ services:
 2. Open the setup link. The setup page asks for no password, and then opens the organization's **Security** page.
 3. Connect the identity provider in the same session.
 4. Under **Account** › **Security**, choose **Link** next to the organization, and sign in at the provider. That links your account and checks the connection works.
+
+The sign-in page still asks for the email address first and offers the provider of its organization. An address at no organization's verified domain has no way in, and the page says so.
 
 A sign-in through single sign-on doesn't administer the instance. For instance administration, sign in with a [one-time sign-in link](#get-back-in) from the server.
 

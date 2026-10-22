@@ -1,21 +1,18 @@
 ---
 title: Anmeldung und Single Sign-on
-description: Legen Sie Anmeldemethoden fest, betreiben Sie Kaeso nur mit Single Sign-on und kommen Sie wieder hinein, wenn nichts geht.
+description: Legen Sie Anmeldemethoden fest, betreiben Sie Kaeso ohne Passwörter und kommen Sie wieder hinein, wenn nichts geht.
 order: 7
 ---
 
-Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink per E-Mail oder über den Identitätsanbieter ihrer Organisation per OpenID Connect. Drei [Einstellungen zur Anmeldung](configuration.md#anmeldung) schalten jede Methode für die ganze Installation ein oder aus. Ein Admin der Organisation verbindet den Identitätsanbieter auf der Seite **Sicherheit** der Organisation ([Organisationen und Projekte](../console/organizations-and-projects.md)).
+Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink per E-Mail oder über den Identitätsanbieter ihrer Organisation per OpenID Connect. Zwei [Einstellungen zur Anmeldung](configuration.md#anmeldung) schalten Passwörter und Anmeldelinks für die ganze Installation ein oder aus. Single Sign-on richtet jede Organisation selbst ein, nicht die Installation: Es funktioniert für eine Organisation, sobald ihr Admin den Identitätsanbieter auf der Seite **Sicherheit** der Organisation verbindet ([Organisationen und Projekte](../console/organizations-and-projects.md)), und jede Organisation kann das.
 
 ## Die Anmeldeseite
 
-Die Anmeldeseite fragt zuerst nach der E-Mail-Adresse. Dann bietet sie an, was für diese Adresse funktioniert: ein Passwort, einen Anmeldelink und Single Sign-on, wenn die Domain der Adresse zu einer Organisation mit Identitätsanbieter gehört.
+Die Anmeldeseite fragt immer zuerst nach der E-Mail-Adresse. Dann bietet sie an, was für diese Adresse funktioniert: ein Passwort, einen Anmeldelink und Single Sign-on, wenn die Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Identitätsanbieter gehört ([E-Mail-Domains bestätigen](../console/organizations-and-projects.md#e-mail-domains-bestätigen)). Einer Adresse an einer anderen Domain oder an einer Domain, die ihre Organisation noch nicht bestätigt hat, bietet sie nie Single Sign-on an.
 
-In zwei Fällen zeigt die Seite sofort den Button eines Anbieters:
+Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist Single Sign-on der einzige Weg hinein für die Adresse und hat die Verbindung **Ohne Klick starten** eingeschaltet, geht die Seite gleich nach der Adresse zum Anbieter weiter, ohne den Button. Nach einer Abmeldung oder wenn der Anbieter eine Anmeldung abgelehnt hat, fragt die Seite erneut nach der Adresse und zeigt den Grund.
 
-- Passwörter und Anmeldelinks sind abgeschaltet, und genau eine Organisation hat einen Identitätsanbieter.
-- Jemand öffnet den Anmeldelink der Organisation, etwa `https://kaeso.example.com/sign-in?org=org_…`, den ihre Seite **Sicherheit** zeigt. Solange andere Methoden eingeschaltet sind, bietet die Seite außerdem **Stattdessen mit E-Mail anmelden** an.
-
-Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt, und wenn der Browser schon angemeldet ist.
+Der einzige Weg zu Single Sign-on, ohne eine E-Mail-Adresse einzugeben, ist der eigene Startlink der Organisation, und nur solange ihre Verbindung **Ohne Klick starten** eingeschaltet hat ([Links, die direkt zum Anbieter führen](#links-die-direkt-zum-anbieter-führen)).
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
@@ -25,13 +22,13 @@ Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Si
 
 ## Links, die direkt zum Anbieter führen
 
-Ein Link auf `/platform/v1/auth/oidc/start` schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
+Der Startlink einer Organisation, der **Anmeldelink** auf ihrer Seite **Sicherheit**, schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
 
 ```text
 https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
 ```
 
-`org` nennt die Organisation; Sie können es weglassen, solange nur eine Organisation Single Sign-on nutzt. `next` ist die Konsolenseite, die sich danach öffnet. Der Link öffnet die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht.
+`org` nennt die Organisation, `next` die Konsolenseite, die sich danach öffnet. Solange die Verbindung der Organisation **Ohne Klick starten** eingeschaltet hat, öffnet der Link die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht. Ist es ausgeschaltet, öffnet der Link die Anmeldeseite, die zuerst nach der E-Mail-Adresse fragt und `next` behält.
 
 Ist der Browser schon bei Kaeso angemeldet, fragt die Seite zuerst: Sie nennt das angemeldete Konto und wartet auf einen Klick. Single Sign-on ersetzt nie die Sitzung eines anderen Kontos. Kommt vom Anbieter ein anderes Konto zurück, bleibt der Browser angemeldet, und die Seite meldet `signed_in_as_other`; zum Wechseln melden Sie sich zuerst ab. Ein auf einer anderen Website platzierter Link kann einen angemeldeten Browser also weder abmelden noch im Konto einer anderen Person anmelden.
 
@@ -48,9 +45,9 @@ Eine Anmeldung über den Anbieter einer Organisation öffnet nur diese Organisat
 
 Eine Verbindung kann keine Domain eines öffentlichen Mail-Anbieters wie `gmail.com` enthalten: Jede Adresse dort würde sich über den Anbieter einer einzigen Organisation anmelden.
 
-## Nur mit Single Sign-on betreiben
+## Ohne Passwörter und Anmeldelinks betreiben
 
-Damit sich Personen nur über Identitätsanbieter anmelden, schalten Sie vor dem ersten Start die anderen Methoden ab:
+Damit sich Personen nur über die Identitätsanbieter von Organisationen anmelden, schalten Sie vor dem ersten Start Passwörter und Anmeldelinks ab:
 
 ```yaml title="compose.override.yaml"
 services:
@@ -64,6 +61,8 @@ services:
 2. Öffnen Sie den Einrichtungslink. Die Einrichtungsseite fragt nach keinem Passwort und öffnet danach die Seite **Sicherheit** der Organisation.
 3. Verbinden Sie den Identitätsanbieter in derselben Sitzung.
 4. Wählen Sie unter **Konto** › **Sicherheit** die Option **Verknüpfen** neben der Organisation und melden Sie sich beim Anbieter an. Das verknüpft Ihr Konto und prüft, dass die Verbindung funktioniert.
+
+Die Anmeldeseite fragt weiterhin zuerst nach der E-Mail-Adresse und bietet den Anbieter ihrer Organisation an. Eine Adresse an keiner bestätigten Domain einer Organisation kommt nicht hinein, und die Seite sagt das.
 
 Eine Anmeldung über Single Sign-on verwaltet die Instanz nicht. Für die Verwaltung der Instanz melden Sie sich mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
 

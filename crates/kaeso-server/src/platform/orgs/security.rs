@@ -39,15 +39,16 @@ pub struct SsoView {
     #[doc = "The name on the sign-in button, such as `Acme ID`; `null`: the button\n\
         says SSO."]
     pub name: Option<String>,
-    #[doc = "The sign-in page sends people to the provider without a click when it\n\
-        offers this provider alone."]
+    #[doc = "Start without a click: the start link `sign_in_url` goes on to the\n\
+        provider, and after the address a sign-in page that offers this provider\n\
+        alone goes on without asking."]
     pub auto_redirect: bool,
     #[doc = "Whether ID tokens must mark the address as verified with\n\
         `email_verified`."]
     pub require_email_verified: bool,
-    #[doc = "The org's sign-in link: the sign-in page with this provider's button,\n\
-        without asking for an address. `GET auth/oidc/start?org=…` opens it and\n\
-        goes on to the provider at once while nobody is signed in."]
+    #[doc = "The org's start link, `GET auth/oidc/start?org=…`. With `auto_redirect`\n\
+        on it goes on to the provider while nobody is signed in; otherwise it\n\
+        opens the sign-in page, which asks for the address."]
     pub sign_in_url: String,
 }
 
@@ -117,7 +118,7 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         auto_redirect: c.auto_redirect,
         require_email_verified: c.require_email_verified,
         sign_in_url: format!(
-            "{}sign-in?org={}",
+            "{}platform/v1/auth/oidc/start?org={}",
             state.config.public_url,
             OrgId::from_uuid(org.id)
         ),

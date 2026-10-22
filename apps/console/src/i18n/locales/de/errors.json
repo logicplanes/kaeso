@@ -346,12 +346,10 @@
   "errors.ssoOtherAccount": "Sie haben sich beim Identitätsanbieter als jemand anderes angemeldet; melden Sie sich dort als Sie selbst an.",
   "errors.ssoSignedInAsOther": "Dieser Browser ist bei einem anderen Konto angemeldet; melden Sie sich zuerst ab und dann erneut an.",
   "errors.ssoStaleSignIn": "Der Identitätsanbieter hat Sie nicht erneut nach der Anmeldung gefragt; versuchen Sie es noch einmal oder bestätigen Sie anders.",
-  "errors.ssoNameOrg": "Die Organisation mit `org` angeben; hier nutzen mehrere Organisationen SSO.",
   "errors.ssoNeedsDomain": "Mindestens eine E-Mail-Domain angeben, deren Benutzer sich über diesen Anbieter anmelden.",
   "errors.ssoNoOrg": "Keine Organisation nutzt SSO für diese Anmeldung; anders anmelden.",
   "errors.ssoNoOwners": "SSO kann keine Inhaber anlegen; eine andere Rolle wählen.",
   "errors.ssoNoVerifiedDomain": "Die SSO dieser Organisation hat noch keine bestätigte E-Mail-Domain; bitten Sie einen Admin, eine zu bestätigen.",
-  "errors.ssoOff": "Die Anmeldung per SSO ist in dieser Installation ausgeschaltet.",
   "errors.ssoOrgOrEmail": "Entweder `org` oder `email` senden.",
   "errors.ssoPublicMail": "{domain} ist eine Domain eines öffentlichen Mail-Anbieters; nennen Sie die eigenen Domains Ihrer Organisation.",
   "errors.ssoRequiredStopFirst": "SSO ist in dieser Organisation Pflicht; diese Pflicht zuerst aufheben.",
@@ -460,5 +458,6 @@
   "errors.timeoutStage.request": "Anfrage",
   "errors.unpricedFeature.key": "Dieser Schlüssel hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
   "errors.unpricedFeature.member": "Das Mitglied hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
-  "errors.unpricedFeature.project": "Das Projekt hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin."
+  "errors.unpricedFeature.project": "Das Projekt hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
+  "errors.ssoEnterEmail": "Geben Sie Ihre E-Mail-Adresse ein, um sich mit Single Sign-on anzumelden."
 }

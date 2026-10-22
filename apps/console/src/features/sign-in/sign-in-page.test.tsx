@@ -5,6 +5,8 @@ import { emailSent, methods, signedInReply, ssoStart, totpRequired } from "~/tes
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
+const UNNAMED_PROVIDER = { org: ORG, org_name: "Northwind Labs", name: null, auto_redirect: false };
+
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
 async function atMethods(path: string, offered = methods()) {
@@ -196,7 +198,7 @@ describe("a signed-in visit", () => {
 
   it("asks before an organization's sign-in link signs the browser in again", async () => {
     signedIn();
-    on("GET", "auth/methods", methods({ sso: true, provider: NORTHWIND_LINK }));
+    on("GET", "auth/methods", methods({ provider: NORTHWIND_LINK }));
     on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s4"));
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp(`/sign-in?org=${ORG}&next=/settings/account&start=sso`);
@@ -211,17 +213,26 @@ describe("a signed-in visit", () => {
     expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: "/settings/account" }]);
   });
 
-  it("opens the page it was asked for when the organization of the link has no provider", async () => {
+  it("opens the page it was asked for when the start link's organization doesn't start without a click", async () => {
     signedIn();
-    on("GET", "auth/methods", methods());
-    await renderApp(`/sign-in?org=${ORG}&next=/settings/account/appearance`);
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_LINK, auto_redirect: false } }));
+    await renderApp(`/sign-in?org=${ORG}&next=/settings/account/appearance&start=sso`);
     await waitFor(() => expect(window.location.pathname).toBe("/settings/account/appearance"));
     expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+  });
+
+  it("opens the page it was asked for from an organization's address without a start link", async () => {
+    signedIn();
+    on("GET", "auth/methods", methods({ provider: NORTHWIND_LINK }));
+    await renderApp(`/sign-in?org=${ORG}&next=/settings/account/appearance`);
+    await waitFor(() => expect(window.location.pathname).toBe("/settings/account/appearance"));
+    expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();
   });
 
   it("names an account without an email address by its name", async () => {
     signedIn({ session: whoAmI({ user: user({ email: null }) }) });
-    on("GET", "auth/methods", methods({ sso: true, provider: NORTHWIND_LINK }));
+    on("GET", "auth/methods", methods({ provider: NORTHWIND_LINK }));
     await renderApp(`/sign-in?org=${ORG}&start=sso`);
     expect(await screen.findByText("You're signed in as Ada Okafor here; to sign in to Northwind Labs as someone else, sign out first.")).toBeInTheDocument();
     expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
@@ -229,8 +240,8 @@ describe("a signed-in visit", () => {
 
   it("says the session stayed when single sign-on came back as another account", async () => {
     signedIn();
-    on("GET", "auth/methods", methods({ sso: true, provider: NORTHWIND_LINK }));
-    await renderApp(`/sign-in?org=${ORG}&next=/settings/account#sso_error=signed_in_as_other`);
+    on("GET", "auth/methods", methods({ provider: NORTHWIND_LINK }));
+    await renderApp("/sign-in?next=/settings/account#sso_error=signed_in_as_other");
     await waitFor(() => expect(window.location.pathname).toBe("/settings/account"));
     expect(
       await (await notifications()).findByText("This browser is signed in to another account, which stays signed in; sign out first to switch."),
@@ -349,7 +360,7 @@ describe("other ways in", () => {
 
   it("sends the person to their identity provider", async () => {
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
-    const { user } = await atMethods("/sign-in", methods({ sso: true, password: false, magic_link: false }));
+    const { user } = await atMethods("/sign-in", methods({ password: false, magic_link: false, provider: UNNAMED_PROVIDER }));
     expect(screen.getByRole("button", { name: "Continue with SSO" })).toHaveFocus();
     on("POST", "auth/oidc/start", ssoStart("https://idp.example.com/authorize?state=s1"));
     await user.click(screen.getByRole("button", { name: "Continue with SSO" }));
@@ -359,12 +370,12 @@ describe("other ways in", () => {
   });
 
   it("puts the focus on the sign-in link when it's the only way in", async () => {
-    await atMethods("/sign-in", methods({ sso: false, password: false, magic_link: true }));
+    await atMethods("/sign-in", methods({ password: false, magic_link: true }));
     expect(screen.getByRole("button", { name: "Email me a sign-in link" })).toHaveFocus();
   });
 
   it("offers single sign-on next to the password", async () => {
-    await atMethods("/sign-in", methods({ sso: true, password: true, magic_link: false }));
+    await atMethods("/sign-in", methods({ password: true, magic_link: false, provider: UNNAMED_PROVIDER }));
     expect(screen.getByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
@@ -396,9 +407,10 @@ describe("other ways in", () => {
   });
 
   it("says when there's no way in for the address", async () => {
-    await atMethods("/sign-in", methods({ password: false, magic_link: false, sso: false, sign_up: false }));
+    await atMethods("/sign-in", methods({ password: false, magic_link: false, sign_up: false }));
     expect(screen.getByText("There's no way to sign in with ada@example.com on this install. Ask an administrator.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign in" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Continue with/ })).not.toBeInTheDocument();
   });
 });
 
@@ -429,134 +441,129 @@ describe("arriving at sign-in", () => {
   });
 });
 
-describe("single sign-on without an address", () => {
+describe("single sign-on after the address", () => {
   const NORTHWIND_ID = { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: false };
-  const ssoOnly = (provider: typeof NORTHWIND_ID | null = NORTHWIND_ID) => methods({ password: false, magic_link: false, sso: true, provider });
+  const ssoOnly = (provider: typeof NORTHWIND_ID | null = NORTHWIND_ID) => methods({ password: false, magic_link: false, provider });
 
-  it("offers the install's only provider by name and sends the person on with where they were going", async () => {
+  it("asks for the address on an organization's address, and offers its provider only after it", async () => {
     signedOut();
-    on("GET", "auth/methods", ssoOnly());
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_ID, auto_redirect: true } }));
+    on("POST", "auth/methods", methods({ provider: NORTHWIND_ID }));
     on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s1"));
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
-    const { user } = await renderApp(`/sign-in?next=/orgs/${ORG}/projects`);
-    const button = await screen.findByRole("button", { name: "Continue with Northwind ID" });
-    expect(button).toHaveFocus();
-    expect(screen.getByText("Northwind ID signs you in to Northwind Labs.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Stay signed in/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sign in with your email instead" })).not.toBeInTheDocument();
-    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
-    await user.click(button);
+    const { user } = await renderApp(`/sign-in?org=${ORG}&next=/orgs/${ORG}/projects`);
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test");
+    expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();
+    expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toEqual([null]);
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(await screen.findByRole("button", { name: "Continue with Northwind ID" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s1"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: `/orgs/${ORG}/projects` }]);
-  });
-
-  it("says SSO on the button of a provider without a name", async () => {
-    signedOut();
-    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, name: null as unknown as string }));
-    await renderApp("/sign-in");
-    expect(await screen.findByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
-    expect(screen.getByText("Single sign-on signs you in to Northwind Labs.")).toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@northwind.test", next: `/orgs/${ORG}/projects` }]);
   });
 
   it("goes on to the provider from a start link while nobody is signed in", async () => {
     signedOut();
-    on("GET", "auth/methods", methods({ sso: true, provider: NORTHWIND_ID }));
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_ID, auto_redirect: true } }));
     on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s5"));
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     await renderApp(`/sign-in?next=/orgs&org=${ORG}&start=sso`);
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s5"));
+    expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toEqual([ORG]);
     expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: "/orgs" }]);
   });
 
-  it("waits for a click on an organization's sign-in link without a start", async () => {
+  it("asks for the address on a start link of an organization that doesn't start without a click", async () => {
     signedOut();
-    on("GET", "auth/methods", methods({ sso: true, provider: NORTHWIND_ID }));
-    await renderApp(`/sign-in?org=${ORG}`);
-    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
-    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
-  });
-
-  it("starts at the provider on its own when the provider asks for it", async () => {
-    signedOut();
-    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
-    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s2"));
-    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
-    await renderApp("/sign-in");
-    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s2"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG }]);
-  });
-
-  it("waits for a click after signing out", async () => {
-    signedOut();
-    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
-    await renderApp("/sign-in?done=signed-out");
-    expect(await (await notifications()).findByText("You're signed out")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
-    await waitFor(() => expect(window.location.search).toBe(""));
-    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
-  });
-
-  it("keeps the organization of a sign-in link when it drops the notice", async () => {
-    signedOut();
-    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
-    await renderApp(`/sign-in?done=signed-out&org=${ORG}`);
-    expect(await (await notifications()).findByText("You're signed out")).toBeInTheDocument();
-    await waitFor(() => expect(window.location.search).toBe(`?org=${ORG}`));
-    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
-  });
-
-  it("says why the provider couldn't start, and lets the person try again", async () => {
-    signedOut();
-    on("GET", "auth/methods", ssoOnly());
-    on("POST", "auth/oidc/start", apiError(503, "unavailable", "The identity provider could not be reached."));
-    const { user } = await renderApp("/sign-in");
+    on("GET", "auth/methods", methods({ provider: NORTHWIND_ID }));
+    on("POST", "auth/methods", methods({ provider: NORTHWIND_ID }));
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s6"));
+    vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { user } = await renderApp(`/sign-in?next=/orgs&org=${ORG}&start=sso`);
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test{Enter}");
     await user.click(await screen.findByRole("button", { name: "Continue with Northwind ID" }));
-    expect(await (await notifications()).findByText("The identity provider could not be reached.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeEnabled();
+    await waitFor(() => expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@northwind.test", next: "/orgs" }]));
   });
 
-  it("waits for a click after the provider refused, and says why in the person's language", async () => {
+  it("asks for the address when the start link's organization has no provider", async () => {
     signedOut();
-    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
-    await renderApp("/sign-in#sso_error=provider_refused", { locale: "de" });
+    on("GET", "auth/methods", methods());
+    await renderApp(`/sign-in?org=${ORG}&start=sso`);
+    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+  });
+
+  it("waits for a click on a start link after the last attempt failed, and says why in the person's language", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_ID, auto_redirect: true } }));
+    await renderApp(`/sign-in?org=${ORG}&start=sso#sso_error=provider_refused`, { locale: "de" });
     expect(
       await within(await screen.findByRole("region", { name: "Benachrichtigungen" })).findByText("Der Identitätsanbieter hat die Anmeldung abgelehnt."),
     ).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Weiter mit Northwind ID" })).toBeInTheDocument();
+    expect(screen.getByText("Northwind ID meldet Sie bei Northwind Labs an.")).toBeInTheDocument();
     expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
   });
 
-  it("offers an organization's provider from its sign-in link, and the address too", async () => {
+  it("says SSO on a start link's button of a provider without a name", async () => {
     signedOut();
-    on("GET", "auth/methods", (r: { query: URLSearchParams }) => (r.query.get("org") === ORG ? methods({ sso: true, provider: NORTHWIND_ID }) : methods()));
-    const { user } = await renderApp(`/sign-in?org=${ORG}`);
-    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
-    expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toContain(ORG);
-    await user.click(screen.getByRole("link", { name: "Sign in with your email instead" }));
-    expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_ID, name: null, auto_redirect: true } }));
+    await renderApp(`/sign-in?org=${ORG}&start=sso#sso_error=provider_refused`);
+    expect(await screen.findByRole("button", { name: "Continue with SSO" })).toBeInTheDocument();
+    expect(screen.getByText("Single sign-on signs you in to Northwind Labs.")).toBeInTheDocument();
+  });
+
+  it("says why the provider couldn't start, and lets the person try again", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ provider: { ...NORTHWIND_ID, auto_redirect: true } }));
+    on("POST", "auth/oidc/start", apiError(503, "unavailable", "The identity provider could not be reached."));
+    const { user } = await renderApp(`/sign-in?org=${ORG}&start=sso`);
+    expect(await (await notifications()).findByText("The identity provider could not be reached.")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Continue with Northwind ID" }));
+    await waitFor(() => expect(requests("POST", "auth/oidc/start")).toHaveLength(2));
+    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeEnabled();
   });
 
   it("ignores an organization that isn't one", async () => {
     signedOut();
     on("GET", "auth/methods", methods());
-    await renderApp("/sign-in?org=../../steal");
+    await renderApp("/sign-in?org=../../steal&start=sso");
     await screen.findByRole("textbox", { name: "Email" });
     expect(requests("GET", "auth/methods").map((r) => r.query.get("org"))).toEqual([null]);
   });
 
-  it("names the provider of the address, and goes straight there when it's the only way in", async () => {
-    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
-    await atMethods("/sign-in", methods({ sso: true, provider: NORTHWIND_ID }));
-    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
-
+  it("asks for the address first where only single sign-on works, then goes straight to a provider that starts without a click", async () => {
     signedOut();
-    on("GET", "auth/methods", methods());
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
     on("POST", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
     on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s3"));
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp(`/sign-in?next=/orgs/${ORG}`);
-    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test{Enter}");
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test");
+    expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+    await user.keyboard("{Enter}");
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s3"));
     expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@northwind.test", next: `/orgs/${ORG}` }]);
+  });
+
+  it("offers the address's provider by name where only single sign-on works", async () => {
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const { user } = await atMethods("/sign-in", ssoOnly());
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s7"));
+    expect(screen.getByRole("button", { name: "Continue with Northwind ID" })).toHaveFocus();
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
+    await user.click(screen.getByRole("button", { name: "Continue with Northwind ID" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s7"));
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@example.com" }]);
+  });
+
+  it("asks for the address after signing out", async () => {
+    signedOut();
+    on("GET", "auth/methods", ssoOnly({ ...NORTHWIND_ID, auto_redirect: true }));
+    await renderApp("/sign-in?done=signed-out");
+    expect(await (await notifications()).findByText("You're signed out")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Email" })).toBeInTheDocument();
+    await waitFor(() => expect(window.location.search).toBe(""));
+    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
   });
 });

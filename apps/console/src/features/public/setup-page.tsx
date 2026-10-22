@@ -55,7 +55,7 @@ function SetupForm({ token }: { token: string }) {
   const queryClient = useQueryClient();
   const install = useQuery(signInMethodsQuery);
   const withPassword = install.data?.password ?? true;
-  const ssoOnly = install.data ? install.data.sso && !install.data.password && !install.data.magic_link : false;
+  const needsProvider = install.data ? !install.data.password && !install.data.magic_link : false;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,7 +70,7 @@ function SetupForm({ token }: { token: string }) {
         body: { token, name: name.trim(), email: email.trim(), ...(withPassword ? { password } : {}), org_name: orgName.trim() },
       });
       await queryClient.resetQueries();
-      const org = ssoOnly ? (await queryClient.fetchQuery(sessionQuery)).memberships[0]?.org_id : undefined;
+      const org = needsProvider ? (await queryClient.fetchQuery(sessionQuery)).memberships[0]?.org_id : undefined;
       await (org ? navigate({ to: "/settings/orgs/$org/security", params: { org } }) : navigate({ to: "/" }));
     });
 
@@ -130,7 +130,7 @@ function SetupForm({ token }: { token: string }) {
           {t("public.setUpKaeso", "Set up Kaeso")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
-          {ssoOnly
+          {needsProvider
             ? tRich("public.setUpSsoNext", "Next, connect your identity provider. Until it works, {command} prints a sign-in link for you.", {
                 command: <Code>{SIGN_IN_LINK_COMMAND}</Code>,
               })

@@ -32,11 +32,9 @@
   "signIn.ssoError.invalidLink": "Dieser Anmeldelink ist ungültig; beginnen Sie auf der Anmeldeseite neu.",
   "signIn.ssoError.linkRequired": "Ihr Konto ist nicht mit diesem Single Sign-on verknüpft; melden Sie sich anders an und verknüpfen Sie es unter Konto › Sicherheit.",
   "signIn.ssoError.linkedElsewhere": "Diese Identität ist bereits mit einem anderen Kaeso-Konto verknüpft.",
-  "signIn.ssoError.nameOrg": "Hier nutzen mehrere Organisationen Single Sign-on; öffnen Sie den Anmeldelink Ihrer Organisation.",
   "signIn.ssoError.noAccess": "Sie haben noch keinen Zugang zu dieser Organisation; bitten Sie einen Admin um eine Einladung.",
   "signIn.ssoError.noSso": "Für diese Anmeldung nutzt keine Organisation Single Sign-on; melden Sie sich anders an.",
   "signIn.ssoError.noVerifiedDomain": "Diese Organisation hat noch keine E-Mail-Domain für Single Sign-on bestätigt; fragen Sie einen Admin.",
-  "signIn.ssoError.off": "Single Sign-on ist auf dieser Installation ausgeschaltet.",
   "signIn.ssoError.orgScheduled": "Diese Organisation ist zum Löschen vorgemerkt.",
   "signIn.ssoError.otherAccount": "Sie haben sich beim Identitätsanbieter als jemand anderes angemeldet; melden Sie sich dort als Sie selbst an.",
   "signIn.ssoError.providerIncompatible": "Die Single-Sign-on-Verbindung funktioniert mit diesem Identitätsanbieter nicht; sagen Sie es einem Admin.",
@@ -50,7 +48,6 @@
   "signIn.title": "Anmelden",
   "signIn.twoStep": "Bestätigung in zwei Schritten",
   "signIn.useApp": "Authenticator-App verwenden",
-  "signIn.useEmail": "Stattdessen mit E-Mail anmelden",
   "signIn.useRecovery": "Wiederherstellungscode verwenden",
   "signIn.verify": "Bestätigen"
 }

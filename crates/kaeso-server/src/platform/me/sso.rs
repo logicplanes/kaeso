@@ -206,20 +206,16 @@ pub async fn confirm_ways(
         .await?
         .ok_or_else(|| ApiError::Authentication("Sign in first.".into()))?;
     let auth = &state.config.auth;
-    let sso = if auth.oidc {
-        sso_identities::linkable(&state.pg, me.uuid())
-            .await?
-            .into_iter()
-            .filter(|r| r.linked_at.is_some())
-            .map(|r| ConfirmSsoView {
-                org_id: OrgId::from_uuid(r.org_id),
-                org_name: r.org_name,
-                provider_name: r.provider_name,
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let sso = sso_identities::linkable(&state.pg, me.uuid())
+        .await?
+        .into_iter()
+        .filter(|r| r.linked_at.is_some())
+        .map(|r| ConfirmSsoView {
+            org_id: OrgId::from_uuid(r.org_id),
+            org_name: r.org_name,
+            provider_name: r.provider_name,
+        })
+        .collect();
     let mut ways = ConfirmWays {
         password: auth.password && user.password_hash.is_some(),
         magic_link: auth.magic_link && user.email.is_some() && user.email_verified_at.is_some(),

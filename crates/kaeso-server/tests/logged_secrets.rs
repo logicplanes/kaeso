@@ -141,7 +141,11 @@ async fn setup_links_and_sign_in_secrets_never_reach_the_log() {
     let idp = MockIdp::start("kaeso", "client-secret").await;
     connect(&app, &org, &idp).await;
     let start = app
-        .post("/auth/oidc/start", json!({ "org": org }), None)
+        .post(
+            "/auth/oidc/start",
+            json!({ "email": "ada@example.com" }),
+            None,
+        )
         .await;
     let binding = start.set_cookie("__Host-kaeso_oidc").unwrap();
     let auth = idp.authorize(

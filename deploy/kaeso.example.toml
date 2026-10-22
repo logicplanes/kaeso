@@ -33,7 +33,6 @@ transport = "smtp"
 [auth]
 password = true
 magic_link = true
-oidc = true
 oidc_allow_private_networks = false
 
 [key_failures]

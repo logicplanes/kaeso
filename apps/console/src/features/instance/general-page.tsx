@@ -117,7 +117,6 @@ function SignIn({ settings }: { settings: SettingsView }) {
   const methods: [string, boolean][] = [
     [t("instance.password", "Password"), settings.sign_in.password],
     [t("instance.signInLink", "Sign-in link"), settings.sign_in.magic_link],
-    [t("instance.sso", "Single sign-on"), settings.sign_in.sso],
   ];
   return (
     <SettingsSection title={t("instance.signInMethods", "Sign-in methods")} description={t("instance.setInConfig", "Set in the gateway's configuration.")}>

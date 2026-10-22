@@ -48,11 +48,20 @@ describe("instance general page", () => {
     expect(screen.getByRole("switch", { name: "Organizations can be deleted" })).toBeChecked();
     expect(screen.getByRole("textbox", { name: "Grace period" })).toHaveValue("7");
     expect(screen.getAllByText("On")).toHaveLength(2);
-    expect(screen.getByText("Off")).toBeInTheDocument();
+    expect(screen.queryByText("Off")).not.toBeInTheDocument();
+    expect(screen.queryByText("Single sign-on")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Time zone" })).toHaveValue("UTC");
     expect(screen.getByText(/\(GMT\+0\)$/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Default metadata retention" })).not.toBeInTheDocument();
     expect(screen.queryByText("SMTP server")).not.toBeInTheDocument();
+  });
+
+  it("says which of passwords and sign-in links the configuration turned off", async () => {
+    signedIn();
+    settingsApi({ sign_in: { password: false, magic_link: true } });
+    await renderApp(PATH);
+    expect(await screen.findByText("Off")).toBeInTheDocument();
+    expect(screen.getAllByText("On")).toHaveLength(1);
   });
 
   it("shows the API's message when the settings couldn't load", async () => {

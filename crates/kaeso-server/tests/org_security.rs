@@ -410,7 +410,11 @@ async fn an_sso_connection_names_its_button_and_its_sign_in_link() {
     assert_eq!(r.body["sso"]["auto_redirect"], false);
     assert_eq!(
         r.body["sso"]["sign_in_url"],
-        format!("{}/sign-in?org={}", common::ORIGIN, owner.org_id)
+        format!(
+            "{}/platform/v1/auth/oidc/start?org={}",
+            common::ORIGIN,
+            owner.org_id
+        )
     );
 
     let r = put(
@@ -569,7 +573,11 @@ async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
             None,
         )
         .await;
-    assert_eq!(m.body["sso"], false, "an unverified domain routes nobody");
+    assert_eq!(
+        m.body["provider"],
+        Value::Null,
+        "an unverified domain routes nobody"
+    );
 
     app.dns.set(
         "_kaeso-verify.acme.example",
@@ -595,7 +603,7 @@ async fn an_sso_domain_counts_only_once_its_dns_record_proves_it() {
             None,
         )
         .await;
-    assert_eq!(m.body["sso"], true);
+    assert_eq!(m.body["provider"]["org"], owner.org_id.as_str());
 
     let r = put(
         &app,

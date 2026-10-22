@@ -48,7 +48,7 @@ Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standa
 
 Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
 
-Anmeldemethoden und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt die Anmeldemethoden und **System** die E-Mail, beide nur zur Ansicht. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
+Passwörter, Anmeldelinks und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt, ob Passwörter und Anmeldelinks eingeschaltet sind, und **System** die E-Mail, beide nur zur Ansicht. Single Sign-on richtet jede Organisation auf ihrer Seite **Sicherheit** ein. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 
 ## Modelldaten synchronisieren
 
