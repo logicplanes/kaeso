@@ -33,6 +33,8 @@
   "signIn.ssoError.linkRequired": "Your account isn't linked to this single sign-on; sign in another way and link it under Account › Security.",
   "signIn.ssoError.linkedElsewhere": "This identity is already linked to another Kaeso account.",
   "signIn.ssoError.noAccess": "You have no access to this organization yet; ask an admin to invite you.",
+  "signIn.ssoError.noAuthTime": "The identity provider can't confirm a recent sign-in; use your password or an email link.",
+  "signIn.ssoError.noAuthTimeNamed": "{provider} can't confirm a recent sign-in; use your password or an email link.",
   "signIn.ssoError.noSso": "No organization uses single sign-on for this sign-in; sign in another way.",
   "signIn.ssoError.noVerifiedDomain": "This organization hasn't verified an email domain for single sign-on yet; ask an admin.",
   "signIn.ssoError.orgScheduled": "This organization is scheduled for deletion.",

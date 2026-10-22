@@ -33,6 +33,8 @@
   "signIn.ssoError.linkRequired": "Ihr Konto ist nicht mit diesem Single Sign-on verknüpft; melden Sie sich anders an und verknüpfen Sie es unter Konto › Sicherheit.",
   "signIn.ssoError.linkedElsewhere": "Diese Identität ist bereits mit einem anderen Kaeso-Konto verknüpft.",
   "signIn.ssoError.noAccess": "Sie haben noch keinen Zugang zu dieser Organisation; bitten Sie einen Admin um eine Einladung.",
+  "signIn.ssoError.noAuthTime": "Der Identitätsanbieter kann keine kürzliche Anmeldung bestätigen; nutzen Sie Ihr Passwort oder einen Link per E-Mail.",
+  "signIn.ssoError.noAuthTimeNamed": "{provider} kann keine kürzliche Anmeldung bestätigen; nutzen Sie Ihr Passwort oder einen Link per E-Mail.",
   "signIn.ssoError.noSso": "Für diese Anmeldung nutzt keine Organisation Single Sign-on; melden Sie sich anders an.",
   "signIn.ssoError.noVerifiedDomain": "Diese Organisation hat noch keine E-Mail-Domain für Single Sign-on bestätigt; fragen Sie einen Admin.",
   "signIn.ssoError.orgScheduled": "Diese Organisation ist zum Löschen vorgemerkt.",

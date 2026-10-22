@@ -1,7 +1,7 @@
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
 
-const MESSAGES: Record<string, () => string> = {
+const MESSAGES: Record<string, (provider?: string) => string> = {
   no_sso: () => t("signIn.ssoError.noSso", "No organization uses single sign-on for this sign-in; sign in another way."),
   invalid_link: () => t("signIn.ssoError.invalidLink", "This sign-in link isn't valid; start again from the sign-in page."),
   expired: () => t("signIn.ssoError.expired", "The sign-in expired or began in another browser; start again."),
@@ -25,14 +25,19 @@ const MESSAGES: Record<string, () => string> = {
   signed_in_as_other: () =>
     t("signIn.ssoError.signedInAsOther", "This browser is signed in to another account, which stays signed in; sign out first to switch."),
   stale_sign_in: () => t("signIn.ssoError.staleSignIn", "The identity provider didn't ask you to sign in again; try again or confirm another way."),
+  no_auth_time: (provider) =>
+    provider
+      ? t("signIn.ssoError.noAuthTimeNamed", "{provider} can't confirm a recent sign-in; use your password or an email link.", { provider })
+      : t("signIn.ssoError.noAuthTime", "The identity provider can't confirm a recent sign-in; use your password or an email link."),
   org_scheduled: () => t("signIn.ssoError.orgScheduled", "This organization is scheduled for deletion."),
   throttled: () => t("signIn.ssoError.throttled", "Too many sign-in attempts; try again in a few minutes."),
 };
 
-export function ssoErrorMessage(code: string): string {
-  return Object.hasOwn(MESSAGES, code) ? (MESSAGES[code] as () => string)() : t("signIn.ssoError.failed", "Single sign-on didn't work; try again.");
+export function ssoErrorMessage(code: string, provider?: string): string {
+  const message = Object.hasOwn(MESSAGES, code) ? MESSAGES[code] : undefined;
+  return message ? message(provider) : t("signIn.ssoError.failed", "Single sign-on didn't work; try again.");
 }
 
-export function showSsoError(code: string, id = "sso-error"): void {
-  toast.error(ssoErrorMessage(code), { id });
+export function showSsoError(code: string, id = "sso-error", provider?: string): void {
+  toast.error(ssoErrorMessage(code, provider), { id });
 }

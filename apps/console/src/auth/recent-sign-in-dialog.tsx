@@ -70,15 +70,17 @@ export default function RecentSignInDialog() {
     await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
     settleRecentSignIn(true);
   }, [queryClient]);
-  const waiting = step.kind === "sso-waiting";
+  const waitingFor = step.kind === "sso-waiting" ? step.provider : null;
+  const refetchWays = confirm.refetch;
   useEffect(() => {
-    if (!waiting) return;
+    if (!waitingFor) return;
     return onConfirmed(({ error }) => {
       if (!error) return void finish();
-      showSsoError(error, "sign-in-again");
+      showSsoError(error, "sign-in-again", providerName(waitingFor));
       setStep({ kind: "choose" });
+      void refetchWays();
     });
-  }, [waiting, finish]);
+  }, [waitingFor, finish, refetchWays]);
   const running = useRef(false);
   const attempt = async (fn: () => Promise<void>) => {
     if (running.current) return;
