@@ -15,6 +15,16 @@ export interface ApiMutationOptions<TData, TVars> extends Omit<UseMutationOption
   onError?: ((error: ApiError, vars: TVars) => void) | undefined;
 }
 
+export async function withSignInAgain<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) return await run();
+    if (isApiError(error) && error.type === "other_sign_in_required" && (await requestRecentSignIn("without-sso"))) return await run();
+    throw error;
+  }
+}
+
 export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, onSuccess, onError, ...rest }: ApiMutationOptions<TData, TVars>) {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -22,19 +32,7 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
     (typeof invalidates === "function" ? invalidates(vars) : (invalidates ?? [])).map(invalidationFilters);
   return useMutation<TData, ApiError, TVars>({
     ...rest,
-    mutationFn: async (vars) => {
-      try {
-        return await mutationFn(vars);
-      } catch (error) {
-        if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) {
-          return await mutationFn(vars);
-        }
-        if (isApiError(error) && error.type === "other_sign_in_required" && (await requestRecentSignIn("without-sso"))) {
-          return await mutationFn(vars);
-        }
-        throw error;
-      }
-    },
+    mutationFn: (vars) => withSignInAgain(() => mutationFn(vars)),
     onSuccess: async (data, vars, ctx, mctx) => {
       for (const filters of [...filtersFor(vars), { queryKey: ["audit-log"] }]) void queryClient.invalidateQueries(filters);
       await onSuccess?.(data, vars, ctx, mctx);

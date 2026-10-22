@@ -306,6 +306,25 @@ describe("starting two-factor setup after a while", () => {
     expect(await within(setup).findByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
     expect(requests("POST", "me/totp")).toHaveLength(2);
   });
+
+  it("asks a single sign-on session to sign in another way, then shows the setup key", async () => {
+    signedIn({ session: whoAmI({ session: { ...whoAmI().session, method: "oidc", sso_org: "org_contoso" } }) });
+    on("GET", "me", me({ has_password: true }));
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
+    on("POST", "auth/password", signedInReply());
+    let calls = 0;
+    on("POST", "me/totp", () =>
+      ++calls === 1 ? apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this.") : SETUP,
+    );
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Set up" }));
+    const again = await screen.findByRole("dialog", { name: "Sign in another way" });
+    await user.type(await within(again).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(again).getByRole("button", { name: "Sign in" }));
+    const setup = await screen.findByRole("dialog", { name: "Set up two-factor authentication" });
+    expect(await within(setup).findByText("JBSW Y3DP EHPK 3PXP")).toBeInTheDocument();
+    expect(requests("POST", "me/totp")).toHaveLength(2);
+  });
 });
 
 describe("with two-factor authentication on", () => {

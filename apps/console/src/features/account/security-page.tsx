@@ -23,9 +23,7 @@ import {
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
 import { meQuery, ssoLinksQuery } from "~/api/queries/me";
-import { useApiMutation } from "~/auth/mutation";
-import { isApiError } from "~/api/errors";
-import { requestRecentSignIn } from "~/auth/recent-sign-in-store";
+import { useApiMutation, withSignInAgain } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { confirmWaysQuery, emailPasswordLink } from "~/auth/sign-in-api";
 import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
@@ -307,14 +305,7 @@ function TurnOffDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
 }
 
 async function beginTotp() {
-  try {
-    return data(await api.POST("/platform/v1/me/totp"));
-  } catch (error) {
-    if (isApiError(error) && error.type === "recent_sign_in_required" && (await requestRecentSignIn())) {
-      return data(await api.POST("/platform/v1/me/totp"));
-    }
-    throw error;
-  }
+  return withSignInAgain(async () => data(await api.POST("/platform/v1/me/totp")));
 }
 
 function TwoFactorDialog({
