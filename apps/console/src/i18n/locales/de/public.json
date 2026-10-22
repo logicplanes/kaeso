@@ -25,7 +25,7 @@
   "public.createToJoin": "{target, select, role {Konto erstellen, um {org} als {role} beizutreten.} org {Konto erstellen, um {org} beizutreten.} other {Konto erstellen, um dieser Kaeso-Instanz beizutreten.}}",
   "public.emailChangeCancelled": "Die E-Mail-Änderung ist abgebrochen",
   "public.emailChangeCancelledHint": "Ihr Konto behält diese Adresse; haben Sie die Änderung nicht angefordert, setzen Sie Ihr Passwort zurück.",
-  "public.emailChanged": "E-Mail-Adresse geändert; Ihre anderen Sitzungen sind abgemeldet",
+  "public.emailChanged": "E-Mail geändert; Ihre anderen Sitzungen sind abgemeldet",
   "public.emailMeLink": "Link per E-Mail senden",
   "public.finishAccount": "Konto fertigstellen",
   "public.finishAccountHint": "Den Namen wählen, den andere sehen; ein Passwort ist optional.",
