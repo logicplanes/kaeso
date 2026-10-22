@@ -4,6 +4,19 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+#### Console
+
+- An organization's Security page says when its identity provider's sign-ins can never count as recent, and `GET orgs/{org}/security` returns it as `sso.sends_auth_time`.
+
+### Fixed
+
+#### Console
+
+- The sign-in-again dialog no longer keeps offering an identity provider that never sends `auth_time`, such as one run on Clerk: after one failed confirmation it explains why and offers the password or an email link, so the prompt stops coming back. A confirmation without `auth_time` now returns `no_auth_time` instead of `stale_sign_in`.
+- Setting up an authenticator app from a single sign-on session asks to sign in another way instead of showing an error whose Try again failed the same way.
+
 ## [0.3.6] - 2026-10-22
 
 ### Changed
