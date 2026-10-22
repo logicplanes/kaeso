@@ -2,14 +2,12 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import openapiTS, { astToString } from "openapi-typescript";
-import { createConfig } from "@redocly/openapi-core";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const document = join(root, "../../openapi.json");
 
 const spec = JSON.parse(readFileSync(document, "utf8"));
-const redocly = await createConfig({}, { extends: ["minimal"] });
-const ast = await openapiTS(spec, { alphabetize: true, exportType: true, rootTypes: false, redocly });
+const ast = await openapiTS(spec, { alphabetize: true, exportType: true, rootTypes: false });
 const out = join(root, "src/api/generated/schema.ts");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, astToString(ast));
