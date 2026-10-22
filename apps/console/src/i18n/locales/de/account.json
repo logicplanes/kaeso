@@ -54,6 +54,8 @@
   "account.leaveConfirmHint": "Sie verlieren den Zugriff auf ihre Projekte, und Ihre Schlüssel darin werden archiviert. Ein Inhaber kann Sie erneut einladen.",
   "account.leaveOrg": "Organisation verlassen",
   "account.leftOrg": "Sie haben {org} verlassen",
+  "account.managedBy": "Verwaltet von",
+  "account.managedByHint": "Adresse an ihrer Domain; ihre SSO ist eine volle Anmeldung.",
   "account.memberships": "Mitgliedschaften",
   "account.membershipsHint": "Ihre Organisationen, Ihre Rechte darin und die Projekte, denen Sie angehören.",
   "account.nameHint": "Für die Mitglieder Ihrer Organisationen sichtbar.",

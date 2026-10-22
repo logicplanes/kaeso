@@ -19,7 +19,8 @@ use crate::platform::orgs::invites::{INVITE_LIFETIME, InviteView};
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
 use crate::platform::validate::validate_email;
-use crate::platform::views::UserView;
+use crate::platform::views::{ManagedBy, UserView};
+use crate::services::managed::Domains;
 use crate::services::users as lifecycle;
 use crate::state::AppState;
 
@@ -31,12 +32,23 @@ pub struct InstanceUserView {
     pub user: UserView,
     #[doc = "Whether TOTP is on."]
     pub totp_enabled: bool,
+    #[doc = "The org that manages the account: its address is at a verified email\n\
+        domain of an org with an SSO connection; `null` when no org does."]
+    pub managed_by: Option<ManagedBy>,
+}
+
+fn managed_by(domains: &Domains, u: &users::User) -> Option<ManagedBy> {
+    domains
+        .manager(u.email.as_deref())
+        .map(|(org, name)| ManagedBy::new(org, name))
 }
 
 async fn view(state: &AppState, u: &users::User) -> ApiResult<InstanceUserView> {
+    let domains = Domains::load(&state.pg, None).await?;
     Ok(InstanceUserView {
         user: UserView::from_row(u),
         totp_enabled: totp::is_enabled(&state.pg, u.id).await?,
+        managed_by: managed_by(&domains, u),
     })
 }
 
@@ -74,12 +86,14 @@ pub async fn list(
     let list = List::from_rows(&page, rows, |u| u.id, |u| u);
     let ids: Vec<uuid::Uuid> = list.data.iter().map(|u| u.id).collect();
     let with_totp = totp::enabled_among(&state.pg, &ids).await?;
+    let domains = Domains::load(&state.pg, None).await?;
     let data = list
         .data
         .iter()
         .map(|u| InstanceUserView {
             user: UserView::from_row(u),
             totp_enabled: with_totp.contains(&u.id),
+            managed_by: managed_by(&domains, u),
         })
         .collect();
     Ok(Json(List {

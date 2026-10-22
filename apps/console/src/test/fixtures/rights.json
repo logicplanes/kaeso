@@ -231,7 +231,7 @@
             "id": "security.sso.require",
             "scope": "org",
             "name": "Require SSO",
-            "description": "Require members to sign in to this organization through SSO.",
+            "description": "Require the accounts this organization manages to sign in only through its SSO.",
             "sensitive": true,
             "recent_sign_in": true,
             "cloud_only": false,

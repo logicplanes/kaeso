@@ -46,6 +46,14 @@ describe("instance users list", () => {
     expect(userQueries()[0]).toEqual({ limit: "100" });
   });
 
+  it("names the organization that manages each account", async () => {
+    signedIn();
+    users([ADA, { ...GRACE, managed_by: { org: "org_acme", name: "Acme" } }]);
+    await renderApp(PATH);
+    expect(await within(table()).findByText("Acme")).toBeInTheDocument();
+    expect(within(table()).getByText("Managed by")).toBeInTheDocument();
+  });
+
   it("gives the creation day room for it in every language", async () => {
     signedIn();
     users();

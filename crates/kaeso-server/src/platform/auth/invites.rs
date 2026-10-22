@@ -180,6 +180,7 @@ pub async fn accept_invite(
             invite.email
         )));
     }
+    crate::services::managed::refuse_other_sign_in(&state.pg, &invite.email).await?;
     let name = validate_name("name", req.name.as_deref().unwrap_or_default())?;
     let password_hash = match req.password {
         Some(p) => Some(hash_password("password", p).await?),

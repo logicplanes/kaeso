@@ -8,7 +8,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 
 | Page | What it holds |
 | --- | --- |
-| Profile | Picture, name, email address and account id, and deleting the account |
+| Profile | Picture, name, email address and account id, the organization that manages the account, and deleting the account |
 | Security | Password, two-factor authentication, recovery codes and links to single sign-on |
 | Sessions | The browsers you are signed in with |
 | API keys | Your own keys in every project ([API keys](api-keys.md)) |
@@ -28,7 +28,7 @@ Under **Security**, **Change password** sets a new password and signs out your o
 
 ## Turn on two-factor authentication
 
-Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code, or a sign-in through its own identity provider.
+Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code, or a sign-in through its own identity provider or the one of the organization that manages your account.
 
 A sign-in link first shows the account it signs in to. Choose **Sign in** only if you asked for the link yourself. If this browser is signed in to another account, signing in replaces that session here.
 
@@ -69,11 +69,15 @@ Through single sign-on, the console opens your identity provider in a small wind
 
 ## After signing in through single sign-on
 
-A sign-in through an organization's identity provider opens only that organization, and lets you read your account. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
+When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements, and changes to your account, which still need a recent sign-in. Instance administration needs another sign-in.
+
+A sign-in through the provider of an organization that doesn't manage your account opens only that organization, and lets you read your account. That happens when your address is at another domain. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 
 - changing your email address or password, or two-factor authentication;
 - creating an organization, leaving another one, or deleting the account;
 - opening another organization, or instance administration.
+
+When the organization that manages your account requires single sign-on, you sign in only through its provider, and it confirms recent sign-ins too ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 
 Without a password, choose **Email me a link** under **Account** › **Security**, or **Forgot your password?** on the sign-in page, and set one from the email. The console offers the same link when an action needs another sign-in and nothing else works.
 

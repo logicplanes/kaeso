@@ -179,7 +179,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Sends a sign-in link if the address has an active account. Always\nanswers the same way.",
+        "summary": "Sends a sign-in link if the address has an active account. Always\nanswers the same way, unless the org that manages the address's domain\nrequires SSO.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthMagicLink",
         "requestBody": {
@@ -299,7 +299,7 @@
           "auth"
         ],
         "summary": "Signs in with a sign-in link. The link works once. With TOTP set up,\nanswers with a challenge for `auth/totp` instead of a session.",
-        "description": "A link from `kaeso user sign-in-link` works even while sign-in links by email are turned off.\n\n**Access:** public; no authentication.",
+        "description": "A link from `kaeso user sign-in-link` works even while sign-in links by email are turned off, and for an account whose managing org requires SSO.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthMagicLinkVerify",
         "requestBody": {
           "content": {
@@ -3650,7 +3650,7 @@
           "me"
         ],
         "summary": "Deletes the user's account. Needs a recent sign-in;\nrefused while the user is the last owner of an org.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "deleteMe",
         "responses": {
           "204": {
@@ -3929,7 +3929,7 @@
           "me"
         ],
         "summary": "Starts an email change: sends a confirmation link to the new address\nand a link to cancel it to the current one. Needs a recent sign-in and,\nwhile TOTP is on, a code. Ending the session that asked, or every\nsession, cancels the change.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeEmail",
         "requestBody": {
           "content": {
@@ -4105,7 +4105,7 @@
           "me"
         ],
         "summary": "The signed-in user's keys, in every project of the orgs this session may\nopen.",
-        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from an org's SSO.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from the SSO of an org that doesn't manage the account.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "getMeKeys",
         "parameters": [
           {
@@ -4652,7 +4652,7 @@
           "me"
         ],
         "summary": "Creates an org; the caller becomes its owner. Allowed for instance admins,\nand for others as the instance setting `org_creation` says;\n`auth/session` reports it as `can_create_orgs`.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeOrgs",
         "requestBody": {
           "content": {
@@ -4716,7 +4716,7 @@
           "me"
         ],
         "summary": "Sets or changes the password. Ends every session of the user; the\ncaller gets a new session (new cookie). Without a current password (a\nuser who signs in by sign-in link or SSO), a recent sign-in is needed.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMePassword",
         "requestBody": {
           "content": {
@@ -4781,7 +4781,7 @@
           "me"
         ],
         "summary": "Replaces the recovery codes with ten new ones. Needs TOTP on, a recent\nsign-in and a current code or one of the recovery codes.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeRecoveryCodes",
         "requestBody": {
           "content": {
@@ -5002,19 +5002,8 @@
           "me"
         ],
         "summary": "The ways the signed-in user can confirm it's them when an action needs a\nsign-in within the last 15 minutes.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "When the org that manages the account requires SSO, only its identity provider confirms, since the account can't sign in another way.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "getMeSignInAgain",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "query",
-            "description": "The org the action is in. When it requires SSO, only its own SSO\nconfirms, since a session from anywhere else can't act there.",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -5177,7 +5166,7 @@
           "me"
         ],
         "summary": "Starts linking the account to an org's identity provider: answers with\nthe provider's URL. Whoever signs in there is linked to this account, and\nthe browser comes back to `next` signed in as before.",
-        "description": "Needs a sign-in within the last 15 minutes. On failure the browser comes back to `next` with an error code in `#sso_error=`.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "Needs a sign-in within the last 15 minutes. On failure the browser comes back to `next` with an error code in `#sso_error=`.\n\n**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeSsoLinks",
         "requestBody": {
           "content": {
@@ -5241,7 +5230,7 @@
           "me"
         ],
         "summary": "Unlinks the account from an org's identity provider: it no longer signs\nin through it, and the account's sessions it signed in end.",
-        "description": "Needs a sign-in within the last 15 minutes. When the session that asks came from that org's SSO, it ends too.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "Needs a sign-in within the last 15 minutes. When the session that asks came from that org's SSO, it ends too.\n\n**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "deleteMeSsoLinksOrg",
         "parameters": [
           {
@@ -5296,7 +5285,7 @@
           "me"
         ],
         "summary": "Starts TOTP setup: a new secret, confirmed with `me/totp/confirm`.\nRefused while TOTP is on. Needs a recent sign-in.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeTotp",
         "responses": {
           "200": {
@@ -5345,7 +5334,7 @@
           "me"
         ],
         "summary": "Turns TOTP off with a current code or a recovery code. Refused while an\norg of the user requires 2FA. Needs a recent sign-in.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "deleteMeTotp",
         "requestBody": {
           "content": {
@@ -5403,7 +5392,7 @@
           "me"
         ],
         "summary": "Confirms TOTP setup with a code and returns ten recovery codes. The\nsession gets a new id and counts as signed in with a second factor.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeTotpConfirm",
         "requestBody": {
           "content": {
@@ -15116,8 +15105,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Requires (or stops requiring) members to sign in to this org through\nits SSO. Needs an SSO connection.",
-        "description": "**Right:** `security.sso.require` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "summary": "Requires (or stops requiring) the accounts the org manages to sign in\nonly through its SSO. Needs an SSO connection.",
+        "description": "The accounts at the org's verified email domains then can't sign in with a password or a sign-in link anywhere on the install, and their sessions from those end, except the one making the request. Guests, members at other domains, keep their own sign-in. A sign-in link from `kaeso user sign-in-link` still works.\n\n**Right:** `security.sso.require` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecurityRequireSso",
         "parameters": [
           {
@@ -16807,7 +16796,7 @@
           },
           "type": {
             "type": "string",
-            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `other_sign_in_required` (a session from an\norganization's SSO can't do this; sign in another way), `not_found`,\n`conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
+            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `other_sign_in_required` (a session from the\nSSO of an organization that doesn't manage the account, or any SSO\nsession for instance administration, can't do this; sign in another\nway), `not_found`,\n`conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
             "example": "not_found"
           }
         }
@@ -17515,6 +17504,17 @@
               "totp_enabled"
             ],
             "properties": {
+              "managed_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ManagedBy",
+                    "description": "The org that manages the account: its address is at a verified email\ndomain of an org with an SSO connection; `null` when no org does."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "totp_enabled": {
                 "type": "boolean",
                 "description": "Whether TOTP is on."
@@ -18859,6 +18859,17 @@
                     "totp_enabled"
                   ],
                   "properties": {
+                    "managed_by": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/components/schemas/ManagedBy",
+                          "description": "The org that manages the account: its address is at a verified email\ndomain of an org with an SSO connection; `null` when no org does."
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "totp_enabled": {
                       "type": "boolean",
                       "description": "Whether TOTP is on."
@@ -19504,7 +19515,8 @@
                 "id",
                 "user",
                 "grant",
-                "joined_at"
+                "joined_at",
+                "managed"
               ],
               "properties": {
                 "grant": {
@@ -19519,6 +19531,10 @@
                   "type": "string",
                   "format": "date-time",
                   "description": "When they joined."
+                },
+                "managed": {
+                  "type": "boolean",
+                  "description": "Whether the org manages their account: their address is at one of its\nverified email domains and it has an SSO connection. Otherwise they are\na guest, who keeps their own way of signing in."
                 },
                 "user": {
                   "$ref": "#/components/schemas/MemberUser",
@@ -20699,6 +20715,25 @@
           }
         }
       },
+      "ManagedBy": {
+        "type": "object",
+        "description": "The org that manages an account.",
+        "required": [
+          "org",
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "Acme"
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org."
+          }
+        }
+      },
       "Me": {
         "allOf": [
           {
@@ -20815,7 +20850,8 @@
           "id",
           "user",
           "grant",
-          "joined_at"
+          "joined_at",
+          "managed"
         ],
         "properties": {
           "grant": {
@@ -20830,6 +20866,10 @@
             "type": "string",
             "format": "date-time",
             "description": "When they joined."
+          },
+          "managed": {
+            "type": "boolean",
+            "description": "Whether the org manages their account: their address is at one of its\nverified email domains and it has an SSO connection. Otherwise they are\na guest, who keeps their own way of signing in."
           },
           "user": {
             "$ref": "#/components/schemas/MemberUser",
@@ -20847,12 +20887,13 @@
           "role",
           "rights",
           "project_rights",
-          "access"
+          "access",
+          "sso"
         ],
         "properties": {
           "access": {
             "type": "string",
-            "description": "Whether this session may use the org: `ok`, `needs_2fa` (set up TOTP\nand sign in with it), `needs_sso` (sign in through the org's\nidentity provider) or `needs_other_sign_in` (this session came from\nanother org's SSO; sign in with a password or a sign-in link).",
+            "description": "Whether this session may use the org: `ok`, `needs_2fa` (set up TOTP\nand sign in with it), `needs_sso` (the org manages the account and\nrequires SSO; sign in through its identity provider) or\n`needs_other_sign_in` (this session came from the SSO of an org that\ndoesn't manage the account; sign in with a password or a sign-in link).",
             "example": "ok"
           },
           "org_avatar_url": {
@@ -20909,6 +20950,10 @@
           "role": {
             "$ref": "#/components/schemas/RoleRef",
             "description": "The user's org role."
+          },
+          "sso": {
+            "type": "boolean",
+            "description": "Whether the org has an SSO connection, so it manages the accounts at its\nverified email domains and its other members are guests."
           }
         }
       },
@@ -21628,7 +21673,7 @@
           },
           "require_sso": {
             "type": "boolean",
-            "description": "Whether members must sign in through the org's SSO."
+            "description": "Whether the accounts the org manages sign in only through its SSO,\neverywhere on the install; guests keep their own sign-in."
           },
           "sso_default_preset": {
             "type": [
@@ -22996,7 +23041,7 @@
           },
           "require_sso": {
             "type": "boolean",
-            "description": "Whether members must sign in through the org's SSO."
+            "description": "Whether the accounts the org manages sign in only through its SSO,\neverywhere on the install; guests keep their own sign-in."
           },
           "sso": {
             "oneOf": [
@@ -23204,7 +23249,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OrgId",
-                "description": "The org whose SSO signed this session in; `null` for other ways in.\nSuch a session opens only that org and reads the user's own account;\nanything else answers `other_sign_in_required`."
+                "description": "The org whose SSO signed this session in; `null` for other ways in.\nWhen that org manages the account (`managed_by` in `auth/session`),\nthe session counts like a password one everywhere but `instance/*`.\nOtherwise it opens only that org and reads the user's own account,\nand anything else answers `other_sign_in_required`."
               },
               {
                 "type": "null"
@@ -23501,7 +23546,7 @@
           },
           "sso_required": {
             "type": "boolean",
-            "description": "The organization of the address's verified domain requires SSO, so the\npage offers its provider alone."
+            "description": "The organization that manages the address, at its verified domain,\nrequires SSO, so the page offers its provider alone: the account can't\nsign in with a password or a sign-in link anywhere on the install."
           }
         }
       },
@@ -24973,11 +25018,22 @@
           },
           "can_create_orgs": {
             "type": "boolean",
-            "description": "Whether the user may create organizations (`POST me/orgs`): always\nfor instance admins; for everyone else as the instance setting\n`org_creation` says, by their email domain when it is\n`allowed_domains`. Never from a session that came from an org's SSO."
+            "description": "Whether the user may create organizations (`POST me/orgs`): always\nfor instance admins; for everyone else as the instance setting\n`org_creation` says, by their email domain when it is\n`allowed_domains`. Never from a session that came from the SSO of an\norg that doesn't manage the account."
           },
           "locale": {
             "$ref": "#/components/schemas/UserLocale",
             "description": "The language the console is shown in, as in `me`:\nthe console reads it at start, before anything else is shown."
+          },
+          "managed_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ManagedBy",
+                "description": "The org that manages the account: its address is at a verified email\ndomain of an org with an SSO connection. A sign-in through that org's\nSSO counts like a password one everywhere but `instance/*`. `null` for\nan account no org manages."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "memberships": {
             "type": "array",
@@ -25022,7 +25078,7 @@
         }
       },
       "Forbidden": {
-        "description": "The caller lacks the right, the org requires 2FA or SSO, a recent sign-in is needed, or a session from an organization's SSO can't do this (`permission_denied`, `recent_sign_in_required`, `other_sign_in_required`).",
+        "description": "The caller lacks the right, the org requires 2FA or SSO, a recent sign-in is needed, or a session from the SSO of an organization that doesn't manage the account can't do this (`permission_denied`, `recent_sign_in_required`, `other_sign_in_required`).",
         "content": {
           "application/json": {
             "schema": {

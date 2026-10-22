@@ -20,6 +20,8 @@ Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die 
 
 Eine Organisation mit [Single Sign-on](organizations-and-projects.md#single-sign-on) kann Personen ihrer E-Mail-Domains auch ohne Einladung beitreten lassen. Das gilt nur für Personen, die neu bei Kaeso sind. Wer schon ein Konto hat, braucht eine Einladung und verknüpft das Konto unter **Konto** mit dem Identitätsanbieter.
 
+In einer Organisation mit Single Sign-on kennzeichnet **Mitglieder** jedes Mitglied, dessen Adresse nicht zu einer ihrer bestätigten Domains gehört, als **Gast**. Die Konten der übrigen Mitglieder verwaltet die Organisation, und **Single Sign-on verlangen** gilt nur für sie; Gäste behalten ihren eigenen Weg der Anmeldung ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
+
 ## Rolle wählen
 
 Organisationen haben sechs integrierte Rollen: **Inhaber**, **Admin**, **Abrechnung**, **Entwickler**, **Prüfer** und **Mitglied**. Projekte haben drei: **Admin**, **Entwickler** und **Betrachter**. Die Konsole beschreibt jede Rolle dort, wo Sie eine wählen, und integrierte Rollen lassen sich nicht ändern.

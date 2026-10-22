@@ -54,6 +54,8 @@
   "account.leaveConfirmHint": "You lose access to its projects, and your keys in them are archived. An owner can invite you again.",
   "account.leaveOrg": "Leave organization",
   "account.leftOrg": "You left {org}",
+  "account.managedBy": "Managed by",
+  "account.managedByHint": "Your address is at its domain; its SSO signs you in fully.",
   "account.memberships": "Memberships",
   "account.membershipsHint": "Your organizations, your rights in them, and their projects you belong to.",
   "account.nameHint": "Shown to the members of your organizations.",

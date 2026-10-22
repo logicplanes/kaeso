@@ -54,6 +54,8 @@
   "account.leaveConfirmHint": "您将失去其项目的访问权限，您在其中的密钥将被归档。所有者可以再次邀请您。",
   "account.leaveOrg": "退出组织",
   "account.leftOrg": "已退出 {org}",
+  "account.managedBy": "管理方",
+  "account.managedByHint": "您的地址属于其域名；通过其 SSO 登录即为完整登录。",
   "account.memberships": "成员身份",
   "account.membershipsHint": "您所在的组织、您在其中的权限，以及您所属的项目。",
   "account.nameHint": "向您所在组织的成员显示。",

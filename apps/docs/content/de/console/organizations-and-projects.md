@@ -59,7 +59,9 @@ DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Bestätigen
 
 Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)), und nur, wenn das Konto der Organisation angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
 
-Single Sign-on bestätigt eine kürzliche Anmeldung nur, wenn Ihr Anbieter in seinen ID-Tokens `auth_time` sendet. Kommt eine Bestätigung ohne `auth_time` zurück, zeigt **Sicherheit** die Zeile **Kürzliche Anmeldung**: Anmeldungen über den Anbieter zählen nie als kürzlich, Mitglieder bestätigen also mit Passwort oder Anmeldelink. Ist **Single Sign-on verlangen** eingeschaltet, können sie gar nicht bestätigen, bis der Anbieter es sendet ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
+Single Sign-on bestätigt eine kürzliche Anmeldung nur, wenn Ihr Anbieter in seinen ID-Tokens `auth_time` sendet. Kommt eine Bestätigung ohne `auth_time` zurück, zeigt **Sicherheit** die Zeile **Kürzliche Anmeldung**: Anmeldungen über den Anbieter zählen nie als kürzlich, Mitglieder bestätigen also mit Passwort oder Anmeldelink. Ist **Single Sign-on verlangen** eingeschaltet, können die Konten, die die Organisation verwaltet, gar nicht bestätigen, bis der Anbieter es sendet ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
+
+Sobald die Verbindung steht, verwaltet die Organisation die Konten an ihren bestätigten Domains: Eine Anmeldung über ihren Anbieter öffnet alles, was diese Konten öffnen können, außer der Verwaltung der Instanz ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
@@ -67,11 +69,11 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 
 | Einstellung | Wirkung |
 | --- | --- |
-| Single Sign-on verlangen | Mitglieder gelangen nur über den Identitätsanbieter in die Organisation. Ihre anderen Sitzungen gelten weiter für ihre übrigen Organisationen. Setzt einen verbundenen Anbieter voraus |
-| Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit einem Code aus ihrer Authenticator-App, per Passwort oder Anmeldelink. Eine Anmeldung über den eigenen Identitätsanbieter der Organisation reicht ebenfalls |
+| Single Sign-on verlangen | Konten an ihren bestätigten Domains melden sich nur per SSO an; Gäste behalten ihre eigene Anmeldung. Die Konten, die sie verwaltet, können sich nirgends auf der Installation mit Passwort oder Anmeldelink anmelden, und ihre anderen Sitzungen enden. Setzt einen verbundenen Anbieter voraus |
+| Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit einem Code aus ihrer Authenticator-App, per Passwort oder Anmeldelink. Eine Anmeldung über Single Sign-on reicht ebenfalls, über den eigenen Anbieter der Organisation oder den der Organisation, die das Konto des Mitglieds verwaltet |
 | Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und ein Projekt kann ein kürzeres Limit setzen |
 
-Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole warnt Sie vor dem Speichern. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.
+Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole fragt vor dem Speichern nach. Wenn Sie Single Sign-on verlangen, bleibt Ihre eigene Sitzung bestehen; ein [Anmeldelink vom Server](../self-hosting/sign-in.md#wieder-hineinkommen) ist also nie Ihr einziger Weg zurück. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.
 
 ## Organisation löschen
 

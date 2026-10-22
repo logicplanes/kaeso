@@ -125,7 +125,7 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `security.sso.manage` | 管理 SSO | 配置组织的身份提供商，以及经由它加入的人员的角色。 | 需近期登录 |
-| `security.sso.require` | 要求 SSO | 要求成员通过 SSO 登录此组织。 | 敏感；需近期登录 |
+| `security.sso.require` | 要求 SSO | 要求此组织管理的账户只能通过其 SSO 登录。 | 敏感；需近期登录 |
 | `security.2fa.require` | 要求双重验证 | 要求成员使用双重验证。 | 需近期登录 |
 | `security.key_policy.manage` | 设置密钥有效期 | 设置组织的密钥最长有效期。 |  |
 

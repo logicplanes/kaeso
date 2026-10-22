@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { ORG, roles, signedIn, withRights } from "~/test/fixtures";
+import { ORG, membership, roles, signedIn, whoAmI, withRights } from "~/test/fixtures";
 import { OTHER_USER, THIRD_USER, hoverReason, member, notifications, paged, roleGrant } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -37,6 +37,30 @@ describe("organization members", () => {
     expect(linus).toHaveTextContent("Suspended");
     expect(linus).toHaveTextContent("Member");
     expect(linus).toHaveTextContent("Joined 15 Oct 2026");
+  });
+
+  it("marks the members the organization doesn't manage as guests once it has single sign-on", async () => {
+    const team = [
+      member({ managed: true }),
+      member({ user: { id: OTHER_USER, name: "Grace Hopper", email: "grace@else.example" }, grant: roleGrant("member", "Member") }),
+    ];
+    signedIn({ session: whoAmI({ memberships: [membership({ sso: true })] }) });
+    on("GET", "orgs/:org/members", paged(team));
+    await renderApp(PATH);
+    const grid = await screen.findByRole("grid", { name: "Members" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")).toHaveLength(2));
+    const [ada, grace] = within(grid).getAllByRole("gridcell") as [HTMLElement, HTMLElement];
+    expect(ada).not.toHaveTextContent("Guest");
+    expect(grace).toHaveTextContent("Guest");
+  });
+
+  it("shows no guests in an organization without single sign-on", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged(people));
+    await renderApp(PATH);
+    const grid = await screen.findByRole("grid", { name: "Members" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")).toHaveLength(3));
+    expect(within(grid).queryByText("Guest")).not.toBeInTheDocument();
   });
 
   it("finds members by name or email address, and says when none match", async () => {

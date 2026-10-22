@@ -68,6 +68,62 @@ pub async fn org_for_domain(
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Manager {
+    pub org_id: Uuid,
+    pub org_name: String,
+    pub require_sso: bool,
+}
+
+pub async fn manager_of_domain(
+    db: impl PgExecutor<'_>,
+    domain: &str,
+) -> Result<Option<Manager>, StoreError> {
+    Ok(sqlx::query_as!(
+        Manager,
+        "SELECT o.id AS org_id, o.name AS org_name, o.require_sso FROM org_oidc_domains d \
+         JOIN org_oidc c ON c.org_id = d.org_id JOIN organizations o ON o.id = d.org_id \
+         WHERE d.domain = $1 AND d.verified_at IS NOT NULL",
+        domain
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ManagedDomain {
+    pub domain: String,
+    pub org_id: Uuid,
+    pub org_name: String,
+}
+
+pub async fn managed_domains(
+    db: impl PgExecutor<'_>,
+    org_id: Option<Uuid>,
+) -> Result<Vec<ManagedDomain>, StoreError> {
+    Ok(sqlx::query_as!(
+        ManagedDomain,
+        "SELECT d.domain, o.id AS org_id, o.name AS org_name FROM org_oidc_domains d \
+         JOIN org_oidc c ON c.org_id = d.org_id JOIN organizations o ON o.id = d.org_id \
+         WHERE d.verified_at IS NOT NULL AND ($1::uuid IS NULL OR d.org_id = $1) \
+         ORDER BY d.domain",
+        org_id
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn connected_among(
+    db: impl PgExecutor<'_>,
+    orgs: &[Uuid],
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT org_id FROM org_oidc WHERE org_id = ANY($1)", orgs)
+            .fetch_all(db)
+            .await?,
+    )
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Upserted {
     Saved,
     DomainTaken(String),

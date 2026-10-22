@@ -59,8 +59,9 @@ export function SecurityPage() {
 
 function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: string | null | undefined }) {
   const [open, setOpen] = useState(false);
-  const fromSso = useSession().session.method === "oidc";
-  const linkTo = !hasPassword && fromSso ? email : undefined;
+  const { session, managed_by: managedBy } = useSession();
+  const confinedSso = session.method === "oidc" && (!managedBy || session.sso_org !== managedBy.org);
+  const linkTo = !hasPassword && confinedSso ? email : undefined;
   const control = linkTo ? (
     <EmailPasswordLink email={linkTo} />
   ) : (
@@ -91,7 +92,7 @@ function PasswordSection({ hasPassword, email }: { hasPassword: boolean; email: 
 }
 
 function EmailPasswordLink({ email }: { email: string }) {
-  const ways = useQuery(confirmWaysQuery(undefined));
+  const ways = useQuery(confirmWaysQuery());
   const send = useApiMutation({
     mutationFn: () => emailPasswordLink(email),
     onSuccess: () => toast(t("account.passwordLinkSent", "Link sent to {email}", { email })),

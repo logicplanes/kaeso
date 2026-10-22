@@ -6,7 +6,7 @@ use kaeso_store::pg::{keys, members};
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use crate::platform::access::{Ctx, policy_gap, require_org_policy};
+use crate::platform::access::{Area, Ctx, managed_by, policy_gap, require_policy};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::keys::KeyView;
@@ -28,7 +28,8 @@ pub struct MyKeyFilter {
     summary = "The signed-in user's keys, in every project of the orgs this session may\n\
     open.",
     description = "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, \
-    such as another org's when the session came from an org's SSO.",
+    such as another org's when the session came from the SSO of an org that doesn't manage the \
+    account.",
     tag = "me",
     params(PageParams, MyKeyFilter),
     responses((status = 200, body = List<KeyView>))
@@ -41,10 +42,18 @@ pub async fn list(
 ) -> ApiResult<Json<List<KeyView>>> {
     let page = page.page()?;
     let session = ctx.session()?;
+    let managed = managed_by(&state, session).await?.map(|m| m.org_id);
     let open: Vec<uuid::Uuid> = members::orgs_of_user(&state.pg, session.user_id)
         .await?
         .into_iter()
-        .filter(|m| policy_gap(session, m.org_id, m.require_sso, m.require_2fa).is_none())
+        .filter(|m| {
+            let area = Area::Org {
+                id: m.org_id,
+                require_sso: m.require_sso,
+                require_2fa: m.require_2fa,
+            };
+            policy_gap(session, managed, area).is_none()
+        })
         .map(|m| m.org_id)
         .collect();
     let rows = keys::list_of_user(
@@ -79,7 +88,7 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
         if f.org.state == "scheduled_for_deletion" {
             return Err(ApiError::OrgScheduledForDeletion);
         }
-        require_org_policy(ctx.session()?, &f.org)?;
+        require_policy(state, ctx.session()?, Area::of_org(&f.org)).await?;
     }
     let rights = match found {
         Some(f) => {

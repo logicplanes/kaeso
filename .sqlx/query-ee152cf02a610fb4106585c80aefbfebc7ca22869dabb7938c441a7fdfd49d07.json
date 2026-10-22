@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions s SET revoked_at = $3 FROM users u WHERE u.id = s.user_id AND s.method <> 'oidc' AND s.revoked_at IS NULL AND ($2::uuid IS NULL OR s.id <> $2) AND split_part(email_key(u.email), '@', 2) = ANY($1) RETURNING s.token_hash",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token_hash",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "sessions",
+            "name": "token_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ee152cf02a610fb4106585c80aefbfebc7ca22869dabb7938c441a7fdfd49d07"
+}

@@ -1,5 +1,5 @@
 use kaeso_core::id::OrgId;
-use kaeso_store::pg::oidc;
+use kaeso_store::pg::{oidc, orgs, sessions};
 
 use crate::platform::error::ApiError;
 use crate::state::AppState;
@@ -43,18 +43,29 @@ pub async fn operator_verify_domain(
     if oidc::verified_elsewhere(&mut *tx, org.uuid(), &domain).await? {
         return Ok(OperatorVerify::VerifiedElsewhere);
     }
-    if !oidc::mark_verified(&mut *tx, org.uuid(), &domain, state.clock.now()).await? {
+    let now = state.clock.now();
+    if !oidc::mark_verified(&mut *tx, org.uuid(), &domain, now).await? {
         return Ok(OperatorVerify::AlreadyVerified(org));
     }
+    let required = orgs::get(&mut *tx, org.uuid())
+        .await?
+        .is_some_and(|o| o.require_sso);
+    let ended = if required {
+        sessions::revoke_other_sign_ins_at(&mut *tx, std::slice::from_ref(&domain), None, now)
+            .await?
+    } else {
+        Vec::new()
+    };
     crate::platform::audit::system(
         &mut tx,
         Some(org),
         "security.sso_domain_verify",
         Some(("org", org.to_string())),
-        Some(serde_json::json!({ "domain": domain, "by": "operator" })),
-        state.clock.now(),
+        Some(serde_json::json!({ "domain": domain, "by": "operator", "sessions_ended": ended.len() })),
+        now,
     )
     .await?;
     tx.commit().await?;
+    crate::auth::sessions::forget(state, &ended).await;
     Ok(OperatorVerify::Verified(org))
 }

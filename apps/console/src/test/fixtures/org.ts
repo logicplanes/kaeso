@@ -24,6 +24,7 @@ export function member(overrides: Partial<Omit<MemberView, "user">> & { user?: P
   return {
     id: `mem_${user?.id ?? USER}`,
     joined_at: NOW,
+    managed: false,
     grant: {
       role: { id: "owner", kind: "builtin", name: "Owner" },
       preset: "owner",

@@ -356,6 +356,7 @@
   "errors.ssoRequiredStopFirst": "此组织要求使用 SSO，请先取消该要求。",
   "errors.ssoSecretAgain": "更改 `issuer` 或 `client_id` 时，请重新发送 `client_secret`。",
   "errors.ssoSessionOnly": "只有控制台会话可以更改 SSO，API 密钥不能。",
+  "errors.ssoOnly": "您的组织要求单点登录；请通过其身份提供商继续。",
   "errors.stale.catalogueModel": "此目录模型在您加载后已被修改，请重新加载后重试。",
   "errors.stale.limit": "此限额在您加载后已被修改，请重新加载后重试。",
   "errors.timeoutRange": "超时时间必须为 1 到 3600 秒。",

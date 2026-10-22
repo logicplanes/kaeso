@@ -4,10 +4,10 @@ use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, SessionId, UserId};
 use kaeso_store::pg::sessions as sessions_store;
-use kaeso_store::pg::{members, oidc, orgs, sso_identities, users};
+use kaeso_store::pg::{members, oidc, sso_identities, users};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
@@ -15,7 +15,7 @@ use crate::platform::auth::next;
 use crate::platform::auth::oidc::{StartResponse, begin_confirm, begin_link};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
-use crate::platform::params::{Path, Query};
+use crate::platform::params::Path;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -189,28 +189,17 @@ pub struct ConfirmWays {
     pub set_password: bool,
 }
 
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct ConfirmFor {
-    #[doc = "The org the action is in. When it requires SSO, only its own SSO\n\
-        confirms, since a session from anywhere else can't act there."]
-    pub org: Option<OrgId>,
-}
-
 #[utoipa::path(
     get,
     path = "/me/sign-in-again",
     summary = "The ways the signed-in user can confirm it's them when an action needs a\n\
     sign-in within the last 15 minutes.",
+    description = "When the org that manages the account requires SSO, only its identity \
+    provider confirms, since the account can't sign in another way.",
     tag = "me",
-    params(ConfirmFor),
     responses((status = 200, body = ConfirmWays))
 )]
-pub async fn confirm_ways(
-    State(state): State<AppState>,
-    ctx: Ctx,
-    Query(at): Query<ConfirmFor>,
-) -> ApiResult<Json<ConfirmWays>> {
+pub async fn confirm_ways(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<ConfirmWays>> {
     let me = ctx.user_id()?;
     let user = users::get(&state.pg, me.uuid())
         .await?
@@ -232,18 +221,16 @@ pub async fn confirm_ways(
         sso,
         set_password: auth.password && user.password_hash.is_none() && user.email.is_some(),
     };
-    if let Some(org) = at.org
-        && members::get_org(&state.pg, org.uuid(), me.uuid())
-            .await?
-            .is_some()
-        && orgs::get(&state.pg, org.uuid())
-            .await?
-            .is_some_and(|o| o.require_sso)
-    {
+    let manager = match user.email.as_deref() {
+        Some(email) => crate::services::managed::of_address(&state.pg, email).await?,
+        None => None,
+    };
+    if let Some(manager) = manager.filter(|m| m.require_sso) {
         ways.password = false;
         ways.magic_link = false;
         ways.set_password = false;
-        ways.sso.retain(|s| s.org_id == org);
+        ways.sso
+            .retain(|s| s.org_id == OrgId::from_uuid(manager.org_id));
     }
     Ok(Json(ways))
 }

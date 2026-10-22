@@ -64,8 +64,10 @@ pub struct SessionView {
     #[doc = "Whether a second factor was used."]
     pub second_factor: bool,
     #[doc = "The org whose SSO signed this session in; `null` for other ways in.\n\
-        Such a session opens only that org and reads the user's own account;\n\
-        anything else answers `other_sign_in_required`."]
+        When that org manages the account (`managed_by` in `auth/session`),\n\
+        the session counts like a password one everywhere but `instance/*`.\n\
+        Otherwise it opens only that org and reads the user's own account,\n\
+        and anything else answers `other_sign_in_required`."]
     pub sso_org: Option<OrgId>,
     #[doc = "When the user last signed in on this session. Through SSO, when the\n\
         identity provider last checked them (its `auth_time`); without one,\n\
@@ -78,6 +80,25 @@ pub struct SessionView {
     #[doc = "When it ends at the latest (it also ends after 7 days without use)."]
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "The org that manages an account.")]
+pub struct ManagedBy {
+    #[doc = "The org."]
+    pub org: OrgId,
+    #[doc = "Its name."]
+    #[schema(example = "Acme")]
+    pub name: String,
+}
+
+impl ManagedBy {
+    pub fn new(org: uuid::Uuid, name: impl Into<String>) -> ManagedBy {
+        ManagedBy {
+            org: OrgId::from_uuid(org),
+            name: name.into(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]

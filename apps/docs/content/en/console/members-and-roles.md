@@ -20,6 +20,8 @@ Open **Organization settings** › **Members** and choose **Invite members**. Th
 
 An organization with [single sign-on](organizations-and-projects.md#single-sign-on) can also let people from its email domains join without an invitation. That works only for people new to Kaeso. Someone who already has an account needs an invitation, and links the account to the identity provider from their **Account**.
 
+In an organization with single sign-on, **Members** marks each member whose address isn't at one of its verified domains as **Guest**. The organization manages the other members' accounts, and **Require single sign-on** applies to those alone; guests keep their own way of signing in ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
+
 ## Choose a role
 
 Organizations have six built-in roles: **Owner**, **Admin**, **Billing**, **Developer**, **Auditor** and **Member**. Projects have three: **Admin**, **Developer** and **Viewer**. The console describes each role wherever you choose one, and built-in roles can't be changed.

@@ -213,6 +213,24 @@ pub async fn revoke_sso(
     .await?)
 }
 
+pub async fn revoke_other_sign_ins_at(
+    db: impl PgExecutor<'_>,
+    domains: &[String],
+    keep: Option<Uuid>,
+    at: OffsetDateTime,
+) -> Result<Vec<Vec<u8>>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE sessions s SET revoked_at = $3 FROM users u WHERE u.id = s.user_id \
+         AND s.method <> 'oidc' AND s.revoked_at IS NULL AND ($2::uuid IS NULL OR s.id <> $2) \
+         AND split_part(email_key(u.email), '@', 2) = ANY($1) RETURNING s.token_hash",
+        domains,
+        keep,
+        at
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn list_for_user(
     db: impl PgExecutor<'_>,
     user_id: Uuid,

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
 import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { toastApiError } from "~/api/toast-error";
 import { t } from "~/i18n";
@@ -55,9 +54,8 @@ function openPopup(): Window | null {
 export default function RecentSignInDialog() {
   const [withoutSso] = useState(() => signInAgainKind() === "without-sso");
   const session = useSession();
-  const { org } = useParams({ strict: false });
   const queryClient = useQueryClient();
-  const confirm = useQuery(confirmWaysQuery(org));
+  const confirm = useQuery(confirmWaysQuery());
   const [step, setStep] = useState<Step>({ kind: "choose" });
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");

@@ -60,8 +60,8 @@ impl Access {
             Access::Session => {
                 "**Access:** a signed-in console session; no right is needed.".into()
             }
-            Access::Account => "**Access:** a signed-in console session that didn't come from an \
-                organization's SSO; such a session gets `other_sign_in_required`."
+            Access::Account => "**Access:** a signed-in console session; one from the SSO of an \
+                org that doesn't manage the account gets `other_sign_in_required`."
                 .into(),
             Access::InstanceAdmin => "**Access:** a console session of an instance admin that \
                 didn't come from an organization's SSO."
@@ -454,9 +454,7 @@ async fn check(
             ctx.session()?;
         }
         Access::Account => {
-            if from_sso(ctx.session()?) {
-                return Err(ApiError::OtherSignInRequired);
-            }
+            require_policy(state, ctx.session()?, Area::Account).await?;
         }
         Access::InstanceAdmin => {
             let session = ctx.session()?;
@@ -465,9 +463,7 @@ async fn check(
                     "Only instance admins can do this.".into(),
                 ));
             }
-            if from_sso(session) {
-                return Err(ApiError::OtherSignInRequired);
-            }
+            require_policy(state, session, Area::Instance).await?;
         }
         Access::Org(right) => {
             let org = path_id::<OrgId>(params, "org", "organization")?;
@@ -666,26 +662,89 @@ pub fn from_sso(session: &SessionRow) -> bool {
     session.method == "oidc"
 }
 
-pub fn policy_gap(
-    session: &SessionRow,
-    org_id: uuid::Uuid,
-    require_sso: bool,
-    require_2fa: bool,
-) -> Option<PolicyGap> {
-    let own_sso = from_sso(session) && session.oidc_org_id == Some(org_id);
-    if require_sso && !own_sso {
-        Some(PolicyGap::NeedsSso)
-    } else if from_sso(session) && !own_sso {
-        Some(PolicyGap::NeedsOtherSignIn)
-    } else if require_2fa && !own_sso && !session.second_factor {
-        Some(PolicyGap::Needs2fa)
-    } else {
-        None
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Area {
+    Org {
+        id: uuid::Uuid,
+        require_sso: bool,
+        require_2fa: bool,
+    },
+    Account,
+    Instance,
+}
+
+impl Area {
+    pub fn of_org(org: &Org) -> Area {
+        Area::Org {
+            id: org.id,
+            require_sso: org.require_sso,
+            require_2fa: org.require_2fa,
+        }
+    }
+
+    fn needs_manager(self, session: &SessionRow) -> bool {
+        from_sso(session)
+            || matches!(
+                self,
+                Area::Org {
+                    require_sso: true,
+                    ..
+                }
+            )
     }
 }
 
-pub fn require_org_policy(session: &SessionRow, org: &Org) -> ApiResult<()> {
-    match policy_gap(session, org.id, org.require_sso, org.require_2fa) {
+// A session from SSO counts as a full sign-in only while the org whose provider signed it in
+// manages the account; otherwise that provider vouches for nothing beyond its own org.
+pub fn policy_gap(
+    session: &SessionRow,
+    managed_by: Option<uuid::Uuid>,
+    area: Area,
+) -> Option<PolicyGap> {
+    let sso = from_sso(session);
+    let full = !sso || (session.oidc_org_id.is_some() && session.oidc_org_id == managed_by);
+    match area {
+        Area::Account if full => None,
+        Area::Instance if !sso => None,
+        Area::Account | Area::Instance => Some(PolicyGap::NeedsOtherSignIn),
+        Area::Org {
+            id,
+            require_sso,
+            require_2fa,
+        } => {
+            if sso && session.oidc_org_id == Some(id) {
+                None
+            } else if require_sso && managed_by == Some(id) {
+                Some(PolicyGap::NeedsSso)
+            } else if !full {
+                Some(PolicyGap::NeedsOtherSignIn)
+            } else if require_2fa && !sso && !session.second_factor {
+                Some(PolicyGap::Needs2fa)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+pub async fn managed_by(
+    state: &AppState,
+    session: &SessionRow,
+) -> ApiResult<Option<kaeso_store::pg::oidc::Manager>> {
+    Ok(crate::services::managed::of_user(&state.pg, session.user_id).await?)
+}
+
+pub async fn require_policy(state: &AppState, session: &SessionRow, area: Area) -> ApiResult<()> {
+    let manager = if area.needs_manager(session) {
+        managed_by(state, session).await?.map(|m| m.org_id)
+    } else {
+        None
+    };
+    refuse(policy_gap(session, manager, area))
+}
+
+pub fn refuse(gap: Option<PolicyGap>) -> ApiResult<()> {
+    match gap {
         None => Ok(()),
         Some(PolicyGap::NeedsSso) => Err(ApiError::PermissionDenied(
             "This organization requires signing in with SSO.".into(),
@@ -730,7 +789,7 @@ async fn org_scope(
     if changes && found.org.state == "scheduled_for_deletion" {
         return Err(ApiError::OrgScheduledForDeletion);
     }
-    require_org_policy(session, &found.org)?;
+    require_policy(state, session, Area::of_org(&found.org)).await?;
     let project_scope = match (found.project, project) {
         (Some(p), Some(_)) => {
             let project_grant = found
@@ -765,6 +824,7 @@ async fn org_scope(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use PolicyGap::{Needs2fa, NeedsOtherSignIn, NeedsSso};
 
     fn session(method: &str, second_factor: bool, oidc_org: Option<uuid::Uuid>) -> SessionRow {
         let now = OffsetDateTime::now_utc();
@@ -778,62 +838,179 @@ mod tests {
             last_used_at: now,
             expires_at: now,
             user_state: "active".into(),
-            is_instance_admin: false,
+            is_instance_admin: true,
         }
     }
 
+    fn org(id: uuid::Uuid, require_sso: bool, require_2fa: bool) -> Area {
+        Area::Org {
+            id,
+            require_sso,
+            require_2fa,
+        }
+    }
+
+    struct World {
+        a: uuid::Uuid,
+        b: uuid::Uuid,
+    }
+
+    impl World {
+        fn new() -> World {
+            World {
+                a: uuid::Uuid::now_v7(),
+                b: uuid::Uuid::now_v7(),
+            }
+        }
+
+        fn areas(&self) -> [(&'static str, Area); 8] {
+            [
+                ("org A", org(self.a, false, false)),
+                ("org A requiring SSO", org(self.a, true, false)),
+                ("org B", org(self.b, false, false)),
+                ("org B requiring SSO", org(self.b, true, false)),
+                ("org B requiring 2FA", org(self.b, false, true)),
+                ("org B requiring both", org(self.b, true, true)),
+                ("account changes", Area::Account),
+                ("instance administration", Area::Instance),
+            ]
+        }
+    }
+
+    fn check(
+        s: &SessionRow,
+        managed_by: Option<uuid::Uuid>,
+        w: &World,
+        expected: [Option<PolicyGap>; 8],
+    ) {
+        for ((name, area), want) in w.areas().into_iter().zip(expected) {
+            assert_eq!(policy_gap(s, managed_by, area), want, "{name}");
+        }
+    }
+
+    const OTHER: Option<PolicyGap> = Some(NeedsOtherSignIn);
+    const SSO: Option<PolicyGap> = Some(NeedsSso);
+    const TFA: Option<PolicyGap> = Some(Needs2fa);
+
     #[test]
-    fn only_a_second_factor_or_the_orgs_own_sso_meets_required_two_factor() {
-        let org = uuid::Uuid::now_v7();
-        let other = uuid::Uuid::now_v7();
+    fn a_managed_sso_session_counts_like_a_password_everywhere_but_the_instance() {
+        let w = World::new();
+        let sso = session("oidc", false, Some(w.a));
+        check(
+            &sso,
+            Some(w.a),
+            &w,
+            [None, None, None, None, None, None, None, OTHER],
+        );
+    }
+
+    #[test]
+    fn an_sso_session_that_doesnt_manage_the_account_opens_only_its_own_org() {
+        let w = World::new();
+        let sso = session("oidc", false, Some(w.a));
+        check(
+            &sso,
+            None,
+            &w,
+            [None, None, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
+        );
+        check(
+            &sso,
+            Some(w.b),
+            &w,
+            [None, None, OTHER, SSO, OTHER, SSO, OTHER, OTHER],
+        );
+    }
+
+    #[test]
+    fn an_sso_session_whose_org_is_gone_opens_nothing() {
+        let w = World::new();
+        let orphan = session("oidc", false, None);
+        check(
+            &orphan,
+            None,
+            &w,
+            [OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
+        );
+        check(
+            &orphan,
+            Some(w.a),
+            &w,
+            [OTHER, SSO, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
+        );
+    }
+
+    #[test]
+    fn a_session_without_sso_meets_each_orgs_own_policies() {
+        let w = World::new();
         for method in ["password", "magic_link", "setup", "signup"] {
-            assert_eq!(
-                policy_gap(&session(method, false, None), org, false, true),
-                Some(PolicyGap::Needs2fa),
-                "{method}"
-            );
-            assert_eq!(
-                policy_gap(&session(method, true, None), org, false, true),
+            let without_code = session(method, false, None);
+            check(
+                &without_code,
                 None,
-                "{method}"
+                &w,
+                [None, None, None, None, TFA, TFA, None, None],
+            );
+            check(
+                &without_code,
+                Some(w.b),
+                &w,
+                [None, None, None, SSO, TFA, SSO, None, None],
+            );
+            let with_code = session(method, true, None);
+            check(&with_code, None, &w, [None; 8]);
+            check(
+                &with_code,
+                Some(w.a),
+                &w,
+                [None, SSO, None, None, None, None, None, None],
             );
         }
+    }
+
+    #[test]
+    fn requiring_sso_closes_an_org_only_to_the_accounts_it_manages() {
+        let w = World::new();
+        let password = session("password", true, None);
+        let required = org(w.b, true, false);
+        assert_eq!(policy_gap(&password, None, required), None, "a guest");
+        assert_eq!(policy_gap(&password, Some(w.a), required), None);
+        assert_eq!(policy_gap(&password, Some(w.b), required), SSO);
+        let own = session("oidc", false, Some(w.b));
+        assert_eq!(policy_gap(&own, Some(w.b), required), None);
+        let managed_elsewhere = session("oidc", false, Some(w.a));
+        assert_eq!(policy_gap(&managed_elsewhere, Some(w.a), required), None);
+    }
+
+    #[test]
+    fn the_second_factor_of_an_sso_session_is_the_providers() {
+        let w = World::new();
+        let strict = org(w.b, false, true);
         assert_eq!(
-            policy_gap(&session("oidc", false, Some(org)), org, false, true),
+            policy_gap(&session("oidc", false, Some(w.a)), Some(w.a), strict),
             None
         );
         assert_eq!(
-            policy_gap(&session("oidc", false, Some(other)), org, false, true),
-            Some(PolicyGap::NeedsOtherSignIn)
+            policy_gap(&session("oidc", false, Some(w.b)), None, strict),
+            None
+        );
+        assert_eq!(
+            policy_gap(&session("password", false, None), Some(w.a), strict),
+            TFA
         );
     }
 
     #[test]
-    fn an_sso_session_opens_only_the_org_whose_provider_signed_it_in() {
-        let org = uuid::Uuid::now_v7();
-        let other = uuid::Uuid::now_v7();
-        let sso = session("oidc", false, Some(org));
-        assert_eq!(policy_gap(&sso, org, true, true), None);
-        assert_eq!(
-            policy_gap(&sso, other, false, false),
-            Some(PolicyGap::NeedsOtherSignIn)
-        );
-        assert_eq!(
-            policy_gap(&sso, other, true, false),
-            Some(PolicyGap::NeedsSso)
-        );
-        assert_eq!(
-            policy_gap(&session("oidc", false, None), org, false, false),
-            Some(PolicyGap::NeedsOtherSignIn),
-            "a session whose org is gone opens no org"
-        );
-        assert_eq!(
-            policy_gap(&session("password", false, None), org, true, false),
-            Some(PolicyGap::NeedsSso)
-        );
-        assert_eq!(
-            policy_gap(&session("password", false, None), org, false, false),
-            None
-        );
+    fn the_account_manager_is_looked_up_only_where_it_decides() {
+        let w = World::new();
+        let password = session("password", false, None);
+        let sso = session("oidc", false, Some(w.a));
+        assert!(!Area::Account.needs_manager(&password));
+        assert!(!Area::Instance.needs_manager(&password));
+        assert!(!org(w.b, false, true).needs_manager(&password));
+        assert!(org(w.b, true, false).needs_manager(&password));
+        for (name, area) in w.areas() {
+            assert!(area.needs_manager(&sso), "{name}");
+        }
     }
 }

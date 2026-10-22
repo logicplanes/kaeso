@@ -55,6 +55,7 @@ pub async fn request(
     if let Some(refused) = accounts::refuse_sign_up(&account_policy(&state).await?, &email) {
         return Err(refused);
     }
+    crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
     let answer = Json(EmailSent {
         status: "email_sent",
         message: format!("Open the link we sent to {email} to continue."),

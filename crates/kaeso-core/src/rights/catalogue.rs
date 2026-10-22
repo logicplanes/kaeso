@@ -180,7 +180,7 @@ rights!(
         ProviderCredentialsReplace = "provider_credentials.replace", Providers, "Change provider keys", false, true, false, [ProviderCredentialsView], "Replace and rename provider keys, choose each provider's default and assign keys to projects.";
         ProviderCredentialsDelete = "provider_credentials.delete", Providers, "Delete provider keys", true, false, false, [ProviderCredentialsView], "Remove a provider key from the organization.";
         SecuritySsoManage = "security.sso.manage", Security, "Manage SSO", false, true, false, [], "Configure the organization's identity provider and the role of people who arrive through it.";
-        SecuritySsoRequire = "security.sso.require", Security, "Require SSO", true, true, false, [], "Require members to sign in to this organization through SSO.";
+        SecuritySsoRequire = "security.sso.require", Security, "Require SSO", true, true, false, [], "Require the accounts this organization manages to sign in only through its SSO.";
         Security2faRequire = "security.2fa.require", Security, "Require two-factor", false, true, false, [], "Require two-factor authentication for members.";
         SecurityKeyPolicyManage = "security.key_policy.manage", Security, "Set key lifetime", false, false, false, [], "Set the organization's maximum key lifetime.";
         PlatformKeysView = "platform_keys.view", Keys, "View platform keys", false, false, false, [], "See the organization's platform keys (metadata).";

@@ -425,3 +425,24 @@ pub async fn join(app: &App, owner: &Owner, invite: Value, name: &str) -> (Strin
         accepted.body["user"]["id"].as_str().unwrap().to_owned(),
     )
 }
+
+pub async fn manage_domain(app: &App, org: &str, domain: &str) {
+    sqlx::query(
+        "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, \
+         wrapped_key, key_id, verification_token) \
+         VALUES ($1, 'https://idp.example', 'kaeso', '', '', '', 'none', 'token') \
+         ON CONFLICT (org_id) DO NOTHING",
+    )
+    .bind(uuid(org))
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO org_oidc_domains (org_id, domain, verified_at) VALUES ($1, $2, now())",
+    )
+    .bind(uuid(org))
+    .bind(domain)
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+}

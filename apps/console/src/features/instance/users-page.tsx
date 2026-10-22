@@ -74,6 +74,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         ),
       ),
       col.text({ id: "email", header: t("common.email", "Email"), size: 192, priority: 2 }, (u: InstanceUserView) => u.email ?? ""),
+      col.text({ id: "managedBy", header: t("instance.managedBy", "Managed by"), size: 144, priority: 3 }, (u: InstanceUserView) => u.managed_by?.name ?? ""),
       col.custom(
         { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
         (u: InstanceUserView) => u.state,

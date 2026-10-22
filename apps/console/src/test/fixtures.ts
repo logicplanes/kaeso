@@ -43,6 +43,7 @@ export function membership(overrides: Partial<Membership> = {}): Membership {
     rights: ALL_ORG_RIGHTS,
     project_rights: ALL_PROJECT_RIGHTS,
     access: "all",
+    sso: false,
     ...overrides,
   };
 }
@@ -62,6 +63,7 @@ export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
       last_used_at: NOW,
       expires_at: "2026-11-14T12:00:00Z",
     },
+    managed_by: null,
     memberships: [membership()],
     can_create_orgs: true,
     can_administer_instance: who.is_instance_admin && !sso,

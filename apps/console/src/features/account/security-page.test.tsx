@@ -69,6 +69,16 @@ describe("password", () => {
     expect(screen.queryByRole("button", { name: "Set password" })).not.toBeInTheDocument();
   });
 
+  it("sets a first password from a single sign-on session of the organization that manages the account", async () => {
+    const managed = whoAmI({ managed_by: { org: "org_acme", name: "Acme" } });
+    signedIn({ session: { ...managed, session: { ...managed.session, method: "oidc", sso_org: "org_acme" } } });
+    on("GET", "me", me({ has_password: false }));
+    await renderApp(PATH);
+    expect(await screen.findByText("Not set; you sign in with a link or SSO.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Set password" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Email me a link" })).not.toBeInTheDocument();
+  });
+
   it("keeps the dialog open when the current password is wrong", async () => {
     signedIn();
     on("GET", "me", me());
