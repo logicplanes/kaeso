@@ -1,16 +1,19 @@
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use kaeso_core::email::{canonical, same_address};
+use kaeso_core::email::{canonical, normalize, same_address};
 use kaeso_store::pg::users;
 use kaeso_testkit::services::TestServices;
 
 const WRITTEN: &[&str] = &[
     "ada@example.com",
     "ADA@Example.com",
+    "\u{FF21}\u{FF24}\u{FF21}@example.com",
     "kim@example.com",
     "\u{212A}im@example.com",
     "\u{212A}IM@example.com",
     "\u{FF4B}\u{FF49}\u{FF4D}@example.com",
+    "\u{FF2B}\u{FF29}\u{FF2D}@example.com",
+    "kim\u{FF20}example.com",
     "e\u{301}va@example.com",
     "\u{E9}va@example.com",
     "\u{C9}VA@example.com",
@@ -20,9 +23,16 @@ const WRITTEN: &[&str] = &[
     "stra\u{DF}e@example.com",
     "STRASSE@example.com",
     "\u{39F}\u{394}\u{3A5}\u{3A3}@example.com",
+    "\u{3BF}\u{3B4}\u{3C5}\u{3C3}@example.com",
     "\u{3BF}\u{3B4}\u{3C5}\u{3C2}@example.com",
     "admin@example.com",
+    "ADMIN@example.com",
+    "adm\u{130}n@example.com",
     "ADM\u{130}N@example.com",
+    "admi\u{307}n@example.com",
+    "admI\u{307}n@example.com",
+    "ADMI\u{307}N@example.com",
+    "adm\u{131}n@example.com",
 ];
 
 async fn email_key(pg: &sqlx::PgPool, address: &str) -> String {
@@ -34,39 +44,50 @@ async fn email_key(pg: &sqlx::PgPool, address: &str) -> String {
 }
 
 #[tokio::test]
-async fn the_database_folds_every_address_at_least_as_far_as_canonical() {
+async fn the_database_key_is_the_canonical_form() {
     let s = TestServices::start().await;
     kaeso_store::pg::migrate(&s.pg).await.unwrap();
-    for written in WRITTEN.iter().filter(|w| !w.contains('\u{130}')) {
-        assert_eq!(
-            email_key(&s.pg, written).await,
-            canonical(written),
-            "{written}"
-        );
+    let mut keys = Vec::new();
+    for written in WRITTEN {
+        let key = email_key(&s.pg, written).await;
+        assert_eq!(key, canonical(written), "{written}");
+        keys.push(key);
     }
-    assert_eq!(
-        email_key(&s.pg, "ADM\u{130}N@example.com").await,
-        "admin@example.com",
-        "the database's lower() folds a dotted capital I to i"
-    );
-    assert_eq!(
-        canonical("ADM\u{130}N@example.com"),
+    for (a, key_a) in WRITTEN.iter().zip(&keys) {
+        for (b, key_b) in WRITTEN.iter().zip(&keys) {
+            assert_eq!(
+                key_a == key_b,
+                same_address(a, b),
+                "{a} and {b} have one database key exactly when they are one address"
+            );
+        }
+    }
+    assert!(same_address(
+        "ADM\u{130}N@example.com",
         "admi\u{307}n@example.com"
-    );
+    ));
     assert!(!same_address(
         "ADM\u{130}N@example.com",
         "admin@example.com"
     ));
-    for a in WRITTEN {
-        for b in WRITTEN {
-            if same_address(a, b) {
-                assert_eq!(
-                    email_key(&s.pg, a).await,
-                    email_key(&s.pg, b).await,
-                    "{a} and {b} are one address, so the index finds one from the other"
-                );
-            }
-        }
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn every_character_postgres_knows_has_the_same_key_in_the_database_and_in_canonical() {
+    let s = TestServices::start().await;
+    kaeso_store::pg::migrate(&s.pg).await.unwrap();
+    let keys: Vec<(i32, String)> = sqlx::query_as(
+        "SELECT i, email_key(chr(i)) FROM generate_series(1, 1114111) i \
+         WHERE i NOT BETWEEN 55296 AND 57343 AND unicode_assigned(chr(i)) ORDER BY i",
+    )
+    .fetch_all(&s.pg)
+    .await
+    .unwrap();
+    assert!(keys.len() > 100_000);
+    for (point, key) in keys {
+        let c = char::from_u32(u32::try_from(point).unwrap()).unwrap();
+        assert_eq!(key, canonical(&c.to_string()), "U+{point:04X}");
     }
     s.cleanup().await;
 }
@@ -140,6 +161,22 @@ async fn an_address_has_one_account_or_none_however_it_was_stored() {
             .email
             .as_deref(),
         Some("ada@example.com")
+    );
+
+    let admin = store_as_before_the_upgrade(&s.pg, "admi\u{307}n@example.com").await;
+    for typed in ["admI\u{307}n@example.com", "ADM\u{130}N@example.com"] {
+        let found = users::get_by_email(&s.pg, &normalize(typed).unwrap())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(found.id, admin, "{typed}");
+    }
+    assert_eq!(
+        users::get_by_email(&s.pg, "admin@example.com")
+            .await
+            .unwrap(),
+        None,
+        "a dotted i is another address than a plain one"
     );
 
     let twin = store_as_before_the_upgrade(&s.pg, "\u{E9}va@example.com").await;

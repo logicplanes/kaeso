@@ -25,10 +25,10 @@ pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
     Ok(address)
 }
 
-// Lowercased one character at a time, as PostgreSQL's lower() does in the store's email_key();
-// str::to_lowercase would also turn a word-final Σ into ς, which the database never does.
+// The store's email_key() computes the same key in SQL. One character at a time, because
+// str::to_lowercase would also turn a word-final Σ into ς, which email_key() never does.
 pub fn canonical(email: &str) -> String {
-    let folded: String = email.trim().nfkc().flat_map(char::to_lowercase).collect();
+    let folded: String = email.nfkc().flat_map(char::to_lowercase).collect();
     folded.nfkc().collect()
 }
 
@@ -228,6 +228,14 @@ mod tests {
             !same_address("adm\u{130}n@example.com", "admin@example.com"),
             "a dotted capital I is not an i, whatever the database's lower() says"
         );
+        assert!(same_address(
+            "adm\u{130}n@example.com",
+            "admi\u{307}n@example.com"
+        ));
+        assert!(same_address(
+            "admI\u{307}n@example.com",
+            "admi\u{307}n@example.com"
+        ));
         for typed in [
             "\u{212A}im@example.com",
             "ADM\u{130}N@example.com",
@@ -236,6 +244,19 @@ mod tests {
             let once = canonical(typed);
             assert_eq!(canonical(&once), once, "{typed}");
         }
+    }
+
+    #[test]
+    fn only_the_dotted_capital_i_lowercases_to_more_than_one_character() {
+        let longer: Vec<char> = (0..=u32::from(char::MAX))
+            .filter_map(char::from_u32)
+            .filter(|c| c.to_lowercase().count() > 1)
+            .collect();
+        assert_eq!(
+            longer,
+            ['\u{130}'],
+            "the store's email_key() spells out each of these next to its simple lowercase"
+        );
     }
 
     #[test]

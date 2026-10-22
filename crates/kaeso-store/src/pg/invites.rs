@@ -90,20 +90,17 @@ pub async fn pending_for(
     email: &str,
     now: OffsetDateTime,
 ) -> Result<Option<Invite>, StoreError> {
-    let found = sqlx::query_as!(
+    Ok(sqlx::query_as!(
         Invite,
         "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
          FROM invites WHERE org_id = $1 AND email_key(email) = email_key($2) AND accepted_at IS NULL AND revoked_at IS NULL \
-         AND expires_at > $3 ORDER BY id DESC",
+         AND expires_at > $3 ORDER BY id DESC LIMIT 1",
         org_id,
         email,
         now
     )
-    .fetch_all(db)
-    .await?;
-    Ok(found
-        .into_iter()
-        .find(|i| kaeso_core::email::same_address(&i.email, email)))
+    .fetch_optional(db)
+    .await?)
 }
 
 pub async fn pending_of_org(
@@ -185,31 +182,22 @@ pub async fn revoke(
 }
 
 pub async fn revoke_others_for(
-    db: &mut sqlx::PgConnection,
+    db: impl PgExecutor<'_>,
     org_id: Uuid,
     email: &str,
     accepted: Uuid,
     now: OffsetDateTime,
 ) -> Result<u64, StoreError> {
-    let others: Vec<Uuid> = sqlx::query!(
-        "SELECT id, email FROM invites WHERE org_id = $1 AND email_key(email) = email_key($2) \
-         AND id <> $3 AND accepted_at IS NULL AND revoked_at IS NULL FOR UPDATE",
+    Ok(sqlx::query!(
+        "UPDATE invites SET revoked_at = $4, updated_at = now() \
+         WHERE org_id = $1 AND email_key(email) = email_key($2) AND id <> $3 \
+         AND accepted_at IS NULL AND revoked_at IS NULL",
         org_id,
         email,
-        accepted
-    )
-    .fetch_all(&mut *db)
-    .await?
-    .into_iter()
-    .filter(|i| kaeso_core::email::same_address(&i.email, email))
-    .map(|i| i.id)
-    .collect();
-    Ok(sqlx::query!(
-        "UPDATE invites SET revoked_at = $2, updated_at = now() WHERE id = ANY($1)",
-        &others,
+        accepted,
         now
     )
-    .execute(&mut *db)
+    .execute(db)
     .await?
     .rows_affected())
 }

@@ -83,14 +83,12 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<User>, Stor
     .await?)
 }
 
-// email_key() is the database's side of kaeso_core::email::canonical and folds at least as much
-// (its lower() turns `İ` into `i`), so a row it finds is the address only when both have the same
-// canonical form. Two accounts with one form predate the rule, and neither is picked.
+// Two accounts with one email_key() predate the rule, and neither is picked.
 pub async fn get_by_email(
     db: impl PgExecutor<'_>,
     email: &str,
 ) -> Result<Option<User>, StoreError> {
-    let found = sqlx::query_as!(
+    let mut same = sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
          notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users \
@@ -99,14 +97,6 @@ pub async fn get_by_email(
     )
     .fetch_all(db)
     .await?;
-    let mut same: Vec<User> = found
-        .into_iter()
-        .filter(|u| {
-            u.email
-                .as_deref()
-                .is_some_and(|stored| kaeso_core::email::same_address(stored, email))
-        })
-        .collect();
     if same.len() > 1 {
         let users: Vec<Uuid> = same.iter().map(|u| u.id).collect();
         tracing::warn!(
