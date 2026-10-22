@@ -25,7 +25,7 @@ RUN cargo build --release --locked -p kaeso-testkit --bin kaeso-testkit \
  && cp target/release/kaeso-testkit /kaeso-testkit \
  && rm -rf target
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2 AS mock
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:83b9b50586253821cf63ffcec87d3d94265a093ad30da232039af962dd8f4edf AS mock
 COPY --from=mock-build --chmod=0555 /kaeso-testkit /usr/local/bin/kaeso-testkit
 COPY --from=mock-build --chmod=0555 /src/crates/kaeso-codecs/fixtures /fixtures
 USER nonroot:nonroot
@@ -33,7 +33,7 @@ ENV KAESO_KPP_FIXTURES=/fixtures
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/kaeso-testkit", "mock-provider", "0.0.0.0:8080"]
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:e792ab3d241a468a4fd7519ddbbebe66b49b5f365771716ea688ad40b6c6f1c2 AS gateway
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:83b9b50586253821cf63ffcec87d3d94265a093ad30da232039af962dd8f4edf AS gateway
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso gateway" \
       org.opencontainers.image.description="The Kaeso gateway: one OpenAI- and Anthropic-compatible API for your applications, with keys, routing, limits and usage under your control." \
