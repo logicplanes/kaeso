@@ -58,13 +58,13 @@ Die Hauptschlüssel sind die Datei `master-keys` neben der `compose.yaml`. Ein g
 
 `master-keys` enthält einen oder mehrere Schlüssel, durch Kommas getrennt, den aktiven zuerst: `k7c21e9d04a:…,k3f9a01bc2d:…`. Kaeso verschlüsselt neue Secrets mit dem ersten Schlüssel und entschlüsselt ältere mit ihrem eigenen.
 
-1. Erzeugen Sie einen neuen Schlüssel und setzen Sie ihn vor den alten:
+1. Erzeugen Sie einen neuen Schlüssel und schreiben Sie ihn vor den alten. Weil der Befehl in die bestehende Datei schreibt, behält sie ihren Eigentümer und ihre Rechte. Er schreibt nur, wenn beide Schlüssel gelesen wurden, und danach vergisst die Shell beide:
 
 ```bash
-umask 077
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(sudo cat master-keys)" > master-keys.new
-sudo chown 65532:65532 master-keys.new && sudo chmod 0400 master-keys.new
-mv master-keys.new master-keys
+new=$(docker compose exec -T gateway kaeso master-key generate) &&
+  old=$(sudo cat master-keys) &&
+  printf '%s,%s\n' "$new" "$old" | sudo tee master-keys > /dev/null
+unset new old
 ```
 
 2. Erstellen Sie das Gateway neu, damit es die neue Datei liest:

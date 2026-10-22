@@ -58,13 +58,13 @@ The master keys are the file `master-keys` next to `compose.yaml`. A stored prov
 
 `master-keys` holds one or more keys separated by commas, the active key first: `k7c21e9d04a:…,k3f9a01bc2d:…`. Kaeso encrypts new secrets with the first key and decrypts older ones with theirs.
 
-1. Generate a new key and put it in front of the old one:
+1. Generate a new key and write it in front of the old one. Writing into the existing file keeps its owner and mode. Nothing is written unless both keys were read, and the shell forgets both afterwards:
 
 ```bash
-umask 077
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(sudo cat master-keys)" > master-keys.new
-sudo chown 65532:65532 master-keys.new && sudo chmod 0400 master-keys.new
-mv master-keys.new master-keys
+new=$(docker compose exec -T gateway kaeso master-key generate) &&
+  old=$(sudo cat master-keys) &&
+  printf '%s,%s\n' "$new" "$old" | sudo tee master-keys > /dev/null
+unset new old
 ```
 
 2. Recreate the gateway, so it reads the new file:
