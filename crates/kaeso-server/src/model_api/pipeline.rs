@@ -554,9 +554,14 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         ));
     }
 
-    let models = project_models(state, caller.project_id)
-        .await
-        .map_err(|e| Failure::new(e, Stage::Catalogue))?;
+    let models = project_models(
+        state,
+        caller.project_id,
+        caller.key_id,
+        caller.service_account_id,
+    )
+    .await
+    .map_err(|e| Failure::new(e, Stage::Catalogue))?;
     let (entry, _) = models
         .catalogue
         .resolve(req.model())

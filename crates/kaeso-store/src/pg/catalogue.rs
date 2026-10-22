@@ -666,6 +666,7 @@ pub struct ProjectModels {
     pub users: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
+    pub open: BTreeSet<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -675,6 +676,8 @@ struct Stored {
     users: BTreeMap<Uuid, BTreeSet<Uuid>>,
     service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
     keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
+    #[serde(default)]
+    open: BTreeSet<Uuid>,
 }
 
 impl From<Stored> for ProjectModels {
@@ -684,18 +687,20 @@ impl From<Stored> for ProjectModels {
             users: s.users,
             service_accounts: s.service_accounts,
             keys: s.keys,
+            open: s.open,
         }
     }
 }
 
 impl Serialize for ProjectModels {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("ProjectModels", 5)?;
+        let mut out = serializer.serialize_struct("ProjectModels", 6)?;
         out.serialize_field("entries", self.catalogue.entries())?;
         out.serialize_field("aliases", self.catalogue.aliases())?;
         out.serialize_field("users", &self.users)?;
         out.serialize_field("service_accounts", &self.service_accounts)?;
         out.serialize_field("keys", &self.keys)?;
+        out.serialize_field("open", &self.open)?;
         out.end()
     }
 }
@@ -735,33 +740,64 @@ pub async fn project_models(
         set.extend(r.model);
     }
     let accounts = sqlx::query!(
-        "SELECT s.id, ma.catalogue_model_id AS \"model?\" FROM service_accounts s \
-         LEFT JOIN model_access ma ON ma.service_account_id = s.id WHERE s.project_id = $1 AND s.models_restricted",
+        "SELECT s.id, s.models_restricted, ma.catalogue_model_id AS \"model?\" FROM service_accounts s \
+         LEFT JOIN model_access ma ON ma.service_account_id = s.id AND s.models_restricted \
+         WHERE s.project_id = $1",
         project_id
     )
     .fetch_all(&mut *db)
     .await?;
     for r in accounts {
-        out.service_accounts
-            .entry(r.id)
-            .or_default()
-            .extend(r.model);
+        if r.models_restricted {
+            out.service_accounts
+                .entry(r.id)
+                .or_default()
+                .extend(r.model);
+        } else {
+            out.open.insert(r.id);
+        }
     }
     let keys = sqlx::query!(
-        "SELECT k.id, ma.catalogue_model_id AS \"model?\" FROM api_keys k \
-         LEFT JOIN model_access ma ON ma.api_key_id = k.id \
-         WHERE k.project_id = $1 AND k.models_restricted AND k.archived_at IS NULL",
+        "SELECT k.id, k.models_restricted, ma.catalogue_model_id AS \"model?\" FROM api_keys k \
+         LEFT JOIN model_access ma ON ma.api_key_id = k.id AND k.models_restricted \
+         WHERE k.project_id = $1 AND k.archived_at IS NULL",
         project_id
     )
     .fetch_all(&mut *db)
     .await?;
     for r in keys {
-        out.keys.entry(r.id).or_default().extend(r.model);
+        if r.models_restricted {
+            out.keys.entry(r.id).or_default().extend(r.model);
+        } else {
+            out.open.insert(r.id);
+        }
     }
     Ok(out)
 }
 
 impl ProjectModels {
+    // A key or service account this value doesn't list was created after it was loaded,
+    // perhaps with a model list: it gets no model rather than every one.
+    fn listed<'a>(
+        &self,
+        id: Uuid,
+        restricted: &'a BTreeMap<Uuid, BTreeSet<Uuid>>,
+    ) -> Option<&'a BTreeSet<Uuid>> {
+        match restricted.get(&id) {
+            Some(models) => Some(models),
+            None if self.open.contains(&id) => None,
+            None => Some(&NOTHING),
+        }
+    }
+
+    pub fn knows(&self, key: Option<Uuid>, service_account: Option<Uuid>) -> bool {
+        let known = |id: Uuid, restricted: &BTreeMap<Uuid, BTreeSet<Uuid>>| {
+            restricted.contains_key(&id) || self.open.contains(&id)
+        };
+        key.is_none_or(|k| known(k, &self.keys))
+            && service_account.is_none_or(|s| known(s, &self.service_accounts))
+    }
+
     pub fn access(
         &self,
         key: Option<Uuid>,
@@ -770,12 +806,12 @@ impl ProjectModels {
     ) -> Access<'_> {
         let member = match (user, service_account) {
             (Some(u), _) => self.users.get(&u),
-            (None, Some(s)) => self.service_accounts.get(&s),
+            (None, Some(s)) => self.listed(s, &self.service_accounts),
             (None, None) => Some(&NOTHING),
         };
         Access {
             member,
-            key: key.and_then(|k| self.keys.get(&k)),
+            key: key.and_then(|k| self.listed(k, &self.keys)),
         }
     }
 }
@@ -823,15 +859,83 @@ mod tests {
         keys.sort_unstable();
         assert_eq!(
             keys,
-            ["aliases", "entries", "keys", "service_accounts", "users"]
+            [
+                "aliases",
+                "entries",
+                "keys",
+                "open",
+                "service_accounts",
+                "users"
+            ]
         );
         assert_eq!(json["aliases"][0]["name"], "fast");
+        let mut older = json.clone();
         let back: ProjectModels = serde_json::from_value(json).unwrap();
         assert_eq!(back, models);
         assert_eq!(back.catalogue.resolve("fast").unwrap().0, &gpt);
         assert_eq!(back.catalogue.resolve("openai/gpt-4o").unwrap().0, &gpt);
         assert!(back.access(None, Some(user), None).allows(gpt.id));
         assert!(!back.access(None, None, None).allows(gpt.id));
-        assert!(back.access(None, None, Some(Uuid::now_v7())).allows(gpt.id));
+        older.as_object_mut().unwrap().remove("open");
+        let older: ProjectModels = serde_json::from_value(older).unwrap();
+        assert!(
+            older.open.is_empty(),
+            "a value cached before `open` reads back"
+        );
+    }
+
+    #[test]
+    fn a_key_or_service_account_the_cached_lists_do_not_know_may_use_no_model() {
+        let gpt = entry("openai", "gpt-4o");
+        let (restricted_user, restricted_key, open_key, open_account) = (
+            Uuid::now_v7(),
+            Uuid::now_v7(),
+            Uuid::now_v7(),
+            Uuid::now_v7(),
+        );
+        let models = ProjectModels {
+            catalogue: Catalogue::new(vec![gpt.clone()], vec![]),
+            users: BTreeMap::from([(restricted_user, BTreeSet::new())]),
+            keys: BTreeMap::from([(restricted_key, BTreeSet::new())]),
+            open: BTreeSet::from([open_key, open_account]),
+            ..ProjectModels::default()
+        };
+        let (new_key, new_account, other_user) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
+        assert!(
+            !models
+                .access(Some(restricted_key), Some(other_user), None)
+                .allows(gpt.id)
+        );
+        assert!(
+            !models
+                .access(Some(open_key), Some(restricted_user), None)
+                .allows(gpt.id)
+        );
+        assert!(
+            models
+                .access(Some(open_key), Some(other_user), None)
+                .allows(gpt.id)
+        );
+        assert!(
+            models
+                .access(Some(open_key), None, Some(open_account))
+                .allows(gpt.id)
+        );
+        assert!(
+            !models
+                .access(Some(new_key), Some(other_user), None)
+                .allows(gpt.id),
+            "a key created after the value was cached gets nothing"
+        );
+        assert!(
+            !models
+                .access(Some(open_key), None, Some(new_account))
+                .allows(gpt.id)
+        );
+        assert!(models.knows(Some(open_key), Some(open_account)));
+        assert!(models.knows(Some(restricted_key), None));
+        assert!(!models.knows(Some(new_key), None));
+        assert!(!models.knows(Some(open_key), Some(new_account)));
+        assert!(models.knows(None, None));
     }
 }

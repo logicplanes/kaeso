@@ -967,3 +967,67 @@ async fn large_requests_are_translated_like_small_ones() {
     let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(body["error"]["type"], "invalid_request_error", "{body}");
 }
+
+#[tokio::test]
+async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_it() {
+    let env = env().await;
+    let state = &env.app.state;
+    let project = common::uuid(&env.project);
+    let stale = (*kaeso_server::services::catalogue::project_models(state, project)
+        .await
+        .unwrap())
+    .clone();
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let models = env
+        .app
+        .get(&format!("{base}/models"), &env.owner.cookie)
+        .await;
+    let haiku = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "claude-haiku-4-5")
+        .unwrap()["id"]
+        .clone();
+    let narrow = env
+        .app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "narrow", "models": [haiku] }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    let narrow_key = narrow.body["secret"].as_str().unwrap();
+    state
+        .caches
+        .project_models
+        .put(&project.to_string(), stale)
+        .await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(narrow_key),
+        false,
+        Some(chat("gpt-4o", "x")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.text());
+    let r = call(&env, "/v1/models", Some(narrow_key), false, None).await;
+    let listed = r.json();
+    let listed: Vec<&str> = listed["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(listed, ["claude-haiku-4-5"], "{}", r.text());
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(narrow_key),
+        true,
+        Some(messages("claude-haiku-4-5", "x")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+}
