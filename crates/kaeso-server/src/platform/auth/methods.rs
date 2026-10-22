@@ -3,14 +3,13 @@ use axum::extract::State;
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::{instance, oidc, orgs, users};
 use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 use super::throttle_ip;
 use crate::auth::throttle::METHODS_PER_IP;
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
-use crate::platform::params::Query;
 use crate::services::accounts;
 use crate::state::AppState;
 
@@ -28,10 +27,9 @@ pub struct SignInMethodsView {
         address: some address may. With one: this address may, by the\n\
         instance's account creation setting and its domain."]
     pub sign_up: bool,
-    #[doc = "The identity provider the page offers, by name. With an address: the one\n\
-        of the org whose verified domain the address is at, `null` when no org's\n\
-        is. Without one: the one of the org in `org`, only while its connection\n\
-        has **Start without a click** on; otherwise `null`."]
+    #[doc = "The identity provider the page offers, by name: the one of the org whose\n\
+        verified domain the address is at, `null` when no org's is. Always\n\
+        `null` without an address, since SSO is offered only after it."]
     pub provider: Option<SsoProviderView>,
     #[doc = "The install is set up: its first user exists, so a setup link no longer\n\
         works and people sign in instead."]
@@ -41,7 +39,7 @@ pub struct SignInMethodsView {
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "An identity provider a sign-in page offers.")]
 pub struct SsoProviderView {
-    #[doc = "The org it signs in to; pass it as `org` to `auth/oidc/start`."]
+    #[doc = "The org it signs in to."]
     pub org: OrgId,
     #[doc = "The org's name, so the page says where the provider signs in."]
     #[schema(example = "Acme")]
@@ -49,10 +47,9 @@ pub struct SsoProviderView {
     #[doc = "The name on the sign-in button, such as `Acme ID`; `null` to say SSO."]
     #[schema(example = "Acme ID")]
     pub name: Option<String>,
-    #[doc = "The connection has **Start without a click** on: the org's start link\n\
-        goes on to the provider, and after the address a page that offers SSO\n\
-        alone goes on without asking, unless the browser is signed in already,\n\
-        the person just signed out or the last attempt failed."]
+    #[doc = "The connection has **Start without a click** on: when the page offers\n\
+        this provider alone, it goes on to the provider right after the address,\n\
+        without showing the button."]
     pub auto_redirect: bool,
 }
 
@@ -65,15 +62,6 @@ impl SsoProviderView {
             auto_redirect: c.auto_redirect,
         }
     }
-}
-
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct MethodsQuery {
-    #[doc = "The org of a start link (`/sign-in?org=…&start=sso`), whose identity\n\
-        provider the page offers while its connection has **Start without a\n\
-        click** on."]
-    pub org: Option<OrgId>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -96,41 +84,19 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
     }
 }
 
-async fn offered(state: &AppState, org: Option<OrgId>) -> ApiResult<Option<SsoProviderView>> {
-    let Some(org) = org else {
-        return Ok(None);
-    };
-    let (Some(connection), Some(row)) = (
-        oidc::get(&state.pg, org.uuid()).await?,
-        orgs::get(&state.pg, org.uuid()).await?,
-    ) else {
-        return Ok(None);
-    };
-    Ok(connection
-        .auto_redirect
-        .then(|| SsoProviderView::of(connection, &row)))
-}
-
 #[utoipa::path(
     get,
     path = "/auth/methods",
     summary = "The sign-in methods on this install, for the first step of a sign-in page.",
-    description = "It names an identity provider only for `org` of an organization whose \
-    connection has Start without a click on, for the hand-off of that organization's start link. \
-    Otherwise single sign-on is offered only after the address, by `POST auth/methods`.",
+    description = "It never names an identity provider: single sign-on is offered only after \
+    the address, by `POST auth/methods`.",
     tag = "auth",
-    params(MethodsQuery),
     responses((status = 200, body = SignInMethodsView))
 )]
-pub async fn get(
-    State(state): State<AppState>,
-    Query(q): Query<MethodsQuery>,
-) -> ApiResult<Json<SignInMethodsView>> {
+pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SignInMethodsView>> {
     let policy = accounts::policy(&instance::get(&state.pg).await?);
     let set_up = users::any_exist(&state.pg).await?;
-    let mut methods = install(&state, policy.sign_up_open(), set_up);
-    methods.provider = offered(&state, q.org).await?;
-    Ok(Json(methods))
+    Ok(Json(install(&state, policy.sign_up_open(), set_up)))
 }
 
 #[utoipa::path(

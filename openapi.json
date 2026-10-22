@@ -369,19 +369,8 @@
           "auth"
         ],
         "summary": "The sign-in methods on this install, for the first step of a sign-in page.",
-        "description": "It names an identity provider only for `org` of an organization whose connection has Start without a click on, for the hand-off of that organization's start link. Otherwise single sign-on is offered only after the address, by `POST auth/methods`.\n\n**Access:** public; no authentication.",
+        "description": "It never names an identity provider: single sign-on is offered only after the address, by `POST auth/methods`.\n\n**Access:** public; no authentication.",
         "operationId": "getAuthMethods",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "query",
-            "description": "The org of a start link (`/sign-in?org=…&start=sso`), whose identity\nprovider the page offers while its connection has **Start without a\nclick** on.",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -556,70 +545,12 @@
       }
     },
     "/platform/v1/auth/oidc/start": {
-      "get": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "An org's start link: while its connection has Start without a click on, sends\nthe browser to the console's sign-in page for the org\n(`/sign-in?next=…&org=…&start=sso`), which goes on to its identity provider;\notherwise to the sign-in page (`/sign-in?next=…`), which asks for the address.\nOn failure, to the sign-in page with an error code in `#sso_error=`.",
-        "description": "For links from an intranet page or a bookmark. It begins no sign-in itself: the page starts one with `POST auth/oidc/start`, at once in a browser without a session, and only when the person chooses to in a browser that is signed in already. The callback never replaces another account's session, so a link planted on another site can neither sign that browser in to someone else's account nor end its session.\n\n**Access:** public; no authentication.",
-        "operationId": "getAuthOidcStart",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "query",
-            "description": "The org whose identity provider signs in.",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          },
-          {
-            "name": "next",
-            "in": "query",
-            "description": "The console path to open once signed in, as in `POST auth/oidc/start`.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "303": {
-            "description": "Redirect to the sign-in page, with `#sso_error=` on failure."
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {}
-        ],
-        "x-kaeso-access": "public"
-      },
       "post": {
         "tags": [
           "auth"
         ],
         "summary": "Starts SSO for an org: answers with the provider's URL and sets a cookie\nthat binds the flow to this browser.",
-        "description": "With `email`, the org whose verified domain the address is at. With `org`, only an org whose connection has Start without a click on, as its start link hands it to the sign-in page, or one the signed-in user is a member of; any other org answers 400.\n\n**Access:** public; no authentication.",
+        "description": "With `email`, the org whose verified domain the address is at. With `org`, only an org the signed-in user is a member of; without a session, or for another org, it answers 400 and asks for `email`.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthOidcStart",
         "requestBody": {
           "content": {
@@ -23540,7 +23471,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/SsoProviderView",
-                "description": "The identity provider the page offers, by name. With an address: the one\nof the org whose verified domain the address is at, `null` when no org's\nis. Without one: the one of the org in `org`, only while its connection\nhas **Start without a click** on; otherwise `null`."
+                "description": "The identity provider the page offers, by name: the one of the org whose\nverified domain the address is at, `null` when no org's is. Always\n`null` without an address, since SSO is offered only after it."
               },
               {
                 "type": "null"
@@ -23767,7 +23698,7 @@
         "properties": {
           "auto_redirect": {
             "type": "boolean",
-            "description": "The connection has **Start without a click** on: the org's start link\ngoes on to the provider, and after the address a page that offers SSO\nalone goes on without asking, unless the browser is signed in already,\nthe person just signed out or the last attempt failed."
+            "description": "The connection has **Start without a click** on: when the page offers\nthis provider alone, it goes on to the provider right after the address,\nwithout showing the button."
           },
           "name": {
             "type": [
@@ -23779,7 +23710,7 @@
           },
           "org": {
             "$ref": "#/components/schemas/OrgId",
-            "description": "The org it signs in to; pass it as `org` to `auth/oidc/start`."
+            "description": "The org it signs in to."
           },
           "org_name": {
             "type": "string",
@@ -23802,7 +23733,7 @@
               "boolean",
               "null"
             ],
-            "description": "Send people to the provider without a click when the sign-in page\noffers it alone: through the org's sign-in link, or as the only\nprovider of an install that signs in only with SSO. Leave out to keep\nthe stored choice; off for a new connection."
+            "description": "Send people on to the provider right after they enter their address,\nwhen the sign-in page offers it alone, without showing its button.\nLeave out to keep the stored choice; off for a new connection."
           },
           "client_id": {
             "type": "string",
@@ -23874,13 +23805,12 @@
           "key_id",
           "redirect_url",
           "auto_redirect",
-          "require_email_verified",
-          "sign_in_url"
+          "require_email_verified"
         ],
         "properties": {
           "auto_redirect": {
             "type": "boolean",
-            "description": "Start without a click: the start link `sign_in_url` goes on to the\nprovider, and after the address a sign-in page that offers this provider\nalone goes on without asking."
+            "description": "Start without a click: after the address, a sign-in page that offers\nthis provider alone goes on to it without showing the button."
           },
           "client_id": {
             "type": "string",
@@ -23923,10 +23853,6 @@
               "null"
             ],
             "description": "Whether the provider's ID tokens say when the person signed in\n(`auth_time`): `true` once a token did, `false` once a confirmation's\ntoken didn't, `null` while unknown or after `issuer` or `client_id`\nchanges. With `false`, its sign-ins never count as recent and it can't\nconfirm one, so members confirm with a password or a sign-in link."
-          },
-          "sign_in_url": {
-            "type": "string",
-            "description": "The org's start link, `GET auth/oidc/start?org=…`. With `auto_redirect`\non it goes on to the provider while nobody is signed in; otherwise it\nopens the sign-in page, which asks for the address."
           }
         }
       },
@@ -23954,7 +23880,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OrgId",
-                "description": "The org, from `provider` in `GET auth/methods?org=…`: accepted while its\nconnection has **Start without a click** on, or from a signed-in member\nof the org; otherwise send `email`."
+                "description": "The org, only from a signed-in member of it, such as on the page that\nsays the org requires single sign-on; otherwise send `email`."
               },
               {
                 "type": "null"

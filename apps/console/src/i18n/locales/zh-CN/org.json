@@ -348,7 +348,7 @@
   "org.sso.addressesAny": "身份提供商未验证的地址也能登录。",
   "org.sso.addressesVerified": "只有身份提供商标记为已验证的地址才能登录。",
   "org.sso.autoRedirect": "无需点击即开始",
-  "org.sso.autoRedirectHint": "登录链接直接前往提供商；输入邮箱后，Kaeso 不再询问。",
+  "org.sso.autoRedirectHint": "输入邮箱后，如果提供商是唯一的登录方式，则直接前往提供商。",
   "org.sso.button": "登录按钮",
   "org.sso.buttonName": "按钮名称",
   "org.sso.buttonNameExample": "Acme ID",
@@ -368,7 +368,6 @@
   "org.sso.connected": "身份提供商已连接",
   "org.sso.copyRecord": "复制 TXT 值",
   "org.sso.copyRedirect": "复制重定向 URL",
-  "org.sso.copySignInLink": "复制登录链接",
   "org.sso.description": "成员通过您的身份提供商（OpenID Connect）登录。",
   "org.sso.disconnect": "断开连接",
   "org.sso.disconnectConfirm": "断开身份提供商？",
@@ -419,8 +418,6 @@
   "org.sso.requiredOff": "已不再要求单点登录",
   "org.sso.requiredOn": "已要求单点登录",
   "org.sso.saved": "单点登录已保存",
-  "org.sso.signInLink": "登录链接",
-  "org.sso.signInLinkHint": "打开登录页，先询问邮箱。",
   "org.sso.signInStep": "登录页如何提供它？",
   "org.sso.signInStepHint": "按钮上的名称，以及是否无需点击即在提供商处开始登录。",
   "org.sso.title": "单点登录",
@@ -435,6 +432,5 @@
   "org.twoFactor.requireHint": "登录时需要验证码，通过本组织自己的单点登录除外。",
   "org.twoFactor.requiredOff": "已不再要求双重验证",
   "org.twoFactor.requiredOn": "已要求双重验证",
-  "org.wholeDays": "请输入整数天数，至少为 1",
-  "org.sso.signInLinkStraight": "直接前往提供商，无需询问邮箱。"
+  "org.wholeDays": "请输入整数天数，至少为 1"
 }

@@ -5,11 +5,12 @@ import { methods, ssoStart } from "~/test/fixtures/public";
 import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
-describe("the first page a start link opens", () => {
-  it("fetches the provider's step and goes on to the provider", async () => {
+describe("the first page a person signs in on", () => {
+  it("goes on to a provider that starts without a click only after the address", async () => {
     signedOut();
+    on("GET", "auth/methods", methods({ password: false, magic_link: false }));
     on(
-      "GET",
+      "POST",
       "auth/methods",
       methods({
         password: false,
@@ -19,10 +20,10 @@ describe("the first page a start link opens", () => {
     );
     on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s8"));
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
-    await renderApp(`/sign-in?org=${ORG}&start=sso`);
-    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
+    const { user } = await renderApp("/sign-in");
+    await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@northwind.test{Enter}");
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s8"));
-    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG }]);
-    expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ email: "ada@northwind.test" }]);
+    expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();
   });
 });

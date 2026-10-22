@@ -30,14 +30,13 @@ test("an identity provider is connected, and a new person signs in through it", 
   verifyDomain("example.com");
   await page.reload();
   await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
-  await expect(page.getByText("Opens sign-in, which asks for the email first.")).toBeVisible();
+  await expect(page.getByText("Sign-in link")).toHaveCount(0);
 
   const other = await browser.newContext();
   const visitor = await other.newPage();
-  await visitor.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Forgs`);
-  await expect(visitor).toHaveURL(/\/sign-in\?next=%2Forgs$/);
-  await expect(visitor.getByRole("textbox", { name: "Email" })).toBeVisible();
-  await visitor.goto(`/sign-in?org=${org}`);
+  const link = await visitor.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Forgs`);
+  expect(link?.status()).toBe(405);
+  await visitor.goto(`/sign-in?org=${org}&start=sso`);
   await expect(visitor.getByRole("textbox", { name: "Email" })).toBeVisible();
   await expect(visitor.getByRole("button", { name: "Continue with SSO" })).toHaveCount(0);
   await enterEmail(visitor, "sso@example.com");

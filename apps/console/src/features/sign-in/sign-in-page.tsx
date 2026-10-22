@@ -45,22 +45,15 @@ export function SignInPage({
   page,
   ssoError,
   notice,
-  quiet = false,
-  startLink = false,
-  signedInAs = null,
 }: {
   next?: string | undefined;
   page?: SignInMethods | null | undefined;
   ssoError?: string | null | undefined;
   notice?: string | undefined;
-  quiet?: boolean;
-  startLink?: boolean;
-  signedInAs?: string | null;
 }) {
   usePageTitle(t("signIn.title", "Sign in"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const provider = startLink && page?.provider?.auto_redirect ? page.provider : null;
   const [SignUp, setSignUp] = useState(() => signUpLine);
   useEffect(() => {
     if (!SignUp)
@@ -74,8 +67,6 @@ export function SignInPage({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [step, setStep] = useState<Step>({ kind: "email" });
-  const [stepsMissing, setStepsMissing] = useState(false);
-  const [loaded, setLoaded] = useState(() => steps);
   const [busy, setBusy] = useState<Busy | null>(null);
   const passwordFailed = useRef(false);
   useEffect(() => {
@@ -88,9 +79,6 @@ export function SignInPage({
   useEffect(() => {
     if (ssoError) void loadSteps().then((m) => m.showSsoError(ssoError));
   }, [ssoError]);
-  useEffect(() => {
-    if (signedInAs && page !== undefined && !provider) void navigate({ href: safeNext(next), replace: true });
-  }, [signedInAs, page, provider, next, navigate]);
   useEffect(() => {
     if (!notice) return;
     toast.success(notice, { id: "sign-in-notice" });
@@ -161,14 +149,6 @@ export function SignInPage({
     setPasswordError(null);
     setStep({ kind: "email" });
   };
-  const alone = provider && !stepsMissing && step.kind === "email" ? provider : null;
-  useEffect(() => {
-    if (provider && !loaded)
-      loadSteps().then(
-        (m) => setLoaded(m),
-        () => setStepsMissing(true),
-      );
-  }, [provider, loaded]);
 
   if (step.kind === "link-sent") {
     return (
@@ -216,12 +196,7 @@ export function SignInPage({
     );
   }
 
-  if (alone && loaded) {
-    const { ProviderStep } = loaded;
-    return <ProviderStep provider={alone} next={next} auto={!quiet && !signedInAs} signedInAs={signedInAs} />;
-  }
-
-  if (page === undefined || alone) return <PublicPage title={t("signIn.title", "Sign in")}>{null}</PublicPage>;
+  if (page === undefined) return <PublicPage title={t("signIn.title", "Sign in")}>{null}</PublicPage>;
 
   return (
     <PublicPage title={t("signIn.title", "Sign in")}>

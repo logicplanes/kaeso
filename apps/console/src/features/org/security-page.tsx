@@ -208,15 +208,6 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
             )}
             <SettingsRow title={t("org.sso.button", "Sign-in button")} description={buttonSentence(sso)} />
             <SettingsRow
-              title={t("org.sso.signInLink", "Sign-in link")}
-              description={
-                sso.auto_redirect
-                  ? t("org.sso.signInLinkStraight", "Goes straight to the provider, without asking for an email.")
-                  : t("org.sso.signInLinkHint", "Opens sign-in, which asks for the email first.")
-              }
-              control={<InlineCopyText value={sso.sign_in_url} label={t("org.sso.copySignInLink", "Copy sign-in link")} />}
-            />
-            <SettingsRow
               title={t("org.sso.redirectUrl", "Redirect URL")}
               description={t("org.sso.registerRedirect", "Register it at the provider as the sign-in callback.")}
               control={<InlineCopyText value={sso.redirect_url} label={t("org.sso.copyRedirect", "Copy redirect URL")} />}
@@ -453,7 +444,7 @@ function SsoDialog({
               />
               <Switch
                 label={t("org.sso.autoRedirect", "Start without a click")}
-                description={t("org.sso.autoRedirectHint", "The sign-in link goes straight to the provider, and after the email Kaeso doesn't ask again.")}
+                description={t("org.sso.autoRedirectHint", "After the email, sign-in goes straight to the provider when it's the only way in.")}
                 checked={autoRedirect}
                 onCheckedChange={setAutoRedirect}
               />

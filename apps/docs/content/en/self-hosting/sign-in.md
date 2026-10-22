@@ -12,7 +12,9 @@ The sign-in page always asks for the email address first. It then offers what wo
 
 The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. When single sign-on is the address's only way in and the connection has **Start without a click** on, the page goes on to the provider right after the address, without the button. After someone signs out, or when the provider refused a sign-in, the page asks for the address again and shows the reason.
 
-The only way to single sign-on without entering an email is the organization's own start link, and only while its connection has **Start without a click** on ([links that go straight to the provider](#links-that-go-straight-to-the-provider)).
+Single sign-on is offered only after the address: no link starts it for an organization, so a link on another site can't send a browser through an identity provider into someone else's account. For a bookmark or an intranet page, link to the sign-in page, such as `https://kaeso.example.com/sign-in`; with **Start without a click** on, members go on to the provider as soon as they enter their address.
+
+Single sign-on never replaces another account's session either. When the provider answers with another account while the browser is signed in, the browser stays signed in and the page says `signed_in_as_other`; to switch accounts, sign out first.
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
@@ -25,18 +27,6 @@ A provider can also sign someone in with a session of its own from earlier, with
 So the provider must send `auth_time`, the time of the sign-in, in its ID tokens for single sign-on to confirm a recent sign-in. OpenID Connect requires it once `max_age` is sent, but some providers never send it. An answer without it is refused with `no_auth_time`, and Kaeso notes on the connection that the provider can't confirm. The console then stops offering that provider when it asks someone to sign in again, and offers a password, a sign-in link or a link to set a password instead.
 
 In an organization that requires single sign-on, nothing else confirms there, so its members can't take actions that need a recent sign-in. The organization's **Security** page shows either case under **Recent sign-in**. Kaeso offers the provider again once one of its ID tokens carries `auth_time`, and forgets what it noted when the issuer or client id changes. A sign-in without `auth_time` notes nothing, since providers may leave it out while `max_age` isn't sent.
-
-## Links that go straight to the provider
-
-An organization's start link, the **Sign-in link** on its **Security** page, sends a browser that isn't signed in straight to the identity provider, for a bookmark or an intranet page:
-
-```text
-https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
-```
-
-`org` names the organization, and `next` is the console page to open afterwards. While the organization's connection has **Start without a click** on, the link opens the organization's sign-in page, which names the organization and its provider and goes on to the provider at once. With it off, the link opens the sign-in page, which asks for the email address first and keeps `next`.
-
-When the browser is signed in to Kaeso already, the page asks first: it names the account that is signed in and waits for a click. Single sign-on never replaces another account's session. When the provider answers with another account, the browser stays signed in and the page says `signed_in_as_other`; to switch accounts, sign out first. So a link planted on another site can neither sign a browser out nor sign it in to someone else's account.
 
 ## Who signs in through single sign-on
 

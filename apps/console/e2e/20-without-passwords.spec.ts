@@ -50,8 +50,7 @@ test("the first admin sets up an install without passwords and connects the iden
   await page.reload();
   await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
   await expect(page.getByText("Says Continue with Northwind ID and starts on its own.")).toBeVisible();
-  await expect(page.getByText(`${SSO_CONSOLE_URL}/platform/v1/auth/oidc/start?org=${org}`)).toBeVisible();
-  await expect(page.getByText("Goes straight to the provider, without asking for an email.")).toBeVisible();
+  await expect(page.getByText(`${SSO_CONSOLE_URL}/platform/v1/auth/oidc/start?org=${org}`)).toHaveCount(0);
 });
 
 test("a person enters their email, goes straight to the identity provider and comes back to the page they asked for", async ({ browser }) => {
@@ -79,19 +78,21 @@ test("a person enters their email, goes straight to the identity provider and co
   await context.close();
 });
 
-test("a start link sends a bookmark straight to the identity provider", async ({ browser }) => {
+test("a link that names the organization still asks for the email before the identity provider", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();
-  await page.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Fsettings%2Faccount%2Fsessions`);
+  const link = await page.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Fsettings%2Faccount%2Fsessions`);
+  expect(link?.status()).toBe(405);
+  await page.goto(`/sign-in?next=%2Fsettings%2Faccount%2Fsessions&org=${org}&start=sso`);
+  await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mock identity provider" })).toHaveCount(0);
+  await enterEmail(page, "sam@example.com");
   await signInAtProvider(page, "sam@example.com", "Sam Rivera");
   await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
-  await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
 
-  await page.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Fsettings%2Faccount%2Fsessions`);
-  await expect(page.getByText(`You're signed in as sam@example.com here; to sign in to ${ADMIN.org} as someone else, sign out first.`)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Mock identity provider" })).toHaveCount(0);
-  await page.getByRole("link", { name: "Stay signed in as sam@example.com" }).click();
+  await page.goto(`/sign-in?next=%2Fsettings%2Faccount%2Fsessions&org=${org}&start=sso`);
   await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
+  await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
   await context.close();
 });
 
