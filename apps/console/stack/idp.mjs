@@ -30,6 +30,7 @@ function idToken(grant) {
       iat: issuedAt,
       exp: issuedAt + 300,
       nonce: grant.nonce,
+      auth_time: grant.authTime,
       email: grant.email,
       email_verified: true,
       name: grant.name,
@@ -83,6 +84,7 @@ function authorize(form) {
     redirect: redirect.href,
     email: form.get("login_email") ?? "",
     name: form.get("login_name") ?? "",
+    authTime: Math.floor(Date.now() / 1000),
   });
   redirect.searchParams.set("code", code);
   redirect.searchParams.set("state", form.get("state") ?? "");
