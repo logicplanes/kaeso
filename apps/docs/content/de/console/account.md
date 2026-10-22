@@ -22,6 +22,8 @@ Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neu
 
 Die Bestätigung meldet alle anderen Sitzungen Ihres Kontos ab. Der Browser, der den Link öffnet, bleibt angemeldet; öffnen Sie ihn dort, wo Sie nicht angemeldet sind, bleibt der Browser angemeldet, der die Änderung angefordert hat.
 
+Verwaltet eine Organisation Ihr Konto, gehört Ihre Adresse ihrem Identitätsanbieter, und **Profil** zeigt kein **E-Mail ändern**. Ändert der Anbieter Ihre Adresse innerhalb der bestätigten Domains der Organisation, ändert Ihre nächste Anmeldung über ihn sie auch in Kaeso ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
+
 ## Passwort ändern
 
 Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ihre anderen Sitzungen ab. Melden Sie sich nur mit Links oder Single Sign-on an, haben Sie kein Passwort, und **Passwort festlegen** fügt eines hinzu.

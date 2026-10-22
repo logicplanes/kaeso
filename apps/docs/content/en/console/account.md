@@ -22,6 +22,8 @@ Under **Profile**, choose **Change email** and enter the new address, and with t
 
 Confirming the change signs out every other session of your account. The browser that opens the link stays signed in; when you open it where you aren't signed in, the browser that asked for the change stays.
 
+When an organization manages your account, its identity provider owns your address, and **Profile** shows no **Change email**. When the provider changes your address within the organization's verified domains, your next sign-in through it changes it in Kaeso too ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
+
 ## Change your password
 
 Under **Security**, **Change password** sets a new password and signs out your other sessions. If you sign in only with links or single sign-on, you have no password, and **Set password** adds one.
