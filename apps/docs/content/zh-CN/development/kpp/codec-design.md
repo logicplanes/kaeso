@@ -128,7 +128,7 @@ serde 跳过被忽略的值和原始值时不受其递归上限约束，否则�
 模型列表（`GET /v1/models`、`GET /v1/models/{id}`）是 KPP 的一部分，包括 `ModelInfo`、`ModelLifecycle`、`ModelList` 和 `ModelsQuery`，因此网关自己永远不需要了解这些线路结构。
 
 - **入站。** 每种方言都使用相同的路径，因此路径无法说明方言：`dispatch::models_dialect` 根据请求头来选择（有 `anthropic-version` 表示 Anthropic，否则为 OpenAI）。`ModelList::page` 对每种方言都以相同的方式应用 `before_id`、`after_id`、`limit` 和生命周期过滤。
-- **出站。** 为了确认服务商是否向某个密钥提供某个模型，网关发送由 `dispatch::encode_model_request` 构建的 `GET /v1/models/{id}`，其中 ID 是一个经过百分号编码的路径段。ID 为 `.` 或 `..`，或在斜杠之间包含其中之一时，结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这类路径段。它用 `decode_model` 读取响应，404 解码为 `NotFound`。那里的 404 也可能表示服务商没有这个端点，因此网关接着读取服务商的列表。`dispatch::encode_models_request` 根据 `ModelsQuery` 构建 `GET /v1/models`，只包含该方言会发送的分页和过滤参数，其他参数为 `Unsupported`。`decode_models` 读取每一页。
+- **出站。** 为了确认服务商是否向某个密钥提供某个模型，网关发送由 `dispatch::encode_model_request` 构建的 `GET /v1/models/{id}`，其中 ID 是一个经过百分号编码的路径段。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。其他任何 ID（包括 `a/../b`）都保持为一个编码后的路径段。ID 加入目录时 Platform API 更严格：它还会拒绝斜杠之间的 `.` 或 `..`（[模型和别名](../../console/models-and-aliases.md#添加模型)）。它用 `decode_model` 读取响应，404 解码为 `NotFound`。那里的 404 也可能表示服务商没有这个端点，因此网关接着读取服务商的列表。`dispatch::encode_models_request` 根据 `ModelsQuery` 构建 `GET /v1/models`，只包含该方言会发送的分页和过滤参数，其他参数为 `Unsupported`。`decode_models` 读取每一页。
 - **查询字符串**按 `&` 和 `=` 拆分，并按 `application/x-www-form-urlencoded` 进行百分号解码（`+` 表示空格）。未知参数成为 `query.<name>` 下的 extras。
 - **日期。** KPP 保存 Unix 秒。RFC 3339 日期时间（Anthropic）和完整日期（OpenAI 的 `shutdown_date`）按前推格里高利历转换，不依赖日期库。亚秒位和时区偏移在转换中无法保留；只要再次编码无法重现收到的原文，就把原文保存在形式标记 `spelling` 中。9999 年之后的日期无法用 RFC 3339 表示：此时 Anthropic 的 `created_at` 取文档规定的未知值（纪元起点），其他日期取 `null`。
 - **缺失或为 `null` 的字段。** 对 KPP 中没有值的字段，编码器填入文档规定的默认值；如果收到的请求体对该字段的写法不同，形式标记 `none` 会注明这一点。
