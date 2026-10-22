@@ -148,7 +148,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | bool | `true` | Fetch model data from models.dev. Without it, the gateway uses the data built into the release. |
-| `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | Where the model data comes from. |
+| `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | Where the model data comes from. It must be `https`, except `http` on a loopback address. Kaeso follows at most 3 redirects, each on the same host and over `https`. |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | text | `24h` | How often the gateway fetches it. |
 
 ### Updates
