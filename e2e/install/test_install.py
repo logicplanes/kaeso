@@ -79,7 +79,7 @@ def install(tmp_path_factory):
         subprocess.check_output(["docker", "run", "--rm", gateway, "master-key", "generate"], text=True)
     )
     subprocess.run(
-        ["docker", "run", "--rm", "--user", "0:0", "-v", f"{work}:/kaeso", "--entrypoint", "sh", CADDY,
+        ["docker", "run", "--rm", "--user", "0:0", "-v", f"{work}:/kaeso", "--entrypoint", "sh", console,
          "-c", "chown 65532:65532 /kaeso/master-keys && chmod 0400 /kaeso/master-keys"],
         check=True,
     )
