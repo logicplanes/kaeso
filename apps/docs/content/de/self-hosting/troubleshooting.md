@@ -92,8 +92,7 @@ Der Fehler kommt im Format, das die App aufgerufen hat, und seine Meldung sagt, 
 | --- | --- | --- |
 | 400 | Für den Anbieter des Modells ist kein Anbieter-Schlüssel eingerichtet | Fügen Sie unter **Anbieter** einen hinzu oder weisen Sie dem Projekt einen zu |
 | 401 | Der Schlüssel fehlt, ist unbekannt, deaktiviert, archiviert oder abgelaufen | Prüfen Sie den Schlüssel, den die App sendet, und seinen Zustand unter **API-Schlüssel** |
-| 403 | Der Schlüssel oder sein Mitglied darf das Modell nicht verwenden | Erweitern Sie den Modellzugriff des Mitglieds oder des Schlüssels |
-| 404 | Das Modell steht nicht im Katalog des Projekts | Fügen Sie es unter **Modelle** hinzu oder rufen Sie ein Modell auf, das dort steht |
+| 404 | Das Modell steht nicht im Katalog des Projekts, oder der Schlüssel oder sein Mitglied darf es nicht verwenden | Fügen Sie es unter **Modelle** hinzu oder rufen Sie ein Modell auf, das dort steht; steht es dort, prüfen Sie den Modellzugriff des Schlüssels und seines Mitglieds |
 | 429 | Ein Ratenlimit oder ein Budget, oder zu viele unbekannte Schlüssel von einer Adresse | Warten Sie `Retry-After` ab oder erhöhen Sie das Limit, das die Meldung nennt |
 | 502, 504 | Der Anbieter war nicht erreichbar, hat nicht rechtzeitig geantwortet oder eine Antwort größer als `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` gesendet | Prüfen Sie den Status des Anbieters; das Anfrageprotokoll zeigt seinen Fehler |
 | 503 | Valkey ist nicht erreichbar und ein hartes Budget lässt sich nicht prüfen, oder das Gateway startet neu | Prüfen Sie [`/readyz`](monitoring.md#health-checks) und `docker compose logs valkey` |

@@ -37,7 +37,7 @@ KPP then decodes the request from the app's format, such as Chat Completions or 
 
 ## The model
 
-Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`. If the member or the key may not use the model, the request gets 403.
+Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`. If the member or the key may not use the model, the request also gets 404, with the same message as an unknown name, so a key can't learn which other models the project has.
 
 The catalogue entry says what the model can do. Kaeso answers 400 when a request needs something the model lacks:
 

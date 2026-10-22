@@ -37,7 +37,7 @@ Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions ode
 
 ## Das Modell
 
-Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage 403.
+Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404, mit derselben Meldung wie ein unbekannter Name, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
 
 Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine Anfrage etwas braucht, das dem Modell fehlt:
 
