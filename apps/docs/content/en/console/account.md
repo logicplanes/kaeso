@@ -47,7 +47,7 @@ An organization's identity provider signs you in only once your account is linke
 2. Choose **Link** next to the organization.
 3. Sign in at the identity provider. You come back to **Security**, signed in as before.
 
-**Unlink** stops the provider from signing you in. The organization's audit log records both, as `user.sso_link` and `user.sso_unlink`.
+**Unlink** stops the provider from signing you in and ends the sessions it signed you in to; like other security changes, it needs a recent sign-in. The organization's audit log records both, as `user.sso_link` and `user.sso_unlink`.
 
 ## Sign out other browsers
 

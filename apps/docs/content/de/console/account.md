@@ -47,7 +47,7 @@ Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mi
 2. Wählen Sie **Verknüpfen** neben der Organisation.
 3. Melden Sie sich beim Identitätsanbieter an. Sie kommen zurück zu **Sicherheit** und sind angemeldet wie zuvor.
 
-**Trennen** hindert den Anbieter daran, Sie anzumelden. Das Audit-Log der Organisation verzeichnet beides, als `user.sso_link` und `user.sso_unlink`.
+**Trennen** hindert den Anbieter daran, Sie anzumelden, und beendet die Sitzungen, in denen er Sie angemeldet hat; wie andere Sicherheitsänderungen braucht es eine kürzliche Anmeldung. Das Audit-Log der Organisation verzeichnet beides, als `user.sso_link` und `user.sso_unlink`.
 
 ## Andere Browser abmelden
 

@@ -129,7 +129,7 @@
   "account.ssoProvider": "its SSO",
   "account.ssoUnlink": "Unlink",
   "account.ssoUnlinkConfirm": "Unlink from {org}'s single sign-on?",
-  "account.ssoUnlinkConfirmHint": "Its identity provider stops signing you in until you link the account again.",
+  "account.ssoUnlinkConfirmHint": "Its identity provider stops signing you in, and the sessions it signed you in to end.",
   "account.ssoUnlinked": "Unlinked from single sign-on",
   "account.storeCodes": "Store your recovery codes",
   "account.storeCodesHint": "Each code signs you in once without your authenticator; they're shown only now.",

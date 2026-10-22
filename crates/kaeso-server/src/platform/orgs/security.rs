@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use kaeso_core::id::OrgId;
 use kaeso_core::rights::OrgPreset;
 use kaeso_crypto::{ExposeSecret, Sealed};
+use kaeso_store::pg::sessions as sessions_store;
 use kaeso_store::pg::{oidc, orgs};
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
@@ -11,6 +12,7 @@ use utoipa::ToSchema;
 
 use super::org::{OrgView, lock_changeable};
 use crate::auth::oidc::Provider;
+use crate::auth::sessions;
 use crate::platform::access::Ctx;
 use crate::platform::auth::oidc::secret_aad;
 use crate::platform::error::{ApiError, ApiResult};
@@ -204,6 +206,8 @@ pub struct SsoRequest {
     path = "/orgs/{org}/security/sso",
     summary = "Sets up or replaces the SSO connection. The provider's discovery\n\
     document is fetched first, so a mistake shows now, not at sign-in.",
+    description = "A new `issuer` or `client_id` ends every session the previous provider \
+    signed in to the org, since that provider no longer vouches for them.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = SsoRequest,
@@ -329,6 +333,9 @@ pub async fn put_sso(
         .map_err(ApiError::internal)?;
     let mut tx = state.pg.begin().await?;
     let mut row = lock_changeable(&mut tx, &ctx).await?;
+    let repointed = oidc::get(&mut *tx, scope.org.id)
+        .await?
+        .is_some_and(|c| c.issuer != issuer || c.client_id != req.client_id.trim());
     let stored = oidc::upsert(
         &mut tx,
         &oidc::Connection {
@@ -360,12 +367,20 @@ pub async fn put_sso(
     row.sso_default_preset = default_role.as_ref().map(|g| g.preset.clone());
     row.sso_default_role_id = default_role.and_then(|g| g.role_id);
     orgs::update(&mut *tx, &row).await?;
+    // Only after the upsert has the connection row's lock: an SSO callback holds it until its
+    // session is committed, so that session is ended here rather than outliving the change.
+    let ended = if repointed {
+        sessions_store::revoke_sso(&mut *tx, scope.org.id, None, ctx.now).await?
+    } else {
+        Vec::new()
+    };
     ctx.audit(Some(org), "security.sso_update")
         .target("org", org)
-        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified }))
+        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified, "sessions_ended": ended.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    sessions::forget(&state, &ended).await;
     Ok(Json(view(&state, &row).await?))
 }
 
@@ -433,7 +448,8 @@ pub async fn verify_domains(
 #[utoipa::path(
     delete,
     path = "/orgs/{org}/security/sso",
-    summary = "Removes the SSO connection. Refused while SSO is required.",
+    summary = "Removes the SSO connection and ends every session it signed in. Refused\n\
+    while SSO is required.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     responses((status = 204, description = "Removed."))
@@ -457,11 +473,15 @@ pub async fn delete_sso(
     row.sso_default_preset = None;
     row.sso_default_role_id = None;
     orgs::update(&mut *tx, &row).await?;
+    // Only after the delete has the connection row's lock, as in `put_sso`.
+    let ended = sessions_store::revoke_sso(&mut *tx, row.id, None, ctx.now).await?;
     ctx.audit(Some(scope.id()), "security.sso_delete")
         .target("org", scope.id())
+        .after(serde_json::json!({ "sessions_ended": ended.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    sessions::forget(&state, &ended).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
-import { ssoStart } from "~/test/fixtures/public";
+import { signedInReply, ssoStart } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -58,9 +58,29 @@ describe("single sign-on links", () => {
     expect(await screen.findByText("Linked; you can sign in through Contoso ID.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Unlink" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Unlink from Contoso's single sign-on?" });
+    expect(within(confirm).getByText("Its identity provider stops signing you in, and the sessions it signed you in to end.")).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Unlink" }));
     expect(await (await notifications()).findByText("Unlinked from single sign-on")).toBeInTheDocument();
     expect(requests("DELETE", "me/sso-links/:org").map((r) => r.params.org)).toEqual(["org_contoso"]);
+  });
+
+  it("asks to sign in again before it unlinks after a while", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("GET", "me/sso-links", links(true));
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, sso: [] });
+    on("POST", "auth/password", signedInReply());
+    let calls = 0;
+    on("DELETE", "me/sso-links/:org", () => (++calls === 1 ? apiError(403, "recent_sign_in_required", "Sign in again to do this.") : noContent()));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Unlink" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Unlink from Contoso's single sign-on?" });
+    await user.click(within(confirm).getByRole("button", { name: "Unlink" }));
+    const again = await screen.findByRole("dialog", { name: "Sign in again to continue" });
+    await user.type(await within(again).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(again).getByRole("button", { name: "Sign in" }));
+    expect(await (await notifications()).findByText("Unlinked from single sign-on")).toBeInTheDocument();
+    expect(requests("DELETE", "me/sso-links/:org")).toHaveLength(2);
   });
 
   it("says why an unlink was refused", async () => {

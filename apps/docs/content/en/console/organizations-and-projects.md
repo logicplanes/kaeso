@@ -55,7 +55,7 @@ _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9f
 
 DNS changes can take a while to show; choose **Verify** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
 
-**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same. **Disconnect** removes it, and members sign in with a password or a sign-in link again.
+**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same; a new issuer or client id ends the sessions the previous provider signed in. **Disconnect** removes it and ends the sessions it signed in, and members sign in with a password or a sign-in link again.
 
 Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 

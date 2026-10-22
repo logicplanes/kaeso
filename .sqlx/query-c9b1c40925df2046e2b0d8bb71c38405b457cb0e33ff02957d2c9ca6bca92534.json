@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions SET revoked_at = $3 WHERE method = 'oidc' AND oidc_org_id = $1 AND ($2::uuid IS NULL OR user_id = $2) AND revoked_at IS NULL RETURNING token_hash",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token_hash",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "sessions",
+            "name": "token_hash"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c9b1c40925df2046e2b0d8bb71c38405b457cb0e33ff02957d2c9ca6bca92534"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id FROM sso_identities WHERE org_id = $1 AND issuer = $2 AND subject = $3",
+  "query": "SELECT user_id FROM sso_identities WHERE org_id = $1 AND issuer = $2 AND subject = $3 FOR SHARE",
   "describe": {
     "columns": [
       {
@@ -26,5 +26,5 @@
       false
     ]
   },
-  "hash": "6ee0fd40ac4632d5df3a315964cd411598b273d49acaeea593499aaf91d40f24"
+  "hash": "7f52d5be1eb363468513e5f74034110fd5ffcbbcf5552c3292323adab5530a2c"
 }

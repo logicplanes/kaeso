@@ -36,6 +36,25 @@ pub async fn get(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Option<Connect
     .await?)
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Pointer {
+    pub issuer: String,
+    pub client_id: String,
+}
+
+pub async fn lock_pointer(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+) -> Result<Option<Pointer>, StoreError> {
+    Ok(sqlx::query_as!(
+        Pointer,
+        "SELECT issuer, client_id FROM org_oidc WHERE org_id = $1 FOR SHARE",
+        org_id
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
 pub async fn org_for_domain(
     db: impl PgExecutor<'_>,
     domain: &str,

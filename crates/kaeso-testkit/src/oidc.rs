@@ -50,6 +50,29 @@ struct Inner {
     key: CoreRsaPrivateSigningKey,
     grants: Mutex<HashMap<String, Grant>>,
     fault: Mutex<Fault>,
+    hold: Mutex<Option<Hold>>,
+}
+
+struct Hold {
+    reached: tokio::sync::oneshot::Sender<()>,
+    release: tokio::sync::oneshot::Receiver<()>,
+}
+
+pub struct HeldToken {
+    reached: tokio::sync::oneshot::Receiver<()>,
+    release: tokio::sync::oneshot::Sender<()>,
+}
+
+impl HeldToken {
+    pub async fn reached(&mut self) {
+        (&mut self.reached)
+            .await
+            .expect("the token request arrives");
+    }
+
+    pub fn release(self) {
+        let _ = self.release.send(());
+    }
 }
 
 #[derive(Clone)]
@@ -84,6 +107,7 @@ impl MockIdp {
             key,
             grants: Mutex::new(HashMap::new()),
             fault: Mutex::new(Fault::None),
+            hold: Mutex::new(None),
         });
         let app = Router::new()
             .route("/.well-known/openid-configuration", get(discovery))
@@ -106,6 +130,18 @@ impl MockIdp {
             *f = fault;
         }
     }
+    pub fn hold_next_token(&self) -> HeldToken {
+        let (reached_tx, reached) = tokio::sync::oneshot::channel();
+        let (release, release_rx) = tokio::sync::oneshot::channel();
+        if let Ok(mut hold) = self.inner.hold.lock() {
+            *hold = Some(Hold {
+                reached: reached_tx,
+                release: release_rx,
+            });
+        }
+        HeldToken { reached, release }
+    }
+
     pub fn authorize(&self, authorization_url: &str, email: &str, name: &str) -> Authorized {
         self.authorize_as(authorization_url, &format!("sub-{email}"), email, name)
     }
@@ -250,6 +286,11 @@ async fn token(
     headers: HeaderMap,
     Form(form): Form<TokenForm>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    let hold = inner.hold.lock().ok().and_then(|mut h| h.take());
+    if let Some(hold) = hold {
+        let _ = hold.reached.send(());
+        let _ = hold.release.await;
+    }
     let error = |e: &str| {
         (
             StatusCode::BAD_REQUEST,

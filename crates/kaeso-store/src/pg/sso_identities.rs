@@ -11,7 +11,7 @@ pub async fn user_of(
     subject: &str,
 ) -> Result<Option<Uuid>, StoreError> {
     Ok(sqlx::query_scalar!(
-        "SELECT user_id FROM sso_identities WHERE org_id = $1 AND issuer = $2 AND subject = $3",
+        "SELECT user_id FROM sso_identities WHERE org_id = $1 AND issuer = $2 AND subject = $3 FOR SHARE",
         org_id,
         issuer,
         subject
