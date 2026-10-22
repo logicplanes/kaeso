@@ -286,9 +286,6 @@ pub async fn put_sso(
         }
     };
     let existing = oidc::get(&state.pg, scope.org.id).await?;
-    let repointed = existing
-        .as_ref()
-        .is_some_and(|c| c.issuer != issuer || c.client_id != req.client_id.trim());
     let display_name = match req.name.as_deref().map(str::trim) {
         None => existing.as_ref().and_then(|c| c.display_name.clone()),
         Some("") => None,
@@ -336,6 +333,9 @@ pub async fn put_sso(
         .map_err(ApiError::internal)?;
     let mut tx = state.pg.begin().await?;
     let mut row = lock_changeable(&mut tx, &ctx).await?;
+    let repointed = oidc::get(&mut *tx, scope.org.id)
+        .await?
+        .is_some_and(|c| c.issuer != issuer || c.client_id != req.client_id.trim());
     let stored = oidc::upsert(
         &mut tx,
         &oidc::Connection {
