@@ -52,7 +52,7 @@ Die Anmeldung eines verwalteten Kontos über den Anbieter seiner Organisation is
 | Organisationen | Jede, der die Person angehört | Nur die Organisation des Anbieters | Jede, außer einer, die das Konto verwaltet und Single Sign-on verlangt |
 | Zwei-Faktor-Pflicht einer Organisation | Durch den Anbieter erfüllt | In der Organisation des Anbieters erfüllt | Braucht einen Code |
 | Änderungen am Konto | Erlaubt, mit kürzlicher Anmeldung | Brauchen ein Passwort oder einen Anmeldelink | Erlaubt, mit kürzlicher Anmeldung |
-| Verwaltung der Instanz | Braucht ein Passwort oder einen Anmeldelink | Braucht ein Passwort oder einen Anmeldelink | Für Instanz-Admins erlaubt |
+| Verwaltung der Instanz | Nur über die Organisation, die für Instanz-Admins gewählt ist | Braucht ein Passwort oder einen Anmeldelink | Für Instanz-Admins erlaubt |
 
 **Konto** › **Profil** zeigt **Verwaltet von** und den Namen der Organisation, und die Seite **Mitglieder** einer Organisation kennzeichnet Gäste ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
 
@@ -61,6 +61,12 @@ Die Anmeldung eines verwalteten Kontos über den Anbieter seiner Organisation is
 Ist **Single Sign-on verlangen** eingeschaltet, melden sich die Konten, die eine Organisation verwaltet, überall auf der Installation nur über ihren Anbieter an. Die Anmeldeseite bietet ihnen allein den Anbieter an, und ein Passwort, ein Anmeldelink, eine Registrierung oder eine Einladung ohne Konto wird mit `Your organization requires single sign-on; continue with its identity provider.` abgelehnt. Das Einschalten der Pflicht beendet ihre Sitzungen aus einem Passwort oder einem Anmeldelink, außer der Sitzung, die sie einschaltet; ebenso das Bestätigen einer weiteren Domain, während die Pflicht gilt.
 
 Gäste behalten ihre eigene Anmeldung und öffnen die Organisation damit, unter ihrer Zwei-Faktor-Pflicht. Ein Anmeldelink vom Server meldet ein verwaltetes Konto weiterhin an ([wieder hineinkommen](#wieder-hineinkommen)).
+
+### Instanz-Admins
+
+Standardmäßig verwaltet der Identitätsanbieter keiner Organisation die Instanz; wer den Anbieter einer Organisation verwaltet, kann sich also nicht selbst zum Admin der Instanz machen. Um es einer Organisation zu erlauben, wählen Sie sie unter **Instanz** › **Allgemein** › **Single Sign-on für Instanz-Admins** ([Installationseinstellungen ändern](../console/instance-administration.md#installationseinstellungen-ändern)). Die Anmeldung eines Instanz-Admins über den Anbieter dieser Organisation verwaltet dann die Instanz, solange die Organisation sein Konto verwaltet.
+
+Die Wahl verlangt die kürzliche Anmeldung eines Instanz-Admins mit Passwort oder Anmeldelink, nie eine über Single Sign-on, und das Audit-Log der Instanz hält sie als `instance.admin_sso_update` fest. Wählen lässt sich nur eine Organisation mit Verbindung. Verliert sie ihre Verbindung später, bleibt die Einstellung wirkungslos, und **Allgemein** weist darauf hin.
 
 ## Ohne Passwörter und Anmeldelinks betreiben
 
@@ -81,7 +87,7 @@ services:
 
 Die Anmeldeseite fragt weiterhin zuerst nach der E-Mail-Adresse und bietet den Anbieter ihrer Organisation an. Eine Adresse an keiner bestätigten Domain einer Organisation kommt nicht hinein, und die Seite sagt das.
 
-Eine Anmeldung über Single Sign-on verwaltet die Instanz nicht. Für die Verwaltung der Instanz melden Sie sich mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
+Eine Anmeldung über Single Sign-on verwaltet die Instanz erst, wenn ein Instanz-Admin die Organisation dafür wählt ([Instanz-Admins](#instanz-admins)). Bis dahin melden Sie sich für die Verwaltung der Instanz mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
 
 > [!IMPORTANT]
 > Lassen Sie **Single Sign-on verlangen** ausgeschaltet, bis die Verbindung funktioniert. Auf einer Installation ohne Passwörter bringt es nichts, und es sperrt die Organisation für jede Sitzung ihrer verwalteten Konten, die nicht von ihrem Anbieter stammt, auch für eine über den Anmeldelink eines Betreibers.

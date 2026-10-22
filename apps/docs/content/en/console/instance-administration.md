@@ -41,12 +41,13 @@ Under **General**:
 | Account creation | **Invitation only**, **Allowed email domains** or **Anyone**. Invited people can always create their account |
 | Organization creation | **Instance admins only**, **Users on allowed domains** or **Any signed-in user** |
 | Allowed domains | The domains for the two settings above. `*.example.com` covers subdomains |
+| Single sign-on for instance admins | **None**, or an organization with single sign-on whose provider may sign its managed instance admins in to administer the instance ([instance admins](../self-hosting/sign-in.md#instance-admins)) |
 | Time zone | The install's time zone. Every time in the console shows in it, for everyone, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.
 
-Changing account creation, organization creation or the allowed domains needs a recent sign-in. The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
+Changing account creation, organization creation or the allowed domains needs a recent sign-in. Changing single sign-on for instance admins needs one with a password or a sign-in link. The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
 
 Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
 

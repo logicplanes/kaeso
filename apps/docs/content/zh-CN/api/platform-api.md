@@ -97,7 +97,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择实例管理员的单点登录（只能使用密码或登录链接），选择自动更新，应用更新，以及计划删除或删除组织。
 
 ## 约定
 
@@ -157,7 +157,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 401 | `authentication` | 没有会话或密钥，或会话、密钥未知、已过期或已结束。 |
 | 403 | `permission_denied` | 缺少权限、密钥用于其不能访问的路由、缺少 `Origin`，或组织策略不允许。 |
 | 403 | `recent_sign_in_required` | 该操作需要[近期登录](#近期登录)。 |
-| 403 | `other_sign_in_required` | 会话来自不管理该账户的组织的单点登录，而操作不在该组织内；或者会话来自单点登录，而操作属于实例管理。请使用密码或登录链接登录。 |
+| 403 | `other_sign_in_required` | 会话来自不管理该账户的组织的单点登录，而操作不在该组织内；或者会话来自单点登录，而操作属于实例管理，且该单点登录不来自为实例管理员选定的组织。请使用密码或登录链接登录。 |
 | 404 | `not_found` | 路径不存在，或对象不存在或调用方无权查看。 |
 | 405 | `invalid_request` | 路径不接受该方法。`Allow` 列出它接受的方法。 |
 | 409 | `conflict` | 更改与当前状态冲突，例如名称已被占用。 |
@@ -179,7 +179,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥和通知，以及创建组织和删除账户。 |
 | `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
 | `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容日志、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
-| `instance/*` | 供实例管理员使用：用户、组织、实例设置、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
+| `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
 
 实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何有效用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
 

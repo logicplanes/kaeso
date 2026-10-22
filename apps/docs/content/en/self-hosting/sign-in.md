@@ -52,7 +52,7 @@ A managed account's sign-in through its organization's provider is a full sign-i
 | Organizations | Every one the person belongs to | Only the provider's organization | Every one, except one that manages the account and requires single sign-on |
 | An organization's two-factor requirement | Met by the provider | Met in the provider's organization | Needs a code |
 | Account changes | Allowed, with a recent sign-in | Need a password or a sign-in link | Allowed, with a recent sign-in |
-| Instance administration | Needs a password or a sign-in link | Needs a password or a sign-in link | Allowed for instance admins |
+| Instance administration | Only through the organization chosen for instance admins | Needs a password or a sign-in link | Allowed for instance admins |
 
 **Account** › **Profile** shows **Managed by** and the organization's name, and an organization's **Members** page marks guests ([after signing in through single sign-on](../console/account.md#after-signing-in-through-single-sign-on)).
 
@@ -61,6 +61,12 @@ A managed account's sign-in through its organization's provider is a full sign-i
 With **Require single sign-on** on, the accounts an organization manages sign in only through its provider, anywhere on the install. The sign-in page offers them the provider alone, and a password, a sign-in link, a sign-up or an invitation without an account is refused with `Your organization requires single sign-on; continue with its identity provider.` Turning the requirement on ends their sessions from a password or a sign-in link, except the session that turns it on, and so does verifying another domain while it is on.
 
 Guests keep their own sign-in and open the organization with it, under its two-factor requirement. A sign-in link from the server still signs a managed account in ([get back in](#get-back-in)).
+
+### Instance admins
+
+No organization's identity provider administers the instance by default, so an organization's provider admin can't make themselves the instance's admin. To let one, choose the organization under **Instance** › **General** › **Single sign-on for instance admins** ([change install settings](../console/instance-administration.md#change-install-settings)). An instance admin's sign-in through that organization's provider then administers the instance, while the organization manages their account.
+
+Choosing it needs an instance admin's recent sign-in with a password or a sign-in link, never one through single sign-on, and the instance's audit log records it as `instance.admin_sso_update`. Only an organization with a connection can be chosen. If it later loses its connection, the setting has no effect, and **General** says so.
 
 ## Run without passwords or sign-in links
 
@@ -81,7 +87,7 @@ services:
 
 The sign-in page still asks for the email address first and offers the provider of its organization. An address at no organization's verified domain has no way in, and the page says so.
 
-A sign-in through single sign-on doesn't administer the instance. For instance administration, sign in with a [one-time sign-in link](#get-back-in) from the server.
+A sign-in through single sign-on administers the instance only once an instance admin chooses the organization for it ([instance admins](#instance-admins)). Until then, sign in for instance administration with a [one-time sign-in link](#get-back-in) from the server.
 
 > [!IMPORTANT]
 > Leave **Require single sign-on** off until the connection works. On an install without passwords it adds nothing, and it closes the organization to every session of the accounts it manages that didn't come from its provider, including one from an operator's sign-in link.
