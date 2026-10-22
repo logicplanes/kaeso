@@ -78,7 +78,7 @@ Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | Text | `0.0.0.0:8080` | Adresse der Modell-API, der Platform API und der Health-Checks. |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | Text | `0.0.0.0:9100` | Adresse der Prometheus-Metriken. Nie öffentlich weiterleiten. |
+| `KAESO_METRICS_LISTEN` | `metrics_listen` | Text | `127.0.0.1:9100` | Adresse der Prometheus-Metriken. Nie öffentlich weiterleiten. Das Gateway-Image setzt `0.0.0.0:9100`, damit ein aus dem Container veröffentlichter Port sie erreicht; [Zustand und Metriken](monitoring.md#metriken) zeigt, wie. |
 | `KAESO_PUBLIC_URL` | `public_url` | Text | erforderlich | Die Adresse, die Personen und Apps verwenden, etwa `https://kaeso.example.com`, ohne Pfad. Sie muss `https` sein, außer `http` auf einer Loopback-Adresse für die Entwicklung. |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | Text | `127.0.0.0/8,::1/128` | Kommagetrennte Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut. `trusted_proxies = ""` in der TOML-Datei vertraut keinem; eine leere Variable behält den Standard. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |

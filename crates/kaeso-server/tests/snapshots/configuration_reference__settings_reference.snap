@@ -5,7 +5,7 @@ expression: settings_reference()
 | Environment | TOML key | Type | Default | Meaning |
 |---|---|---|---|---|
 | `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `0.0.0.0:9100` | Address of the Prometheus metrics listener. Never route it publicly. |
+| `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics listener, loopback only unless set. Never route it publicly. |
 | `KAESO_PUBLIC_URL` | `public_url` | text | required | The URL people and apps use to reach this install, e.g. `https://kaeso.example.com`. Required. Must be `https`, except `http://localhost` for development. |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of reverse proxies whose `X-Forwarded-For` is believed, for client addresses in logs, sign-in throttling and the API key throttle. `trusted_proxies = ""` in the TOML file trusts no proxy; an empty variable keeps the default. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long in-flight requests and streams may run after a shutdown signal. |

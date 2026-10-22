@@ -73,7 +73,7 @@ pub const PROVIDER_FIELDS: &[ProviderField] = &[
 #[rustfmt::skip]
 const ROWS: &[Row] = &[
     s("listen", "KAESO_LISTEN", Text, Some("0.0.0.0:8080"), false, "Address of the model API, the Platform API and the health checks."),
-    s("metrics_listen", "KAESO_METRICS_LISTEN", Text, Some("0.0.0.0:9100"), false, "Address of the Prometheus metrics listener. Never route it publicly."),
+    s("metrics_listen", "KAESO_METRICS_LISTEN", Text, Some("127.0.0.1:9100"), false, "Address of the Prometheus metrics listener, loopback only unless set. Never route it publicly."),
     s("public_url", "KAESO_PUBLIC_URL", Text, None, false, "The URL people and apps use to reach this install, e.g. `https://kaeso.example.com`. Required. Must be `https`, except `http://localhost` for development."),
     s("trusted_proxies", "KAESO_TRUSTED_PROXIES", Text, Some("127.0.0.0/8,::1/128"), false, "Comma-separated networks of reverse proxies whose `X-Forwarded-For` is believed, for client addresses in logs, sign-in throttling and the API key throttle. `trusted_proxies = \"\"` in the TOML file trusts no proxy; an empty variable keeps the default."),
     s("shutdown_grace", "KAESO_SHUTDOWN_GRACE", Text, Some("30s"), false, "How long in-flight requests and streams may run after a shutdown signal."),

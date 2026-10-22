@@ -78,7 +78,7 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `0.0.0.0:9100` | Address of the Prometheus metrics. Never route it publicly. |
+| `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics. Never route it publicly. The gateway image sets `0.0.0.0:9100`, so a port published from the container reaches it; [health and metrics](monitoring.md#metrics) shows how. |
 | `KAESO_PUBLIC_URL` | `public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
