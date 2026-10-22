@@ -54,6 +54,8 @@ Die Anmeldung eines verwalteten Kontos über den Anbieter seiner Organisation is
 | Änderungen am Konto | Erlaubt, mit kürzlicher Anmeldung | Brauchen ein Passwort oder einen Anmeldelink | Erlaubt, mit kürzlicher Anmeldung |
 | Verwaltung der Instanz | Nur über die Organisation, die für Instanz-Admins gewählt ist | Braucht ein Passwort oder einen Anmeldelink | Für Instanz-Admins erlaubt |
 
+Die Adresse eines verwalteten Kontos gehört dem Anbieter. `POST me/email` lehnt eine Änderung mit `Your organization manages this address; change it at its identity provider.` ab, und ein Link zur Bestätigung einer früheren Änderung funktioniert nicht mehr. Bringt eine Anmeldung über den Anbieter eine andere Adresse an einer der bestätigten Domains der Organisation, ändert Kaeso die Adresse des Kontos darauf, denn Issuer und Subjekt verknüpfen das Konto, nicht die Adresse. Das Audit-Log der Organisation hält das als `user.email_change` fest. Eine Adresse, die ein anderes Konto hat, wird nie übernommen, und der Anbieter einer Organisation, die das Konto nicht verwaltet, ändert sie nie.
+
 **Konto** › **Profil** zeigt **Verwaltet von** und den Namen der Organisation, und die Seite **Mitglieder** einer Organisation kennzeichnet Gäste ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
 
 ### Single Sign-on verlangen

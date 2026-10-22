@@ -153,5 +153,6 @@
   "account.unknownAddress": "未知地址",
   "account.useAppCode": "使用身份验证器应用",
   "account.useRecoveryCode": "使用恢复码",
-  "account.yourKeys": "您的密钥"
+  "account.yourKeys": "您的密钥",
+  "account.emailManaged": "{email}；请在您的身份提供商处更改。"
 }

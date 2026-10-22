@@ -4002,7 +4002,7 @@
           "me"
         ],
         "summary": "Starts an email change: sends a confirmation link to the new address\nand a link to cancel it to the current one. Needs a recent sign-in and,\nwhile TOTP is on, a code. Ending the session that asked, or every\nsession, cancels the change.",
-        "description": "**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
+        "description": "Refused with `permission_denied` for an account an org manages (`managed_by` in `auth/session`): its identity provider owns the address, and a sign-in through it brings a new one within the org's verified domains.\n\n**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "postMeEmail",
         "requestBody": {
           "content": {

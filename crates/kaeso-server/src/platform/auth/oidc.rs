@@ -705,6 +705,9 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         return Err(ApiError::PermissionDenied(SIGNED_IN_AS_OTHER.into()));
     }
     let user_id = UserId::from_uuid(user.id);
+    if linked.is_some() {
+        follow_address(&mut tx, ctx, org, &connection.issuer, &user, &email).await?;
+    }
     if members::get_org(&mut *tx, org.uuid(), user.id)
         .await?
         .is_none()
@@ -781,6 +784,45 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         cookies::set(state, &created.token).ok_or_else(|| ApiError::internal("session cookie"))?;
     response.headers_mut().append(header::SET_COOKIE, cookie);
     Ok(response)
+}
+
+// The issuer and subject link the account, not the address, so the provider of the org that
+// manages the address may move it within that org's verified domains; another org's provider,
+// or an address another account holds, never changes it.
+async fn follow_address(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ctx: &Ctx,
+    org: OrgId,
+    issuer: &str,
+    user: &users::User,
+    email: &str,
+) -> ApiResult<()> {
+    let Some(stored) = user.email.as_deref() else {
+        return Ok(());
+    };
+    if kaeso_core::email::same_address(stored, email) {
+        return Ok(());
+    }
+    let domain = crate::services::managed::domain_of(stored);
+    let managed_here = oidc::manager_of_domain(&mut **tx, &domain)
+        .await?
+        .is_some_and(|m| m.org_id == org.uuid());
+    if !managed_here {
+        return Ok(());
+    }
+    if !users::set_email(&mut **tx, user.id, email, ctx.now).await? {
+        tracing::warn!(user = %user.id, "the identity provider sent an address another account holds");
+        return Ok(());
+    }
+    let id = UserId::from_uuid(user.id);
+    ctx.audit(Some(org), "user.email_change")
+        .by(id)
+        .target("user", id)
+        .before(serde_json::json!({ "email": stored }))
+        .after(serde_json::json!({ "email": email, "by": "identity_provider", "issuer": issuer }))
+        .write(tx)
+        .await?;
+    Ok(())
 }
 
 // auth_time is optional unless max_age is sent (OpenID Connect Core 1.0 §2), so only a

@@ -2675,3 +2675,93 @@ async fn instance_admins_administer_through_single_sign_on_only_from_the_chosen_
     );
     s.cleanup().await;
 }
+
+const MANAGED_ADDRESS: &str =
+    "Your organization manages this address; change it at its identity provider.";
+
+#[tokio::test]
+async fn the_identity_provider_owns_a_managed_accounts_address() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+    let ada = sso_as(&app, &idp, "sub-ada", "ada@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    sso_as(&app, &idp, "sub-bob", "bob@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    let email_of = |cookie: String| {
+        let app = &app;
+        async move {
+            app.get("/auth/session", &cookie).await.body["user"]["email"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        }
+    };
+
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "ada@else.example" }),
+            Some(&ada),
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, MANAGED_ADDRESS)
+    );
+
+    common::manage_domain(&app, &owner.org_id, "eu.acme.example").await;
+    let renamed = sso_as(&app, &idp, "sub-ada", "Ada.Lovelace@eu.acme.example")
+        .await
+        .cookie()
+        .expect("signed in through the identity");
+    assert_eq!(email_of(renamed).await, "Ada.Lovelace@eu.acme.example");
+    let audited = app
+        .get(
+            &format!("/orgs/{}/audit-log?action=user.email_change", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        audited.body["data"][0]["before"]["email"],
+        "ada@acme.example"
+    );
+    assert_eq!(audited.body["data"][0]["after"]["by"], "identity_provider");
+
+    let kept = sso_as(&app, &idp, "sub-ada", "bob@acme.example")
+        .await
+        .cookie()
+        .expect("still signed in");
+    assert_eq!(
+        email_of(kept).await,
+        "Ada.Lovelace@eu.acme.example",
+        "another account's address is never taken"
+    );
+
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let guest = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    assert_eq!(
+        email_of(guest).await,
+        "owner@example.com",
+        "an address the org doesn't manage stays the account's own"
+    );
+    s.cleanup().await;
+}

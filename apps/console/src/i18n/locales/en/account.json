@@ -31,6 +31,7 @@
   "account.disable": "Disable",
   "account.downloadTxt": "Download .txt",
   "account.emailLinkSent": "Confirmation link sent; your old address was notified",
+  "account.emailManaged": "{email}; change it at your identity provider.",
   "account.emailNotificationsHint": "To your account's address; security emails are always sent.",
   "account.emailPasswordLink": "Email me a link",
   "account.emailPending": "{email} · link sent to {next}",

@@ -169,6 +169,7 @@
   "errors.logsUnavailable": "Request logs are unavailable right now; try again shortly.",
   "errors.lowerLimitsFirst": "First lower the limits that allow more than this one: {list}.",
   "errors.magicLinkOff": "Sign-in links are turned off on this install.",
+  "errors.managedAddress": "Your organization manages this address; change it at its identity provider.",
   "errors.maxCustomRoles": "An organization can have at most {max} custom roles.",
   "errors.maxDomains": "Allow at most {max} domains.",
   "errors.memberHoldsMoreRights": "You can't change a member who holds rights you don't hold.",

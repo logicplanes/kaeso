@@ -463,5 +463,6 @@
   "errors.unpricedFeature.member": "成员有支出预算，无法为 `{feature}` 计价，请联系管理员。",
   "errors.unpricedFeature.project": "项目有支出预算，无法为 `{feature}` 计价，请联系管理员。",
   "errors.ssoEnterEmail": "请输入您的邮箱以通过单点登录登录。",
-  "errors.adminSsoNoConnection": "此组织没有 SSO 连接；请先连接一个。"
+  "errors.adminSsoNoConnection": "此组织没有 SSO 连接；请先连接一个。",
+  "errors.managedAddress": "此地址由您的组织管理；请在其身份提供商处更改。"
 }
