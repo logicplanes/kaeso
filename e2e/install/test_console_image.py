@@ -94,6 +94,23 @@ def test_an_image_built_from_a_umask_077_checkout_serves_the_console(image):
         subprocess.run(["docker", "rm", "-f", name], check=False, capture_output=True)
 
 
+def version(text: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in text.removeprefix("go").removeprefix("v").split("."))
+
+
+def test_caddy_is_built_with_the_go_and_x_net_releases_that_fix_the_http2_advisories(image):
+    info = subprocess.run(
+        ["docker", "run", "--rm", "--entrypoint", "caddy", image, "build-info"], check=True, capture_output=True, text=True
+    ).stdout.splitlines()
+    fields = [line.split("\t") for line in info]
+    go = next(f[1] for f in fields if f[0] == "go")
+    net = [f[2] for f in fields if len(f) > 2 and f[0] in ("dep", "=>") and f[1] == "golang.org/x/net"][-1]
+    caddy = next(f[2] for f in fields if len(f) > 2 and f[0] == "dep" and f[1] == "github.com/caddyserver/caddy/v2")
+    assert version(go) >= (1, 26, 9), go
+    assert version(net) >= (0, 60, 0), net
+    assert version(caddy) >= (2, 11, 7), caddy
+
+
 def test_the_console_stops_with_a_message_when_it_cannot_read_its_files(image):
     run = subprocess.run(
         ["docker", "run", "--rm", "--tmpfs", "/srv:mode=0700", image],

@@ -22,7 +22,7 @@ flowchart TD
 
 ## Services
 
-`compose.yaml` starts six services. It pins every image to a version and a digest: the gateway, console and updater images to the release's version and the digests its Release workflow built.
+`compose.yaml` starts six services. It pins every image to a version and a digest: the gateway, console and updater images to the release's version and the digests its Release workflow built. Caddy runs from the console image, which carries Kaeso's own build of Caddy.
 
 | Service | Role | Its data |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ Keep copies of `.env` and `master-keys` apart from the database backups ([backup
 The services share as little as they can:
 
 - PostgreSQL, ClickHouse and Valkey sit on an internal network with no route outside, and only the gateway reaches them.
-- No container can gain privileges, and each one starts without Linux capabilities. Caddy, the gateway, the console and the updater run as unprivileged users, all but Caddy on read-only file systems. Caddy keeps only the right to bind ports 80 and 443.
+- No container can gain privileges, and each one starts without Linux capabilities. Caddy, the gateway, the console and the updater run as unprivileged users, all but Caddy on read-only file systems. Caddy binds ports 80 and 443 without a capability, because its container lets unprivileged users bind any port.
 - Valkey runs as its image's own user from the start, without capabilities. PostgreSQL and ClickHouse get back only the capabilities their images need at start. With them, each hands its data directory to its own user and stops running as root. `caddy-init` only gets the rights to read every directory and change owners, and `updater-init` also the right to change a file's mode.
 - Every service has a memory limit and a process limit, and Docker rotates its log at 10 MB, keeping five files ([container limits](configuration.md#container-limits)).
 - The gateway signs in to PostgreSQL as `kaeso`, which owns the Kaeso database but is not a superuser. ClickHouse's `kaeso` user can't manage users or grants, and Valkey requires a password on every connection, which it reads from a file rather than its command line.

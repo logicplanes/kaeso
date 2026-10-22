@@ -120,7 +120,7 @@ Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt 
 4. **Migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
 5. **Wieder erreichbar.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.
 
-Der Updater ersetzt sich nicht selbst, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet seine neue Version. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
+Der Updater ersetzt weder sich selbst noch Caddy, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet ihre neuen Versionen. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
 
 [Updates](../development/architecture/updates.md) erklärt, wie der Updater ein Release prüft und Container umstellt.
 

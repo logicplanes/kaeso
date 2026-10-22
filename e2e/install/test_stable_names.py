@@ -33,8 +33,11 @@ UPDATER_MOUNTS = {
     "docker-proxy": [],
 }
 IMAGES = {
+    "caddy-init": "ghcr.io/logicplanes/kaeso-console",
+    "caddy": "ghcr.io/logicplanes/kaeso-console",
     "gateway": "ghcr.io/logicplanes/kaeso-gateway",
     "console": "ghcr.io/logicplanes/kaeso-console",
+    "updater-init": "ghcr.io/logicplanes/kaeso-console",
     "updater": "ghcr.io/logicplanes/kaeso-updater",
 }
 

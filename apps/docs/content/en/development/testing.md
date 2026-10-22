@@ -216,7 +216,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-This suite builds the gateway and mock provider images and runs `deploy/compose.yaml` from a clean state, with the overrides in `e2e/install`. It completes the first-start setup and calls the install with both SDKs. It also checks that PostgreSQL and ClickHouse give the gateway no rights it doesn't need, and that Valkey refuses connections without its password. A stand-in serves the console's address. `KAESO_TEST_CONSOLE_IMAGE` runs the real console image instead, and `KAESO_TEST_GATEWAY_IMAGE` and `KAESO_TEST_MOCK_IMAGE` use images that are already built.
+This suite builds the gateway, mock provider, console and updater images and runs `deploy/compose.yaml` from a clean state, with the overrides in `e2e/install`. It completes the first-start setup and calls the install with both SDKs. It also checks that PostgreSQL and ClickHouse give the gateway no rights it doesn't need, and that Valkey refuses connections without its password. The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` and `KAESO_TEST_UPDATER_IMAGE` use images that are already built.
 
 ## Fuzzing
 

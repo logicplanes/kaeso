@@ -8,7 +8,7 @@ x-logging: &logging
 
 services:
   caddy-init:
-    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    image: ghcr.io/logicplanes/kaeso-console:0.3.6
     restart: "no"
     user: "0:0"
     security_opt: [no-new-privileges:true]
@@ -24,17 +24,21 @@ services:
       - caddy_config:/config
 
   caddy:
-    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    image: ghcr.io/logicplanes/kaeso-console:0.3.6
     restart: unless-stopped
     user: "65532:65532"
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
-    cap_add: [NET_BIND_SERVICE]
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 0
     mem_limit: ${CADDY_MEMORY:-512m}
     pids_limit: ${CADDY_PIDS:-256}
     logging: *logging
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
     environment:
       KAESO_DOMAIN: ${KAESO_DOMAIN:?set KAESO_DOMAIN in .env}
+      XDG_DATA_HOME: /data
+      XDG_CONFIG_HOME: /config
     ports:
       - "80:80"
       - "443:443"
@@ -111,7 +115,7 @@ services:
     networks: [edge]
 
   updater-init:
-    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    image: ghcr.io/logicplanes/kaeso-console:0.3.6
     profiles: [updater]
     restart: "no"
     user: "0:0"
@@ -183,7 +187,7 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    image: postgres:18.6-alpine@sha256:83148c0bc09eac4d598b70a61e1404d0212b76c95c504bfd6c81a4c59ec91792
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]

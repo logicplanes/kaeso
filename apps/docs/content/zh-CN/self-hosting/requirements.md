@@ -29,7 +29,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每 5 分钟一次 |
 | 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |
 | 出站 | `ghcr.io`、`pkg-containers.githubusercontent.com` | 安装或更新时，Docker 拉取 Kaeso 的镜像 |
-| 出站 | `registry-1.docker.io`、`auth.docker.io`、`production.cloudflare.docker.com` | Docker 拉取 Caddy、PostgreSQL、ClickHouse、Valkey 和更新器套接字代理的镜像 |
+| 出站 | `registry-1.docker.io`、`auth.docker.io`、`production.cloudflare.docker.com` | Docker 拉取 PostgreSQL、ClickHouse、Valkey 和更新器套接字代理的镜像 |
 | 出站 | `github.com`、`release-assets.githubusercontent.com` | 手动或由更新器下载版本的 `compose.yaml` 和 `release.json` |
 | 出站 | `api.github.com` | 更新器和 `gh attestation verify` 获取版本的证明 |
 | 出站 | 您的 SMTP 服务器 | 登录链接、邀请、提醒和安全通知（[邮件](email.md)） |

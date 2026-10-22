@@ -29,7 +29,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, every 5 minutes |
 | Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |
 | Outgoing | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker pulling Kaeso's images, when you install or update |
-| Outgoing | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker pulling the images of Caddy, PostgreSQL, ClickHouse, Valkey and the updater's socket proxy |
+| Outgoing | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker pulling the images of PostgreSQL, ClickHouse, Valkey and the updater's socket proxy |
 | Outgoing | `github.com`, `release-assets.githubusercontent.com` | Downloading a release's `compose.yaml` and `release.json`, by hand or by the updater |
 | Outgoing | `api.github.com` | The updater, and `gh attestation verify`, fetching a release's attestations |
 | Outgoing | Your SMTP server | Sign-in links, invitations, alerts and security notices ([email](email.md)) |

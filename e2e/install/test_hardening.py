@@ -33,7 +33,7 @@ def services() -> dict:
 def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(services):
     needed = {
         "caddy-init": ["CHOWN", "DAC_READ_SEARCH"],
-        "caddy": ["NET_BIND_SERVICE"],
+        "caddy": [],
         "gateway": [],
         "console": [],
         "docker-proxy": [],
@@ -60,6 +60,16 @@ def test_the_edge_and_the_kaeso_images_run_without_root_on_read_only_file_system
     assert init["network_mode"] == "none"
     assert init["command"] == ["chown", "-R", "65532:65532", "/data", "/config"]
     assert services["caddy"]["depends_on"]["caddy-init"]["condition"] == "service_completed_successfully"
+
+
+def test_the_edge_runs_the_console_image_and_binds_its_ports_without_capabilities(services):
+    for name in ("caddy-init", "caddy", "updater-init"):
+        assert services[name]["image"] == services["console"]["image"], name
+    assert not [s["image"] for s in services.values() if s["image"].startswith("caddy:")]
+    edge = services["caddy"]
+    assert edge["sysctls"] == {"net.ipv4.ip_unprivileged_port_start": "0"}
+    assert edge["command"] == ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+    assert {k: edge["environment"][k] for k in ("XDG_DATA_HOME", "XDG_CONFIG_HOME")} == {"XDG_DATA_HOME": "/data", "XDG_CONFIG_HOME": "/config"}
 
 
 def test_the_updater_runs_as_the_user_its_files_and_volumes_belong_to(services):

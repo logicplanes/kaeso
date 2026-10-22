@@ -216,7 +216,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-Diese Suite baut die Images des Gateways und des Mock-Anbieters und startet `deploy/compose.yaml` aus einem sauberen Zustand, mit den Overrides in `e2e/install`. Sie schließt die Einrichtung beim ersten Start ab und ruft die Installation mit beiden SDKs auf. Sie prüft außerdem, dass PostgreSQL und ClickHouse dem Gateway keine Rechte geben, die es nicht braucht, und dass Valkey Verbindungen ohne sein Passwort ablehnt. Ein Platzhalter bedient die Adresse der Konsole. `KAESO_TEST_CONSOLE_IMAGE` startet stattdessen das echte Image der Konsole, und `KAESO_TEST_GATEWAY_IMAGE` und `KAESO_TEST_MOCK_IMAGE` nutzen bereits gebaute Images.
+Diese Suite baut die Images des Gateways, des Mock-Anbieters, der Konsole und des Updaters und startet `deploy/compose.yaml` aus einem sauberen Zustand, mit den Overrides in `e2e/install`. Sie schließt die Einrichtung beim ersten Start ab und ruft die Installation mit beiden SDKs auf. Sie prüft außerdem, dass PostgreSQL und ClickHouse dem Gateway keine Rechte geben, die es nicht braucht, und dass Valkey Verbindungen ohne sein Passwort ablehnt. Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` und `KAESO_TEST_UPDATER_IMAGE` nutzen bereits gebaute Images.
 
 ## Fuzzing
 
