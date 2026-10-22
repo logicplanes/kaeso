@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower($1) AND ($2::uuid IS NULL OR id <> $2)) AS \"t!\"",
+  "query": "SELECT EXISTS (SELECT 1 FROM users WHERE email_key(email) = email_key($1) AND ($2::uuid IS NULL OR id <> $2)) AS \"t!\"",
   "describe": {
     "columns": [
       {
@@ -20,5 +20,5 @@
       null
     ]
   },
-  "hash": "1233c3ea8843763b4bf54cccda99edd3fb96d8ac01c3d29c40b2c4f8ba284292"
+  "hash": "e52a6fc9e7eb19ff549ca0250461df8e2667aec17a2bd3746098a194e6db4789"
 }

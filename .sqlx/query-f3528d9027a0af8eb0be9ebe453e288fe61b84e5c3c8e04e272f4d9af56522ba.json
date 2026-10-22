@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE lower(email) = lower($1)",
+  "query": "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE email_key(email) = email_key($1) ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -144,5 +144,5 @@
       true
     ]
   },
-  "hash": "89efb5117357b2bd8b362fa332179bd060938a3500336f77f5823cef68f4eb9c"
+  "hash": "f3528d9027a0af8eb0be9ebe453e288fe61b84e5c3c8e04e272f4d9af56522ba"
 }

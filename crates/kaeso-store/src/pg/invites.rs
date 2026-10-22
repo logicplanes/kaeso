@@ -93,7 +93,7 @@ pub async fn pending_for(
     Ok(sqlx::query_as!(
         Invite,
         "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
-         FROM invites WHERE org_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL AND revoked_at IS NULL \
+         FROM invites WHERE org_id = $1 AND email_key(email) = email_key($2) AND accepted_at IS NULL AND revoked_at IS NULL \
          AND expires_at > $3 ORDER BY id DESC LIMIT 1",
         org_id,
         email,
@@ -190,7 +190,7 @@ pub async fn revoke_others_for(
 ) -> Result<u64, StoreError> {
     Ok(sqlx::query!(
         "UPDATE invites SET revoked_at = $4, updated_at = now() \
-         WHERE org_id = $1 AND lower(email) = lower($2) AND id <> $3 \
+         WHERE org_id = $1 AND email_key(email) = email_key($2) AND id <> $3 \
          AND accepted_at IS NULL AND revoked_at IS NULL",
         org_id,
         email,

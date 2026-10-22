@@ -1,3 +1,5 @@
+use unicode_normalization::UnicodeNormalization;
+
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 #[error("`{0}` is not a valid email address")]
 pub struct InvalidEmail(pub String);
@@ -5,7 +7,8 @@ pub struct InvalidEmail(pub String);
 pub const MAX_LEN: usize = 254;
 
 pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
-    let s = input.trim();
+    let s: String = input.trim().nfkc().collect();
+    let s = s.as_str();
     let invalid = || InvalidEmail(s.chars().take(64).collect());
     if s.is_empty() || s.len() > MAX_LEN || s.chars().any(|c| c.is_whitespace() || c.is_control()) {
         return Err(invalid());
@@ -20,6 +23,17 @@ pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
         return Err(invalid());
     }
     Ok(address)
+}
+
+// The store's email_key() computes the same key in SQL. One character at a time, because
+// str::to_lowercase would also turn a word-final Σ into ς, which email_key() never does.
+pub fn canonical(email: &str) -> String {
+    let folded: String = email.nfkc().flat_map(char::to_lowercase).collect();
+    folded.nfkc().collect()
+}
+
+pub fn same_address(a: &str, b: &str) -> bool {
+    canonical(a) == canonical(b)
 }
 
 pub fn normalize_domain(input: &str) -> Option<String> {
@@ -190,6 +204,59 @@ mod tests {
         );
         assert_eq!(stored_form("BÜCHER").unwrap(), "xn--bcher-kva");
         assert_eq!(stored_form("ada@example"), None);
+    }
+
+    #[test]
+    fn lookalike_addresses_have_one_canonical_form() {
+        assert_eq!(
+            normalize("\u{212A}im@example.com").unwrap(),
+            "Kim@example.com"
+        );
+        assert_eq!(normalize("ａｄａ@example.com").unwrap(), "ada@example.com");
+        assert_eq!(
+            normalize("ada\u{FF20}example.com").unwrap(),
+            "ada@example.com"
+        );
+        assert_eq!(canonical("Kim@example.com"), "kim@example.com");
+        assert_eq!(
+            canonical("\u{39F}\u{394}\u{3A5}\u{3A3}@example.com"),
+            "\u{3BF}\u{3B4}\u{3C5}\u{3C3}@example.com",
+            "a final capital sigma lowercases as the database does"
+        );
+        assert!(same_address("\u{212A}IM@example.com", "kim@example.com"));
+        assert!(
+            !same_address("adm\u{130}n@example.com", "admin@example.com"),
+            "a dotted capital I is not an i, whatever the database's lower() says"
+        );
+        assert!(same_address(
+            "adm\u{130}n@example.com",
+            "admi\u{307}n@example.com"
+        ));
+        assert!(same_address(
+            "admI\u{307}n@example.com",
+            "admi\u{307}n@example.com"
+        ));
+        for typed in [
+            "\u{212A}im@example.com",
+            "ADM\u{130}N@example.com",
+            "Ada@xn--bcher-kva.example",
+        ] {
+            let once = canonical(typed);
+            assert_eq!(canonical(&once), once, "{typed}");
+        }
+    }
+
+    #[test]
+    fn only_the_dotted_capital_i_lowercases_to_more_than_one_character() {
+        let longer: Vec<char> = (0..=u32::from(char::MAX))
+            .filter_map(char::from_u32)
+            .filter(|c| c.to_lowercase().count() > 1)
+            .collect();
+        assert_eq!(
+            longer,
+            ['\u{130}'],
+            "the store's email_key() spells out each of these next to its simple lowercase"
+        );
     }
 
     #[test]
