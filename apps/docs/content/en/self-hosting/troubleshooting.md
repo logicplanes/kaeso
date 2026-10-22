@@ -92,8 +92,7 @@ The error comes in the format the app called, and its message says what to do. [
 | --- | --- | --- |
 | 400 | No provider key is set up for the model's provider | Add one under **Providers**, or assign one to the project |
 | 401 | The key is missing, unknown, disabled, archived or expired | Check the key the app sends, and its state under **API keys** |
-| 403 | The key, or its member, may not use the model | Widen the model access of the member or the key |
-| 404 | The model isn't in the project's catalogue | Add it under **Models**, or call a model that is there |
+| 404 | The model isn't in the project's catalogue, or the key or its member may not use it | Add it under **Models**, or call a model that is there; if it is there, check the model access of the key and of its member |
 | 429 | A rate limit or a budget, or too many unknown keys from one address | Wait for `Retry-After`, or raise the limit the message names |
 | 502, 504 | The provider couldn't be reached, didn't answer in time, or sent a response larger than `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | Check the provider's status; the request log shows its error |
 | 503 | Valkey is down and a hard budget can't be checked, or the gateway is restarting | Check [`/readyz`](monitoring.md#health-checks) and `docker compose logs valkey` |

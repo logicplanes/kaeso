@@ -49,7 +49,7 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 ```json
 {
   "error": {
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models.",
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
     "type": "invalid_request_error",
     "param": "model",
     "code": null
@@ -126,7 +126,7 @@ try {
   "type": "error",
   "error": {
     "type": "not_found_error",
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models."
+    "message": "The model `gpt-9` does not exist or this key may not use it."
   },
   "request_id": "req_…"
 }
@@ -162,9 +162,9 @@ try {
 | 401 | 缺少密钥，或密钥未知、已停用、已归档或已过期。 |
 | 401 | 密钥所属的成员或服务账号已不再有效，或其项目或组织无法使用。 |
 | 403 | 密钥仅具有平台访问权限，或者是平台密钥。两者都不能调用模型。 |
-| 403 | 密钥所属的成员或服务账号缺少 `api.request` 权限，或无权使用此模型。 |
-| 403 | 请求适用支出预算，且使用了服务商在 token 之外另行计费的功能，例如服务商运行的工具或 `service_tier: priority`（[限额和预算](../console/limits-and-budgets.md#支出预算无法计价的功能)）。 |
-| 404 | 模型不在项目目录中，或服务商不向项目的服务商密钥提供该模型。 |
+| 403 | 密钥所属的成员或服务账号缺少 `api.request` 权限。 |
+| 403 | 请求适用支出预算，且使用了服务商在 token 之外另行计费的功能，例如服务商运行的工具或 `service_tier: priority`，或使用没有价格的模型（[限额和预算](../console/limits-and-budgets.md#支出预算无法计价的功能)）。 |
+| 404 | 模型不在项目目录中，密钥或其成员无权使用该模型，或服务商不向项目的服务商密钥提供该模型。密钥无权使用的模型与不存在的模型返回相同的回答，因此密钥无法得知项目还有哪些模型。 |
 | 404 | 路径不存在。 |
 | 405 | 该路径不接受此方法。 |
 | 413 | 正文大于 `KAESO_BODY_LIMITS_MODEL_API`，默认为 8 MiB。 |

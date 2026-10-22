@@ -49,7 +49,7 @@ Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 ```json
 {
   "error": {
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models.",
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
     "type": "invalid_request_error",
     "param": "model",
     "code": null
@@ -126,7 +126,7 @@ Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler 
   "type": "error",
   "error": {
     "type": "not_found_error",
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models."
+    "message": "The model `gpt-9` does not exist or this key may not use it."
   },
   "request_id": "req_…"
 }
@@ -162,9 +162,9 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 401 | Der Schlüssel fehlt, ist unbekannt, deaktiviert, archiviert oder abgelaufen. |
 | 401 | Das Mitglied oder Dienstkonto des Schlüssels ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar. |
 | 403 | Der Schlüssel hat nur Plattformzugriff, oder es ist ein Plattform-Schlüssel. Beide rufen keine Modelle auf. |
-| 403 | Dem Mitglied oder Dienstkonto des Schlüssels fehlt das Recht `api.request`, oder es darf dieses Modell nicht verwenden. |
-| 403 | Ein Ausgabenbudget gilt, und die Anfrage nutzt eine Funktion, die der Anbieter über Tokens hinaus abrechnet, etwa ein Werkzeug des Anbieters oder `service_tier: priority` ([Limits und Budgets](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)). |
-| 404 | Das Modell steht nicht im Katalog des Projekts, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. |
+| 403 | Dem Mitglied oder Dienstkonto des Schlüssels fehlt das Recht `api.request`. |
+| 403 | Ein Ausgabenbudget gilt, und die Anfrage nutzt eine Funktion, die der Anbieter über Tokens hinaus abrechnet, etwa ein Werkzeug des Anbieters oder `service_tier: priority`, oder ein Modell ohne Preis ([Limits und Budgets](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)). |
+| 404 | Das Modell steht nicht im Katalog des Projekts, der Schlüssel oder sein Mitglied darf es nicht verwenden, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. Ein Modell, das der Schlüssel nicht verwenden darf, antwortet wie eines, das es nicht gibt, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
 | 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 8 MiB. |

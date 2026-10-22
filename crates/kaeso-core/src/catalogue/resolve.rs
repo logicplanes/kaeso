@@ -20,9 +20,7 @@ pub enum Via {
 
 #[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
 pub enum ResolveError {
-    #[error(
-        "The model `{0}` is not in this project's model catalogue. A project admin can add it under the project's models."
-    )]
+    #[error("`{0}` is not in the project's model catalogue")]
     NotInCatalogue(String),
     #[error(
         "The model name `{name}` is served by several providers in this project ({}). Use a prefixed name such as `{}/{name}`.",
@@ -191,17 +189,6 @@ impl Access<'_> {
 
     pub fn allows(&self, entry: Uuid) -> bool {
         self.check(entry).is_ok()
-    }
-}
-
-pub fn access_message(model: &str, level: AccessLevel) -> String {
-    match level {
-        AccessLevel::Member => format!(
-            "The model `{model}` is not in the models this key's member may use in this project. A project admin can change the member's model access."
-        ),
-        AccessLevel::Key => format!(
-            "The model `{model}` is not in this key's model list. Create a key with access to it, or ask a project admin to change the key's model access."
-        ),
     }
 }
 

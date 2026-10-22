@@ -530,31 +530,10 @@ const messages = (): Rule[] => [
     (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),
     { levels: "codeList" },
   ),
-  rule("errors.modelApi.notInCatalogue", (v) =>
-    t(
-      "errors.modelApi.notInCatalogue",
-      "The model `{model}` is not in this project's model catalogue. A project admin can add it under the project's models.",
-      v,
-    ),
-  ),
   rule("errors.modelApi.ambiguous", (v) =>
     t(
       "errors.modelApi.ambiguous",
       "The model name `{model}` is served by several providers in this project ({providers}). Use a prefixed name such as `{provider}/{model}`.",
-      v,
-    ),
-  ),
-  rule("errors.modelApi.memberAccess", (v) =>
-    t(
-      "errors.modelApi.memberAccess",
-      "The model `{model}` is not in the models this key's member may use in this project. A project admin can change the member's model access.",
-      v,
-    ),
-  ),
-  rule("errors.modelApi.keyAccess", (v) =>
-    t(
-      "errors.modelApi.keyAccess",
-      "The model `{model}` is not in this key's model list. Create a key with access to it, or ask a project admin to change the key's model access.",
       v,
     ),
   ),
