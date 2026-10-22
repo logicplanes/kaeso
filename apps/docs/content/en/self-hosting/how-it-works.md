@@ -26,14 +26,14 @@ flowchart TD
 
 | Service | Role | Its data |
 | --- | --- | --- |
-| `caddy` | Terminates TLS with a certificate it gets and renews itself, and routes requests | The volumes `caddy_data` and `caddy_config` |
+| `caddy` | Terminates TLS with a certificate it gets and renews itself, and routes requests | The volumes `caddy_data` and `caddy_config`, and `caddy_site`, which it only reads |
 | `gateway` | Serves the model API, the Platform API and the health checks on port 8080, and metrics on port 9100. Calls the providers and sends email | None |
 | `console` | Serves the web interface | None |
 | `postgres` | Stores users, organizations, projects, keys, encrypted provider keys, catalogues, limits, usage and audit logs | The volume `postgres` |
 | `clickhouse` | Stores request logs and usage rollups | The volume `clickhouse` |
 | `valkey` | Holds rate and budget counters and shared caches | The volume `valkey` |
 
-The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)). Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
+The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)). Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. It also puts the Caddyfile and the updating page from `compose.yaml` into `caddy_site`, since Compose can't give files to a container with a read-only file system. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
 
 ## Files
 
@@ -65,7 +65,7 @@ Keep copies of `.env` and `master-keys` apart from the database backups ([backup
 The services share as little as they can:
 
 - PostgreSQL, ClickHouse and Valkey sit on an internal network with no route outside, and only the gateway reaches them.
-- No container can gain privileges, and each one starts without Linux capabilities. Caddy, the gateway, the console and the updater run as unprivileged users, all but Caddy on read-only file systems. Caddy binds ports 80 and 443 without a capability, because its container lets unprivileged users bind any port.
+- No container can gain privileges, and each one starts without Linux capabilities. Caddy, the gateway, the console and the updater run as unprivileged users on read-only file systems. Caddy binds ports 80 and 443 without a capability, because its container lets unprivileged users bind any port, and its admin endpoint is off.
 - Valkey runs as its image's own user from the start, without capabilities. PostgreSQL and ClickHouse get back only the capabilities their images need at start. With them, each hands its data directory to its own user and stops running as root. `caddy-init` only gets the rights to read every directory and change owners, and `updater-init` also the right to change a file's mode.
 - Every service has a memory limit and a process limit, and Docker rotates its log at 10 MB, keeping five files ([container limits](configuration.md#container-limits)).
 - The gateway signs in to PostgreSQL as `kaeso`, which owns the Kaeso database but is not a superuser. ClickHouse's `kaeso` user can't manage users or grants, and Valkey requires a password on every connection, which it reads from a file rather than its command line.
@@ -86,7 +86,7 @@ The gateway keeps no state of its own. To run several instances, put them behind
 Every release keeps these names, so a new `compose.yaml` finds your data:
 
 - The Compose project `kaeso` and its services `caddy-init`, `caddy`, `gateway`, `console`, `postgres`, `clickhouse` and `valkey`, plus `updater-init`, `updater` and `docker-proxy` in the `updater` profile.
-- The volumes `kaeso_postgres`, `kaeso_clickhouse` and `kaeso_valkey` for data, `kaeso_caddy_data` and `kaeso_caddy_config` for certificates, and `kaeso_maintenance` and `kaeso_updater` for the updater.
+- The volumes `kaeso_postgres`, `kaeso_clickhouse` and `kaeso_valkey` for data, `kaeso_caddy_data` and `kaeso_caddy_config` for certificates, `kaeso_caddy_site` for Caddy's configuration, and `kaeso_maintenance` and `kaeso_updater` for the updater.
 - The images `ghcr.io/logicplanes/kaeso-gateway`, `ghcr.io/logicplanes/kaeso-console` and `ghcr.io/logicplanes/kaeso-updater`, tagged with the release's version.
 
 > [!WARNING]

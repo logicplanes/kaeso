@@ -12,6 +12,7 @@ RELEASE_ASSET = f"{RELEASES}/latest/download/compose.yaml"
 VOLUMES = {
     "caddy_data": "kaeso_caddy_data",
     "caddy_config": "kaeso_caddy_config",
+    "caddy_site": "kaeso_caddy_site",
     "postgres": "kaeso_postgres",
     "clickhouse": "kaeso_clickhouse",
     "valkey": "kaeso_valkey",
@@ -19,8 +20,8 @@ VOLUMES = {
 }
 UPDATER_VOLUMES = VOLUMES | {"updater": "kaeso_updater"}
 MOUNTS = {
-    "caddy-init": [("caddy_data", "/data"), ("caddy_config", "/config")],
-    "caddy": [("caddy_data", "/data"), ("caddy_config", "/config"), ("maintenance", "/srv/maintenance")],
+    "caddy-init": [("caddy_data", "/data"), ("caddy_config", "/config"), ("caddy_site", "/site")],
+    "caddy": [("caddy_data", "/data"), ("caddy_config", "/config"), ("caddy_site", "/etc/caddy"), ("maintenance", "/srv/maintenance")],
     "gateway": [],
     "console": [],
     "postgres": [("postgres", "/var/lib/postgresql")],

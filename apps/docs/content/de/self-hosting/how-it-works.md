@@ -26,14 +26,14 @@ flowchart TD
 
 | Dienst | Aufgabe | Seine Daten |
 | --- | --- | --- |
-| `caddy` | Terminiert TLS mit einem Zertifikat, das er selbst bezieht und erneuert, und leitet Anfragen weiter | Die Volumes `caddy_data` und `caddy_config` |
+| `caddy` | Terminiert TLS mit einem Zertifikat, das er selbst bezieht und erneuert, und leitet Anfragen weiter | Die Volumes `caddy_data` und `caddy_config` sowie `caddy_site`, das er nur liest |
 | `gateway` | Stellt die Modell-API, die Platform API und die Health-Checks auf Port 8080 bereit und die Metriken auf Port 9100. Ruft die Anbieter auf und sendet E-Mails | Keine |
 | `console` | Stellt die Weboberfläche bereit | Keine |
 | `postgres` | Speichert Benutzer, Organisationen, Projekte, Schlüssel, verschlüsselte Anbieter-Schlüssel, Kataloge, Limits, Nutzung und Audit-Logs | Das Volume `postgres` |
 | `clickhouse` | Speichert Anfrageprotokolle und Nutzungsaggregate | Das Volume `clickhouse` |
 | `valkey` | Hält Raten- und Budgetzähler und gemeinsame Caches | Das Volume `valkey` |
 
-Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)). Bevor Caddy startet, läuft `caddy-init` einmal und übergibt die Volumes von Caddy dem Benutzer, als der Caddy läuft. Ebenso übergibt `updater-init` dem Updater seine Volumes. Der Gruppe des Updaters gibt es Lese- und Schreibrecht auf die `compose.yaml`, die der Updater an Ort und Stelle neu schreibt, und allen anderen nimmt es das Schreibrecht.
+Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)). Bevor Caddy startet, läuft `caddy-init` einmal und übergibt die Volumes von Caddy dem Benutzer, als der Caddy läuft. Außerdem legt es das Caddyfile und die Update-Seite aus der `compose.yaml` in `caddy_site` ab, da Compose einem Container mit schreibgeschütztem Dateisystem keine Dateien übergeben kann. Ebenso übergibt `updater-init` dem Updater seine Volumes. Der Gruppe des Updaters gibt es Lese- und Schreibrecht auf die `compose.yaml`, die der Updater an Ort und Stelle neu schreibt, und allen anderen nimmt es das Schreibrecht.
 
 ## Dateien
 
@@ -65,7 +65,7 @@ Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Back
 Die Dienste teilen so wenig wie möglich:
 
 - PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk ohne Weg nach außen, und nur das Gateway erreicht sie.
-- Kein Container kann Rechte hinzugewinnen, und jeder startet ohne Linux-Capabilities. Caddy, Gateway, Konsole und Updater laufen als Benutzer ohne Sonderrechte, alle außer Caddy auf schreibgeschützten Dateisystemen. Caddy belegt die Ports 80 und 443 ohne Capability, weil sein Container Benutzern ohne Sonderrechte jeden Port erlaubt.
+- Kein Container kann Rechte hinzugewinnen, und jeder startet ohne Linux-Capabilities. Caddy, Gateway, Konsole und Updater laufen als Benutzer ohne Sonderrechte auf schreibgeschützten Dateisystemen. Caddy belegt die Ports 80 und 443 ohne Capability, weil sein Container Benutzern ohne Sonderrechte jeden Port erlaubt, und sein Admin-Endpunkt ist aus.
 - Valkey läuft von Anfang an als der eigene Benutzer seines Images, ohne Capabilities. PostgreSQL und ClickHouse bekommen nur die Capabilities zurück, die ihre Images beim Start brauchen. Damit übergibt jeder sein Datenverzeichnis dem eigenen Benutzer und läuft danach nicht mehr als root. `caddy-init` bekommt nur die Rechte, jedes Verzeichnis zu lesen und Eigentümer zu ändern, und `updater-init` zusätzlich das Recht, die Rechte einer Datei zu ändern.
 - Jeder Dienst hat eine Speicher- und eine Prozessgrenze, und Docker rotiert sein Log bei 10 MB und behält fünf Dateien ([Container-Grenzen](configuration.md#container-grenzen)).
 - Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort, das es aus einer Datei liest statt von seiner Befehlszeile.
@@ -86,7 +86,7 @@ Das Gateway hält keinen eigenen Zustand. Für mehrere Instanzen stellen Sie sie
 Jedes Release behält diese Namen, damit eine neue `compose.yaml` Ihre Daten findet:
 
 - Das Compose-Projekt `kaeso` mit seinen Diensten `caddy-init`, `caddy`, `gateway`, `console`, `postgres`, `clickhouse` und `valkey`, dazu `updater-init`, `updater` und `docker-proxy` im Profil `updater`.
-- Die Volumes `kaeso_postgres`, `kaeso_clickhouse` und `kaeso_valkey` für Daten, `kaeso_caddy_data` und `kaeso_caddy_config` für Zertifikate sowie `kaeso_maintenance` und `kaeso_updater` für den Updater.
+- Die Volumes `kaeso_postgres`, `kaeso_clickhouse` und `kaeso_valkey` für Daten, `kaeso_caddy_data` und `kaeso_caddy_config` für Zertifikate, `kaeso_caddy_site` für die Konfiguration von Caddy sowie `kaeso_maintenance` und `kaeso_updater` für den Updater.
 - Die Images `ghcr.io/logicplanes/kaeso-gateway`, `ghcr.io/logicplanes/kaeso-console` und `ghcr.io/logicplanes/kaeso-updater`, getaggt mit der Version des Releases.
 
 > [!WARNING]
