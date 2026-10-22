@@ -44,7 +44,7 @@ Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben 
 
 Exportieren erfordert das Recht **Protokolle exportieren**, mit Inhalt zusätzlich **Prompts und Ausgaben ansehen**.
 
-In CSV setzt Kaeso ein `'` vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Eine Tabellenkalkulation zeigt den Wert dann als Text, statt ihn als Formel auszuführen.
+In CSV setzt Kaeso jeden Textwert in doppelte Anführungszeichen. Ein `'` setzt es vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Dasselbe gilt für einen Wert mit `;`, `|` oder einem Tabulator und nach einem solchen Trennzeichen, wenn eines dieser Zeichen folgt. Eine Tabellenkalkulation zeigt den Wert dann als Text, an welchem Trennzeichen sie auch teilt.
 
 ## Aufbewahrung
 

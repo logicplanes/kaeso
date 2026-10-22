@@ -979,7 +979,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(lines.next().unwrap().ends_with(",usage_estimated,source"));
     let row = lines.next().unwrap();
-    assert!(row.ends_with(",playground"), "{row}");
+    assert!(row.ends_with(",\"playground\""), "{row}");
     assert!(lines.next().is_none());
 
     let rows: Vec<(Option<Uuid>, Option<Uuid>, i64, i64)> = sqlx::query_as(
