@@ -462,5 +462,6 @@
   "errors.unpricedFeature.key": "Dieser Schlüssel hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
   "errors.unpricedFeature.member": "Das Mitglied hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
   "errors.unpricedFeature.project": "Das Projekt hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
-  "errors.ssoEnterEmail": "Geben Sie Ihre E-Mail-Adresse ein, um sich mit Single Sign-on anzumelden."
+  "errors.ssoEnterEmail": "Geben Sie Ihre E-Mail-Adresse ein, um sich mit Single Sign-on anzumelden.",
+  "errors.adminSsoNoConnection": "Diese Organisation hat keine SSO-Verbindung; richten Sie zuerst eine ein."
 }

@@ -105,6 +105,46 @@ pub async fn complete_setup(db: impl PgExecutor<'_>, at: OffsetDateTime) -> Resu
     Ok(())
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AdminSso {
+    pub org_id: uuid::Uuid,
+    pub org_name: String,
+    pub connected: bool,
+}
+
+pub async fn admin_sso(db: impl PgExecutor<'_>) -> Result<Option<AdminSso>, StoreError> {
+    Ok(sqlx::query_as!(
+        AdminSso,
+        r#"SELECT o.id AS org_id, o.name AS org_name,
+         EXISTS (SELECT 1 FROM org_oidc c WHERE c.org_id = o.id) AS "connected!"
+         FROM instance_settings s JOIN organizations o ON o.id = s.admin_sso_org_id"#
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
+pub async fn admin_sso_org(db: impl PgExecutor<'_>) -> Result<Option<uuid::Uuid>, StoreError> {
+    Ok(
+        sqlx::query_scalar!("SELECT admin_sso_org_id FROM instance_settings")
+            .fetch_optional(db)
+            .await?
+            .flatten(),
+    )
+}
+
+pub async fn set_admin_sso_org(
+    db: impl PgExecutor<'_>,
+    org: Option<uuid::Uuid>,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE instance_settings SET admin_sso_org_id = $1, updated_at = now()",
+        org
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn set_time_zone(db: impl PgExecutor<'_>, timezone: &str) -> Result<(), StoreError> {
     sqlx::query!(
         "UPDATE instance_settings SET timezone = $1, updated_at = now()",

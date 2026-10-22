@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) ORDER BY id LIMIT $2",
+  "query": "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) ORDER BY id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -162,7 +162,8 @@
       "Left": [
         "Uuid",
         "Int8",
-        "Text"
+        "Text",
+        "Bool"
       ]
     },
     "nullable": [
@@ -182,5 +183,5 @@
       true
     ]
   },
-  "hash": "f991512d0aec7d943f39ca98afa2234e69c8c2871614921baee69e6a8a0b42b5"
+  "hash": "53c7bebda9a3467165d17ac7e5ca6090952aaa689dd1c72e9bb3d1349c1e167b"
 }

@@ -103,6 +103,7 @@ pub async fn list(
     limit: i64,
     search: Option<&str>,
     order: OrgOrder,
+    sso: Option<bool>,
 ) -> Result<Vec<Org>, StoreError> {
     let pattern = search.map(|s| {
         format!(
@@ -118,11 +119,13 @@ pub async fn list(
                 Org,
                 "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, \
                  content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
-                 FROM organizations WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) \
+                 FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) \
+                 AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) \
                  ORDER BY id LIMIT $2",
                 after,
                 limit,
-                pattern
+                pattern,
+                sso
             )
             .fetch_all(db)
             .await?
@@ -135,10 +138,12 @@ pub async fn list(
                  FROM organizations o WHERE ($1::uuid IS NULL OR (COALESCE(o.deletion_due_at, 'infinity'), o.id) > \
                  (SELECT COALESCE(c.deletion_due_at, 'infinity'), c.id FROM organizations c WHERE c.id = $1)) \
                  AND ($3::text IS NULL OR name ILIKE $3) \
+                 AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) \
                  ORDER BY COALESCE(o.deletion_due_at, 'infinity'), o.id LIMIT $2",
                 after,
                 limit,
-                pattern
+                pattern,
+                sso
             )
             .fetch_all(db)
             .await?

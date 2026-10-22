@@ -69,7 +69,7 @@ Through single sign-on, the console opens your identity provider in a small wind
 
 ## After signing in through single sign-on
 
-When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements, and changes to your account, which still need a recent sign-in. Instance administration needs another sign-in.
+When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements, and changes to your account, which still need a recent sign-in. Instance administration needs another sign-in, unless an instance admin chose the organization for it.
 
 A sign-in through the provider of an organization that doesn't manage your account opens only that organization, and lets you read your account. That happens when your address is at another domain. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 

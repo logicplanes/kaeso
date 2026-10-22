@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT admin_sso_org_id FROM instance_settings",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "admin_sso_org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "admin_sso_org_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "467dde68e0847ff1170f03ff127a460c48da8c4281502e7e6a1274c7c38e356c"
+}

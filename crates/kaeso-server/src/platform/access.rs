@@ -64,7 +64,8 @@ impl Access {
                 org that doesn't manage the account gets `other_sign_in_required`."
                 .into(),
             Access::InstanceAdmin => "**Access:** a console session of an instance admin that \
-                didn't come from an organization's SSO."
+                didn't come from an organization's SSO, or came from the SSO of the org chosen \
+                for instance admins (`instance/settings/admin-sso`) while it manages the account."
                 .into(),
             Access::Org(r) => format!(
                 "**Right:** `{}` on the organization in the path{}.",
@@ -463,7 +464,12 @@ async fn check(
                     "Only instance admins can do this.".into(),
                 ));
             }
-            require_policy(state, session, Area::Instance).await?;
+            let admin_sso = if from_sso(session) {
+                kaeso_store::pg::instance::admin_sso_org(&state.pg).await?
+            } else {
+                None
+            };
+            require_policy(state, session, Area::Instance { admin_sso }).await?;
         }
         Access::Org(right) => {
             let org = path_id::<OrgId>(params, "org", "organization")?;
@@ -670,7 +676,9 @@ pub enum Area {
         require_2fa: bool,
     },
     Account,
-    Instance,
+    Instance {
+        admin_sso: Option<uuid::Uuid>,
+    },
 }
 
 impl Area {
@@ -695,7 +703,8 @@ impl Area {
 }
 
 // A session from SSO counts as a full sign-in only while the org whose provider signed it in
-// manages the account; otherwise that provider vouches for nothing beyond its own org.
+// manages the account; otherwise that provider vouches for nothing beyond its own org. The
+// instance trusts no org's provider unless an instance admin, signed in another way, chose it.
 pub fn policy_gap(
     session: &SessionRow,
     managed_by: Option<uuid::Uuid>,
@@ -705,8 +714,11 @@ pub fn policy_gap(
     let full = !sso || (session.oidc_org_id.is_some() && session.oidc_org_id == managed_by);
     match area {
         Area::Account if full => None,
-        Area::Instance if !sso => None,
-        Area::Account | Area::Instance => Some(PolicyGap::NeedsOtherSignIn),
+        Area::Instance { .. } if !sso => None,
+        Area::Instance { admin_sso } if full && admin_sso.is_some() => {
+            (session.oidc_org_id != admin_sso).then_some(PolicyGap::NeedsOtherSignIn)
+        }
+        Area::Account | Area::Instance { .. } => Some(PolicyGap::NeedsOtherSignIn),
         Area::Org {
             id,
             require_sso,
@@ -855,6 +867,8 @@ mod tests {
         b: uuid::Uuid,
     }
 
+    const AREAS: usize = 10;
+
     impl World {
         fn new() -> World {
             World {
@@ -863,7 +877,7 @@ mod tests {
             }
         }
 
-        fn areas(&self) -> [(&'static str, Area); 8] {
+        fn areas(&self) -> [(&'static str, Area); AREAS] {
             [
                 ("org A", org(self.a, false, false)),
                 ("org A requiring SSO", org(self.a, true, false)),
@@ -872,7 +886,22 @@ mod tests {
                 ("org B requiring 2FA", org(self.b, false, true)),
                 ("org B requiring both", org(self.b, true, true)),
                 ("account changes", Area::Account),
-                ("instance administration", Area::Instance),
+                (
+                    "instance, no org chosen",
+                    Area::Instance { admin_sso: None },
+                ),
+                (
+                    "instance, org A chosen",
+                    Area::Instance {
+                        admin_sso: Some(self.a),
+                    },
+                ),
+                (
+                    "instance, org B chosen",
+                    Area::Instance {
+                        admin_sso: Some(self.b),
+                    },
+                ),
             ]
         }
     }
@@ -881,7 +910,7 @@ mod tests {
         s: &SessionRow,
         managed_by: Option<uuid::Uuid>,
         w: &World,
-        expected: [Option<PolicyGap>; 8],
+        expected: [Option<PolicyGap>; AREAS],
     ) {
         for ((name, area), want) in w.areas().into_iter().zip(expected) {
             assert_eq!(policy_gap(s, managed_by, area), want, "{name}");
@@ -893,14 +922,14 @@ mod tests {
     const TFA: Option<PolicyGap> = Some(Needs2fa);
 
     #[test]
-    fn a_managed_sso_session_counts_like_a_password_everywhere_but_the_instance() {
+    fn a_managed_sso_session_counts_like_a_password_and_administers_only_where_chosen() {
         let w = World::new();
         let sso = session("oidc", false, Some(w.a));
         check(
             &sso,
             Some(w.a),
             &w,
-            [None, None, None, None, None, None, None, OTHER],
+            [None, None, None, None, None, None, None, OTHER, None, OTHER],
         );
     }
 
@@ -912,13 +941,17 @@ mod tests {
             &sso,
             None,
             &w,
-            [None, None, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
+            [
+                None, None, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER,
+            ],
         );
         check(
             &sso,
             Some(w.b),
             &w,
-            [None, None, OTHER, SSO, OTHER, SSO, OTHER, OTHER],
+            [
+                None, None, OTHER, SSO, OTHER, SSO, OTHER, OTHER, OTHER, OTHER,
+            ],
         );
     }
 
@@ -926,17 +959,14 @@ mod tests {
     fn an_sso_session_whose_org_is_gone_opens_nothing() {
         let w = World::new();
         let orphan = session("oidc", false, None);
-        check(
-            &orphan,
-            None,
-            &w,
-            [OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
-        );
+        check(&orphan, None, &w, [OTHER; AREAS]);
         check(
             &orphan,
             Some(w.a),
             &w,
-            [OTHER, SSO, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER],
+            [
+                OTHER, SSO, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, OTHER,
+            ],
         );
     }
 
@@ -949,21 +979,21 @@ mod tests {
                 &without_code,
                 None,
                 &w,
-                [None, None, None, None, TFA, TFA, None, None],
+                [None, None, None, None, TFA, TFA, None, None, None, None],
             );
             check(
                 &without_code,
                 Some(w.b),
                 &w,
-                [None, None, None, SSO, TFA, SSO, None, None],
+                [None, None, None, SSO, TFA, SSO, None, None, None, None],
             );
             let with_code = session(method, true, None);
-            check(&with_code, None, &w, [None; 8]);
+            check(&with_code, None, &w, [None; AREAS]);
             check(
                 &with_code,
                 Some(w.a),
                 &w,
-                [None, SSO, None, None, None, None, None, None],
+                [None, SSO, None, None, None, None, None, None, None, None],
             );
         }
     }
@@ -1001,12 +1031,37 @@ mod tests {
     }
 
     #[test]
+    fn the_org_chosen_for_instance_admins_counts_only_while_it_manages_the_account() {
+        let w = World::new();
+        let chosen = Area::Instance {
+            admin_sso: Some(w.a),
+        };
+        let from_a = session("oidc", false, Some(w.a));
+        assert_eq!(policy_gap(&from_a, Some(w.a), chosen), None);
+        assert_eq!(
+            policy_gap(&from_a, None, chosen),
+            OTHER,
+            "the connection or the domain is gone, or the address moved"
+        );
+        assert_eq!(policy_gap(&from_a, Some(w.b), chosen), OTHER);
+        assert_eq!(
+            policy_gap(&session("oidc", false, Some(w.b)), Some(w.b), chosen),
+            OTHER
+        );
+    }
+
+    #[test]
     fn the_account_manager_is_looked_up_only_where_it_decides() {
         let w = World::new();
         let password = session("password", false, None);
         let sso = session("oidc", false, Some(w.a));
         assert!(!Area::Account.needs_manager(&password));
-        assert!(!Area::Instance.needs_manager(&password));
+        assert!(
+            !Area::Instance {
+                admin_sso: Some(w.a)
+            }
+            .needs_manager(&password)
+        );
         assert!(!org(w.b, false, true).needs_manager(&password));
         assert!(org(w.b, true, false).needs_manager(&password));
         for (name, area) in w.areas() {

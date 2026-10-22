@@ -69,7 +69,7 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 ## Nach einer Anmeldung über Single Sign-on
 
-Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen, und Änderungen an Ihrem Konto, die weiterhin eine kürzliche Anmeldung verlangen. Die Verwaltung der Instanz braucht eine weitere Anmeldung.
+Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen, und Änderungen an Ihrem Konto, die weiterhin eine kürzliche Anmeldung verlangen. Die Verwaltung der Instanz braucht eine weitere Anmeldung, es sei denn, ein Instanz-Admin hat die Organisation dafür gewählt.
 
 Eine Anmeldung über den Anbieter einer Organisation, die Ihr Konto nicht verwaltet, öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Das geschieht, wenn Ihre Adresse zu einer anderen Domain gehört. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 

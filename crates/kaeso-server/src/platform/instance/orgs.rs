@@ -70,6 +70,8 @@ pub struct OrgFilter {
         came from."]
     #[param(inline)]
     pub sort: Option<OrgSort>,
+    #[doc = "Only orgs with (`true`) or without (`false`) an SSO connection."]
+    pub sso: Option<bool>,
 }
 
 #[utoipa::path(
@@ -96,6 +98,7 @@ pub async fn list(
         page.fetch(),
         f.search.as_deref(),
         order,
+        f.sso,
     )
     .await?;
     let list = List::from_rows(&page, rows, |o| o.id, |o| o);

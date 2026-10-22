@@ -140,9 +140,9 @@ pub struct ErrorEnvelope {
 pub struct ErrorBody {
     #[doc = "One of `invalid_request`, `authentication`, `permission_denied`,\n\
         `recent_sign_in_required`, `other_sign_in_required` (a session from the\n\
-        SSO of an organization that doesn't manage the account, or any SSO\n\
-        session for instance administration, can't do this; sign in another\n\
-        way), `not_found`,\n\
+        SSO of an organization that doesn't manage the account, or an SSO\n\
+        session for instance administration other than one from the org chosen\n\
+        for instance admins, can't do this; sign in another way), `not_found`,\n\
         `conflict`,\n\
         `org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n\
         `unavailable`, `provider_error` (only the Playground's model\n\

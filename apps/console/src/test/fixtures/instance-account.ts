@@ -46,6 +46,7 @@ export function instanceSettings(overrides: Partial<SettingsView> = {}): Setting
     timezone: "UTC",
     mail: { transport: "smtp", host: "mail.example.com", port: 587, from: "kaeso@example.com" },
     sign_in: { password: true, magic_link: true },
+    admin_sso: null,
     ...overrides,
   };
 }

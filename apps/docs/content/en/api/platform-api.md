@@ -97,7 +97,7 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 
 - **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
 - **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
-- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it.
+- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing single sign-on for instance admins (only with a password or a sign-in link), choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it.
 
 ## Conventions
 
@@ -157,7 +157,7 @@ The message is one short sentence for people, and the console shows it as it is.
 | 401 | `authentication` | No session or key, or one that is unknown, expired or ended. |
 | 403 | `permission_denied` | A missing right, a key on a route it can't use, a missing `Origin` or an organization policy. |
 | 403 | `recent_sign_in_required` | The action needs a [recent sign-in](#recent-sign-in). |
-| 403 | `other_sign_in_required` | The session came from the single sign-on of an organization that doesn't manage the account, and the action is outside that organization; or it came from single sign-on and the action is instance administration. Sign in with a password or a sign-in link. |
+| 403 | `other_sign_in_required` | The session came from the single sign-on of an organization that doesn't manage the account, and the action is outside that organization; or it came from single sign-on and the action is instance administration, other than from the organization chosen for instance admins. Sign in with a password or a sign-in link. |
 | 404 | `not_found` | The path doesn't exist, or the thing doesn't exist or the caller can't see it. |
 | 405 | `invalid_request` | The path doesn't take this method. `Allow` lists the ones it takes. |
 | 409 | `conflict` | The change clashes with the current state, such as a name already taken. |
@@ -179,7 +179,7 @@ Routes are relative to `/platform/v1`. [`openapi.json`](#openapi-document) lists
 | `me`, `me/*` | Your profile, picture and language (`locale`: `auto`, `en`, `de` or `zh-CN`), email, password, two-factor authentication and recovery codes. Also your sessions, memberships, keys and notifications, creating an organization and deleting your account. |
 | `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also the providers Kaeso calls, provider keys, security settings, platform keys, log settings and storage, usage, the audit log, ownership transfer, deletion and restoring. |
 | `orgs/{org}/projects/{project}/*` | The project and its picture, members with their model access, service accounts, keys with their models and limits, and key policy. Also the catalogue and aliases, limits, content logging, request logs and exports, usage, the audit log and the [Playground](#playground). |
-| `instance/*` | For instance admins: users, organizations, instance settings, the models.dev sync, system health and storage, updates and the instance audit log. |
+| `instance/*` | For instance admins: users, organizations, instance settings and the organization whose single sign-on may administer the instance (`instance/settings/admin-sso`), the models.dev sync, system health and storage, updates and the instance audit log. |
 
 Instance admins see every organization's metadata, never its content. They create, rename, schedule for deletion, restore and delete organizations under `instance/orgs`. `POST instance/orgs/{org}/owner` makes any active user an owner, the admin included, which is how an instance admin gets in to manage an organization. The organization's audit log records it.
 

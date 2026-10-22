@@ -17,6 +17,7 @@
   "format.audit.action.credentialDelete": "已删除提供商密钥",
   "format.audit.action.credentialRename": "已重命名提供商密钥",
   "format.audit.action.credentialReplace": "已替换提供商密钥",
+  "format.audit.action.instanceAdminSsoUpdate": "已更改实例管理员的单点登录",
   "format.audit.action.instanceInvite": "已邀请用户加入实例",
   "format.audit.action.instanceSettingsUpdate": "已更改实例设置",
   "format.audit.action.instanceSetup": "已设置 Kaeso",

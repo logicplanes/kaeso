@@ -1305,7 +1305,7 @@
           "instance"
         ],
         "summary": "The instance audit log, newest first.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceAuditLog",
         "parameters": [
           {
@@ -1434,7 +1434,7 @@
           "instance"
         ],
         "summary": "One event of the instance audit log.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceAuditLogEvent",
         "parameters": [
           {
@@ -1495,7 +1495,7 @@
           "instance"
         ],
         "summary": "The models.dev data in use and the last sync.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceModelsDev",
         "responses": {
           "200": {
@@ -1546,7 +1546,7 @@
           "instance"
         ],
         "summary": "Fetches models.dev now (even when periodic sync is off).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceModelsDevSync",
         "responses": {
           "200": {
@@ -1597,7 +1597,7 @@
           "instance"
         ],
         "summary": "Every org of the install.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceOrgs",
         "parameters": [
           {
@@ -1643,6 +1643,15 @@
                 "created",
                 "deletion"
               ]
+            }
+          },
+          {
+            "name": "sso",
+            "in": "query",
+            "description": "Only orgs with (`true`) or without (`false`) an SSO connection.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           }
         ],
@@ -1693,7 +1702,7 @@
           "instance"
         ],
         "summary": "Creates an org with an owner.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceOrgs",
         "requestBody": {
           "content": {
@@ -1757,7 +1766,7 @@
           "instance"
         ],
         "summary": "One org's metadata.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceOrgsOrg",
         "parameters": [
           {
@@ -1816,7 +1825,7 @@
           "instance"
         ],
         "summary": "Deletes an org scheduled for deletion now, instead of at its date.\nNeeds a recent sign-in and an instance that allows\ndeleting orgs. `204` once it is gone; `202` when its logs cannot be\ndeleted yet, and the next run of the deletion job finishes it.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "deleteInstanceOrgsOrg",
         "parameters": [
           {
@@ -1872,7 +1881,7 @@
           "instance"
         ],
         "summary": "Renames an org. Recorded in the org's audit log and the instance's.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "patchInstanceOrgsOrg",
         "parameters": [
           {
@@ -1946,7 +1955,7 @@
           "instance"
         ],
         "summary": "One org's members.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceOrgsOrgMembers",
         "parameters": [
           {
@@ -2029,7 +2038,7 @@
           "instance"
         ],
         "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceOrgsOrgOwner",
         "parameters": [
           {
@@ -2103,7 +2112,7 @@
           "instance"
         ],
         "summary": "One org's projects.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceOrgsOrgProjects",
         "parameters": [
           {
@@ -2186,7 +2195,7 @@
           "instance"
         ],
         "summary": "Restores an org scheduled for deletion.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceOrgsOrgRestore",
         "parameters": [
           {
@@ -2247,7 +2256,7 @@
           "instance"
         ],
         "summary": "Schedules an org for deletion, as its owner can: its\nkeys stop working at once, members and instance admins are told, and it\nstays read-only for the instance's grace period. Needs a recent sign-in\nand an instance that allows deleting orgs.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceOrgsOrgScheduleDeletion",
         "parameters": [
           {
@@ -2308,7 +2317,7 @@
           "instance"
         ],
         "summary": "An org's usage totals and log storage.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceOrgsOrgUsage",
         "parameters": [
           {
@@ -2369,7 +2378,7 @@
           "instance"
         ],
         "summary": "The instance settings.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceSettings",
         "responses": {
           "200": {
@@ -2418,7 +2427,7 @@
           "instance"
         ],
         "summary": "Changes who may create accounts and orgs and the allowed domains (with a\nrecent sign-in), org deletion, and the retention defaults and maximums.\nContent is never kept longer than metadata.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "patchInstanceSettings",
         "requestBody": {
           "content": {
@@ -2476,13 +2485,77 @@
         "x-kaeso-access": "instance_admin"
       }
     },
+    "/platform/v1/instance/settings/admin-sso": {
+      "put": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Chooses the org whose single sign-on may administer the instance, or\nnone.",
+        "description": "An instance admin's session from that org's SSO may then use `instance/*` while the org manages the admin's account. Changing it needs a recent sign-in that didn't come from SSO, so no org's identity provider can grant its admins the instance; a session from SSO gets `other_sign_in_required`. The org must have an SSO connection; if it later loses it, the setting has no effect. Audited as `instance.admin_sso_update`.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "operationId": "putInstanceSettingsAdminSso",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminSsoUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
     "/platform/v1/instance/settings/test-email": {
       "post": {
         "tags": [
           "instance"
         ],
         "summary": "Sends a test email now and reports whether the SMTP server took it.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceSettingsTestEmail",
         "requestBody": {
           "content": {
@@ -2546,7 +2619,7 @@
           "instance"
         ],
         "summary": "Version, component health and storage.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceSystem",
         "responses": {
           "200": {
@@ -2597,7 +2670,7 @@
           "instance"
         ],
         "summary": "The running version, newer releases with their notes, the update settings, the updater and the last update.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUpdates",
         "responses": {
           "200": {
@@ -2648,7 +2721,7 @@
           "instance"
         ],
         "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUpdatesApply",
         "requestBody": {
           "content": {
@@ -2712,7 +2785,7 @@
           "instance"
         ],
         "summary": "Looks for new releases now, even when checking is off.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUpdatesCheck",
         "responses": {
           "200": {
@@ -2763,7 +2836,7 @@
           "instance"
         ],
         "summary": "Past and running updates, newest first.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUpdatesJobs",
         "parameters": [
           {
@@ -2838,7 +2911,7 @@
           "instance"
         ],
         "summary": "One update and its progress.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUpdatesJobsUpdate",
         "parameters": [
           {
@@ -2899,7 +2972,7 @@
           "instance"
         ],
         "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "patchInstanceUpdatesSettings",
         "requestBody": {
           "content": {
@@ -2963,7 +3036,7 @@
           "instance"
         ],
         "summary": "Every user of the install.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUsers",
         "parameters": [
           {
@@ -3056,7 +3129,7 @@
           "instance"
         ],
         "summary": "Invites someone to create an account on this install (without an org).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUsersInvites",
         "requestBody": {
           "content": {
@@ -3120,7 +3193,7 @@
           "instance"
         ],
         "summary": "One user.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUsersUser",
         "parameters": [
           {
@@ -3179,7 +3252,7 @@
           "instance"
         ],
         "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "deleteInstanceUsersUser",
         "parameters": [
           {
@@ -3234,7 +3307,7 @@
           "instance"
         ],
         "summary": "Deactivates a user: no sign-in, every session ends, their keys are\ndisabled until reactivation.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUsersUserDeactivate",
         "parameters": [
           {
@@ -3295,7 +3368,7 @@
           "instance"
         ],
         "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "putInstanceUsersUserInstanceAdmin",
         "parameters": [
           {
@@ -3369,7 +3442,7 @@
           "instance"
         ],
         "summary": "The orgs a user belongs to, by name, with their role in each.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "getInstanceUsersUserOrgs",
         "parameters": [
           {
@@ -3430,7 +3503,7 @@
           "instance"
         ],
         "summary": "Reactivates a user and re-enables the keys deactivation disabled.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUsersUserReactivate",
         "parameters": [
           {
@@ -3491,7 +3564,7 @@
           "instance"
         ],
         "summary": "Resets a user's two-factor authentication. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUsersUserReset2fa",
         "parameters": [
           {
@@ -3546,7 +3619,7 @@
           "instance"
         ],
         "summary": "Ends every session of a user and tells them.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
         "operationId": "postInstanceUsersUserSessionsRevoke",
         "parameters": [
           {
@@ -15687,6 +15760,47 @@
           }
         }
       },
+      "AdminSsoUpdate": {
+        "type": "object",
+        "description": "The org whose single sign-on may administer the instance.",
+        "properties": {
+          "org": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrgId",
+                "description": "An org with an SSO connection, or `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AdminSsoView": {
+        "type": "object",
+        "description": "The org whose single sign-on may administer the instance.",
+        "required": [
+          "org",
+          "name",
+          "connected"
+        ],
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "Whether the org has an SSO connection. Without one it manages no\naccount, so the setting has no effect."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "Acme"
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The org. An instance admin's session from its SSO may use\n`instance/*` while the org manages the admin's account."
+          }
+        }
+      },
       "AliasCreate": {
         "type": "object",
         "description": "A new alias.",
@@ -16796,7 +16910,7 @@
           },
           "type": {
             "type": "string",
-            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `other_sign_in_required` (a session from the\nSSO of an organization that doesn't manage the account, or any SSO\nsession for instance administration, can't do this; sign in another\nway), `not_found`,\n`conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
+            "description": "One of `invalid_request`, `authentication`, `permission_denied`,\n`recent_sign_in_required`, `other_sign_in_required` (a session from the\nSSO of an organization that doesn't manage the account, or an SSO\nsession for instance administration other than one from the org chosen\nfor instance admins, can't do this; sign in another way), `not_found`,\n`conflict`,\n`org_scheduled_for_deletion`, `request_too_large`, `rate_limited`,\n`unavailable`, `provider_error` (only the Playground's model\nrequests), `internal`.",
             "example": "not_found"
           }
         }
@@ -23249,7 +23363,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/OrgId",
-                "description": "The org whose SSO signed this session in; `null` for other ways in.\nWhen that org manages the account (`managed_by` in `auth/session`),\nthe session counts like a password one everywhere but `instance/*`.\nOtherwise it opens only that org and reads the user's own account,\nand anything else answers `other_sign_in_required`."
+                "description": "The org whose SSO signed this session in; `null` for other ways in.\nWhen that org manages the account (`managed_by` in `auth/session`),\nthe session counts like a password one everywhere; for `instance/*`,\nonly when that org is the one chosen for instance admins.\nOtherwise it opens only that org and reads the user's own account,\nand anything else answers `other_sign_in_required`."
               },
               {
                 "type": "null"
@@ -23376,6 +23490,17 @@
           "account_creation": {
             "$ref": "#/components/schemas/AccountCreation",
             "description": "Who may create an account without an invitation.\nInvitations work under every setting."
+          },
+          "admin_sso": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdminSsoView",
+                "description": "The org whose single sign-on may administer the instance\n(`PUT instance/settings/admin-sso`); `null`: none, so every instance\nadmin signs in with a password or a sign-in link for it."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "allowed_domains": {
             "type": "array",
@@ -25014,7 +25139,7 @@
         "properties": {
           "can_administer_instance": {
             "type": "boolean",
-            "description": "Whether this session may use `instance/*`: the user is an instance\nadmin and didn't sign in through an org's SSO."
+            "description": "Whether this session may use `instance/*`: the user is an instance\nadmin and didn't sign in through an org's SSO, or signed in through\nthe SSO of the org chosen for instance admins, which manages the\naccount."
           },
           "can_create_orgs": {
             "type": "boolean",
@@ -25028,7 +25153,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/ManagedBy",
-                "description": "The org that manages the account: its address is at a verified email\ndomain of an org with an SSO connection. A sign-in through that org's\nSSO counts like a password one everywhere but `instance/*`. `null` for\nan account no org manages."
+                "description": "The org that manages the account: its address is at a verified email\ndomain of an org with an SSO connection. A sign-in through that org's\nSSO counts like a password one; for `instance/*`, only when an instance\nadmin chose that org for instance admins. `null` for\nan account no org manages."
               },
               {
                 "type": "null"

@@ -97,7 +97,7 @@ In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 
 
 - **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
 - **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
-- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
+- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, Single Sign-on für Instanz-Admins wählen (nur mit Passwort oder Anmeldelink), automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
 
 ## Konventionen
 
@@ -157,7 +157,7 @@ Die Meldung ist ein kurzer Satz für Menschen, und die Konsole zeigt ihn unverä
 | 401 | `authentication` | Keine Sitzung und kein Schlüssel, oder einer, der unbekannt, abgelaufen oder beendet ist. |
 | 403 | `permission_denied` | Ein fehlendes Recht, ein Schlüssel auf einer Route, die er nicht nutzen kann, ein fehlendes `Origin` oder eine Richtlinie der Organisation. |
 | 403 | `recent_sign_in_required` | Die Aktion verlangt eine [kürzliche Anmeldung](#kürzliche-anmeldung). |
-| 403 | `other_sign_in_required` | Die Sitzung stammt aus dem Single Sign-on einer Organisation, die das Konto nicht verwaltet, und die Aktion liegt außerhalb dieser Organisation; oder sie stammt aus Single Sign-on, und die Aktion gehört zur Verwaltung der Instanz. Melden Sie sich mit einem Passwort oder einem Anmeldelink an. |
+| 403 | `other_sign_in_required` | Die Sitzung stammt aus dem Single Sign-on einer Organisation, die das Konto nicht verwaltet, und die Aktion liegt außerhalb dieser Organisation; oder sie stammt aus Single Sign-on, und die Aktion gehört zur Verwaltung der Instanz, außer aus der Organisation, die für Instanz-Admins gewählt ist. Melden Sie sich mit einem Passwort oder einem Anmeldelink an. |
 | 404 | `not_found` | Den Pfad gibt es nicht, oder das Gesuchte gibt es nicht oder der Aufrufer kann es nicht sehen. |
 | 405 | `invalid_request` | Der Pfad nimmt diese Methode nicht an. `Allow` nennt die, die er annimmt. |
 | 409 | `conflict` | Die Änderung widerspricht dem aktuellen Zustand, etwa ein schon vergebener Name. |
@@ -179,7 +179,7 @@ Die Routen sind relativ zu `/platform/v1`. [`openapi.json`](#openapi-dokument) n
 | `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel und Benachrichtigungen, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
 | `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem die Anbieter, die Kaeso aufruft, Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Inhaberwechsel, Löschen und Wiederherstellen. |
 | `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder mit ihrem Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits und die Schlüsselrichtlinie. Außerdem der Katalog und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log und der [Playground](#playground). |
-| `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen, der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
+| `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen und die Organisation, deren Single Sign-on die Instanz verwalten darf (`instance/settings/admin-sso`), der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
 
 Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, auch den Admin selbst; so gelangt ein Instanz-Admin in eine Organisation, um sie zu verwalten. Das Audit-Log der Organisation hält das fest.
 

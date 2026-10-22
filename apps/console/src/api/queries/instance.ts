@@ -95,6 +95,12 @@ export const instanceOrgProjectsQuery = (org: string) =>
       ),
   });
 
+export const instanceSsoOrgsQuery = queryOptions({
+  queryKey: ["instance", "orgs", "sso"],
+  queryFn: (): Promise<InstanceOrgView[]> =>
+    allPages(async (after) => data(await api.GET("/platform/v1/instance/orgs", { params: { query: { limit: 100, sso: true, ...(after ? { after } : {}) } } }))),
+});
+
 export const instanceSettingsQuery = queryOptions({
   queryKey: ["instance", "settings"],
   queryFn: async (): Promise<SettingsView> => data(await api.GET("/platform/v1/instance/settings")),

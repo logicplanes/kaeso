@@ -5,6 +5,7 @@
   "errors.adaptiveThinking": "Adaptive thinking applies only to Anthropic models.",
   "errors.addressInUse": "Another account uses this address.",
   "errors.addressInUseNow": "Another account uses this address now.",
+  "errors.adminSsoNoConnection": "This organization has no SSO connection; connect one first.",
   "errors.afterNotCursor": "`after` is not a cursor from a previous page.",
   "errors.alertThresholds": "Alert thresholds are up to 10 ascending percentages from 1 to 100.",
   "errors.aliasCharacters": "An alias must not contain spaces, control characters or `/`.",
