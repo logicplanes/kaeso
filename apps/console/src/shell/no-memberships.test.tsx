@@ -24,7 +24,7 @@ describe("the welcome page for people outside every organization", () => {
     expect(await screen.findByRole("heading", { name: "Welcome to Kaeso", level: 1 })).toBeInTheDocument();
     expect(document.title).toBe("Welcome · Kaeso");
     expect(screen.getByText("Create one to start, or ask an owner or admin to invite you to theirs.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ada Okafor: account and sign out" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ada Okafor", description: "Account and sign out" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     await user.keyboard("{Meta>}{Enter}{/Meta}");

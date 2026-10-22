@@ -47,9 +47,9 @@ test("every current model of a provider is added at once, and models already the
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.6");
   await expect(hit(page, "gpt-5.6").getByText("Already in catalogue")).toBeVisible();
-  await dialog.getByRole("button", { name: "Provider" }).click();
+  await dialog.getByRole("button", { description: "Provider" }).click();
   await page.getByRole("option", { name: /^Anthropic/ }).click();
-  await expect(dialog.getByRole("button", { name: "Provider" })).toHaveText(/Anthropic/);
+  await expect(dialog.getByRole("button", { description: "Provider" })).toHaveText(/Anthropic/);
   await dialog.getByRole("button", { name: "Add every current Anthropic model" }).click();
   await expect(dialog.getByText(/skips ones already here/)).toBeVisible();
   await dialog.getByRole("button", { name: "Add every current Anthropic model" }).click();

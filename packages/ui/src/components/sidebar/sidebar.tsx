@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -19,6 +18,7 @@ import { Collapsible } from "@base-ui/react/collapsible";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
+import { showsText, useHiddenDescription } from "../../utils/hidden-description.js";
 import { useStoredState } from "../../hooks/use-stored-state.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -404,49 +404,48 @@ function Switcher({
 }: SidebarSwitcherProps) {
   const { rail } = useSidebar();
   const t = useUiText();
-  const captionId = useId();
-  const hasCaption = caption !== undefined && caption !== null && caption !== false && caption !== "";
+  const hasCaption = showsText(caption);
+  const named = showsText(label);
+  const hint = ariaLabel ?? t("sidebar.switchOrOpenSettings", "Switch or open settings");
+  const purpose = useHiddenDescription(named ? hint : undefined);
   return (
-    <LazyMenu
-      side="top"
-      header={header}
-      footer={footer}
-      trigger={
-        <button
-          type="button"
-          aria-label={ariaLabel ?? (typeof label === "string" ? t("sidebar.switchOrOpenSettings", "{label}: switch or open settings", { label }) : undefined)}
-          {...(hasCaption ? { "aria-describedby": captionId } : {})}
-          {...(force ? { "data-force": force } : {})}
-          className={cn(
-            "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-2 open:bg-fill-3 focus-ring-inset",
-            rail && "justify-center px-0",
-            className,
-          )}
-        >
-          {avatar}
-          {!rail &&
-            (hasCaption ? (
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate">{label}</span>
-                <span id={captionId} className={cn("truncate text-caption font-regular", KAESO_SIDEBAR_VARIANTS.caption[captionTone].classes)}>
-                  {caption}
+    <>
+      <LazyMenu
+        side="top"
+        header={header}
+        footer={footer}
+        trigger={
+          <button
+            type="button"
+            {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
+            {...(force ? { "data-force": force } : {})}
+            className={cn(
+              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-2 open:bg-fill-3 focus-ring-inset",
+              rail && "justify-center px-0",
+              className,
+            )}
+          >
+            {avatar}
+            {!rail &&
+              (hasCaption ? (
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate">{label}</span>
+                  <span className={cn("truncate text-caption font-regular", KAESO_SIDEBAR_VARIANTS.caption[captionTone].classes)}>{caption}</span>
                 </span>
-              </span>
-            ) : (
-              <span className="min-w-0 flex-1 truncate">{label}</span>
-            ))}
-          {rail && hasCaption && (
-            <span id={captionId} className="sr-only">
-              {caption}
-            </span>
-          )}
-          {!rail && trailing}
-          {!rail && <Icon icon={icons.switcher} size="sm" className="text-fg-tertiary transition-control group-hover/sw:text-fg-secondary" />}
-        </button>
-      }
-    >
-      {children}
-    </LazyMenu>
+              ) : (
+                <span className="min-w-0 flex-1 truncate">{label}</span>
+              ))}
+            {rail && named && <span className="sr-only">{label}</span>}
+            {rail && hasCaption && <span className="sr-only">{caption}</span>}
+            {!rail && trailing}
+            {!rail && <Icon icon={icons.switcher} size="sm" className="text-fg-tertiary transition-control group-hover/sw:text-fg-secondary" />}
+          </button>
+        }
+      >
+        {children}
+      </LazyMenu>
+      {purpose.node}
+    </>
   );
 }
 Switcher.displayName = "Sidebar.Switcher";
@@ -467,6 +466,10 @@ function Place({ avatar, label, children, href, header, footer, "aria-label": ar
   const { rail } = useSidebar();
   const t = useUiText();
   const LinkComp = useLinkComponent();
+  const named = showsText(label);
+  const hint = children ? (ariaLabel ?? t("sidebar.switchPlace", "Switch")) : ariaLabel;
+  const purpose = useHiddenDescription(named ? hint : undefined);
+  const naming = named ? (purpose.id ? { "aria-describedby": purpose.id } : {}) : hint ? { "aria-label": hint } : {};
   const classes = cn(
     "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-pill px-12 text-left text-body font-semibold text-fg",
     (children || href) && "cursor-pointer transition-control hover:bg-fill-2 open:bg-fill-3 focus-ring-inset",
@@ -483,33 +486,41 @@ function Place({ avatar, label, children, href, header, footer, "aria-label": ar
   const common = { className: classes, ...(force ? { "data-force": force } : {}) };
   if (children) {
     return (
-      <LazyMenu
-        side="bottom"
-        header={header}
-        footer={footer}
-        trigger={
-          <button type="button" aria-label={ariaLabel ?? t("sidebar.switchPlace", "{label}: switch", { label })} {...common}>
-            {inner}
-          </button>
-        }
-      >
-        {children}
-      </LazyMenu>
+      <>
+        <LazyMenu
+          side="bottom"
+          header={header}
+          footer={footer}
+          trigger={
+            <button type="button" {...naming} {...common}>
+              {inner}
+            </button>
+          }
+        >
+          {children}
+        </LazyMenu>
+        {purpose.node}
+      </>
     );
   }
   const el = href ? (
-    <LinkComp href={href} {...(ariaLabel ? { "aria-label": ariaLabel } : {})} {...common}>
+    <LinkComp href={href} {...naming} {...common}>
       {inner}
     </LinkComp>
   ) : (
     <div {...common}>{inner}</div>
   );
-  return rail ? (
-    <Tooltip content={label} side="right">
-      {el}
-    </Tooltip>
-  ) : (
-    el
+  return (
+    <>
+      {rail ? (
+        <Tooltip content={label} side="right">
+          {el}
+        </Tooltip>
+      ) : (
+        el
+      )}
+      {href && purpose.node}
+    </>
   );
 }
 Place.displayName = "Sidebar.Place";
@@ -627,7 +638,7 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
       ) : (
         icon && <Icon icon={icon} size="md" className={cn("text-fg-secondary transition-control group-hover/si:text-fg", active && "text-fg")} />
       )}
-      {!rail && <span className="min-w-0 flex-1 truncate">{children}</span>}
+      {rail ? <span className="sr-only">{children}</span> : <span className="min-w-0 flex-1 truncate">{children}</span>}
       {!rail && count !== undefined && <span className={cn("text-caption font-medium tabular", active ? "text-fg" : "text-fg-tertiary")}>{count}</span>}
       {!rail && trailing}
     </>
@@ -636,7 +647,6 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
     className: classes,
     ...(active ? { "aria-current": "page" as const } : {}),
     ...(force ? { "data-force": force } : {}),
-    ...(rail && typeof children === "string" ? { "aria-label": children } : {}),
   };
   const el = href ? (
     <LinkComp ref={ref as React.Ref<HTMLAnchorElement>} href={href} {...common} {...(onClick ? { onClick } : {})}>

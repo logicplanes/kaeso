@@ -19,7 +19,7 @@ const providers = [
 ];
 
 const open = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole("button", { name: "Model" }));
+  await user.click(screen.getByRole("button", { description: "Model" }));
   return screen.findByRole("listbox", { name: "Model" });
 };
 
@@ -52,8 +52,8 @@ describe("ModelPicker", () => {
         value="claude-sonnet-4-5"
       />,
     );
-    expect(screen.getByRole("button", { name: "Model" })).toContainElement(screen.getByRole("img", { name: "Anthropic" }));
-    await user.click(screen.getByRole("button", { name: "Model" }));
+    expect(screen.getByRole("button", { description: "Model" })).toContainElement(screen.getByRole("img", { name: "Anthropic" }));
+    await user.click(screen.getByRole("button", { description: "Model" }));
     const groups = within(await screen.findByRole("listbox", { name: "Model" })).getAllByRole("group");
     expect(groups.map((g) => document.getElementById(g.getAttribute("aria-labelledby")!)?.textContent)).toEqual(["acme", "Anthropic", "DeepSeek", "OpenAI"]);
     await user.click(screen.getByRole("combobox", { name: "Provider" }));
@@ -85,7 +85,7 @@ describe("ModelPicker", () => {
     await user.keyboard("gpt5mini{Enter}");
     expect(onValueChange).toHaveBeenCalledWith("gpt-5-mini");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Model" })).toHaveTextContent("GPT-5 mini");
+    expect(screen.getByRole("button", { description: "Model" })).toHaveTextContent("GPT-5 mini");
   });
 
   it("hides deprecated models behind a toggle and filters by provider", async () => {
@@ -143,11 +143,11 @@ describe("ModelPicker", () => {
     await user.click(gpt5());
     expect(screen.getByRole("listbox")).toBeInTheDocument();
     await user.keyboard("{Escape}{Escape}");
-    expect(screen.getByRole("button", { name: "Model" })).toHaveTextContent("GPT-5 mini +1");
+    expect(screen.getByRole("button", { description: "Model" })).toHaveTextContent("GPT-5 mini +1");
     unmount();
 
     render(<ModelPicker options={options} allLabel="All models" appearance="default" size="md" onValueChange={onValueChange} />);
-    expect(screen.getByRole("button", { name: "Model" })).toHaveTextContent("All models");
+    expect(screen.getByRole("button", { description: "Model" })).toHaveTextContent("All models");
     await open(user);
     await user.keyboard("{ArrowDown}{Enter}");
     expect(onValueChange).toHaveBeenLastCalledWith("deepseek-chat");

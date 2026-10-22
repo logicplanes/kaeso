@@ -4,8 +4,9 @@ export const docs = {
   DatePicker: {
     description: "A pill showing the date; a popover with the calendar and a typed ISO field.",
     props: {
-      "aria-label": 'Names the trigger when there is no `label`: "Expires". What it shows (the date, or the placeholder) becomes its description.',
-      "aria-labelledby": "Names the trigger by the elements with these ids, as `aria-label` does.",
+      "aria-label":
+        'What the trigger is for when there is no `label`: "Expires". The trigger is named by what it shows (the date, or the placeholder) and reads this as its description.',
+      "aria-labelledby": "Names the trigger by the elements with these ids, followed by what it shows.",
       defaultValue: "The chosen day on first render.",
       description: "One sentence of help under the label.",
       disabled: "Turns it off: it can't be used, and it looks dimmed.",
@@ -27,8 +28,9 @@ export const docs = {
     description:
       'A pill showing the range ("Oct 1 – Oct 12") or its preset ("Last 30 days"); presets first, then the months and typed ISO fields. A preset applies at once; days chosen in the popover apply with Apply.',
     props: {
-      "aria-label": 'Names the trigger when there is no `label`: "Expires". What it shows (the date, or the placeholder) becomes its description.',
-      "aria-labelledby": "Names the trigger by the elements with these ids, as `aria-label` does.",
+      "aria-label":
+        'What the trigger is for when there is no `label`: "Expires". The trigger is named by what it shows (the date, or the placeholder) and reads this as its description.',
+      "aria-labelledby": "Names the trigger by the elements with these ids, followed by what it shows.",
       defaultValue: "The chosen range on first render.",
       description: "One sentence of help under the label.",
       disabled: "Turns it off: it can't be used, and it looks dimmed.",

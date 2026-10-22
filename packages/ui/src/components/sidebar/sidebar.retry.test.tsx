@@ -32,7 +32,7 @@ describe("a sidebar menu whose code failed to load", () => {
         </Sidebar>
       </Sidebar.Provider>,
     );
-    const trigger = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
+    const trigger = screen.getByRole("button", { name: "Northwind Labs", description: "Switch or open settings" });
 
     await act(async () => idle.forEach((run) => run()));
     await act(() => lazyModulesSettled());

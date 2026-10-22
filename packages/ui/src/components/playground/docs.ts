@@ -52,7 +52,8 @@ export const docs = {
       required: "Marks it as required in a form.",
       allLabel: 'Single only: a first option for no model in particular, such as "All models"; choosing it reports an empty string.',
       appearance: "A quiet button (`ghost`) or a filled one (`default`).",
-      "aria-label": 'The picker\'s accessible name ("Model" by default).',
+      "aria-label":
+        'What the picker is for ("Model" by default): it names the list and its popover, and the button, named by the model it shows, reads it as its description.',
       defaultValue: "The chosen model, or models with `multiple`, on first render.",
       disabled: "Turns it off: it can't be used, and it looks dimmed.",
       fullWidth: "Fills the container.",

@@ -27,6 +27,8 @@ export interface LazyModuleOptions<T> {
 const CHROMIUM_FAILED_FETCH = /^Failed to fetch dynamically imported module: (\S+)$/;
 const IMPORTED = /\bimport\(\s*(["'`])([^"'`$]+)\1\s*\)/;
 
+const downloadFailed = (error: unknown) => error instanceof Error && CHROMIUM_FAILED_FETCH.test(error.message);
+
 function failedAddress(error: unknown, load: () => unknown, base: (() => string) | undefined): string | undefined {
   const named = error instanceof Error ? CHROMIUM_FAILED_FETCH.exec(error.message)?.[1] : undefined;
   const from = base?.();
@@ -45,7 +47,8 @@ export function lazyModule<T>(load: () => Promise<T>, { base, reimport = (url) =
   let pending: Promise<T> | undefined;
   let failures = 0;
   let address: string | undefined;
-  const attempt = () => (address ? reimport(fresh(address, failures)).catch(() => load()) : load());
+  const attempt = () =>
+    address ? reimport(fresh(address, failures)).catch((error: unknown) => (downloadFailed(error) ? Promise.reject(error) : load())) : load();
   return {
     current: () => mod,
     load: () =>

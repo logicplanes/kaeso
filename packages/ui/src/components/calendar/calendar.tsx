@@ -101,7 +101,10 @@ export function Calendar({
 }: CalendarProps) {
   const locale = useLocale();
   const t = useUiText();
-  const language = useMemo(() => (locale === "en" ? {} : localized(locale, t)), [locale, t]);
+  const language = useMemo(() => {
+    const own = localized(locale, t);
+    return locale === "en" ? { labels: own.labels } : own;
+  }, [locale, t]);
   const common = {
     ...language,
     classNames: numberOfMonths > 1 ? { ...CAL_CLASSES, outside: "k-outside invisible" } : CAL_CLASSES,

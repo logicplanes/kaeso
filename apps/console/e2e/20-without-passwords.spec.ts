@@ -66,7 +66,7 @@ test("a person enters their email, goes straight to the identity provider and co
 
   await page.goto("/");
   await expectSignedIn(page);
-  await page.getByRole("button", { name: `${ADMIN.org}: switch or open settings` }).click();
+  await page.getByRole("button", { name: ADMIN.org, description: "Switch or open settings", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(toastText(page, "You're signed out")).toBeVisible();
@@ -125,6 +125,6 @@ test("the operator's sign-in link lets the first admin in without a password", a
   await page.goto(`/auth/magic-link#token=${operatorSignInToken(ADMIN.email)}`);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expectSignedIn(page);
-  await expect(page.getByRole("button", { name: `${ADMIN.org}: switch or open settings` })).toBeVisible();
+  await expect(page.getByRole("button", { name: ADMIN.org, description: "Switch or open settings", exact: true })).toBeVisible();
   await context.close();
 });

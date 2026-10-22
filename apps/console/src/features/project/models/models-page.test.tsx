@@ -163,13 +163,13 @@ describe("ModelsPage", () => {
     const { user, router } = await renderApp(projectPath("models"));
 
     await screen.findByText("claude-haiku-4-5");
-    expect(screen.queryByRole("button", { name: "Provider" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { description: "Provider" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Filters" }));
     const panel = await screen.findByRole("dialog", { name: "Filter models" });
     await user.click(within(panel).getByRole("switch", { name: "Only overridden" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true }));
     expect(screen.getByRole("button", { name: "Filters · 1" })).toBeInTheDocument();
-    expect(within(panel).getByRole("button", { name: "Provider" })).toHaveTextContent("All providers");
+    expect(within(panel).getByRole("button", { description: "Provider" })).toHaveTextContent("All providers");
     vi.unstubAllGlobals();
   });
 
@@ -178,7 +178,7 @@ describe("ModelsPage", () => {
     const { user, router } = await renderApp(projectPath("models"));
 
     await screen.findByText("gpt-5");
-    const provider = screen.getByRole("button", { name: "Provider" });
+    const provider = screen.getByRole("button", { description: "Provider" });
     expect(provider).toHaveTextContent("All providers");
     await user.click(provider);
     await user.click(await screen.findByRole("option", { name: /^OpenAI/ }));

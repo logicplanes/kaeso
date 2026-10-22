@@ -37,11 +37,7 @@ export function OrgSwitcher({ org }: { org: string | undefined }) {
           avatar={avatar}
           label={name}
           {...(caption ? { caption, captionTone: "danger" as const } : {})}
-          aria-label={
-            org
-              ? t("shell.orgSwitcher.label", "{name}: switch or open settings", { name })
-              : t("shell.orgSwitcher.personLabel", "{name}: account and sign out", { name })
-          }
+          aria-label={org ? t("shell.orgSwitcher.description", "Switch or open settings") : t("shell.orgSwitcher.personDescription", "Account and sign out")}
           header={
             <div className="flex min-w-0 items-center gap-10">
               <Avatar name={session.user.name} {...(session.user.avatar_url ? { src: session.user.avatar_url } : {})} size={32} decorative />

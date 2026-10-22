@@ -16,7 +16,8 @@ export const meta = {
   ],
   a11y: [
     "The current page has aria-current=page.",
-    "In rail mode labels move into tooltips and become accessible names.",
+    "In rail mode labels move into tooltips and stay the accessible names.",
+    "The place and the switcher are named by what they show; what opening them does is their description.",
     "A collapsed sidebar is inert, so its links leave the tab order.",
   ],
 };
@@ -77,7 +78,7 @@ export function ProjectPlace({ force }: { force?: string }) {
     <Sidebar.Place
       avatar={<Avatar name={name} kind="org" size={20} decorative />}
       label={name}
-      aria-label={`${name}: switch project`}
+      aria-label="Switch project"
       {...(force ? { "data-force": force } : {})}
     >
       <Menu.Group label="Projects">

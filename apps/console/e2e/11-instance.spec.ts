@@ -69,7 +69,7 @@ test("general: the deletion grace period changes, and with deletion off no organ
   await page.getByRole("switch", { name: "Organizations can be deleted" }).click();
   await expect(toastText(page, "Organizations can't be deleted")).toBeVisible();
   await page.goto("/");
-  await page.getByRole("button", { name: /: switch or open settings$/ }).click();
+  await page.getByRole("button", { description: "Switch or open settings" }).click();
   await page.getByRole("menuitem", { name: "Organization settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "General" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Transfer ownership" })).toBeVisible();

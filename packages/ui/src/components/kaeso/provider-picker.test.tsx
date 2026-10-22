@@ -86,11 +86,12 @@ describe("ProviderPicker", () => {
         onValueChange={onValueChange}
       />,
     );
-    const trigger = screen.getByRole("button", { name: "Provider" });
+    const trigger = screen.getByRole("button", { name: "Groq", description: "Provider" });
     expect(trigger).toHaveTextContent("Groq");
     render(<ProviderPicker appearance="select" providers={providers} allLabel="All providers" aria-label="Every provider" value={null} />);
-    expect(screen.getByRole("button", { name: "Every provider" }).firstElementChild).not.toHaveClass("text-fg-tertiary");
-    expect(screen.getByRole("button", { name: "Every provider" })).toHaveTextContent("All providers");
+    const all = screen.getByRole("button", { name: "All providers", description: "Every provider" });
+    expect(all.firstElementChild).not.toHaveClass("text-fg-tertiary");
+    expect(all).toHaveTextContent("All providers");
     await user.click(trigger);
     expect(screen.getByRole("combobox", { name: "Search providers" })).toHaveFocus();
     await user.keyboard("{Home}{Enter}");

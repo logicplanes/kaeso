@@ -9,7 +9,7 @@ export const docs = {
       disabled: "Turns off every segment.",
       fullWidth: "Fills the width of its container.",
       onValueChange: "Called with the chosen option.",
-      options: "The options, as segments.",
+      options: "The options, as segments. A segment with a label is named by it; an icon-only one needs its `aria-label`, also shown as its tooltip.",
       size: "The control's height.",
       value: "The chosen option, when you control it.",
     },

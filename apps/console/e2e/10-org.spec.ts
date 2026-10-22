@@ -17,7 +17,7 @@ test.describe.configure({ mode: "serial" });
 
 async function openOrgSettings(page: Page, label: string) {
   await signInAsOwner(page);
-  await page.getByRole("button", { name: `${OWNER.org}: switch or open settings` }).click();
+  await page.getByRole("button", { name: OWNER.org, description: "Switch or open settings", exact: true }).click();
   await page.getByRole("menuitem", { name: "Organization settings" }).click();
   await expect(page).toHaveURL(/\/settings\/orgs\/[^/]+\/general$/);
   if (label !== "General") await page.locator(`nav[aria-label="Settings"] a[href^="/settings/orgs/"]`).getByText(label, { exact: true }).click();
@@ -303,7 +303,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
   await page.getByRole("tab", { name: "Deletions" }).click();
   await page.getByRole("button", { name: "Delete logs" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete request logs" });
-  await dialog.getByRole("button", { name: "Period" }).click();
+  await dialog.getByRole("button", { description: "Period" }).click();
   await page.getByRole("option", { name: "Last 7 days" }).click();
   const typed = dialog.getByRole("textbox", { name: "Type delete to confirm" });
   await stepTo(dialog, typed);

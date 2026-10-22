@@ -27,7 +27,7 @@ describe("lazyModule", () => {
   const bundled = <T,>(load: () => Promise<T>) =>
     Object.assign(load, { toString: () => "() => o(() => import(`./nav-sheet.C1a2b3.js`), __vite__mapDeps([0, 1]))" });
 
-  it("fetches a module whose download failed in Chromium from a fresh address, since Chromium remembers the failed one", async () => {
+  it("fetches a module whose download failed in Chromium from a fresh address, and asks for no other while the fresh one fails to download", async () => {
     const load = vi.fn(() => Promise.reject(new TypeError(`Failed to fetch dynamically imported module: ${chunk}`)));
     const reimport = vi
       .fn<(url: string) => Promise<string>>()
@@ -37,7 +37,7 @@ describe("lazyModule", () => {
     await expect(m.load()).rejects.toThrow("Failed to fetch");
     await expect(m.load()).rejects.toThrow("Failed to fetch");
     await expect(m.load()).resolves.toBe("sheet");
-    expect(load).toHaveBeenCalledTimes(2);
+    expect(load).toHaveBeenCalledTimes(1);
     expect(reimport.mock.calls).toEqual([[`${chunk}?retry=1`], [`${chunk}?retry=2`]]);
     expect(m.current()).toBe("sheet");
   });

@@ -17,11 +17,7 @@ export function ProjectSwitcher({ org, project }: { org: string; project: string
   useEffect(() => preloadPictures(listed?.map((p) => p.avatar_url) ?? []), [listed]);
   return (
     <OpensWhenReady ready={!!menus && !projects.isPending}>
-      <Sidebar.Place
-        avatar={<Picture project={known} />}
-        label={name}
-        aria-label={name ? t("shell.projectSwitcher.label", "{name}: switch project", { name }) : t("shell.switchProject", "Switch project")}
-      >
+      <Sidebar.Place avatar={<Picture project={known} />} label={name} aria-label={t("shell.switchProject", "Switch project")}>
         {menus ? <menus.ProjectMenu org={org} project={project} known={known} listed={listed} /> : <></>}
       </Sidebar.Place>
     </OpensWhenReady>

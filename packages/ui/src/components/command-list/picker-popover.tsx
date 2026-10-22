@@ -8,6 +8,7 @@ import { Icon } from "../icon/icon.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { KAESO_SELECT_VARIANTS } from "../select/select.js";
 import { useUiText } from "../../i18n/context.js";
+import { joinIds, showsText, useHiddenDescription } from "../../utils/hidden-description.js";
 import { CommandListHeightContext } from "./command-list.js";
 
 export const KAESO_PICKER_POPOVER_VARIANTS = {
@@ -99,37 +100,58 @@ export interface PickerTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButton
   invalid?: boolean | undefined;
   placeholder?: ReactNode | undefined;
   children?: ReactNode | undefined;
+  "aria-label"?: string | undefined;
   "data-force"?: string | undefined;
 }
 
 export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(function PickerTrigger(
-  { appearance = "default", size = "md", fullWidth, invalid, placeholder, children, className, type = "button", ...props },
+  {
+    appearance = "default",
+    size = "md",
+    fullWidth,
+    invalid,
+    placeholder,
+    children,
+    className,
+    type = "button",
+    "aria-label": ariaLabel,
+    "aria-describedby": describedBy,
+    ...props
+  },
   ref,
 ) {
   const empty = children === undefined || children === null || children === false;
+  const shows = showsText(empty ? placeholder : children);
+  const purpose = useHiddenDescription(shows ? ariaLabel : undefined);
+  const descriptions = joinIds(purpose.id, describedBy);
   return (
-    <button
-      ref={ref}
-      type={type}
-      data-picker=""
-      {...props}
-      {...(invalid ? { "aria-invalid": true } : {})}
-      className={cn(
-        "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control focus-ring disabled:cursor-not-allowed",
-        KAESO_SELECT_VARIANTS.size[size].classes,
-        KAESO_SELECT_VARIANTS.appearance[appearance].classes,
-        invalid && "ring-invalid",
-        fullWidth && "w-full",
-        className,
-      )}
-    >
-      <span className={cn("flex min-w-0 flex-1 items-center truncate text-left", empty && "font-regular text-fg-tertiary")}>
-        {empty ? placeholder : children}
-      </span>
-      <span className="flex shrink-0 text-fg-tertiary">
-        <Icon icon={icons.chevronDown} size="sm" />
-      </span>
-    </button>
+    <>
+      <button
+        ref={ref}
+        type={type}
+        data-picker=""
+        {...props}
+        {...(!shows && ariaLabel ? { "aria-label": ariaLabel } : {})}
+        {...(descriptions ? { "aria-describedby": descriptions } : {})}
+        {...(invalid ? { "aria-invalid": true } : {})}
+        className={cn(
+          "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control focus-ring disabled:cursor-not-allowed",
+          KAESO_SELECT_VARIANTS.size[size].classes,
+          KAESO_SELECT_VARIANTS.appearance[appearance].classes,
+          invalid && "ring-invalid",
+          fullWidth && "w-full",
+          className,
+        )}
+      >
+        <span className={cn("flex min-w-0 flex-1 items-center truncate text-left", empty && "font-regular text-fg-tertiary")}>
+          {empty ? placeholder : children}
+        </span>
+        <span className="flex shrink-0 text-fg-tertiary">
+          <Icon icon={icons.chevronDown} size="sm" />
+        </span>
+      </button>
+      {purpose.node}
+    </>
   );
 });
 PickerTrigger.displayName = "PickerTrigger";

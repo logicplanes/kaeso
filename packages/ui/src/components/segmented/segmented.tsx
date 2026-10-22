@@ -78,7 +78,7 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
             key={o.value}
             value={o.value}
             {...(o.disabled ? { disabled: true } : {})}
-            {...(o["aria-label"] ? { "aria-label": o["aria-label"] } : {})}
+            {...(iconOnly && o["aria-label"] ? { "aria-label": o["aria-label"] } : {})}
             className={cn(
               "relative inline-flex cursor-pointer items-center justify-center gap-6 rounded-pill font-medium whitespace-nowrap text-fg-secondary transition-control focus-ring tap-target",
               "hover:text-fg checked:text-fg disabled:cursor-not-allowed disabled:text-fg-disabled",

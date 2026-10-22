@@ -47,6 +47,8 @@ export const docs = {
     description: "The pill that opens a picker and shows its value, in the same looks and sizes as `Select`.",
     props: {
       appearance: "A raised pill, quiet in a settings row, or transparent in a column header.",
+      "aria-label":
+        "What the picker is for. The pill is named by what it shows, so this becomes its description; it names the pill only while the pill shows nothing.",
       children: "The chosen value as it should read; the placeholder shows without it.",
       fullWidth: "Fills the container.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",

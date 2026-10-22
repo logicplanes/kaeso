@@ -104,7 +104,8 @@ export const docs = {
       required: "Marks it as required in a form.",
       allLabel: 'Select only: a first option for no provider in particular, such as "All providers"; choosing it reports `null`.',
       appearance: "An always-open list for a dialog step, or a pill that opens it.",
-      "aria-label": "The accessible name, for when there is no visible label.",
+      "aria-label":
+        "What the picker is for, when there is no visible label: it names the list, and the pill, named by the provider it shows, reads it as its description.",
       autoFocus: "List only: focuses the search field when it appears.",
       disabled: "Turns it off: it can't be used, and it looks dimmed.",
       onValueChange: "Called with the chosen provider's id, or `null` for `allLabel`.",
