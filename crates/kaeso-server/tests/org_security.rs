@@ -300,7 +300,11 @@ async fn an_sso_connection_is_stored_kept_required_and_removed() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["require_sso"], true);
     let r = app.get(&base, cookie).await;
-    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.status,
+        StatusCode::OK,
+        "the owner's address is at another domain, so they keep their own sign-in"
+    );
 
     let admin = sso_session(&app, &idp, "ada@acme.example").await;
     let r = delete(&app, &admin, &sso).await;

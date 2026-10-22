@@ -79,7 +79,8 @@ pub struct SsoDomain {
 pub struct SecurityView {
     #[doc = "Whether members need two-factor authentication."]
     pub require_2fa: bool,
-    #[doc = "Whether members must sign in through the org's SSO."]
+    #[doc = "Whether the accounts the org manages sign in only through its SSO,\n\
+        everywhere on the install; guests keep their own sign-in."]
     pub require_sso: bool,
     #[doc = "The longest lifetime of new keys, in days; `null` for no limit."]
     pub max_key_lifetime_days: Option<i32>,
@@ -426,6 +427,7 @@ pub async fn verify_domains(
     }
     let mut tx = state.pg.begin().await?;
     let row = lock_changeable(&mut tx, &ctx).await?;
+    let mut ended_all = Vec::new();
     for domain in &proven {
         if oidc::verified_elsewhere(&mut *tx, row.id, domain).await? {
             return Err(ApiError::Conflict(format!(
@@ -434,14 +436,21 @@ pub async fn verify_domains(
             )));
         }
         if oidc::mark_verified(&mut *tx, row.id, domain, ctx.now).await? {
+            let ended = if row.require_sso {
+                end_other_sign_ins(&mut tx, &ctx, std::slice::from_ref(domain)).await?
+            } else {
+                Vec::new()
+            };
             ctx.audit(Some(org), "security.sso_domain_verify")
                 .target("org", org)
-                .after(serde_json::json!({ "domain": domain }))
+                .after(serde_json::json!({ "domain": domain, "sessions_ended": ended.len() }))
                 .write(&mut tx)
                 .await?;
+            ended_all.extend(ended);
         }
     }
     tx.commit().await?;
+    sessions::forget(&state, &ended_all).await;
     Ok(Json(view(&state, &row).await?))
 }
 
@@ -503,27 +512,52 @@ async fn set_flag(
     let before = lock_changeable(&mut tx, ctx).await?;
     let mut row = before.clone();
     apply(&mut row);
-    if row.require_sso && !before.require_sso && oidc::get(&mut *tx, row.id).await?.is_none() {
-        return Err(ApiError::Conflict(
-            "Set up an SSO connection before requiring SSO.".into(),
-        ));
+    let mut ended = Vec::new();
+    if row.require_sso && !before.require_sso {
+        let connection = oidc::get(&mut *tx, row.id).await?.ok_or_else(|| {
+            ApiError::Conflict("Set up an SSO connection before requiring SSO.".into())
+        })?;
+        ended = end_other_sign_ins(&mut tx, ctx, &connection.verified_domains).await?;
     }
     orgs::update(&mut *tx, &row).await?;
+    let mut after = serde_json::to_value(OrgView::from_row(&row)).map_err(ApiError::internal)?;
+    if let (false, Some(fields)) = (ended.is_empty(), after.as_object_mut()) {
+        fields.insert("sessions_ended".into(), ended.len().into());
+    }
     ctx.audit(Some(scope.id()), action)
         .target("org", scope.id())
         .before(OrgView::from_row(&before))
-        .after(OrgView::from_row(&row))
+        .after(after)
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    sessions::forget(state, &ended).await;
     Ok(Json(view(state, &row).await?))
+}
+
+// Requiring SSO covers the accounts the org manages everywhere, so their sessions from a
+// password or a sign-in link end; the caller's own stays, and the org closes to it instead.
+async fn end_other_sign_ins(
+    tx: &mut sqlx::PgConnection,
+    ctx: &Ctx,
+    domains: &[String],
+) -> ApiResult<Vec<Vec<u8>>> {
+    if domains.is_empty() {
+        return Ok(Vec::new());
+    }
+    let keep = ctx.session().ok().map(|s| s.id);
+    Ok(sessions_store::revoke_other_sign_ins_at(&mut *tx, domains, keep, ctx.now).await?)
 }
 
 #[utoipa::path(
     put,
     path = "/orgs/{org}/security/require-sso",
-    summary = "Requires (or stops requiring) members to sign in to this org through\n\
-    its SSO. Needs an SSO connection.",
+    summary = "Requires (or stops requiring) the accounts the org manages to sign in\n\
+    only through its SSO. Needs an SSO connection.",
+    description = "The accounts at the org's verified email domains then can't sign in with a \
+    password or a sign-in link anywhere on the install, and their sessions from those end, except \
+    the one making the request. Guests, members at other domains, keep their own sign-in. A \
+    sign-in link from `kaeso user sign-in-link` still works.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = Switch,

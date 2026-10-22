@@ -44,7 +44,8 @@ fn links_on(state: &AppState) -> ApiResult<()> {
     post,
     path = "/auth/magic-link",
     summary = "Sends a sign-in link if the address has an active account. Always\n\
-    answers the same way.",
+    answers the same way, unless the org that manages the address's domain\n\
+    requires SSO.",
     tag = "auth",
     request_body = MagicLinkRequest,
     responses((status = 200, description = "Accepted; an email was sent if the account exists.", body = EmailSent))
@@ -60,6 +61,7 @@ pub async fn request(
     let Ok(email) = kaeso_core::email::normalize(&req.email) else {
         return Ok(answer);
     };
+    crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
     if throttle::hit(
         &state,
         EMAILS_PER_ADDRESS,
@@ -114,7 +116,7 @@ pub struct VerifyRequest {
     summary = "Signs in with a sign-in link. The link works once. With TOTP set up,\n\
     answers with a challenge for `auth/totp` instead of a session.",
     description = "A link from `kaeso user sign-in-link` works even while sign-in links by \
-    email are turned off.",
+    email are turned off, and for an account whose managing org requires SSO.",
     tag = "auth",
     request_body = VerifyRequest,
     responses(
@@ -148,6 +150,9 @@ pub async fn verify(
         .await?
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
+    if !by_operator && let Some(email) = &user.email {
+        crate::services::managed::refuse_other_sign_in(&state.pg, email).await?;
+    }
     users::mark_verified(&state.pg, user.id, ctx.now).await?;
     if totp::is_enabled(&state.pg, user.id).await? {
         return challenge(&state, &ctx, &user, Method::MagicLink).await;

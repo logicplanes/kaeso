@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::extract::State;
 use kaeso_core::id::OrgId;
-use kaeso_store::pg::{instance, oidc, orgs, users};
+use kaeso_store::pg::{instance, oidc, users};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -20,8 +20,9 @@ pub struct SignInMethodsView {
     pub password: bool,
     #[doc = "A sign-in link by email."]
     pub magic_link: bool,
-    #[doc = "The organization of the address's verified domain requires SSO, so the\n\
-        page offers its provider alone."]
+    #[doc = "The organization that manages the address, at its verified domain,\n\
+        requires SSO, so the page offers its provider alone: the account can't\n\
+        sign in with a password or a sign-in link anywhere on the install."]
     pub sso_required: bool,
     #[doc = "The page offers to create an account (`auth/signup`). Without an\n\
         address: some address may. With one: this address may, by the\n\
@@ -54,10 +55,10 @@ pub struct SsoProviderView {
 }
 
 impl SsoProviderView {
-    fn of(c: oidc::Connection, org: &orgs::Org) -> SsoProviderView {
+    fn of(c: oidc::Connection, org_name: &str) -> SsoProviderView {
         SsoProviderView {
             org: OrgId::from_uuid(c.org_id),
-            org_name: org.name.clone(),
+            org_name: org_name.to_owned(),
             name: c.display_name,
             auto_redirect: c.auto_redirect,
         }
@@ -120,18 +121,14 @@ pub async fn lookup(
     let policy = accounts::policy(&instance::get(&state.pg).await?);
     let set_up = users::any_exist(&state.pg).await?;
     let mut methods = install(&state, policy.may_sign_up(&email), set_up);
-    let org = oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email)).await?;
-    let connection = match org {
-        Some(org) => oidc::get(&state.pg, org).await?,
+    let manager = crate::services::managed::of_address(&state.pg, &email).await?;
+    let connection = match &manager {
+        Some(m) => oidc::get(&state.pg, m.org_id).await?,
         None => None,
     };
-    let org = match &connection {
-        Some(c) => orgs::get(&state.pg, c.org_id).await?,
-        None => None,
-    };
-    if let (Some(connection), Some(org)) = (connection, org) {
-        methods.sso_required = org.require_sso;
-        methods.provider = Some(SsoProviderView::of(connection, &org));
+    if let (Some(manager), Some(connection)) = (manager, connection) {
+        methods.sso_required = manager.require_sso;
+        methods.provider = Some(SsoProviderView::of(connection, &manager.org_name));
     }
     if methods.sso_required {
         methods.password = false;

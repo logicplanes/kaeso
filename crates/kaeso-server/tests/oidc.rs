@@ -1583,18 +1583,19 @@ async fn an_answer_in_flight_while_the_connection_changes_signs_nobody_in() {
     s.cleanup().await;
 }
 
-#[tokio::test]
-async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign_in() {
-    let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
-    let idp = MockIdp::start("kaeso", "client-secret").await;
-    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
-    set_default_role(&app, &owner.org_id, "member").await;
-    let beta = another_org(&app, "Beta").await;
+struct InTwoOrgs {
+    acme: String,
+    beta: String,
+    ada: String,
+}
 
-    let r = sso_as(&app, &idp, "sub-ada", "ada@acme.example").await;
-    let ada = r.cookie().expect("a new account");
+async fn ada_in_two_orgs(app: &App, idp: &MockIdp) -> InTwoOrgs {
+    let owner = app.setup().await;
+    connect_org(app, &owner.org_id, idp, "acme.example", None, false).await;
+    set_default_role(app, &owner.org_id, "member").await;
+    let beta = another_org(app, "Beta").await;
+    let r = sso_as(app, idp, "sub-ada", "ada@acme.example").await;
+    let ada = r.cookie().unwrap();
     let who = app.get("/auth/session", &ada).await;
     let ada_id: kaeso_core::id::UserId = who.body["user"]["id"].as_str().unwrap().parse().unwrap();
     let mut tx = app.state.pg.begin().await.unwrap();
@@ -1610,9 +1611,16 @@ async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign
     .await
     .unwrap();
     tx.commit().await.unwrap();
+    InTwoOrgs {
+        acme: owner.org_id,
+        beta,
+        ada,
+    }
+}
 
-    let who = app.get("/auth/session", &ada).await;
-    let access: std::collections::HashMap<String, String> = who.body["memberships"]
+async fn access_of(app: &App, cookie: &str) -> std::collections::HashMap<String, String> {
+    let who = app.get("/auth/session", cookie).await;
+    who.body["memberships"]
         .as_array()
         .unwrap()
         .iter()
@@ -1622,13 +1630,94 @@ async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign
                 m["access"].as_str().unwrap().to_owned(),
             )
         })
-        .collect();
-    assert_eq!(access[&owner.org_id], "ok");
+        .collect()
+}
+
+#[tokio::test]
+async fn a_managed_accounts_sso_session_opens_every_org_and_the_account() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let InTwoOrgs { acme, beta, ada } = ada_in_two_orgs(&app, &idp).await;
+
+    let who = app.get("/auth/session", &ada).await;
+    assert_eq!(who.body["managed_by"]["org"], acme.as_str());
+    assert_eq!(who.body["managed_by"]["name"], "Acme");
+    let access = access_of(&app, &ada).await;
+    assert_eq!((&*access[&acme], &*access[&beta]), ("ok", "ok"));
+    app.get(&format!("/orgs/{beta}"), &ada)
+        .await
+        .expect_status(StatusCode::OK);
+    sqlx::query("UPDATE organizations SET require_2fa = true WHERE id = $1")
+        .bind(common::uuid(&beta))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(
+        access_of(&app, &ada).await[&beta],
+        "ok",
+        "the provider stands in for the second factor"
+    );
+
+    app.clock.advance(time::Duration::minutes(16));
+    let r = app
+        .post(
+            "/me/password",
+            json!({ "new_password": "another long password" }),
+            Some(&ada),
+        )
+        .await;
+    assert_eq!(
+        r.error_type(),
+        "recent_sign_in_required",
+        "an account change still needs a recent sign-in"
+    );
+    let r = app
+        .post("/me/orgs", json!({ "name": "Mine" }), Some(&ada))
+        .await;
+    assert_eq!(
+        r.body["error"]["message"],
+        "Only instance admins can create organizations on this install.",
+        "the instance's own rule decides, not the way Ada signed in"
+    );
+    let r = app
+        .call(
+            axum::http::Method::DELETE,
+            &format!("/me/memberships/{beta}"),
+            None,
+            Some(&ada),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let InTwoOrgs {
+        acme: owner_org,
+        beta,
+        ada,
+    } = ada_in_two_orgs(&app, &idp).await;
+    sqlx::query("UPDATE users SET email = 'ada@else.example' WHERE email = 'ada@acme.example'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let who = app.get("/auth/session", &ada).await;
+    assert_eq!(
+        who.body["managed_by"],
+        serde_json::Value::Null,
+        "an address at another domain is no longer the org's"
+    );
+
+    let access = access_of(&app, &ada).await;
+    assert_eq!(access[&owner_org], "ok");
     assert_eq!(access[&beta], "needs_other_sign_in");
     assert_eq!(
-        app.get(&format!("/orgs/{}", owner.org_id), &ada)
-            .await
-            .status,
+        app.get(&format!("/orgs/{owner_org}"), &ada).await.status,
         StatusCode::OK
     );
     let r = app.get(&format!("/orgs/{beta}"), &ada).await;
@@ -1968,17 +2057,30 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
         .execute(&app.state.pg)
         .await
         .unwrap();
-    let there = app
-        .get(&format!("/me/sign-in-again?org={}", owner.org_id), &sso)
+    let guest = app
+        .get("/me/sign-in-again", &sso)
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(
-        (&there.body["password"], &there.body["magic_link"]),
-        (&json!(false), &json!(false)),
-        "an org that requires SSO is confirmed only through it"
+        guest.body["password"], true,
+        "requiring SSO leaves a guest's own sign-in alone"
     );
-    assert_eq!(there.body["sso"].as_array().unwrap().len(), 1);
+    common::manage_domain(&app, &owner.org_id, "example.com").await;
+    let managed = app
+        .get("/me/sign-in-again", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        (&managed.body["password"], &managed.body["magic_link"]),
+        (&json!(false), &json!(false)),
+        "an account whose org requires SSO is confirmed only through it"
+    );
+    assert_eq!(managed.body["sso"].as_array().unwrap().len(), 1);
     sqlx::query("UPDATE organizations SET require_sso = false")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM org_oidc_domains WHERE domain = 'example.com'")
         .execute(&app.state.pg)
         .await
         .unwrap();

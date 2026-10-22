@@ -166,6 +166,7 @@ pub async fn password(
     }
     throttle_ip(&state, &ctx, SIGN_IN_PER_IP).await?;
     let email = kaeso_core::email::normalize(&req.email).map_err(|_| wrong())?;
+    crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
     let attempts = Attempts::for_address(&ctx, &email);
     attempts.begin(&state).await?;
 

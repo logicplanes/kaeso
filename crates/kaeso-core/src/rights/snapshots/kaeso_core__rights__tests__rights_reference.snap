@@ -24,7 +24,7 @@ expression: rights_reference()
 | `provider_credentials.replace` | Providers | Change provider keys | Replace and rename provider keys, choose each provider's default and assign keys to projects. | `provider_credentials.view` | ✓ |  |
 | `provider_credentials.delete` ⚠ | Providers | Delete provider keys | Remove a provider key from the organization. | `provider_credentials.view` |  |  |
 | `security.sso.manage` | Security | Manage SSO | Configure the organization's identity provider and the role of people who arrive through it. |  | ✓ |  |
-| `security.sso.require` ⚠ | Security | Require SSO | Require members to sign in to this organization through SSO. |  | ✓ |  |
+| `security.sso.require` ⚠ | Security | Require SSO | Require the accounts this organization manages to sign in only through its SSO. |  | ✓ |  |
 | `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
 | `security.key_policy.manage` | Security | Set key lifetime | Set the organization's maximum key lifetime. |  |  |  |
 | `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |

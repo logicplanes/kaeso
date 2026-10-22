@@ -11,7 +11,7 @@ use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::org_to_store;
 use crate::platform::json::Body;
-use crate::platform::orgs::members::{MemberView, grant_of};
+use crate::platform::orgs::members::MemberView;
 use crate::platform::orgs::org::OrgView;
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
@@ -208,11 +208,12 @@ pub async fn members_list(
     let page = page.page()?;
     let rows = members::list_org(&state.pg, o.id, page.after, page.fetch(), None, None).await?;
     let list = List::from_rows(&page, rows, |m| m.id, |m| m);
+    let domains = crate::platform::orgs::members::domains(&state, o.id).await?;
     Ok(Json(List {
         data: list
             .data
             .iter()
-            .map(|m| Ok(MemberView::from_row(m, &grant_of(m)?)))
+            .map(|m| crate::platform::orgs::members::view(m, &domains))
             .collect::<ApiResult<_>>()?,
         has_more: list.has_more,
         next_cursor: list.next_cursor,

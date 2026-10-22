@@ -9,6 +9,7 @@ pub mod keys;
 pub mod limits;
 pub mod logs;
 pub mod mail_lang;
+pub mod managed;
 pub mod master_key;
 pub mod models_dev;
 pub mod orgs;

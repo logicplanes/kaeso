@@ -19,6 +19,7 @@ use crate::platform::grants::{
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query, id_param};
+use crate::services::managed::Domains;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -51,12 +52,19 @@ pub struct MemberView {
     #[doc = "When they joined."]
     #[serde(with = "time::serde::rfc3339")]
     pub joined_at: OffsetDateTime,
+    #[doc = "Whether the org manages their account: their address is at one of its\n\
+        verified email domains and it has an SSO connection. Otherwise they are\n\
+        a guest, who keeps their own way of signing in."]
+    pub managed: bool,
 }
 
 impl MemberView {
-    pub fn from_row(m: &OrgMember, grant: &OrgGrant) -> MemberView {
+    pub fn from_row(m: &OrgMember, grant: &OrgGrant, domains: &Domains) -> MemberView {
         let role = RoleRef::of_org(&m.grant());
         MemberView {
+            managed: domains
+                .manager(m.email.as_deref())
+                .is_some_and(|(org, _)| org == m.org_id),
             id: MembershipId::from_uuid(m.id),
             user: MemberUser {
                 id: UserId::from_uuid(m.user_id),
@@ -75,8 +83,12 @@ pub(crate) fn grant_of(m: &OrgMember) -> ApiResult<OrgGrant> {
     org_from_store(&m.grant())
 }
 
-fn view(m: &OrgMember) -> ApiResult<MemberView> {
-    Ok(MemberView::from_row(m, &grant_of(m)?))
+pub(crate) fn view(m: &OrgMember, domains: &Domains) -> ApiResult<MemberView> {
+    Ok(MemberView::from_row(m, &grant_of(m)?, domains))
+}
+
+pub(crate) async fn domains(state: &AppState, org: uuid::Uuid) -> ApiResult<Domains> {
+    Ok(Domains::load(&state.pg, Some(org)).await?)
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -125,8 +137,13 @@ pub async fn list(
     )
     .await?;
     let list = List::from_rows(&page, rows, |m| m.id, |m| m);
+    let domains = domains(&state, ctx.org()?.org.id).await?;
     Ok(Json(List {
-        data: list.data.iter().map(view).collect::<ApiResult<_>>()?,
+        data: list
+            .data
+            .iter()
+            .map(|m| view(m, &domains))
+            .collect::<ApiResult<_>>()?,
         has_more: list.has_more,
         next_cursor: list.next_cursor,
     }))
@@ -155,7 +172,11 @@ pub async fn get(
     ctx: Ctx,
     Path((_org, user)): Path<(String, String)>,
 ) -> ApiResult<Json<MemberView>> {
-    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
+    let domains = domains(&state, ctx.org()?.org.id).await?;
+    Ok(Json(view(
+        &member(&state.pg, &ctx, &user).await?,
+        &domains,
+    )?))
 }
 
 #[utoipa::path(
@@ -223,7 +244,11 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     crate::services::keys::forget_user_in_org(&state, scope.org.id, target.user_id).await;
-    Ok(Json(view(&member(&state.pg, &ctx, &user).await?)?))
+    let domains = domains(&state, scope.org.id).await?;
+    Ok(Json(view(
+        &member(&state.pg, &ctx, &user).await?,
+        &domains,
+    )?))
 }
 
 #[utoipa::path(

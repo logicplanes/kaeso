@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
-use crate::platform::grants::{org_from_store, org_to_store};
+use crate::platform::grants::org_to_store;
 use crate::platform::json::Body;
 use crate::platform::params::Path;
 use crate::state::AppState;
@@ -37,7 +37,8 @@ pub struct OrgView {
     pub content_retention_days: i32,
     #[doc = "Whether members need two-factor authentication."]
     pub require_2fa: bool,
-    #[doc = "Whether members must sign in through the org's SSO."]
+    #[doc = "Whether the accounts the org manages sign in only through its SSO,\n\
+        everywhere on the install; guests keep their own sign-in."]
     pub require_sso: bool,
     #[doc = "The longest lifetime of new API keys, in days; `null` for no limit."]
     pub max_key_lifetime_days: Option<i32>,
@@ -368,8 +369,6 @@ pub async fn transfer(
     let row = members::get_org(&state.pg, scope.org.id, req.user_id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("member"))?;
-    Ok(Json(crate::platform::orgs::members::MemberView::from_row(
-        &row,
-        &org_from_store(&row.grant())?,
-    )))
+    let domains = super::members::domains(&state, scope.org.id).await?;
+    Ok(Json(super::members::view(&row, &domains)?))
 }

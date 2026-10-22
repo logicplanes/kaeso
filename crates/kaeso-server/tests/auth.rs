@@ -1083,7 +1083,7 @@ async fn password_changes_end_other_sessions_and_rotate_this_one() {
 async fn required_two_factor_and_sso_show_in_the_session() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
-    app.setup().await;
+    let owner = app.setup().await;
     sqlx::query("UPDATE organizations SET require_2fa = true")
         .execute(&app.state.pg)
         .await
@@ -1119,6 +1119,12 @@ async fn required_two_factor_and_sso_show_in_the_session() {
         .execute(&app.state.pg)
         .await
         .unwrap();
+    assert_eq!(
+        app.get("/auth/session", &magic).await.body["memberships"][0]["access"],
+        "needs_2fa",
+        "requiring SSO leaves an account the org doesn't manage to its own sign-in"
+    );
+    common::manage_domain(&app, &owner.org_id, "example.com").await;
     assert_eq!(
         app.get("/auth/session", &magic).await.body["memberships"][0]["access"],
         "needs_sso"

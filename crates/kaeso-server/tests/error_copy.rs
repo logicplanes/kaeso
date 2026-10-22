@@ -14,6 +14,7 @@ const SCANNED: &[&str] = &[
     "crates/kaeso-server/src/platform",
     "crates/kaeso-server/src/auth",
     "crates/kaeso-server/src/services/limits.rs",
+    "crates/kaeso-server/src/services/managed.rs",
     "crates/kaeso-server/src/services/orgs.rs",
     "crates/kaeso-server/src/services/users.rs",
     "crates/kaeso-core/src/catalogue/mod.rs",
