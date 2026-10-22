@@ -104,6 +104,16 @@ describe("single sign-on links", () => {
     expect((await (await notifications()).findAllByText("This identity is already linked to another Kaeso account.")).length).toBeGreaterThan(0);
   });
 
+  it("says why linking failed in the person's language", async () => {
+    signedIn();
+    on("GET", "me", me());
+    on("GET", "me/sso-links", links(false));
+    await renderApp(`${PATH}#sso_error=linked_elsewhere`, { locale: "de" });
+    const region = within(await screen.findByRole("region", { name: "Benachrichtigungen" }));
+    expect((await region.findAllByText("Diese Identität ist bereits mit einem anderen Kaeso-Konto verknüpft.")).length).toBeGreaterThan(0);
+    expect(window.location.hash).toBe("");
+  });
+
   it("shows no section without an organization that uses single sign-on", async () => {
     signedIn();
     on("GET", "me", me());
