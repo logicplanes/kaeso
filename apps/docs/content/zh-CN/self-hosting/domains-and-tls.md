@@ -57,7 +57,7 @@ services:
 为 Kaeso 设置代理：
 
 - 关闭 `/v1/` 的响应缓冲，让流式回复实时到达应用。
-- 传递 `X-Forwarded-For`。网关只信任来自 `KAESO_TRUSTED_PROXIES` 的这个请求头。Compose 包将其设为回环网段和各私有网段，只有它自己的容器和主机发布的端口能到达这些地址。在其他环境中默认只信任回环地址，因此请将其设为代理的地址。在不受信任的代理后面，日志和 [API 密钥限流](configuration.md#api-密钥限流)会把每个客户端都看作该代理。
+- 传递 `X-Forwarded-For`，并在 `.env` 中把 `KAESO_TRUSTED_PROXIES` 设为代理的确切地址。网关只信任来自该地址的这个请求头。Compose 包默认信任回环地址和 `edge` 网络，即 `EDGE_SUBNET`。服务器上调用上述端口的代理会从 `EDGE_SUBNET` 的第一个地址（默认为 `172.30.83.1`）到达网关。在不受信任的代理后面，日志和 [API 密钥限流](configuration.md#api-密钥限流)会把每个客户端都看作该代理。
 - 如果用户通过 `https://` 加 `KAESO_DOMAIN` 以外的地址访问 Kaeso，请在 `.env` 中把 `KAESO_PUBLIC_URL` 设为该地址。
 - 切勿转发指标端口 9100。
 
@@ -66,7 +66,7 @@ services:
 如果代理在同一台服务器的 Docker 中运行，请通过 Docker 网络而不是发布的端口把它连接到 Kaeso。为代理和 Kaeso 单独创建一个网络：
 
 ```bash
-docker network create kaeso-proxy
+docker network create --subnet 172.30.84.0/24 kaeso-proxy
 ```
 
 然后把网关和控制台加入该网络，并使用其他栈不会用到的别名：
@@ -89,7 +89,7 @@ networks:
     external: true
 ```
 
-把代理的容器加入 `kaeso-proxy`，转发到 `kaeso-gateway:8080` 和 `kaeso-console:3000`。之所以需要别名，是因为 Compose 会在服务加入的每个网络中把服务名注册为 DNS 名称。在其他栈也在用的网络上，`gateway` 可能会指向另一个栈的容器。
+把代理的容器以固定地址（例如 `172.30.84.2`）加入 `kaeso-proxy`，在 `.env` 中设置 `KAESO_TRUSTED_PROXIES=172.30.84.2`，并转发到 `kaeso-gateway:8080` 和 `kaeso-console:3000`。之所以需要别名，是因为 Compose 会在服务加入的每个网络中把服务名注册为 DNS 名称。在其他栈也在用的网络上，`gateway` 可能会指向另一个栈的容器。
 
 ## 长时间的流
 

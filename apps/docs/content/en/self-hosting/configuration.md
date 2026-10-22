@@ -32,6 +32,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `KAESO_DIR` | with the updater | The install's folder, the only folder the updater's Docker proxy allows bind mounts from. |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
+| `EDGE_SUBNET` | no | The subnet of the `edge` network, `172.30.83.0/24` by default, whose `X-Forwarded-For` the gateway believes. Change it when the server already uses that range. |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … and `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | no | The services' memory and process limits, and the memory Valkey keeps its data in ([container limits](#container-limits)). |
 
 Use only letters and digits in the passwords, as `openssl rand -hex` writes them, because they go into connection URLs. PostgreSQL keeps the passwords it had when its volume was created, so changing `POSTGRES_PASSWORD` later locks the gateway out. ClickHouse and Valkey take their password from `.env` at every start.
@@ -254,6 +255,7 @@ The gateway counts failed API key lookups per client address in Valkey, so a cli
 - Valid keys never count. A key the instance used in the last 30 seconds still works from a blocked address; other valid keys wait for the window to end.
 - IPv6 addresses count per /64.
 - Behind a proxy, the client address comes from `X-Forwarded-For` only when the proxy is in `KAESO_TRUSTED_PROXIES`. Otherwise every client shares the proxy's allowance.
+- Docker Desktop, Colima and rootless Docker pass published ports through a proxy of their own, so Caddy sees every client at one address, and all clients share one allowance. Run Kaeso on Docker Engine with rootful networking where the limit should hold per client.
 - While Valkey can't be reached, failures aren't counted.
 
 Each block adds to `kaeso_key_failure_blocks_total` and logs `too many failed API key lookups from one address` with the address ([health and metrics](monitoring.md)).

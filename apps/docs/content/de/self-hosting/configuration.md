@@ -32,6 +32,7 @@ services:
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Der Updater](upgrades.md#der-updater)). |
 | `KAESO_DIR` | mit dem Updater | Der Ordner der Installation, der einzige, aus dem der Docker-Proxy des Updaters Bind-Mounts erlaubt. |
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
+| `EDGE_SUBNET` | nein | Das Subnetz des Netzwerks `edge`, standardmäßig `172.30.83.0/24`, dessen `X-Forwarded-For` das Gateway glaubt. Ändern Sie es, wenn der Server diesen Bereich schon nutzt. |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … und `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | nein | Die Speicher- und Prozessgrenzen der Dienste und der Speicher, in dem Valkey seine Daten hält ([Container-Grenzen](#container-grenzen)). |
 
 Verwenden Sie in den Passwörtern nur Buchstaben und Ziffern, wie `openssl rand -hex` sie schreibt, denn sie stehen in Verbindungs-URLs. PostgreSQL behält die Passwörter, die es beim Anlegen seines Volumes hatte; ändern Sie `POSTGRES_PASSWORD` später, sperrt das das Gateway aus. ClickHouse und Valkey übernehmen ihr Passwort bei jedem Start aus der `.env`.
@@ -255,6 +256,7 @@ Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln je Client-Adress
 - Gültige Schlüssel zählen nie. Ein Schlüssel, den die Instanz in den letzten 30 Sekunden verwendet hat, funktioniert auch von einer gesperrten Adresse; andere gültige Schlüssel warten das Zeitfenster ab.
 - IPv6-Adressen zählen je /64.
 - Hinter einem Proxy kommt die Client-Adresse nur dann aus `X-Forwarded-For`, wenn der Proxy in `KAESO_TRUSTED_PROXIES` steht. Sonst teilen sich alle Clients das Kontingent des Proxys.
+- Docker Desktop, Colima und rootless Docker leiten veröffentlichte Ports über einen eigenen Proxy weiter. Caddy sieht dann jeden Client unter einer Adresse, und alle Clients teilen sich ein Kontingent. Betreiben Sie Kaeso auf Docker Engine mit Root-Netzwerk, wo das Limit je Client gelten soll.
 - Solange Valkey nicht erreichbar ist, werden Fehlschläge nicht gezählt.
 
 Jede Sperre erhöht `kaeso_key_failure_blocks_total` und protokolliert `too many failed API key lookups from one address` mit der Adresse ([Zustand und Metriken](monitoring.md)).

@@ -214,3 +214,14 @@ def test_valkey_reads_its_password_from_a_file_and_never_evicts_counters():
     assert "maxmemory 300mb" in lines
     assert "maxmemory-policy noeviction" in lines
     assert "appendonly yes" in lines
+
+
+def test_the_gateway_trusts_forwarded_addresses_only_from_loopback_and_the_edge_network():
+    found = config()
+    assert found["networks"]["edge"]["ipam"]["config"] == [{"subnet": "172.30.83.0/24"}]
+    assert found["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "127.0.0.0/8,::1/128,172.30.83.0/24"
+    moved = config({"EDGE_SUBNET": "10.83.0.0/24"})
+    assert moved["networks"]["edge"]["ipam"]["config"] == [{"subnet": "10.83.0.0/24"}]
+    assert moved["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "127.0.0.0/8,::1/128,10.83.0.0/24"
+    own = config({"KAESO_TRUSTED_PROXIES": "172.30.84.2"})
+    assert own["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "172.30.84.2"

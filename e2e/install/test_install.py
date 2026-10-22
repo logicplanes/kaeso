@@ -183,6 +183,32 @@ def test_the_gateway_reads_a_master_key_file_only_its_own_user_can_read(install)
     assert install.health["gateway"] == "healthy"
 
 
+def test_the_gateway_logs_the_address_caddy_saw_and_never_one_the_client_sends(install, owner):
+    org = owner.get("/platform/v1/auth/session").json()["memberships"][0]["org_id"]
+    project = next(p["id"] for p in owner.get(f"/platform/v1/orgs/{org}/projects").json()["data"] if p["name"] == "First project")
+    base = f"/platform/v1/orgs/{org}/projects/{project}"
+    key = owner.post(f"{base}/keys", json={"name": "forwarded"}).json()["secret"]
+    forged = "203.0.113.7"
+    oa = openai.OpenAI(base_url=f"{install.url}/v1", api_key=key, max_retries=0, default_headers={"X-Forwarded-For": forged})
+    oa.chat.completions.create(model="gpt-4o", messages=[{"role": "user", "content": "Hello"}])
+
+    def logged() -> list[str] | None:
+        rows = owner.get(f"{base}/logs").json().get("data", [])
+        return [row["client_ip"] for row in rows] if len(rows) >= 3 else None
+
+    addresses = poll(logged, "the third log entry", seconds=30)
+    caddy = subprocess.run(
+        ["docker", "inspect", "--format", f'{{{{(index .NetworkSettings.Networks "{PROJECT}_edge").IPAddress}}}}', f"{PROJECT}-caddy-1"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert caddy.startswith("172.30.83."), caddy
+    assert forged not in addresses
+    assert caddy not in addresses
+    assert all(addresses), addresses
+
+
 def test_wait_returns_once_every_service_is_healthy_caddy_included(install):
     shipped = ("caddy", "gateway", "console", "postgres", "clickhouse", "valkey")
     assert {name: install.health.get(name) for name in shipped} == dict.fromkeys(shipped, "healthy")

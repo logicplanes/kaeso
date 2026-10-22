@@ -90,7 +90,7 @@ services:
       KAESO_SMTP_PASSWORD: ${KAESO_SMTP_PASSWORD:-}
       KAESO_SMTP_FROM: ${KAESO_SMTP_FROM:-Kaeso <kaeso@${KAESO_DOMAIN}>}
       KAESO_UPDATER_TOKEN: ${KAESO_UPDATER_TOKEN:-}
-      KAESO_TRUSTED_PROXIES: ${KAESO_TRUSTED_PROXIES:-127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7}
+      KAESO_TRUSTED_PROXIES: ${KAESO_TRUSTED_PROXIES:-127.0.0.0/8,::1/128,${EDGE_SUBNET:-172.30.83.0/24}}
       KAESO_LOG_FORMAT: json
     secrets: [master_keys]
     networks: [edge, data, updates]
@@ -509,6 +509,9 @@ secrets:
 
 networks:
   edge:
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.30.83.0/24}
   data:
     internal: true
   updates:
