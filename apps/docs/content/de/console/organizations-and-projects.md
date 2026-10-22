@@ -62,6 +62,8 @@ DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Bestätigen
 
 Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)), und nur, wenn das Konto der Organisation angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
 
+Single Sign-on bestätigt eine kürzliche Anmeldung nur, wenn Ihr Anbieter in seinen ID-Tokens `auth_time` sendet. Kommt eine Bestätigung ohne `auth_time` zurück, zeigt **Sicherheit** die Zeile **Kürzliche Anmeldung**: Anmeldungen über den Anbieter zählen nie als kürzlich, Mitglieder bestätigen also mit Passwort oder Anmeldelink. Ist **Single Sign-on verlangen** eingeschaltet, können sie gar nicht bestätigen, bis der Anbieter es sendet ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
+
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
 Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen:

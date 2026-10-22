@@ -16,9 +16,15 @@ The only way to single sign-on without entering an email is the organization's o
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
-When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. A provider whose answer says the last sign-in is older than the request, or doesn't say when it was (`auth_time`), is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
+## Recent sign-ins
+
+When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. An answer that says the last sign-in is older than the request is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
 
 A provider can also sign someone in with a session of its own from earlier, without asking. So a session from single sign-on dates from the provider's `auth_time`, not from when it came back to Kaeso, and counts as a recent sign-in only while that time is within 15 minutes. Kaeso measures it against the token's issue time `iat`, on the provider's clock, so the two servers' clocks needn't agree. Without `auth_time`, the session counts as older than 15 minutes from the start.
+
+So the provider must send `auth_time`, the time of the sign-in, in its ID tokens for single sign-on to confirm a recent sign-in. OpenID Connect requires it once `max_age` is sent, but some providers never send it. An answer without it is refused with `no_auth_time`, and Kaeso notes on the connection that the provider can't confirm. The console then stops offering that provider when it asks someone to sign in again, and offers a password, a sign-in link or a link to set a password instead.
+
+In an organization that requires single sign-on, nothing else confirms there, so its members can't take actions that need a recent sign-in. The organization's **Security** page shows either case under **Recent sign-in**. Kaeso offers the provider again once one of its ID tokens carries `auth_time`, and forgets what it noted when the issuer or client id changes. A sign-in without `auth_time` notes nothing, since providers may leave it out while `max_age` isn't sent.
 
 ## Links that go straight to the provider
 

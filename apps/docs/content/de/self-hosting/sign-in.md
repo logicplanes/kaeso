@@ -16,9 +16,15 @@ Der einzige Weg zu Single Sign-on, ohne eine E-Mail-Adresse einzugeben, ist der 
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
-Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, oder sagt sie nicht, wann sie war (`auth_time`), wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
+## Kürzliche Anmeldungen
+
+Verlangt eine Aktion eine kürzliche Anmeldung, bittet die Konsole den Anbieter, die Person erneut anzumelden (`prompt=login`, `max_age=0`), wie OpenID Connect es vorsieht. Sagt die Antwort eines Anbieters, dass die letzte Anmeldung älter als die Anfrage ist, wird sie mit `stale_sign_in` abgelehnt; eine Bestätigung bedeutet also immer eine frische Anmeldung.
 
 Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Sitzung anmelden. Eine Sitzung aus Single Sign-on zählt deshalb ab dem `auth_time` des Anbieters, nicht ab der Rückkehr zu Kaeso, und gilt nur als kürzliche Anmeldung, solange dieser Zeitpunkt höchstens 15 Minuten zurückliegt. Kaeso misst ihn am Ausstellungszeitpunkt `iat` des Tokens, auf der Uhr des Anbieters; die Uhren beider Server müssen also nicht übereinstimmen. Ohne `auth_time` gilt die Sitzung von Anfang an als älter als 15 Minuten.
+
+Damit Single Sign-on eine kürzliche Anmeldung bestätigen kann, muss der Anbieter also in seinen ID-Tokens `auth_time` senden, den Zeitpunkt der Anmeldung. OpenID Connect verlangt das, sobald `max_age` gesendet wird, doch manche Anbieter senden es nie. Eine Antwort ohne `auth_time` wird mit `no_auth_time` abgelehnt, und Kaeso vermerkt an der Verbindung, dass der Anbieter nicht bestätigen kann. Bittet die Konsole dann um eine erneute Anmeldung, bietet sie diesen Anbieter nicht mehr an, sondern ein Passwort, einen Anmeldelink oder einen Link, um ein Passwort festzulegen.
+
+In einer Organisation, die Single Sign-on verlangt, bestätigt dort sonst nichts; ihre Mitglieder können Aktionen, die eine kürzliche Anmeldung verlangen, dann nicht ausführen. Die Seite **Sicherheit** der Organisation zeigt beide Fälle unter **Kürzliche Anmeldung**. Kaeso bietet den Anbieter wieder an, sobald eines seiner ID-Tokens `auth_time` enthält, und vergisst den Vermerk, wenn sich Issuer oder Client-ID ändern. Eine Anmeldung ohne `auth_time` vermerkt nichts, da Anbieter es weglassen dürfen, solange kein `max_age` gesendet wird.
 
 ## Links, die direkt zum Anbieter führen
 
