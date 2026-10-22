@@ -156,13 +156,35 @@ const DOMAINS = new Set(
 );
 const PIPED = /\|\s*(?:sudo\s+)?(?:(?:ba|da|fi|k|z)?sh|python3?|perl|ruby|node|iex)\b/i;
 const DOWNLOAD = /\b(?:curl|wget)\s+(?:-|[^\s,;]*[./:])|`\s*(?:sudo\s+)?(?:curl|wget)\b/i;
+const PIPED_DOWNLOAD = /\b(?:curl|wget)\b[^|\n]*\|/i;
+const CONTAINER = /\b(?:docker|podman)\s+(?:(?:container|image)\s+)?(?:run|pull)\b/i;
+const PACKAGE_RUNNER = /\b(?:npx|bunx|uvx|(?:pnpm|yarn)\s+dlx|npm\s+(?:i|install|exec)|pip3?\s+install|python3?\s+-m\s+pip\s+install)\b/i;
+const ENVIRONMENT = /\b(?i:set|export|setx)\s+`?[A-Z][A-Z0-9]*_[A-Z0-9_]*\b|\b[A-Z][A-Z0-9]*_[A-Z0-9_]*=\S|\$env:/;
+const REGISTRY_IMAGE = /(?<![\w./:@-])((?:[a-z0-9-]+\.)*[a-z][a-z0-9-]*)(:\d+)?\/[a-z0-9._-]+(?:\/[a-z0-9._-]+)*(:\w[\w.-]*)?/gi;
+const DIGEST_IMAGE = /(?<![\w./:@-])[a-z0-9][\w./:-]*@sha256:[0-9a-f]+/gi;
+const PLACED_IMAGE = /(?<![\w-])(?:FROM\s+|image:\s*)`?([a-z0-9][\w.-]*(?:[/:@][\w.-]+)+)/g;
+const OWN_IMAGE = /^ghcr\.io\/logicplanes\//i;
 
 const domainLike = (name) => DOMAINS.has(name) || (name.length === 2 && !CODE_TYPES.has(name));
+
+const fromRegistry = ([, host, port, tag]) => port || (tag && (host.includes(".") || host.toLowerCase() === "localhost"));
+
+const images = (text) => [
+  ...[...text.matchAll(REGISTRY_IMAGE)].filter(fromRegistry).map(([image]) => image),
+  ...[...text.matchAll(DIGEST_IMAGE)].map(([image]) => image),
+  ...[...text.matchAll(PLACED_IMAGE)].map(([, image]) => image),
+];
 
 export function hazard(text) {
   if (/(https?:|ftp:|mailto:|www\.|:\/\/)/i.test(text) || /\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(text)) return "has an address";
   if (PIPED.test(text)) return "pipes into a shell";
   if (DOWNLOAD.test(text)) return "has a download command";
+  if (PIPED_DOWNLOAD.test(text)) return "pipes a download into a command";
+  if (CONTAINER.test(text)) return "has a container command";
+  if (PACKAGE_RUNNER.test(text)) return "has a package install or run command";
+  if (ENVIRONMENT.test(text)) return "tells people to set an environment variable";
+  const image = images(text).find((reference) => !OWN_IMAGE.test(reference));
+  if (image) return `names the image ${image}, which isn't under ghcr.io/logicplanes/`;
   for (const match of text.matchAll(HOST)) {
     const host = match[1].toLowerCase();
     const path = PATH.exec(text.slice(match.index + match[1].length))?.[0] ?? "";

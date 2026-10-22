@@ -123,3 +123,30 @@ def test_the_tag_job_pushes_only_the_tag_so_prod_can_take_updates_from_the_maint
     sync = job("sync")
     assert "origin/prod" not in sync
     assert 'v$VERSION^{commit}:refs/heads/dev' in sync
+
+
+def test_no_release_job_restores_a_cache_another_run_could_have_written():
+    assert "cache-from" not in WORKFLOW
+    assert "cache-to" not in WORKFLOW
+    assert "rust-cache" not in WORKFLOW
+    assert "actions/cache" not in WORKFLOW
+    assert not re.search(r"^\s+cache: ", WORKFLOW, re.M)
+    setups = re.findall(r"uses: actions/setup-node@\w+\n((?:\s{8}.*\n)+)", WORKFLOW)
+    assert setups and all("package-manager-cache: false" in setup for setup in setups), setups
+    assert re.search(r"^          no-cache: true$", job("image"), re.M)
+
+
+def test_the_npm_packages_are_packed_from_an_install_without_lifecycle_scripts():
+    installs = re.findall(r"pnpm install[^\n]*", job("pack"))
+    assert installs == ["pnpm install --frozen-lockfile --ignore-scripts"]
+
+
+def test_the_crates_compile_without_the_publishing_token_and_upload_unverified():
+    build = job("crates-verify")
+    assert "id-token" not in build
+    assert "environment:" not in build
+    assert 'cargo publish --dry-run --locked "${packages[@]}"' in build
+    publish = job("crates")
+    assert re.search(r"^    needs: \[validate, crates-verify\]$", publish, re.M)
+    assert "id-token: write" in publish
+    assert re.findall(r"cargo publish[^\n]*", publish) == ['cargo publish --locked --no-verify -p "$crate"']

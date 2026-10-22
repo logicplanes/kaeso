@@ -36,7 +36,7 @@ Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库�
 
 要自己撰写版本说明，在 `dev` 上的 `CHANGELOG.md` 中把内容写在 `[Unreleased]` 下。发布时会先列出这些行，再为每个没有被其中任何一行以 `[#42](…/pull/42)` 形式链接的拉取请求添加一行。这适合说明需要比标题更详细的版本，也适合热修复，因为热修复的提交没有拉取请求。
 
-如果仓库的 `release` 环境配置了机密 `LOG_AI_KEY`，工作流会通过维护者的 Kaeso 实例让模型根据已合并的拉取请求起草这一分节。模型按合并时的样子读取每个拉取请求：squash 提交的主题行和正文，或以其他方式合并的拉取请求的各个提交。只有当关联议题的作者对仓库有写权限时，模型才会看到该议题的标题。它会原样保留 `[Unreleased]` 下的内容。如果草稿未通过检查或请求失败，发布会改用标题。要在不修改任何文件的情况下预览下一个版本的说明：
+如果仓库的 `release` 环境配置了机密 `LOG_AI_KEY`，工作流会通过维护者的 Kaeso 实例让模型根据已合并的拉取请求起草这一分节。模型按合并时的样子读取每个拉取请求：squash 提交的主题行和正文，或以其他方式合并的拉取请求的各个提交，其中的 HTML 注释会先被去掉。只有当关联议题的作者对仓库有写权限时，模型才会看到该议题的标题。它会原样保留 `[Unreleased]` 下的内容。如果草稿未通过检查或请求失败，发布会改用标题。要在不修改任何文件的情况下预览下一个版本的说明：
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -52,7 +52,10 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
 
 - 不含地址：没有 URL、电子邮件地址或 IP 地址。
 - 除 `kaeso.app` 及其子域名、`github.com/logicplanes/kaeso` 和 `ghcr.io/logicplanes` 上的 Kaeso 镜像外，不含主机名。`crates.io` 和 `models.dev` 可以不带路径出现。以常见顶级域名（例如 `.com` 或 `.example`）结尾的名称算作主机名，在代码片段中也一样。
-- 不含 `| sh` 这样的 shell 管道，也不含 `curl -fsSL` 或 `wget` 这样的下载命令。
+- 不含 `ghcr.io/logicplanes/` 以外的镜像引用。以镜像仓库开头的名称（例如 `docker.io/example/kaeso-gateway:1.4.0`）、带摘要的名称（例如 `example/kaeso-gateway@sha256:…`）以及跟在 `FROM` 或 `image:` 后面的名称都算作镜像。`google/gemma-4-31b-it:free` 这样的模型 ID 是可以的。
+- 不含 `| sh` 或 `curl … | jq` 这样的 shell 管道，也不含 `curl -fsSL` 或 `wget` 这样的下载命令。
+- 不含拉取、安装或运行某个东西的命令：`docker run`、`docker pull`、`npx`、`pnpm dlx`、`npm install`、`npm i` 或 `pip install`。
+- 不含设置环境变量的指示，例如 `set KAESO_…`、`export KAESO_…` 或 `KAESO_…=…`。提到某个设置项是可以的。
 
 经过一次修正后仍未通过的草稿会改用标题。未通过检查的标题会让 **Prepare** 任务停止，并指出对应的拉取请求。请在 `dev` 上的 `[Unreleased]` 下为它写一行并链接该拉取请求，然后重新运行 Release。
 
@@ -120,6 +123,10 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
 | npm | `@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens` |
 
 镜像以版本号作为标签；稳定版本还会打上 `MAJOR.MINOR` 和 `latest`，从 1.0.0 起还有 `MAJOR`。
+
+### 干净构建
+
+发布作业不会恢复任何可能由其他运行写入的缓存。镜像以 `no-cache` 构建，pnpm 和 Cargo 从空的存储开始。npm 软件包从不运行生命周期脚本的安装中打包。**crates.io build** 作业在没有发布令牌的情况下打包并编译 `kaeso-kpp` 和 `kaeso-codecs`。随后 **crates.io** 作业持有令牌，用 `cargo publish --no-verify` 上传它们，因此不会运行任何构建脚本。
 
 ### 提交与证明
 

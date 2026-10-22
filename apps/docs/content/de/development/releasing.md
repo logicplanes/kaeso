@@ -36,7 +36,7 @@ Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Depen
 
 Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
 
-Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Das Modell liest jeden so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
+Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Das Modell liest jeden so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests, jeweils ohne HTML-Kommentare. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -52,7 +52,10 @@ Jede Zeile der Notizen, vom Modell oder aus einem Titel, besteht diese Prüfunge
 
 - Keine Adressen: keine URLs, E-Mail-Adressen oder IP-Adressen.
 - Keine Hostnamen außer `kaeso.app` und seinen Subdomains, `github.com/logicplanes/kaeso` und Kaesos Images unter `ghcr.io/logicplanes`. `crates.io` und `models.dev` dürfen ohne Pfad vorkommen. Ein Name, der auf eine gängige Top-Level-Domain wie `.com` oder `.example` endet, zählt als Hostname, auch in Code-Spans.
-- Keine Shell-Pipelines wie `| sh` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
+- Keine Image-Referenzen außerhalb von `ghcr.io/logicplanes/`. Ein Name zählt als Image, wenn er mit einer Registry beginnt, etwa `docker.io/example/kaeso-gateway:1.4.0`, einen Digest hat, etwa `example/kaeso-gateway@sha256:…`, oder auf `FROM` oder `image:` folgt. Eine Modell-ID wie `google/gemma-4-31b-it:free` ist erlaubt.
+- Keine Shell-Pipelines wie `| sh` oder `curl … | jq` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
+- Keine Befehle, die etwas laden, installieren oder ausführen: `docker run`, `docker pull`, `npx`, `pnpm dlx`, `npm install`, `npm i` oder `pip install`.
+- Keine Anweisungen, eine Umgebungsvariable zu setzen, etwa `set KAESO_…`, `export KAESO_…` oder `KAESO_…=…`. Eine Einstellung zu nennen ist erlaubt.
 
 Ein Entwurf, der nach einer Korrektur noch scheitert, fällt auf die Titel zurück. Ein Titel, der scheitert, hält den Job **Prepare** an und nennt den Pull Request. Schreiben Sie dafür eine Zeile unter `[Unreleased]` auf `dev`, die den Pull Request verlinkt, und starten Sie Release erneut.
 
@@ -120,6 +123,10 @@ Ein Release veröffentlicht:
 | npm | `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens` |
 
 Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.MINOR`, `latest` und ab 1.0.0 `MAJOR`.
+
+### Saubere Builds
+
+Release-Jobs stellen keinen Cache wieder her, den ein anderer Lauf geschrieben haben könnte. Die Images bauen mit `no-cache`, pnpm und Cargo beginnen mit einem leeren Speicher. Die npm-Pakete werden aus einer Installation ohne Lifecycle-Skripte gepackt. Der Job **crates.io build** packt und kompiliert `kaeso-kpp` und `kaeso-codecs` ohne Veröffentlichungstoken. Erst der Job **crates.io** hält das Token und lädt sie mit `cargo publish --no-verify` hoch, sodass er kein Build-Skript ausführt.
 
 ### Commits und Attestierungen
 

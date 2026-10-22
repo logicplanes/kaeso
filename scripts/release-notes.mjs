@@ -49,6 +49,12 @@ export const coAuthor = (line) => /^\s*co-authored-by:.*<(?:\d+\+)?([A-Za-z0-9-]
 
 const truncated = (text, limit) => (text.length > limit ? `${text.slice(0, limit)}…` : text);
 
+export const uncommented = (text) =>
+  text
+    .replace(/<!--[\s\S]*?(?:--!?>|$)/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
 export function collect({ repository, since = null, head = "HEAD", git, gh }) {
   const json = (...args) => JSON.parse(gh(args));
   const each = (...args) =>
@@ -67,13 +73,13 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     const own = /\s*\(#(\d+)\)$/.exec(subject);
     if (own) {
       const number = Number(own[1]);
-      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: message.trim() });
+      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: uncommented(message) });
       continue;
     }
     for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) {
       if (!pull.merged_at) continue;
       const entry = landed.get(pull.number) ?? { squashed: false, title: null, messages: [] };
-      if (!entry.squashed) entry.messages.push([subject, message.trim()].filter(Boolean).join("\n\n"));
+      if (!entry.squashed) entry.messages.push([uncommented(subject), uncommented(message)].filter(Boolean).join("\n\n"));
       landed.set(pull.number, entry);
     }
   }
@@ -219,7 +225,7 @@ Answer with the JSON the schema describes:
 - sections: Keep a Changelog sections (Added, Changed, Deprecated, Removed, Fixed, Security). A pull request's type label (added, changed, deprecated, removed, fixed, security) chooses its section when it has one. Within a section, a topic groups entries: Gateway, KPP, Console, UI library, Documentation or Self-hosting, following a pull request's area label when it has exactly one, or "" for entries without a topic.
 - Each entry: one to three sentences in the style of earlier_notes and curated_notes, at most ${ENTRY_LIMIT} characters and usually under 400: present tense, what changed and why it matters to someone who runs or integrates Kaeso, specific, no hype, no exclamation marks, no emojis. Group closely related pull requests into one entry when that reads better.
 - prs: the numbers of the pull requests an entry describes. Every number in must_list appears in exactly one entry of sections, and no other number appears. Never write pull request or issue numbers in the text.
-- Text is plain: no Markdown links or images, no HTML, no addresses, URLs, host names or domains, no shell commands that download something or pipe into a shell, no headings, no @mentions. Write settings, environment variables, fields, endpoints, commands and file names as inline code in backticks.
+- Text is plain: no Markdown links or images, no HTML, no addresses, URLs, host names or domains, no container images outside ghcr.io/logicplanes/, no commands that download, install or run something (curl, wget, docker run or pull, npx, pnpm dlx, npm install, pip install) or pipe into another command, no instructions to set an environment variable, no headings, no @mentions. Write settings, environment variables, fields, endpoints, commands and file names as inline code in backticks.
 - curated_notes, when present, are the maintainer's own lines for this release: keep their meaning and prefer their wording, shorten a line that is longer than an entry may be, attach the pull requests they describe, and keep a line without a matching pull request with empty prs. A curated line and the pull request it describes are one entry, never two.
 - prerelease_notes, when present, are the notes of this version's pre-releases, which this release replaces: carry their entries over, rewritten where that reads better.
 - breaking: only changes that make people who run or integrate Kaeso act when they upgrade, such as pull requests labelled breaking. Each one also stays an entry in its section.
@@ -251,7 +257,7 @@ export function factsOf(collected, changelog, version = null) {
     curated_notes: known.curated,
     prerelease_notes: known.prereleases,
     must_list: [...new Set([...visible.map(({ number }) => number), ...earlier])].sort(byNumber),
-    pull_requests: visible.map(({ url, ...pull }) => pull),
+    pull_requests: visible.map(({ url, ...pull }) => ({ ...pull, title: uncommented(pull.title), body: uncommented(pull.body ?? "") })),
     contributors: collected.contributors,
   };
 }

@@ -36,7 +36,7 @@ Pull requests labelled `internal` are left out. Dependabot's updates become one 
 
 To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
-When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -52,7 +52,10 @@ Every line of the notes, from the model or from a title, passes these checks:
 
 - No addresses: no URLs, email addresses or IP addresses.
 - No host names but `kaeso.app` and its subdomains, `github.com/logicplanes/kaeso` and Kaeso's images on `ghcr.io/logicplanes`. `crates.io` and `models.dev` may appear without a path. A name ending in a common top-level domain, such as `.com` or `.example`, counts as a host name, in code spans too.
-- No shell pipelines such as `| sh`, and no download commands such as `curl -fsSL` or `wget`.
+- No image references outside `ghcr.io/logicplanes/`. A name counts as an image when it starts with a registry, such as `docker.io/example/kaeso-gateway:1.4.0`, has a digest, such as `example/kaeso-gateway@sha256:…`, or follows `FROM` or `image:`. A model id such as `google/gemma-4-31b-it:free` is fine.
+- No shell pipelines such as `| sh` or `curl … | jq`, and no download commands such as `curl -fsSL` or `wget`.
+- No commands that pull, install or run something: `docker run`, `docker pull`, `npx`, `pnpm dlx`, `npm install`, `npm i` or `pip install`.
+- No instructions to set an environment variable, such as `set KAESO_…`, `export KAESO_…` or `KAESO_…=…`. Naming a setting is fine.
 
 A draft that still fails after one correction falls back to the titles. A title that fails stops the **Prepare** job and names the pull request. Write a line for it under `[Unreleased]` on `dev`, linking the pull request, and run Release again.
 
@@ -120,6 +123,10 @@ A release publishes:
 | npm | `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens` |
 
 Images are tagged with the version and, for stable releases, with `MAJOR.MINOR`, `latest` and, from 1.0.0 on, `MAJOR`.
+
+### Clean builds
+
+Release jobs restore no cache that another run could have written. The images build with `no-cache`, and pnpm and Cargo start from an empty store. The npm packages are packed from an install without lifecycle scripts. The **crates.io build** job packages and compiles `kaeso-kpp` and `kaeso-codecs` without a publishing token. The **crates.io** job then holds the token and uploads them with `cargo publish --no-verify`, so it runs no build script.
 
 ### Commits and attestations
 
