@@ -334,6 +334,8 @@ fn messages_blocks_nested_tool_results_system_and_tools_are_counted() {
 
     let chat = r#"{"model": "m", "messages": [{"role": "user", "content": [{"type": "text", "text": "a"}]}], "functions": [{"name": "f"}], "tools": [{"type": "function", "function": {"name": "g"}}]}"#;
     assert_eq!(shape(C, chat), counted(1, 1, 2));
+    let calls = r#"{"model": "m", "messages": [{"role": "assistant", "content": "ok", "tool_calls": [{"id": "a", "type": "function", "function": {"name": "f", "arguments": "{}"}}, {"id": "b", "type": "function", "function": {"name": "g", "arguments": "{}"}}]}]}"#;
+    assert_eq!(shape(C, calls), counted(1, 3, 0));
 
     let responses = r#"{"model": "m", "input": [
         {"role": "user", "content": [{"type": "input_text", "text": "a"}, {"type": "input_image", "image_url": "data:"}]},

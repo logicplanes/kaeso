@@ -166,6 +166,7 @@ fn child(node: Node, key: &str) -> Option<Node> {
         (Node::Item(_) | Node::Block(_) | Node::Content(_), "content" | "output") => {
             Node::Content(None)
         }
+        (Node::Item(OpenAiChat), "tool_calls") => Node::Content(None),
         _ => return None,
     })
 }
