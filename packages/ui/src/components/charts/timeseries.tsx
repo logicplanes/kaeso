@@ -145,8 +145,8 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
     return visible.map((s) => s.points.map(() => tween.values[k++] ?? 0));
   }, [visible, tween.values]);
   const yScale = axis.copy().domain([0, tween.top || 1]);
-  const t0 = d3min(times) ?? new Date();
-  const t1 = d3max(times) ?? new Date();
+  const t0 = d3min(times) ?? new Date(0);
+  const t1 = d3max(times) ?? t0;
   const ordinal = tickAt === "points" && times.length > 0;
   const slot = ordinal ? w / times.length : 0;
   const x = scaleLinear().domain([t0.getTime(), t1.getTime()]).range([0, w]);
@@ -168,7 +168,9 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
           { start: slot / 2, end: slot / 2 + M.right },
           times.map((d) => wallDay(d, clock)),
         ).map((i) => ({ key: times[i]!.getTime(), x: Math.round(at(i)), anchor: "middle", label: fmt(times[i]!) }))
-      : timeLabels(t0, t1, w, w + M.right, (d) => x(d.getTime()), fmt, clock);
+      : times.length
+        ? timeLabels(t0, t1, w, w + M.right, (d) => x(d.getTime()), fmt, clock)
+        : [];
   const step = (times[1]?.getTime() ?? 0) - (times[0]?.getTime() ?? 0);
   const pointFormat =
     formatTime ??

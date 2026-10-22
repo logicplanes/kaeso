@@ -83,6 +83,7 @@ describe("TimeseriesChart", () => {
     expect(screen.queryByText("No data for this period")).not.toBeInTheDocument();
     rerender(<TimeseriesChart aria-label="Spend" series={[{ id: "a", label: "A", points: [] }]} />);
     expect(screen.getByText("No data for this period")).toBeInTheDocument();
+    expect([...screen.getByRole("figure", { name: "Spend" }).querySelectorAll("text")].map((t) => t.textContent)).toEqual(["0", "1"]);
     rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4))} error="down" onRetry={onRetry} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this chart");
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
