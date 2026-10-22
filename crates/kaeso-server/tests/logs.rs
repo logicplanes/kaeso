@@ -712,6 +712,62 @@ async fn exports_stream_large_ranges_in_both_formats() {
 }
 
 #[tokio::test]
+async fn a_formula_after_a_separator_is_never_a_cell_of_its_own_in_the_csv_export() {
+    let env = env(&[]).await;
+    let ua = "probe;=HYPERLINK(CHAR(104)&CHAR(116)&CHAR(116)&CHAR(112))";
+    let req = axum::http::Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .header("user-agent", ua)
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&chat("gpt-4o", "Hi")).unwrap(),
+        ))
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let unknown = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("m|=1+1", "Hi")),
+    )
+    .await;
+    assert_eq!(unknown.status, StatusCode::NOT_FOUND);
+    flush(&env).await;
+    let req = axum::http::Request::builder()
+        .uri(format!("/platform/v1{}/logs/export?format=csv", base(&env)))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let csv = std::str::from_utf8(&body).unwrap();
+    let guarded = ua.replace(";=", ";'=");
+    assert!(csv.contains(&format!(",\"'{guarded}\",")), "{csv}");
+    assert!(csv.contains(",\"'m|'=1+1\","), "{csv}");
+    assert!(csv.contains(",\"gpt-4o\","), "{csv}");
+    for line in csv.lines().skip(1) {
+        for cell in line.split([',', ';', '|', '\t']) {
+            assert!(!cell.starts_with(['=', '+', '-', '@']), "{cell} in {line}");
+        }
+    }
+}
+
+#[tokio::test]
 async fn retention_shrinks_and_deletions_remove_rows() {
     let env = env(&[]).await;
     let now = env.app.clock.now().replace_nanosecond(0).unwrap();

@@ -903,66 +903,86 @@ pub struct ExportParams {
 
 const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source\n";
 
+// OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
+// text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
+// may split on, and to a formula after such a separator, so no cell it yields is a formula.
 const FORMULA_STARTS: [char; 10] = [
     '=', '+', '-', '@', '\t', '\r', '\u{FF1D}', '\u{FF0B}', '\u{FF0D}', '\u{FF20}',
 ];
 
-fn csv_field(s: &str) -> String {
-    let s = if s.starts_with(FORMULA_STARTS) {
-        format!("'{s}")
-    } else {
-        s.to_owned()
-    };
-    if s.contains([',', '"', '\n', '\r']) {
-        format!("\"{}\"", s.replace('"', "\"\""))
-    } else {
-        s
+const SPLIT_ON: [char; 3] = [';', '\t', '|'];
+
+enum Cell {
+    Text(String),
+    Number(String),
+}
+
+fn csv_text(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 4);
+    out.push('"');
+    if s.starts_with(FORMULA_STARTS) || s.contains(SPLIT_ON) {
+        out.push('\'');
     }
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        out.push(c);
+        if c == '"' {
+            out.push('"');
+        }
+        if SPLIT_ON.contains(&c) && chars.peek().is_some_and(|n| FORMULA_STARTS.contains(n)) {
+            out.push('\'');
+        }
+    }
+    out.push('"');
+    out
 }
 
 fn csv_line(v: &LogView) -> String {
+    use Cell::{Number, Text};
     let progress = v.stream_progress.as_ref();
-    let fields = [
-        v.id.clone(),
-        v.started_at.format(&Rfc3339).unwrap_or_default(),
-        v.duration_ms.to_string(),
-        v.ttfb_ms.map(|t| t.to_string()).unwrap_or_default(),
-        v.key_id.map(|k| k.to_string()).unwrap_or_default(),
-        v.principal_kind.clone(),
-        v.principal_id.clone(),
-        v.endpoint.clone(),
-        v.ingress_dialect.clone(),
-        v.egress_dialect.clone(),
-        v.provider.clone(),
-        v.requested_model.clone(),
-        v.model.clone(),
-        v.stream.to_string(),
-        v.status.to_string(),
-        v.error_kind.clone().unwrap_or_default(),
-        v.usage.input_tokens.to_string(),
-        v.usage.output_tokens.to_string(),
-        v.usage.cache_read_tokens.to_string(),
-        v.usage.cache_write_tokens.to_string(),
-        v.usage.reasoning_tokens.to_string(),
-        v.cost.clone(),
-        v.user_agent.clone(),
-        v.client_ip.clone(),
-        v.upstream_request_id.clone(),
-        progress.map(|p| p.events.to_string()).unwrap_or_default(),
-        progress.map(|p| p.bytes.to_string()).unwrap_or_default(),
-        progress
-            .and_then(|p| p.first_byte_ms)
-            .map(|t| t.to_string())
-            .unwrap_or_default(),
-        progress
-            .map(|p| p.keepalives.to_string())
-            .unwrap_or_default(),
-        v.usage.estimated.to_string(),
-        v.source.clone(),
+    fn number<T: ToString>(n: Option<T>) -> Cell {
+        Number(n.map(|n| n.to_string()).unwrap_or_default())
+    }
+    let cells = [
+        Text(v.id.clone()),
+        Text(v.started_at.format(&Rfc3339).unwrap_or_default()),
+        Number(v.duration_ms.to_string()),
+        number(v.ttfb_ms),
+        Text(v.key_id.map(|k| k.to_string()).unwrap_or_default()),
+        Text(v.principal_kind.clone()),
+        Text(v.principal_id.clone()),
+        Text(v.endpoint.clone()),
+        Text(v.ingress_dialect.clone()),
+        Text(v.egress_dialect.clone()),
+        Text(v.provider.clone()),
+        Text(v.requested_model.clone()),
+        Text(v.model.clone()),
+        Number(v.stream.to_string()),
+        Number(v.status.to_string()),
+        Text(v.error_kind.clone().unwrap_or_default()),
+        Number(v.usage.input_tokens.to_string()),
+        Number(v.usage.output_tokens.to_string()),
+        Number(v.usage.cache_read_tokens.to_string()),
+        Number(v.usage.cache_write_tokens.to_string()),
+        Number(v.usage.reasoning_tokens.to_string()),
+        Number(v.cost.clone()),
+        Text(v.user_agent.clone()),
+        Text(v.client_ip.clone()),
+        Text(v.upstream_request_id.clone()),
+        number(progress.map(|p| p.events)),
+        number(progress.map(|p| p.bytes)),
+        number(progress.and_then(|p| p.first_byte_ms)),
+        number(progress.map(|p| p.keepalives)),
+        Number(v.usage.estimated.to_string()),
+        Text(v.source.clone()),
     ];
-    let mut line = fields
+    let mut line = cells
         .iter()
-        .map(|f| csv_field(f))
+        .map(|c| match c {
+            Text(s) => csv_text(s),
+            Number(s) if s.chars().all(|c| c.is_ascii_alphanumeric() || c == '.') => s.clone(),
+            Number(s) => csv_text(s),
+        })
         .collect::<Vec<_>>()
         .join(",");
     line.push('\n');
@@ -1161,27 +1181,32 @@ pub async fn export(
 
 #[cfg(test)]
 mod tests {
-    use super::csv_field;
+    use super::csv_text;
 
     #[test]
-    fn csv_fields_are_quoted_and_never_read_as_formulas() {
+    fn text_cells_are_quoted_and_never_read_as_formulas() {
         for (raw, written) in [
-            ("claude-haiku-4-5", "claude-haiku-4-5"),
+            ("claude-haiku-4-5", "\"claude-haiku-4-5\""),
             ("ua, with comma", "\"ua, with comma\""),
             ("say \"hi\"", "\"say \"\"hi\"\"\""),
             (
                 "=HYPERLINK(\"https://evil.example\")",
                 "\"'=HYPERLINK(\"\"https://evil.example\"\")\"",
             ),
-            ("+1", "'+1"),
-            ("-2+3", "'-2+3"),
-            ("@SUM(A1)", "'@SUM(A1)"),
-            ("\u{FF1D}1+1", "'\u{FF1D}1+1"),
-            ("\tx", "'\tx"),
+            ("+1", "\"'+1\""),
+            ("-2+3", "\"'-2+3\""),
+            ("@SUM(A1)", "\"'@SUM(A1)\""),
+            ("\u{FF1D}1+1", "\"'\u{FF1D}1+1\""),
+            ("\tx", "\"'\tx\""),
             ("\r=1", "\"'\r=1\""),
-            ("", ""),
+            ("probe;=1+1", "\"'probe;'=1+1\""),
+            ("a|=1", "\"'a|'=1\""),
+            ("a\t=1", "\"'a\t'=1\""),
+            ("a;b", "\"'a;b\""),
+            ("a=1", "\"a=1\""),
+            ("", "\"\""),
         ] {
-            assert_eq!(csv_field(raw), written, "{raw:?}");
+            assert_eq!(csv_text(raw), written, "{raw:?}");
         }
     }
 }

@@ -44,7 +44,7 @@ The **Request** and **Reply** tabs need the right **View prompts and outputs**. 
 
 Exporting needs the right **Export logs**, and with content also **View prompts and outputs**.
 
-In CSV, Kaeso puts a `'` in front of a value that starts with `=`, `+`, `-`, `@`, a tab or a carriage return. A spreadsheet then shows the value as text instead of running it as a formula.
+In CSV, Kaeso puts every text value in double quotes. It adds a `'` in front of a value that starts with `=`, `+`, `-`, `@`, a tab or a carriage return. It does the same for a value that holds `;`, `|` or a tab, and after such a separator when one of those characters follows. A spreadsheet then shows the value as text instead of running it as a formula, whichever separator it splits on.
 
 ## Retention
 
