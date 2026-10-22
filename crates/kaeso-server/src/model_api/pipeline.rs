@@ -526,7 +526,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .translating
             .hold(
                 holder,
-                super::memory::estimate(kind, &shape).saturating_add(retained(2)),
+                super::memory::estimate(kind, request_bytes, &shape).saturating_add(retained(2)),
             )
             .await
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,

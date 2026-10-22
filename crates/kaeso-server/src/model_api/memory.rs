@@ -35,13 +35,15 @@ fn structure(shape: &RequestShape) -> u64 {
         .saturating_add(count(shape.tools).saturating_mul(PER_TOOL))
 }
 
-pub fn estimate(kind: RequestKind, shape: &RequestShape) -> u64 {
+// Decoding first reads every value as raw JSON, whitespace included, so translating is charged
+// by the body as received; only what survives decoding is charged by its compact size.
+pub fn estimate(kind: RequestKind, body_bytes: usize, shape: &RequestShape) -> u64 {
     let per_byte = if kind == RequestKind::Embed {
         PER_EMBEDDING_BODY_BYTE
     } else {
         PER_BODY_BYTE
     };
-    count(shape.bytes)
+    count(body_bytes.max(shape.bytes))
         .saturating_mul(per_byte)
         .saturating_add(structure(shape))
 }
@@ -187,12 +189,19 @@ mod tests {
     #[test]
     fn the_estimate_weighs_content_bytes_and_every_counted_structure() {
         assert_eq!(
-            estimate(RequestKind::Generate, &shape(1000, 2, 3, 1)),
+            estimate(RequestKind::Generate, 0, &shape(1000, 2, 3, 1)),
             5000 + 2 * 4096 + 3 * 2048 + 1024
         );
-        assert_eq!(estimate(RequestKind::Embed, &shape(1000, 0, 0, 0)), 20_000);
         assert_eq!(
-            estimate(RequestKind::Generate, &shape(usize::MAX, usize::MAX, 0, 0)),
+            estimate(RequestKind::Embed, 0, &shape(1000, 0, 0, 0)),
+            20_000
+        );
+        assert_eq!(
+            estimate(
+                RequestKind::Generate,
+                0,
+                &shape(usize::MAX, usize::MAX, 0, 0)
+            ),
             u64::MAX
         );
     }
@@ -210,7 +219,7 @@ mod tests {
     }
 
     #[test]
-    fn whitespace_padding_adds_nothing_to_the_estimate() {
+    fn whitespace_padding_counts_while_translating_but_not_once_decoded() {
         let body = br#"{"model":"m","input":"hi"}"#;
         let mut padded = b"{".to_vec();
         padded.extend(std::iter::repeat_n(b' ', 1 << 20));
@@ -219,9 +228,10 @@ mod tests {
             kaeso_codecs::limits::request_shape(kaeso_kpp::DialectId::OpenAiResponses, b).unwrap()
         };
         assert_eq!(shape_of(body).bytes, body.len());
-        assert_eq!(
-            estimate(RequestKind::Generate, &shape_of(&padded)),
-            estimate(RequestKind::Generate, &shape_of(body))
+        assert_eq!(decoded(&shape_of(&padded)), decoded(&shape_of(body)));
+        assert!(
+            estimate(RequestKind::Generate, padded.len(), &shape_of(&padded))
+                >= u64::try_from(padded.len()).unwrap() * PER_BODY_BYTE
         );
     }
 
