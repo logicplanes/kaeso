@@ -196,6 +196,23 @@ pub async fn revoke_all(
     .await?)
 }
 
+pub async fn revoke_sso(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Option<Uuid>,
+    at: OffsetDateTime,
+) -> Result<Vec<Vec<u8>>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE sessions SET revoked_at = $3 WHERE method = 'oidc' AND oidc_org_id = $1 \
+         AND ($2::uuid IS NULL OR user_id = $2) AND revoked_at IS NULL RETURNING token_hash",
+        org_id,
+        user_id,
+        at
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn list_for_user(
     db: impl PgExecutor<'_>,
     user_id: Uuid,

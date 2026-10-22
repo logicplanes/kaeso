@@ -1308,17 +1308,125 @@ async fn a_linked_account_signs_in_through_its_identity_and_only_its_own_org() {
         .await;
     assert_eq!(r.error_type(), "recent_sign_in_required");
 
-    let r = app
-        .call(
-            axum::http::Method::DELETE,
-            &format!("/me/sso-links/{}", owner.org_id),
+    let unlink = |cookie: String| {
+        let app = &app;
+        let path = format!("/me/sso-links/{}", owner.org_id);
+        async move {
+            app.call(axum::http::Method::DELETE, &path, None, Some(&cookie))
+                .await
+        }
+    };
+    let r = unlink(owner.cookie.clone()).await;
+    assert_eq!(
+        r.error_type(),
+        "recent_sign_in_required",
+        "unlinking is a security change"
+    );
+    let fresh = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
             None,
-            Some(&owner.cookie),
         )
-        .await;
+        .await
+        .expect_status(StatusCode::OK)
+        .cookie()
+        .unwrap();
+    let r = unlink(fresh.clone()).await;
     assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    assert_eq!(
+        app.get("/auth/session", &sso).await.status,
+        StatusCode::UNAUTHORIZED,
+        "the session the unlinked identity signed in ends"
+    );
+    assert_eq!(
+        app.get("/auth/session", &fresh).await.status,
+        StatusCode::OK,
+        "a session from another sign-in stays"
+    );
     let r = sso_as(&app, &idp, "sub-owner", "owner@acme.example").await;
     assert!(r.cookie().is_none(), "{}", location(&r));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn removing_or_repointing_the_connection_ends_the_sessions_it_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    let org = format!("/orgs/{}", owner.org_id);
+    let sso = format!("/orgs/{}/security/sso", owner.org_id);
+    let connection = |idp: &MockIdp, name: &str| {
+        json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example"],
+            "name": name,
+            "default_role": "member",
+        })
+    };
+    let signed_in = |cookie: String| {
+        let app = &app;
+        async move { app.get("/auth/session", &cookie).await.status }
+    };
+    let alice = sso_as(&app, &idp, "sub-alice", "alice@acme.example")
+        .await
+        .cookie()
+        .expect("signed in");
+    app.get(&org, &alice).await.expect_status(StatusCode::OK);
+
+    app.call(
+        axum::http::Method::PUT,
+        &sso,
+        Some(connection(&idp, "Acme ID")),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        signed_in(alice.clone()).await,
+        StatusCode::OK,
+        "a change that keeps the provider keeps its sessions"
+    );
+
+    let other = MockIdp::start("kaeso", "client-secret").await;
+    app.call(
+        axum::http::Method::PUT,
+        &sso,
+        Some(connection(&other, "Acme ID")),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        signed_in(alice.clone()).await,
+        StatusCode::UNAUTHORIZED,
+        "the replaced provider's sessions end"
+    );
+    assert_eq!(signed_in(owner.cookie.clone()).await, StatusCode::OK);
+
+    let bob = sso_as(&app, &other, "sub-bob", "bob@acme.example")
+        .await
+        .cookie()
+        .expect("signed in through the new provider");
+    app.get(&org, &bob).await.expect_status(StatusCode::OK);
+    app.call(axum::http::Method::DELETE, &sso, None, Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+    app.clock.advance(time::Duration::days(6));
+    assert_eq!(
+        app.get(&org, &bob).await.status,
+        StatusCode::UNAUTHORIZED,
+        "a removed connection's sessions end"
+    );
+    assert_eq!(
+        signed_in(owner.cookie.clone()).await,
+        StatusCode::OK,
+        "sessions from other sign-ins stay"
+    );
     s.cleanup().await;
 }
 

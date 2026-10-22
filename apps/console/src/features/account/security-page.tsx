@@ -506,7 +506,7 @@ function SingleSignOnSection() {
         onOpenChange={setUnlinking}
         tone="warning"
         title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
-        description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in until you link the account again.")}
+        description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in, and the sessions it signed you in to end.")}
         confirmLabel={t("account.ssoUnlink", "Unlink")}
         loading={unlink.isPending}
         onConfirm={() => unlink.mutateAsync(target.org_id)}

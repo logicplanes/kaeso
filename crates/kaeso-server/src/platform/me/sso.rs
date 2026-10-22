@@ -3,11 +3,13 @@ use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, SessionId, UserId};
+use kaeso_store::pg::sessions as sessions_store;
 use kaeso_store::pg::{members, oidc, orgs, sso_identities, users};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
+use crate::auth::sessions;
 use crate::platform::access::Ctx;
 use crate::platform::auth::next;
 use crate::platform::auth::oidc::{StartResponse, begin_confirm, begin_link};
@@ -125,7 +127,9 @@ async fn member_with_sso(state: &AppState, org: OrgId, me: UserId) -> ApiResult<
     delete,
     path = "/me/sso-links/{org}",
     summary = "Unlinks the account from an org's identity provider: it no longer signs\n\
-    in through it.",
+    in through it, and the account's sessions it signed in end.",
+    description = "Needs a sign-in within the last 15 minutes. When the session that asks \
+    came from that org's SSO, it ends too.",
     tag = "me",
     params(("org" = OrgId, Path)),
     responses((status = 204, description = "Unlinked."))
@@ -135,17 +139,21 @@ pub async fn unlink(
     ctx: Ctx,
     Path(org): Path<String>,
 ) -> ApiResult<StatusCode> {
+    ctx.require_recent_sign_in()?;
     let me = ctx.user_id()?;
     let org: OrgId = org.parse().map_err(|_| ApiError::not_found("link"))?;
     let mut tx = state.pg.begin().await?;
     if !sso_identities::unlink(&mut *tx, org.uuid(), me.uuid()).await? {
         return Err(ApiError::not_found("link"));
     }
+    let ended = sessions_store::revoke_sso(&mut *tx, org.uuid(), Some(me.uuid()), ctx.now).await?;
     ctx.audit(Some(org), "user.sso_unlink")
         .target("user", me)
+        .after(serde_json::json!({ "sessions_ended": ended.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    sessions::forget(&state, &ended).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

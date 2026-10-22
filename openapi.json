@@ -5227,8 +5227,8 @@
         "tags": [
           "me"
         ],
-        "summary": "Unlinks the account from an org's identity provider: it no longer signs\nin through it.",
-        "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
+        "summary": "Unlinks the account from an org's identity provider: it no longer signs\nin through it, and the account's sessions it signed in end.",
+        "description": "Needs a sign-in within the last 15 minutes. When the session that asks came from that org's SSO, it ends too.\n\n**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "deleteMeSsoLinksOrg",
         "parameters": [
           {
@@ -15178,7 +15178,7 @@
           "orgs"
         ],
         "summary": "Sets up or replaces the SSO connection. The provider's discovery\ndocument is fetched first, so a mistake shows now, not at sign-in.",
-        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "description": "A new `issuer` or `client_id` ends every session the previous provider signed in to the org, since that provider no longer vouches for them.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecuritySso",
         "parameters": [
           {
@@ -15249,7 +15249,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Removes the SSO connection. Refused while SSO is required.",
+        "summary": "Removes the SSO connection and ends every session it signed in. Refused\nwhile SSO is required.",
         "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "deleteOrgsOrgSecuritySso",
         "parameters": [
