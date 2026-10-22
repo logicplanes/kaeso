@@ -17,6 +17,7 @@
   "format.audit.action.credentialDelete": "Provider key deleted",
   "format.audit.action.credentialRename": "Provider key renamed",
   "format.audit.action.credentialReplace": "Provider key replaced",
+  "format.audit.action.instanceAdminSsoUpdate": "Single sign-on for instance admins changed",
   "format.audit.action.instanceInvite": "User invited to the install",
   "format.audit.action.instanceSettingsUpdate": "Instance settings changed",
   "format.audit.action.instanceSetup": "Kaeso set up",

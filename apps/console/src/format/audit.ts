@@ -42,6 +42,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "instance.setup": () => t("format.audit.action.instanceSetup", "Kaeso set up"),
   "instance.invite": () => t("format.audit.action.instanceInvite", "User invited to the install"),
   "instance.settings_update": () => t("format.audit.action.instanceSettingsUpdate", "Instance settings changed"),
+  "instance.admin_sso_update": () => t("format.audit.action.instanceAdminSsoUpdate", "Single sign-on for instance admins changed"),
   "instance.update_check": () => t("format.audit.action.instanceUpdateCheck", "Checked for updates"),
   "instance.update_settings": () => t("format.audit.action.instanceUpdateSettings", "Update settings changed"),
   "instance.update_start": () => t("format.audit.action.instanceUpdateStart", "Update started"),

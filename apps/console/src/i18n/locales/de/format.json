@@ -17,6 +17,7 @@
   "format.audit.action.credentialDelete": "Anbieter-Schlüssel gelöscht",
   "format.audit.action.credentialRename": "Anbieter-Schlüssel umbenannt",
   "format.audit.action.credentialReplace": "Anbieter-Schlüssel ersetzt",
+  "format.audit.action.instanceAdminSsoUpdate": "Single Sign-on für Instanz-Admins geändert",
   "format.audit.action.instanceInvite": "Benutzer zur Installation eingeladen",
   "format.audit.action.instanceSettingsUpdate": "Instanzeinstellungen geändert",
   "format.audit.action.instanceSetup": "Kaeso eingerichtet",

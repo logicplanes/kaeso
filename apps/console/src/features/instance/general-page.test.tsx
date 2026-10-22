@@ -3,8 +3,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import type { SettingsView } from "~/api/generated/types";
 import { signedIn, whoAmI } from "~/test/fixtures";
-import { instanceSettings, system } from "~/test/fixtures/instance-account";
-import { hoverReason, notifications } from "~/test/fixtures/org";
+import { instanceOrg, instanceSettings, system } from "~/test/fixtures/instance-account";
+import { hoverReason, notifications, paged } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { formatTimeZone } from "@logicplanes/kaeso-ui/format";
@@ -409,5 +409,65 @@ describe("the time zone", () => {
     const browser = Intl.DateTimeFormat().resolvedOptions().timeZone;
     await user.click(await screen.findByRole("button", { name: "Use this zone" }));
     await waitFor(() => expect(patches()).toEqual([{ timezone: browser }]));
+  });
+});
+
+describe("single sign-on for instance admins", () => {
+  const ACME = instanceOrg({ id: "org_acme", name: "Acme" });
+
+  function adminSsoApi(initial: Partial<SettingsView> = {}) {
+    settingsApi(initial);
+    on("GET", "instance/orgs", paged([ACME]));
+    on("PUT", "instance/settings/admin-sso", ({ body }: { body: { org: string | null } }) =>
+      instanceSettings({ admin_sso: body.org ? { org: body.org, name: "Acme", connected: true } : null }),
+    );
+  }
+
+  it("chooses the organization whose single sign-on may manage the install, from those with a connection", async () => {
+    signedIn();
+    adminSsoApi();
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText("Instance admins sign in another way to manage it.")).toBeInTheDocument();
+    await waitFor(() => expect(requests("GET", "instance/orgs").map((r) => r.query.get("sso"))).toEqual(["true"]));
+    await choose(user, "Single sign-on for instance admins", "Acme");
+    expect(await notifications().findByText("Acme can now sign instance admins in")).toBeInTheDocument();
+    expect(requests("PUT", "instance/settings/admin-sso").map((r) => r.body)).toEqual([{ org: "org_acme" }]);
+  });
+
+  it("stops letting an organization's single sign-on manage the install", async () => {
+    signedIn();
+    adminSsoApi({ admin_sso: { org: "org_acme", name: "Acme", connected: true } });
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText("Applies to admins whose account the organization manages.")).toBeInTheDocument();
+    await choose(user, "Single sign-on for instance admins", "None");
+    expect(await notifications().findByText("No organization signs instance admins in")).toBeInTheDocument();
+    expect(requests("PUT", "instance/settings/admin-sso").map((r) => r.body)).toEqual([{ org: null }]);
+  });
+
+  it("says when the chosen organization lost its connection, so the setting does nothing", async () => {
+    signedIn();
+    on("GET", "instance/system", system());
+    on("GET", "instance/settings", instanceSettings({ admin_sso: { org: "org_gone", name: "Initech", connected: false } }));
+    on("GET", "instance/orgs", paged([ACME]));
+    await renderApp(PATH);
+    expect(await screen.findByText("Initech has no SSO connection, so this has no effect.")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Single sign-on for instance admins" })).toHaveTextContent("Initech");
+  });
+
+  it("asks for a sign-in without single sign-on before changing it", async () => {
+    const session = whoAmI();
+    signedIn({ session: { ...session, session: { ...session.session, method: "oidc", sso_org: "org_acme" } } });
+    settingsApi();
+    on("GET", "instance/orgs", paged([ACME]));
+    on("GET", "me/sign-in-again", { password: true, magic_link: true, set_password: false, sso: [] });
+    on(
+      "PUT",
+      "instance/settings/admin-sso",
+      apiError(403, "other_sign_in_required", "You signed in with SSO; sign in with your password or a sign-in link to do this."),
+    );
+    const { user } = await renderApp(PATH);
+    await screen.findByText("Instance admins sign in another way to manage it.");
+    await choose(user, "Single sign-on for instance admins", "Acme");
+    expect(await screen.findByRole("dialog", { name: "Sign in another way" })).toBeInTheDocument();
   });
 });
