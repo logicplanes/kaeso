@@ -168,6 +168,15 @@ pub fn decode_model(
 }
 
 pub fn encode_model_request(dialect: DialectId, model: &str) -> Result<EncodedRequest, KppError> {
+    // A URL parser removes a `.` or `..` path segment even when it is percent-encoded
+    // (WHATWG URL, "single-dot" and "double-dot" segments), so no encoding keeps them.
+    if matches!(model, "." | "..") {
+        return Err(KppError::invalid_request(format!(
+            "The model id `{model}` can't be part of a URL; use the model's real id."
+        ))
+        .with_param("model")
+        .with_status(400));
+    }
     dispatch!(dialect, encode_model_request(model))
 }
 

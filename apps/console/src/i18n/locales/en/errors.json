@@ -232,6 +232,7 @@
   "errors.modelApi.unreachable": "Kaeso cannot reach the provider. Try again shortly.",
   "errors.modelApi.unserved": "{provider} does not serve the model `{model}` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
   "errors.modelCannotTake": "The model cannot take this request as it is; check its settings.",
+  "errors.modelIdDots": "`model_id` can't be `.` or `..`, or have either between slashes.",
   "errors.modelIdForm": "A model id has 1 to 200 characters and no spaces.",
   "errors.modelIdsOrAllCurrent": "Send either `model_ids` or `all_current: true`.",
   "errors.modelNotAllowed": "The model `{model}` is not among the models you may use in this project.",

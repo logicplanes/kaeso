@@ -320,6 +320,7 @@ const messages = (): Rule[] => [
   rule("errors.aliasCharacters", () => t("errors.aliasCharacters", "An alias must not contain spaces, control characters or `/`.")),
   rule("errors.aliasTaken", (v) => t("errors.aliasTaken", "The alias `{name}` exists in this project.", v)),
   rule("errors.modelIdForm", () => t("errors.modelIdForm", "A model id has 1 to 200 characters and no spaces.")),
+  rule("errors.modelIdDots", () => t("errors.modelIdDots", "`model_id` can't be `.` or `..`, or have either between slashes.")),
   rule("errors.listModelIds", () => t("errors.listModelIds", "List 1 to 200 model ids.")),
   rule("errors.modelIdsOrAllCurrent", () => t("errors.modelIdsOrAllCurrent", "Send either `model_ids` or `all_current: true`.")),
   rule("errors.notOnModelsDevAddCustom", (v) =>

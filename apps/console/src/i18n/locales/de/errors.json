@@ -162,6 +162,7 @@
   "errors.missingRightProject": "Dafür fehlt das Recht `{right}` in diesem Projekt; bitten Sie einen seiner Admins darum.",
   "errors.modalityNeeded": "`{name}` muss mindestens eine Modalität enthalten.",
   "errors.modelCannotTake": "Das Modell kann diese Anfrage so nicht annehmen; seine Einstellungen prüfen.",
+  "errors.modelIdDots": "`model_id` darf nicht `.` oder `..` sein und keines davon zwischen Schrägstrichen enthalten.",
   "errors.modelIdForm": "Eine Modell-ID hat 1 bis 200 Zeichen und keine Leerzeichen.",
   "errors.modelIdsOrAllCurrent": "Entweder `model_ids` oder `all_current: true` senden.",
   "errors.modelNotAllowed": "Das Modell `{model}` gehört nicht zu den Modellen, die Sie in diesem Projekt nutzen dürfen.",

@@ -790,6 +790,30 @@ fn a_retrieved_model_id_stays_one_path_segment() {
     assert_eq!(req.path, "/v1/models/a%2Fb%20c%3Fd%23e%25f");
     let req = dispatch::encode_model_request(OPENAI[0], "modèle").unwrap();
     assert_eq!(req.path, "/v1/models/mod%C3%A8le");
+    for (id, path) in [
+        ("a/../../x", "/v1/models/a%2F..%2F..%2Fx"),
+        ("x?y#z", "/v1/models/x%3Fy%23z"),
+        ("...", "/v1/models/..."),
+        ("v1.5", "/v1/models/v1.5"),
+    ] {
+        let req = dispatch::encode_model_request(DialectId::OpenAiResponses, id).unwrap();
+        assert_eq!(req.path, path);
+    }
+}
+
+#[test]
+fn a_model_id_a_url_would_resolve_away_is_refused() {
+    for dialect in [A, OPENAI[0]] {
+        for id in [".", ".."] {
+            let err = dispatch::encode_model_request(dialect, id).unwrap_err();
+            assert_eq!(err.kind, ErrorKind::InvalidRequest);
+            assert_eq!(err.param.as_deref(), Some("model"));
+            assert_eq!(
+                err.message,
+                format!("The model id `{id}` can't be part of a URL; use the model's real id.")
+            );
+        }
+    }
 }
 
 #[test]
