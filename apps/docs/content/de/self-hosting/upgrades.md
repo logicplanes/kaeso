@@ -73,17 +73,18 @@ Der Updater ist ein optionaler Dienst in der `compose.yaml`, mit einem eigenen P
 
 Der Updater braucht Docker Engine 25 oder neuer.
 
-1. Geben Sie im Ordner der Installation Gateway und Updater ein gemeinsames Token und schalten Sie das Profil `updater` ein:
+1. Geben Sie im Ordner der Installation Gateway und Updater ein gemeinsames Token, schalten Sie das Profil `updater` ein und nennen Sie den Ordner der Installation:
 
 ```bash
 echo "KAESO_UPDATER_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "COMPOSE_PROFILES=updater" >> .env
+echo "KAESO_DIR=$PWD" >> .env
 docker compose up -d --wait
 ```
 
 2. Unter **Einstellungen** › **Instanz** › **Updates** aktualisiert **Auf … aktualisieren** die Installation jetzt, und **Automatisch** lässt sie in einem Fenster aktualisieren. Beides verlangt eine Anmeldung innerhalb der letzten 15 Minuten.
 
-Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Liegt der Docker-Socket nicht unter `/var/run/docker.sock`, etwa bei rootless Docker, setzen Sie `DOCKER_SOCKET` in der `.env`.
+Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Liegt der Docker-Socket nicht unter `/var/run/docker.sock`, etwa bei rootless Docker, setzen Sie `DOCKER_SOCKET` in der `.env`. Startet `docker-proxy` nicht und verlangt sein Log `KAESO_DIR`, ergänzen Sie es wie in Schritt 1.
 
 Um das Token aus der `.env` herauszuhalten, legen Sie es in eine Datei und geben es beiden Diensten als [Compose-Secret](https://docs.docker.com/compose/how-tos/use-secrets/). Beide lesen `KAESO_UPDATER_TOKEN_FILE`:
 
@@ -151,15 +152,15 @@ Entfernen Sie danach beide `…-previous`-Container mit `docker rm`. Solange ein
 
 ### Was der Updater darf
 
-Der Updater kommt root auf dem Server gleich. Er kann Container anlegen, und `docker-proxy`, der als root läuft, um den Docker-Socket zu erreichen, prüft bei jedem Aufruf nur Methode und Pfad. Wer den Updater oder den Proxy kontrolliert, kontrolliert den Server. Der Updater ist so gebaut, dass diese Befugnis möglichst begrenzt bleibt:
+Der Updater kommt root auf dem Server gleich. Er kann Container anlegen, und `docker-proxy`, der als root läuft, um den Docker-Socket zu erreichen, prüft bei jedem Aufruf nur Methode und Pfad und woher Bind-Mounts kommen. Wer den Updater oder den Proxy kontrolliert, kontrolliert den Server. Der Updater ist so gebaut, dass diese Befugnis möglichst begrenzt bleibt:
 
 - Er antwortet nur dem Gateway, in einem internen Netzwerk und nur mit dem gemeinsamen Token. Das Gateway übergibt ihm eine Versionsnummer und sonst nichts.
-- Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht.
+- Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht. Bind-Mounts erlaubt er nur aus `KAESO_DIR`, dem Ordner der Installation; ändern Sie `KAESO_DIR` also, wenn Sie den Ordner verschieben.
 - Er ersetzt nur die Gateway- und Konsolen-Container seines eigenen Compose-Projekts, mit Images, die er geprüft hat.
-- Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk oder Mounts von denen des ersetzten abweichen, und lädt nur die Images von Kaeso, per Digest.
+- Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk, Mounts, Ports, Namensauflösung, Gruppen oder Limits von denen des ersetzten abweichen, und lädt nur die Images von Kaeso, per Digest.
 - Er ändert in der `compose.yaml` nur die Image-Versionen und Digests und lässt eine Datei unangetastet, die von der des Releases abweicht.
 
-Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
+Der Proxy kann nicht prüfen, was ein neuer Container verlangt, etwa Rechte oder Geräte des Hosts, und lässt den Updater die Einstellungen jedes Containers lesen, auch die Datenbankpasswörter in ihrer Umgebung. Diese Prüfungen liegen allein im Updater. Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
 
 ## Während Kaeso aktualisiert wird
 

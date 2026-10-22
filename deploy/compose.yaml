@@ -126,7 +126,7 @@ services:
     mem_limit: 64m
     pids_limit: 32
     logging: *logging
-    command: ["sh", "-c", "chown -R 65532:65532 /maintenance /state && chgrp 65532 /kaeso/compose.yaml && chmod g+rw /kaeso/compose.yaml"]
+    command: ["sh", "-c", "chown -R 65532:65532 /maintenance /state && chgrp 65532 /kaeso/compose.yaml && chmod g=rw,o-w /kaeso/compose.yaml"]
     volumes:
       - ./compose.yaml:/kaeso/compose.yaml
       - maintenance:/maintenance
@@ -174,9 +174,11 @@ services:
       - -allowhealthcheck
       - -watchdoginterval=600
       - -stoponwatchdog
-      - -allowGET=/v1\.44/(version|containers/json|containers/[0-9a-f]{12,64}/json|images/(sha256:[0-9a-f]{64}|ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64})/json)
+      - -allowGET=/v1\.44/(version|containers/json|containers/([0-9a-f]{12}|[0-9a-f]{64})/json|images/(sha256:[0-9a-f]{64}|ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64})/json)
       - -allowPOST=/v1\.44/(images/create|images/ghcr\.io/logicplanes/kaeso-(gateway|console|updater)@sha256:[0-9a-f]{64}/tag|containers/create|containers/[0-9a-f]{64}/(start|stop|rename))
       - -allowDELETE=/v1\.44/containers/[0-9a-f]{64}
+      # Not a path on purpose: socket-proxy refuses to start on it, while an empty value would allow every bind mount.
+      - -allowbindmountfrom=${KAESO_DIR:-set KAESO_DIR in .env}
     volumes:
       - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
     networks: [docker]

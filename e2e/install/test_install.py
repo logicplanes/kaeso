@@ -91,6 +91,7 @@ def install(tmp_path_factory):
         "KAESO_TEST_UPDATER_IMAGE": updater,
         "KAESO_UPDATER_TOKEN": os.urandom(32).hex(),
         "COMPOSE_PROFILES": "updater",
+        "KAESO_DIR": str(work),
     }
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]

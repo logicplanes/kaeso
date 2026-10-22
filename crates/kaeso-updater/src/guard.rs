@@ -20,6 +20,28 @@ pub const CONFINED: &[&str] = &[
     "SecurityOpt",
     "Sysctls",
     "Runtime",
+    "ReadonlyRootfs",
+    "Tmpfs",
+    "MaskedPaths",
+    "ReadonlyPaths",
+    "VolumeDriver",
+    "PortBindings",
+    "PublishAllPorts",
+    "ExtraHosts",
+    "Dns",
+    "DnsOptions",
+    "DnsSearch",
+    "Links",
+    "GroupAdd",
+    "CgroupParent",
+    "Ulimits",
+    "Memory",
+    "MemorySwap",
+    "ShmSize",
+    "OomKillDisable",
+    "PidsLimit",
+    "Init",
+    "LogConfig",
 ];
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -65,6 +87,7 @@ fn unset(value: Option<&Value>) -> Option<&Value> {
         Some(Value::Object(o)) if o.is_empty() => None,
         Some(Value::String(s)) if s.is_empty() => None,
         Some(Value::Bool(false)) => None,
+        Some(Value::Number(n)) if n.as_i64() == Some(0) => None,
         Some(v) => Some(v),
     }
 }
@@ -112,7 +135,13 @@ mod tests {
                 "Privileged": false,
                 "SecurityOpt": ["no-new-privileges:true"],
                 "Mounts": [{ "Type": "bind", "Source": "/srv/kaeso/master-keys", "Target": "/run/secrets/master_keys" }],
-                "Memory": 2_147_483_648u64
+                "Memory": 2_147_483_648u64,
+                "PidsLimit": 1024,
+                "ReadonlyRootfs": true,
+                "Tmpfs": { "/tmp": "noexec" },
+                "MaskedPaths": ["/proc/kcore", "/proc/keys"],
+                "ReadonlyPaths": ["/proc/sys", "/proc/sysrq-trigger"],
+                "LogConfig": { "Type": "json-file", "Config": { "max-size": "10m" } }
             }
         })
     }
@@ -136,7 +165,10 @@ mod tests {
         host["Binds"] = json!([]);
         host["Privileged"] = Value::Null;
         host.as_object_mut().unwrap().remove("CapAdd");
-        host["Memory"] = json!(1);
+        host["Init"] = json!(false);
+        host["OomKillDisable"] = json!(false);
+        host["ShmSize"] = json!(0);
+        host["CpuShares"] = json!(512);
         assert_eq!(
             container("kaeso-gateway-1", &spec(host), &replaced()),
             Ok(())
@@ -159,6 +191,37 @@ mod tests {
             ),
             ("SecurityOpt", json!(["seccomp=unconfined"])),
             ("UsernsMode", json!("host")),
+            ("ReadonlyRootfs", json!(false)),
+            ("Tmpfs", json!({ "/run": "exec,suid" })),
+            ("MaskedPaths", json!([])),
+            ("ReadonlyPaths", json!([])),
+            ("VolumeDriver", json!("example")),
+            (
+                "PortBindings",
+                json!({ "8080/tcp": [{ "HostIp": "0.0.0.0", "HostPort": "8080" }] }),
+            ),
+            ("PublishAllPorts", json!(true)),
+            ("ExtraHosts", json!(["api.openai.com:203.0.113.7"])),
+            ("Dns", json!(["203.0.113.7"])),
+            ("DnsOptions", json!(["ndots:15"])),
+            ("DnsSearch", json!(["example.com"])),
+            ("Links", json!(["/kaeso-postgres-1:/kaeso-gateway-1/db"])),
+            ("GroupAdd", json!(["0"])),
+            ("CgroupParent", json!("/")),
+            (
+                "Ulimits",
+                json!([{ "Name": "nofile", "Soft": 1_048_576, "Hard": 1_048_576 }]),
+            ),
+            ("Memory", json!(0)),
+            ("MemorySwap", json!(-1)),
+            ("ShmSize", json!(17_179_869_184u64)),
+            ("OomKillDisable", json!(true)),
+            ("PidsLimit", json!(-1)),
+            ("Init", json!(true)),
+            (
+                "LogConfig",
+                json!({ "Type": "gelf", "Config": { "gelf-address": "udp://203.0.113.7:12201" } }),
+            ),
         ];
         for (field, value) in wider {
             let mut host = replaced()["HostConfig"].clone();
