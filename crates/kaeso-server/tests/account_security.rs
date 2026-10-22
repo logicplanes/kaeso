@@ -99,6 +99,20 @@ async fn recovery_codes_and_turning_totp_off_follow_the_org_policy() {
     let r = app
         .post("/me/recovery-codes", json!({}), Some(&cookie))
         .await;
+    assert_eq!(
+        (r.status, r.body["error"]["param"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("code")),
+        "new recovery codes need the second factor: {:?}",
+        r.body
+    );
+    app.clock.advance(time::Duration::seconds(30));
+    let r = app
+        .post(
+            "/me/recovery-codes",
+            json!({ "code": code(&secret, &app) }),
+            Some(&cookie),
+        )
+        .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["recovery_codes"].as_array().unwrap().len(), 10);
 

@@ -407,14 +407,16 @@ pub async fn totp_disable(
 #[utoipa::path(
     post,
     path = "/me/recovery-codes",
-    summary = "Replaces the recovery codes with ten new ones. Needs TOTP on and a\n\
-    recent sign-in.",
+    summary = "Replaces the recovery codes with ten new ones. Needs TOTP on, a recent\n\
+    sign-in and a current code or one of the recovery codes.",
     tag = "me",
+    request_body = SecondFactor,
     responses((status = 200, body = TotpEnabled))
 )]
 pub async fn recovery_codes(
     State(state): State<AppState>,
     ctx: Ctx,
+    Body(req): Body<SecondFactor>,
 ) -> ApiResult<Json<TotpEnabled>> {
     ctx.require_recent_sign_in()?;
     let user_id = ctx.user_id()?;
@@ -423,6 +425,7 @@ pub async fn recovery_codes(
             "Turn on two-factor authentication first.".into(),
         ));
     }
+    require_second_factor(&state, &ctx, user_id, &req).await?;
     let (codes, hashes) = new_recovery_codes();
     let mut tx = state.pg.begin().await?;
     totp::replace_recovery_codes(&mut tx, user_id.uuid(), &hashes).await?;

@@ -800,7 +800,7 @@ async fn turning_totp_off_needs_a_current_code() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let (cookie, _) = turn_on_totp(&app, &owner.cookie).await;
+    let (cookie, _, old) = totp_with_recovery_codes(&app, &owner.cookie).await;
     let r = app
         .call(
             Method::DELETE,
@@ -814,8 +814,12 @@ async fn turning_totp_off_needs_a_current_code() {
         r.body["error"]["message"],
         "That code isn't valid or was already used."
     );
-    let recovery = app
-        .post("/me/recovery-codes", json!({}), Some(&cookie))
+    let new = app
+        .post(
+            "/me/recovery-codes",
+            json!({ "recovery_code": old[0] }),
+            Some(&cookie),
+        )
         .await
         .expect_status(StatusCode::OK)
         .body["recovery_codes"][0]
@@ -825,11 +829,56 @@ async fn turning_totp_off_needs_a_current_code() {
     app.call(
         Method::DELETE,
         "/me/totp",
-        Some(json!({ "recovery_code": recovery })),
+        Some(json!({ "recovery_code": old[1] })),
+        Some(&cookie),
+    )
+    .await
+    .expect_status(StatusCode::BAD_REQUEST);
+    app.call(
+        Method::DELETE,
+        "/me/totp",
+        Some(json!({ "recovery_code": new })),
         Some(&cookie),
     )
     .await
     .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn new_recovery_codes_need_the_second_factor() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (cookie, secret, recovery) = totp_with_recovery_codes(&app, &owner.cookie).await;
+    let regenerate = |factor: Value| {
+        let app = &app;
+        let cookie = cookie.clone();
+        async move { app.post("/me/recovery-codes", factor, Some(&cookie)).await }
+    };
+    let r = regenerate(json!({}))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (&r.body["error"]["param"], &r.body["error"]["message"]),
+        (
+            &json!("code"),
+            &json!("Enter a code from your authenticator app or a recovery code.")
+        ),
+        "a stolen session alone can't replace the recovery codes"
+    );
+    let r = regenerate(json!({ "code": wrong_code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(r.body["error"]["message"], WRONG);
+    next_step(&app).await;
+    let r = regenerate(json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["recovery_codes"].as_array().unwrap().len(), 10);
+    regenerate(json!({ "recovery_code": recovery[0] }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
     s.cleanup().await;
 }
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
+import type { UserEvent } from "@testing-library/user-event";
 import { signedIn, whoAmI } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
 import { emailSent, signedInReply } from "~/test/fixtures/public";
@@ -394,37 +395,67 @@ describe("with two-factor authentication on", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("regenerates the recovery codes", async () => {
+  async function regenerateWith(user: UserEvent, code = "123456") {
+    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
+    const confirm = await screen.findByRole("dialog", { name: "Regenerate recovery codes?" });
+    const regenerate = within(confirm).getByRole("button", { name: "Regenerate" });
+    expect(regenerate).toBeDisabled();
+    await user.type(within(confirm).getByLabelText("Code from the app"), code);
+    await user.click(regenerate);
+    return confirm;
+  }
+
+  it("regenerates the recovery codes with a code from the app", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true }));
     on("POST", "me/recovery-codes", { recovery_codes: ["eeee-ffff"] });
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
-    const confirm = await screen.findByRole("alertdialog", { name: "Regenerate recovery codes?" });
-    await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
+    await regenerateWith(user);
     const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
     expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
-    expect(cachedText()).toContain("eeee-ffff");
-    expect(requests("POST", "me/recovery-codes")).toHaveLength(1);
+    expect(requests("POST", "me/recovery-codes").map((r) => r.body)).toEqual([{ code: "123456" }]);
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
     await waitFor(() => expect(cachedText()).not.toContain("eeee-ffff"));
   });
 
-  it("keeps the confirmation open while new codes are made, so two regenerations can't race", async () => {
+  it("regenerates the recovery codes with one of the current ones", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    on("POST", "me/recovery-codes", { recovery_codes: ["eeee-ffff"] });
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
+    const confirm = await screen.findByRole("dialog", { name: "Regenerate recovery codes?" });
+    await user.click(within(confirm).getByRole("link", { name: "Use a recovery code" }));
+    await user.type(within(confirm).getByRole("textbox", { name: "Recovery code" }), " abcd-efgh ");
+    await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
+    expect(await screen.findByRole("dialog", { name: "Store your recovery codes" })).toBeInTheDocument();
+    expect(requests("POST", "me/recovery-codes").map((r) => r.body)).toEqual([{ recovery_code: "abcd-efgh" }]);
+  });
+
+  it("keeps the dialog open with a wrong code, and says why", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    on("POST", "me/recovery-codes", apiError(400, "invalid_request", "That code isn't valid or was already used.", { param: "code" }));
+    const { user } = await renderApp(PATH);
+    const confirm = await regenerateWith(user);
+    expect((await within(confirm).findAllByText("That code isn't valid or was already used.")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("dialog", { name: "Regenerate recovery codes?" })).toBe(confirm);
+    expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the dialog open while new codes are made, so two regenerations can't race", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true }));
     let respond: (body: unknown) => void = () => undefined;
     on("POST", "me/recovery-codes", () => new Promise((resolve) => (respond = resolve)));
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "Regenerate" }));
-    const confirm = await screen.findByRole("alertdialog", { name: "Regenerate recovery codes?" });
-    await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
+    const confirm = await regenerateWith(user);
     await waitFor(() => expect(requests("POST", "me/recovery-codes")).toHaveLength(1));
     expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeDisabled();
     await user.keyboard("{Escape}");
-    expect(screen.getByRole("alertdialog", { name: "Regenerate recovery codes?" })).toBe(confirm);
+    expect(screen.getByRole("dialog", { name: "Regenerate recovery codes?" })).toBe(confirm);
     await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
     expect(requests("POST", "me/recovery-codes")).toHaveLength(1);
     respond({ recovery_codes: ["eeee-ffff"] });
@@ -442,8 +473,7 @@ describe("with two-factor authentication on", () => {
       ["eeee-ffff", null],
       ["gggg-hhhh", "eeee-ffff"],
     ] as const) {
-      await user.click(await screen.findByRole("button", { name: "Regenerate" }));
-      await user.click(within(await screen.findByRole("alertdialog", { name: "Regenerate recovery codes?" })).getByRole("button", { name: "Regenerate" }));
+      await regenerateWith(user);
       const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
       expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent(shown);
       if (gone) expect(screen.queryByText(gone, { exact: false })).not.toBeInTheDocument();

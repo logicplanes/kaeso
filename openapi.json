@@ -4780,9 +4780,19 @@
         "tags": [
           "me"
         ],
-        "summary": "Replaces the recovery codes with ten new ones. Needs TOTP on and a\nrecent sign-in.",
+        "summary": "Replaces the recovery codes with ten new ones. Needs TOTP on, a recent\nsign-in and a current code or one of the recovery codes.",
         "description": "**Access:** a signed-in console session that didn't come from an organization's SSO; such a session gets `other_sign_in_required`.",
         "operationId": "postMeRecoveryCodes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecondFactor"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
@@ -4807,6 +4817,9 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"

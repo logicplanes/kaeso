@@ -189,19 +189,11 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
   const [twoFactor, setTwoFactor] = useState<TwoFactorState>(TWO_FACTOR_CLOSED);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
-  const regenerate = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/me/recovery-codes")),
-    invalidates: [["me"]],
-    onSuccess: (r) => {
-      setRegenerating(false);
-      setTwoFactor({ open: true, codes: r.recovery_codes });
-    },
-  });
-  const forgetCodes = regenerate.reset;
-  const closeTwoFactor = useCallback(() => {
-    setTwoFactor(TWO_FACTOR_CLOSED);
-    forgetCodes();
-  }, [forgetCodes]);
+  const regenerated = useCallback((codes: string[]) => {
+    setRegenerating(false);
+    setTwoFactor({ open: true, codes });
+  }, []);
+  const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   return (
     <SettingsSection
       title={t("account.twoFactor", "Two-factor authentication")}
@@ -255,17 +247,52 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
       <DialogScope open={turningOff}>
         <TurnOffDialog open={turningOff} onOpenChange={setTurningOff} />
       </DialogScope>
-      <AlertDialog
-        open={regenerating}
-        onOpenChange={setRegenerating}
-        tone="warning"
-        title={t("account.regenerateConfirm", "Regenerate recovery codes?")}
-        description={t("account.regenerateConfirmHint", "Your current recovery codes stop working; you get ten new ones to store.")}
-        confirmLabel={t("account.regenerate", "Regenerate")}
-        loading={regenerate.isPending}
-        onConfirm={() => regenerate.mutateAsync()}
-      />
+      <DialogScope open={regenerating}>
+        <RegenerateDialog open={regenerating} onOpenChange={setRegenerating} onRegenerated={regenerated} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function RegenerateDialog({
+  open,
+  onOpenChange,
+  onRegenerated,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRegenerated: (codes: string[]) => void;
+}) {
+  const [factor, setFactor] = useState<SecondFactorValue>(NO_SECOND_FACTOR);
+  const regenerate = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/me/recovery-codes", { body: secondFactorBody(factor) })),
+    invalidates: [["me"]],
+    onSuccess: (r) => onRegenerated(r.recovery_codes),
+    onError: () => setFactor((f) => ({ ...f, code: "" })),
+  });
+  const run = () => secondFactorReady(factor) && !regenerate.isPending && regenerate.mutate();
+  return (
+    <Dialog
+      busy={regenerate.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
+      size="sm"
+      title={t("account.regenerateConfirm", "Regenerate recovery codes?")}
+      description={t("account.regenerateConfirmHint", "Your current recovery codes stop working; you get ten new ones to store.")}
+      onSubmit={run}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button variant="primary" disabled={!secondFactorReady(factor)} loading={regenerate.isPending} onClick={run}>
+            {t("account.regenerate", "Regenerate")}
+          </Button>
+        </>
+      }
+    >
+      <SecondFactorField value={factor} onChange={setFactor} error={fieldError(regenerate.error, "code")} />
+    </Dialog>
   );
 }
 
