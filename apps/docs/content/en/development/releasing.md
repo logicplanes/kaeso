@@ -36,7 +36,7 @@ Pull requests labelled `internal` are left out. Dependabot's updates become one 
 
 To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
-When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev

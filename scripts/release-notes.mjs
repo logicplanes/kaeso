@@ -49,6 +49,12 @@ export const coAuthor = (line) => /^\s*co-authored-by:.*<(?:\d+\+)?([A-Za-z0-9-]
 
 const truncated = (text, limit) => (text.length > limit ? `${text.slice(0, limit)}…` : text);
 
+export const uncommented = (text) =>
+  text
+    .replace(/<!--[\s\S]*?(?:--!?>|$)/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
 export function collect({ repository, since = null, head = "HEAD", git, gh }) {
   const json = (...args) => JSON.parse(gh(args));
   const each = (...args) =>
@@ -67,13 +73,13 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     const own = /\s*\(#(\d+)\)$/.exec(subject);
     if (own) {
       const number = Number(own[1]);
-      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: message.trim() });
+      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: uncommented(message) });
       continue;
     }
     for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) {
       if (!pull.merged_at) continue;
       const entry = landed.get(pull.number) ?? { squashed: false, title: null, messages: [] };
-      if (!entry.squashed) entry.messages.push([subject, message.trim()].filter(Boolean).join("\n\n"));
+      if (!entry.squashed) entry.messages.push([uncommented(subject), uncommented(message)].filter(Boolean).join("\n\n"));
       landed.set(pull.number, entry);
     }
   }
@@ -251,7 +257,7 @@ export function factsOf(collected, changelog, version = null) {
     curated_notes: known.curated,
     prerelease_notes: known.prereleases,
     must_list: [...new Set([...visible.map(({ number }) => number), ...earlier])].sort(byNumber),
-    pull_requests: visible.map(({ url, ...pull }) => pull),
+    pull_requests: visible.map(({ url, ...pull }) => ({ ...pull, title: uncommented(pull.title), body: uncommented(pull.body ?? "") })),
     contributors: collected.contributors,
   };
 }
