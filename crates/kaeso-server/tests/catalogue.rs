@@ -156,6 +156,28 @@ async fn entries_store_only_overrides_and_merge_with_models_dev() {
         )
         .await;
     assert_eq!(dup.status, StatusCode::CONFLICT);
+    for dots in ["..", ".", "a/../b", "openai/./x", "../"] {
+        let r = app
+            .post(
+                &format!("{b}/models"),
+                json!({
+                    "provider": "openai", "model_id": dots, "custom": true,
+                    "overrides": {
+                        "input_modalities": ["text"], "output_modalities": ["text"],
+                        "context_limit": 32000, "output_limit": 4000,
+                        "input_price": "1", "output_price": "1", "egress_dialect": "openai_chat"
+                    }
+                }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{dots}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], "model_id");
+        assert_eq!(
+            r.body["error"]["message"],
+            "`model_id` can't be `.` or `..`, or have either between slashes."
+        );
+    }
     let unknown = app
         .post(
             &format!("{b}/models"),

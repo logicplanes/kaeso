@@ -162,6 +162,7 @@
   "errors.missingRightProject": "需要此项目中的 `{right}` 权限，请向项目管理员申请。",
   "errors.modalityNeeded": "`{name}` 必须至少列出一种模态。",
   "errors.modelCannotTake": "该模型无法按当前设置处理此请求，请检查其设置。",
+  "errors.modelIdDots": "`model_id` 不能是 `.` 或 `..`，也不能在斜杠之间包含它们。",
   "errors.modelIdForm": "模型 ID 为 1 到 200 个字符，且不含空格。",
   "errors.modelIdsOrAllCurrent": "请发送 `model_ids` 或 `all_current: true` 之一。",
   "errors.modelNotAllowed": "模型 `{model}` 不在您可在此项目中使用的模型之列。",

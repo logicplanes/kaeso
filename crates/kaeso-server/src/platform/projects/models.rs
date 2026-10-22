@@ -162,6 +162,12 @@ fn validate_model_id(id: &str) -> ApiResult<()> {
             "A model id has 1 to 200 characters and no spaces.",
         ));
     }
+    if id.split('/').any(|part| matches!(part, "." | "..")) {
+        return Err(ApiError::invalid(
+            "model_id",
+            "`model_id` can't be `.` or `..`, or have either between slashes.",
+        ));
+    }
     Ok(())
 }
 

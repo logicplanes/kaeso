@@ -13,7 +13,7 @@ Choose **Add models**, pick a provider from the searchable list next to the sear
 Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
 
 - **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. The dialog says how many models it adds, and warns before you add 50 or more.
-- **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it.
+- **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it. An id can't be `.` or `..` or have either between slashes, because a URL would drop that part.
 
 The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
 
