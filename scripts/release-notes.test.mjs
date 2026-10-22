@@ -584,9 +584,13 @@ test("notes that name another host, pipe into a shell or download something fall
     ["Set `KAESO_UPDATES_URL` to the mirror before you upgrade.", /tells people to set an environment variable/],
     ["Run `export KAESO_UPDATER_TOKEN` first.", /tells people to set an environment variable/],
     ["Upgrade with `KAESO_UPDATES_CHECK=false` in `.env`.", /tells people to set an environment variable/],
-    ["The fixed image is `mallory/kaeso-gateway:1.4.0`.", /names the image mallory\/kaeso-gateway:1\.4\.0, which isn't under ghcr\.io\/logicplanes\//],
+    [
+      "The fixed image is `docker.io/mallory/kaeso-gateway:1.4.0`.",
+      /names the image docker\.io\/mallory\/kaeso-gateway:1\.4\.0, which isn't under ghcr\.io\/logicplanes\//,
+    ],
     ["The fixed image is `ghcr.io/mallory/kaeso-gateway:1.4.0`.", /names the image ghcr\.io\/mallory\/kaeso-gateway:1\.4\.0/],
-    ["Caddy now runs `caddy:2.11.8-alpine`.", /names the image caddy:2\.11\.8-alpine/],
+    ["Set `image: mallory/kaeso-gateway:1.4.0` in `compose.yaml`.", /names the image mallory\/kaeso-gateway:1\.4\.0/],
+    ["Caddy now builds `FROM caddy:2.11.8-alpine`.", /names the image caddy:2\.11\.8-alpine/],
     ["Pin `kaeso-gateway@sha256:0123abcd` instead.", /names the image kaeso-gateway@sha256:0123abcd/],
   ]) {
     await fallsBack(
@@ -602,6 +606,7 @@ test("notes that name another host, pipe into a shell or download something fall
     "Prices come from models.dev, and the crates are on crates.io.",
     "The console image is `ghcr.io/logicplanes/kaeso-console:1.4.0`, and `KAESO_TRUSTED_PROXIES` names the proxy.",
     "Settings take effect at 10:30, and `kaeso_codecs::dispatch` decodes every request.",
+    "OpenRouter prices `google/gemma-4-31b-it:free` and `meta-llama/llama-3.3-70b-instruct:free` again.",
   ])
     assert.equal(plain(text, 800, new Set()), null, text);
 });
