@@ -84,6 +84,8 @@ Docker rotates each service's log at 10 MB and keeps five files.
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
+| `KAESO_SERVER_BODY_READ_DEADLINE` | `server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. An 8 MiB body, the model API's default limit, arrives in time at 1.2 Mbit/s; raise it for apps on slower links. |
+| `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | integer | `4096` | Connections the gateway serves at once, from apps or a proxy in front. Further ones wait in the operating system's queue until one closes. The default matches Linux's default listen queue, `net.core.somaxconn`. |
 
 On a loopback `http` address, such as `http://localhost:8080`, the session cookie goes without `Secure` and the `__Host-` prefix, so the console works over plain HTTP on your computer.
 

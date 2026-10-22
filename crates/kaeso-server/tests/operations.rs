@@ -174,7 +174,7 @@ async fn graceful_shutdown_finishes_open_requests_and_refuses_new_ones() {
         router,
         shutdown.clone(),
         Duration::from_secs(2),
-        Duration::from_secs(30),
+        connections(Duration::from_secs(30), 4096),
         CancellationToken::new(),
     ));
     let client = reqwest::Client::new();
@@ -216,7 +216,7 @@ async fn graceful_shutdown_gives_up_after_the_grace_period() {
         ),
         shutdown.clone(),
         Duration::from_millis(300),
-        Duration::from_secs(30),
+        connections(Duration::from_secs(30), 4096),
         overdue.clone(),
     ));
     let stuck = tokio::spawn(async move { reqwest::get(format!("http://{addr}/forever")).await });
@@ -386,9 +386,24 @@ async fn the_operator_resets_two_factor_by_email_address() {
 
 const HEADER_TIMEOUT: Duration = Duration::from_millis(300);
 
+fn connections(header_read_timeout: Duration, max: usize) -> kaeso_server::serve::Connections {
+    kaeso_server::serve::Connections {
+        header_read_timeout,
+        max,
+    }
+}
+
 async fn serving(
     router: Router,
     header_read_timeout: Duration,
+) -> (std::net::SocketAddr, CancellationToken) {
+    serving_at_most(router, header_read_timeout, 4096).await
+}
+
+async fn serving_at_most(
+    router: Router,
+    header_read_timeout: Duration,
+    max: usize,
 ) -> (std::net::SocketAddr, CancellationToken) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -398,10 +413,47 @@ async fn serving(
         router,
         shutdown.clone(),
         Duration::from_secs(1),
-        header_read_timeout,
+        connections(header_read_timeout, max),
         CancellationToken::new(),
     ));
     (addr, shutdown)
+}
+
+async fn answer_to(stream: &mut TcpStream) -> String {
+    stream
+        .write_all(b"GET / HTTP/1.1\r\nHost: kaeso.test\r\n\r\n")
+        .await
+        .unwrap();
+    let mut buf = vec![0; 1024];
+    let n = stream.read(&mut buf).await.unwrap();
+    buf.truncate(n);
+    String::from_utf8_lossy(&buf).into_owned()
+}
+
+#[tokio::test]
+async fn connections_over_the_limit_wait_until_one_closes() {
+    let (addr, shutdown) = serving_at_most(
+        Router::new().route("/", get(|| async { "hi" })),
+        Duration::from_secs(30),
+        1,
+    )
+    .await;
+    let mut first = TcpStream::connect(addr).await.unwrap();
+    assert!(answer_to(&mut first).await.contains("200 OK"));
+    let mut second = TcpStream::connect(addr).await.unwrap();
+    let waiting = tokio::spawn(async move { answer_to(&mut second).await });
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert!(
+        !waiting.is_finished(),
+        "the second connection is not served yet"
+    );
+    drop(first);
+    let answer = tokio::time::timeout(Duration::from_secs(5), waiting)
+        .await
+        .expect("served once the first closed")
+        .unwrap();
+    assert!(answer.contains("200 OK"), "{answer}");
+    shutdown.cancel();
 }
 
 async fn until_closed(stream: &mut TcpStream) -> (Vec<u8>, Duration) {

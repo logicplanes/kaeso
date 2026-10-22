@@ -134,7 +134,10 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
         env.app.router.clone(),
         shutdown.clone(),
         Duration::from_secs(1),
-        Duration::from_secs(30),
+        kaeso_server::serve::Connections {
+            header_read_timeout: Duration::from_secs(30),
+            max: 4096,
+        },
         CancellationToken::new(),
     ));
     let started = Instant::now();
@@ -581,4 +584,50 @@ async fn a_request_body_that_stops_arriving_is_refused() {
         "The request body did not arrive in time; send it again."
     );
     assert!(started.elapsed() < Duration::from_secs(10));
+}
+
+#[tokio::test]
+async fn a_request_body_dripped_in_time_for_each_part_is_refused_at_its_deadline() {
+    use axum::body::{Body, Bytes};
+    use axum::http::Request;
+    use tower::ServiceExt;
+    let env = env(&[
+        ("KAESO_SERVER_BODY_READ_TIMEOUT", "1s"),
+        ("KAESO_SERVER_BODY_READ_DEADLINE", "2s"),
+    ])
+    .await;
+    assert_eq!(
+        env.app.state.config.server.body_read_deadline,
+        Duration::from_secs(2)
+    );
+    let body = serde_json::to_vec(&chat("gpt-4o", "Hi")).unwrap();
+    let dripped = futures::stream::unfold(body.into_iter(), |mut bytes| async move {
+        let byte = bytes.next()?;
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        Some((Ok::<_, std::io::Error>(Bytes::from(vec![byte])), bytes))
+    });
+    let req = Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .body(Body::from_stream(dripped))
+        .unwrap();
+    let started = Instant::now();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let waited = started.elapsed();
+    assert_eq!(resp.status(), 400);
+    let body = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        json["error"]["message"],
+        "The request body did not arrive in time; send it again."
+    );
+    assert!(
+        (Duration::from_secs(2)..Duration::from_secs(4)).contains(&waited),
+        "{waited:?}"
+    );
+    assert!(env.mock.received().is_empty());
 }

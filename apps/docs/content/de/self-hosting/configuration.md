@@ -84,6 +84,8 @@ Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | Text | `30s` | Wie lange laufende Anfragen und Streams nach dem Signal zum Beenden noch laufen dürfen. Was dann noch offen ist, endet mit 503 und wird abgerechnet und protokolliert. |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | Text | `30s` | Wie lange ein Client für die Header einer Anfrage brauchen oder eine Verbindung zwischen Anfragen ruhen lassen darf; 1s bis 10m. Eine laufende Antwort bricht es nie ab. |
 | `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | Text | `30s` | Wie lange das Gateway auf den nächsten Teil eines Anfrage-Bodys wartet, bevor es die Anfrage mit 400 ablehnt; 1s bis 10m. |
+| `KAESO_SERVER_BODY_READ_DEADLINE` | `server.body_read_deadline` | Text | `60s` | Wie lange das Gateway auf einen ganzen Anfrage-Body wartet, wie gleichmäßig seine Teile auch ankommen, bevor es die Anfrage mit 400 ablehnt; 1s bis 1h. Ein Body von 8 MiB, die Standardgrenze der Modell-API, kommt bei 1,2 Mbit/s rechtzeitig an; erhöhen Sie den Wert für Apps mit langsameren Verbindungen. |
+| `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | Ganzzahl | `4096` | Verbindungen, die das Gateway gleichzeitig bedient, von Apps oder einem vorgeschalteten Proxy. Weitere warten in der Warteschlange des Betriebssystems, bis eine schließt. Der Standard entspricht der Standard-Warteschlange von Linux, `net.core.somaxconn`. |
 
 Auf einer Loopback-Adresse mit `http`, etwa `http://localhost:8080`, kommt das Sitzungscookie ohne `Secure` und ohne das Präfix `__Host-` aus, sodass die Konsole auf Ihrem Rechner über einfaches HTTP funktioniert.
 

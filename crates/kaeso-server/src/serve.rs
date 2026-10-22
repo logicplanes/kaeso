@@ -19,6 +19,7 @@ use kaeso_store::pg::{self, instance};
 use kaeso_store::valkey::Valkey;
 use metrics_exporter_prometheus::PrometheusHandle;
 use tokio::net::TcpListener;
+use tokio::sync::Semaphore;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 use tower::ServiceExt;
@@ -57,6 +58,13 @@ const METRICS_SHUTDOWN_GRACE: Duration = Duration::from_secs(1);
 const IN_FLIGHT_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 const LOG_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 const OVERDUE_ANSWER_WAIT: Duration = Duration::from_secs(1);
+const METRICS_MAX_CONNECTIONS: usize = 64;
+
+#[derive(Clone, Copy, Debug)]
+pub struct Connections {
+    pub header_read_timeout: Duration,
+    pub max: usize,
+}
 
 #[derive(Debug, Default)]
 pub struct Overrides {
@@ -223,7 +231,10 @@ pub async fn run(
             app,
             shutdown.clone(),
             grace,
-            header_read_timeout,
+            Connections {
+                header_read_timeout,
+                max: config.server.max_connections,
+            },
             state.in_flight.cutter()
         ),
         serve_until(
@@ -231,7 +242,10 @@ pub async fn run(
             metrics_app,
             shutdown.clone(),
             METRICS_SHUTDOWN_GRACE,
-            header_read_timeout,
+            Connections {
+                header_read_timeout,
+                max: METRICS_MAX_CONNECTIONS,
+            },
             CancellationToken::new()
         ),
     );
@@ -278,7 +292,7 @@ pub async fn serve_until(
     router: Router,
     shutdown: CancellationToken,
     grace: Duration,
-    header_read_timeout: Duration,
+    connections: Connections,
     overdue: CancellationToken,
 ) -> Result<(), std::io::Error> {
     let kill = CancellationToken::new();
@@ -286,7 +300,7 @@ pub async fn serve_until(
         listener,
         router,
         shutdown.clone(),
-        header_read_timeout,
+        connections,
         kill.clone(),
     );
     let mut server = tokio::spawn(server);
@@ -332,12 +346,37 @@ async fn accept_until(
     listener: TcpListener,
     router: Router,
     shutdown: CancellationToken,
-    header_read_timeout: Duration,
+    limits: Connections,
     kill: CancellationToken,
 ) -> std::io::Result<()> {
+    let header_read_timeout = limits.header_read_timeout;
     let builder = Arc::new(connection_builder(header_read_timeout));
     let connections = TaskTracker::new();
+    let slots = Arc::new(Semaphore::new(limits.max));
+    let mut full = false;
     loop {
+        let slot = match slots.clone().try_acquire_owned() {
+            Ok(slot) => {
+                full = false;
+                slot
+            }
+            Err(_) => {
+                if !full {
+                    tracing::warn!(
+                        max = limits.max,
+                        "the gateway serves its most connections at once; new ones wait"
+                    );
+                    full = true;
+                }
+                tokio::select! {
+                    slot = slots.clone().acquire_owned() => match slot {
+                        Ok(slot) => slot,
+                        Err(_) => break,
+                    },
+                    () = shutdown.cancelled() => break,
+                }
+            }
+        };
         let accepted = tokio::select! {
             accepted = listener.accept() => accepted,
             () = shutdown.cancelled() => break,
@@ -354,7 +393,7 @@ async fn accept_until(
         if let Err(e) = stream.set_nodelay(true) {
             tracing::debug!(error = %e, "cannot turn off Nagle's algorithm on a connection");
         }
-        connections.spawn(serve_connection(
+        let served = serve_connection(
             builder.clone(),
             stream,
             peer,
@@ -362,7 +401,11 @@ async fn accept_until(
             shutdown.clone(),
             header_read_timeout,
             kill.clone(),
-        ));
+        );
+        connections.spawn(async move {
+            served.await;
+            drop(slot);
+        });
     }
     drop(listener);
     connections.close();

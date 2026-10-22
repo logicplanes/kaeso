@@ -84,6 +84,8 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
 | `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
 | `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
+| `KAESO_SERVER_BODY_READ_DEADLINE` | `server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。8 MiB 的请求体（模型 API 的默认上限）以 1.2 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
+| `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | 整数 | `4096` | 网关同时服务的连接数，来自应用或前置代理。更多连接会在操作系统的队列中等待，直到有连接关闭。默认值与 Linux 默认的监听队列 `net.core.somaxconn` 相同。 |
 
 在 `http` 回环地址上（例如 `http://localhost:8080`），会话 Cookie 不带 `Secure` 和 `__Host-` 前缀，因此控制台可以在您的电脑上通过普通 HTTP 使用。
 

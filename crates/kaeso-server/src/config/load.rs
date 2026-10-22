@@ -715,6 +715,38 @@ mod tests {
     }
 
     #[test]
+    fn a_whole_body_has_a_deadline_and_connections_are_capped_by_default() {
+        let c = load(&Map::minimal()).unwrap();
+        assert_eq!(c.server.body_read_deadline.as_secs(), 60);
+        assert_eq!(c.server.max_connections, 4096);
+        let c = load(
+            &Map::minimal()
+                .set("KAESO_SERVER_BODY_READ_DEADLINE", "1h")
+                .set("KAESO_SERVER_MAX_CONNECTIONS", "1"),
+        )
+        .unwrap();
+        assert_eq!(c.server.body_read_deadline.as_secs(), 3600);
+        assert_eq!(c.server.max_connections, 1);
+        for bad in ["0s", "3601s"] {
+            let err = load(&Map::minimal().set("KAESO_SERVER_BODY_READ_DEADLINE", bad))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with("KAESO_SERVER_BODY_READ_DEADLINE (server.body_read_deadline)"),
+                "{err}"
+            );
+            assert!(err.ends_with("must be between 1s and 1h"), "{err}");
+        }
+        let err = load(&Map::minimal().set("KAESO_SERVER_MAX_CONNECTIONS", "0"))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.starts_with("KAESO_SERVER_MAX_CONNECTIONS (server.max_connections)"),
+            "{err}"
+        );
+    }
+
+    #[test]
     fn the_header_read_timeout_is_bounded() {
         for (ok, secs) in [("1s", 1), ("90s", 90), ("10m", 600)] {
             let c = load(&Map::minimal().set("KAESO_SERVER_HEADER_READ_TIMEOUT", ok)).unwrap();

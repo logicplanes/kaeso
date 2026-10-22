@@ -79,6 +79,8 @@ const ROWS: &[Row] = &[
     s("shutdown_grace", "KAESO_SHUTDOWN_GRACE", Text, Some("30s"), false, "How long in-flight requests and streams may run after a shutdown signal."),
     s("server.header_read_timeout", "KAESO_SERVER_HEADER_READ_TIMEOUT", Text, Some("30s"), false, "How long a client may take to send the headers of a request, and how long a connection may sit idle between two requests, before the gateway closes it; 1s to 10m."),
     s("server.body_read_timeout", "KAESO_SERVER_BODY_READ_TIMEOUT", Text, Some("30s"), false, "How long the gateway waits for the next part of a request body before it refuses the request; 1s to 10m."),
+    s("server.body_read_deadline", "KAESO_SERVER_BODY_READ_DEADLINE", Text, Some("60s"), false, "How long the gateway waits for a whole request body, however steadily it arrives, before it refuses the request; 1s to 1h."),
+    s("server.max_connections", "KAESO_SERVER_MAX_CONNECTIONS", Integer, Some("4096"), false, "Connections the gateway serves at once; further ones wait to be accepted until one closes."),
     s("cors.allowed_origins", "KAESO_CORS_ALLOWED_ORIGINS", Text, None, false, "Comma-separated origins of the web apps that may call the model API from a browser, such as `https://app.example.com`, never `*`; only these get CORS headers, and only on `/v1`."),
     s("postgres.url", "KAESO_POSTGRES_URL", Text, None, true, "PostgreSQL connection URL. Required."),
     s("postgres.pool_size", "KAESO_POSTGRES_POOL_SIZE", Integer, Some("20"), false, "Maximum PostgreSQL connections per gateway instance."),

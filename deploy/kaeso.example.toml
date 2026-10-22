@@ -7,6 +7,8 @@ shutdown_grace = "30s"
 [server]
 header_read_timeout = "30s"
 body_read_timeout = "30s"
+body_read_deadline = "60s"
+max_connections = 4096
 
 [cors]
 allowed_origins = ""
