@@ -73,17 +73,18 @@ services:
 
 更新器需要 Docker Engine 25 或更高版本。
 
-1. 在实例文件夹中，为网关和更新器设置共享令牌，并开启 `updater` profile（配置集）：
+1. 在实例文件夹中，为网关和更新器设置共享令牌，开启 `updater` profile（配置集），并写明实例文件夹：
 
 ```bash
 echo "KAESO_UPDATER_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "COMPOSE_PROFILES=updater" >> .env
+echo "KAESO_DIR=$PWD" >> .env
 docker compose up -d --wait
 ```
 
 2. 在**设置** › **实例** › **更新**中，现在**更新到 …** 可以更新实例，**自动**则让实例在窗口内自动更新。两者都需要在过去 15 分钟内登录过。
 
-更新器未安装、没有响应或对某个版本来说太旧时，页面会给出提示。Docker 套接字不在 `/var/run/docker.sock` 时（例如 rootless Docker），请在 `.env` 中设置 `DOCKER_SOCKET`。
+更新器未安装、没有响应或对某个版本来说太旧时，页面会给出提示。Docker 套接字不在 `/var/run/docker.sock` 时（例如 rootless Docker），请在 `.env` 中设置 `DOCKER_SOCKET`。如果 `docker-proxy` 无法启动，且其日志要求设置 `KAESO_DIR`，请按第 1 步添加。
 
 如果不想把令牌放在 `.env` 中，可以把它写进一个文件，作为 [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/) 交给两个服务。两者都读取 `KAESO_UPDATER_TOKEN_FILE`：
 
@@ -154,7 +155,7 @@ secrets:
 更新器相当于服务器上的 root。它可以创建容器，而为访问 Docker 套接字以 root 运行的 `docker-proxy` 只检查每个调用的方法和路径，以及绑定挂载的来源。控制了更新器或代理，就控制了服务器。更新器的设计让这种能力尽可能受限：
 
 - 它只在内部网络上响应网关，而且必须带有共享令牌。网关只向它传递一个版本号。
-- 它只能通过 `docker-proxy` 访问 Docker，代理只放行更新所需的调用。代理只允许来自你运行 `docker compose up` 的文件夹的绑定挂载，因此请在实例文件夹中运行它。
+- 它只能通过 `docker-proxy` 访问 Docker，代理只放行更新所需的调用。代理只允许来自 `KAESO_DIR`（即实例文件夹）的绑定挂载，因此移动该文件夹时请修改 `KAESO_DIR`。
 - 它只替换自己 Compose 项目中的网关和控制台容器，使用的是它验证过的镜像。
 - 如果新容器的特权、capabilities、设备、命名空间、网络、挂载、端口、名称解析、用户组或资源限制与被替换的容器不同，它会拒绝创建；它只按摘要拉取 Kaeso 的镜像。
 - 它只修改 `compose.yaml` 中的镜像版本和摘要；如果文件与该版本的原文件有其他差异，它不会改动。

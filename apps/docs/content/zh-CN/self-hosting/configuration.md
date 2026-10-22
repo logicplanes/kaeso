@@ -30,6 +30,7 @@ services:
 | `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS`、`KAESO_SMTP_USER`、`KAESO_SMTP_PASSWORD`、`KAESO_SMTP_FROM` | 除非只记录邮件，否则需要 `KAESO_SMTP_HOST` | 网关发送邮件的方式（[电子邮件](#电子邮件)）。 |
 | `KAESO_MAIL_TRANSPORT` | 否 | 设为 `log` 时只记录邮件，不发送。 |
 | `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
+| `KAESO_DIR` | 使用更新器时 | 实例文件夹，也是更新器的 Docker 代理唯一允许绑定挂载的来源。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
 | `CADDY_MEMORY`、`GATEWAY_MEMORY` 等，`CADDY_PIDS`、`GATEWAY_PIDS` 等，以及 `VALKEY_MAXMEMORY` | 否 | 各服务的内存和进程数上限，以及 Valkey 存放数据的内存（[容器限制](#容器限制)）。 |
 

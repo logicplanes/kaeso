@@ -11,7 +11,7 @@ PASSWORD = "c0ffee0ddba11"
 
 
 def config(env: dict[str, str] | None = None) -> dict:
-    base = {k: v for k, v in os.environ.items() if not k.startswith("COMPOSE_")}
+    base = {k: v for k, v in os.environ.items() if not k.startswith("COMPOSE_") and k != "KAESO_DIR"}
     passwords = ("POSTGRES_PASSWORD", "POSTGRES_SUPERUSER_PASSWORD", "CLICKHOUSE_PASSWORD", "VALKEY_PASSWORD")
     base |= {name: PASSWORD for name in passwords} | (env or {})
     out = subprocess.run(
@@ -114,10 +114,27 @@ def test_the_docker_proxy_lets_the_updater_call_only_the_endpoints_it_uses():
             assert not any(p.fullmatch(path) for p in allowed.get(method, [])), f"{method} {path}"
 
 
-def test_the_docker_proxy_allows_bind_mounts_only_from_the_install_folder(tmp_path):
-    command = config({"PWD": str(tmp_path)})["services"]["docker-proxy"]["command"]
-    assert f"-allowbindmountfrom={tmp_path}" in command
+def bind_mounts_from(env: dict[str, str]) -> str:
+    command = config(env)["services"]["docker-proxy"]["command"]
     assert "-allowfrom=updater" in command
+    return next(flag for flag in command if flag.startswith("-allowbindmountfrom=")).split("=", 1)[1]
+
+
+def test_the_docker_proxy_allows_bind_mounts_only_from_the_install_folder(tmp_path):
+    assert bind_mounts_from({"KAESO_DIR": str(tmp_path), "PWD": "/"}) == str(tmp_path)
+
+
+def test_the_docker_proxy_refuses_to_start_without_the_install_folder(services, tmp_path):
+    unset = bind_mounts_from({"PWD": str(tmp_path)})
+    assert bind_mounts_from({"KAESO_DIR": "", "PWD": str(tmp_path)}) == unset
+    started = subprocess.run(
+        ["docker", "run", "--rm", services["docker-proxy"]["image"], f"-allowbindmountfrom={unset}"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert started.returncode != 0
+    assert "set KAESO_DIR in .env" in started.stderr + started.stdout
 
 
 def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(services):

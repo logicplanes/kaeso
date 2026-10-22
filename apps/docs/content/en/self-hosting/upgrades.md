@@ -73,17 +73,18 @@ The updater is an optional service in `compose.yaml`, with its own Docker socket
 
 The updater needs Docker Engine 25 or newer.
 
-1. In the install's folder, give the gateway and the updater a shared token and turn on the `updater` profile:
+1. In the install's folder, give the gateway and the updater a shared token, turn on the `updater` profile and name the install's folder:
 
 ```bash
 echo "KAESO_UPDATER_TOKEN=$(openssl rand -hex 32)" >> .env
 echo "COMPOSE_PROFILES=updater" >> .env
+echo "KAESO_DIR=$PWD" >> .env
 docker compose up -d --wait
 ```
 
 2. Under **Settings** › **Instance** › **Updates**, **Update to …** now updates the install, and **Automatically** lets it update in a window. Both need a sign-in within the last 15 minutes.
 
-The page says when the updater isn't installed, doesn't answer, or is too old for a release. When Docker's socket isn't at `/var/run/docker.sock`, as with rootless Docker, set `DOCKER_SOCKET` in `.env`.
+The page says when the updater isn't installed, doesn't answer, or is too old for a release. When Docker's socket isn't at `/var/run/docker.sock`, as with rootless Docker, set `DOCKER_SOCKET` in `.env`. When `docker-proxy` doesn't start and its log asks you to set `KAESO_DIR`, add it as in step 1.
 
 To keep the token out of `.env`, put it in a file and give it to both services as a [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/). Both read `KAESO_UPDATER_TOKEN_FILE`:
 
@@ -154,7 +155,7 @@ Then remove both `…-previous` containers with `docker rm`. The updater starts 
 The updater is equivalent to root on the server. It can create containers, and `docker-proxy`, which runs as root to reach Docker's socket, checks only the method and path of each call and where bind mounts come from. Whoever controls the updater or the proxy controls the server. The updater is built to keep that power narrow:
 
 - It answers only the gateway, on an internal network, and only with the shared token. The gateway passes it a version number and nothing else.
-- It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs. It allows bind mounts only from the folder you run `docker compose up` in, so run it in the install's folder.
+- It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs. It allows bind mounts only from `KAESO_DIR`, the install's folder, so change `KAESO_DIR` when you move the folder.
 - It replaces only the gateway and console containers of its own Compose project, with images it verified.
 - It refuses to create a container whose privileges, capabilities, devices, namespaces, network, mounts, ports, name resolution, groups or limits differ from the one it replaces, and pulls only Kaeso's images, by digest.
 - It changes only the image versions and digests in `compose.yaml`, and leaves a file that differs from the release's alone.
