@@ -1114,6 +1114,58 @@ async fn make_free(env: &Env, model: &str) {
 }
 
 #[tokio::test]
+async fn a_spend_budget_refuses_a_model_without_a_price_unless_an_admin_set_one() {
+    let mut feed: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
+    feed["openai"]["models"]["gpt-4o-mini"]["cost"] = json!({ "input": 0, "output": 0 });
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/api.json", listener.local_addr().unwrap());
+    let feed = feed.to_string();
+    let router =
+        axum::Router::new().route("/api.json", axum::routing::get(move || async move { feed }));
+    tokio::spawn(async move { axum::serve(listener, router).await });
+    let env = common::v1::env(None, Some(&[("KAESO_MODELS_DEV_URL", url.as_str())])).await;
+    kaeso_server::services::models_dev::sync(&env.app.state)
+        .await
+        .unwrap();
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let chat = |model: &'static str| {
+        let (env, secret) = (&env, &secret);
+        async move {
+            call(
+                env,
+                "/v1/chat/completions",
+                Some(secret),
+                false,
+                Some(common::v1::chat(model, "Hi")),
+            )
+            .await
+        }
+    };
+    assert_eq!(
+        chat("gpt-4o-mini").await.status,
+        StatusCode::OK,
+        "no budget, no check"
+    );
+    limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "month", "amount": 1 })).await;
+    env.mock.clear();
+    let r = chat("gpt-4o-mini").await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "model");
+    assert_eq!(
+        r.json()["error"]["message"],
+        "This key has a spend budget that can't price `gpt-4o-mini`; ask an admin."
+    );
+    assert!(env.mock.received().is_empty());
+    assert_eq!(chat("gpt-4o").await.status, StatusCode::OK);
+    make_free(&env, "gpt-4o-mini").await;
+    assert_eq!(
+        chat("gpt-4o-mini").await.status,
+        StatusCode::OK,
+        "a price of zero set by hand is a free model"
+    );
+}
+
+#[tokio::test]
 async fn a_free_model_runs_requests_side_by_side_under_a_hard_spend_budget() {
     let env = common::v1::env(None, None).await;
     make_free(&env, "claude-haiku-4-5").await;

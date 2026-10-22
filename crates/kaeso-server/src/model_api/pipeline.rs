@@ -654,7 +654,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         at: rec.outcome().started_at,
         timeout: timeouts.request,
         worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
-        unpriced: kaeso_core::cost::unpriced(&req, plan.dialect),
+        unpriced: kaeso_core::cost::unpriced_model(
+            &eff.fields,
+            &entry.overrides,
+            kind,
+            &eff.model_id,
+        )
+        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect)),
     };
     rec.reservation = state
         .limits
