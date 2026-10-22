@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { screen, waitFor } from "@testing-library/react";
 import { ORG, signedOut } from "~/test/fixtures";
-import { methods } from "~/test/fixtures/public";
+import { methods, ssoStart } from "~/test/fixtures/public";
 import { on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
-describe("the first sign-in page of an install that signs in only with single sign-on", () => {
-  it("fetches the provider's step and offers it", async () => {
+describe("the first page a start link opens", () => {
+  it("fetches the provider's step and goes on to the provider", async () => {
     signedOut();
     on(
       "GET",
@@ -15,12 +15,15 @@ describe("the first sign-in page of an install that signs in only with single si
         password: false,
         magic_link: false,
         sso: true,
-        provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: false },
+        provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true },
       }),
     );
-    await renderApp("/sign-in");
-    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toHaveFocus();
+    on("POST", "auth/oidc/start", ssoStart("https://id.northwind.test/authorize?state=s8"));
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    await renderApp(`/sign-in?org=${ORG}&start=sso`);
+    expect(await screen.findByRole("button", { name: "Continue with Northwind ID" })).toBeInTheDocument();
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://id.northwind.test/authorize?state=s8"));
+    expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG }]);
     expect(screen.queryByRole("textbox", { name: "Email" })).not.toBeInTheDocument();
-    expect(requests("POST", "auth/oidc/start")).toHaveLength(0);
   });
 });

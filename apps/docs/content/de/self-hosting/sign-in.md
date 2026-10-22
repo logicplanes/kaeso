@@ -8,14 +8,11 @@ Personen melden sich an der Konsole mit einem Passwort an, mit einem Anmeldelink
 
 ## Die Anmeldeseite
 
-Die Anmeldeseite fragt zuerst nach der E-Mail-Adresse. Dann bietet sie an, was für diese Adresse funktioniert: ein Passwort, einen Anmeldelink und Single Sign-on, wenn die Domain der Adresse zu einer Organisation mit Identitätsanbieter gehört.
+Die Anmeldeseite fragt immer zuerst nach der E-Mail-Adresse. Dann bietet sie an, was für diese Adresse funktioniert: ein Passwort, einen Anmeldelink und Single Sign-on, wenn die Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Identitätsanbieter gehört ([E-Mail-Domains bestätigen](../console/organizations-and-projects.md#e-mail-domains-bestätigen)). Einer Adresse an einer anderen Domain oder an einer Domain, die ihre Organisation noch nicht bestätigt hat, bietet sie nie Single Sign-on an.
 
-In zwei Fällen zeigt die Seite sofort den Button eines Anbieters:
+Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist Single Sign-on der einzige Weg hinein für die Adresse und hat die Verbindung **Ohne Klick starten** eingeschaltet, geht die Seite gleich nach der Adresse zum Anbieter weiter, ohne den Button. Nach einer Abmeldung oder wenn der Anbieter eine Anmeldung abgelehnt hat, fragt die Seite erneut nach der Adresse und zeigt den Grund.
 
-- Passwörter und Anmeldelinks sind abgeschaltet, und genau eine Organisation hat einen Identitätsanbieter.
-- Jemand öffnet den Anmeldelink der Organisation, etwa `https://kaeso.example.com/sign-in?org=org_…`, den ihre Seite **Sicherheit** zeigt. Solange andere Methoden eingeschaltet sind, bietet die Seite außerdem **Stattdessen mit E-Mail anmelden** an.
-
-Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist **Ohne Klick starten** eingeschaltet, schickt die Seite Personen sofort zum Anbieter, wenn er ihr einziger Weg hinein ist. Nach einer Abmeldung wartet sie trotzdem auf einen Klick, ebenso wenn der Anbieter eine Anmeldung abgelehnt hat, damit der Grund lesbar bleibt, und wenn der Browser schon angemeldet ist.
+Der einzige Weg zu Single Sign-on, ohne eine E-Mail-Adresse einzugeben, ist der eigene Startlink der Organisation, und nur solange ihre Verbindung **Ohne Klick starten** eingeschaltet hat ([Links, die direkt zum Anbieter führen](#links-die-direkt-zum-anbieter-führen)).
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
@@ -25,13 +22,13 @@ Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Si
 
 ## Links, die direkt zum Anbieter führen
 
-Ein Link auf `/platform/v1/auth/oidc/start` schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
+Der Startlink einer Organisation, der **Anmeldelink** auf ihrer Seite **Sicherheit**, schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
 
 ```text
 https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
 ```
 
-`org` nennt die Organisation; Sie können es weglassen, solange nur eine Organisation Single Sign-on nutzt. `next` ist die Konsolenseite, die sich danach öffnet. Der Link öffnet die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht.
+`org` nennt die Organisation, `next` die Konsolenseite, die sich danach öffnet. Solange die Verbindung der Organisation **Ohne Klick starten** eingeschaltet hat, öffnet der Link die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht. Ist es ausgeschaltet, öffnet der Link die Anmeldeseite, die zuerst nach der E-Mail-Adresse fragt und `next` behält.
 
 Ist der Browser schon bei Kaeso angemeldet, fragt die Seite zuerst: Sie nennt das angemeldete Konto und wartet auf einen Klick. Single Sign-on ersetzt nie die Sitzung eines anderen Kontos. Kommt vom Anbieter ein anderes Konto zurück, bleibt der Browser angemeldet, und die Seite meldet `signed_in_as_other`; zum Wechseln melden Sie sich zuerst ab. Ein auf einer anderen Website platzierter Link kann einen angemeldeten Browser also weder abmelden noch im Konto einer anderen Person anmelden.
 

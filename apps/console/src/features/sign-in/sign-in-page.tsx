@@ -42,27 +42,25 @@ const onlySso = (m: SignInMethods) => m.sso && !m.password && !m.magic_link && !
 
 export function SignInPage({
   next,
-  org,
   page,
   ssoError,
   notice,
   quiet = false,
-  startNow = false,
+  startLink = false,
   signedInAs = null,
 }: {
   next?: string | undefined;
-  org?: string | undefined;
   page?: SignInMethods | null | undefined;
   ssoError?: string | null | undefined;
   notice?: string | undefined;
   quiet?: boolean;
-  startNow?: boolean;
+  startLink?: boolean;
   signedInAs?: string | null;
 }) {
   usePageTitle(t("signIn.title", "Sign in"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const provider = page?.provider ?? null;
+  const provider = startLink && page?.provider?.auto_redirect ? page.provider : null;
   const [SignUp, setSignUp] = useState(() => signUpLine);
   useEffect(() => {
     if (!SignUp)
@@ -76,7 +74,7 @@ export function SignInPage({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [step, setStep] = useState<Step>({ kind: "email" });
-  const [withEmailInstead, setWithEmailInstead] = useState(false);
+  const [stepsMissing, setStepsMissing] = useState(false);
   const [loaded, setLoaded] = useState(() => steps);
   const [busy, setBusy] = useState<Busy | null>(null);
   const passwordFailed = useRef(false);
@@ -91,13 +89,13 @@ export function SignInPage({
     if (ssoError) void loadSteps().then((m) => m.showSsoError(ssoError));
   }, [ssoError]);
   useEffect(() => {
-    if (signedInAs && page !== undefined && !page?.provider) void navigate({ href: safeNext(next), replace: true });
-  }, [signedInAs, page, next, navigate]);
+    if (signedInAs && page !== undefined && !provider) void navigate({ href: safeNext(next), replace: true });
+  }, [signedInAs, page, provider, next, navigate]);
   useEffect(() => {
     if (!notice) return;
     toast.success(notice, { id: "sign-in-notice" });
-    void navigate({ to: "/sign-in", search: { ...(next ? { next } : {}), ...(org ? { org } : {}) }, replace: true });
-  }, [notice, next, org, navigate]);
+    void navigate({ to: "/sign-in", search: next ? { next } : {}, replace: true });
+  }, [notice, next, navigate]);
 
   const done = async () => {
     await queryClient.resetQueries();
@@ -116,14 +114,14 @@ export function SignInPage({
       setBusy(null);
     }
   };
-  const toProvider = async (body: { email: string } | { org: string }) => {
-    window.location.assign(await startSso({ ...body, ...(next ? { next } : {}) }));
+  const toProvider = async (email: string) => {
+    window.location.assign(await startSso({ email, ...(next ? { next } : {}) }));
   };
   const address = email.trim();
   const withEmail = () =>
     run("continue", async () => {
       const [methods] = await Promise.all([signInMethodsFor(address), loadSteps()]);
-      if (onlySso(methods) && methods.provider?.auto_redirect) await toProvider({ email: address });
+      if (onlySso(methods) && methods.provider?.auto_redirect) await toProvider(address);
       else setStep({ kind: "methods", methods });
     });
   const withPassword = () =>
@@ -156,19 +154,19 @@ export function SignInPage({
       const { requestSignUp } = await loadSteps();
       setStep({ kind: "link-sent", message: await requestSignUp(address) });
     });
-  const withSso = () => run("sso", () => toProvider({ email: address }));
+  const withSso = () => run("sso", () => toProvider(address));
   const otherEmail = () => {
     setEmail(address);
     setPassword("");
     setPasswordError(null);
     setStep({ kind: "email" });
   };
-  const alone = provider && !withEmailInstead && step.kind === "email" ? provider : null;
+  const alone = provider && !stepsMissing && step.kind === "email" ? provider : null;
   useEffect(() => {
     if (provider && !loaded)
       loadSteps().then(
         (m) => setLoaded(m),
-        () => setWithEmailInstead(true),
+        () => setStepsMissing(true),
       );
   }, [provider, loaded]);
 
@@ -220,16 +218,7 @@ export function SignInPage({
 
   if (alone && loaded) {
     const { ProviderStep } = loaded;
-    return (
-      <ProviderStep
-        provider={alone}
-        next={next}
-        auto={!quiet && !signedInAs && (startNow || alone.auto_redirect)}
-        signedInAs={signedInAs}
-        onEmail={page?.password || page?.magic_link ? () => setWithEmailInstead(true) : undefined}
-        signUp={SignUp && <SignUp />}
-      />
-    );
+    return <ProviderStep provider={alone} next={next} auto={!quiet && !signedInAs} signedInAs={signedInAs} />;
   }
 
   if (page === undefined || alone) return <PublicPage title={t("signIn.title", "Sign in")}>{null}</PublicPage>;

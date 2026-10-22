@@ -307,7 +307,7 @@ async fn a_command_is_answered_while_a_bulk_connection_is_busy() {
 
 #[tokio::test]
 async fn an_sso_domain_signs_in_through_one_organization() {
-    use kaeso_store::pg::oidc::{self, Connected, Upserted};
+    use kaeso_store::pg::oidc::{self, Upserted};
     let s = TestServices::start().await;
     let (first, second) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
     for org in [first, second] {
@@ -332,16 +332,8 @@ async fn an_sso_domain_signs_in_through_one_organization() {
     };
     let mut conn = s.pg.acquire().await.unwrap();
     assert_eq!(
-        oidc::connected(&mut *conn).await.unwrap(),
-        Connected::Nowhere
-    );
-    assert_eq!(
         oidc::upsert(&mut conn, &connection(first)).await.unwrap(),
         Upserted::Saved
-    );
-    assert_eq!(
-        oidc::connected(&mut *conn).await.unwrap(),
-        Connected::Only(first)
     );
     let stored = oidc::get(&mut *conn, first).await.unwrap().unwrap();
     assert_eq!(stored.display_name.as_deref(), Some("Acme ID"));
@@ -394,10 +386,6 @@ async fn an_sso_domain_signs_in_through_one_organization() {
             .verified_domains,
         ["acme.example"],
         "saving the connection again keeps its verified domains"
-    );
-    assert_eq!(
-        oidc::connected(&mut *conn).await.unwrap(),
-        Connected::Several
     );
     drop(conn);
     s.cleanup().await;

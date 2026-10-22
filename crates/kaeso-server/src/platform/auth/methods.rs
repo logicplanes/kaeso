@@ -7,7 +7,6 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::throttle_ip;
 use crate::auth::throttle::METHODS_PER_IP;
-use crate::config::AuthConfig;
 use crate::platform::access::Ctx;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
@@ -23,7 +22,7 @@ pub struct SignInMethodsView {
     #[doc = "A sign-in link by email."]
     pub magic_link: bool,
     #[doc = "SSO. Without an address: on for the install. With one: the address's\n\
-        domain belongs to an organization with an identity provider."]
+        domain is a verified domain of an organization with an identity provider."]
     pub sso: bool,
     #[doc = "That organization requires SSO, so the page offers SSO alone."]
     pub sso_required: bool,
@@ -32,9 +31,9 @@ pub struct SignInMethodsView {
         instance's account creation setting and its domain."]
     pub sign_up: bool,
     #[doc = "The identity provider the page offers by name. Without an address: the\n\
-        one of the org in `org`, or the install's only one when SSO is its only\n\
-        sign-in method, so the page needs no address; otherwise `null`. With an\n\
-        address: the one of its domain."]
+        one of the org in `org`, only while its connection has **Start without a\n\
+        click** on; otherwise `null`. With an address: the one of its verified\n\
+        domain."]
     pub provider: Option<SsoProviderView>,
     #[doc = "The install is set up: its first user exists, so a setup link no longer\n\
         works and people sign in instead."]
@@ -52,9 +51,10 @@ pub struct SsoProviderView {
     #[doc = "The name on the sign-in button, such as `Acme ID`; `null` to say SSO."]
     #[schema(example = "Acme ID")]
     pub name: Option<String>,
-    #[doc = "The page starts the sign-in at the provider without a click, unless the\n\
-        browser is signed in already, the person just signed out or the last\n\
-        attempt failed."]
+    #[doc = "The connection has **Start without a click** on: the org's start link\n\
+        goes on to the provider, and after the address a page that offers SSO\n\
+        alone goes on without asking, unless the browser is signed in already,\n\
+        the person just signed out or the last attempt failed."]
     pub auto_redirect: bool,
 }
 
@@ -72,8 +72,9 @@ impl SsoProviderView {
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct MethodsQuery {
-    #[doc = "The org of a sign-in link (`/sign-in?org=…`), whose identity provider\n\
-        the page offers."]
+    #[doc = "The org of a start link (`/sign-in?org=…&start=sso`), whose identity\n\
+        provider the page offers while its connection has **Start without a\n\
+        click** on."]
     pub org: Option<OrgId>,
 }
 
@@ -98,38 +99,28 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
     }
 }
 
-pub fn sso_only(auth: &AuthConfig) -> bool {
-    auth.oidc && !auth.password && !auth.magic_link
-}
-
 async fn offered(state: &AppState, org: Option<OrgId>) -> ApiResult<Option<SsoProviderView>> {
-    if !state.config.auth.oidc {
-        return Ok(None);
-    }
-    let org = match org {
-        Some(org) => Some(org.uuid()),
-        None if sso_only(&state.config.auth) => match oidc::connected(&state.pg).await? {
-            oidc::Connected::Only(org) => Some(org),
-            oidc::Connected::Nowhere | oidc::Connected::Several => None,
-        },
-        None => None,
-    };
-    let Some(org) = org else {
+    let Some(org) = org.filter(|_| state.config.auth.oidc) else {
         return Ok(None);
     };
     let (Some(connection), Some(row)) = (
-        oidc::get(&state.pg, org).await?,
-        orgs::get(&state.pg, org).await?,
+        oidc::get(&state.pg, org.uuid()).await?,
+        orgs::get(&state.pg, org.uuid()).await?,
     ) else {
         return Ok(None);
     };
-    Ok(Some(SsoProviderView::of(connection, &row)))
+    Ok(connection
+        .auto_redirect
+        .then(|| SsoProviderView::of(connection, &row)))
 }
 
 #[utoipa::path(
     get,
     path = "/auth/methods",
     summary = "The sign-in methods on this install, for the first step of a sign-in page.",
+    description = "It names an identity provider only for `org` of an organization whose \
+    connection has Start without a click on, for the hand-off of that organization's start link. \
+    Otherwise single sign-on is offered only after the address, by `POST auth/methods`.",
     tag = "auth",
     params(MethodsQuery),
     responses((status = 200, body = SignInMethodsView))
@@ -149,8 +140,8 @@ pub async fn get(
     post,
     path = "/auth/methods",
     summary = "The sign-in methods for an address: the install's, with SSO when the\n\
-    address's domain belongs to an organization with an identity provider,\n\
-    and whether the address may create an account.",
+    address's domain is a verified domain of an organization with an identity\n\
+    provider, and whether the address may create an account.",
     tag = "auth",
     request_body = MethodsRequest,
     responses((status = 200, body = SignInMethodsView))

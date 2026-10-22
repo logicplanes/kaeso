@@ -106,7 +106,7 @@ const messages = (): Rule[] => [
   rule("errors.inviteAccountExists", (v) => t("errors.inviteAccountExists", "An account with {email} exists; sign in to accept the invitation.", v)),
   rule("errors.ssoNoOrg", () => t("errors.ssoNoOrg", "No organization uses SSO for this sign-in; use another way to sign in.")),
   rule("errors.ssoOrgOrEmail", () => t("errors.ssoOrgOrEmail", "Send either `org` or `email`.")),
-  rule("errors.ssoNameOrg", () => t("errors.ssoNameOrg", "Name the organization with `org`; several organizations use SSO here.")),
+  rule("errors.ssoEnterEmail", () => t("errors.ssoEnterEmail", "Enter your email to sign in with single sign-on.")),
   rule("errors.nextPath", () => t("errors.nextPath", "`next` must be a console path on this install, starting with one `/`.")),
   rule("errors.setupPasswordOff", () => t("errors.setupPasswordOff", "Password sign-in is turned off on this install; leave `password` out.")),
   rule("errors.idpRefused", () => t("errors.idpRefused", "The identity provider refused the sign-in.")),

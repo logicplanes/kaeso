@@ -4,7 +4,6 @@ import { toast } from "~/shell/toast";
 const MESSAGES: Record<string, () => string> = {
   sso_off: () => t("signIn.ssoError.off", "Single sign-on is turned off on this install."),
   no_sso: () => t("signIn.ssoError.noSso", "No organization uses single sign-on for this sign-in; sign in another way."),
-  name_org: () => t("signIn.ssoError.nameOrg", "Several organizations use single sign-on here; open your organization's sign-in link."),
   invalid_link: () => t("signIn.ssoError.invalidLink", "This sign-in link isn't valid; start again from the sign-in page."),
   expired: () => t("signIn.ssoError.expired", "The sign-in expired or began in another browser; start again."),
   incomplete: () => t("signIn.ssoError.incomplete", "The identity provider's answer was incomplete; start again."),

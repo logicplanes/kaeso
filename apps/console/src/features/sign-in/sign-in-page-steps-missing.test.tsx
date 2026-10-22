@@ -9,7 +9,7 @@ vi.mock("./sign-in-steps", () => {
   throw new Error("The chunk couldn't be fetched.");
 });
 
-describe("signing in when the provider's step can't be fetched", () => {
+describe("a start link when the provider's step can't be fetched", () => {
   it("asks for the address instead", async () => {
     signedOut();
     on(
@@ -17,7 +17,7 @@ describe("signing in when the provider's step can't be fetched", () => {
       "auth/methods",
       methods({ password: false, magic_link: false, sso: true, provider: { org: ORG, org_name: "Northwind Labs", name: "Northwind ID", auto_redirect: true } }),
     );
-    await renderApp("/sign-in");
+    await renderApp(`/sign-in?org=${ORG}&start=sso`);
     expect(await screen.findByRole("textbox", { name: "Email" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Continue with Northwind ID" })).not.toBeInTheDocument();
   });

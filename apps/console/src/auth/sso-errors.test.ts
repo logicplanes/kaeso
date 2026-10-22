@@ -4,7 +4,6 @@ import { ssoErrorMessage } from "./sso-errors";
 const CODES = [
   "sso_off",
   "no_sso",
-  "name_org",
   "invalid_link",
   "expired",
   "incomplete",

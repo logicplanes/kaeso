@@ -41,12 +41,12 @@ Mit Single Sign-on melden sich Mitglieder über Ihren OpenID-Connect-Identitäts
 2. **Welche App meldet Personen an?** Geben Sie ihre Client-ID und ihr Client-Secret ein.
 3. **Welche E-Mail-Domains melden sich darüber an?** Die Anmeldeseite leitet Personen mit einer Adresse unter diesen Domains zu Ihrem Anbieter. Internationalisierte Domains funktionieren in beiden Schreibweisen, `bücher.example` oder `xn--bcher-kva.example`.
 4. **Beitritt ohne Einladung möglich?** Wählen Sie **Nur mit Einladung** oder die Rolle, mit der Personen ohne Kaeso-Konto beitreten. Diese Rolle kann nicht Inhaber sein.
-5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, steht auf dem Button „Weiter mit SSO“. **Ohne Klick starten** leitet Personen direkt zu Ihrem Anbieter, wenn die Anmeldeseite nur ihn anbietet, außer direkt nach dem Abmelden, wenn der Anbieter sie abgewiesen hat oder wenn der Browser schon angemeldet ist. **Bestätigte Adressen verlangen** weist Tokens ab, die die Adresse nicht als bestätigt kennzeichnen; schalten Sie es nur für einen Anbieter ab, der `email_verified` nie sendet.
+5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, steht auf dem Button „Weiter mit SSO“. **Ohne Klick starten** lässt den Anmeldelink der Organisation direkt zu Ihrem Anbieter führen, und nachdem jemand eine Adresse an Ihren bestätigten Domains eingegeben hat, geht die Anmeldeseite ohne Nachfrage zu Ihrem Anbieter weiter, wenn er der einzige Weg hinein ist. **Bestätigte Adressen verlangen** weist Tokens ab, die die Adresse nicht als bestätigt kennzeichnen; schalten Sie es nur für einen Anbieter ab, der `email_verified` nie sendet.
 
 Nach dem Verbinden zeigt die Seite zwei Adressen:
 
 - Die **Weiterleitungs-URL**: Tragen Sie sie beim Anbieter als Callback der Anmeldung ein.
-- Den **Anmeldelink**: Er öffnet die Anmeldeseite mit dem Button Ihres Anbieters, sodass Mitglieder keine Adresse eingeben. Teilen Sie ihn, etwa im Intranet.
+- Den **Anmeldelink**, den Startlink der Organisation: Mit **Ohne Klick starten** führt er direkt zu Ihrem Anbieter, sodass Mitglieder keine Adresse eingeben; sonst öffnet er die Anmeldeseite, die zuerst nach der Adresse fragt. Teilen Sie ihn, etwa im Intranet.
 
 ### E-Mail-Domains bestätigen
 

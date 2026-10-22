@@ -1,11 +1,12 @@
 import type { Page } from "@playwright/test";
-import { expect, test, expectSignedIn, stepTo, submitSteps, toastText } from "./support";
+import { expect, test, enterEmail, expectSignedIn, stepTo, submitSteps, toastText } from "./support";
 import { SSO_CONSOLE_URL, STACK_URLS, operatorSignInToken, setupLinkToken, verifyDomain } from "./stack";
 
 test.describe.configure({ mode: "serial" });
 test.use({ baseURL: SSO_CONSOLE_URL });
 
 const ADMIN = { name: "Ines Moreau", email: "ines@example.com", org: "Northwind SSO" };
+let org = "";
 
 async function signInAtProvider(page: Page, email: string, name: string): Promise<void> {
   await expect(page.getByRole("heading", { name: "Mock identity provider" })).toBeVisible();
@@ -24,6 +25,7 @@ test("the first admin sets up an install without passwords and connects the iden
   await page.getByLabel("Organization name").fill(ADMIN.org);
   await page.getByRole("button", { name: "Set up Kaeso" }).click();
   await expect(page).toHaveURL(/\/settings\/orgs\/[^/]+\/security$/);
+  org = /\/settings\/orgs\/([^/]+)\/security$/.exec(new URL(page.url()).pathname)?.[1] ?? "";
 
   await page.getByRole("button", { name: "Connect an identity provider" }).click();
   const dialog = page.getByRole("dialog", { name: "Connect an identity provider" });
@@ -48,13 +50,17 @@ test("the first admin sets up an install without passwords and connects the iden
   await page.reload();
   await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
   await expect(page.getByText("Says Continue with Northwind ID and starts on its own.")).toBeVisible();
-  await expect(page.getByText(new RegExp(`${SSO_CONSOLE_URL}/sign-in\\?org=org_`))).toBeVisible();
+  await expect(page.getByText(`${SSO_CONSOLE_URL}/platform/v1/auth/oidc/start?org=${org}`)).toBeVisible();
+  await expect(page.getByText("Goes straight to the provider, without asking for an email.")).toBeVisible();
 });
 
-test("a person goes straight to the identity provider and comes back to the page they asked for", async ({ browser }) => {
+test("a person enters their email, goes straight to the identity provider and comes back to the page they asked for", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();
   await page.goto("/settings/account/sessions");
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount%2Fsessions$/);
+  await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toHaveCount(0);
+  await enterEmail(page, "sam@example.com");
   await signInAtProvider(page, "sam@example.com", "Sam Rivera");
   await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
   await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
@@ -65,9 +71,9 @@ test("a person goes straight to the identity provider and comes back to the page
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   await expect(toastText(page, "You're signed out")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Email" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Continue with Northwind ID" }).click();
+  await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toHaveCount(0);
+  await enterEmail(page, "sam@example.com");
   await signInAtProvider(page, "sam@example.com", "Sam Rivera");
   await expectSignedIn(page);
   await context.close();
@@ -76,12 +82,12 @@ test("a person goes straight to the identity provider and comes back to the page
 test("a start link sends a bookmark straight to the identity provider", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();
-  await page.goto("/platform/v1/auth/oidc/start?next=%2Fsettings%2Faccount%2Fsessions");
+  await page.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Fsettings%2Faccount%2Fsessions`);
   await signInAtProvider(page, "sam@example.com", "Sam Rivera");
   await expect(page).toHaveURL(/\/settings\/account\/sessions$/);
   await expect(page.getByRole("heading", { name: "Sessions", level: 1 })).toBeVisible();
 
-  await page.goto("/platform/v1/auth/oidc/start?next=%2Fsettings%2Faccount%2Fsessions");
+  await page.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Fsettings%2Faccount%2Fsessions`);
   await expect(page.getByText(`You're signed in as sam@example.com here; to sign in to ${ADMIN.org} as someone else, sign out first.`)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mock identity provider" })).toHaveCount(0);
   await page.getByRole("link", { name: "Stay signed in as sam@example.com" }).click();
@@ -89,14 +95,16 @@ test("a start link sends a bookmark straight to the identity provider", async ({
   await context.close();
 });
 
-test("a refused sign-in comes back to the sign-in page and waits for a click", async ({ browser }) => {
+test("a refused sign-in comes back to the sign-in page and asks for the email again", async ({ browser }) => {
   const context = await browser.newContext({ baseURL: SSO_CONSOLE_URL });
   const page = await context.newPage();
   await page.goto("/sign-in?next=/settings/account");
+  await enterEmail(page, "sam@example.com");
   await signInAtProvider(page, "eve@elsewhere.example", "Eve");
-  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount&org=org_[a-z0-9]+$/);
+  await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Faccount$/);
   await expect(toastText(page, "This organization's single sign-on doesn't sign in addresses at your domain.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Continue with Northwind ID" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mock identity provider" })).toHaveCount(0);
   await context.close();
 });
 

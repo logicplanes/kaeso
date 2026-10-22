@@ -30,10 +30,16 @@ test("an identity provider is connected, and a new person signs in through it", 
   verifyDomain("example.com");
   await page.reload();
   await expect(page.getByText("Its addresses sign in through the provider.")).toBeVisible();
+  await expect(page.getByText("Opens sign-in, which asks for the email first.")).toBeVisible();
 
   const other = await browser.newContext();
   const visitor = await other.newPage();
-  await visitor.goto("/sign-in");
+  await visitor.goto(`/platform/v1/auth/oidc/start?org=${org}&next=%2Forgs`);
+  await expect(visitor).toHaveURL(/\/sign-in\?next=%2Forgs$/);
+  await expect(visitor.getByRole("textbox", { name: "Email" })).toBeVisible();
+  await visitor.goto(`/sign-in?org=${org}`);
+  await expect(visitor.getByRole("textbox", { name: "Email" })).toBeVisible();
+  await expect(visitor.getByRole("button", { name: "Continue with SSO" })).toHaveCount(0);
   await enterEmail(visitor, "sso@example.com");
   await visitor.getByRole("button", { name: "Continue with SSO" }).click();
   await expect(visitor.getByRole("heading", { name: "Mock identity provider" })).toBeVisible();

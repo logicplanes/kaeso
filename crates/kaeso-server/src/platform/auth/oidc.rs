@@ -42,11 +42,11 @@ pub fn secret_aad(org: OrgId) -> Vec<u8> {
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "Which org to sign in to, and where to go afterwards.")]
 pub struct StartRequest {
-    #[doc = "The org: from its sign-in link (`/sign-in?org=…`, the `sign_in_url` of\n\
-        its SSO connection), from `provider` in `auth/methods`, or from the\n\
-        console page that asks for its SSO."]
+    #[doc = "The org, from `provider` in `GET auth/methods?org=…`: accepted while its\n\
+        connection has **Start without a click** on, or from a signed-in member\n\
+        of the org; otherwise send `email`."]
     pub org: Option<OrgId>,
-    #[doc = "Or the user's email address, whose domain names the org."]
+    #[doc = "Or the user's email address, whose verified domain names the org."]
     #[schema(example = "ada@acme.example")]
     pub email: Option<String>,
     #[doc = "The console path to open once signed in, starting with one `/`; never\n\
@@ -59,9 +59,8 @@ pub struct StartRequest {
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct StartLink {
-    #[doc = "The org whose identity provider signs in. Without it, the install's\n\
-        only SSO connection."]
-    pub org: Option<OrgId>,
+    #[doc = "The org whose identity provider signs in."]
+    pub org: OrgId,
     #[doc = "The console path to open once signed in, as in `POST auth/oidc/start`."]
     pub next: Option<String>,
 }
@@ -99,7 +98,7 @@ fn binding_cookie(
 
 const SSO_OFF: &str = "SSO sign-in is turned off on this install.";
 const NO_SSO: &str = "No organization uses SSO for this sign-in; use another way to sign in.";
-const NAME_THE_ORG: &str = "Name the organization with `org`; several organizations use SSO here.";
+const ENTER_EMAIL: &str = "Enter your email to sign in with single sign-on.";
 const PROVIDER_REFUSED: &str = "The identity provider refused the sign-in.";
 const INCOMPLETE: &str = "The identity provider's answer is incomplete.";
 const INVALID_EMAIL: &str = "The identity provider sent an invalid email address.";
@@ -123,7 +122,6 @@ const ACCEPT_INVITE: &str = "; sign in to accept the invitation.";
 const CODES: &[(&str, &str)] = &[
     (SSO_OFF, "sso_off"),
     (NO_SSO, "no_sso"),
-    (NAME_THE_ORG, "name_org"),
     (PROVIDER_REFUSED, "provider_refused"),
     (INCOMPLETE, "incomplete"),
     (INVALID_EMAIL, "invalid_email"),
@@ -179,14 +177,13 @@ struct Begun {
 
 #[derive(Default)]
 struct Back {
-    org: Option<OrgId>,
     next: Option<String>,
     to_page: bool,
 }
 
 #[derive(Clone, Copy)]
 enum Purpose {
-    SignIn { named: bool },
+    SignIn,
     Link(UserId),
     Confirm { user: UserId, session: SessionId },
 }
@@ -238,10 +235,10 @@ async fn begin(
 ) -> ApiResult<Begun> {
     let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
     let provider = provider(state, org, &connection).await?;
-    let (named, link, confirm) = match purpose {
-        Purpose::SignIn { named } => (named, None, None),
-        Purpose::Link(user) => (false, Some(user), None),
-        Purpose::Confirm { user, session } => (false, None, Some((user, session))),
+    let (link, confirm) = match purpose {
+        Purpose::SignIn => (None, None),
+        Purpose::Link(user) => (Some(user), None),
+        Purpose::Confirm { user, session } => (None, Some((user, session))),
     };
     let started = provider.start(confirm.is_some());
     let binding = random_token();
@@ -258,7 +255,6 @@ async fn begin(
                 "pkce_verifier": started.pkce_verifier,
                 "binding": crate::cache::hex(&secret::hash(&binding)),
                 "next": next,
-                "sign_in_org": named.then(|| org.to_string()),
                 "link_user": link.map(|u| u.to_string()),
                 "confirm_user": confirm.map(|(u, _)| u.to_string()),
                 "confirm_session": confirm.map(|(_, s)| s.to_string()),
@@ -280,6 +276,9 @@ async fn begin(
     path = "/auth/oidc/start",
     summary = "Starts SSO for an org: answers with the provider's URL and sets a cookie\n\
     that binds the flow to this browser.",
+    description = "With `email`, the org whose verified domain the address is at. With `org`, \
+    only an org whose connection has Start without a click on, as its start link hands it to \
+    the sign-in page, or one the signed-in user is a member of; any other org answers 400.",
     tag = "auth",
     request_body = StartRequest,
     responses((status = 200, body = StartResponse))
@@ -292,20 +291,22 @@ pub async fn start(
     sso_on(&state)?;
     throttle_ip(&state, &ctx, TOKENS_PER_IP).await?;
     let next = next::validate(&state.config.public_url, req.next.as_deref())?;
-    let (org, named) = match (req.org, req.email) {
-        (Some(org), None) => (org, true),
+    let org = match (req.org, req.email) {
+        (Some(org), None) => {
+            named_org(&state, &ctx, org).await?;
+            org
+        }
         (None, Some(email)) => {
             let email = kaeso_core::email::normalize(&email)
                 .map_err(|e| ApiError::invalid("email", format!("{e}.")))?;
-            let org = oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email))
+            oidc::org_for_domain(&state.pg, kaeso_core::email::domain(&email))
                 .await?
                 .map(OrgId::from_uuid)
-                .ok_or_else(no_sso)?;
-            (org, false)
+                .ok_or_else(no_sso)?
         }
         _ => return Err(ApiError::bad_request("Send either `org` or `email`.")),
     };
-    let begun = begin(&state, &ctx, org, Purpose::SignIn { named }, next).await?;
+    let begun = begin(&state, &ctx, org, Purpose::SignIn, next).await?;
     Ok((
         [(header::SET_COOKIE, begun.cookie)],
         axum::Json(StartResponse {
@@ -315,13 +316,34 @@ pub async fn start(
         .into_response())
 }
 
+// Single sign-on belongs to the org of the person's verified email domain, so an org named
+// without an address is only offered where it chose a start link or the person is its member.
+async fn named_org(state: &AppState, ctx: &Ctx, org: OrgId) -> ApiResult<()> {
+    let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
+    if connection.auto_redirect {
+        return Ok(());
+    }
+    let member = match ctx.session() {
+        Ok(current) => members::get_org(&state.pg, org.uuid(), current.user_id)
+            .await?
+            .is_some(),
+        Err(_) => false,
+    };
+    if member {
+        Ok(())
+    } else {
+        Err(ApiError::invalid("email", ENTER_EMAIL))
+    }
+}
+
 #[utoipa::path(
     get,
     path = "/auth/oidc/start",
-    summary = "A link to an org's SSO: sends the browser to the console's sign-in page for\n\
-    the org (`/sign-in?org=…&next=…&start=sso`), which names the org and its\n\
-    identity provider. On failure, to the sign-in page with an error code in\n\
-    `#sso_error=`.",
+    summary = "An org's start link: while its connection has Start without a click on, sends\n\
+    the browser to the console's sign-in page for the org\n\
+    (`/sign-in?next=…&org=…&start=sso`), which goes on to its identity provider;\n\
+    otherwise to the sign-in page (`/sign-in?next=…`), which asks for the address.\n\
+    On failure, to the sign-in page with an error code in `#sso_error=`.",
     description = "For links from an intranet page or a bookmark. It begins no sign-in itself: \
     the page starts one with `POST auth/oidc/start`, at once in a browser without a session, \
     and only when the person chooses to in a browser that is signed in already. The callback \
@@ -342,32 +364,20 @@ pub async fn start_link(
     let page = async {
         sso_on(&state)?;
         let next = next::validate(&state.config.public_url, link.next.as_deref())?;
-        let org = match link.org {
-            Some(org) => org,
-            None => match oidc::connected(&state.pg).await? {
-                oidc::Connected::Only(org) => OrgId::from_uuid(org),
-                oidc::Connected::Nowhere => return Err(no_sso()),
-                oidc::Connected::Several => {
-                    return Err(ApiError::invalid("org", NAME_THE_ORG));
-                }
-            },
-        };
-        oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
-        Ok(Back {
-            org: Some(org),
-            next,
-            to_page: false,
-        })
+        let connection = oidc::get(&state.pg, link.org.uuid())
+            .await?
+            .ok_or_else(no_sso)?;
+        Ok((next, connection.auto_redirect))
     };
     match page.await {
-        Ok(page) => {
-            let page = sign_in_location(&state, &page);
+        Ok((next, true)) => {
+            let page = sign_in_location(&state, next.as_deref());
             let joiner = if page.contains('?') { '&' } else { '?' };
-            redirect(&format!("{page}{joiner}start=sso"))
+            redirect(&format!("{page}{joiner}org={}&start=sso", link.org))
         }
+        Ok((next, false)) => redirect(&sign_in_location(&state, next.as_deref())),
         Err(e) => {
             let back = Back {
-                org: link.org,
                 next: link.next,
                 to_page: false,
             };
@@ -433,27 +443,22 @@ fn failed_location(state: &AppState, reason: &str, back: &Back) -> String {
         page.set_fragment(Some(&format!("sso_error={reason}")));
         return page.to_string();
     }
-    format!("{}#sso_error={reason}", sign_in_location(state, back))
+    format!(
+        "{}#sso_error={reason}",
+        sign_in_location(state, back.next.as_deref())
+    )
 }
 
-fn sign_in_location(state: &AppState, back: &Back) -> String {
-    let next = back
-        .next
-        .as_deref()
+fn sign_in_location(state: &AppState, next: Option<&str>) -> String {
+    let query = next
         .filter(|n| next::target(&state.config.public_url, n).is_some())
         .map(|n| {
             format!(
-                "next={}",
+                "?next={}",
                 percent_encoding::utf8_percent_encode(n, FRAGMENT)
             )
-        });
-    let org = back.org.map(|o| format!("org={o}"));
-    let query = [next, org].into_iter().flatten().collect::<Vec<_>>();
-    let query = if query.is_empty() {
-        String::new()
-    } else {
-        format!("?{}", query.join("&"))
-    };
+        })
+        .unwrap_or_default();
     format!("{}sign-in{query}", state.config.public_url)
 }
 
@@ -486,7 +491,7 @@ fn binding_from(state: &AppState, headers: &HeaderMap) -> Option<String> {
     summary = "The identity provider returns here. On success the session cookie is\n\
     set and the browser goes to the console; on failure to the sign-in page\n\
     with an error code in `#sso_error=`.",
-    description = "The codes: `sso_off`, `no_sso`, `name_org`, `invalid_link`, `expired`, \
+    description = "The codes: `sso_off`, `no_sso`, `invalid_link`, `expired`, \
     `incomplete`, `provider_refused`, `provider_unreachable`, `answer_unverified`, \
     `provider_incompatible`, `email_unverified`, `invalid_email`, `domain_not_allowed`, \
     `no_verified_domain`, `deactivated`, `no_access`, `accept_invite`, `link_required`, \
@@ -615,7 +620,6 @@ async fn take_flow(
         link_user,
         confirm,
         back: Back {
-            org: field("sign_in_org").and_then(|o| o.parse().ok()),
             next: field("next"),
             to_page: link_user.is_some() || confirm.is_some(),
         },

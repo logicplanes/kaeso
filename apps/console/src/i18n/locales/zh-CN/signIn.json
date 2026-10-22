@@ -32,7 +32,6 @@
   "signIn.ssoError.invalidLink": "此登录链接无效；请从登录页重新开始。",
   "signIn.ssoError.linkRequired": "您的账户尚未关联此单点登录；请用其他方式登录，并在“账户 › 安全”中关联。",
   "signIn.ssoError.linkedElsewhere": "此身份已关联到另一个 Kaeso 账户。",
-  "signIn.ssoError.nameOrg": "此处有多个组织使用单点登录；请打开您所在组织的登录链接。",
   "signIn.ssoError.noAccess": "您尚无权访问此组织；请让管理员邀请您。",
   "signIn.ssoError.noSso": "没有组织为此登录使用单点登录；请用其他方式登录。",
   "signIn.ssoError.noVerifiedDomain": "此组织尚未为单点登录验证邮箱域名；请联系管理员。",
@@ -50,7 +49,6 @@
   "signIn.title": "登录",
   "signIn.twoStep": "两步验证",
   "signIn.useApp": "使用身份验证器应用",
-  "signIn.useEmail": "改用邮箱登录",
   "signIn.useRecovery": "使用恢复码",
   "signIn.verify": "验证"
 }

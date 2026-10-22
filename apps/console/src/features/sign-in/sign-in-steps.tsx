@@ -1,7 +1,7 @@
 import { Button, Input, Link, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toastApiError } from "~/api/toast-error";
 import { startSso, type SignInMethods, type SsoProvider } from "~/auth/sign-in-api";
 import { PublicPage } from "~/shell/public-page";
@@ -38,15 +38,11 @@ export function ProviderStep({
   next,
   auto,
   signedInAs,
-  onEmail,
-  signUp,
 }: {
   provider: SsoProvider;
   next: string | undefined;
   auto: boolean;
   signedInAs: string | null;
-  onEmail: (() => void) | undefined;
-  signUp: ReactNode;
 }) {
   const [starting, setStarting] = useState(false);
   const started = useRef(false);
@@ -76,15 +72,7 @@ export function ProviderStep({
             {t("public.staySignedInAs", "Stay signed in as {email}", { email: signedInAs })}
           </Button>
         )}
-        {onEmail && (
-          <Text variant="small" tone="secondary" className="text-center">
-            <Link href="#" onClick={(e) => (e.preventDefault(), onEmail())}>
-              {t("signIn.useEmail", "Sign in with your email instead")}
-            </Link>
-          </Text>
-        )}
       </div>
-      {signUp}
     </PublicPage>
   );
 }

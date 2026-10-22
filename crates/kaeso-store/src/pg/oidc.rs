@@ -47,24 +47,6 @@ pub async fn org_for_domain(
     .await?)
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Connected {
-    Nowhere,
-    Only(Uuid),
-    Several,
-}
-
-pub async fn connected(db: impl PgExecutor<'_>) -> Result<Connected, StoreError> {
-    let orgs = sqlx::query_scalar!("SELECT org_id FROM org_oidc ORDER BY org_id LIMIT 2")
-        .fetch_all(db)
-        .await?;
-    Ok(match orgs.as_slice() {
-        [] => Connected::Nowhere,
-        [only] => Connected::Only(*only),
-        _ => Connected::Several,
-    })
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Upserted {
     Saved,
