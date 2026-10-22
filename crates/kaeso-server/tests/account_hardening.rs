@@ -208,6 +208,56 @@ async fn email_changes_need_the_second_factor_and_can_be_cancelled_from_the_old_
     s.cleanup().await;
 }
 
+#[tokio::test]
+async fn an_email_change_tells_whether_an_address_is_taken_only_after_the_second_factor() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@example.com", "role": "member" }),
+        "Eve",
+    )
+    .await;
+    let (cookie, secret) = turn_on_totp(&app, &eve).await;
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com" }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        r.body["error"]["param"], "code",
+        "without the second factor the answer is the same for every address"
+    );
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com", "code": "000000" }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(r.body["error"]["message"], WRONG);
+    next_step(&app).await;
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com", "code": code(&secret, &app) }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::CONFLICT);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Another account uses this address."
+    );
+    s.cleanup().await;
+}
+
 async fn sign_in_as(app: &App, email: &str) -> String {
     app.post(
         "/auth/password",
