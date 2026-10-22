@@ -9,12 +9,15 @@ use kaeso_store::pg::{self, catalogue, locks};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use time::OffsetDateTime;
+use url::Url;
 
 use crate::state::AppState;
 
 pub const EMBEDDED_SOURCE: &str = "embedded";
 
 const MAX_DOCUMENT: usize = 64 << 20;
+
+const MAX_REDIRECTS: usize = 3;
 
 #[derive(Clone, Debug)]
 pub struct Loaded {
@@ -332,7 +335,7 @@ pub async fn sync(state: &AppState) -> Result<Synced, SyncError> {
 
 async fn fetch_and_apply(state: &AppState, now: OffsetDateTime) -> Result<Synced, SyncError> {
     let url = state.config.models_dev.url.clone();
-    let body = fetch(url.as_str()).await.map_err(SyncError::Fetch)?;
+    let body = fetch(&url).await.map_err(SyncError::Fetch)?;
     let hash = Sha256::digest(&body).to_vec();
     if let Some(stored) = catalogue::sync_state(&state.pg).await?
         && stored.content_hash == hash
@@ -347,14 +350,43 @@ async fn fetch_and_apply(state: &AppState, now: OffsetDateTime) -> Result<Synced
     Ok(Synced::Applied(applied))
 }
 
-async fn fetch(url: &str) -> Result<Vec<u8>, String> {
+fn redirect_refusal(from: &Url, to: &Url, hops: usize) -> Option<String> {
+    if hops > MAX_REDIRECTS {
+        return Some(format!("{from} redirected more than {MAX_REDIRECTS} times"));
+    }
+    if to.host() != from.host() {
+        return Some(format!("{from} redirected to another host, {to}"));
+    }
+    if to.scheme() != "https" && to.scheme() != from.scheme() {
+        return Some(format!("{from} redirected to {to}, which is not https"));
+    }
+    None
+}
+
+async fn fetch(url: &Url) -> Result<Vec<u8>, String> {
+    let origin = url.clone();
+    let redirects = reqwest::redirect::Policy::custom(move |attempt| {
+        match redirect_refusal(&origin, attempt.url(), attempt.previous().len()) {
+            Some(refused) => attempt.error(refused),
+            None => attempt.follow(),
+        }
+    });
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(60))
         .connect_timeout(Duration::from_secs(10))
+        .redirect(redirects)
         .user_agent(concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| e.to_string())?;
-    let mut resp = client.get(url).send().await.map_err(|e| e.to_string())?;
+    let mut resp = client.get(url.as_str()).send().await.map_err(|e| {
+        let mut message = e.to_string();
+        let mut cause = std::error::Error::source(&e);
+        while let Some(c) = cause {
+            message = format!("{message}: {c}");
+            cause = c.source();
+        }
+        message
+    })?;
     if !resp.status().is_success() {
         return Err(format!("{url} answered {}", resp.status()));
     }
@@ -384,4 +416,73 @@ pub async fn due(state: &AppState) -> Result<bool, StoreError> {
         None => true,
         Some(at) => state.clock.now() - at >= interval,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::response::Redirect;
+    use axum::routing::get;
+
+    use super::*;
+
+    fn url(s: &str) -> Url {
+        Url::parse(s).unwrap()
+    }
+
+    #[test]
+    fn redirects_stay_on_https_and_the_same_host_a_few_times() {
+        let from = url("https://models.dev/api.json");
+        assert_eq!(
+            redirect_refusal(&from, &url("https://models.dev/v2.json"), 1),
+            None
+        );
+        assert_eq!(
+            redirect_refusal(&from, &url("https://models.dev:8443/a"), 3),
+            None
+        );
+        for (to, hops) in [
+            ("http://models.dev/api.json", 1),
+            ("https://evil.example/api.json", 1),
+            ("https://cdn.models.dev/api.json", 1),
+            ("https://models.dev/api.json", 4),
+        ] {
+            assert!(
+                redirect_refusal(&from, &url(to), hops).is_some(),
+                "{to} after {hops}"
+            );
+        }
+        let local = url("http://127.0.0.1:9/api.json");
+        assert_eq!(
+            redirect_refusal(&local, &url("http://127.0.0.1:9/b"), 1),
+            None
+        );
+        assert_eq!(
+            redirect_refusal(&local, &url("https://127.0.0.1:9/b"), 1),
+            None
+        );
+        assert!(redirect_refusal(&local, &url("http://localhost:9/b"), 1).is_some());
+    }
+
+    #[tokio::test]
+    async fn the_fetch_follows_only_the_redirects_it_allows() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let router = axum::Router::new()
+            .route("/api.json", get(|| async { "{}" }))
+            .route("/moved", get(|| async { Redirect::temporary("/api.json") }))
+            .route(
+                "/elsewhere",
+                get(move || async move {
+                    Redirect::temporary(&format!("http://localhost:{port}/api.json"))
+                }),
+            )
+            .route("/loop", get(|| async { Redirect::temporary("/loop") }));
+        tokio::spawn(async move { axum::serve(listener, router).await });
+        let at = |path: &str| url(&format!("http://127.0.0.1:{port}{path}"));
+        assert_eq!(fetch(&at("/moved")).await.unwrap(), b"{}");
+        let err = fetch(&at("/elsewhere")).await.unwrap_err();
+        assert!(err.contains("another host"), "{err}");
+        let err = fetch(&at("/loop")).await.unwrap_err();
+        assert!(err.contains("more than 3 times"), "{err}");
+    }
 }

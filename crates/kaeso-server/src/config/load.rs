@@ -747,6 +747,30 @@ mod tests {
     }
 
     #[test]
+    fn models_dev_is_fetched_over_https_or_from_localhost() {
+        for ok in [
+            "https://models.example.com/api.json",
+            "http://127.0.0.1:9/api.json",
+            "http://localhost/api.json",
+        ] {
+            let c = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", ok)).unwrap();
+            assert_eq!(c.models_dev.url.as_str(), ok);
+        }
+        for bad in [
+            "http://models.example.com/api.json",
+            "ftp://models.example.com/api.json",
+        ] {
+            let err = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", bad))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with("KAESO_MODELS_DEV_URL (models_dev.url)"),
+                "{err}"
+            );
+        }
+    }
+
+    #[test]
     fn the_header_read_timeout_is_bounded() {
         for (ok, secs) in [("1s", 1), ("90s", 90), ("10m", 600)] {
             let c = load(&Map::minimal().set("KAESO_SERVER_HEADER_READ_TIMEOUT", ok)).unwrap();

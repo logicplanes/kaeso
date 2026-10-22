@@ -102,7 +102,7 @@ const ROWS: &[Row] = &[
     s("key_failures.per_address", "KAESO_KEY_FAILURES_PER_ADDRESS", Integer, Some("100"), false, "Failed API key lookups (well-formed keys that match no key) allowed per client address and window, on the model API and the Platform API together; beyond it, keys that are not cached are refused with 429 until the window ends. IPv6 addresses count per /64. Valid keys never count. `0` turns the throttle off."),
     s("key_failures.window", "KAESO_KEY_FAILURES_WINDOW", Text, Some("1m"), false, "The window of `key_failures.per_address`: 1s to 1h."),
     s("models_dev.sync", "KAESO_MODELS_DEV_SYNC", Bool, Some("true"), false, "Fetch models.dev periodically. Off for installs without internet; the built-in snapshot is used."),
-    s("models_dev.url", "KAESO_MODELS_DEV_URL", Text, Some("https://models.dev/api.json"), false, "Where models.dev data is fetched from."),
+    s("models_dev.url", "KAESO_MODELS_DEV_URL", Text, Some("https://models.dev/api.json"), false, "Where models.dev data is fetched from: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3."),
     s("models_dev.interval", "KAESO_MODELS_DEV_INTERVAL", Text, Some("24h"), false, "How often models.dev is fetched."),
     s("updates.check", "KAESO_UPDATES_CHECK", Bool, Some("true"), false, "Look for new Kaeso releases every 5 minutes; turn it off for installs without internet."),
     s("updates.channel", "KAESO_UPDATES_CHANNEL", Text, Some("stable"), false, "The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console."),

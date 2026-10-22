@@ -148,7 +148,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
 | `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | 布尔 | `true` | 从 models.dev 获取模型数据。关闭后，网关使用版本内置的数据。 |
-| `KAESO_MODELS_DEV_URL` | `models_dev.url` | 文本 | `https://models.dev/api.json` | 模型数据的来源。 |
+| `KAESO_MODELS_DEV_URL` | `models_dev.url` | 文本 | `https://models.dev/api.json` | 模型数据的来源。必须使用 `https`，回环地址上的 `http` 除外。Kaeso 最多跟随 3 次重定向，每次都须在同一主机上并使用 `https`。 |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | 文本 | `24h` | 网关获取数据的间隔。 |
 
 ### 更新

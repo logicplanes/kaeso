@@ -293,6 +293,16 @@ impl Config {
                 );
             }
         }
+        match self.models_dev.url.scheme() {
+            "https" => {}
+            "http" if is_loopback_host(&self.models_dev.url) => {}
+            _ => {
+                return invalid(
+                    "models_dev.url",
+                    "must be an https URL (http is only allowed for localhost)".into(),
+                );
+            }
+        }
         if self.public_url.path() != "/"
             || self.public_url.query().is_some()
             || self.public_url.fragment().is_some()
@@ -540,7 +550,7 @@ fn networks<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<ipnet::IpNet>,
         .collect()
 }
 
-fn is_loopback_host(url: &Url) -> bool {
+pub(crate) fn is_loopback_host(url: &Url) -> bool {
     match url.host() {
         Some(url::Host::Domain(d)) => d == "localhost" || d.ends_with(".localhost"),
         Some(url::Host::Ipv4(ip)) => ip.is_loopback(),

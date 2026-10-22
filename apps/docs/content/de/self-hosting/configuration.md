@@ -148,7 +148,7 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 | Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- | --- |
 | `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | Bool | `true` | Modelldaten von models.dev abrufen. Ohne sie verwendet das Gateway die Daten, die im Release enthalten sind. |
-| `KAESO_MODELS_DEV_URL` | `models_dev.url` | Text | `https://models.dev/api.json` | Woher die Modelldaten kommen. |
+| `KAESO_MODELS_DEV_URL` | `models_dev.url` | Text | `https://models.dev/api.json` | Woher die Modelldaten kommen. Die Adresse muss `https` sein, außer `http` auf einer Loopback-Adresse. Kaeso folgt höchstens 3 Weiterleitungen, jede auf demselben Host und über `https`. |
 | `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | Text | `24h` | Wie oft das Gateway sie abruft. |
 
 ### Updates
