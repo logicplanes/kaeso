@@ -585,6 +585,21 @@ fn check_domain(connection: &oidc::Connection, email: &str) -> ApiResult<()> {
     )))
 }
 
+// Removing or repointing the connection takes this row's lock before it ends the org's SSO
+// sessions, so a callback that read the connection before the change either sees the change
+// here or holds the lock until its session is committed and then ended with the others.
+async fn still_connected(
+    tx: &mut sqlx::PgConnection,
+    connection: &oidc::Connection,
+) -> ApiResult<()> {
+    match oidc::lock_pointer(&mut *tx, connection.org_id).await? {
+        Some(now) if now.issuer == connection.issuer && now.client_id == connection.client_id => {
+            Ok(())
+        }
+        _ => Err(expired()),
+    }
+}
+
 async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiResult<Response> {
     let org = flow.org;
     let connection = oidc::get(&state.pg, org.uuid())
@@ -629,6 +644,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     let scheduled = org_row.state != "active";
 
     let mut tx = state.pg.begin().await?;
+    still_connected(&mut tx, &connection).await?;
     let linked =
         sso_identities::user_of(&mut *tx, org.uuid(), &connection.issuer, &identity.subject)
             .await?;
@@ -819,6 +835,7 @@ async fn confirm(
     }
     let org = flow.org;
     let mut tx = state.pg.begin().await?;
+    still_connected(&mut tx, connection).await?;
     let account = users::get(&mut *tx, user.uuid())
         .await?
         .filter(|u| u.state == "active")
@@ -937,6 +954,7 @@ async fn link(
 ) -> ApiResult<Response> {
     let org = flow.org;
     let mut tx = state.pg.begin().await?;
+    still_connected(&mut tx, connection).await?;
     let account = users::get(&mut *tx, user.uuid())
         .await?
         .filter(|u| u.state == "active")

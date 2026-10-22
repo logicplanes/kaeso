@@ -1430,6 +1430,159 @@ async fn removing_or_repointing_the_connection_ends_the_sessions_it_signed_in() 
     s.cleanup().await;
 }
 
+async fn answered_during(
+    app: &App,
+    idp: &MockIdp,
+    url: &str,
+    binding: &str,
+    email: &str,
+    change: impl std::future::Future<Output = ()>,
+) -> common::Resp {
+    let auth = idp.authorize_as(url, &format!("sub-{email}"), email, "Someone");
+    let mut held = idp.hold_next_token();
+    let answer = callback(app, &auth.code, &auth.state, Some(binding));
+    let change = async move {
+        held.reached().await;
+        change.await;
+        held.release();
+    };
+    tokio::join!(answer, change).0
+}
+
+#[tokio::test]
+async fn an_answer_in_flight_while_the_connection_changes_signs_nobody_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    let other = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("member")).await;
+    let sso = format!("/orgs/{}/security/sso", owner.org_id);
+    let repoint = |to: &MockIdp| {
+        let body = json!({
+            "issuer": to.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example"],
+            "default_role": "member",
+        });
+        let (app, sso, cookie) = (&app, &sso, &owner.cookie);
+        async move {
+            app.call(axum::http::Method::PUT, sso, Some(body), Some(cookie))
+                .await
+                .expect_status(StatusCode::OK);
+        }
+    };
+    let accounts = || async {
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap()
+    };
+    let before = accounts().await;
+
+    let flow = start(&app, json!({ "email": "alice@acme.example" })).await;
+    let removed = async {
+        app.call(axum::http::Method::DELETE, &sso, None, Some(&owner.cookie))
+            .await
+            .expect_status(StatusCode::NO_CONTENT);
+    };
+    let r = answered_during(
+        &app,
+        &idp,
+        &flow.url,
+        &flow.binding,
+        "alice@acme.example",
+        removed,
+    )
+    .await;
+    refused_with(&r, "expired");
+    assert_eq!(
+        accounts().await,
+        before,
+        "a removed connection creates no account"
+    );
+
+    connect(&app, &owner, &idp, Some("member")).await;
+    let flow = start(&app, json!({ "email": "alice@acme.example" })).await;
+    let r = answered_during(
+        &app,
+        &idp,
+        &flow.url,
+        &flow.binding,
+        "alice@acme.example",
+        repoint(&other),
+    )
+    .await;
+    refused_with(&r, "expired");
+    assert_eq!(
+        accounts().await,
+        before,
+        "a replaced provider creates no account"
+    );
+
+    let begun = app
+        .post(
+            "/me/sso-links",
+            json!({ "org": owner.org_id }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let r = answered_during(
+        &app,
+        &other,
+        begun.body["authorization_url"].as_str().unwrap(),
+        &begun.set_cookie("__Host-kaeso_oidc").unwrap(),
+        "owner@acme.example",
+        repoint(&idp),
+    )
+    .await;
+    refused_with(&r, "expired");
+    assert_eq!(
+        links(&app).await,
+        0,
+        "a replaced provider links no identity"
+    );
+
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner@acme.example",
+        "owner@acme.example",
+    )
+    .await;
+    let begun = app
+        .post(
+            "/me/sign-in-again/sso",
+            json!({ "org": owner.org_id }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let r = answered_during(
+        &app,
+        &idp,
+        begun.body["authorization_url"].as_str().unwrap(),
+        &begun.set_cookie("__Host-kaeso_oidc").unwrap(),
+        "owner@acme.example",
+        repoint(&other),
+    )
+    .await;
+    refused_with(&r, "expired");
+    assert_eq!(
+        app.get("/auth/session", &owner.cookie).await.status,
+        StatusCode::OK,
+        "a replaced provider replaces no session"
+    );
+
+    let r = sso_as(&app, &other, "sub-alice", "alice@acme.example").await;
+    assert!(r.cookie().is_some(), "the connection now in place signs in");
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn an_sso_session_reads_the_account_but_changes_it_only_after_another_sign_in() {
     let s = TestServices::start().await;

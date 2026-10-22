@@ -367,6 +367,8 @@ pub async fn put_sso(
     row.sso_default_preset = default_role.as_ref().map(|g| g.preset.clone());
     row.sso_default_role_id = default_role.and_then(|g| g.role_id);
     orgs::update(&mut *tx, &row).await?;
+    // Only after the upsert has the connection row's lock: an SSO callback holds it until its
+    // session is committed, so that session is ended here rather than outliving the change.
     let ended = if repointed {
         sessions_store::revoke_sso(&mut *tx, scope.org.id, None, ctx.now).await?
     } else {
@@ -471,6 +473,7 @@ pub async fn delete_sso(
     row.sso_default_preset = None;
     row.sso_default_role_id = None;
     orgs::update(&mut *tx, &row).await?;
+    // Only after the delete has the connection row's lock, as in `put_sso`.
     let ended = sessions_store::revoke_sso(&mut *tx, row.id, None, ctx.now).await?;
     ctx.audit(Some(scope.id()), "security.sso_delete")
         .target("org", scope.id())
