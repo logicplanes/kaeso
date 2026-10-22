@@ -6,6 +6,7 @@ import { StepDialog } from "./step-dialog.js";
 import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
 import { TagInput } from "../input/tag-input.js";
+import { Combobox } from "../combobox/combobox.js";
 import { useState } from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -135,6 +136,45 @@ describe("Dialog", () => {
     await frames();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(opener).toHaveFocus();
+  });
+  it("closing after another dialog opened leaves the focus and the search in the new one", async () => {
+    function RenameThenAddOwner() {
+      const [renaming, setRenaming] = useState(false);
+      const [adding, setAdding] = useState(false);
+      return (
+        <>
+          <Button onClick={() => setRenaming(true)}>Rename</Button>
+          <Button onClick={() => setAdding(true)}>Add owner</Button>
+          <Dialog open={renaming} onOpenChange={setRenaming} title="Rename the organization">
+            <Button onClick={() => setRenaming(false)}>Save name</Button>
+          </Dialog>
+          <Dialog open={adding} onOpenChange={setAdding} title="Add an owner">
+            <Combobox label="User" options={[{ value: "usr_lin", label: "Lin Park" }]} />
+          </Dialog>
+        </>
+      );
+    }
+    let finishClosing = () => undefined as void;
+    const closing = { finished: new Promise<void>((resolve) => (finishClosing = resolve)) } as unknown as Animation;
+    const animations = vi.spyOn(Element.prototype, "getAnimations").mockImplementation(function (this: Element) {
+      return this.closest("[data-ending-style]") ? [closing] : [];
+    });
+    render(<RenameThenAddOwner />);
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    await frames();
+    await userEvent.click(screen.getByRole("button", { name: "Save name" }));
+    await userEvent.click(screen.getByRole("button", { name: "Add owner" }));
+    await frames();
+    const search = screen.getByRole("combobox", { name: "User" });
+    await userEvent.type(search, "Lin");
+    expect(screen.getByRole("dialog", { name: "Rename the organization", hidden: true })).toBeInTheDocument();
+    finishClosing();
+    await frames();
+    animations.mockRestore();
+    expect(screen.queryByRole("dialog", { name: "Rename the organization" })).not.toBeInTheDocument();
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue("Lin");
+    expect(screen.getByRole("option", { name: "Lin Park" })).toBeVisible();
   });
   it("⌘Enter submits", async () => {
     const onSubmit = vi.fn();

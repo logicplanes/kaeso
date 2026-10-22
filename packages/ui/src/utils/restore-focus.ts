@@ -19,8 +19,9 @@ export function useRestoreFocus(open: boolean | undefined, first: () => HTMLElem
   return {
     initialFocus: () => first(),
     finalFocus: () => {
-      if (open !== undefined && opener.current?.isConnected) return opener.current;
-      return !focusedElsewhere();
+      // Base UI focuses a returned element even after the focus moved on; its moved-focus check covers only `true` (floating-ui/floating-ui#2607).
+      if (focusedElsewhere()) return false;
+      return open !== undefined && opener.current?.isConnected ? opener.current : true;
     },
   };
 }
