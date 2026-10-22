@@ -137,8 +137,8 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
         gate.wait_for(1).await;
         assert_eq!(
             state.translating.free(),
-            121 << 10,
-            "the open call keeps only its decoded request: its content, one message and one block"
+            115 << 10,
+            "the open call keeps only its decoded request, its content, one message and one block, twice: once to encode the reply and once for the input counter"
         );
         let next = call(
             &env,
@@ -163,13 +163,17 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
 }
 
 fn post(path: &str, key: &str, body: Vec<u8>) -> Request<Body> {
-    Request::builder()
+    let req = Request::builder()
         .uri(path)
         .method("POST")
-        .header("authorization", format!("Bearer {key}"))
-        .header("content-type", "application/json")
-        .body(Body::from(body))
-        .unwrap()
+        .header("content-type", "application/json");
+    let req = if path.starts_with("/v1/messages") {
+        req.header("x-api-key", key)
+            .header("anthropic-version", "2023-06-01")
+    } else {
+        req.header("authorization", format!("Bearer {key}"))
+    };
+    req.body(Body::from(body)).unwrap()
 }
 
 fn padded_stalled_stream() -> Vec<u8> {
@@ -237,13 +241,13 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     }
     assert_eq!(
         total - budget.free(),
-        13 * (7 << 10),
-        "each open stream keeps 7 KiB for its decoded request, one message and one block, not its padding"
+        13 * (13 << 10),
+        "each open stream keeps 13 KiB for its decoded request, one message and one block, and the request the input counter keeps, not its padding"
     );
     assert_eq!(content_logging(true).await.status, StatusCode::OK);
     streams.push(open().await);
     assert!(
-        total - budget.free() >= 13 * (7 << 10) + body.len() as u64,
+        total - budget.free() >= 13 * (13 << 10) + body.len() as u64,
         "a body kept for its log is counted until it is logged"
     );
     let (victim, _) = new_key(&env, "victim").await;
@@ -260,7 +264,7 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     drop(streams);
 }
 
-async fn open_stalled_chat(env: &common::v1::Env, body: Vec<u8>) -> axum::response::Response {
+async fn without_content_logging(env: &common::v1::Env) {
     let settings = format!(
         "/orgs/{}/projects/{}/logs/settings",
         env.owner.org_id, env.project
@@ -271,14 +275,22 @@ async fn open_stalled_chat(env: &common::v1::Env, body: Vec<u8>) -> axum::respon
         .call(Method::PATCH, &settings, Some(off), Some(&env.owner.cookie))
         .await;
     assert_eq!(r.status, StatusCode::OK);
+}
+
+async fn open_stalled(
+    env: &common::v1::Env,
+    path: &str,
+    body: Vec<u8>,
+) -> axum::response::Response {
+    without_content_logging(env).await;
     let r = env
         .app
         .router
         .clone()
-        .oneshot(post("/v1/chat/completions", &env.key, body))
+        .oneshot(post(path, &env.key, body))
         .await
         .unwrap();
-    assert_eq!(r.status(), StatusCode::OK);
+    assert_eq!(r.status(), StatusCode::OK, "{path}");
     r
 }
 
@@ -292,11 +304,12 @@ async fn a_tool_schema_padded_with_whitespace_keeps_memory_for_its_padding() {
         r#"{{"model":"gpt-4o","stream":true,"messages":[{{"role":"user","content":"[mock:stall]"}}],"tools":[{{"type":"function","function":{{"name":"lookup","parameters":{{"type":"object"{}}}}}}}]}}"#,
         " ".repeat(padding)
     );
-    let stream = open_stalled_chat(&env, body.into_bytes()).await;
+    let stream = open_stalled(&env, "/v1/chat/completions", body.into_bytes()).await;
     let held = total - budget.free();
+    let kept = 2 * padding as u64;
     assert!(
-        (padding as u64..padding as u64 + (16 << 10)).contains(&held),
-        "the schema keeps its padding in the decoded request, so the open stream keeps memory for it: {held} bytes"
+        (kept..kept + (32 << 10)).contains(&held),
+        "the schema keeps its padding in the decoded request and in the request the input counter keeps, so the open stream keeps memory for both: {held} bytes"
     );
     drop(stream);
 }
@@ -312,15 +325,118 @@ async fn many_tiny_messages_keep_their_structure_while_the_provider_answers() {
     said.push(json!({ "role": "user", "content": "[mock:stall]" }));
     let body = serde_json::to_vec(&json!({ "model": "gpt-4o", "stream": true, "messages": said }))
         .unwrap();
-    let structure = 2_001 * (6 << 10);
-    let content = body.len() as u64;
-    let stream = open_stalled_chat(&env, body).await;
+    let structure = 2 * 2_001 * (6 << 10);
+    let content = 2 * body.len() as u64;
+    let stream = open_stalled(&env, "/v1/chat/completions", body).await;
     let held = total - budget.free();
     assert!(
         (structure..structure + content + (1 << 10)).contains(&held),
-        "2,001 messages of one block each keep 6 KiB apiece besides their content: {held} bytes"
+        "2,001 messages of one block each keep 6 KiB apiece besides their content, in the decoded request and in the request the input counter keeps: {held} bytes"
     );
     drop(stream);
+}
+
+async fn add_chat_provider(env: &common::v1::Env) -> &'static str {
+    let org = &env.owner.org_id;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "groq", "name": "groq", "secret": "gsk_test-groq-credential-0003" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{}/models", env.project),
+            json!({ "provider": "groq", "model_id": "openai/gpt-oss-20b" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    "groq/openai/gpt-oss-20b"
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_block_or_item_kept_raw_keeps_memory_for_its_padding_while_the_provider_answers() {
+    let env = common::v1::env(None, None).await;
+    let chat_model = add_chat_provider(&env).await;
+    let budget = &env.app.state.translating;
+    let padding: u64 = 1 << 20;
+    let p = " ".repeat(padding as usize);
+    let unknown = format!(r#"{{"type":"novel",{p}"novel":1}}"#);
+    let cases = [
+        (
+            "/v1/chat/completions",
+            format!(
+                r#"{{"model":"{chat_model}","stream":true,"messages":[{{"role":"user","content":[{{"type":"text","text":"[mock:stall]"}},{unknown}]}}]}}"#
+            ),
+            1,
+        ),
+        (
+            "/v1/messages",
+            format!(
+                r#"{{"model":"claude-haiku-4-5","max_tokens":16,"stream":true,"messages":[{{"role":"user","content":[{{"type":"text","text":"[mock:stall]"}},{unknown}]}}]}}"#
+            ),
+            2,
+        ),
+        (
+            "/v1/responses",
+            format!(
+                r#"{{"model":"gpt-4o","stream":true,"input":[{{"role":"user","content":"[mock:stall]"}},{unknown}]}}"#
+            ),
+            2,
+        ),
+    ];
+    let mut streams = Vec::new();
+    for (path, body, copies) in cases {
+        let before = budget.free();
+        streams.push(open_stalled(&env, path, body.into_bytes()).await);
+        let held = before - budget.free();
+        let kept = copies * padding;
+        assert!(
+            (kept..kept + (32 << 10)).contains(&held),
+            "{path}: the block is kept raw with its padding in {copies} decoded requests, so the open stream keeps memory for it: {held} bytes"
+        );
+    }
+    drop(streams);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn embedding_token_ids_keep_their_decoded_size_while_the_provider_answers() {
+    let env = common::v1::env(None, None).await;
+    without_content_logging(&env).await;
+    let state = &env.app.state;
+    let total = state.config.body_limits.in_flight.0;
+    let mut gate = env.mock.gate();
+    let ids: u64 = 1_000_000;
+    let body = json!({
+        "model": "text-embedding-3-small",
+        "user": gate.marker(),
+        "input": vec![7; ids as usize],
+    });
+    let size = serde_json::to_vec(&body).unwrap().len() as u64;
+    let decoded = 4 * ids;
+    assert!(
+        size < 2 * ids + 1024,
+        "a token id takes two bytes of JSON: {size} bytes"
+    );
+    let first = call(&env, "/v1/embeddings", Some(&env.key), false, Some(body));
+    let check = async {
+        gate.wait_for(1).await;
+        let held = total - state.translating.free();
+        assert!(
+            (decoded..decoded + size + (16 << 10)).contains(&held),
+            "the open call keeps its token ids as decoded, four bytes each: {held} bytes"
+        );
+        gate.open();
+    };
+    let (first, ()) = tokio::join!(first, check);
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    state.in_flight.settled().await;
+    assert_eq!(state.translating.free(), total);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

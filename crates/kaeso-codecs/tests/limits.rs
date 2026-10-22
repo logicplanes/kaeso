@@ -76,6 +76,187 @@ fn whitespace_inside_a_value_kept_raw_is_counted() {
     );
 }
 
+const PAD: usize = 4096;
+
+fn padding_kept_and_counted(dialect: DialectId, template: &str) -> Option<(bool, usize)> {
+    let pad = " ".repeat(PAD);
+    let tight = template.replace('~', "");
+    let padded = template.replace('~', &pad);
+    let kind = if dialect == E {
+        RequestKind::Embed
+    } else {
+        RequestKind::Generate
+    };
+    let decoded =
+        dispatch::decode_request(dialect, kind, padded.as_bytes(), &HeaderList::new()).ok()?;
+    let kept = format!("{decoded:?}").contains(&pad);
+    let counted = request_shape(dialect, padded.as_bytes()).unwrap().bytes
+        - request_shape(dialect, tight.as_bytes()).unwrap().bytes;
+    Some((kept, counted))
+}
+
+fn assert_counted_exactly_when_kept(dialect: DialectId, templates: &[String]) -> usize {
+    let mut decoded = 0;
+    for template in templates {
+        let Some((kept, counted)) = padding_kept_and_counted(dialect, template) else {
+            continue;
+        };
+        decoded += 1;
+        let expected = if kept { PAD } else { 0 };
+        assert_eq!(counted, expected, "kept: {kept}, {template}");
+    }
+    decoded
+}
+
+#[test]
+fn chat_counts_whitespace_exactly_where_its_decoder_keeps_it() {
+    let parts = [
+        r#"{~"type":"text","text":"a"}"#,
+        r#"{~"type":"refusal","refusal":"no"}"#,
+        r#"{~"type":"image_url","image_url":{"url":"https://example.com/a.png"}}"#,
+        r#"{~"type":"file","file":{"file_id":"file-1"}}"#,
+        r#"{~"type":"input_audio","input_audio":{"data":"AA==","format":"wav"}}"#,
+        r#"{~"type":"novel","novel":1}"#,
+        r#"{~"text":"a"}"#,
+        r#"{"type":"text","text":"a","content":[~1]}"#,
+        r#"{"type":"text","text":"a","output":{~}}"#,
+    ];
+    let messages = [
+        r#"{"role":"system","content":[PART]}"#,
+        r#"{"role":"developer","content":[PART]}"#,
+        r#"{"role":"user","content":[PART]}"#,
+        r#"{"role":"assistant","content":[PART]}"#,
+        r#"{"role":"tool","tool_call_id":"t","content":[PART]}"#,
+    ];
+    let mut templates: Vec<String> = messages
+        .iter()
+        .flat_map(|m| parts.iter().map(move |p| m.replace("PART", p)))
+        .collect();
+    templates.extend(
+        [
+            r#"{~"role":"user","content":"a"}"#,
+            r#"{"role":"user","content":"a","output":[~1]}"#,
+            r#"{~"role":"function","name":"f","content":"a"}"#,
+            r#"{"role":"function","name":"f","content":[~{"type":"text","text":"a"}]}"#,
+            r#"{"role":"assistant","content":null,"tool_calls":[{~"id":"c","type":"novel"}]}"#,
+        ]
+        .map(str::to_owned),
+    );
+    let bodies: Vec<String> = templates
+        .iter()
+        .map(|m| format!(r#"{{"model":"m","messages":[{m}]}}"#))
+        .collect();
+    let decoded = assert_counted_exactly_when_kept(C, &bodies);
+    assert!(decoded > 40, "{decoded} of {} bodies decoded", bodies.len());
+    let unknown = r#"{"model":"m","messages":[{"role":"user","content":[{~"type":"novel"}]}]}"#;
+    assert_eq!(padding_kept_and_counted(C, unknown), Some((true, PAD)));
+}
+
+#[test]
+fn anthropic_counts_whitespace_exactly_where_its_decoder_keeps_it() {
+    let blocks = [
+        r#"{~"type":"text","text":"a"}"#,
+        r#"{"type":"text","text":"a","content":[~1]}"#,
+        r#"{"type":"text","text":"a","output":[~1]}"#,
+        r#"{~"type":"image","source":{"type":"base64","media_type":"image/png","data":"AA=="}}"#,
+        r#"{~"type":"image","source":{"type":"url","url":"https://example.com/a.png"}}"#,
+        r#"{~"type":"image","source":{"type":"file","file_id":"f"}}"#,
+        r#"{~"type":"image","source":{"type":"text","media_type":"text/plain","data":"a"}}"#,
+        r#"{~"type":"image","source":{"type":"novel"}}"#,
+        r#"{"type":"image","source":{~"type":"novel"}}"#,
+        r#"{~"type":"document","source":{"type":"text","media_type":"text/plain","data":"a"}}"#,
+        r#"{~"type":"document","source":{"type":"base64","media_type":"application/pdf","data":"AA=="}}"#,
+        r#"{~"type":"document","source":{"type":"novel"}}"#,
+        r#"{~"type":"tool_use","id":"t","name":"f","input":{}}"#,
+        r#"{~"type":"tool_result","tool_use_id":"t","content":"a"}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","content":[{~"type":"text","text":"a"}]}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","content":[{~"type":"novel"}]}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","output":[~1]}"#,
+        r#"{~"type":"thinking","thinking":"a","signature":"s"}"#,
+        r#"{~"type":"redacted_thinking","data":"d"}"#,
+        r#"{~"type":"server_tool_use","id":"s","name":"web_search","input":{}}"#,
+        r#"{"type":"web_search_tool_result","tool_use_id":"s","content":[{~"type":"web_search_result","url":"u"}]}"#,
+        r#"{~"type":"novel"}"#,
+    ];
+    let nest = |levels: usize, inner: &str| {
+        let open = r#"{"type":"tool_result","tool_use_id":"t","content":["#.repeat(levels);
+        format!("{open}{inner}{}", "]}".repeat(levels))
+    };
+    let mut bodies: Vec<String> = blocks
+        .iter()
+        .flat_map(|b| {
+            [
+                format!(r#"{{"model":"m","max_tokens":1,"messages":[{{"role":"user","content":[{b}]}}]}}"#),
+                format!(r#"{{"model":"m","max_tokens":1,"system":[{b}],"messages":[]}}"#),
+            ]
+        })
+        .collect();
+    for levels in [4, 5] {
+        for inner in [r#"{~"type":"text","text":"a"}"#, r#"{~"type":"novel"}"#] {
+            let b = nest(levels, inner);
+            bodies.push(format!(
+                r#"{{"model":"m","max_tokens":1,"messages":[{{"role":"user","content":[{b}]}}]}}"#
+            ));
+        }
+    }
+    bodies.extend([
+        r#"{"model":"m","max_tokens":1,"messages":[{~"role":"user","content":"a"}]}"#.to_owned(),
+        r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":"a","output":[~1]}]}"#
+            .to_owned(),
+    ]);
+    let decoded = assert_counted_exactly_when_kept(A, &bodies);
+    assert!(decoded > 40, "{decoded} of {} bodies decoded", bodies.len());
+    let unknown = r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[{~"type":"novel"}]}]}"#;
+    assert_eq!(padding_kept_and_counted(A, unknown), Some((true, PAD)));
+}
+
+#[test]
+fn responses_counts_all_whitespace_inside_its_input_items() {
+    let items = [
+        r#"{~"role":"user","content":"a"}"#,
+        r#"{~"type":"message","role":"user","content":[{"type":"input_text","text":"a"}]}"#,
+        r#"{"role":"user","content":[{~"type":"input_text","text":"a"}]}"#,
+        r#"{"role":"user","content":[{~"type":"input_image","image_url":"a","file_id":"b"}]}"#,
+        r#"{~"type":"function_call","call_id":"c","name":"f","arguments":"{}"}"#,
+        r#"{~"type":"function_call","call_id":1,"name":"f","arguments":"{}"}"#,
+        r#"{~"type":"function_call_output","call_id":"c","output":"a"}"#,
+        r#"{~"type":"reasoning","summary":[]}"#,
+        r#"{~"type":"item_reference","id":"r"}"#,
+        r#"{~"role":"critic","content":"a"}"#,
+    ];
+    let mut kept_raw = 0;
+    for item in items {
+        let body = format!(r#"{{"model":"m","input":[{item}]}}"#);
+        let (kept, counted) = padding_kept_and_counted(R, &body).unwrap();
+        assert_eq!(counted, PAD, "{item}");
+        kept_raw += usize::from(kept);
+    }
+    assert!(kept_raw >= 4, "{kept_raw} items kept raw");
+    for between in [
+        r#"{~"model":"m","input":[{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m",~"input":[{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m","input":[~{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m","input":[{"role":"user","content":"a"}~]}"#,
+    ] {
+        assert_eq!(
+            padding_kept_and_counted(R, between),
+            Some((false, 0)),
+            "{between}"
+        );
+    }
+}
+
+#[test]
+fn token_ids_of_embedding_inputs_are_counted_without_the_whitespace_between_them() {
+    let tight = r#"{"model":"m","input":[[1,2],[3]]}"#;
+    let loose = r#"{"model":"m","input":[ [ 1 , 2 ] ,
+        [3] ]}"#;
+    for body in [tight, loose] {
+        let s = request_shape(E, body.as_bytes()).unwrap();
+        assert_eq!((s.items, s.tokens, s.bytes), (2, 3, tight.len()), "{body}");
+    }
+}
+
 fn refused(dialect: DialectId, body: &str) -> KppError {
     let err = request_shape(dialect, body.as_bytes()).unwrap_err();
     let decoded = dispatch::decode_request(
@@ -126,13 +307,18 @@ fn messages_blocks_nested_tool_results_system_and_tools_are_counted() {
         counted(1, 0, 0)
     );
 
+    let tokens = |items, tokens| {
+        let mut s = counted(items, 0, 0);
+        s.tokens = tokens;
+        s
+    };
     assert_eq!(
         shape(E, r#"{"model": "m", "input": ["a", "b", [1, 2]]}"#),
-        counted(3, 0, 0)
+        tokens(3, 2)
     );
     assert_eq!(
         shape(E, r#"{"model": "m", "input": [1, 2, 3]}"#),
-        counted(0, 0, 0)
+        tokens(0, 3)
     );
 }
 

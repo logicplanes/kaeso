@@ -516,16 +516,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .or(caller.service_account_id)
         .unwrap_or(caller.project_id);
     // Held for the whole call, after the translation's share is returned: the app's
-    // decoded request, kept to encode the reply, and the raw body until it is logged.
-    let logged = if keep_content { request_bytes } else { 0 };
-    let retained =
-        super::memory::decoded(&shape).saturating_add(u64::try_from(logged).unwrap_or(u64::MAX));
+    // decoded request, kept to encode the reply, the request sent while the input
+    // counter may still need it, and the raw body until it is logged.
+    let logged = u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX);
+    let decoded = super::memory::decoded(&shape);
+    let retained = |copies: u64| decoded.saturating_mul(copies).saturating_add(logged);
     rec.held = Some(
         state
             .translating
             .hold(
                 holder,
-                super::memory::estimate(kind, &shape).saturating_add(retained),
+                super::memory::estimate(kind, &shape).saturating_add(retained(2)),
             )
             .await
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
@@ -724,8 +725,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    let sent_req = (eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
     if let Some(held) = &mut rec.held {
-        held.keep(retained);
+        held.keep(retained(1 + u64::from(sent_req.is_some())));
     }
     let base = base_url(state, eff.provider.id).ok_or_else(|| {
         fail(Stage::Setup)(error(
@@ -785,7 +787,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         provider,
         auth: eff.provider.auth,
         dialect: plan.dialect,
-        asked: (eff.provider.count_tokens == Some(plan.dialect)).then_some((app_req, req)),
+        asked: sent_req.map(|req| (app_req, req)),
         adaptive_thinking: plan.adaptive_thinking,
         reasoning: plan.reasoning,
         timeouts,

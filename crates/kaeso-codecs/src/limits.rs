@@ -2,8 +2,10 @@ use std::borrow::Cow;
 use std::fmt;
 
 use kaeso_kpp::{DialectId, KppError};
-use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde_json::value::RawValue;
+
+use crate::openai_chat::PartContext;
 
 /// The most messages (Anthropic Messages, OpenAI Chat Completions) or input items
 /// (OpenAI Responses) one request may hold: Anthropic's documented limit per request.
@@ -33,23 +35,59 @@ pub struct RequestShape {
     pub blocks: usize,
     /// Tool definitions.
     pub tools: usize,
-    /// Bytes of the body without the whitespace between the tokens of the request
-    /// object, its messages, items or inputs, their content blocks and the list of
-    /// tools: the most its decoded values can hold. Whitespace inside any other value
-    /// counts, since a value kept raw, such as a tool's parameters, keeps it.
+    /// Token ids in the inputs of an embeddings request.
+    pub tokens: usize,
+    /// Bytes of the body without the whitespace that decoding drops: the whitespace
+    /// between the tokens of the request object, its messages, items or inputs, their
+    /// content blocks and the list of tools. Whitespace inside any other value counts,
+    /// and so does all whitespace inside a message, item or block that its decoder keeps
+    /// raw, such as a content block of a type it doesn't know or any input item of an
+    /// OpenAI Responses request, since a raw value keeps it byte for byte.
     pub bytes: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Scope {
+    Chat(PartContext),
+    Anthropic(u8),
+}
+
+pub(crate) enum Form {
+    Raw,
+    Typed,
+    Nests(Scope),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Node {
     Top(DialectId),
-    Items,
-    Item,
-    Content,
-    Block,
+    Items(DialectId),
+    Item(DialectId),
+    Content(Option<Scope>),
+    Block(Option<Scope>),
     Tools,
     Inputs,
     Input,
+    Token,
+}
+
+impl Node {
+    fn form(self, raw: &RawValue) -> Form {
+        if !raw.get().starts_with('{') {
+            return Form::Typed;
+        }
+        match self {
+            Node::Item(DialectId::OpenAiChat) => crate::openai_chat::message_form(raw),
+            Node::Item(DialectId::AnthropicMessages) => Form::Nests(Scope::Anthropic(0)),
+            Node::Block(Some(Scope::Chat(parts))) => crate::openai_chat::part_form(raw, parts),
+            Node::Block(Some(Scope::Anthropic(depth))) => {
+                crate::anthropic_messages::block_form(raw, depth)
+            }
+            // The Responses decoder keeps any item or part raw that doesn't parse as its
+            // type, which only decoding it can tell.
+            _ => Form::Raw,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -121,13 +159,15 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{AnthropicMessages, OpenAiChat, OpenAiEmbeddings, OpenAiResponses};
     Some(match (node, key) {
-        (Node::Top(OpenAiResponses), "input") => Node::Items,
+        (Node::Top(d @ OpenAiResponses), "input") => Node::Items(d),
         (Node::Top(OpenAiEmbeddings), "input") => Node::Inputs,
-        (Node::Top(AnthropicMessages | OpenAiChat), "messages") => Node::Items,
-        (Node::Top(AnthropicMessages), "system") => Node::Content,
+        (Node::Top(d @ (AnthropicMessages | OpenAiChat)), "messages") => Node::Items(d),
+        (Node::Top(AnthropicMessages), "system") => Node::Content(Some(Scope::Anthropic(0))),
         (Node::Top(OpenAiChat), "functions") => Node::Tools,
         (Node::Top(AnthropicMessages | OpenAiChat | OpenAiResponses), "tools") => Node::Tools,
-        (Node::Item | Node::Block | Node::Content, "content" | "output") => Node::Content,
+        (Node::Item(_) | Node::Block(_) | Node::Content(_), "content" | "output") => {
+            Node::Content(None)
+        }
         _ => return None,
     })
 }
@@ -135,6 +175,8 @@ fn child(node: Node, key: &str) -> Option<Node> {
 struct Walk<'t> {
     node: Node,
     tally: &'t mut Tally,
+    kept: bool,
+    nests: Option<Scope>,
 }
 
 impl Walk<'_> {
@@ -142,7 +184,27 @@ impl Walk<'_> {
         Walk {
             node,
             tally: &mut *self.tally,
+            kept: self.kept,
+            nests: None,
         }
+    }
+
+    fn opaque(&mut self) -> Opaque<'_> {
+        Opaque {
+            tally: &mut *self.tally,
+            kept: self.kept,
+        }
+    }
+
+    fn token(self) {
+        if matches!(self.node, Node::Input | Node::Token) {
+            self.tally.shape.tokens += 1;
+        }
+    }
+
+    fn walk_raw<E: serde::de::Error>(self, raw: &RawValue) -> Result<(), E> {
+        let mut de = serde_json::Deserializer::from_str(raw.get());
+        self.deserialize(&mut de).map_err(E::custom)
     }
 }
 
@@ -166,14 +228,17 @@ impl<'de> Visitor<'de> for Walk<'_> {
     }
 
     fn visit_i64<E>(self, _: i64) -> Result<(), E> {
+        self.token();
         Ok(())
     }
 
     fn visit_u64<E>(self, _: u64) -> Result<(), E> {
+        self.token();
         Ok(())
     }
 
     fn visit_f64<E>(self, _: f64) -> Result<(), E> {
+        self.token();
         Ok(())
     }
 
@@ -183,8 +248,8 @@ impl<'de> Visitor<'de> for Walk<'_> {
 
     fn visit_str<E: serde::de::Error>(self, _: &str) -> Result<(), E> {
         match self.node {
-            Node::Items => self.tally.count(Over::Items),
-            Node::Content => self.tally.count(Over::Blocks),
+            Node::Items(_) => self.tally.count(Over::Items),
+            Node::Content(_) => self.tally.count(Over::Blocks),
             Node::Inputs | Node::Input => self.tally.count(Over::Inputs),
             _ => Ok(()),
         }
@@ -192,23 +257,29 @@ impl<'de> Visitor<'de> for Walk<'_> {
 
     fn visit_seq<A: SeqAccess<'de>>(mut self, mut seq: A) -> Result<(), A::Error> {
         let (counted, element) = match self.node {
-            Node::Items => (Some(Over::Items), Some(Node::Item)),
-            Node::Content => (Some(Over::Blocks), Some(Node::Block)),
+            Node::Items(d) => (Some(Over::Items), Some(Node::Item(d))),
+            Node::Content(scope) => (Some(Over::Blocks), Some(Node::Block(scope))),
             Node::Tools => (Some(Over::Tools), None),
             Node::Inputs => (None, Some(Node::Input)),
             Node::Input => {
                 self.tally.count(Over::Inputs)?;
-                (None, None)
+                (None, Some(Node::Token))
             }
-            Node::Top(_) | Node::Item | Node::Block => (None, None),
+            Node::Top(_) | Node::Item(_) | Node::Block(_) | Node::Token => (None, None),
         };
         loop {
-            if self.node == Node::Items {
+            if matches!(self.node, Node::Items(_)) {
                 self.tally.in_message = 0;
             }
             let more = match element {
+                Some(node @ (Node::Item(_) | Node::Block(_))) if !self.kept => seq
+                    .next_element_seed(Element {
+                        node,
+                        tally: &mut *self.tally,
+                    })?
+                    .is_some(),
                 Some(node) => seq.next_element_seed(self.at(node))?.is_some(),
-                None => seq.next_element_seed(Opaque(&mut *self.tally))?.is_some(),
+                None => seq.next_element_seed(self.opaque())?.is_some(),
             };
             if !more {
                 return Ok(());
@@ -220,32 +291,96 @@ impl<'de> Visitor<'de> for Walk<'_> {
     }
 
     fn visit_map<A: MapAccess<'de>>(mut self, mut map: A) -> Result<(), A::Error> {
-        if self.node == Node::Content {
+        if matches!(self.node, Node::Content(_)) {
             self.tally.count(Over::Blocks)?;
         }
+        let typed_object = !self.kept && matches!(self.node, Node::Item(_) | Node::Block(_));
         while let Some(Key(key)) = map.next_key::<Key<'de>>()? {
             match child(self.node, &key) {
+                Some(_) if typed_object && key == "content" && self.nests.is_some() => {
+                    let node = Node::Content(self.nests);
+                    map.next_value_seed(self.at(node))?;
+                }
+                Some(node) if typed_object => map.next_value_seed(Kept {
+                    node,
+                    tally: &mut *self.tally,
+                })?,
                 Some(node) => {
                     if matches!(self.node, Node::Top(_)) {
                         self.tally.in_message = 0;
                     }
                     map.next_value_seed(self.at(node))?;
                 }
-                None => map.next_value_seed(Opaque(&mut *self.tally))?,
+                None => map.next_value_seed(self.opaque())?,
             }
         }
         Ok(())
     }
 }
 
-struct Opaque<'t>(&'t mut Tally);
+struct Element<'t> {
+    node: Node,
+    tally: &'t mut Tally,
+}
+
+impl<'de> DeserializeSeed<'de> for Element<'_> {
+    type Value = ();
+
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
+        let (kept, nests) = match self.node.form(raw) {
+            Form::Raw => {
+                self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+                (true, None)
+            }
+            Form::Typed => (false, None),
+            Form::Nests(scope) => (false, Some(scope)),
+        };
+        Walk {
+            node: self.node,
+            tally: self.tally,
+            kept,
+            nests,
+        }
+        .walk_raw(raw)
+    }
+}
+
+struct Kept<'t> {
+    node: Node,
+    tally: &'t mut Tally,
+}
+
+impl<'de> DeserializeSeed<'de> for Kept<'_> {
+    type Value = ();
+
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
+        self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+        Walk {
+            node: self.node,
+            tally: self.tally,
+            kept: true,
+            nests: None,
+        }
+        .walk_raw(raw)
+    }
+}
+
+struct Opaque<'t> {
+    tally: &'t mut Tally,
+    kept: bool,
+}
 
 impl<'de> DeserializeSeed<'de> for Opaque<'_> {
     type Value = ();
 
     fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        if self.kept {
+            return <IgnoredAny as serde::Deserialize<'de>>::deserialize(d).map(|_| ());
+        }
         let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
-        self.0.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+        self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
         Ok(())
     }
 }
@@ -324,6 +459,8 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
     let walked = Walk {
         node: Node::Top(dialect),
         tally: &mut tally,
+        kept: false,
+        nests: None,
     }
     .deserialize(&mut de);
     match (walked, tally.over) {

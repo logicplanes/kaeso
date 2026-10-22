@@ -17,6 +17,8 @@ const PER_EMBEDDING_BODY_BYTE: u64 = 20;
 const PER_ITEM: u64 = 4 * KIB;
 const PER_BLOCK: u64 = 2 * KIB;
 const PER_TOOL: u64 = KIB;
+// A decoded embedding input holds each token id as a u32.
+const PER_TOKEN: u64 = 4;
 
 pub const WAIT: Duration = Duration::from_secs(10);
 
@@ -45,7 +47,9 @@ pub fn estimate(kind: RequestKind, shape: &RequestShape) -> u64 {
 }
 
 pub fn decoded(shape: &RequestShape) -> u64 {
-    count(shape.bytes).saturating_add(structure(shape))
+    count(shape.bytes)
+        .saturating_add(count(shape.tokens).saturating_mul(PER_TOKEN))
+        .saturating_add(structure(shape))
 }
 
 type Holders = Arc<Mutex<HashMap<Uuid, Arc<Semaphore>>>>;
@@ -200,6 +204,9 @@ mod tests {
             1000 + 2 * 4096 + 3 * 2048 + 1024
         );
         assert_eq!(decoded(&shape(usize::MAX, 1, 0, 0)), u64::MAX);
+        let mut ids = shape(2000, 1, 0, 0);
+        ids.tokens = 1000;
+        assert_eq!(decoded(&ids), 2000 + 4 * 1000 + 4096);
     }
 
     #[test]
