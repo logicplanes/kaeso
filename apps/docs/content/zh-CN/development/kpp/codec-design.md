@@ -101,6 +101,9 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 | `MAX_BLOCKS_PER_MESSAGE` | 10,000 | 单条消息、输入项或系统提示词中的内容块，包括其工具结果中的内容块 | 远高于任何服务商对每个请求中图片或文档数量的限制 |
 | `MAX_TOOLS` | 10,000 | `tools`，以及 Chat 的 `functions` | Anthropic 工具搜索的目录规模 |
 | `MAX_EMBEDDING_INPUTS` | 2,048 | OpenAI Embeddings 中 `input` 数组的输入 | OpenAI 最多 2,048 个输入的限制 |
+| `MAX_DEPTH` | 127 | 正文中任意位置对象和数组的嵌套层数，最外层对象也计入 | serde_json 在其 128 层递归上限内能完整解析的最大层数 |
+
+serde 跳过被忽略的值和原始值时不受其递归上限约束，否则编解码器可能以每层一个栈帧的方式遍历任意深度的原始值。`request_shape` 在一次遍历字节时统计字符串之外的深度，并拒绝更深的正文，不给出 `param`。Responses 编解码器与其规范编码的比较同样在 `MAX_DEPTH` 处停止，并把服务商回复的其余部分保留为原始值，因此深层回复也不会让栈溢出。
 
 不是 JSON 的正文，或结构不像该方言请求的正文，会尽可能统计，随后由解码报告问题所在。像 `"messages"` 这样经过转义的键，按其表示的键统计。`request_shape` 还会以 `RequestShape` 返回统计结果，使网关能在解码之前估算请求的内存。
 
