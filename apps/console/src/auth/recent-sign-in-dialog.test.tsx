@@ -397,6 +397,55 @@ describe("confirming through one of several identity providers", () => {
   });
 });
 
+describe("signing in again from the organization that manages the account", () => {
+  const managed = {
+    session: { ...whoAmI().session, method: "oidc", sso_org: ACME_ID.org_id },
+    managed_by: { org: ACME_ID.org_id, name: "Acme" },
+  };
+
+  it("offers its identity provider first, then the password and an email link", async () => {
+    needsRecentSignIn({ session: managed, ways: { password: true, magic_link: true, sso: [ACME_ID] } });
+    on("POST", "auth/password", signedInReply());
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
+    expect(within(box).getByRole("button", { name: "Email me a sign-in link instead" })).toBeInTheDocument();
+    expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
+    await user.click(within(box).getByRole("button", { name: "Use your password instead" }));
+    await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
+    await user.click(within(box).getByRole("button", { name: "Sign in" }));
+    expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
+  });
+
+  it("puts the managing organization's provider ahead of the others", async () => {
+    const globex = { org_id: "org_01hxglobex", org_name: "Globex", provider_name: null };
+    needsRecentSignIn({ session: managed, ways: { password: false, magic_link: false, sso: [globex, ACME_ID] } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
+    expect(within(box).getByRole("button", { name: "Continue with Globex instead" })).toBeInTheDocument();
+  });
+
+  it("asks for the password first when the provider can't confirm", async () => {
+    needsRecentSignIn({ session: managed, ways: { password: true, magic_link: true, sso: [] } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: "Use your password instead" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the password first for a session from another organization's provider", async () => {
+    needsRecentSignIn({
+      session: { ...managed, managed_by: { org: "org_01hxglobex", name: "Globex" } },
+      ways: { password: true, magic_link: false, sso: [ACME_ID] },
+    });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
+    expect(within(box).getByRole("button", { name: "Continue with Acme ID instead" })).toBeInTheDocument();
+  });
+});
+
 describe("an account without an email address", () => {
   it("is asked to sign in again as itself at its identity provider", async () => {
     needsRecentSignIn({ session: { user: { ...whoAmI().user, email: null } }, ways: { password: false, magic_link: false, sso: [ACME_ID] } });

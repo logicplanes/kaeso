@@ -69,6 +69,8 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 
 Through single sign-on, the console opens your identity provider in a small window and asks you to sign in there again. The page and what you entered stay as they are, and the action continues once you have. Only your own linked identity confirms, from a fresh sign-in, and a refusal says why. When the browser blocks the window, the console goes to the provider in this tab and brings you back to the page. A confirmation through an organization's provider makes the session one from that organization's single sign-on.
 
+When you signed in through the provider of the organization that manages your account, the console offers that provider first, and **Use your password instead** or a sign-in link beside it. A provider that can't confirm a recent sign-in isn't offered, and the console asks for your password first.
+
 ## After signing in through single sign-on
 
 When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements, and changes to your account, which still need a recent sign-in. Instance administration needs another sign-in, unless an instance admin chose the organization for it.

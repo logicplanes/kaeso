@@ -16387,7 +16387,7 @@
             "items": {
               "$ref": "#/components/schemas/ConfirmSsoView"
             },
-            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO. A provider\nwhose ID tokens are known to leave out `auth_time` can't confirm and isn't\nlisted (`sends_auth_time` in `GET orgs/{org}/security`)."
+            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO. A provider\nwhose ID tokens are known to leave out `auth_time` can't confirm and isn't\nlisted (`sends_auth_time` in `GET orgs/{org}/security`). The org that\nmanages the account comes first."
           }
         }
       },
