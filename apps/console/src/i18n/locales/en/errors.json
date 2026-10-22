@@ -26,6 +26,7 @@
   "errors.apiKeyOrgDeleting": "This organization is scheduled for deletion; its keys no longer work.",
   "errors.apiKeyOwnerInactive": "The account or service account this key belongs to is no longer active.",
   "errors.apiKeyProjectArchived": "This key's project is archived; its keys no longer work.",
+  "errors.appCodesLocked": "Codes from your app are locked after too many wrong ones; use a recovery code.",
   "errors.archivedNotDefault": "An archived project cannot be the default.",
   "errors.bearerKey": "Send the key as `Authorization: Bearer <key>`.",
   "errors.bodyNotJson": "The body is not valid JSON.",

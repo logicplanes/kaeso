@@ -39,7 +39,7 @@ A sign-in link first shows the account it signs in to. Choose **Sign in** only i
 
 Setting it up needs a sign-in from the last 15 minutes. **Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication after you enter a current code or a recovery code. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
 
-A sign-in takes up to three codes; after three wrong ones, start again with your password or a sign-in link. After 10 wrong codes in a row, codes from the app stop working, and Kaeso emails you, and again after every 10 more. A recovery code still signs you in and unlocks the app's codes, and so does resetting your password by email.
+A sign-in takes up to three codes; after three wrong ones, start again with your password or a sign-in link. After 10 wrong codes in a row, at sign-in or when you confirm a change in your account, codes from the app stop working, and Kaeso emails you, and again after every 10 more. A recovery code still signs you in and unlocks the app's codes, and so does resetting your password by email.
 
 ## Link single sign-on
 

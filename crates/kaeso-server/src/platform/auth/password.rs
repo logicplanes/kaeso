@@ -304,7 +304,7 @@ fn codes_locked() -> ApiError {
     )
 }
 
-async fn failed_code(state: &AppState, ctx: &Ctx, user: UserId) -> ApiResult<i32> {
+pub(crate) async fn failed_code(state: &AppState, ctx: &Ctx, user: UserId) -> ApiResult<i32> {
     let failed = totp::count_failed_code(&state.pg, user.uuid()).await?;
     if failed >= CODES_BEFORE_LOCK && failed % CODES_BEFORE_LOCK == 0 {
         tracing::warn!(user = %user, failed, "authenticator codes locked after wrong codes");

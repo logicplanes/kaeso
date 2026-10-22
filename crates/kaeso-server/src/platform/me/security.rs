@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 use crate::auth::sessions::{self, Method, SignIn};
 use crate::auth::totp::{Factor, SecondFactorError, aad, check_code, new_recovery_codes};
 use crate::platform::access::Ctx;
-use crate::platform::auth::password::Attempts;
+use crate::platform::auth::password::{Attempts, CODES_BEFORE_LOCK, failed_code};
 use crate::platform::auth::setup::hash_password;
 use crate::platform::auth::start_session_until;
 use crate::platform::error::{ApiError, ApiResult};
@@ -58,17 +58,34 @@ pub(crate) async fn require_second_factor(
     };
     let attempts = Attempts::for_user(ctx, user);
     attempts.begin(state).await?;
+    let app_code = matches!(factor, Factor::Code(_));
+    if app_code && totp::failed_codes(&state.pg, user.uuid()).await? >= CODES_BEFORE_LOCK {
+        failed_code(state, ctx, user).await?;
+        return Err(app_codes_locked());
+    }
     match crate::auth::totp::check(state, user, factor).await {
         Ok(()) => {
+            totp::clear_failed_codes(&state.pg, user.uuid()).await?;
             attempts.succeeded(state).await;
             Ok(())
         }
-        Err(SecondFactorError::Invalid) => Err(ApiError::invalid(
-            "code",
-            "That code isn't valid or was already used.",
-        )),
+        Err(SecondFactorError::Invalid) => {
+            let failed = failed_code(state, ctx, user).await?;
+            Err(if app_code && failed >= CODES_BEFORE_LOCK {
+                app_codes_locked()
+            } else {
+                ApiError::invalid("code", "That code isn't valid or was already used.")
+            })
+        }
         Err(e) => Err(ApiError::internal(e)),
     }
+}
+
+fn app_codes_locked() -> ApiError {
+    ApiError::invalid(
+        "code",
+        "Codes from your app are locked after too many wrong ones; use a recovery code.",
+    )
 }
 
 fn method_of(name: &str) -> Method {

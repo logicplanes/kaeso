@@ -1097,3 +1097,59 @@ async fn a_password_reset_by_email_unlocks_app_codes() {
         .expect_status(StatusCode::OK);
     s.cleanup().await;
 }
+
+const APP_CODES_LOCKED: &str =
+    "Codes from your app are locked after too many wrong ones; use a recovery code.";
+
+#[tokio::test]
+async fn security_changes_count_wrong_codes_and_keep_to_their_lock() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (cookie, secret, recovery) = totp_with_recovery_codes(&app, &owner.cookie).await;
+    next_step(&app).await;
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+    for n in 1..=3 {
+        let ip = format!("2001:db8:3:{n}::1");
+        let challenge = password_challenge(&app, &ip, PASSWORD).await;
+        for _ in 0..3 {
+            answer(&app, &ip, &challenge, bad.clone())
+                .await
+                .expect_status(StatusCode::UNAUTHORIZED);
+        }
+    }
+    let turn_off = |factor: Value| {
+        let app = &app;
+        let cookie = cookie.clone();
+        async move {
+            app.call(Method::DELETE, "/me/totp", Some(factor), Some(&cookie))
+                .await
+        }
+    };
+    let before = app.mail.to(OWNER).len();
+    let r = turn_off(bad.clone())
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (&r.body["error"]["message"], &r.body["error"]["param"]),
+        (&json!(APP_CODES_LOCKED), &json!("code")),
+        "the tenth wrong code in a row locks app codes, wherever it was entered"
+    );
+    app.wait_for_mail(OWNER, before + 1).await;
+    assert_eq!(locked_emails(&app).len(), 1);
+
+    let r = turn_off(json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        r.body["error"]["message"], APP_CODES_LOCKED,
+        "a right code from the app doesn't pass the lock"
+    );
+    let challenge = password_challenge(&app, "2001:db8:3:9::1", PASSWORD).await;
+    assert_eq!(challenge["codes_locked"], true);
+
+    turn_off(json!({ "recovery_code": recovery[0] }))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}

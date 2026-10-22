@@ -381,6 +381,7 @@
   "errors.apiKeyExpired": "此 API 密钥已过期。",
   "errors.apiKeyOrgDeleting": "此组织已计划删除，其密钥已失效。",
   "errors.apiKeyProjectArchived": "此密钥所属的项目已归档，其密钥已失效。",
+  "errors.appCodesLocked": "输错次数过多，验证器应用的验证码已锁定；请使用恢复码。",
   "errors.apiKeyOwnerInactive": "此密钥所属的账户或服务账号已不再有效。",
   "errors.limitsUnavailable": "Kaeso 暂时无法检查此项目的限额，请稍后重试。",
   "errors.inviteMaxProjects": "一个邀请最多可指定 {max} 个项目。",

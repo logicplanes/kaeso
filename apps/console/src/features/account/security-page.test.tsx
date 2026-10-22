@@ -376,6 +376,24 @@ describe("with two-factor authentication on", () => {
     expect(screen.getByRole("dialog", { name: "Turn off two-factor authentication?" })).toBeInTheDocument();
   });
 
+  it("says in the person's language when codes from the app are locked", async () => {
+    signedIn();
+    on("GET", "me", me({ totp_enabled: true }));
+    on(
+      "DELETE",
+      "me/totp",
+      apiError(400, "invalid_request", "Codes from your app are locked after too many wrong ones; use a recovery code.", { param: "code" }),
+    );
+    const { user } = await renderApp(PATH, { locale: "de" });
+    await user.click(await screen.findByRole("button", { name: "Ausschalten" }));
+    const confirm = await screen.findByRole("dialog", { name: "Zwei-Faktor-Authentifizierung ausschalten?" });
+    await user.type(within(confirm).getByLabelText("Code aus der App"), "123456");
+    await user.click(within(confirm).getByRole("button", { name: "Ausschalten" }));
+    expect(
+      (await screen.findAllByText("Codes aus Ihrer App sind nach zu vielen falschen gesperrt; einen Wiederherstellungscode verwenden.")).length,
+    ).toBeGreaterThan(0);
+  });
+
   it("regenerates the recovery codes", async () => {
     signedIn();
     on("GET", "me", me({ totp_enabled: true }));

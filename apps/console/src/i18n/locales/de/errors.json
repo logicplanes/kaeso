@@ -381,6 +381,7 @@
   "errors.apiKeyExpired": "Dieser API-Schlüssel ist abgelaufen.",
   "errors.apiKeyOrgDeleting": "Diese Organisation ist zur Löschung vorgemerkt; ihre Schlüssel funktionieren nicht mehr.",
   "errors.apiKeyProjectArchived": "Das Projekt dieses Schlüssels ist archiviert; seine Schlüssel funktionieren nicht mehr.",
+  "errors.appCodesLocked": "Codes aus Ihrer App sind nach zu vielen falschen gesperrt; einen Wiederherstellungscode verwenden.",
   "errors.apiKeyOwnerInactive": "Das Konto oder Dienstkonto, zu dem dieser Schlüssel gehört, ist nicht mehr aktiv.",
   "errors.limitsUnavailable": "Kaeso kann die Limits dieses Projekts gerade nicht prüfen; gleich erneut versuchen.",
   "errors.inviteMaxProjects": "Eine Einladung kann höchstens {max} Projekte nennen.",
