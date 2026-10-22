@@ -4,6 +4,13 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Self-hosting
+
+- This release changes `compose.yaml` beyond its image versions, so it installs by hand: download the release's `compose.yaml`, then run `docker compose up -d --wait`. With the updater, add `KAESO_DIR` (the install's folder) to `.env` first, or `docker-proxy` won't start. The `edge` network now has a fixed subnet, `EDGE_SUBNET` (`172.30.83.0/24` by default); set another in `.env` if that range is taken on the server. Behind your own reverse proxy, set `KAESO_TRUSTED_PROXIES` to the proxy's address, since only loopback and the `edge` network are trusted by default.
+- Keep the master keys private: `sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys` on Linux, or only `chmod 0400 master-keys` on Docker Desktop and Colima.
+
 ### Added
 
 #### Console
