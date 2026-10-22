@@ -68,6 +68,7 @@ async fn connect(app: &App, org: &str, idp: &MockIdp) {
             display_name: None,
             auto_redirect: false,
             require_email_verified: true,
+            sends_auth_time: None,
         },
     )
     .await

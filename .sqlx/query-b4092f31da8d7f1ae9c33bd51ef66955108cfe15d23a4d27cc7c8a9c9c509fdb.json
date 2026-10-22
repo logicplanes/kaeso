@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", verification_token, display_name, auto_redirect, require_email_verified FROM org_oidc",
+  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", verification_token, display_name, auto_redirect, require_email_verified, sends_auth_time FROM org_oidc",
   "describe": {
     "columns": [
       {
@@ -135,6 +135,17 @@
             "name": "require_email_verified"
           }
         }
+      },
+      {
+        "ordinal": 13,
+        "name": "sends_auth_time",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "org_oidc",
+            "name": "sends_auth_time"
+          }
+        }
       }
     ],
     "parameters": {
@@ -153,8 +164,9 @@
       false,
       true,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "de1ca4652e8c53de4c44fab4bfa68acd247daffd8989660f3c1b688bba480e11"
+  "hash": "b4092f31da8d7f1ae9c33bd51ef66955108cfe15d23a4d27cc7c8a9c9c509fdb"
 }

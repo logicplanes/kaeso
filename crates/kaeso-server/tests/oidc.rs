@@ -65,6 +65,7 @@ async fn connect_org_with(
             display_name: name.map(str::to_owned),
             auto_redirect,
             require_email_verified: true,
+            sends_auth_time: None,
         },
     )
     .await
@@ -2054,7 +2055,7 @@ async fn an_sso_sign_in_is_only_as_recent_as_the_sign_in_at_the_provider() {
     .await;
     assert_eq!(
         location(&r),
-        format!("{ORIGIN}/orgs/x/providers#sso_error=stale_sign_in"),
+        format!("{ORIGIN}/orgs/x/providers#sso_error=no_auth_time"),
         "a confirmation without auth_time can't prove a fresh sign-in"
     );
     assert!(r.cookie().is_none());
@@ -2092,5 +2093,184 @@ async fn an_account_without_a_password_is_offered_one_by_email_to_confirm_with()
     assert_eq!(ways.body["password"], false);
     assert_eq!(ways.body["set_password"], true);
     assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
+
+    oidc::record_auth_time(
+        &app.state.pg,
+        common::uuid(&owner.org_id),
+        idp.issuer(),
+        false,
+    )
+    .await
+    .unwrap();
+    let ways = app
+        .get("/me/sign-in-again", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(ways.body["sso"], json!([]));
+    assert_eq!(
+        ways.body["set_password"], true,
+        "without a provider that can confirm, the account is still offered a password"
+    );
+    s.cleanup().await;
+}
+
+async fn sends_auth_time(app: &App, owner: &Owner) -> serde_json::Value {
+    app.get(&format!("/orgs/{}/security", owner.org_id), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK)
+        .body["sso"]["sends_auth_time"]
+        .clone()
+}
+
+async fn confirming_providers(app: &App, cookie: &str) -> Vec<String> {
+    app.get("/me/sign-in-again", cookie)
+        .await
+        .expect_status(StatusCode::OK)
+        .body["sso"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|s| s["provider_name"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_sign_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(
+        &app,
+        &owner.org_id,
+        &idp,
+        "acme.example",
+        Some("Acme ID"),
+        false,
+    )
+    .await;
+    assert_eq!(sends_auth_time(&app, &owner).await, json!(null));
+
+    idp.set_fault(Fault::NoAuthTime);
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let sso = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    assert_eq!(
+        sends_auth_time(&app, &owner).await,
+        json!(null),
+        "without max_age a provider may leave auth_time out, so a sign-in proves nothing"
+    );
+    assert_eq!(confirming_providers(&app, &sso).await, ["Acme ID"]);
+
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &sso,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    refused_with(&r, "no_auth_time");
+    assert_eq!(app.get("/auth/session", &sso).await.status, StatusCode::OK);
+    assert_eq!(sends_auth_time(&app, &owner).await, json!(false));
+    let ways = app
+        .get("/me/sign-in-again", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        ways.body["sso"],
+        json!([]),
+        "a provider that can't confirm isn't offered again"
+    );
+    assert_eq!(ways.body["password"], true, "the password still confirms");
+    let linked = app
+        .get("/me/sso-links", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        linked.body["data"][0]["linked"], true,
+        "the account stays linked and signs in through it"
+    );
+
+    sso_as(&app, &idp, "sub-owner", "owner@acme.example").await;
+    assert_eq!(
+        sends_auth_time(&app, &owner).await,
+        json!(false),
+        "another sign-in without auth_time changes nothing"
+    );
+
+    idp.set_fault(Fault::None);
+    let fresh = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    assert_eq!(sends_auth_time(&app, &owner).await, json!(true));
+    assert_eq!(confirming_providers(&app, &fresh).await, ["Acme ID"]);
+    app.clock.advance(time::Duration::minutes(16));
+    let (_, r) = confirm_as(
+        &app,
+        &idp,
+        &fresh,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    assert_eq!(location(&r), format!("{ORIGIN}/orgs/x/providers"));
+    assert!(r.cookie().is_some(), "the provider confirms again");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_new_issuer_or_client_id_forgets_whether_tokens_carry_auth_time() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    let sso = format!("/orgs/{}/security/sso", owner.org_id);
+    let save = |client_id: &'static str, secret: Option<&'static str>| {
+        let mut body =
+            json!({ "issuer": idp.issuer(), "client_id": client_id, "domains": ["acme.example"] });
+        if let Some(secret) = secret {
+            body["client_secret"] = json!(secret);
+        }
+        app.call(
+            axum::http::Method::PUT,
+            &sso,
+            Some(body),
+            Some(&owner.cookie),
+        )
+    };
+    oidc::record_auth_time(
+        &app.state.pg,
+        common::uuid(&owner.org_id),
+        idp.issuer(),
+        false,
+    )
+    .await
+    .unwrap();
+
+    let kept = save("kaeso", None).await.expect_status(StatusCode::OK);
+    assert_eq!(
+        kept.body["sso"]["sends_auth_time"],
+        json!(false),
+        "the same provider and app keep what their tokens showed"
+    );
+    let changed = save("kaeso-new", Some("client-secret"))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(changed.body["sso"]["sends_auth_time"], json!(null));
     s.cleanup().await;
 }

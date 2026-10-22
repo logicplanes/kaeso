@@ -88,12 +88,14 @@ pub struct Linkable {
     pub org_name: String,
     pub provider_name: Option<String>,
     pub linked_at: Option<OffsetDateTime>,
+    pub sends_auth_time: Option<bool>,
 }
 
 pub async fn linkable(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<Vec<Linkable>, StoreError> {
     Ok(sqlx::query_as!(
         Linkable,
-        "SELECT o.id AS org_id, o.name AS org_name, c.display_name AS provider_name, i.linked_at \
+        "SELECT o.id AS org_id, o.name AS org_name, c.display_name AS provider_name, i.linked_at, \
+         c.sends_auth_time \
          FROM org_memberships m \
          JOIN organizations o ON o.id = m.org_id \
          JOIN org_oidc c ON c.org_id = m.org_id \

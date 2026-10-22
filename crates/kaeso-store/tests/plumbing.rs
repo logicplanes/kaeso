@@ -329,6 +329,7 @@ async fn an_sso_domain_signs_in_through_one_organization() {
         display_name: Some("Acme ID".into()),
         auto_redirect: true,
         require_email_verified: true,
+        sends_auth_time: None,
     };
     let mut conn = s.pg.acquire().await.unwrap();
     assert_eq!(

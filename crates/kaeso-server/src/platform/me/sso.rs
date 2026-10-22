@@ -172,7 +172,9 @@ pub struct ConfirmWays {
     #[doc = "With a sign-in link sent to the account's verified email address."]
     pub magic_link: bool,
     #[doc = "Through these orgs' identity providers, which the account is linked to; a\n\
-        confirmation there makes the session one from that org's SSO."]
+        confirmation there makes the session one from that org's SSO. A provider\n\
+        whose ID tokens are known to leave out `auth_time` can't confirm and isn't\n\
+        listed (`sends_auth_time` in `GET orgs/{org}/security`)."]
     pub sso: Vec<ConfirmSsoView>,
     #[doc = "The account has no password yet but can set one through a link sent to its\n\
         email address (`POST auth/password-reset`), then confirm with it."]
@@ -209,7 +211,7 @@ pub async fn confirm_ways(
     let sso = sso_identities::linkable(&state.pg, me.uuid())
         .await?
         .into_iter()
-        .filter(|r| r.linked_at.is_some())
+        .filter(|r| r.linked_at.is_some() && r.sends_auth_time != Some(false))
         .map(|r| ConfirmSsoView {
             org_id: OrgId::from_uuid(r.org_id),
             org_name: r.org_name,
@@ -256,7 +258,9 @@ pub struct ConfirmRequest {
     description = "Only the same account, from a fresh sign-in at the provider, confirms: the \
     session is replaced by a new one from that org's SSO, signed in now, and the browser comes \
     back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, \
-    such as `other_account`, `link_required` or `stale_sign_in`.",
+    such as `other_account`, `link_required` or `stale_sign_in`. `no_auth_time` means the \
+    provider's answer didn't say when the person signed in; the org's connection is then marked \
+    so, and `GET me/sign-in-again` stops offering it.",
     tag = "me",
     request_body = ConfirmRequest,
     responses((status = 200, body = StartResponse))
