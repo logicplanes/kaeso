@@ -267,7 +267,7 @@ jobs:
           set -euo pipefail
           node scripts/version.mjs set "$VERSION"
           mkdir -p "$RUNNER_TEMP/versions"
-          git diff -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/versions/versions.patch"
+          git diff --full-index -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/versions/versions.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-versions
@@ -336,7 +336,7 @@ jobs:
             fi
             git apply --index "$patch"
           fi
-          git diff --cached -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/release/versions.patch"
+          git diff --cached --full-index -- . ':(exclude)CHANGELOG.md' > "$RUNNER_TEMP/release/versions.patch"
           if ! cmp -s "$RUNNER_TEMP/versions/versions.patch" "$RUNNER_TEMP/release/versions.patch"; then
             echo "::error::Beyond CHANGELOG.md, the release changes differ from what node scripts/version.mjs set $VERSION writes on its own, so nothing was committed."
             diff "$RUNNER_TEMP/versions/versions.patch" "$RUNNER_TEMP/release/versions.patch" || true
