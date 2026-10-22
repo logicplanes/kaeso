@@ -182,7 +182,8 @@ pub struct ConfirmWays {
     #[doc = "Through these orgs' identity providers, which the account is linked to; a\n\
         confirmation there makes the session one from that org's SSO. A provider\n\
         whose ID tokens are known to leave out `auth_time` can't confirm and isn't\n\
-        listed (`sends_auth_time` in `GET orgs/{org}/security`)."]
+        listed (`sends_auth_time` in `GET orgs/{org}/security`). The org that\n\
+        manages the account comes first."]
     pub sso: Vec<ConfirmSsoView>,
     #[doc = "The account has no password yet but can set one through a link sent to its\n\
         email address (`POST auth/password-reset`), then confirm with it."]
@@ -225,12 +226,15 @@ pub async fn confirm_ways(State(state): State<AppState>, ctx: Ctx) -> ApiResult<
         Some(email) => crate::services::managed::of_address(&state.pg, email).await?,
         None => None,
     };
-    if let Some(manager) = manager.filter(|m| m.require_sso) {
-        ways.password = false;
-        ways.magic_link = false;
-        ways.set_password = false;
-        ways.sso
-            .retain(|s| s.org_id == OrgId::from_uuid(manager.org_id));
+    if let Some(manager) = &manager {
+        let managing = OrgId::from_uuid(manager.org_id);
+        ways.sso.sort_by_key(|s| s.org_id != managing);
+        if manager.require_sso {
+            ways.password = false;
+            ways.magic_link = false;
+            ways.set_password = false;
+            ways.sso.retain(|s| s.org_id == managing);
+        }
     }
     Ok(Json(ways))
 }

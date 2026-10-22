@@ -2765,3 +2765,80 @@ async fn the_identity_provider_owns_a_managed_accounts_address() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn signing_in_again_offers_the_managing_orgs_provider_first() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let acme_idp = MockIdp::start("kaeso", "client-secret").await;
+    let beta_idp = MockIdp::start("kaeso", "client-secret").await;
+    let beta = app
+        .post("/me/orgs", json!({ "name": "Beta" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let beta = beta.body["id"].as_str().unwrap().to_owned();
+    connect_org(&app, &owner.org_id, &acme_idp, "acme.example", None, false).await;
+    connect_org(
+        &app,
+        &beta,
+        &beta_idp,
+        "example.com",
+        Some("Beta ID"),
+        false,
+    )
+    .await;
+    link_account(
+        &app,
+        &acme_idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-acme",
+        "owner@acme.example",
+    )
+    .await;
+    link_account(
+        &app,
+        &beta_idp,
+        &owner.cookie,
+        &beta,
+        "sub-beta",
+        "owner@example.com",
+    )
+    .await;
+    let orgs_offered = |r: &common::Resp| -> Vec<String> {
+        r.body["sso"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["org_name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+
+    let ways = app
+        .get("/me/sign-in-again", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        orgs_offered(&ways),
+        ["Beta", "Acme"],
+        "Beta manages the account, so it comes first"
+    );
+    assert_eq!(
+        (&ways.body["password"], &ways.body["magic_link"]),
+        (&json!(true), &json!(true))
+    );
+
+    sqlx::query("UPDATE org_oidc SET sends_auth_time = false WHERE org_id = $1")
+        .bind(common::uuid(&beta))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let ways = app.get("/me/sign-in-again", &owner.cookie).await;
+    assert_eq!(
+        orgs_offered(&ways),
+        ["Acme"],
+        "a provider known to leave out auth_time can't confirm"
+    );
+    s.cleanup().await;
+}
