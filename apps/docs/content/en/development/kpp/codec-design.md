@@ -101,6 +101,9 @@ Decoding a request costs far more memory than its body: every message, content b
 | `MAX_BLOCKS_PER_MESSAGE` | 10,000 | Content blocks of one message, input item or system prompt, with the blocks inside its tool results | Far above any provider's image or document limit per request |
 | `MAX_TOOLS` | 10,000 | `tools`, and Chat's `functions` | The catalog size of Anthropic's tool search |
 | `MAX_EMBEDDING_INPUTS` | 2,048 | Inputs of an OpenAI Embeddings `input` array | OpenAI's limit of 2,048 inputs |
+| `MAX_DEPTH` | 127 | Levels of objects and arrays anywhere in the body, the outermost object included | The most serde_json parses whole under its recursion limit of 128 |
+
+serde skips ignored and raw values without its recursion limit, so the codecs could otherwise walk a raw value of any depth one stack frame per level. `request_shape` counts the depth in one pass over the bytes, outside strings, and refuses a deeper body without `param`. The Responses codec's diff against its canonical encoding also stops at `MAX_DEPTH` and keeps the rest of a provider's reply raw, so a deep reply can't overflow the stack either.
 
 A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it.
 

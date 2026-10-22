@@ -31,7 +31,7 @@ Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.
 
 Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 8 MiB. Auf einen größeren antwortet Kaeso mit 413.
 
-KPP zählt, was der Body enthält, bevor es etwas decodiert. Mehr als 100.000 Nachrichten oder Eingabeelemente, 10.000 Inhaltsblöcke in einer Nachricht, 10.000 Werkzeuge oder 2.048 Embedding-Eingaben erhalten 400. Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen und Senden braucht. Solange die laufenden Anfragen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, wartet die Anfrage, bis sie fertig sind.
+KPP zählt, was der Body enthält, bevor es etwas decodiert. Mehr als 100.000 Nachrichten oder Eingabeelemente, 10.000 Inhaltsblöcke in einer Nachricht, 10.000 Werkzeuge, 2.048 Embedding-Eingaben oder mehr als 127 Ebenen verschachtelter Objekte und Arrays erhalten 400. Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen und Senden braucht. Solange die laufenden Anfragen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, wartet die Anfrage, bis sie fertig sind.
 
 Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions oder Messages, in sein kanonisches Format. Eine Anfrage, die sich nicht lesen lässt, lehnt Kaeso hier ab. Ebenso eine, die etwas verlangt, das Kaeso nie an einen Anbieter sendet, etwa mehr als eine Auswahl oder gespeicherten Responses-Zustand.
 

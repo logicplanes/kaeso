@@ -2,9 +2,58 @@
 
 mod common;
 
-use axum::http::StatusCode;
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
 use common::v1::{call, chat, messages};
+use http_body_util::BodyExt;
 use serde_json::{Value, json};
+use tower::ServiceExt;
+
+fn nested_text(levels: usize) -> Vec<u8> {
+    let open = r#"{"text":"#.repeat(levels);
+    format!(
+        r#"{{"model":"gpt-4o","input":"hi","text":{open}{{}}{}}}"#,
+        "}".repeat(levels)
+    )
+    .into_bytes()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_body_nested_thousands_deep_is_refused_and_the_gateway_keeps_serving() {
+    let env = common::v1::env(None, None).await;
+    env.mock.clear();
+    let body = nested_text(5_000);
+    assert!(body.len() < 64 << 10, "{} bytes", body.len());
+    let req = Request::builder()
+        .uri("/v1/responses")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .body(Body::from(body))
+        .unwrap();
+    let router = env.app.router.clone();
+    let resp = tokio::spawn(async move { router.oneshot(req).await.unwrap() })
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    let error: Value =
+        serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(error["error"]["type"], "invalid_request_error");
+    assert_eq!(
+        error["error"]["message"],
+        "The body nests more than 127 levels deep; Kaeso takes at most 127."
+    );
+    assert!(env.mock.received().is_empty());
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("gpt-4o", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+}
 
 fn tiny_items(n: usize) -> Value {
     json!({

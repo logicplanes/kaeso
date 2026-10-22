@@ -101,6 +101,9 @@ Eine Anfrage zu decodieren kostet weit mehr Speicher als ihr Body: Jede Nachrich
 | `MAX_BLOCKS_PER_MESSAGE` | 10.000 | Inhaltsblöcke einer Nachricht, eines Eingabeelements oder des System-Prompts, mit den Blöcken in ihren Werkzeugergebnissen | Weit über der Grenze jedes Anbieters für Bilder oder Dokumente pro Anfrage |
 | `MAX_TOOLS` | 10.000 | `tools` und `functions` von Chat | Die Kataloggröße der Werkzeugsuche von Anthropic |
 | `MAX_EMBEDDING_INPUTS` | 2.048 | Eingaben eines `input`-Arrays von OpenAI Embeddings | Die Grenze von OpenAI: 2.048 Eingaben |
+| `MAX_DEPTH` | 127 | Ebenen von Objekten und Arrays irgendwo im Body, das äußerste Objekt mitgezählt | So viel liest serde_json unter seiner Rekursionsgrenze von 128 vollständig |
+
+serde überspringt ignorierte und rohe Werte ohne seine Rekursionsgrenze, sonst könnten die Codecs einen rohen Wert beliebiger Tiefe mit einem Stack-Frame pro Ebene durchlaufen. `request_shape` zählt die Tiefe in einem Durchgang über die Bytes, außerhalb von Strings, und lehnt einen tieferen Body ohne `param` ab. Auch der Vergleich des Responses-Codecs mit seiner kanonischen Codierung hält bei `MAX_DEPTH` an und behält den Rest einer Antwort des Anbieters roh, damit auch eine tiefe Antwort den Stack nicht überlaufen lässt.
 
 Ein Body, der kein JSON ist oder nicht wie eine Anfrage des Dialekts aufgebaut ist, wird gezählt, soweit er sich lesen lässt, und das Decodieren meldet dann, was falsch ist. Ein maskierter Schlüssel wie `"messages"` zählt wie der Schlüssel, den er schreibt. `request_shape` gibt die Zählung auch als `RequestShape` zurück, damit das Gateway den Speicher einer Anfrage schätzen kann, bevor es sie decodiert.
 

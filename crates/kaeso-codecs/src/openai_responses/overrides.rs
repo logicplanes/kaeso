@@ -5,6 +5,8 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::node::{Node, entries_of};
+use crate::limits::MAX_DEPTH;
+
 const SET: &str = "set";
 const UNSET: &str = "unset";
 const CANON: &str = "canon";
@@ -61,13 +63,17 @@ impl Overrides {
             }
         };
         for (path, raw, canon) in self.set {
-            let value = raw.to_value().unwrap_or(Value::Null);
             let key = full(&path);
-            let respelled = canon.as_ref().is_some_and(|c| values_equal(c, &value));
-            if respelled || is_form(&path, &value, canon.is_some()) {
-                form_set_insert(extras, key.clone(), value);
-            } else {
-                extras.fields.insert(key.clone(), raw);
+            match raw.to_value() {
+                Ok(value)
+                    if canon.as_ref().is_some_and(|c| values_equal(c, &value))
+                        || is_form(&path, &value, canon.is_some()) =>
+                {
+                    form_set_insert(extras, key.clone(), value);
+                }
+                _ => {
+                    extras.fields.insert(key.clone(), raw);
+                }
             }
             if let Some(c) = canon {
                 form_map_insert(extras, CANON, key, c);
@@ -152,6 +158,21 @@ fn diff_at(
     {
         return;
     }
+    if path.len() < MAX_DEPTH {
+        diff_children(canon, actual, path, keys, out);
+        return;
+    }
+    diff_whole(canon, actual, path, out);
+}
+
+fn diff_children(
+    canon: Option<&Node>,
+    actual: &RawValue,
+    path: &mut Vec<String>,
+    keys: &Keys<'_>,
+    out: &mut Overrides,
+) {
+    let text = actual.get().trim_start();
     let canon_obj = match canon {
         None => Some(Node::obj()),
         Some(n) => {
@@ -208,6 +229,10 @@ fn diff_at(
         }
         return;
     }
+    diff_whole(canon, actual, path, out);
+}
+
+fn diff_whole(canon: Option<&Node>, actual: &RawValue, path: &[String], out: &mut Overrides) {
     let canon_value = canon.and_then(|c| c.to_value().ok());
     let equal = match (&canon_value, serde_json::from_str::<Value>(actual.get())) {
         (Some(c), Ok(a)) => *c == a,
@@ -318,6 +343,11 @@ pub(crate) fn apply(
     };
     let pristine = node.clone();
     let fresh = |key: &str, segs: &[String]| -> bool {
+        // Decoding records no path deeper than MAX_DEPTH, and the Node walks recurse once
+        // per segment: a deeper key, only ever built by hand, would overflow the stack.
+        if segs.len() > MAX_DEPTH {
+            return false;
+        }
         let refs: Vec<&str> = segs.iter().map(String::as_str).collect();
         let now = pristine.value_at(&refs);
         match (canon.and_then(|m| m.get(key)), now) {

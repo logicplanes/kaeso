@@ -18,6 +18,10 @@ pub const MAX_TOOLS: usize = 10_000;
 /// The most inputs one OpenAI Embeddings request may hold: OpenAI's documented limit.
 pub const MAX_EMBEDDING_INPUTS: usize = 2_048;
 
+/// The deepest one request body may nest objects and arrays, the outermost object
+/// counted: the most serde_json parses whole under its recursion limit of 128.
+pub const MAX_DEPTH: usize = 127;
+
 /// What a request body holds, counted without decoding it.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
@@ -269,12 +273,19 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
 
 /// Counts the messages, content blocks and tools of a request body without decoding it,
 /// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`] or
-/// [`MAX_EMBEDDING_INPUTS`] with an `InvalidRequest` error that names the field.
+/// [`MAX_EMBEDDING_INPUTS`] with an `InvalidRequest` error that names the field, and one
+/// that nests deeper than [`MAX_DEPTH`] with an `InvalidRequest` error.
 ///
 /// Every codec's `decode_request` runs this first. A body that is not JSON, or not shaped
 /// like the dialect's request, is counted as far as it can be read, and decoding it then
 /// reports what is wrong.
 pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, KppError> {
+    if nests_deeper_than(body, MAX_DEPTH) {
+        return Err(KppError::invalid_request(format!(
+            "The body nests more than {MAX_DEPTH} levels deep; Kaeso takes at most {MAX_DEPTH}."
+        ))
+        .with_status(400));
+    }
     let mut tally = Tally::default();
     let mut de = serde_json::Deserializer::from_slice(body);
     let walked = Walk {
@@ -286,4 +297,35 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
         (Err(_), Some(over)) => Err(refusal(dialect, over)),
         _ => Ok(tally.shape),
     }
+}
+
+// serde_json skips ignored and raw values without its recursion limit, so the codecs'
+// walks over them would follow any depth; this scan keeps no stack to overflow.
+fn nests_deeper_than(body: &[u8], limit: usize) -> bool {
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for &byte in body {
+        if in_string {
+            match byte {
+                _ if escaped => escaped = false,
+                b'\\' => escaped = true,
+                b'"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match byte {
+            b'"' => in_string = true,
+            b'{' | b'[' => {
+                depth += 1;
+                if depth > limit {
+                    return true;
+                }
+            }
+            b'}' | b']' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    false
 }
