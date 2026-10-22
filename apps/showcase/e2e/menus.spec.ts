@@ -8,18 +8,18 @@ interface Frame {
 }
 
 const cases = [
-  { path: "/components/menu", trigger: "Key actions", header: false },
-  { path: "/components/menu/examples", trigger: "Ada Okafor", header: true },
-  { path: "/components/sidebar", trigger: /: switch project$/, header: false },
-  { path: "/components/sidebar", trigger: /: switch or open settings$/, header: true },
+  { path: "/components/menu", trigger: { name: "Key actions" }, header: false },
+  { path: "/components/menu/examples", trigger: { name: "Ada Okafor" }, header: true },
+  { path: "/components/sidebar", trigger: { description: "Switch project" }, header: false },
+  { path: "/components/sidebar", trigger: { description: "Switch or open settings" }, header: true },
 ] as const;
 
 test.use({ reducedMotion: "no-preference" });
 
 for (const menu of cases) {
-  test(`${menu.path} "${String(menu.trigger)}" opens in place`, async ({ page }) => {
+  test(`${menu.path} "${Object.values(menu.trigger)[0]}" opens in place`, async ({ page }) => {
     await open(page, menu.path);
-    const trigger = page.getByRole("button", { name: menu.trigger, exact: typeof menu.trigger === "string" }).first();
+    const trigger = page.getByRole("button", { ...menu.trigger, exact: true }).first();
     await trigger.scrollIntoViewIfNeeded();
     const recording = page.evaluate(
       () =>
@@ -84,13 +84,13 @@ function boxesAfterPress(page: Page) {
   );
 }
 
-for (const trigger of [/: switch project$/, /: switch or open settings$/]) {
-  test(`the sidebar menu "${String(trigger)}" on a slow machine loads while the page is idle and opens on the press`, async ({ page }) => {
+for (const trigger of ["Switch project", "Switch or open settings"]) {
+  test(`the sidebar menu "${trigger}" on a slow machine loads while the page is idle and opens on the press`, async ({ page }) => {
     await slowMachine(page);
     const preloaded = page.waitForResponse(SIDEBAR_MENU, { timeout: 15_000 });
     await open(page, "/components/sidebar");
     await preloaded;
-    const button = page.getByRole("button", { name: trigger }).first();
+    const button = page.getByRole("button", { description: trigger, exact: true }).first();
     await button.scrollIntoViewIfNeeded();
     const recording = boxesAfterPress(page);
     await button.click();
@@ -99,7 +99,7 @@ for (const trigger of [/: switch project$/, /: switch or open settings$/]) {
     expect(boxes.filter((b) => b !== boxes[0])).toEqual([]);
   });
 
-  test(`the sidebar menu "${String(trigger)}" pressed before it has loaded shows pressed, then opens whole`, async ({ page }) => {
+  test(`the sidebar menu "${trigger}" pressed before it has loaded shows pressed, then opens whole`, async ({ page }) => {
     await slowMachine(page);
     let release!: () => void;
     const arrived = new Promise<void>((resolve) => (release = resolve));
@@ -108,7 +108,7 @@ for (const trigger of [/: switch project$/, /: switch or open settings$/]) {
       await route.continue();
     });
     await page.goto("/components/sidebar");
-    const button = page.getByRole("button", { name: trigger }).first();
+    const button = page.getByRole("button", { description: trigger, exact: true }).first();
     await button.scrollIntoViewIfNeeded();
     await expect(page.locator("astro-island[ssr]", { has: button })).toHaveCount(0);
     await button.click();

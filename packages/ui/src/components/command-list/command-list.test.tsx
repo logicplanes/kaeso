@@ -197,13 +197,14 @@ describe("PickerPopover", () => {
       );
     }
     render(<Picker />);
-    const trigger = screen.getByRole("button", { name: "Model" });
-    expect(trigger).toHaveTextContent("Choose a model");
+    const trigger = screen.getByRole("button", { description: "Model" });
+    expect(trigger).toHaveAccessibleName("Choose a model");
     await user.click(trigger);
     expect(await screen.findByRole("listbox", { name: "Models" })).toBeInTheDocument();
     await user.keyboard("mini{Enter}");
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
-    expect(trigger).toHaveTextContent("gpt-5-mini");
+    expect(trigger).toHaveAccessibleName("gpt-5-mini");
+    expect(trigger).not.toHaveAttribute("aria-label");
   });
 
   it("clears the search with Escape inside a dialog, then closes only the picker and returns focus", async () => {
@@ -216,7 +217,7 @@ describe("PickerPopover", () => {
         </PickerPopover>
       </Dialog>,
     );
-    const trigger = screen.getByRole("button", { name: "Provider" });
+    const trigger = screen.getByRole("button", { description: "Provider" });
     await user.click(trigger);
     const search = await screen.findByRole("combobox", { name: "Search" });
     await user.type(search, "gpt");
@@ -238,7 +239,7 @@ describe("PickerPopover", () => {
         </PickerPopover>
       </Dialog>,
     );
-    await waitFor(() => expect(screen.getByRole("button", { name: "Models" })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole("button", { description: "Models" })).toHaveFocus());
   });
 
   it("opens as a full-screen sheet with a title on phones", async () => {
@@ -256,7 +257,7 @@ describe("PickerPopover", () => {
         <CommandList groups={groups} aria-label="Providers" />
       </PickerPopover>,
     );
-    await user.click(screen.getByRole("button", { name: "Provider" }));
+    await user.click(screen.getByRole("button", { description: "Provider" }));
     const sheet = await screen.findByRole("dialog", { name: "Provider" });
     expect(within(sheet).getByRole("listbox", { name: "Providers" })).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Close" }));
@@ -284,7 +285,7 @@ describe("CommandList outside a browser", () => {
           {null}
         </PickerPopover>,
       );
-      expect(screen.getByRole("button", { name: "Model" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Model" })).not.toHaveAttribute("aria-describedby");
     } finally {
       Object.defineProperty(window, "matchMedia", { value: original, configurable: true });
     }

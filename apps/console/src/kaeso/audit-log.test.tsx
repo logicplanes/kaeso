@@ -216,7 +216,7 @@ describe("AuditLog", () => {
     await user.tab();
     await waitFor(() => expect(router.state.location.search).not.toHaveProperty("target"));
 
-    await user.click(screen.getByRole("button", { name: "Days" }));
+    await user.click(screen.getByRole("button", { description: "Days" }));
     await user.click(within(await screen.findByRole("dialog", { name: "Choose a date range" })).getByRole("option", { name: "Today" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ from: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) }));
     const { from, to } = router.state.location.search as { from: string; to: string };

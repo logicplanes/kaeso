@@ -527,16 +527,15 @@ describe("ModelPicker", () => {
         ]}
       />,
     );
-    const trigger = screen.getByRole("button", { name: "Model" });
-    expect(trigger).toHaveTextContent("GPT-5");
-    expect(trigger).toHaveTextContent("gpt-5");
+    const trigger = screen.getByRole("button", { description: "Model" });
+    expect(trigger).toHaveAccessibleName("openai GPT-5 gpt-5");
   });
 
   it("draws its ghost in full text colour through Select's own appearance, without a styling warning", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
       render(<ModelPicker value="gpt-5" options={[{ value: "gpt-5", provider: "openai", name: "GPT-5" }]} />);
-      expect(screen.getByRole("button", { name: "Model" })).toHaveClass(...KAESO_SELECT_VARIANTS.appearance.header.classes.split(" "));
+      expect(screen.getByRole("button", { description: "Model" })).toHaveClass(...KAESO_SELECT_VARIANTS.appearance.header.classes.split(" "));
       expect(warn).not.toHaveBeenCalled();
     } finally {
       warn.mockRestore();

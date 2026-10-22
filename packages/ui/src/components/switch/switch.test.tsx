@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Switch } from "./switch.js";
 import { Segmented } from "../segmented/segmented.js";
+import { icons } from "../../icons/vocabulary.js";
 
 describe("Switch", () => {
   it("toggles with a click and reports its state", async () => {
@@ -45,6 +46,20 @@ describe("Segmented", () => {
     screen.getByRole("radio", { name: "7d" }).focus();
     await userEvent.keyboard("{ArrowRight}");
     expect(onChange).toHaveBeenLastCalledWith("30d");
+  });
+
+  it("names a segment by its label, and an icon-only one by its aria-label", () => {
+    render(
+      <Segmented
+        aria-label="View"
+        options={[
+          { value: "list", label: "List", "aria-label": "Show as a list" },
+          { value: "board", icon: icons.board, "aria-label": "Board" },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("radio", { name: "List" })).not.toHaveAttribute("aria-label");
+    expect(screen.getByRole("radio", { name: "Board" })).toBeInTheDocument();
   });
 
   it("names a switch by its label alone and describes it with its description", async () => {

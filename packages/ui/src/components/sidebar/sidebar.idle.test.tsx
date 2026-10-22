@@ -50,7 +50,7 @@ describe("a sidebar menu on a slow machine", () => {
     gate.open();
     await act(() => lazyModulesSettled());
 
-    const trigger = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
+    const trigger = screen.getByRole("button", { name: "Northwind Labs", description: "Switch or open settings" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     await user.click(trigger);
     expect(screen.getByRole("menu")).toBeInTheDocument();

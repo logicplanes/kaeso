@@ -37,14 +37,14 @@ describe("the sidebar in a project", () => {
     expect(within(nav).getByRole("link", { name: "Northwind Labs" })).not.toHaveAttribute("aria-current");
     expect(within(nav).queryByRole("link", { name: "API keys" })).not.toBeInTheDocument();
     expect(within(nav).queryByRole("link", { name: "Audit log" })).not.toBeInTheDocument();
-    expect(await within(nav).findByRole("button", { name: "Checkout assistant: switch project" })).toBeInTheDocument();
+    expect(await within(nav).findByRole("button", { name: "Checkout assistant", description: "Switch project" })).toBeInTheDocument();
   });
 
   it("switches to another project on the same page", async () => {
     signedIn();
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
-    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" }));
+    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveAttribute("aria-checked", "true");
     expect(within(menu).getByRole("menuitem", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
@@ -59,7 +59,7 @@ describe("the sidebar in a project", () => {
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", page([]));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}?from=2026-10-01&to=2026-10-07`);
-    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" }));
+    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     await user.click(await screen.findByRole("menuitemradio", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
     expect(router.state.location.search).toMatchObject({ from: "2026-10-01", to: "2026-10-07" });
@@ -72,7 +72,7 @@ describe("the sidebar in a project", () => {
     on("GET", "orgs/:org/projects/:project/models", { data: [] });
     on("GET", "orgs/:org/projects/:project/logs", page([]));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
-    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" }));
+    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     await user.click(await screen.findByRole("menuitemradio", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
     expect(router.state.location.searchStr).toBe("");
@@ -83,7 +83,7 @@ describe("the sidebar in a project", () => {
     on("GET", "orgs/:org/projects", apiError(403, "permission_denied", "You can't list this organization's projects."));
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
-    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" }));
+    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getAllByRole("menuitemradio")).toHaveLength(1);
     expect(within(menu).getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveAttribute("aria-checked", "true");
@@ -113,7 +113,7 @@ describe("the sidebar in a project", () => {
     on("GET", "orgs/:org/projects/:project", project());
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
-    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" }));
+    await user.click(await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).getAllByRole("menuitemradio")).toHaveLength(2);
     expect(within(menu).getByRole("menuitemradio", { name: /Checkout assistant/ })).toHaveTextContent("Default");
@@ -161,7 +161,7 @@ describe("the organization switcher", () => {
       memberships: [myMembership(), myMembership({ org_id: "org_globex", org_name: "Globex" })],
     });
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     const menu = await screen.findByRole("menu");
     expect(screen.getByText("Ada Okafor")).toBeInTheDocument();
     expect(screen.getByText("owner@example.com")).toBeInTheDocument();
@@ -182,7 +182,7 @@ describe("the organization switcher", () => {
       ],
     });
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    const switcher = await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" });
+    const switcher = await screen.findByRole("button", { name: "Northwind Labs Deletion on 20 Oct", description: "Switch or open settings" });
     expect(switcher).toHaveTextContent("Deletion on 20 Oct");
     await user.click(switcher);
     const menu = await screen.findByRole("menu");
@@ -193,7 +193,7 @@ describe("the organization switcher", () => {
   it("leaves out the organization list for a person in one organization who can't create more", async () => {
     signedIn({ session: whoAmI({ can_create_orgs: false, user: { ...whoAmI().user, is_instance_admin: false } }) });
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     const menu = await screen.findByRole("menu");
     expect(within(menu).queryByRole("menuitemradio")).not.toBeInTheDocument();
     expect(within(menu).queryByRole("menuitem", { name: "Instance" })).not.toBeInTheDocument();
@@ -211,7 +211,7 @@ describe("the organization switcher", () => {
       return { id: "org_new", name: "Initech" };
     });
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     const create = within(dialog).getByRole("button", { name: "Create organization" });
@@ -227,7 +227,7 @@ describe("the organization switcher", () => {
     signedIn();
     on("POST", "me/orgs", apiError(400, "invalid_request", "A name has at most 100 characters.", { param: "name" }));
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     const name = within(dialog).getByRole("textbox", { name: "Name" });
@@ -244,7 +244,7 @@ describe("the organization switcher", () => {
     signedIn();
     on("POST", "me/orgs", apiError(403, "permission_denied", "You can't create organizations on this instance."));
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Initech");
@@ -258,7 +258,7 @@ describe("the organization switcher", () => {
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
     signedOut();
     on("POST", "auth/logout", apiError(401, "authentication", "Sign in to continue."));
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/sign-in"));
   });
@@ -273,7 +273,7 @@ describe("the organization switcher", () => {
     window.localStorage.setItem("kaeso:playground-draft:proj_checkout", "Where is order 4471?");
     window.localStorage.setItem("kaeso:theme", "dark");
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/sign-in"));
     expect(window.localStorage.getItem("kaeso:recent")).toBeNull();
@@ -285,7 +285,7 @@ describe("the organization switcher", () => {
     signedIn();
     on("POST", "auth/logout", () => new Response("<!doctype html><title>Portal</title>", { status: 200, headers: { "content-type": "text/html" } }));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     expect((await notifications().findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
     expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects`);
@@ -298,7 +298,7 @@ describe("the organization switcher", () => {
       return noContent();
     });
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/sign-in"));
     expect(requests("POST", "auth/logout")).toHaveLength(1);
@@ -309,7 +309,7 @@ describe("the organization switcher", () => {
     signedIn();
     on("POST", "auth/logout", apiError(500, "internal", "The gateway hit an error."));
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await screen.findByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
     expect((await screen.findAllByText("The gateway hit an error.")).length).toBeGreaterThan(0);
     expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects`);
@@ -324,7 +324,7 @@ describe("pictures in the sidebar", () => {
     });
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { container } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
-    await within(sidebar()).findByRole("button", { name: "Checkout assistant: switch project" });
+    await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" });
     await waitFor(() => expect(container.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull());
     expect(container.querySelector('img[src="/avatars/org.webp"]')).not.toBeNull();
   });
@@ -334,7 +334,7 @@ describe("the switcher for a person outside every organization", () => {
   it("shows the person's picture and offers only to create an organization", async () => {
     signedIn({ session: whoAmI({ memberships: [], user: person({ avatar_url: "/avatars/ada.webp" }) }), memberships: [] });
     const { user } = await renderApp("/");
-    const switcher = await screen.findByRole("button", { name: "Ada Okafor: account and sign out" });
+    const switcher = await screen.findByRole("button", { name: "Ada Okafor", description: "Account and sign out" });
     await waitFor(() => expect(switcher.querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull());
     await user.click(switcher);
     const menu = await screen.findByRole("menu");

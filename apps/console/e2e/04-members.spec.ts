@@ -33,7 +33,7 @@ test("an invited person accepts and joins the organization", async ({ page, brow
   await invitee.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
   await invitee.getByRole("button", { name: "Create account and join" }).click();
   await expectSignedIn(invitee);
-  await expect(invitee.getByRole("button", { name: `${OWNER.org}: switch or open settings` })).toBeVisible();
+  await expect(invitee.getByRole("button", { name: OWNER.org, description: "Switch or open settings", exact: true })).toBeVisible();
   await other.close();
 });
 
@@ -50,7 +50,7 @@ test("a member's rights are customized and their models limited; removed, then a
   await expect(row(page, "Members", DEVELOPER.name).getByText("Viewer · customized", { exact: true })).toBeVisible();
 
   await sheet.getByRole("button", { name: "Edit", exact: true }).click();
-  await sheet.getByRole("button", { name: "Models" }).click();
+  await sheet.getByRole("button", { description: "Models" }).click();
   await page.getByRole("option", { name: /^GPT-5\.6/ }).click();
   await page.keyboard.press("Escape");
   await sheet.getByRole("button", { name: "Save", exact: true }).click();

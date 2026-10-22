@@ -104,10 +104,10 @@ describe("Sidebar", () => {
         </Sidebar>
       </Sidebar.Provider>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Northwind Labs: switch or open settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await waitFor(() => expect(screen.getByRole("menuitem", { name: "Organization settings" })).toBeInTheDocument());
   });
-  it("shows a caption under the switcher's label in the caption's tone", () => {
+  it("shows a caption under the switcher's label in the caption's tone, and reads it with the label", () => {
     render(
       <Sidebar.Provider shortcut={false}>
         <Sidebar aria-label="Console" resizable={false}>
@@ -119,12 +119,12 @@ describe("Sidebar", () => {
         </Sidebar>
       </Sidebar.Provider>,
     );
-    const button = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
-    expect(button).toHaveAccessibleDescription("Deletion on 20 Oct");
+    const button = screen.getByRole("button", { name: "Northwind Labs Deletion on 20 Oct" });
+    expect(button).toHaveAccessibleDescription("Switch or open settings");
     expect(button).toHaveTextContent("Northwind LabsDeletion on 20 Oct");
     expect(screen.getByText("Deletion on 20 Oct")).toHaveClass(KAESO_SIDEBAR_VARIANTS.caption.danger.classes);
   });
-  it("describes the switcher only when there is a caption, in the secondary tone by default", () => {
+  it("is named by its label and caption and described by what opening it does, the caption in the secondary tone by default", () => {
     const { rerender } = render(
       <Sidebar.Provider shortcut={false}>
         <Sidebar.Switcher avatar={null} label="Northwind Labs">
@@ -132,8 +132,9 @@ describe("Sidebar", () => {
         </Sidebar.Switcher>
       </Sidebar.Provider>,
     );
-    const button = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
-    expect(button).not.toHaveAccessibleDescription();
+    const button = screen.getByRole("button", { name: "Northwind Labs" });
+    expect(button).toHaveAccessibleDescription("Switch or open settings");
+    expect(button).not.toHaveAttribute("aria-label");
     expect(button).toHaveTextContent("Northwind Labs");
     rerender(
       <Sidebar.Provider shortcut={false}>
@@ -142,10 +143,10 @@ describe("Sidebar", () => {
         </Sidebar.Switcher>
       </Sidebar.Provider>,
     );
-    expect(screen.getByRole("button", { name: "Northwind Labs: switch or open settings" })).toHaveAccessibleDescription("Trial ends on 2 Nov");
+    expect(screen.getByRole("button", { name: "Northwind Labs Trial ends on 2 Nov" })).toHaveAccessibleDescription("Switch or open settings");
     expect(screen.getByText("Trial ends on 2 Nov")).toHaveClass(KAESO_SIDEBAR_VARIANTS.caption.secondary.classes);
   });
-  it("keeps the caption as the accessible description in rail mode", () => {
+  it("keeps the label and the caption in its name in rail mode", () => {
     render(
       <Sidebar.Provider shortcut={false} defaultRail>
         <Sidebar.Switcher avatar={null} label="Northwind Labs" caption="Deletion on 20 Oct" captionTone="danger">
@@ -153,9 +154,27 @@ describe("Sidebar", () => {
         </Sidebar.Switcher>
       </Sidebar.Provider>,
     );
-    const button = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
-    expect(button).toHaveAccessibleDescription("Deletion on 20 Oct");
+    const button = screen.getByRole("button", { name: "Northwind Labs Deletion on 20 Oct" });
+    expect(button).toHaveAccessibleDescription("Switch or open settings");
     expect(screen.getByText("Deletion on 20 Oct")).toHaveClass("sr-only");
+  });
+  it("takes what opening the switcher does from aria-label, and is named by it while it has no label", () => {
+    const { rerender } = render(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar.Switcher avatar={null} label="Ada Okafor" aria-label="Account and sign out">
+          <Menu.Item>Sign out</Menu.Item>
+        </Sidebar.Switcher>
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByRole("button", { name: "Ada Okafor" })).toHaveAccessibleDescription("Account and sign out");
+    rerender(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar.Switcher avatar={null} label="" aria-label="Account and sign out">
+          <Menu.Item>Sign out</Menu.Item>
+        </Sidebar.Switcher>
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByRole("button", { name: "Account and sign out" })).not.toHaveAttribute("aria-describedby");
   });
   it("heads the items with the place, which opens its menu below", async () => {
     render(
@@ -163,7 +182,7 @@ describe("Sidebar", () => {
         <Sidebar aria-label="Console" resizable={false}>
           <Sidebar.Content>
             <Sidebar.BackLink href="/orgs/northwind">Northwind Labs</Sidebar.BackLink>
-            <Sidebar.Place avatar={<span data-testid="picture" />} label="Checkout assistant" aria-label="Checkout assistant: switch project">
+            <Sidebar.Place avatar={<span data-testid="picture" />} label="Checkout assistant" aria-label="Switch project">
               <Menu.RadioGroup value="checkout">
                 <Menu.RadioItem value="checkout" leading={<span data-testid="menu-picture" />} hint="Default">
                   Checkout assistant
@@ -178,7 +197,7 @@ describe("Sidebar", () => {
         </Sidebar>
       </Sidebar.Provider>,
     );
-    const place = screen.getByRole("button", { name: "Checkout assistant: switch project" });
+    const place = screen.getByRole("button", { name: "Checkout assistant", description: "Switch project" });
     expect(place).toHaveClass("h-36", "px-12", "gap-8", "font-semibold", "text-fg");
     expect(screen.getByTestId("picture").parentElement).toHaveClass("size-18");
     expect(screen.getByRole("link", { name: "Northwind Labs" })).toHaveClass("px-12", "gap-8");

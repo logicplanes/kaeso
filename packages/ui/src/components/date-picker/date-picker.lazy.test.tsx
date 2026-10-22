@@ -46,7 +46,7 @@ describe("a picker clicked before its popover has loaded", () => {
         <button type="button">Elsewhere</button>
       </>,
     );
-    const trigger = screen.getByRole("button", { name: "Expires" });
+    const trigger = screen.getByRole("button", { description: "Expires" });
     isClosed(trigger);
 
     await user.click(trigger);
@@ -84,7 +84,7 @@ describe("a picker clicked before its popover has loaded", () => {
   it("stays closed when the popover arrives after a cancel, and opens at once afterwards", async () => {
     const user = userEvent.setup();
     render(<DateRangePicker aria-label="Period" />);
-    const trigger = screen.getByRole("button", { name: "Period" });
+    const trigger = screen.getByRole("button", { description: "Period" });
     await user.click(trigger);
     isOpen(trigger);
     await user.keyboard("{Escape}");

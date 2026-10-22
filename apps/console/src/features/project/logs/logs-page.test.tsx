@@ -403,7 +403,7 @@ describe("LogsPage", () => {
     await user.click(await screen.findByRole("option", { name: "Custom range" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ from: expect.any(String), to: expect.any(String) }));
     expect(router.state.location.search).not.toHaveProperty("range");
-    expect(await screen.findByRole("button", { name: "Days" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { description: "Days" })).toBeInTheDocument();
     await waitFor(() => expect(lastQuery().to).toMatch(/T00:00:00/));
 
     await user.click(screen.getByRole("combobox", { name: "Time range" }));
@@ -559,7 +559,7 @@ describe("LogsPage", () => {
     const { user, router } = await renderApp(projectPath("logs?from=2026-10-01&to=2026-10-03"));
 
     await screen.findByRole("row", { name: /key_web/ });
-    await user.click(screen.getByRole("button", { name: "Days" }));
+    await user.click(screen.getByRole("button", { description: "Days" }));
     const dialog = await screen.findByRole("dialog", { name: "Choose a date range" });
     const start = within(dialog).getByRole("textbox", { name: "Start date" });
     const end = within(dialog).getByRole("textbox", { name: "End date" });

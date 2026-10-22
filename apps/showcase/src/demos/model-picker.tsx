@@ -28,7 +28,7 @@ export const meta = {
     ["Escape", "Clears the search, then closes"],
   ],
   a11y: [
-    "A button named “Model” by default opens a search field over a listbox, one group per provider.",
+    "A button named by the model it shows, and described as “Model” by default, opens a search field over a listbox, one group per provider.",
     "Above the list, a Provider select narrows it to one provider; it offers only the providers whose models match the search.",
     "On phones the list opens as a full-screen sheet with the search on top.",
   ],

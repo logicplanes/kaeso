@@ -38,7 +38,7 @@ describe("a sidebar menu pressed before it has loaded", () => {
         <button type="button">Elsewhere</button>
       </Sidebar.Provider>,
     );
-    const trigger = screen.getByRole("button", { name: "Northwind Labs: switch or open settings" });
+    const trigger = screen.getByRole("button", { name: "Northwind Labs", description: "Switch or open settings" });
     expect(trigger).toHaveAttribute("aria-haspopup", "menu");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     await act(() => lazyModulesSettled());
@@ -60,7 +60,7 @@ describe("a sidebar menu pressed before it has loaded", () => {
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     await arrive();
-    expect(screen.getByRole("button", { name: "Northwind Labs: switch or open settings" })).toBe(trigger);
+    expect(screen.getByRole("button", { name: "Northwind Labs", description: "Switch or open settings" })).toBe(trigger);
     expect(screen.getByRole("menuitem", { name: "Organization settings" })).toBeInTheDocument();
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     await user.keyboard("{Escape}");

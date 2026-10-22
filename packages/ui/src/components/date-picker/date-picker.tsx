@@ -11,6 +11,7 @@ import { formatDate, formatDateRange } from "../../format/index.js";
 import { lazyModule, preload, type LazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
+import { joinIds, useHiddenDescription } from "../../utils/hidden-description.js";
 
 export const KAESO_DATE_PICKER_VARIANTS = {
   size: {
@@ -62,14 +63,34 @@ interface TriggerButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   preload: () => void;
   pending: boolean;
   onCancel: () => void;
-  named: boolean;
+  labelled: boolean;
+  "aria-label"?: string | undefined;
+  "aria-labelledby"?: string | undefined;
 }
 
 const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function TriggerButton(
-  { size, children, placeholder, invalid, disabled, id, controlProps, force, preload, pending, onCancel, named, className, ...rest },
+  {
+    size,
+    children,
+    placeholder,
+    invalid,
+    disabled,
+    id,
+    controlProps,
+    force,
+    preload,
+    pending,
+    onCancel,
+    labelled,
+    "aria-label": ariaLabel,
+    "aria-labelledby": labelledBy,
+    className,
+    ...rest
+  },
   ref,
 ) {
   const valueId = useId();
+  const purpose = useHiddenDescription(labelledBy ? undefined : ariaLabel);
   const self = useRef<HTMLButtonElement | null>(null);
   const setRef = useCallback(
     (el: HTMLButtonElement | null) => {
@@ -99,43 +120,47 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
     };
   }, [pending, onCancel]);
   const control = (controlProps ?? {}) as { "aria-describedby"?: string | undefined };
-  const describedBy = [named ? valueId : "", control["aria-describedby"] ?? ""].filter(Boolean).join(" ");
+  const describedBy = joinIds(purpose.id, labelled && !labelledBy && valueId, control["aria-describedby"]);
   return (
-    <button
-      ref={setRef}
-      type="button"
-      {...rest}
-      {...(pending ? { "aria-expanded": true, "data-popup-open": "" } : {})}
-      onPointerEnter={(e) => {
-        preload();
-        rest.onPointerEnter?.(e);
-      }}
-      onFocus={(e) => {
-        preload();
-        rest.onFocus?.(e);
-      }}
-      onBlur={(e) => {
-        if (pending && e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) onCancel();
-        rest.onBlur?.(e);
-      }}
-      disabled={disabled}
-      {...control}
-      {...(describedBy ? { "aria-describedby": describedBy } : {})}
-      {...(id ? { id } : {})}
-      {...(invalid ? { "aria-invalid": true } : {})}
-      {...(force ? { "data-force": force } : {})}
-      className={cn(
-        "inline-flex min-w-0 cursor-pointer items-center rounded-pill font-medium whitespace-nowrap material-secondary transition-control focus-ring disabled:cursor-not-allowed",
-        KAESO_DATE_PICKER_VARIANTS.size[size].classes,
-        invalid && "ring-invalid",
-        className,
-      )}
-    >
-      <Icon icon={icons.calendar} size="sm" className="text-fg-secondary" />
-      <span id={valueId} className={cn("truncate tabular", placeholder && "font-regular text-fg-tertiary")}>
-        {children}
-      </span>
-    </button>
+    <>
+      <button
+        ref={setRef}
+        type="button"
+        {...rest}
+        {...(pending ? { "aria-expanded": true, "data-popup-open": "" } : {})}
+        onPointerEnter={(e) => {
+          preload();
+          rest.onPointerEnter?.(e);
+        }}
+        onFocus={(e) => {
+          preload();
+          rest.onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          if (pending && e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) onCancel();
+          rest.onBlur?.(e);
+        }}
+        disabled={disabled}
+        {...control}
+        {...(labelledBy ? { "aria-labelledby": `${labelledBy} ${valueId}` } : {})}
+        {...(describedBy ? { "aria-describedby": describedBy } : {})}
+        {...(id ? { id } : {})}
+        {...(invalid ? { "aria-invalid": true } : {})}
+        {...(force ? { "data-force": force } : {})}
+        className={cn(
+          "inline-flex min-w-0 cursor-pointer items-center rounded-pill font-medium whitespace-nowrap material-secondary transition-control focus-ring disabled:cursor-not-allowed",
+          KAESO_DATE_PICKER_VARIANTS.size[size].classes,
+          invalid && "ring-invalid",
+          className,
+        )}
+      >
+        <Icon icon={icons.calendar} size="sm" className="text-fg-secondary" />
+        <span id={valueId} className={cn("truncate tabular", placeholder && "font-regular text-fg-tertiary")}>
+          {children}
+        </span>
+      </button>
+      {purpose.node}
+    </>
   );
 });
 
@@ -181,7 +206,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
   const fc = useFieldControl(props);
   const t = useUiText();
   const naming = { ...(ariaLabel ? { "aria-label": ariaLabel } : {}), ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}) };
-  const named = !!(ariaLabel || ariaLabelledBy || label || field);
+  const labelled = !!(label || field);
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onValueChange);
   const { open, pending, setOpen } = useLoadedOpen(datePopup);
   const cancel = useCallback(() => setOpen(false), [setOpen]);
@@ -201,7 +226,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
             preload={preloadDatePopup}
             pending={pending}
             onCancel={cancel}
-            named={named}
+            labelled={labelled}
             {...naming}
           >
             {date ? formatDate(date) : (placeholder ?? t("datePicker.pickDate", "Pick a date"))}
@@ -292,7 +317,7 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
   const defaults = useMemo(() => rangePresets(t), [t]);
   const presets = presetsProp ?? defaults;
   const naming = { ...(ariaLabel ? { "aria-label": ariaLabel } : {}), ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}) };
-  const named = !!(ariaLabel || ariaLabelledBy || label || field);
+  const labelled = !!(label || field);
   const [inner, setInner] = useState<DateRange | null>(defaultValue);
   const range = value !== undefined ? value : inner;
   const [picked, setPicked] = useState<string | null>(null);
@@ -332,7 +357,7 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
             preload={preloadRangePopup}
             pending={pending}
             onCancel={cancel}
-            named={named}
+            labelled={labelled}
             {...naming}
           >
             {display}

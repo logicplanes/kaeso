@@ -22,7 +22,10 @@ describe("a switcher whose menu is still downloading", () => {
     signedIn();
     on("GET", "orgs/:org/projects/:project/limits", page([]));
     const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
-    const switcher = await within(screen.getByRole("navigation", { name: "Console" })).findByRole("button", { name: "Checkout assistant: switch project" });
+    const switcher = await within(screen.getByRole("navigation", { name: "Console" })).findByRole("button", {
+      name: "Checkout assistant",
+      description: "Switch project",
+    });
     act(() => switcher.focus());
     await user.keyboard("{Tab}");
     expect(switcher).not.toHaveFocus();

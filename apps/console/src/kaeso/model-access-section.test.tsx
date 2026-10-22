@@ -47,7 +47,7 @@ describe("ModelAccessSection", () => {
     await within(sheet).findByText("Every model in the catalogue: 2 models.");
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     expect(within(sheet).getByText("Their keys' model lists are narrowed to match.")).toBeInTheDocument();
-    const picker = within(sheet).getByRole("button", { name: "Models" });
+    const picker = within(sheet).getByRole("button", { description: "Models" });
     expect(picker).toHaveTextContent("Every model in the catalogue");
     await user.click(picker);
     await user.click(await screen.findByRole("option", { name: /GPT-5 mini/ }));
@@ -56,7 +56,7 @@ describe("ModelAccessSection", () => {
 
     expect(await notifications().findByText("Models saved")).toBeInTheDocument();
     expect(requests("PATCH", `${MEMBER}/models`).map((r) => r.body)).toEqual([{ models: ["cm_gpt"] }]);
-    await waitFor(() => expect(within(sheet).queryByRole("button", { name: "Models" })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(sheet).queryByRole("button", { description: "Models" })).not.toBeInTheDocument());
   });
 
   it("opens every model again when the list is emptied", async () => {
@@ -65,7 +65,7 @@ describe("ModelAccessSection", () => {
 
     await within(sheet).findByText("Sonnet 4.5");
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
-    await user.click(within(sheet).getByRole("button", { name: "Models" }));
+    await user.click(within(sheet).getByRole("button", { description: "Models" }));
     const chosen = await screen.findByRole("option", { name: /Sonnet 4.5/ });
     expect(chosen).toHaveAttribute("aria-selected", "true");
     await user.click(chosen);
@@ -86,7 +86,7 @@ describe("ModelAccessSection", () => {
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     expect((await notifications().findAllByText("That model isn't in the catalogue.")).length).toBeGreaterThan(0);
-    expect(within(sheet).getByRole("button", { name: "Models" })).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { description: "Models" })).toBeInTheDocument();
   });
 
   it("can't be edited without Manage limits", async () => {
@@ -109,7 +109,7 @@ describe("ModelAccessSection", () => {
     const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
     expect(await within(sheet).findByText("Every model in the catalogue: 1 model.")).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
-    await user.click(within(sheet).getByRole("button", { name: "Models" }));
+    await user.click(within(sheet).getByRole("button", { description: "Models" }));
     await user.click(await screen.findByRole("option", { name: /Sonnet 4.5/ }));
     await user.keyboard("{Escape}");
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
@@ -133,7 +133,7 @@ describe("ModelAccessSection", () => {
     expect(await within(sheet).findByText("Every model its owner may use: 1 model.")).toBeInTheDocument();
     await user.click(within(sheet).getByRole("button", { name: "Edit" }));
     expect(within(sheet).queryByText("Their keys' model lists are narrowed to match.")).not.toBeInTheDocument();
-    const picker = within(sheet).getByRole("button", { name: "Models" });
+    const picker = within(sheet).getByRole("button", { description: "Models" });
     expect(picker).toHaveTextContent("Every model its owner may use");
     await user.click(picker);
     expect(await screen.findByRole("option", { name: /GPT-5 mini/ })).toBeInTheDocument();

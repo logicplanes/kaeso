@@ -310,7 +310,7 @@ describe("OverviewPage", () => {
     const { user, router } = await renderApp(projectPath(`?${PERIOD}`));
 
     await breakdown();
-    await user.click(screen.getByRole("button", { name: "Period" }));
+    await user.click(screen.getByRole("button", { description: "Period" }));
     const dialog = await screen.findByRole("dialog", { name: "Choose a date range" });
     await user.click(within(dialog).getByRole("option", { name: "Last 7 days" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ period: "7d" }));

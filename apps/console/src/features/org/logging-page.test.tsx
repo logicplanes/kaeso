@@ -246,7 +246,7 @@ describe("log deletions", () => {
     const dialog = await screen.findByRole("dialog", { name: "Delete request logs" });
     expect(within(dialog).getByText("Whole UTC days; usage and costs stay.")).toBeInTheDocument();
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose the period");
-    await user.click(within(dialog).getByRole("button", { name: /Period/ }));
+    await user.click(within(dialog).getByRole("button", { description: "Period" }));
     await user.click(await screen.findByRole("option", { name: "Today" }));
     const today = new Date().toISOString().slice(0, 10);
     expect(await within(dialog).findByText(/whole UTC days\.$/)).toBeInTheDocument();
@@ -280,7 +280,7 @@ describe("log deletions", () => {
     const { user } = await renderApp(`${PATH}?tab=deletions`);
     await user.click(await screen.findByRole("button", { name: "Delete logs" }));
     const dialog = await screen.findByRole("dialog", { name: "Delete request logs" });
-    await user.click(within(dialog).getByRole("button", { name: /Period/ }));
+    await user.click(within(dialog).getByRole("button", { description: "Period" }));
     await user.click(await screen.findByRole("option", { name: "Today" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("combobox", { name: "Project" }));
@@ -294,7 +294,7 @@ describe("log deletions", () => {
     const { user } = await renderApp(`${PATH}?tab=deletions`);
     await user.click(await screen.findByRole("button", { name: "Delete logs" }));
     const dialog = await screen.findByRole("dialog", { name: "Delete request logs" });
-    await user.click(within(dialog).getByRole("button", { name: /Period/ }));
+    await user.click(within(dialog).getByRole("button", { description: "Period" }));
     await user.click(await screen.findByRole("option", { name: "Last 7 days" }));
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.click(await within(dialog).findByRole("button", { name: "Continue" }));

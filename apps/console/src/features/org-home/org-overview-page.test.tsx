@@ -298,7 +298,7 @@ describe("organization overview", () => {
     ).toEqual(["CCheckout assistantDefault", "SSupport triage"]);
     expect(screen.getByText("Open one to work in it")).toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Usage breakdown" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Period" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { description: "Period" })).not.toBeInTheDocument();
     expect(requests("GET", USAGE)).toHaveLength(0);
     expect(requests("GET", "orgs/:org/usage/span")).toHaveLength(0);
   });
@@ -318,7 +318,7 @@ describe("organization overview", () => {
     usage({});
     const { user, router } = await renderApp(`/orgs/${ORG}?${PERIOD}&by=model`);
     await breakdown();
-    await user.click(screen.getByRole("button", { name: /Period/ }));
+    await user.click(screen.getByRole("button", { description: "Period" }));
     await user.click(await screen.findByRole("option", { name: "Last 7 days" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ period: "7d", by: "model" }));
   });

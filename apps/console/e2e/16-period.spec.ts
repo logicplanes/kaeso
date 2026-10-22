@@ -5,7 +5,7 @@ test.describe.configure({ mode: "serial" });
 
 type Scroller = { scrollHeight: number; clientHeight: number };
 
-const trigger = (page: Page) => page.getByRole("button", { name: "Period" });
+const trigger = (page: Page) => page.getByRole("button", { description: "Period" });
 const popover = (page: Page) => page.getByRole("dialog", { name: "Choose a date range" });
 const search = (page: Page) => new URL(page.url()).searchParams;
 const thisMonth = () => new Date(`${new Date().toISOString().slice(0, 10)}T12:00:00`).toLocaleDateString("en-US", { month: "long", year: "numeric" });

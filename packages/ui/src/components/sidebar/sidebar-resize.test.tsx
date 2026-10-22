@@ -160,7 +160,7 @@ describe("Sidebar resizing", () => {
         <State />
       </Sidebar.Provider>,
     );
-    expect(screen.getByRole("link", { name: "API keys" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "API keys" })).not.toHaveAttribute("aria-label");
     expect(screen.queryByText("Project")).toBeNull();
     expect(screen.queryByText("3")).toBeNull();
     expect(screen.queryByRole("separator")).toBeNull();

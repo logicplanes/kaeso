@@ -28,7 +28,7 @@ const open = async () => {
 };
 
 async function pickProvider(user: Awaited<ReturnType<typeof open>>["user"], dialog: HTMLElement, name: string) {
-  await user.click(within(dialog).getByRole("button", { name: "Provider" }));
+  await user.click(within(dialog).getByRole("button", { description: "Provider" }));
   await user.click(await screen.findByRole("option", { name: new RegExp(`^${name}`) }));
 }
 
@@ -71,7 +71,7 @@ describe("AddModelsDialog", () => {
     expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
     expect(searches().map((q) => q.provider)).not.toContain("cohere");
     expect(searches()).toContainEqual({ provider: "openai", include_deprecated: "false", limit: "50" });
-    expect(within(dialog).getByRole("button", { name: "Provider" })).toHaveTextContent("OpenAI");
+    expect(within(dialog).getByRole("button", { description: "Provider" })).toHaveTextContent("OpenAI");
   });
 
   it("starts in the search box; Space selects rows and ⌘Enter adds them", async () => {
@@ -186,13 +186,13 @@ describe("AddModelsDialog", () => {
     await pickProvider(user, dialog, "Anthropic");
     expect(await within(dialog).findByText("claude-opus-4-1")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Add every current Anthropic model" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Provider" })).toHaveTextContent("Anthropic");
+    expect(within(dialog).getByRole("button", { description: "Provider" })).toHaveTextContent("Anthropic");
 
     await user.click(within(dialog).getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add models/ })).not.toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: "Add models" }));
     const again = await screen.findByRole("dialog", { name: /Add models/ });
-    expect(within(again).getByRole("button", { name: "Provider" })).toHaveTextContent("Anthropic");
+    expect(within(again).getByRole("button", { description: "Provider" })).toHaveTextContent("Anthropic");
   });
 
   it("says when models.dev lists no models for the provider", async () => {

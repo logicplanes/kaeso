@@ -8,7 +8,7 @@ const days = () => ({ from: "2026-10-09", to: "2026-10-15" });
 async function open(period?: "7d") {
   const onChange = vi.fn();
   const view = await renderUi(<PeriodPicker from="2026-10-01" to="2026-10-07" period={period} days={days} onChange={onChange} />);
-  await view.user.click(screen.getByRole("button", { name: "Period" }));
+  await view.user.click(screen.getByRole("button", { description: "Period" }));
   const dialog = await screen.findByRole("dialog", { name: "Choose a date range" });
   return { ...view, dialog, onChange };
 }
@@ -16,7 +16,7 @@ async function open(period?: "7d") {
 describe("PeriodPicker", () => {
   it("shows the chosen days and picks a named period", async () => {
     const { user, dialog, onChange } = await open();
-    expect(screen.getByRole("button", { name: "Period" })).toHaveTextContent("1 Oct – 7 Oct");
+    expect(screen.getByRole("button", { name: "1 Oct – 7 Oct", description: "Period" })).toBeInTheDocument();
     expect(within(dialog).getByRole("option", { name: "Custom" })).toHaveAttribute("aria-selected", "true");
     await user.click(within(dialog).getByRole("option", { name: "Last 7 days" }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith({ period: "7d", from: undefined, to: undefined }));

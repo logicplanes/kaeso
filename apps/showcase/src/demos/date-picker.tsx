@@ -16,7 +16,7 @@ export const meta = {
   a11y: [
     "The calendar is a grid with day names; typed ISO fields (YYYY-MM-DD) are an alternative to pointing.",
     "The calendar, the trigger and the typed fields name the same day, in the viewer's calendar.",
-    "An aria-label or a field's label names the trigger; the date or range it shows is its description.",
+    "A field's label names the trigger and the date or range it shows is its description; without a label, the trigger is named by what it shows and its aria-label is its description.",
   ],
 };
 export const examples = [

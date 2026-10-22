@@ -66,13 +66,13 @@ describe("date pickers on a slow machine", () => {
     gates.range.open();
     await act(() => lazyModulesSettled());
 
-    const date = screen.getByRole("button", { name: "Expires" });
+    const date = screen.getByRole("button", { description: "Expires" });
     await user.click(date);
     expect(screen.getByRole("dialog", { name: "Choose a date" })).toBeInTheDocument();
     expect(date).toHaveAttribute("aria-expanded", "true");
     await user.keyboard("{Escape}");
 
-    const range = screen.getByRole("button", { name: "Period" });
+    const range = screen.getByRole("button", { description: "Period" });
     await user.click(range);
     expect(screen.getByRole("dialog", { name: "Choose a date range" })).toBeInTheDocument();
     expect(range).toHaveAttribute("aria-expanded", "true");

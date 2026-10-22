@@ -5,7 +5,7 @@ test.describe.configure({ mode: "serial" });
 
 async function openGeneral(page: Page) {
   await signInAsOwner(page);
-  await page.getByRole("button", { name: `${OWNER.org}: switch or open settings` }).click();
+  await page.getByRole("button", { description: "Switch or open settings" }).click();
   await page.getByRole("menuitem", { name: "Organization settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "General" })).toBeVisible();
 }
@@ -30,7 +30,7 @@ test("a scheduled organization stays readable without refused requests, sorts fi
   await expect(page.getByText("This organization is scheduled for deletion")).toBeVisible();
 
   await page.goto("/");
-  await expect(page.getByRole("button", { name: `${OWNER.org}: switch or open settings` }).getByText(/^Deletion on /)).toBeVisible();
+  await expect(page.getByRole("button", { description: "Switch or open settings" }).getByText(/^Deletion on /)).toBeVisible();
   await expect(page.getByText(/It's read-only and its keys stopped working; on .+ it's deleted for good\./)).toBeVisible();
   await expectNoToasts(page);
   await openDefaultProject(page);
@@ -60,7 +60,7 @@ test("a scheduled organization stays readable without refused requests, sorts fi
   await page.getByRole("button", { name: "Restore organization" }).click();
   await expect(toastText(page, `${OWNER.org} restored`)).toBeVisible();
   await expect(page.getByText("This organization is scheduled for deletion")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: `${OWNER.org}: switch or open settings` }).getByText(/^Deletion on /)).toHaveCount(0);
+  await expect(page.getByRole("button", { description: "Switch or open settings" }).getByText(/^Deletion on /)).toHaveCount(0);
 });
 
 test("an instance admin deletes a scheduled organization now from the Organizations table", async ({ page }) => {

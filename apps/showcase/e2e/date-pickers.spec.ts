@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { open, slowMachine } from "./support";
 
 const pickers = [
-  { name: "Expires", chunk: /\/date-popup\.[\w-]+\.js$/, dialog: "Choose a date" },
-  { name: "Period", chunk: /\/range-popup\.[\w-]+\.js$/, dialog: "Choose a date range" },
+  { trigger: { name: "Expires" }, chunk: /\/date-popup\.[\w-]+\.js$/, dialog: "Choose a date" },
+  { trigger: { description: "Period" }, chunk: /\/range-popup\.[\w-]+\.js$/, dialog: "Choose a date range" },
 ] as const;
 
 function boxesAfterPress(page: Page, dialog: string) {
@@ -34,12 +34,12 @@ function boxesAfterPress(page: Page, dialog: string) {
 }
 
 for (const picker of pickers) {
-  test(`the date picker "${picker.name}" on a slow machine loads while the page is idle and opens on the press`, async ({ page }) => {
+  test(`the date picker "${Object.values(picker.trigger)[0]}" on a slow machine loads while the page is idle and opens on the press`, async ({ page }) => {
     await slowMachine(page);
     const preloaded = page.waitForResponse(picker.chunk, { timeout: 15_000 });
     await open(page, "/components/date-picker/examples");
     await preloaded;
-    const button = page.getByRole("button", { name: picker.name }).first();
+    const button = page.getByRole("button", { ...picker.trigger, exact: true }).first();
     await button.scrollIntoViewIfNeeded();
     const recording = boxesAfterPress(page, picker.dialog);
     await button.click();
@@ -48,7 +48,7 @@ for (const picker of pickers) {
     expect(boxes.filter((b) => b !== boxes[0])).toEqual([]);
   });
 
-  test(`the date picker "${picker.name}" pressed before it has loaded shows pressed, then opens whole`, async ({ page }) => {
+  test(`the date picker "${Object.values(picker.trigger)[0]}" pressed before it has loaded shows pressed, then opens whole`, async ({ page }) => {
     await slowMachine(page);
     let release!: () => void;
     const arrived = new Promise<void>((resolve) => (release = resolve));
@@ -57,7 +57,7 @@ for (const picker of pickers) {
       await route.continue();
     });
     await page.goto("/components/date-picker/examples");
-    const button = page.getByRole("button", { name: picker.name }).first();
+    const button = page.getByRole("button", { ...picker.trigger, exact: true }).first();
     await button.scrollIntoViewIfNeeded();
     await expect(page.locator("astro-island[ssr]", { has: button })).toHaveCount(0);
     await button.click();
