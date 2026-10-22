@@ -4,25 +4,71 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
-### Changed
+## [0.3.7] - 2026-10-22
 
-#### Self-hosting
+Operators need to act on this release: compose.yaml changed beyond its image versions and must be installed by hand, and a reverse proxy of your own is trusted only when it is named in the trusted proxies setting. Single sign-on now starts only after the email, organization sign-in links are removed, and changing or deleting an SSO connection ends the sessions it signed in. The gateway also stops deeply nested requests from crashing it, keeps one key from holding the whole translation memory budget, and refuses unpriced models under a spend budget.
 
-- This release changes `compose.yaml` beyond its image versions, so it installs by hand: download the release's `compose.yaml`, then run `docker compose up -d --wait`. With the updater, add `KAESO_DIR` (the install's folder) to `.env` first, or `docker-proxy` won't start. The `edge` network now has a fixed subnet, `EDGE_SUBNET` (`172.30.83.0/24` by default); set another in `.env` if that range is taken on the server. Behind your own reverse proxy, set `KAESO_TRUSTED_PROXIES` to the proxy's address, since only loopback and the `edge` network are trusted by default.
-- Keep the master keys private: `sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys` on Linux, or only `chmod 0400 master-keys` on Docker Desktop and Colima.
+- **Breaking:** Organization start links are removed and sign-in starts after the email, so point links and bookmarks at `/sign-in` instead. ([#319](https://github.com/logicplanes/kaeso/pull/319))
+- **Breaking:** A model a key may not use now answers 404 like an unknown model instead of 403, so clients that match on 403 must change. ([#334](https://github.com/logicplanes/kaeso/pull/334))
+- **Breaking:** Metrics listen on loopback by default, so a scraper on another host needs `metrics_listen` set to a reachable address. ([#335](https://github.com/logicplanes/kaeso/pull/335))
+- **Breaking:** `compose.yaml` changed beyond its image versions, so install the release's file by hand and run Compose from the install's folder. ([#342](https://github.com/logicplanes/kaeso/pull/342), [#343](https://github.com/logicplanes/kaeso/pull/343))
+- **Breaking:** A reverse proxy of your own is trusted only when named in the trusted proxies setting, since the default trusts loopback and the edge network. ([#344](https://github.com/logicplanes/kaeso/pull/344))
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.3.6...v0.3.7](https://github.com/logicplanes/kaeso/compare/v0.3.6...v0.3.7)
 
 ### Added
+
+- Instance administration can be opened to one organization's single sign-on through a new instance setting, which names that organization or none, the default. An instance admin's session from that provider can then use the instance API while the organization manages the account. Changing the setting still needs a password or sign-in link, and each change is audited as `instance.admin_sso_update`. ([#338](https://github.com/logicplanes/kaeso/pull/338))
 
 #### Console
 
 - An organization's Security page says when its identity provider's sign-ins can never count as recent, and `GET orgs/{org}/security` returns it as `sso.sends_auth_time`.
 
+### Changed
+
+- Prometheus metrics listen on loopback by default instead of on every interface. The gateway image still listens on all interfaces inside its container, which is what the documented port mapping reaches, and Compose publishes the port nowhere. ([#335](https://github.com/logicplanes/kaeso/pull/335))
+- A sign-in through the single sign-on of the organization that manages an account now opens all of that person's organizations, and Require single sign-on applies only to those accounts. An organization manages the accounts whose address is at one of its verified domains, and guests keep their own sign-in. ([#337](https://github.com/logicplanes/kaeso/pull/337))
+- The identity provider of the organization that manages an account now owns its address. `POST me/email` is refused for such an account, and a sign-in through that provider replaces the stored address with a newer verified one at a verified domain. An address another account holds is never taken. ([#339](https://github.com/logicplanes/kaeso/pull/339))
+- Signing in again from a managed account's single sign-on offers that organization's identity provider first, with the password and an email link beside it. `GET me/sign-in-again` lists the managing organization first in `sso`, and a provider that doesn't send `auth_time` is left out. ([#340](https://github.com/logicplanes/kaeso/pull/340))
+
 ### Fixed
 
 #### Console
 
-- The sign-in-again dialog no longer keeps offering an identity provider that never sends `auth_time`, such as one run on Clerk: after one failed confirmation it explains why and offers the password or an email link, so the prompt stops coming back. A confirmation without `auth_time` now returns `no_auth_time` instead of `stale_sign_in`.
+- The sign-in-again dialog no longer keeps offering an identity provider that never sends `auth_time`, such as one run on Clerk. After one failed confirmation it explains why and offers the password or an email link, and a confirmation without `auth_time` now returns `no_auth_time` instead of `stale_sign_in`.
 - Setting up an authenticator app from a single sign-on session asks to sign in another way instead of showing an error whose Try again failed the same way.
+
+#### UI library
+
+- A dialog that finishes closing after another dialog opened no longer takes focus from it, so a search typed into a combobox stays and its options remain. ([#346](https://github.com/logicplanes/kaeso/pull/346))
+
+### Security
+
+- Single sign-on starts only after the person enters their email, and the organization start link is removed. A planted link can no longer sign a signed-out browser in to another account, and links point to `/sign-in` instead. ([#319](https://github.com/logicplanes/kaeso/pull/319))
+- Deleting an organization's SSO connection, or saving it with a new issuer or client id, ends every session that connection signed in, and the audit entry records `sessions_ended`. `DELETE me/sso-links/{org}` likewise ends the account's sessions from that organization's SSO and now needs a recent sign-in. ([#320](https://github.com/logicplanes/kaeso/pull/320))
+- Reset links, sign-in links and the link sign-up sends to an existing account go to the account's stored address. Addresses are compared in NFKC-normalized form, so lookalike addresses no longer receive another account's links or dodge its sign-in limits. ([#321](https://github.com/logicplanes/kaeso/pull/321))
+- Confirming a new email address now signs out every other session of the account. The session that opens the confirmation link stays when it belongs to the account, otherwise the session that asked for the change stays. ([#323](https://github.com/logicplanes/kaeso/pull/323))
+- The authenticator-code lock also applies to account changes that ask for a code, and regenerating recovery codes needs an authenticator or recovery code. IPv4-mapped client addresses count as their IPv4 address for throttling, and a changed email address is reported as in use only after the second factor passed. ([#324](https://github.com/logicplanes/kaeso/pull/324))
+- A deeply nested model API request is refused with 400 instead of aborting the gateway, which dropped every request and stream of every organization. Bodies nested more than 127 levels deep are refused before any codec parses them. ([#326](https://github.com/logicplanes/kaeso/pull/326))
+- A request holds its full translation memory estimate only while it is decoded and encoded, and one key can hold at most a quarter of the `body_limits.in_flight` budget. A request that finds no room within 10 seconds gets 503 with `Retry-After: 10`, and whitespace no longer counts toward the estimate. ([#327](https://github.com/logicplanes/kaeso/pull/327))
+- Request bodies have a total read deadline, `server.body_read_deadline`, 60 seconds by default, so a body sent one byte at a time gets the same 400 as a stalled one. The gateway also caps its connections with `server.max_connections`, 4096 by default. ([#328](https://github.com/logicplanes/kaeso/pull/328))
+- The request log's CSV export quotes every text cell and adds an apostrophe in front of values that start a formula or contain a semicolon, pipe or tab. Spreadsheet programs can no longer run a formula from a model name or user agent. ([#329](https://github.com/logicplanes/kaeso/pull/329))
+- The models catalogue that sets the prices spend budgets use is fetched only over https, or over plain http when the feed is on the local machine. Redirects are followed at most three times and only to the same host over https. ([#331](https://github.com/logicplanes/kaeso/pull/331))
+- Under a spend budget, a model with no price, or a zero price from the feed, is refused with 403 naming the model instead of counting as free. A price an admin sets by hand, including zero, still counts as set. ([#332](https://github.com/logicplanes/kaeso/pull/332))
+- Model ids of `.` and `..`, and ids with either between slashes, are refused in the codecs and the Platform API. They can no longer change the path of a provider request. ([#333](https://github.com/logicplanes/kaeso/pull/333))
+- A model a key may not use now answers 404 with the same message as a model that doesn't exist, instead of 403. A restricted key can no longer list a project's catalogue by probing model names. ([#334](https://github.com/logicplanes/kaeso/pull/334))
+- Release builds no longer restore shared caches or run dependency build scripts while holding publishing credentials. Release notes are checked for install commands, pipes into a shell and instructions to change variables. ([#341](https://github.com/logicplanes/kaeso/pull/341))
+- The console and the edge run a Caddy built with Go 1.26.9 and `x/net` 0.60.0, which fix six HTTP/2 vulnerabilities. The edge now runs the console image without the capability to bind privileged ports, and PostgreSQL is pinned to a rebuild with a fixed zlib. ([#342](https://github.com/logicplanes/kaeso/pull/342))
+- The updater refuses containers that change any security-relevant setting, and its Docker proxy allows bind mounts only from the install's folder. Inspect calls accept only the full or short container id that the updater itself uses. ([#343](https://github.com/logicplanes/kaeso/pull/343))
+- New installs write their files with a restrictive umask and give `master-keys` to the gateway's user, so only that user can read it. The edge network has a fixed subnet that the gateway trusts for forwarded addresses, and the edge Caddy runs read-only with its admin API off. This release changes `compose.yaml` beyond its image versions, so install it by hand, and a reverse proxy of your own is trusted only when named in the trusted proxies setting. ([#344](https://github.com/logicplanes/kaeso/pull/344))
+- The console refuses sign-in redirects to other hosts, forgets secrets and one-time link tokens once they are used, requires Trusted Types, and updates by hand only after every check passes. ([#345](https://github.com/logicplanes/kaeso/pull/345))
+
+#### Gateway
+
+- A request that touches a session now invalidates its cached entry instead of writing back the row it read, so a revoke, deactivation or demotion takes effect at once instead of lingering for up to 30 seconds. ([#322](https://github.com/logicplanes/kaeso/pull/322))
+- A key restricted to some models no longer gets every model of its project during a cache invalidation race. The cached access table lists unrestricted keys and service accounts too, an unlisted key gets no models, and the gateway reloads the table once when it meets an unknown key. ([#330](https://github.com/logicplanes/kaeso/pull/330))
 
 ## [0.3.6] - 2026-10-22
 
@@ -579,7 +625,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.6...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.7...HEAD
+[0.3.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.7
 [0.3.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.6
 [0.3.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.5
 [0.3.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.4
