@@ -350,13 +350,6 @@ where
         }
     }
 
-    pub async fn put(&self, key: &str, value: V) {
-        let seen = self.subscription.seen();
-        let value = Arc::new(value);
-        self.valkey_set(key, &value).await;
-        self.remember(key, value, seen, TTL).await;
-    }
-
     pub async fn invalidate(&self, key: &str) {
         self.drop_local(key).await;
         let mut conn = self.valkey.conn();
@@ -478,24 +471,6 @@ where
                     .increment(1);
                 false
             }
-        }
-    }
-
-    async fn valkey_set(&self, key: &str, value: &V) {
-        let Some(bytes) = self.sealed(key, value) else {
-            return;
-        };
-        let mut conn = self.valkey.bulk();
-        let set: Result<(), _> = redis::cmd("SET")
-            .arg(self.valkey_key(key))
-            .arg(bytes)
-            .arg("PX")
-            .arg(millis(TTL))
-            .query_async(&mut conn)
-            .await;
-        if set.is_err() {
-            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "cache_set")
-                .increment(1);
         }
     }
 }

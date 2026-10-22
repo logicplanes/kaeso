@@ -124,12 +124,10 @@ pub async fn authenticate(
         return Ok(None);
     }
     if now - row.last_used_at >= TOUCH_EVERY {
+        // Writing the touched row back could land after a revocation's invalidation and cache
+        // the revoked session again, so the next request reads the touched row from PostgreSQL.
         match sessions::touch(&state.pg, row.id, now).await? {
-            Touch::Touched => {
-                let mut touched = (*row).clone();
-                touched.last_used_at = now;
-                state.caches.sessions.put(&key, touched).await;
-            }
+            Touch::Touched => state.caches.sessions.invalidate(&key).await,
             Touch::Ended => {
                 state.caches.sessions.invalidate(&key).await;
                 return Ok(None);
