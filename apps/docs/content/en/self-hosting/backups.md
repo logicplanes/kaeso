@@ -35,7 +35,7 @@ docker compose start gateway
 
 To restore on a new server:
 
-1. Put `compose.yaml`, `.env` and `master-keys` back in the install's folder.
+1. Put `compose.yaml`, `.env` and `master-keys` back in the install's folder, and give `master-keys` to the gateway's user as in [create the master key](../get-started/quick-start.md#create-the-master-key).
 2. Start only PostgreSQL with `docker compose up -d --wait postgres`.
 3. Restore the dump with the `pg_restore` command above.
 4. Start the rest with `docker compose up -d --wait`.
@@ -61,9 +61,10 @@ The master keys are the file `master-keys` next to `compose.yaml`. A stored prov
 1. Generate a new key and put it in front of the old one:
 
 ```bash
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
+umask 077
+printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(sudo cat master-keys)" > master-keys.new
+sudo chown 65532:65532 master-keys.new && sudo chmod 0400 master-keys.new
 mv master-keys.new master-keys
-chmod 644 master-keys
 ```
 
 2. Recreate the gateway, so it reads the new file:

@@ -43,7 +43,7 @@ Eine Installation ist ein Ordner, den nur Sie lesen können. Er enthält diese D
 | --- | --- |
 | `compose.yaml` | Die Dienste, aus dem Kaeso-Release. Ein Upgrade ersetzt sie. |
 | `.env` | Ihre Einstellungen: die Domain, die Datenbankpasswörter und E-Mail ([Konfiguration](configuration.md#einstellungen-in-der-env)). |
-| `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` liest. |
+| `master-keys` | Die Hauptschlüssel, die das Gateway als Docker-Secret `master_keys` liest. Nur der Benutzer des Gateways, 65532, kann sie lesen. |
 | `compose.override.yaml` | Optional. Ihre eigenen Änderungen an den Diensten, die ein Upgrade beibehält. |
 
 Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Backups auf ([Backups und Hauptschlüssel](backups.md)).

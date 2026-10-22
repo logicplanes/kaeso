@@ -35,7 +35,7 @@ docker compose start gateway
 
 So stellen Sie auf einem neuen Server wieder her:
 
-1. Legen Sie `compose.yaml`, `.env` und `master-keys` zurück in den Ordner der Installation.
+1. Legen Sie `compose.yaml`, `.env` und `master-keys` zurück in den Ordner der Installation, und übergeben Sie `master-keys` dem Benutzer des Gateways wie unter [Den Hauptschlüssel erzeugen](../get-started/quick-start.md#den-hauptschlüssel-erzeugen).
 2. Starten Sie nur PostgreSQL mit `docker compose up -d --wait postgres`.
 3. Stellen Sie den Dump mit dem `pg_restore`-Befehl oben wieder her.
 4. Starten Sie den Rest mit `docker compose up -d --wait`.
@@ -61,9 +61,10 @@ Die Hauptschlüssel sind die Datei `master-keys` neben der `compose.yaml`. Ein g
 1. Erzeugen Sie einen neuen Schlüssel und setzen Sie ihn vor den alten:
 
 ```bash
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
+umask 077
+printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(sudo cat master-keys)" > master-keys.new
+sudo chown 65532:65532 master-keys.new && sudo chmod 0400 master-keys.new
 mv master-keys.new master-keys
-chmod 644 master-keys
 ```
 
 2. Erstellen Sie das Gateway neu, damit es die neue Datei liest:

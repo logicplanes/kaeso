@@ -35,7 +35,7 @@ docker compose start gateway
 
 在新服务器上恢复：
 
-1. 把 `compose.yaml`、`.env` 和 `master-keys` 放回实例文件夹。
+1. 把 `compose.yaml`、`.env` 和 `master-keys` 放回实例文件夹，并像[创建主密钥](../get-started/quick-start.md#创建主密钥)中那样把 `master-keys` 交给网关的用户。
 2. 用 `docker compose up -d --wait postgres` 只启动 PostgreSQL。
 3. 用上面的 `pg_restore` 命令恢复转储。
 4. 用 `docker compose up -d --wait` 启动其余服务。
@@ -61,9 +61,10 @@ docker compose stop clickhouse
 1. 生成一个新密钥，放在旧密钥前面：
 
 ```bash
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
+umask 077
+printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(sudo cat master-keys)" > master-keys.new
+sudo chown 65532:65532 master-keys.new && sudo chmod 0400 master-keys.new
 mv master-keys.new master-keys
-chmod 644 master-keys
 ```
 
 2. 重新创建网关，让它读取新文件：

@@ -43,7 +43,7 @@ flowchart TD
 | --- | --- |
 | `compose.yaml` | 各项服务，来自 Kaeso 版本。升级时会替换它。 |
 | `.env` | 您的设置：域名、数据库密码和邮件（[配置](configuration.md#env-中的设置)）。 |
-| `master-keys` | 主密钥，网关以 Docker secret `master_keys` 的形式读取。 |
+| `master-keys` | 主密钥，网关以 Docker secret `master_keys` 的形式读取。只有网关的用户 65532 能读取它。 |
 | `compose.override.yaml` | 可选。您对服务的修改，升级时会保留。 |
 
 请把 `.env` 和 `master-keys` 的副本与数据库备份分开保存（[备份和主密钥](backups.md)）。

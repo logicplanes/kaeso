@@ -43,7 +43,7 @@ An install is a folder that only you can read. It holds these files:
 | --- | --- |
 | `compose.yaml` | The services, from the Kaeso release. An upgrade replaces it. |
 | `.env` | Your settings: the domain, the database passwords and email ([configuration](configuration.md#settings-in-env)). |
-| `master-keys` | The master keys, which the gateway reads as the Docker secret `master_keys`. |
+| `master-keys` | The master keys, which the gateway reads as the Docker secret `master_keys`. Only the gateway's user, 65532, can read it. |
 | `compose.override.yaml` | Optional. Your own changes to the services, which an upgrade keeps. |
 
 Keep copies of `.env` and `master-keys` apart from the database backups ([backups and master keys](backups.md)).

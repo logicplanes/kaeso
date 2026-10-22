@@ -78,6 +78,11 @@ def install(tmp_path_factory):
     (work / "master-keys").write_text(
         subprocess.check_output(["docker", "run", "--rm", gateway, "master-key", "generate"], text=True)
     )
+    subprocess.run(
+        ["docker", "run", "--rm", "--user", "0:0", "-v", f"{work}:/kaeso", "--entrypoint", "sh", CADDY,
+         "-c", "chown 65532:65532 /kaeso/master-keys && chmod 0400 /kaeso/master-keys"],
+        check=True,
+    )
     env = {
         "KAESO_DOMAIN": ":80",
         "POSTGRES_PASSWORD": os.urandom(16).hex(),
@@ -93,6 +98,7 @@ def install(tmp_path_factory):
         "COMPOSE_PROFILES": "updater",
         "KAESO_DIR": str(work),
     }
+    (work / ".env").touch(mode=0o600)
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
 
@@ -166,6 +172,15 @@ def test_a_fresh_install_serves_both_sdks_and_records_usage(install, owner):
         return len(logs.get("data", [])) == 2 and sum(r["requests"] for r in usage.get("data", [])) == 2
 
     poll(recorded, "two log entries and their usage", seconds=30)
+
+
+def test_the_gateway_reads_a_master_key_file_only_its_own_user_can_read(install):
+    assert (install.work / "master-keys").stat().st_mode & 0o777 == 0o400
+    assert (install.work / ".env").stat().st_mode & 0o777 == 0o600
+    docker_reads_this_folder_as_you_from_a_vm = sys.platform == "darwin"
+    if not docker_reads_this_folder_as_you_from_a_vm:
+        assert (install.work / "master-keys").stat().st_uid == 65532
+    assert install.health["gateway"] == "healthy"
 
 
 def test_wait_returns_once_every_service_is_healthy_caddy_included(install):
