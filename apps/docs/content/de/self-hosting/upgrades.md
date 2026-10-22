@@ -10,32 +10,33 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 
 1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Einstellungen** › **Instanz** › **Updates**.
 2. [Sichern](backups.md) Sie PostgreSQL und ClickHouse, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
-3. Laden Sie im Ordner der Installation die neue `compose.yaml` über die alte und die `release.json` des Releases daneben. `.env`, `master-keys` und `compose.override.yaml` bleiben, wie sie sind.
+3. Setzen Sie im Ordner der Installation `version` auf das Release, auf das Sie aktualisieren, und laden, prüfen und starten Sie es dann. Die Befehle laden `compose.yaml` und `release.json` in einen temporären Ordner und prüfen sie, mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq`:
+   - die Signatur des Release-Workflows von Kaeso auf `release.json`;
+   - den Hash der `compose.yaml`, den `release.json` nennt, und damit den Digest jedes Kaeso-Images;
+   - die Version, die `release.json` nennt.
+
+   Erst dann verschieben sie beide Dateien in den Ordner der Installation, laden die Images und starten sie. `.env`, `master-keys` und `compose.override.yaml` bleiben, wie sie sind.
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/release.json
+version={{version}}
+(
+  set -euo pipefail
+  dir="$(mktemp -d)"
+  curl -fsSL -o "$dir/compose.yaml" "https://github.com/logicplanes/kaeso/releases/download/v$version/compose.yaml"
+  curl -fsSL -o "$dir/release.json" "https://github.com/logicplanes/kaeso/releases/download/v$version/release.json"
+  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
+  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -
+  jq -e --arg version "$version" '.version == $version' "$dir/release.json"
+  mv "$dir/compose.yaml" "$dir/release.json" .
+  rmdir "$dir"
+  docker compose pull
+  docker compose up -d --wait
+)
 ```
 
-4. Prüfen Sie, dass der Release-Workflow von Kaeso das Release gebaut hat. `release.json` trägt die Signatur des Workflows und nennt den Hash der `compose.yaml`, die jedes Kaeso-Image mit seinem Digest nennt. Prüfen Sie mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq` die Signatur, dann den Hash:
+Die Befehle halten beim ersten an, der scheitert, und lassen die Installation, wie sie war. Docker prüft jedes geladene Image gegen den Digest in der `compose.yaml`. Der letzte Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
-```bash
-gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
-echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -
-```
-
-Beide Befehle scheitern, wenn etwas abweicht. Docker prüft danach jedes geladene Image gegen den Digest in der `compose.yaml`.
-
-5. Laden Sie die neuen Images und starten Sie sie:
-
-```bash
-docker compose pull
-docker compose up -d --wait
-```
-
-Der Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
-
-Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole die Befehle der Schritte 3 bis 5 mit der genauen Version.
+Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Befehle mit der genauen Version.
 
 ## Neue Releases
 

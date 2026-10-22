@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button, Code, Input, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api } from "~/api/client";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { sessionQuery } from "~/auth/session";
 import { signInMethodsQuery } from "~/auth/sign-in-api";
 import { usePageTitle } from "~/shell/title";
@@ -69,6 +69,7 @@ function SetupForm({ token }: { token: string }) {
       await api.POST("/platform/v1/auth/setup", {
         body: { token, name: name.trim(), email: email.trim(), ...(withPassword ? { password } : {}), org_name: orgName.trim() },
       });
+      forgetFragment(token);
       await queryClient.resetQueries();
       const org = needsProvider ? (await queryClient.fetchQuery(sessionQuery)).memberships[0]?.org_id : undefined;
       await (org ? navigate({ to: "/settings/orgs/$org/security", params: { org } }) : navigate({ to: "/" }));

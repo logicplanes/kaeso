@@ -5,6 +5,7 @@ import { me } from "~/test/fixtures/instance-account";
 import { emailSent, signedInReply } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { cachedText } from "~/test/cache";
 
 const PATH = "/settings/account/security";
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
@@ -152,6 +153,7 @@ describe("turning on two-factor authentication", () => {
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
     await user.click(within(codes).getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
+    await waitFor(() => expect(cachedText()).not.toMatch(/aaaa-bbbb|JBSWY3DPEHPK3PXP/));
   });
 
   it("confirms one code at a time, even when the code is typed again while the first is checked", async () => {
@@ -384,10 +386,12 @@ describe("with two-factor authentication on", () => {
     await user.click(within(confirm).getByRole("button", { name: "Regenerate" }));
     const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
     expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
+    expect(cachedText()).toContain("eeee-ffff");
     expect(requests("POST", "me/recovery-codes")).toHaveLength(1);
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
+    await waitFor(() => expect(cachedText()).not.toContain("eeee-ffff"));
   });
 
   it("keeps the confirmation open while new codes are made, so two regenerations can't race", async () => {

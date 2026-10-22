@@ -7,6 +7,7 @@ import { access, apiKey, catalogueModel, projectData, projectPath, serviceAccoun
 import { createdKey, model } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { cachedText } from "~/test/cache";
 
 const sonnet = catalogueModel({ effective: { ...catalogueModel().effective, display_name: "Sonnet 4.5" } });
 
@@ -122,10 +123,12 @@ describe("CreateKeyDialog", () => {
     await next(user, dialog, "Models and limits");
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
     const reveal = await screen.findByRole("dialog", { name: "Key created" });
+    expect(cachedText()).toContain(SECRET);
     await user.click(within(reveal).getAllByRole("button", { name: /Copy/ })[0] as HTMLElement);
     await user.click(within(reveal).getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
     expect(screen.queryByRole("alertdialog", { name: "Did you copy the key?" })).not.toBeInTheDocument();
+    await waitFor(() => expect(cachedText()).not.toContain(SECRET));
   });
 
   it("asks before Escape closes a key that wasn't copied, and closes the form with Escape", async () => {

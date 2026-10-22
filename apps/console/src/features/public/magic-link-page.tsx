@@ -7,7 +7,7 @@ import { api, data } from "~/api/client";
 import { toastApiError } from "~/api/toast-error";
 import { usePageTitle } from "~/shell/title";
 import { safeNext } from "~/auth/next";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { sessionQuery } from "~/auth/session-queries";
 import { codeRefusal, signInWithTotp, totpChallenge, type PasswordResult, type TotpChallenge } from "~/auth/sign-in-api";
 import { t } from "~/i18n";
@@ -59,8 +59,10 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
   const [steps, setSteps] = useState<Steps | null>(null);
   const [code, setCode] = useState("");
   const done = async () => {
+    forgetFragment(token);
     await queryClient.resetQueries();
     await navigate({ to: safeNext(next), replace: true });
+    queryClient.removeQueries({ queryKey: ["magic-link", token], exact: true });
   };
   const run = async (fn: () => Promise<void>, onError: (e: unknown) => void) => {
     setBusy(true);

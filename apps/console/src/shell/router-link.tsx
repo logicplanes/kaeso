@@ -1,19 +1,24 @@
 import { forwardRef } from "react";
 import { Link } from "@tanstack/react-router";
 import type { LinkComponentProps } from "@logicplanes/kaeso-ui";
+import { internalPath } from "~/auth/next";
 
 const CURRENT_ONLY = { exact: true } as const;
+const OUTSIDE = /^(?:https?:\/\/|mailto:|otpauth:\/\/|#)/i;
 
 export const RouterLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(function RouterLink({ href, target, children, ...props }, ref) {
-  if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(href) || href.startsWith("mailto:") || href.startsWith("#")) {
+  const outside = OUTSIDE.test(href);
+  const path = outside ? null : internalPath(href);
+  const opens = target ? { target } : {};
+  if (path === null) {
     return (
-      <a ref={ref} href={href} {...(target ? { target } : {})} {...props}>
+      <a ref={ref} {...(outside ? { href } : {})} {...opens} {...props}>
         {children}
       </a>
     );
   }
   return (
-    <Link ref={ref} to={href} activeOptions={CURRENT_ONLY} {...(target ? { target } : {})} {...props}>
+    <Link ref={ref} to={path} activeOptions={CURRENT_ONLY} {...opens} {...props}>
       {children}
     </Link>
   );

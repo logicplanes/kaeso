@@ -4,6 +4,7 @@ import { signedOut } from "~/test/fixtures";
 import { emailSent, methods } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { cachedText } from "~/test/cache";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -72,6 +73,7 @@ describe("setting a new password", () => {
     expect(await (await notifications()).findByText("Password changed; sign in with the new one")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/sign-in");
     expect(requests("POST", "auth/password-reset/verify").map((r) => r.body)).toEqual([{ token: "rst_1", password: "too short but now long" }]);
+    await waitFor(() => expect(cachedText()).not.toContain("rst_1"));
   });
 
   it("names the account for password managers and keeps the hint's height as the password grows", async () => {

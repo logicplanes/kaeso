@@ -150,12 +150,19 @@ function blocked(u: UpdatesView): string | null {
 function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
   const download = `https://github.com/logicplanes/kaeso/releases/download/v${latest.version}`;
   const commands = [
-    `curl -fsSLO ${download}/compose.yaml`,
-    `curl -fsSLO ${download}/release.json`,
-    "gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod",
-    'echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -',
-    "docker compose pull",
-    "docker compose up -d --wait",
+    "(",
+    "  set -euo pipefail",
+    '  dir="$(mktemp -d)"',
+    `  curl -fsSL -o "$dir/compose.yaml" ${download}/compose.yaml`,
+    `  curl -fsSL -o "$dir/release.json" ${download}/release.json`,
+    '  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod',
+    '  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -',
+    `  jq -e '.version == "${latest.version}"' "$dir/release.json"`,
+    '  mv "$dir/compose.yaml" "$dir/release.json" .',
+    '  rmdir "$dir"',
+    "  docker compose pull",
+    "  docker compose up -d --wait",
+    ")",
   ].join("\n");
   const guide = httpsHref(u.upgrade_guide);
   return (

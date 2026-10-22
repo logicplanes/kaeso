@@ -381,11 +381,25 @@ describe("instance updates page", () => {
     expect(await screen.findByText("The updater doesn't answer; check that its container runs.")).toBeInTheDocument();
     expect(screen.getByText("40.4.3 available")).toBeInTheDocument();
     const commands = screen.getByText(/releases\/download\/v40\.4\.3\/compose\.yaml/).closest("pre")?.textContent ?? "";
-    const verify = commands.indexOf("gh attestation verify release.json --repo logicplanes/kaeso");
-    expect(commands).toContain("releases/download/v40.4.3/release.json");
-    expect(verify).toBeGreaterThan(0);
-    expect(commands.indexOf("sha256sum -c -")).toBeGreaterThan(verify);
-    expect(commands.indexOf("docker compose pull")).toBeGreaterThan(commands.indexOf("sha256sum -c -"));
+    const steps = [
+      "set -euo pipefail",
+      'dir="$(mktemp -d)"',
+      'curl -fsSL -o "$dir/compose.yaml" https://github.com/logicplanes/kaeso/releases/download/v40.4.3/compose.yaml',
+      'curl -fsSL -o "$dir/release.json" https://github.com/logicplanes/kaeso/releases/download/v40.4.3/release.json',
+      'gh attestation verify "$dir/release.json" --repo logicplanes/kaeso',
+      "sha256sum -c -",
+      `jq -e '.version == "40.4.3"' "$dir/release.json"`,
+      'mv "$dir/compose.yaml" "$dir/release.json" .',
+      "docker compose pull",
+      "docker compose up -d --wait",
+    ];
+    const at = steps.map((step) => commands.indexOf(step));
+    expect(
+      at.every((i) => i >= 0),
+      JSON.stringify(at),
+    ).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(commands).not.toMatch(/curl -fsSLO|> compose\.yaml/);
   });
 
   it("needs the updater before updates can install automatically", async () => {

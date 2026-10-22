@@ -4,6 +4,7 @@ import { ORG, PROJECT, signedIn, signedOut, whoAmI } from "~/test/fixtures";
 import { signedInReply, totpRequired } from "~/test/fixtures/public";
 import { apiError, json, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { cachedText } from "~/test/cache";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -37,9 +38,11 @@ describe("signing in with an emailed link", () => {
     expect(window.location.hash).toBe("");
     expect(requests("POST", LOOKUP).map((r) => r.body)).toEqual([{ token: "mgl_1" }]);
     expect(requests("POST", VERIFY)).toHaveLength(0);
+    expect(cachedText()).toContain("mgl_1");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
     await waitFor(() => expect(window.location.pathname).toBe(next));
     expect(requests("POST", VERIFY).map((r) => r.body)).toEqual([{ token: "mgl_1" }]);
+    await waitFor(() => expect(cachedText()).not.toContain("mgl_1"));
   });
 
   it("says which session a different account replaces, and can keep it", async () => {

@@ -113,7 +113,7 @@ test("updater away: the commands to update by hand", async ({ page }) => {
   await lookNow(page);
   await expect(page.getByText("The updater doesn't answer; check that its container runs.")).toBeVisible();
   await expect(page.getByText(`releases/download/v${versions.patch}/compose.yaml`, { exact: false })).toBeVisible();
-  await expect(page.getByText("gh attestation verify release.json", { exact: false })).toBeVisible();
+  await expect(page.getByText(`gh attestation verify "$dir/release.json"`, { exact: false })).toBeVisible();
 });
 
 test("settings: pre-releases are offered and updates install automatically in a window", async ({ page }) => {

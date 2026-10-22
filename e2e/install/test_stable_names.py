@@ -7,7 +7,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-RELEASE_ASSET = "https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml"
+RELEASES = "https://github.com/logicplanes/kaeso/releases"
+RELEASE_ASSET = f"{RELEASES}/latest/download/compose.yaml"
 VOLUMES = {
     "caddy_data": "kaeso_caddy_data",
     "caddy_config": "kaeso_caddy_config",
@@ -109,12 +110,20 @@ def test_every_release_attaches_the_compose_file_under_its_name():
     assert re.search(r'gh release create .*"\$RUNNER_TEMP"/assets/\*', workflow)
 
 
-INSTALL_PAGES = ("get-started/quick-start.md", "self-hosting/upgrades.md")
+LANGUAGES = ("en", "de", "zh-CN")
 
 
 @pytest.mark.parametrize(
     "page",
-    ["README.md", *(f"apps/docs/content/{lang}/{page}" for lang in ("en", "de", "zh-CN") for page in INSTALL_PAGES)],
+    ["README.md", *(f"apps/docs/content/{lang}/get-started/quick-start.md" for lang in LANGUAGES)],
 )
 def test_the_install_pages_download_the_latest_release_asset(page):
     assert f"curl -fsSLO {RELEASE_ASSET}" in (ROOT / page).read_text()
+
+
+@pytest.mark.parametrize("lang", LANGUAGES)
+def test_the_upgrade_guide_downloads_the_chosen_release_assets_by_their_names(lang):
+    page = (ROOT / "apps" / "docs" / "content" / lang / "self-hosting" / "upgrades.md").read_text()
+    assert "version={{version}}\n" in page
+    for asset in ("compose.yaml", "release.json"):
+        assert f'curl -fsSL -o "$dir/{asset}" "{RELEASES}/download/v$version/{asset}"' in page

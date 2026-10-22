@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Button, Input, Link, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
@@ -73,6 +73,7 @@ function RequestReset() {
 function NewPassword({ token }: { token: string }) {
   usePageTitle(t("public.newPasswordTitle", "Set a new password"));
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
   const { busy, error, submit } = useSubmit();
   const account = useQuery({
@@ -107,7 +108,9 @@ function NewPassword({ token }: { token: string }) {
           if (!passwordOk(password)) return;
           void submit(async () => {
             await api.POST("/platform/v1/auth/password-reset/verify", { body: { token, password } });
+            forgetFragment(token);
             await navigate({ to: "/sign-in", search: { done: "password-changed" }, replace: true });
+            queryClient.removeQueries({ queryKey: ["password-reset", token], exact: true });
           });
         }}
       >

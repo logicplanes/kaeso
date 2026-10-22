@@ -18,6 +18,10 @@ pub fn target(base: &Url, path: &str) -> Option<Url> {
     }
     let joined = base.join(path.get(1..)?).ok()?;
     let rest = joined.path().strip_prefix(base.path())?;
+    // Dot segments can collapse `/.//host` into `//host`, which a browser reads as another origin.
+    if rest.starts_with('/') {
+        return None;
+    }
     let first = rest.split('/').next().unwrap_or_default();
     let same_site = joined.origin() == base.origin() && joined.username().is_empty();
     (same_site && !NOT_CONSOLE.contains(&first)).then_some(joined)
@@ -80,6 +84,12 @@ mod tests {
             "/platform",
             "/v1/models",
             "/../../platform/v1/auth/session",
+            "/.//evil.example",
+            "/%2e//evil.example",
+            "/%2E//evil.example",
+            "/a/..//evil.example",
+            "/./\\evil.example",
+            "/orgs/../..//evil.example",
         ] {
             assert_eq!(to(path), None, "{path:?}");
         }
@@ -95,5 +105,22 @@ mod tests {
         );
         let refused = validate(&base(), Some("//evil.example")).unwrap_err();
         assert!(refused.to_string().contains("`next`"), "{refused}");
+        assert!(validate(&base(), Some("/a/..//evil.example")).is_err());
+    }
+
+    #[test]
+    fn an_install_under_a_path_refuses_the_same_forms() {
+        let base = Url::parse("https://kaeso.example.com/kaeso/").unwrap();
+        assert_eq!(
+            target(&base, "/orgs").map(|u| u.to_string()).as_deref(),
+            Some("https://kaeso.example.com/kaeso/orgs")
+        );
+        for path in [
+            "/.//evil.example",
+            "/a/..//evil.example",
+            "/%2e//evil.example",
+        ] {
+            assert_eq!(target(&base, path), None, "{path:?}");
+        }
     }
 }

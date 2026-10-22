@@ -17,4 +17,21 @@ describe("where sign-in goes", () => {
     expect(internalPath("")).toBeNull();
     expect(internalPath(null)).toBeNull();
   });
+  it("never a path whose dot segments collapse into another origin", () => {
+    for (const path of [
+      "/.//evil.example",
+      "/%2e//evil.example",
+      "/%2E//evil.example",
+      "/a/..//evil.example",
+      "/./\\evil.example",
+      "/orgs/../..//evil.example/x",
+    ]) {
+      expect(internalPath(path), path).toBeNull();
+      expect(safeNext(path), path).toBe("/");
+    }
+  });
+  it("keeps the path as the browser resolves it, not as it was written", () => {
+    expect(internalPath("/settings/../orgs/kaeso?tab=keys#new")).toBe("/orgs/kaeso?tab=keys#new");
+    expect(internalPath("/./orgs/%2e/kaeso")).toBe("/orgs/kaeso");
+  });
 });
