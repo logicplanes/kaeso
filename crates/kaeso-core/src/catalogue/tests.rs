@@ -34,6 +34,37 @@ fn eff(e: &Entry) -> Effective {
     effective(e, &snapshot(), &Supplement::embedded().unwrap()).unwrap()
 }
 
+fn feed(cost: &str) -> Vec<u8> {
+    format!(
+        r#"{{"openai":{{"id":"openai","models":{{"gpt-4o":{{"id":"gpt-4o","cost":{cost},"limit":{{"context":1,"output":1}}}}}}}}}}"#
+    )
+    .into_bytes()
+}
+
+#[test]
+fn a_price_a_feed_zeroes_leaves_the_model_unpriced_for_a_spend_budget() {
+    let ids = crate::provider::known_ids();
+    let parsed = models_dev::parse(&feed(r#"{"input":0,"output":0}"#), &ids).unwrap();
+    let e = entry("openai", "gpt-4o");
+    let zeroed = effective(&e, &parsed.snapshot, &Supplement::default()).unwrap();
+    assert_eq!(zeroed.fields.input_price, Some(dec!(0)));
+    let refused = crate::cost::unpriced_model(
+        &zeroed.fields,
+        &e.overrides,
+        kaeso_kpp::RequestKind::Generate,
+        "gpt-4o",
+    );
+    assert_eq!(refused.map(|u| u.feature), Some("gpt-4o".to_owned()));
+    for bad in [
+        r#"{"input":-1}"#,
+        r#"{"input":1000001}"#,
+        r#"{"input":"x"}"#,
+    ] {
+        let p = models_dev::parse(&feed(bad), &ids).unwrap();
+        assert_eq!(p.skipped, ["openai/gpt-4o"], "{bad}");
+    }
+}
+
 #[test]
 fn the_shipped_supplement_is_valid_and_names_known_models() {
     let supplement = Supplement::embedded().unwrap();

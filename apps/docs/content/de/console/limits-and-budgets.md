@@ -42,7 +42,8 @@ Kaeso bepreist eine Anfrage nach ihren Tokens. Manche Funktionen rechnen zusätz
 - ein Werkzeug, das der Anbieter ausführt, etwa `web_search` oder `code_execution` von Anthropic oder `web_search`, `file_search`, `image_generation`, `code_interpreter` oder `mcp` von OpenAI;
 - `mcp_servers`, `web_search_options`, `plugins` von OpenRouter oder `search_parameters` von xAI;
 - einen `service_tier` außer `auto`, `default`, `flex`, `on_demand` oder `standard_only`, etwa `priority`;
-- die `anthropic-beta` `context-1m-…`, die lange Prompts zu einem höheren Satz abrechnet.
+- die `anthropic-beta` `context-1m-…`, die lange Prompts zu einem höheren Satz abrechnet;
+- ein Modell ohne Eingabe- oder Ausgabepreis oder mit einem Preis von null, außer ein Admin hat diesen Preis am Modell von Hand gesetzt. Embeddings brauchen nur einen Eingabepreis.
 
 Werkzeuge, die die App selbst ausführt, sind erlaubt: Funktionen und eigene Werkzeuge, `bash`, `text_editor`, `computer` und `memory` von Anthropic sowie `local_shell`, `apply_patch` und `computer_use_preview` von OpenAI. Token-Budgets und Raten lehnen diese Funktionen nicht ab, und ohne Ausgabenbudget sind alle Funktionen erlaubt.
 

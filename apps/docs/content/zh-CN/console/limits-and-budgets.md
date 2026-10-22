@@ -42,7 +42,8 @@ Kaeso 按 token 为请求计价。有些功能还会按次计费或按更高费�
 - 由服务商运行的工具，例如 Anthropic 的 `web_search` 或 `code_execution`，或 OpenAI 的 `web_search`、`file_search`、`image_generation`、`code_interpreter` 或 `mcp`；
 - `mcp_servers`、`web_search_options`、OpenRouter 的 `plugins` 或 xAI 的 `search_parameters`；
 - `auto`、`default`、`flex`、`on_demand` 或 `standard_only` 以外的 `service_tier`，例如 `priority`；
-- `anthropic-beta` 中的 `context-1m-…`，它会按更高费率对长提示词计费。
+- `anthropic-beta` 中的 `context-1m-…`，它会按更高费率对长提示词计费；
+- 没有输入或输出价格、或价格为零的模型，除非管理员在该模型上手动设置了这个价格。Embeddings 只需要输入价格。
 
 由应用自己运行的工具可以使用：函数和自定义工具，Anthropic 的 `bash`、`text_editor`、`computer` 和 `memory`，以及 OpenAI 的 `local_shell`、`apply_patch` 和 `computer_use_preview`。token 预算和速率限制不会拒绝这些功能；没有支出预算时，所有功能都可以使用。
 

@@ -1,4 +1,4 @@
-use kaeso_kpp::Usage;
+use kaeso_kpp::{RequestKind, Usage};
 use rust_decimal::Decimal;
 use rust_decimal::prelude::ToPrimitive;
 
@@ -22,6 +22,28 @@ pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
         .input_price
         .and_then(|p| p.checked_mul(ONE_HOUR_WRITE_FACTOR))
         .or(prices.cache_write_price)
+}
+
+pub fn unpriced_model(
+    prices: &Fields,
+    set_by_hand: &Fields,
+    kind: RequestKind,
+    model: &str,
+) -> Option<Unpriced> {
+    let priced = |price: Option<Decimal>, by_hand: Option<Decimal>| {
+        by_hand.is_some() || price.is_some_and(|p| p > Decimal::ZERO)
+    };
+    let input = priced(prices.input_price, set_by_hand.input_price);
+    let output = priced(prices.output_price, set_by_hand.output_price);
+    let known = match kind {
+        RequestKind::Generate => input && output,
+        RequestKind::Embed => input,
+        _ => true,
+    };
+    (!known).then(|| Unpriced {
+        param: "model",
+        feature: model.to_owned(),
+    })
 }
 
 pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
@@ -91,6 +113,41 @@ pub fn total_tokens(usage: &Usage) -> u64 {
 mod tests {
     use super::*;
     use rust_decimal_macros::dec;
+
+    #[test]
+    fn a_model_is_unpriced_without_a_positive_price_unless_one_was_set_by_hand() {
+        let prices = |input_price: Option<Decimal>, output_price: Option<Decimal>| Fields {
+            input_price,
+            output_price,
+            ..Fields::default()
+        };
+        let none = Fields::default();
+        let generate = RequestKind::Generate;
+        let priced = prices(Some(dec!(1)), Some(dec!(2)));
+        assert_eq!(unpriced_model(&priced, &none, generate, "m"), None);
+        for unpriced in [
+            prices(None, Some(dec!(2))),
+            prices(Some(dec!(1)), None),
+            prices(Some(dec!(0)), Some(dec!(2))),
+            prices(Some(dec!(1)), Some(dec!(0))),
+        ] {
+            let u = unpriced_model(&unpriced, &none, generate, "gpt-x").unwrap();
+            assert_eq!((u.param, u.feature.as_str()), ("model", "gpt-x"));
+        }
+        let free = prices(Some(dec!(0)), Some(dec!(0)));
+        assert_eq!(
+            unpriced_model(&free, &free, generate, "m"),
+            None,
+            "an admin made it free"
+        );
+        let embed = prices(Some(dec!(1)), None);
+        assert_eq!(unpriced_model(&embed, &none, RequestKind::Embed, "m"), None);
+        assert!(unpriced_model(&none, &none, RequestKind::Embed, "m").is_some());
+        assert_eq!(
+            unpriced_model(&none, &none, RequestKind::CountTokens, "m"),
+            None
+        );
+    }
 
     #[test]
     fn costs_are_per_million_tokens_and_round_up_to_nano_dollars() {
