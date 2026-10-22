@@ -96,11 +96,12 @@ def test_the_validate_job_compares_versions_with_the_workspace_semver():
 def test_the_tag_job_commits_only_what_version_set_writes_on_its_own():
     versions = job("versions")
     assert 'node scripts/version.mjs set "$VERSION"' in versions
-    assert "git diff -- . ':(exclude)CHANGELOG.md'" in versions
+    assert "git diff --full-index -- . ':(exclude)CHANGELOG.md'" in versions
     assert re.search(r"^    permissions:\n      contents: read\n    env:", versions, re.M)
     tag = job("tag")
     assert re.search(r"^    needs: \[[^\]]*\bversions\b[^\]]*\]$", tag, re.M)
     assert "name: release-versions" in tag
+    assert "git diff --cached --full-index -- . ':(exclude)CHANGELOG.md'" in tag
     compare = tag.index('cmp -s "$RUNNER_TEMP/versions/versions.patch" "$RUNNER_TEMP/release/versions.patch"')
     assert compare < tag.index('git commit --message "Release $VERSION"')
 
