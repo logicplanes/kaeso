@@ -4,6 +4,7 @@ mod common;
 
 use axum::http::{Method, StatusCode};
 use common::{App, PASSWORD, totp_code as code};
+use kaeso_core::clock::Clock;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -657,6 +658,37 @@ async fn a_revoked_session_is_not_brought_back_by_its_next_use() {
         .await
         .expect_status(StatusCode::UNAUTHORIZED);
     app.get("/me", &owner.cookie)
+        .await
+        .expect_status(StatusCode::UNAUTHORIZED);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_session_touched_as_it_is_revoked_is_not_cached_again() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    app.get("/auth/session", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    app.clock.advance(time::Duration::seconds(61));
+    app.get("/auth/session", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let touched: time::OffsetDateTime = sqlx::query_scalar("SELECT last_used_at FROM sessions")
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(
+        touched,
+        app.clock.now(),
+        "the second use touched the session"
+    );
+    sqlx::query("UPDATE sessions SET revoked_at = now()")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    app.get("/auth/session", &owner.cookie)
         .await
         .expect_status(StatusCode::UNAUTHORIZED);
     s.cleanup().await;
