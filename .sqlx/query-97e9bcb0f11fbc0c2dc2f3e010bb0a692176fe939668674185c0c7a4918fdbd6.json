@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET email = $2, email_verified_at = $3, updated_at = now() WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM users WHERE email_key(email) = email_key($2) AND id <> $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "97e9bcb0f11fbc0c2dc2f3e010bb0a692176fe939668674185c0c7a4918fdbd6"
+}

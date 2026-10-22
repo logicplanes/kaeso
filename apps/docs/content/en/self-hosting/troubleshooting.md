@@ -137,6 +137,12 @@ docker compose exec gateway kaeso user reset-2fa person@example.com
 
 Either way, their authenticator and recovery codes are removed, their sessions end, and they get an email. Where two-factor authentication is required, they set it up again at their next sign-in.
 
+## Two accounts share one address
+
+Kaeso treats email addresses that differ only in how they are written as one address. That covers upper and lower case, an accent typed as part of its letter or after it, and full-width letters. Accounts created before Kaeso compared addresses this way can share one.
+
+Kaeso then signs neither in by that address, sends neither a link, and logs `accounts share one canonical email address; refusing to look either up by it` with both user ids. An instance admin finds both under **Settings** › **Instance** › **Users** and deletes the one that shouldn't exist. The other then signs in as before.
+
 ## Nobody can sign in through single sign-on
 
 On an install without passwords, a broken identity provider leaves no way in. Don't turn passwords back on: print a one-time sign-in link for an instance admin, as [get back in](sign-in.md#get-back-in) shows.

@@ -175,7 +175,7 @@ pub async fn invite(
     Body(req): Body<InstanceInvite>,
 ) -> ApiResult<(StatusCode, Json<InviteView>)> {
     let email = validate_email("email", &req.email)?;
-    if users::get_by_email(&state.pg, &email).await?.is_some() {
+    if users::email_taken(&state.pg, &email, None).await? {
         return Err(ApiError::Conflict(format!(
             "{email} already has an account."
         )));

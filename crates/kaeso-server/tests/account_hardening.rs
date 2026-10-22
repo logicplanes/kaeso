@@ -506,6 +506,105 @@ async fn links_for_an_account_go_to_its_own_address_however_it_is_typed() {
     s.cleanup().await;
 }
 
+const DECOMPOSED: &str = "e\u{301}va@example.com";
+const COMPOSED: &str = "\u{E9}va@example.com";
+
+async fn store_owner_as_before_the_upgrade(app: &App) {
+    sqlx::query("UPDATE users SET email = $1 WHERE email = 'owner@example.com'")
+        .bind(DECOMPOSED)
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+}
+
+async fn password_sign_in(app: &App, email: &str) -> StatusCode {
+    app.post(
+        "/auth/password",
+        json!({ "email": email, "password": PASSWORD }),
+        None,
+    )
+    .await
+    .status
+}
+
+async fn ask_for_links(app: &App, email: &str) {
+    for path in ["/auth/password-reset", "/auth/magic-link"] {
+        app.post(path, json!({ "email": email }), None)
+            .await
+            .expect_status(StatusCode::OK);
+    }
+}
+
+#[tokio::test]
+async fn an_address_stored_decomposed_before_the_upgrade_still_signs_in_and_gets_links() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    store_owner_as_before_the_upgrade(&app).await;
+    for typed in [COMPOSED, DECOMPOSED, "\u{C9}VA@example.com"] {
+        assert_eq!(
+            password_sign_in(&app, typed).await,
+            StatusCode::OK,
+            "{typed}"
+        );
+    }
+    ask_for_links(&app, COMPOSED).await;
+    app.wait_for_mail(DECOMPOSED, 2).await;
+    assert_eq!(
+        kinds_to(&app, DECOMPOSED),
+        ["password_reset", "magic_link"],
+        "the links go to the address as the account stores it"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn accounts_that_share_a_canonical_address_are_never_picked_by_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    store_owner_as_before_the_upgrade(&app).await;
+    sqlx::query(
+        "INSERT INTO users (id, email, name, password_hash, email_verified_at) \
+         SELECT $1, $2, 'Twin', password_hash, now() FROM users WHERE email = $3",
+    )
+    .bind(uuid::Uuid::now_v7())
+    .bind(COMPOSED)
+    .bind(DECOMPOSED)
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    for typed in [COMPOSED, DECOMPOSED] {
+        assert_eq!(
+            password_sign_in(&app, typed).await,
+            StatusCode::UNAUTHORIZED,
+            "{typed} names two accounts, so it signs in to neither"
+        );
+        ask_for_links(&app, typed).await;
+    }
+    kaeso_store::pg::users::insert(
+        &app.state.pg,
+        &kaeso_store::pg::users::NewUser {
+            id: uuid::Uuid::now_v7(),
+            email: "ada@example.com",
+            name: "Ada",
+            password_hash: None,
+            email_verified_at: None,
+            is_instance_admin: false,
+        },
+    )
+    .await
+    .unwrap();
+    ask_for_links(&app, "ada@example.com").await;
+    app.wait_for_mail("ada@example.com", 2).await;
+    assert!(kinds_to(&app, DECOMPOSED).is_empty());
+    assert!(
+        kinds_to(&app, COMPOSED).is_empty(),
+        "no link goes to either account"
+    );
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn sign_in_is_refused_while_its_throttles_cannot_be_counted() {
     let valkey = common::flaky_valkey::FlakyValkey::start().await;

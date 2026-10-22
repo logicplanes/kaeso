@@ -36,10 +36,17 @@ pub struct NewUser<'a> {
     pub is_instance_admin: bool,
 }
 
-pub async fn insert(db: impl PgExecutor<'_>, u: &NewUser<'_>) -> Result<bool, StoreError> {
+pub async fn insert(
+    db: impl sqlx::Acquire<'_, Database = sqlx::Postgres>,
+    u: &NewUser<'_>,
+) -> Result<bool, StoreError> {
+    let mut tx = db.begin().await?;
+    lock_address(&mut tx, u.email).await?;
     let done = sqlx::query!(
         "INSERT INTO users (id, email, name, password_hash, email_verified_at, is_instance_admin) \
-         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING",
+         SELECT $1, $2, $3, $4, $5, $6 \
+         WHERE NOT EXISTS (SELECT 1 FROM users WHERE email_key(email) = email_key($2)) \
+         ON CONFLICT DO NOTHING",
         u.id,
         u.email,
         u.name,
@@ -47,9 +54,22 @@ pub async fn insert(db: impl PgExecutor<'_>, u: &NewUser<'_>) -> Result<bool, St
         u.email_verified_at,
         u.is_instance_admin,
     )
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(done.rows_affected() == 1)
+}
+
+// The canonical form has no unique index, because accounts stored before it existed may share
+// one; this lock makes the check and the write of two accounts with one form take turns.
+async fn lock_address(db: &mut sqlx::PgConnection, email: &str) -> Result<(), StoreError> {
+    sqlx::query!(
+        "SELECT pg_advisory_xact_lock(hashtextextended('users_email:' || email_key($1), 0))",
+        email
+    )
     .execute(db)
     .await?;
-    Ok(done.rows_affected() == 1)
+    Ok(())
 }
 
 pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<User>, StoreError> {
@@ -63,8 +83,9 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<User>, Stor
     .await?)
 }
 
-// PostgreSQL's lower() folds more than Unicode lowercase (`İ` to `i` under glibc and musl), so
-// a row it finds is the address only when both have the same canonical form.
+// email_key() is the database's side of kaeso_core::email::canonical and folds at least as much
+// (its lower() turns `İ` into `i`), so a row it finds is the address only when both have the same
+// canonical form. Two accounts with one form predate the rule, and neither is picked.
 pub async fn get_by_email(
     db: impl PgExecutor<'_>,
     email: &str,
@@ -72,16 +93,29 @@ pub async fn get_by_email(
     let found = sqlx::query_as!(
         User,
         "SELECT id, email, name, password_hash, email_verified_at, state, is_instance_admin, \
-         notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users WHERE lower(email) = lower($1)",
+         notify_budget_alerts, notify_key_expiry, created_at, avatar FROM users \
+         WHERE email_key(email) = email_key($1) ORDER BY id",
         email
     )
-    .fetch_optional(db)
+    .fetch_all(db)
     .await?;
-    Ok(found.filter(|u| {
-        u.email
-            .as_deref()
-            .is_some_and(|stored| kaeso_core::email::same_address(stored, email))
-    }))
+    let mut same: Vec<User> = found
+        .into_iter()
+        .filter(|u| {
+            u.email
+                .as_deref()
+                .is_some_and(|stored| kaeso_core::email::same_address(stored, email))
+        })
+        .collect();
+    if same.len() > 1 {
+        let users: Vec<Uuid> = same.iter().map(|u| u.id).collect();
+        tracing::warn!(
+            ?users,
+            "accounts share one canonical email address; refusing to look either up by it"
+        );
+        return Ok(None);
+    }
+    Ok(same.pop())
 }
 
 pub async fn set_password(db: impl PgExecutor<'_>, id: Uuid, hash: &str) -> Result<(), StoreError> {
@@ -158,7 +192,7 @@ pub async fn email_taken(
     except: Option<Uuid>,
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query_scalar!(
-        "SELECT EXISTS (SELECT 1 FROM users WHERE lower(email) = lower($1) \
+        "SELECT EXISTS (SELECT 1 FROM users WHERE email_key(email) = email_key($1) \
          AND ($2::uuid IS NULL OR id <> $2)) AS \"t!\"",
         email,
         except
@@ -168,21 +202,27 @@ pub async fn email_taken(
 }
 
 pub async fn set_email(
-    db: impl PgExecutor<'_>,
+    db: impl sqlx::Acquire<'_, Database = sqlx::Postgres>,
     id: Uuid,
     email: &str,
     at: OffsetDateTime,
 ) -> Result<bool, StoreError> {
+    let mut tx = db.begin().await?;
+    lock_address(&mut tx, email).await?;
     let result = sqlx::query!(
-        "UPDATE users SET email = $2, email_verified_at = $3, updated_at = now() WHERE id = $1",
+        "UPDATE users SET email = $2, email_verified_at = $3, updated_at = now() WHERE id = $1 \
+         AND NOT EXISTS (SELECT 1 FROM users WHERE email_key(email) = email_key($2) AND id <> $1)",
         id,
         email,
         at
     )
-    .execute(db)
+    .execute(&mut *tx)
     .await;
     match result {
-        Ok(_) => Ok(true),
+        Ok(done) => {
+            tx.commit().await?;
+            Ok(done.rows_affected() == 1)
+        }
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => Ok(false),
         Err(e) => Err(e.into()),
     }

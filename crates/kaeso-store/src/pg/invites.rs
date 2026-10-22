@@ -93,7 +93,7 @@ pub async fn pending_for(
     let found = sqlx::query_as!(
         Invite,
         "SELECT id, org_id, email, org_preset, org_role_id, project_roles, invited_by, expires_at, accepted_at, revoked_at, created_at \
-         FROM invites WHERE org_id = $1 AND lower(email) = lower($2) AND accepted_at IS NULL AND revoked_at IS NULL \
+         FROM invites WHERE org_id = $1 AND email_key(email) = email_key($2) AND accepted_at IS NULL AND revoked_at IS NULL \
          AND expires_at > $3 ORDER BY id DESC",
         org_id,
         email,
@@ -185,22 +185,31 @@ pub async fn revoke(
 }
 
 pub async fn revoke_others_for(
-    db: impl PgExecutor<'_>,
+    db: &mut sqlx::PgConnection,
     org_id: Uuid,
     email: &str,
     accepted: Uuid,
     now: OffsetDateTime,
 ) -> Result<u64, StoreError> {
-    Ok(sqlx::query!(
-        "UPDATE invites SET revoked_at = $4, updated_at = now() \
-         WHERE org_id = $1 AND lower(email) = lower($2) AND id <> $3 \
-         AND accepted_at IS NULL AND revoked_at IS NULL",
+    let others: Vec<Uuid> = sqlx::query!(
+        "SELECT id, email FROM invites WHERE org_id = $1 AND email_key(email) = email_key($2) \
+         AND id <> $3 AND accepted_at IS NULL AND revoked_at IS NULL FOR UPDATE",
         org_id,
         email,
-        accepted,
+        accepted
+    )
+    .fetch_all(&mut *db)
+    .await?
+    .into_iter()
+    .filter(|i| kaeso_core::email::same_address(&i.email, email))
+    .map(|i| i.id)
+    .collect();
+    Ok(sqlx::query!(
+        "UPDATE invites SET revoked_at = $2, updated_at = now() WHERE id = ANY($1)",
+        &others,
         now
     )
-    .execute(db)
+    .execute(&mut *db)
     .await?
     .rows_affected())
 }

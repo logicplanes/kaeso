@@ -25,8 +25,10 @@ pub fn normalize(input: &str) -> Result<String, InvalidEmail> {
     Ok(address)
 }
 
+// Lowercased one character at a time, as PostgreSQL's lower() does in the store's email_key();
+// str::to_lowercase would also turn a word-final Σ into ς, which the database never does.
 pub fn canonical(email: &str) -> String {
-    let folded: String = email.trim().nfkc().collect::<String>().to_lowercase();
+    let folded: String = email.trim().nfkc().flat_map(char::to_lowercase).collect();
     folded.nfkc().collect()
 }
 
@@ -216,6 +218,11 @@ mod tests {
             "ada@example.com"
         );
         assert_eq!(canonical("Kim@example.com"), "kim@example.com");
+        assert_eq!(
+            canonical("\u{39F}\u{394}\u{3A5}\u{3A3}@example.com"),
+            "\u{3BF}\u{3B4}\u{3C5}\u{3C3}@example.com",
+            "a final capital sigma lowercases as the database does"
+        );
         assert!(same_address("\u{212A}IM@example.com", "kim@example.com"));
         assert!(
             !same_address("adm\u{130}n@example.com", "admin@example.com"),

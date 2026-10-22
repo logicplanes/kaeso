@@ -137,6 +137,12 @@ docker compose exec gateway kaeso user reset-2fa person@example.com
 
 In beiden Fällen werden Authenticator und Wiederherstellungscodes entfernt, die Sitzungen der Person enden, und sie erhält eine E-Mail. Wo Zwei-Faktor-Authentifizierung verlangt ist, richtet sie sie bei der nächsten Anmeldung neu ein.
 
+## Zwei Konten teilen sich eine Adresse
+
+Kaeso behandelt E-Mail-Adressen, die sich nur in der Schreibweise unterscheiden, als eine Adresse. Dazu gehören Groß- und Kleinschreibung, ein Akzent als Teil seines Buchstabens oder dahinter getippt sowie Buchstaben in voller Breite. Konten, die angelegt wurden, bevor Kaeso Adressen so verglich, können sich eine Adresse teilen.
+
+Kaeso meldet dann keines der beiden über diese Adresse an, schickt keinem einen Link und protokolliert `accounts share one canonical email address; refusing to look either up by it` mit beiden Benutzer-IDs. Ein Instanz-Admin findet beide unter **Einstellungen** › **Instanz** › **Benutzer** und löscht das Konto, das es nicht geben sollte. Das andere meldet sich danach wieder an wie zuvor.
+
 ## Niemand kann sich über Single Sign-on anmelden
 
 Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter keinen Weg hinein. Schalten Sie Passwörter nicht wieder ein: Geben Sie einen einmaligen Anmeldelink für einen Instanz-Admin aus, wie [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) zeigt.
