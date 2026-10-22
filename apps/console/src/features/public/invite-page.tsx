@@ -8,7 +8,7 @@ import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
 import type { InviteInfo } from "~/api/generated/types";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { sessionQuery } from "~/auth/session";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
@@ -18,13 +18,12 @@ import { readStored, writeStored } from "~/storage";
 import { INVITE_KEY } from "~/auth/user-data";
 
 function inviteToken(): string | null {
-  const fromLink = takeFragment("token");
-  if (fromLink) writeStored(INVITE_KEY, fromLink, "session");
-  return fromLink ?? readStored(INVITE_KEY, "session");
+  return takeFragment("token") ?? readStored(INVITE_KEY, "session");
 }
 
-function forget() {
+function forget(token: string) {
   writeStored(INVITE_KEY, null, "session");
+  forgetFragment(token);
 }
 
 export function InvitePage() {
@@ -75,14 +74,22 @@ function Invitation({ token }: { token: string }) {
   };
 
   useEffect(() => {
-    if (unusable) forget();
-  }, [unusable]);
+    if (unusable) forget(token);
+  }, [unusable, token]);
 
   useEffect(() => {
     if (accepted === undefined) return;
-    forget();
-    void queryClient.resetQueries().then(() => navigate({ href: accepted ? `/orgs/${accepted}` : "/", replace: true }));
-  }, [accepted, navigate, queryClient]);
+    forget(token);
+    void queryClient
+      .resetQueries()
+      .then(() => navigate({ href: accepted ? `/orgs/${accepted}` : "/", replace: true }))
+      .then(() => queryClient.removeQueries({ queryKey: ["invite-lookup", token], exact: true }));
+  }, [accepted, navigate, queryClient, token]);
+
+  const signInToAccept = () => {
+    writeStored(INVITE_KEY, token, "session");
+    void navigate({ to: "/sign-in", search: { next: "/invite" } });
+  };
 
   const accept = (body: { name?: string; password?: string }) => {
     setByLink(body.password === undefined);
@@ -190,7 +197,7 @@ function Invitation({ token }: { token: string }) {
         )}
       >
         <div className="flex flex-col gap-16">
-          <Button variant="primary" size="xl" fullWidth onClick={() => void navigate({ to: "/sign-in", search: { next: "/invite" } })}>
+          <Button variant="primary" size="xl" fullWidth onClick={signInToAccept}>
             {t("public.signInToAccept", "Sign in to accept")}
           </Button>
           <Text variant="small" tone="secondary" className="text-center">

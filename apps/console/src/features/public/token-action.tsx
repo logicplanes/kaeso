@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { toastApiError } from "~/api/toast-error";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 
 export type TokenState = { kind: "working" } | { kind: "missing" } | { kind: "failed" } | { kind: "done" };
 
@@ -12,13 +12,15 @@ export function useTokenAction(action: (token: string) => Promise<void>, fragmen
   useEffect(() => {
     if (!token || started.current) return;
     started.current = true;
-    run(token).then(
-      () => setState({ kind: "done" }),
-      (e: unknown) => {
-        toastApiError(e, { id: "token-link" });
-        setState({ kind: "failed" });
-      },
-    );
+    run(token)
+      .then(
+        () => setState({ kind: "done" }),
+        (e: unknown) => {
+          toastApiError(e, { id: "token-link" });
+          setState({ kind: "failed" });
+        },
+      )
+      .finally(() => forgetFragment(token));
   }, [token]);
   return state;
 }

@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Button, Input, Link, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { PublicPage } from "~/shell/public-page";
 import { api, data } from "~/api/client";
-import { takeFragment } from "~/auth/fragment";
+import { forgetFragment, takeFragment } from "~/auth/fragment";
 import { usePageTitle } from "~/shell/title";
 import { signInMethodsQuery } from "~/auth/sign-in-api";
 import { fieldError } from "~/api/field-error";
@@ -119,6 +119,7 @@ export function SignUpVerifyPage() {
           if (!ready || !token) return;
           void submit(async () => {
             await api.POST("/platform/v1/auth/signup/verify", { body: { token, name: name.trim(), ...(password ? { password } : {}) } });
+            forgetFragment(token);
             await queryClient.resetQueries();
             await navigate({ to: "/", replace: true });
           });

@@ -18,6 +18,10 @@ export function takeFragment(name: string): string | null {
   return taken.get(key) ?? null;
 }
 
+export function forgetFragment(value: string | null | undefined): void {
+  for (const [key, kept] of taken) if (kept === value) taken.delete(key);
+}
+
 const LINK_FRAGMENT = /(?:^|&)(?:token|sso_error)=/;
 let linkVisits = 0;
 const visitListeners = new Set<() => void>();

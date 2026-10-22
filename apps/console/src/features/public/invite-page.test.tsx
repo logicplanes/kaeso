@@ -4,6 +4,7 @@ import { ORG, signedIn, signedOut, user as account, whoAmI } from "~/test/fixtur
 import { accepted, invite, methods } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 const PENDING = "kaeso:invite";
@@ -28,13 +29,13 @@ describe("opening an invitation", () => {
     expect(requests("POST", "auth/invites/lookup")).toHaveLength(0);
   });
 
-  it("looks the invitation up and keeps the token for the visit", async () => {
+  it("looks the invitation up and keeps the token only in memory", async () => {
     signedOut();
     lookup();
     await renderApp("/invite#token=inv_tok");
     expect(await screen.findByText("Join Northwind Labs")).toBeInTheDocument();
     expect(window.location.hash).toBe("");
-    expect(window.sessionStorage.getItem(PENDING)).toBe("inv_tok");
+    expect(window.sessionStorage.getItem(PENDING)).toBeNull();
     expect(requests("POST", "auth/invites/lookup").map((r) => r.body)).toEqual([{ token: "inv_tok" }]);
   });
 
@@ -71,7 +72,7 @@ describe("opening an invitation", () => {
     const { user } = await renderApp("/invite#token=inv_tok");
     expect(await screen.findByText("The invitation couldn't be opened")).toBeInTheDocument();
     expect(screen.queryByText("This invitation can't be used")).not.toBeInTheDocument();
-    expect(window.sessionStorage.getItem(PENDING)).toBe("inv_tok");
+    expect(window.sessionStorage.getItem(PENDING)).toBeNull();
     lookup();
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Join Northwind Labs")).toBeInTheDocument();
@@ -84,7 +85,7 @@ describe("opening an invitation", () => {
     await renderApp("/invite#token=inv_tok");
     expect(await screen.findByText("The invitation couldn't be opened")).toBeInTheDocument();
     expect(screen.getByText("Too many requests; try again in a minute.", { selector: "p" })).toBeInTheDocument();
-    expect(window.sessionStorage.getItem(PENDING)).toBe("inv_tok");
+    expect(window.sessionStorage.getItem(PENDING)).toBeNull();
   });
 });
 
@@ -100,6 +101,7 @@ describe("accepting while signed in", () => {
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
     expect(requests("POST", "auth/invites/accept").map((r) => r.body)).toEqual([{ token: "inv_tok" }]);
     expect(window.sessionStorage.getItem(PENDING)).toBeNull();
+    await waitFor(() => expect(queryClient.getQueryCache().findAll({ queryKey: ["invite-lookup"] })).toEqual([]));
   });
 
   it("goes home after accepting an invitation to the install", async () => {

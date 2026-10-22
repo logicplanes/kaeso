@@ -4,6 +4,7 @@ import { ORG, org, signedIn, withRights } from "~/test/fixtures";
 import { createdPlatformKey, fill, hoverReason, notifications, paged, platformKey } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { cachedText } from "~/test/cache";
 
 const PATH = `/settings/orgs/${ORG}/platform-keys`;
 const DAY = 86_400_000;
@@ -242,9 +243,11 @@ describe("creating a platform key", () => {
     expect(requests("POST", "orgs/:org/platform-keys").map((r) => r.body)).toEqual([{ name: "Terraform" }]);
     expect(within(reveal).getAllByText(/kso_org_secret_value/).length).toBeGreaterThan(0);
     await user.click(within(reveal).getAllByRole("button", { name: /Copy/ })[0] as HTMLElement);
+    expect(cachedText()).toContain("kso_org_secret_value");
     await user.click(within(reveal).getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Platform key created" })).not.toBeInTheDocument());
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(cachedText()).not.toContain("kso_org_secret_value"));
   });
 
   it("needs a date when the key expires on one, and keeps within the organization's limit", async () => {

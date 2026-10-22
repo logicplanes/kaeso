@@ -23,6 +23,7 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: true,
       retry: (count, error) => (isApiError(error) && error.status >= 400 && error.status < 500 ? false : count < 2),
     },
-    mutations: { retry: false },
+    // A mutation's result or variables can be a key secret, recovery codes or a password, and nothing reads one after its dialog closes.
+    mutations: { retry: false, gcTime: 0 },
   },
 });

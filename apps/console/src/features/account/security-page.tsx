@@ -187,7 +187,6 @@ const TWO_FACTOR_CLOSED: TwoFactorState = { open: false, codes: null };
 function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft: number }) {
   const queryClient = useQueryClient();
   const [twoFactor, setTwoFactor] = useState<TwoFactorState>(TWO_FACTOR_CLOSED);
-  const closeTwoFactor = useCallback(() => setTwoFactor(TWO_FACTOR_CLOSED), []);
   const [turningOff, setTurningOff] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const regenerate = useApiMutation({
@@ -198,6 +197,11 @@ function TwoFactorSection({ enabled, codesLeft }: { enabled: boolean; codesLeft:
       setTwoFactor({ open: true, codes: r.recovery_codes });
     },
   });
+  const forgetCodes = regenerate.reset;
+  const closeTwoFactor = useCallback(() => {
+    setTwoFactor(TWO_FACTOR_CLOSED);
+    forgetCodes();
+  }, [forgetCodes]);
   return (
     <SettingsSection
       title={t("account.twoFactor", "Two-factor authentication")}
