@@ -2555,3 +2555,123 @@ async fn a_new_issuer_or_client_id_forgets_whether_tokens_carry_auth_time() {
     assert_eq!(changed.body["sso"]["sends_auth_time"], json!(null));
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn instance_admins_administer_through_single_sign_on_only_from_the_chosen_org() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "example.com", None, false).await;
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@example.com",
+    )
+    .await;
+    let sso = sso_as(&app, &idp, "sub-owner", "owner@example.com")
+        .await
+        .cookie()
+        .unwrap();
+    let admin_sso = |cookie: String, org: serde_json::Value| {
+        let app = &app;
+        async move {
+            app.call(
+                axum::http::Method::PUT,
+                "/instance/settings/admin-sso",
+                Some(json!({ "org": org })),
+                Some(&cookie),
+            )
+            .await
+        }
+    };
+
+    let who = app.get("/auth/session", &sso).await;
+    assert_eq!(who.body["managed_by"]["org"], owner.org_id.as_str());
+    assert_eq!(
+        who.body["can_administer_instance"], false,
+        "no org is chosen"
+    );
+    assert_eq!(
+        app.get("/instance/users", &sso).await.error_type(),
+        "other_sign_in_required"
+    );
+
+    let other = another_org(&app, "Elsewhere").await;
+    let connected = app.get("/instance/orgs?sso=true", &owner.cookie).await;
+    assert_eq!(
+        connected.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|o| o["name"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["Acme"]
+    );
+    let r = admin_sso(owner.cookie.clone(), json!(other)).await;
+    assert_eq!(
+        (r.status, r.body["error"]["param"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("org")),
+        "an org without a connection manages nobody"
+    );
+    let r = admin_sso(owner.cookie.clone(), json!(owner.org_id)).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(
+        r.body["admin_sso"],
+        json!({ "org": owner.org_id, "name": "Acme", "connected": true })
+    );
+    let audited = app
+        .get(
+            "/instance/audit-log?action=instance.admin_sso_update",
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        audited.body["data"][0]["after"]["org"],
+        owner.org_id.as_str()
+    );
+
+    let who = app.get("/auth/session", &sso).await;
+    assert_eq!(who.body["can_administer_instance"], true);
+    app.get("/instance/users", &sso)
+        .await
+        .expect_status(StatusCode::OK);
+    let r = admin_sso(sso.clone(), serde_json::Value::Null).await;
+    assert_eq!(
+        r.error_type(),
+        "other_sign_in_required",
+        "an org's provider can't choose who administers the instance"
+    );
+
+    sqlx::query("UPDATE users SET email = 'owner@else.example'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(
+        app.get("/instance/users", &sso).await.error_type(),
+        "other_sign_in_required",
+        "the org no longer manages the account"
+    );
+    sqlx::query("UPDATE users SET email = 'owner@example.com'")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    app.clock.advance(time::Duration::minutes(16));
+    let r = admin_sso(owner.cookie.clone(), serde_json::Value::Null).await;
+    assert_eq!(r.error_type(), "recent_sign_in_required");
+
+    sqlx::query("DELETE FROM org_oidc")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let settings = app.get("/instance/settings", &owner.cookie).await;
+    assert_eq!(
+        settings.body["admin_sso"]["connected"], false,
+        "without its connection the setting has no effect"
+    );
+    s.cleanup().await;
+}

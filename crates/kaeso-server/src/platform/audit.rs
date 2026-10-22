@@ -22,6 +22,7 @@ pub const ACTIONS: &[&str] = &[
     "credential.delete",
     "credential.rename",
     "credential.replace",
+    "instance.admin_sso_update",
     "instance.invite",
     "instance.settings_update",
     "instance.setup",

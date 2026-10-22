@@ -44,6 +44,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(a, routes!(models_dev::status)))
         .routes(s.route(a, routes!(models_dev::sync)))
         .routes(s.route(a, routes!(settings::update)))
+        .routes(s.route(a, routes!(settings::set_admin_sso)))
         .routes(s.route(a, routes!(settings::test_email)))
         .routes(s.route(a, routes!(system::get)))
         .routes(s.route(a, routes!(updates::get)))

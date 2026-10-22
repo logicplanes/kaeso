@@ -70,7 +70,8 @@ pub struct WhoAmI {
     pub session: SessionView,
     #[doc = "The org that manages the account: its address is at a verified email\n\
         domain of an org with an SSO connection. A sign-in through that org's\n\
-        SSO counts like a password one everywhere but `instance/*`. `null` for\n\
+        SSO counts like a password one; for `instance/*`, only when an instance\n\
+        admin chose that org for instance admins. `null` for\n\
         an account no org manages."]
     pub managed_by: Option<ManagedBy>,
     #[doc = "The user's orgs."]
@@ -82,7 +83,9 @@ pub struct WhoAmI {
         org that doesn't manage the account."]
     pub can_create_orgs: bool,
     #[doc = "Whether this session may use `instance/*`: the user is an instance\n\
-        admin and didn't sign in through an org's SSO."]
+        admin and didn't sign in through an org's SSO, or signed in through\n\
+        the SSO of the org chosen for instance admins, which manages the\n\
+        account."]
     pub can_administer_instance: bool,
     #[doc = "Whether orgs can be deleted on this instance, and how long a deletion\n\
         waits."]
@@ -166,6 +169,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
         })
         .collect::<ApiResult<Vec<_>>>()?;
     let instance = kaeso_store::pg::instance::get(&state.pg).await?;
+    let admin_sso = kaeso_store::pg::instance::admin_sso_org(&state.pg).await?;
     Ok(Json(WhoAmI {
         org_deletion: OrgDeletionPolicy {
             allowed: instance.org_deletion,
@@ -187,7 +191,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
             && crate::services::accounts::policy(&instance)
                 .may_create_orgs(session.is_instance_admin, user.email.as_deref()),
         can_administer_instance: session.is_instance_admin
-            && policy_gap(session, managed, Area::Instance).is_none(),
+            && policy_gap(session, managed, Area::Instance { admin_sso }).is_none(),
         managed_by: manager.map(|m| ManagedBy::new(m.org_id, m.org_name)),
         locale: crate::platform::me::profile::UserLocale::from_stored(
             users::get_locale(&state.pg, user.id).await?.as_deref(),

@@ -65,7 +65,8 @@ pub struct SessionView {
     pub second_factor: bool,
     #[doc = "The org whose SSO signed this session in; `null` for other ways in.\n\
         When that org manages the account (`managed_by` in `auth/session`),\n\
-        the session counts like a password one everywhere but `instance/*`.\n\
+        the session counts like a password one everywhere; for `instance/*`,\n\
+        only when that org is the one chosen for instance admins.\n\
         Otherwise it opens only that org and reads the user's own account,\n\
         and anything else answers `other_sign_in_required`."]
     pub sso_org: Option<OrgId>,

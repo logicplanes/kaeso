@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR (COALESCE(o.deletion_due_at, 'infinity'), o.id) > (SELECT COALESCE(c.deletion_due_at, 'infinity'), c.id FROM organizations c WHERE c.id = $1)) AND ($3::text IS NULL OR name ILIKE $3) ORDER BY COALESCE(o.deletion_due_at, 'infinity'), o.id LIMIT $2",
+  "query": "SELECT id, name, state, deletion_due_at, content_logging, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR (COALESCE(o.deletion_due_at, 'infinity'), o.id) > (SELECT COALESCE(c.deletion_due_at, 'infinity'), c.id FROM organizations c WHERE c.id = $1)) AND ($3::text IS NULL OR name ILIKE $3) AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) ORDER BY COALESCE(o.deletion_due_at, 'infinity'), o.id LIMIT $2",
   "describe": {
     "columns": [
       {
@@ -162,7 +162,8 @@
       "Left": [
         "Uuid",
         "Int8",
-        "Text"
+        "Text",
+        "Bool"
       ]
     },
     "nullable": [
@@ -182,5 +183,5 @@
       true
     ]
   },
-  "hash": "0ca78bad644b40267a256f1848bbe4d72dde22f50e6eb3324b53039db3156b5b"
+  "hash": "8c27ada3862e0d0a102f9a8db27c1d6efff357e18b5db43e90fdc67479dbcd7f"
 }

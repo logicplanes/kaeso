@@ -1,12 +1,14 @@
 use axum::Json;
 use axum::extract::State;
 use kaeso_core::accounts::{AccountCreation, DomainRule, MAX_DOMAINS, OrgCreation};
-use kaeso_store::pg::instance::{self, InstanceSettings};
+use kaeso_core::id::OrgId;
+use kaeso_store::pg::instance::{self, AdminSso, InstanceSettings};
+use kaeso_store::pg::{oidc, orgs};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::config::MailTransport;
-use crate::platform::access::Ctx;
+use crate::platform::access::{Ctx, from_sso};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::services::accounts;
@@ -66,14 +68,37 @@ pub struct SettingsView {
     pub timezone: String,
     #[doc = "Sign-in methods (read-only)."]
     pub sign_in: SignInMethods,
+    #[doc = "The org whose single sign-on may administer the instance\n\
+        (`PUT instance/settings/admin-sso`); `null`: none, so every instance\n\
+        admin signs in with a password or a sign-in link for it."]
+    pub admin_sso: Option<AdminSsoView>,
     #[doc = "Mail (read-only)."]
     pub mail: MailSettings,
 }
 
-fn view(state: &AppState, s: &InstanceSettings) -> SettingsView {
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "The org whose single sign-on may administer the instance.")]
+pub struct AdminSsoView {
+    #[doc = "The org. An instance admin's session from its SSO may use\n\
+        `instance/*` while the org manages the admin's account."]
+    pub org: OrgId,
+    #[doc = "Its name."]
+    #[schema(example = "Acme")]
+    pub name: String,
+    #[doc = "Whether the org has an SSO connection. Without one it manages no\n\
+        account, so the setting has no effect."]
+    pub connected: bool,
+}
+
+fn view(state: &AppState, s: &InstanceSettings, admin_sso: Option<&AdminSso>) -> SettingsView {
     let c = &state.config;
     let policy = accounts::policy(s);
     SettingsView {
+        admin_sso: admin_sso.map(|a| AdminSsoView {
+            org: OrgId::from_uuid(a.org_id),
+            name: a.org_name.clone(),
+            connected: a.connected,
+        }),
         account_creation: policy.account_creation,
         allowed_domains: policy
             .allowed_domains
@@ -112,7 +137,68 @@ fn view(state: &AppState, s: &InstanceSettings) -> SettingsView {
     responses((status = 200, body = SettingsView))
 )]
 pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SettingsView>> {
-    Ok(Json(view(&state, &instance::get(&state.pg).await?)))
+    let admin_sso = instance::admin_sso(&state.pg).await?;
+    Ok(Json(view(
+        &state,
+        &instance::get(&state.pg).await?,
+        admin_sso.as_ref(),
+    )))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[schema(description = "The org whose single sign-on may administer the instance.")]
+pub struct AdminSsoUpdate {
+    #[doc = "An org with an SSO connection, or `null` for none."]
+    pub org: Option<OrgId>,
+}
+
+#[utoipa::path(
+    put,
+    path = "/instance/settings/admin-sso",
+    summary = "Chooses the org whose single sign-on may administer the instance, or\n\
+    none.",
+    description = "An instance admin's session from that org's SSO may then use `instance/*` \
+    while the org manages the admin's account. Changing it needs a recent sign-in that didn't \
+    come from SSO, so no org's identity provider can grant its admins the instance; a session \
+    from SSO gets `other_sign_in_required`. The org must have an SSO connection; if it later \
+    loses it, the setting has no effect. Audited as `instance.admin_sso_update`.",
+    tag = "instance",
+    request_body = AdminSsoUpdate,
+    responses((status = 200, body = SettingsView))
+)]
+pub async fn set_admin_sso(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Body(req): Body<AdminSsoUpdate>,
+) -> ApiResult<Json<SettingsView>> {
+    if from_sso(ctx.session()?) {
+        return Err(ApiError::OtherSignInRequired);
+    }
+    ctx.require_recent_sign_in()?;
+    let mut tx = state.pg.begin().await?;
+    let settings = instance::get_for_update(&mut tx).await?;
+    let before = instance::admin_sso(&mut *tx).await?;
+    if let Some(org) = req.org {
+        if orgs::get(&mut *tx, org.uuid()).await?.is_none() {
+            return Err(ApiError::not_found("organization"));
+        }
+        if oidc::get(&mut *tx, org.uuid()).await?.is_none() {
+            return Err(ApiError::invalid(
+                "org",
+                "This organization has no SSO connection; connect one first.",
+            ));
+        }
+    }
+    instance::set_admin_sso_org(&mut *tx, req.org.map(|o| o.uuid())).await?;
+    let after = instance::admin_sso(&mut *tx).await?;
+    let named = |a: &Option<AdminSso>| serde_json::json!({ "org": a.as_ref().map(|a| OrgId::from_uuid(a.org_id).to_string()), "name": a.as_ref().map(|a| a.org_name.clone()) });
+    ctx.audit(None, "instance.admin_sso_update")
+        .before(named(&before))
+        .after(named(&after))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    Ok(Json(view(&state, &settings, after.as_ref())))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -239,16 +325,17 @@ pub async fn update(
         ));
     }
     instance::update(&mut *tx, &after).await?;
+    let admin_sso = instance::admin_sso(&mut *tx).await?;
     ctx.audit(None, "instance.settings_update")
-        .before(view(&state, &before))
-        .after(view(&state, &after))
+        .before(view(&state, &before, admin_sso.as_ref()))
+        .after(view(&state, &after, admin_sso.as_ref()))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
     if after.timezone != before.timezone {
         state.caches.time_zone.invalidate_all();
     }
-    Ok(Json(view(&state, &after)))
+    Ok(Json(view(&state, &after, admin_sso.as_ref())))
 }
 
 fn allowed_domains(domains: &[String]) -> ApiResult<Vec<String>> {
