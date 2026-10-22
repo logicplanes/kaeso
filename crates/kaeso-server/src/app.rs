@@ -18,7 +18,10 @@ pub fn router(state: AppState) -> Router {
             http::metrics::middleware,
         ))
         .layer(middleware::from_fn_with_state(
-            state.config.server.body_read_timeout,
+            http::body_timeout::BodyWaits {
+                between_frames: state.config.server.body_read_timeout,
+                whole_body: state.config.server.body_read_deadline,
+            },
             http::body_timeout::middleware,
         ))
         .with_state(state)

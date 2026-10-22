@@ -134,7 +134,10 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
         env.app.router.clone(),
         shutdown.clone(),
         Duration::from_secs(1),
-        Duration::from_secs(30),
+        kaeso_server::serve::Connections {
+            header_read_timeout: Duration::from_secs(30),
+            max: 4096,
+        },
         CancellationToken::new(),
     ));
     let started = Instant::now();
@@ -581,4 +584,70 @@ async fn a_request_body_that_stops_arriving_is_refused() {
         "The request body did not arrive in time; send it again."
     );
     assert!(started.elapsed() < Duration::from_secs(10));
+}
+
+#[tokio::test]
+async fn a_request_body_dripped_in_time_for_each_part_is_refused_at_its_deadline() {
+    use axum::body::{Body, Bytes};
+    use axum::http::Request;
+    use tokio::sync::mpsc;
+    use tokio::time::Instant;
+    use tower::ServiceExt;
+    const DEADLINE: Duration = Duration::from_secs(2);
+    const GAP: Duration = Duration::from_millis(400);
+    let env = env(&[
+        ("KAESO_SERVER_BODY_READ_TIMEOUT", "1s"),
+        ("KAESO_SERVER_BODY_READ_DEADLINE", "2s"),
+    ])
+    .await;
+    let (parts, queued) = mpsc::unbounded_channel::<Bytes>();
+    let (asking, mut asked) = mpsc::unbounded_channel::<()>();
+    let dripped = futures::stream::unfold((queued, asking), |(mut queued, asking)| async move {
+        asking.send(()).ok()?;
+        let part = queued.recv().await?;
+        Some((Ok::<_, std::io::Error>(part), (queued, asking)))
+    });
+    let req = Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .body(Body::from_stream(dripped))
+        .unwrap();
+    let sent = Instant::now();
+    let answer = tokio::spawn(env.app.router.clone().oneshot(req));
+    asked.recv().await.expect("the gateway reads the body");
+    let reading = Instant::now();
+    tokio::time::pause();
+    let mut bytes = serde_json::to_vec(&chat("gpt-4o", "Hi"))
+        .unwrap()
+        .into_iter();
+    let refused = loop {
+        tokio::time::advance(GAP).await;
+        let byte = bytes
+            .next()
+            .expect("the gateway refuses the body before all of it arrives");
+        let _ = parts.send(Bytes::from(vec![byte]));
+        if asked.recv().await.is_none() {
+            break Instant::now();
+        }
+    };
+    tokio::time::resume();
+    assert!(refused >= sent + DEADLINE, "{:?}", refused - sent);
+    assert!(
+        refused < reading + DEADLINE + GAP,
+        "{:?}",
+        refused - reading
+    );
+    let resp = answer.await.unwrap().unwrap();
+    assert_eq!(resp.status(), 400);
+    let body = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        json["error"]["message"],
+        "The request body did not arrive in time; send it again."
+    );
+    assert!(env.mock.received().is_empty());
 }

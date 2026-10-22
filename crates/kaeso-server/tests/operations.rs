@@ -14,7 +14,7 @@ use kaeso_store::pg::tokens::{self, TokenKind};
 use kaeso_testkit::services::TestServices;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::Notify;
+use tokio::sync::{Notify, mpsc};
 use tokio_util::sync::CancellationToken;
 use tower::ServiceExt;
 
@@ -174,7 +174,7 @@ async fn graceful_shutdown_finishes_open_requests_and_refuses_new_ones() {
         router,
         shutdown.clone(),
         Duration::from_secs(2),
-        Duration::from_secs(30),
+        connections(Duration::from_secs(30), 4096),
         CancellationToken::new(),
     ));
     let client = reqwest::Client::new();
@@ -216,7 +216,7 @@ async fn graceful_shutdown_gives_up_after_the_grace_period() {
         ),
         shutdown.clone(),
         Duration::from_millis(300),
-        Duration::from_secs(30),
+        connections(Duration::from_secs(30), 4096),
         overdue.clone(),
     ));
     let stuck = tokio::spawn(async move { reqwest::get(format!("http://{addr}/forever")).await });
@@ -386,9 +386,24 @@ async fn the_operator_resets_two_factor_by_email_address() {
 
 const HEADER_TIMEOUT: Duration = Duration::from_millis(300);
 
+fn connections(header_read_timeout: Duration, max: usize) -> kaeso_server::serve::Connections {
+    kaeso_server::serve::Connections {
+        header_read_timeout,
+        max,
+    }
+}
+
 async fn serving(
     router: Router,
     header_read_timeout: Duration,
+) -> (std::net::SocketAddr, CancellationToken) {
+    serving_at_most(router, header_read_timeout, 4096).await
+}
+
+async fn serving_at_most(
+    router: Router,
+    header_read_timeout: Duration,
+    max: usize,
 ) -> (std::net::SocketAddr, CancellationToken) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -398,10 +413,75 @@ async fn serving(
         router,
         shutdown.clone(),
         Duration::from_secs(1),
-        header_read_timeout,
+        connections(header_read_timeout, max),
         CancellationToken::new(),
     ));
     (addr, shutdown)
+}
+
+async fn ask(stream: &mut TcpStream) {
+    stream
+        .write_all(b"GET / HTTP/1.1\r\nHost: kaeso.test\r\n\r\n")
+        .await
+        .unwrap();
+}
+
+async fn answer(stream: &mut TcpStream) -> String {
+    let mut buf = vec![0; 1024];
+    let n = stream.read(&mut buf).await.unwrap();
+    buf.truncate(n);
+    String::from_utf8_lossy(&buf).into_owned()
+}
+
+async fn answer_to(stream: &mut TcpStream) -> String {
+    ask(stream).await;
+    answer(stream).await
+}
+
+async fn once_nothing_can_run() {
+    // With the clock paused, the sleep ends only once every task waits and no socket is ready.
+    tokio::time::pause();
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    tokio::time::resume();
+}
+
+#[tokio::test]
+async fn connections_over_the_limit_wait_until_one_closes() {
+    let (entering, mut entered) = mpsc::unbounded_channel();
+    let router = Router::new().route(
+        "/",
+        get(
+            move |axum::extract::ConnectInfo(peer): axum::extract::ConnectInfo<
+                std::net::SocketAddr,
+            >| {
+                entering.send(peer).unwrap();
+                async { "hi" }
+            },
+        ),
+    );
+    let (addr, shutdown) = serving_at_most(router, Duration::from_secs(30), 1).await;
+    let mut first = TcpStream::connect(addr).await.unwrap();
+    let first_peer = first.local_addr().unwrap();
+    assert!(answer_to(&mut first).await.contains("200 OK"));
+    let mut second = TcpStream::connect(addr).await.unwrap();
+    let second_peer = second.local_addr().unwrap();
+    ask(&mut second).await;
+    // Loopback delivers in order, so the second request is in the gateway's socket once this answer is back.
+    assert!(answer_to(&mut first).await.contains("200 OK"));
+    once_nothing_can_run().await;
+    let served: Vec<_> = std::iter::from_fn(|| entered.try_recv().ok()).collect();
+    assert_eq!(
+        served,
+        [first_peer, first_peer],
+        "the first held the only slot"
+    );
+    drop(first);
+    let reply = tokio::time::timeout(Duration::from_secs(10), answer(&mut second))
+        .await
+        .expect("served once the first closed");
+    assert!(reply.contains("200 OK"), "{reply}");
+    assert_eq!(entered.recv().await, Some(second_peer));
+    shutdown.cancel();
 }
 
 async fn until_closed(stream: &mut TcpStream) -> (Vec<u8>, Duration) {

@@ -65,6 +65,9 @@ pub struct ServerConfig {
     pub header_read_timeout: Duration,
     #[serde(with = "humantime_serde")]
     pub body_read_timeout: Duration,
+    #[serde(with = "humantime_serde")]
+    pub body_read_deadline: Duration,
+    pub max_connections: usize,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -316,6 +319,17 @@ impl Config {
                 "server.body_read_timeout",
                 "must be between 1s and 10m".into(),
             );
+        }
+        if !(Duration::from_secs(1)..=Duration::from_secs(3600))
+            .contains(&self.server.body_read_deadline)
+        {
+            return invalid(
+                "server.body_read_deadline",
+                "must be between 1s and 1h".into(),
+            );
+        }
+        if self.server.max_connections == 0 {
+            return invalid("server.max_connections", "must be at least 1".into());
         }
         if self.postgres.pool_size == 0 {
             return invalid("postgres.pool_size", "must be at least 1".into());
