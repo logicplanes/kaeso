@@ -5,7 +5,7 @@ use kaeso_codecs::limits::{
     request_shape,
 };
 use kaeso_codecs::{HeaderList, dispatch};
-use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, Request, RequestKind, ToolDef};
 
 const A: DialectId = DialectId::AnthropicMessages;
 const C: DialectId = DialectId::OpenAiChat;
@@ -24,7 +24,275 @@ fn repeated(item: &str, n: usize) -> String {
 }
 
 fn shape(dialect: DialectId, body: &str) -> RequestShape {
-    request_shape(dialect, body.as_bytes()).unwrap()
+    let mut shape = request_shape(dialect, body.as_bytes()).unwrap();
+    shape.bytes = 0;
+    shape
+}
+
+#[test]
+fn the_bytes_left_without_whitespace_between_tokens_are_counted() {
+    let tight = r#"{"model":"m","input":"a  b\" {"}"#;
+    let loose = " {\n\t\"model\" : \"m\",\r\n  \"input\":   \"a  b\\\" {\"  } ";
+    for body in [tight, loose] {
+        let s = request_shape(R, body.as_bytes()).unwrap();
+        assert_eq!(s.bytes, tight.len(), "{body}");
+    }
+}
+
+#[test]
+fn whitespace_inside_a_value_kept_raw_is_counted() {
+    let p = " ".repeat(1 << 20);
+    let tight = r#"{"model":"m","messages":[{"role":"user","content":"hi"}],"tools":[{"type":"function","function":{"name":"f","parameters":{"type":"object"}}}]}"#;
+    let schema = format!(r#"{{{p}"type"{p}:{p}"object"{p}}}"#);
+    let padded = tight.replace(r#"{"type":"object"}"#, &schema);
+    assert_eq!(
+        request_shape(C, padded.as_bytes()).unwrap().bytes,
+        tight.len() + 4 * p.len()
+    );
+    let Request::Generate(decoded) = dispatch::decode_request(
+        C,
+        RequestKind::Generate,
+        padded.as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!("a generate request");
+    };
+    let [ToolDef::Function(tool)] = decoded.tools.as_slice() else {
+        panic!("one function tool");
+    };
+    assert_eq!(
+        tool.parameters.as_ref().unwrap().get(),
+        schema,
+        "the decoded request keeps the padding, so the count does too"
+    );
+    let between = format!(
+        r#"{{{p}"model":"m",{p}"messages":[{p}{{"role":{p}"user","content":"hi"}}{p}],{p}"tools":[{p}{{"type":"function","function":{{"name":"f","parameters":{{"type":"object"}}}}}}{p}]{p}}}"#
+    );
+    assert_eq!(
+        request_shape(C, between.as_bytes()).unwrap().bytes,
+        tight.len(),
+        "whitespace that decoding drops is not counted"
+    );
+}
+
+const PAD: usize = 4096;
+
+fn padding_kept_and_counted(dialect: DialectId, template: &str) -> Option<(bool, usize)> {
+    padded_by(dialect, template, PAD)
+}
+
+fn padded_by(dialect: DialectId, template: &str, pad: usize) -> Option<(bool, usize)> {
+    let pad = " ".repeat(pad);
+    let tight = template.replace('~', "");
+    let padded = template.replace('~', &pad);
+    let kind = if dialect == E {
+        RequestKind::Embed
+    } else {
+        RequestKind::Generate
+    };
+    let decoded =
+        dispatch::decode_request(dialect, kind, padded.as_bytes(), &HeaderList::new()).ok()?;
+    let kept = format!("{decoded:?}").contains(&pad);
+    let counted = request_shape(dialect, padded.as_bytes()).unwrap().bytes
+        - request_shape(dialect, tight.as_bytes()).unwrap().bytes;
+    Some((kept, counted))
+}
+
+fn assert_counted_exactly_when_kept(dialect: DialectId, templates: &[String]) -> usize {
+    let mut decoded = 0;
+    for template in templates {
+        let Some((kept, counted)) = padding_kept_and_counted(dialect, template) else {
+            continue;
+        };
+        decoded += 1;
+        let expected = if kept { PAD } else { 0 };
+        assert_eq!(counted, expected, "kept: {kept}, {template}");
+    }
+    decoded
+}
+
+#[test]
+fn chat_counts_whitespace_exactly_where_its_decoder_keeps_it() {
+    let parts = [
+        r#"{~"type":"text","text":"a"}"#,
+        r#"{~"type":"refusal","refusal":"no"}"#,
+        r#"{~"type":"image_url","image_url":{"url":"https://example.com/a.png"}}"#,
+        r#"{~"type":"file","file":{"file_id":"file-1"}}"#,
+        r#"{~"type":"input_audio","input_audio":{"data":"AA==","format":"wav"}}"#,
+        r#"{~"type":"novel","novel":1}"#,
+        r#"{~"text":"a"}"#,
+        r#"{"type":"text","text":"a","content":[~1]}"#,
+        r#"{"type":"text","text":"a","output":{~}}"#,
+    ];
+    let messages = [
+        r#"{"role":"system","content":[PART]}"#,
+        r#"{"role":"developer","content":[PART]}"#,
+        r#"{"role":"user","content":[PART]}"#,
+        r#"{"role":"assistant","content":[PART]}"#,
+        r#"{"role":"tool","tool_call_id":"t","content":[PART]}"#,
+    ];
+    let mut templates: Vec<String> = messages
+        .iter()
+        .flat_map(|m| parts.iter().map(move |p| m.replace("PART", p)))
+        .collect();
+    templates.extend(
+        [
+            r#"{~"role":"user","content":"a"}"#,
+            r#"{"role":"user","content":"a","output":[~1]}"#,
+            r#"{~"role":"function","name":"f","content":"a"}"#,
+            r#"{"role":"function","name":"f","content":[~{"type":"text","text":"a"}]}"#,
+            r#"{"role":"assistant","content":null,"tool_calls":[{~"id":"c","type":"novel"}]}"#,
+        ]
+        .map(str::to_owned),
+    );
+    let bodies: Vec<String> = templates
+        .iter()
+        .map(|m| format!(r#"{{"model":"m","messages":[{m}]}}"#))
+        .collect();
+    let decoded = assert_counted_exactly_when_kept(C, &bodies);
+    assert!(decoded > 40, "{decoded} of {} bodies decoded", bodies.len());
+    let unknown = r#"{"model":"m","messages":[{"role":"user","content":[{~"type":"novel"}]}]}"#;
+    assert_eq!(padding_kept_and_counted(C, unknown), Some((true, PAD)));
+}
+
+#[test]
+fn anthropic_counts_whitespace_exactly_where_its_decoder_keeps_it() {
+    let blocks = [
+        r#"{~"type":"text","text":"a"}"#,
+        r#"{"type":"text","text":"a","content":[~1]}"#,
+        r#"{"type":"text","text":"a","output":[~1]}"#,
+        r#"{~"type":"image","source":{"type":"base64","media_type":"image/png","data":"AA=="}}"#,
+        r#"{~"type":"image","source":{"type":"url","url":"https://example.com/a.png"}}"#,
+        r#"{~"type":"image","source":{"type":"file","file_id":"f"}}"#,
+        r#"{~"type":"image","source":{"type":"text","media_type":"text/plain","data":"a"}}"#,
+        r#"{~"type":"image","source":{"type":"novel"}}"#,
+        r#"{"type":"image","source":{~"type":"novel"}}"#,
+        r#"{~"type":"document","source":{"type":"text","media_type":"text/plain","data":"a"}}"#,
+        r#"{~"type":"document","source":{"type":"base64","media_type":"application/pdf","data":"AA=="}}"#,
+        r#"{~"type":"document","source":{"type":"novel"}}"#,
+        r#"{~"type":"tool_use","id":"t","name":"f","input":{}}"#,
+        r#"{~"type":"tool_result","tool_use_id":"t","content":"a"}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","content":[{~"type":"text","text":"a"}]}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","content":[{~"type":"novel"}]}"#,
+        r#"{"type":"tool_result","tool_use_id":"t","output":[~1]}"#,
+        r#"{~"type":"thinking","thinking":"a","signature":"s"}"#,
+        r#"{~"type":"redacted_thinking","data":"d"}"#,
+        r#"{~"type":"server_tool_use","id":"s","name":"web_search","input":{}}"#,
+        r#"{"type":"web_search_tool_result","tool_use_id":"s","content":[{~"type":"web_search_result","url":"u"}]}"#,
+        r#"{~"type":"novel"}"#,
+    ];
+    let nest = |levels: usize, inner: &str| {
+        let open = r#"{"type":"tool_result","tool_use_id":"t","content":["#.repeat(levels);
+        format!("{open}{inner}{}", "]}".repeat(levels))
+    };
+    let mut bodies: Vec<String> = blocks
+        .iter()
+        .flat_map(|b| {
+            [
+                format!(r#"{{"model":"m","max_tokens":1,"messages":[{{"role":"user","content":[{b}]}}]}}"#),
+                format!(r#"{{"model":"m","max_tokens":1,"system":[{b}],"messages":[]}}"#),
+            ]
+        })
+        .collect();
+    for levels in [4, 5] {
+        for inner in [r#"{~"type":"text","text":"a"}"#, r#"{~"type":"novel"}"#] {
+            let b = nest(levels, inner);
+            bodies.push(format!(
+                r#"{{"model":"m","max_tokens":1,"messages":[{{"role":"user","content":[{b}]}}]}}"#
+            ));
+        }
+    }
+    bodies.extend([
+        r#"{"model":"m","max_tokens":1,"messages":[{~"role":"user","content":"a"}]}"#.to_owned(),
+        r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":"a","output":[~1]}]}"#
+            .to_owned(),
+    ]);
+    let decoded = assert_counted_exactly_when_kept(A, &bodies);
+    assert!(decoded > 40, "{decoded} of {} bodies decoded", bodies.len());
+    let unknown = r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[{~"type":"novel"}]}]}"#;
+    assert_eq!(padding_kept_and_counted(A, unknown), Some((true, PAD)));
+}
+
+#[test]
+fn responses_counts_all_whitespace_inside_its_input_items() {
+    let items = [
+        r#"{~"role":"user","content":"a"}"#,
+        r#"{~"type":"message","role":"user","content":[{"type":"input_text","text":"a"}]}"#,
+        r#"{"role":"user","content":[{~"type":"input_text","text":"a"}]}"#,
+        r#"{"role":"user","content":[{~"type":"input_image","image_url":"a","file_id":"b"}]}"#,
+        r#"{~"type":"function_call","call_id":"c","name":"f","arguments":"{}"}"#,
+        r#"{~"type":"function_call","call_id":1,"name":"f","arguments":"{}"}"#,
+        r#"{~"type":"function_call_output","call_id":"c","output":"a"}"#,
+        r#"{~"type":"reasoning","summary":[]}"#,
+        r#"{~"type":"item_reference","id":"r"}"#,
+        r#"{~"role":"critic","content":"a"}"#,
+    ];
+    let mut kept_raw = 0;
+    for item in items {
+        let body = format!(r#"{{"model":"m","input":[{item}]}}"#);
+        let (kept, counted) = padding_kept_and_counted(R, &body).unwrap();
+        assert_eq!(counted, PAD, "{item}");
+        kept_raw += usize::from(kept);
+    }
+    assert!(kept_raw >= 4, "{kept_raw} items kept raw");
+    for between in [
+        r#"{~"model":"m","input":[{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m",~"input":[{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m","input":[~{"role":"user","content":"a"}]}"#,
+        r#"{"model":"m","input":[{"role":"user","content":"a"}~]}"#,
+    ] {
+        assert_eq!(
+            padding_kept_and_counted(R, between),
+            Some((false, 0)),
+            "{between}"
+        );
+    }
+}
+
+#[test]
+fn whitespace_inside_an_array_shaped_block_or_item_is_counted() {
+    let mib = 1 << 20;
+    for (dialect, body) in [
+        (
+            C,
+            r#"{"model":"m","messages":[{"role":"user","content":[[~]]}]}"#,
+        ),
+        (
+            C,
+            r#"{"model":"m","messages":[{"role":"assistant","content":[[~"a"]]}]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[[~]]}]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"system":[[~]],"messages":[]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t","content":[[~]]}]}]}"#,
+        ),
+        (R, r#"{"model":"m","input":[[~]]}"#),
+        (
+            R,
+            r#"{"model":"m","input":[{"role":"user","content":[[~]]}]}"#,
+        ),
+    ] {
+        assert_eq!(padded_by(dialect, body, mib), Some((true, mib)), "{body}");
+    }
+}
+
+#[test]
+fn token_ids_of_embedding_inputs_are_counted_without_the_whitespace_between_them() {
+    let tight = r#"{"model":"m","input":[[1,2],[3]]}"#;
+    let loose = r#"{"model":"m","input":[ [ 1 , 2 ] ,
+        [3] ]}"#;
+    for body in [tight, loose] {
+        let s = request_shape(E, body.as_bytes()).unwrap();
+        assert_eq!((s.items, s.tokens, s.bytes), (2, 3, tight.len()), "{body}");
+    }
 }
 
 fn refused(dialect: DialectId, body: &str) -> KppError {
@@ -66,6 +334,8 @@ fn messages_blocks_nested_tool_results_system_and_tools_are_counted() {
 
     let chat = r#"{"model": "m", "messages": [{"role": "user", "content": [{"type": "text", "text": "a"}]}], "functions": [{"name": "f"}], "tools": [{"type": "function", "function": {"name": "g"}}]}"#;
     assert_eq!(shape(C, chat), counted(1, 1, 2));
+    let calls = r#"{"model": "m", "messages": [{"role": "assistant", "content": "ok", "tool_calls": [{"id": "a", "type": "function", "function": {"name": "f", "arguments": "{}"}}, {"id": "b", "type": "function", "function": {"name": "g", "arguments": "{}"}}]}]}"#;
+    assert_eq!(shape(C, calls), counted(1, 3, 0));
 
     let responses = r#"{"model": "m", "input": [
         {"role": "user", "content": [{"type": "input_text", "text": "a"}, {"type": "input_image", "image_url": "data:"}]},
@@ -77,13 +347,18 @@ fn messages_blocks_nested_tool_results_system_and_tools_are_counted() {
         counted(1, 0, 0)
     );
 
+    let tokens = |items, tokens| {
+        let mut s = counted(items, 0, 0);
+        s.tokens = tokens;
+        s
+    };
     assert_eq!(
         shape(E, r#"{"model": "m", "input": ["a", "b", [1, 2]]}"#),
-        counted(3, 0, 0)
+        tokens(3, 2)
     );
     assert_eq!(
         shape(E, r#"{"model": "m", "input": [1, 2, 3]}"#),
-        counted(0, 0, 0)
+        tokens(0, 3)
     );
 }
 

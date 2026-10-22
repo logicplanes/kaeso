@@ -428,6 +428,15 @@ where
     })
 }
 
+fn translating_busy() -> KppError {
+    error(
+        ErrorKind::Overloaded,
+        503,
+        "Kaeso is busy translating other requests; try again shortly.",
+    )
+    .with_retry_after(super::memory::WAIT)
+}
+
 pub(crate) fn unserved(eff: &Effective) -> KppError {
     error(
         ErrorKind::NotFound,
@@ -501,11 +510,26 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
+    let holder = caller
+        .key_id
+        .or(caller.user_id)
+        .or(caller.service_account_id)
+        .unwrap_or(caller.project_id);
+    // Held for the whole call, after the translation's share is returned: the app's
+    // decoded request, kept to encode the reply, the request sent while the input
+    // counter may still need it, and the raw body until it is logged.
+    let logged = u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX);
+    let decoded = super::memory::decoded(&shape);
+    let retained = |copies: u64| decoded.saturating_mul(copies).saturating_add(logged);
     rec.held = Some(
         state
             .translating
-            .hold(super::memory::estimate(kind, request_bytes, &shape))
-            .await,
+            .hold(
+                holder,
+                super::memory::estimate(kind, request_bytes, &shape).saturating_add(retained(2)),
+            )
+            .await
+            .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
@@ -701,6 +725,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    let sent_req = (eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
+    let kept = retained(1 + u64::from(sent_req.is_some()));
+    let sent_bytes = encoded.body.len();
+    let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
+    // reqwest's redirect layer keeps a clone of the body until the provider answers, even
+    // with redirects off, however slowly the provider reads the upload.
+    if let Some(held) = &mut rec.held {
+        held.keep(kept.saturating_add(sent));
+    }
     let base = base_url(state, eff.provider.id).ok_or_else(|| {
         fail(Stage::Setup)(error(
             ErrorKind::ProviderError,
@@ -708,11 +741,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             "No base URL is configured for this provider.",
         ))
     })?;
-    let sent_bytes = encoded.body.len();
     let provider = eff.provider.id;
-    rec.sent_input = Some(estimate::tokens_of_bytes(
-        u64::try_from(sent_bytes).unwrap_or(u64::MAX),
-    ));
+    rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
     let resp = state
         .upstream
@@ -730,6 +760,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             count_upstream_error(transport_kind(&e), provider);
             fail(Stage::Upstream)(upstream_error(&e))
         })?;
+    if let Some(held) = &mut rec.held {
+        held.keep(kept);
+    }
     rec.outcome().ttfb = Some(sent_at.elapsed());
     rec.outcome().upstream_request_id = resp
         .headers
@@ -759,7 +792,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         provider,
         auth: eff.provider.auth,
         dialect: plan.dialect,
-        asked: (eff.provider.count_tokens == Some(plan.dialect)).then_some((app_req, req)),
+        asked: sent_req.map(|req| (app_req, req)),
         adaptive_thinking: plan.adaptive_thinking,
         reasoning: plan.reasoning,
         timeouts,

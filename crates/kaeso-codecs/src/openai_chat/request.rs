@@ -4,6 +4,7 @@ use kaeso_kpp::{
     StreamMode, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::convert::{
@@ -14,6 +15,7 @@ use super::wire::{
     ResponseFormat, ToolMessage, UserMessage, role_tag,
 };
 use crate::codec::{HeaderList, is_forwarded_header};
+use crate::limits::{Form, Scope};
 use crate::wire::{Ext, StringOr, type_tag, verbatim_into_form};
 
 pub(crate) const FORM_MAX_TOKENS: &str = "max_tokens";
@@ -504,6 +506,16 @@ fn decode_messages(
         }
     }
     Ok(())
+}
+
+pub(crate) fn message_form(raw: &RawValue) -> Form {
+    let parts = match role_tag(raw).ok().flatten().as_deref() {
+        Some("system" | "developer" | "tool") => PartContext::TextOnly,
+        Some("user") => PartContext::User,
+        Some("assistant") => PartContext::Assistant,
+        _ => return Form::Raw,
+    };
+    Form::Nests(Scope::Chat(parts))
 }
 
 fn previous_is_tool(messages: &[RawJson], i: usize) -> bool {

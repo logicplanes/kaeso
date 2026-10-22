@@ -453,6 +453,7 @@
   "errors.modelApi.timeout": "服务商未及时响应（{stage}）。Kaeso 不会重试；请重试或提高模型的超时时间。",
   "errors.modelApi.transfer": "响应完成前，与服务商的连接中断了。",
   "errors.modelApi.translateUnavailable": "Kaeso 暂时无法转换此请求。请稍后重试。",
+  "errors.modelApi.translatingBusy": "Kaeso 正忙于转换其他请求；请稍后重试。",
   "errors.modelApi.unreachable": "Kaeso 无法连接服务商。请稍后重试。",
   "errors.modelApi.unserved": "{provider} 不向此项目的服务商密钥提供模型 `{model}`；请检查该密钥对它的访问权限，或将该模型从目录中移除。",
   "errors.timeoutStage.connect": "建立连接",

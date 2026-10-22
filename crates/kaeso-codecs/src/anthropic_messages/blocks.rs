@@ -13,6 +13,7 @@ use super::wire::{
 };
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
+use crate::limits::{Form, Scope};
 use crate::wire::without_position;
 use crate::wire::{
     Ext, StringOr, add_nested_extra, extra_for, extras_from, type_tag, verbatim_from_form,
@@ -73,8 +74,8 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
     let origin = dec.origin;
     let unknown = || Block::Unknown(RawItem::new(origin.clone(), RawJson::from(raw)));
     let ty = type_tag(raw).map_err(|e| without_position(&e))?;
-    let block = match ty.as_deref() {
-        Some("text") => {
+    let block = match block_kind(ty.as_deref()) {
+        BlockKind::Text => {
             let w: Ext<TextW> = parse(raw, "text")?;
             let mut b = TextBlock::new(w.known.text);
             b.citations = w
@@ -88,7 +89,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras_from(origin, w.extra, w.verbatim);
             Block::Text(b)
         }
-        Some("image") => {
+        BlockKind::Image => {
             let w: Ext<ImageW> = parse(raw, "image")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
             let Some(source) = decode_source(&w.known.source, origin, &mut extras, false)? else {
@@ -99,7 +100,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras;
             Block::Image(b)
         }
-        Some("document") => {
+        BlockKind::Document => {
             let w: Ext<DocumentW> = parse(raw, "document")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
             let Some(source) = decode_source(&w.known.source, origin, &mut extras, true)? else {
@@ -126,7 +127,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras;
             Block::Document(b)
         }
-        Some("tool_use") => {
+        BlockKind::ToolUse => {
             let mut w: Ext<ToolUseW> = parse(raw, "tool_use")?;
             if let Some(caller) = w.extra.get("caller")
                 && caller.to_value().ok() == Some(serde_json::json!({"type": "direct"}))
@@ -143,7 +144,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras_from(origin, w.extra, w.verbatim);
             Block::ToolCall(b)
         }
-        Some("tool_result") => {
+        BlockKind::ToolResult => {
             let w: Ext<ToolResultW> = parse(raw, "tool_result")?;
             let mut extras = extras_from(origin, w.extra, w.verbatim);
             let content = match w.known.content {
@@ -156,7 +157,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras;
             Block::ToolResult(b)
         }
-        Some("thinking") => {
+        BlockKind::Thinking => {
             let w: Ext<ThinkingW> = parse(raw, "thinking")?;
             if let Some(block) = w
                 .known
@@ -184,7 +185,7 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             }
             Block::Reasoning(b)
         }
-        Some("redacted_thinking") => {
+        BlockKind::RedactedThinking => {
             let w: Ext<RedactedThinkingW> = parse(raw, "redacted_thinking")?;
             let mut b = ReasoningBlock::new(origin.clone());
             b.opaque.push(Opaque::new(
@@ -195,9 +196,61 @@ pub(crate) fn decode_block(raw: &RawValue, dec: Dec<'_>) -> Result<Block, String
             b.extras = extras_from(origin, w.extra, w.verbatim);
             Block::Reasoning(b)
         }
-        _ => unknown(),
+        BlockKind::Unknown => unknown(),
     };
     Ok(block)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum BlockKind {
+    Text,
+    Image,
+    Document,
+    ToolUse,
+    ToolResult,
+    Thinking,
+    RedactedThinking,
+    Unknown,
+}
+
+fn block_kind(ty: Option<&str>) -> BlockKind {
+    match ty {
+        Some("text") => BlockKind::Text,
+        Some("image") => BlockKind::Image,
+        Some("document") => BlockKind::Document,
+        Some("tool_use") => BlockKind::ToolUse,
+        Some("tool_result") => BlockKind::ToolResult,
+        Some("thinking") => BlockKind::Thinking,
+        Some("redacted_thinking") => BlockKind::RedactedThinking,
+        _ => BlockKind::Unknown,
+    }
+}
+
+pub(crate) fn block_form(raw: &RawValue, depth: u8) -> Form {
+    #[derive(serde::Deserialize)]
+    struct Probe<'a> {
+        #[serde(borrow, default)]
+        source: Option<&'a RawValue>,
+    }
+    let Ok(ty) = type_tag(raw) else {
+        return Form::Raw;
+    };
+    let typed_source = |document| {
+        serde_json::from_str::<Probe<'_>>(raw.get())
+            .ok()
+            .and_then(|p| p.source)
+            .and_then(|source| type_tag(source).ok())
+            .is_some_and(|ty| source_kind(ty.as_deref(), document).is_some())
+    };
+    match block_kind(ty.as_deref()) {
+        BlockKind::Unknown => Form::Raw,
+        BlockKind::Image if !typed_source(false) => Form::Raw,
+        BlockKind::Document if !typed_source(true) => Form::Raw,
+        BlockKind::ToolResult if depth < MAX_TOOL_RESULT_DEPTH => {
+            Form::Nests(Scope::Anthropic(depth + 1))
+        }
+        _ => Form::Typed,
+    }
 }
 
 pub(crate) fn decode_content(
@@ -239,8 +292,11 @@ fn decode_source(
 ) -> Result<Option<Source>, String> {
     let ty = type_tag(raw).map_err(|e| without_position(&e))?;
     let err = |e: serde_json::Error| format!("invalid `source`: {}", without_position(&e));
-    let (source, extra, verbatim) = match ty.as_deref() {
-        Some("base64") => {
+    let Some(kind) = source_kind(ty.as_deref(), document) else {
+        return Ok(None);
+    };
+    let (source, extra, verbatim) = match kind {
+        SourceKind::Base64 => {
             let w: Ext<DataSourceW> = Ext::from_raw(raw).map_err(err)?;
             (
                 Source::base64(w.known.media_type, w.known.data),
@@ -248,7 +304,7 @@ fn decode_source(
                 w.verbatim,
             )
         }
-        Some("text") if document => {
+        SourceKind::Text => {
             let w: Ext<DataSourceW> = Ext::from_raw(raw).map_err(err)?;
             (
                 Source::text(w.known.media_type, w.known.data),
@@ -256,11 +312,11 @@ fn decode_source(
                 w.verbatim,
             )
         }
-        Some("url") => {
+        SourceKind::Url => {
             let w: Ext<UrlSourceW> = Ext::from_raw(raw).map_err(err)?;
             (Source::Url(w.known.url), w.extra, w.verbatim)
         }
-        Some("file") => {
+        SourceKind::File => {
             let w: Ext<FileSourceW> = Ext::from_raw(raw).map_err(err)?;
             (
                 Source::file_id(origin.clone(), w.known.file_id),
@@ -268,11 +324,27 @@ fn decode_source(
                 w.verbatim,
             )
         }
-        _ => return Ok(None),
     };
     add_nested_extra(extras, "source", extra);
     verbatim_into_form(extras, "source", verbatim);
     Ok(Some(source))
+}
+
+enum SourceKind {
+    Base64,
+    Text,
+    Url,
+    File,
+}
+
+fn source_kind(ty: Option<&str>, document: bool) -> Option<SourceKind> {
+    match ty {
+        Some("base64") => Some(SourceKind::Base64),
+        Some("text") if document => Some(SourceKind::Text),
+        Some("url") => Some(SourceKind::Url),
+        Some("file") => Some(SourceKind::File),
+        _ => None,
+    }
 }
 
 pub(crate) fn decode_cache(w: Ext<CacheControlW>, origin: &Origin) -> CacheHint {

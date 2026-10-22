@@ -31,7 +31,7 @@ The key needs inference access, and its owner needs the right `api.request`. An 
 
 A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. Kaeso answers a larger one with 413.
 
-KPP counts what the body holds before it decodes anything. More than 100,000 messages or input items, 10,000 content blocks in one message, 10,000 tools, 2,048 embedding inputs or objects and arrays nested more than 127 levels deep get 400. Kaeso then estimates the memory the request takes while it's translated and sent. While the requests in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, the request waits for them to finish.
+KPP counts what the body holds before it decodes anything. More than 100,000 messages or input items, 10,000 content blocks in one message, 10,000 tools, 2,048 embedding inputs or objects and arrays nested more than 127 levels deep get 400. Kaeso then estimates the memory the request takes while it's translated, from its body as received and from its messages, blocks and tools; once decoded, it keeps only what decoding kept. While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`.
 
 KPP then decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. Kaeso refuses a request it can't read here. It also refuses one that asks for something Kaeso never sends to a provider, such as more than one choice or stored Responses state.
 

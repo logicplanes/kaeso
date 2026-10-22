@@ -13,6 +13,7 @@ use super::wire::{
     CacheBreakpoint, FilePart, FileRef, FunctionCall, ImagePart, ImageUrl, RefusalPart, TextPart,
     ToolCall,
 };
+use crate::limits::Form;
 use crate::wire::{
     Ext, add_nested_extra, extra_for, extras_from, nested_extra_for, parse_data_url, type_tag,
     verbatim_from_form, verbatim_into_form, without_position,
@@ -199,9 +200,9 @@ pub(crate) fn decode_part(
             without_position(&e)
         ))
     })?;
-    match (ty.as_deref(), ctx) {
-        (Some("text"), _) => decode_text_part(raw, origin),
-        (Some("refusal"), PartContext::Assistant) => {
+    match part_kind(ty.as_deref(), ctx) {
+        PartKind::Text => decode_text_part(raw, origin),
+        PartKind::Refusal => {
             let part: Ext<RefusalPart> = parse_ext(raw.as_raw(), "refusal part", false)?;
             let mut block = RefusalBlock::new(part.known.refusal);
             block.extras = extras_of(origin, part.extra, part.verbatim);
@@ -211,13 +212,41 @@ pub(crate) fn decode_part(
                 .insert(FORM_REFUSAL_PART.to_owned(), Value::Bool(true));
             Ok(Block::Refusal(block))
         }
-        (Some("image_url"), PartContext::User) => decode_image_part(raw, origin),
-        (Some("file"), PartContext::User) => decode_file_part(raw, origin),
-        (Some("input_audio"), _) => Err(KppError::unsupported(
+        PartKind::Image => decode_image_part(raw, origin),
+        PartKind::File => decode_file_part(raw, origin),
+        PartKind::Audio => Err(KppError::unsupported(
             "input_audio",
             "Audio input (`input_audio` content parts) is not supported by Kaeso. Send the audio transcript as text instead.",
         )),
-        _ => Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone()))),
+        PartKind::Unknown => Ok(Block::Unknown(RawItem::new(origin.clone(), raw.clone()))),
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum PartKind {
+    Text,
+    Refusal,
+    Image,
+    File,
+    Audio,
+    Unknown,
+}
+
+pub(crate) fn part_kind(ty: Option<&str>, ctx: PartContext) -> PartKind {
+    match (ty, ctx) {
+        (Some("text"), _) => PartKind::Text,
+        (Some("refusal"), PartContext::Assistant) => PartKind::Refusal,
+        (Some("image_url"), PartContext::User) => PartKind::Image,
+        (Some("file"), PartContext::User) => PartKind::File,
+        (Some("input_audio"), _) => PartKind::Audio,
+        _ => PartKind::Unknown,
+    }
+}
+
+pub(crate) fn part_form(raw: &RawValue, ctx: PartContext) -> Form {
+    match type_tag(raw) {
+        Ok(ty) if part_kind(ty.as_deref(), ctx) != PartKind::Unknown => Form::Typed,
+        _ => Form::Raw,
     }
 }
 

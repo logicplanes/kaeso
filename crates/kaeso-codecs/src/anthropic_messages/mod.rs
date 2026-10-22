@@ -21,6 +21,8 @@ use crate::codec::{
     StreamEncoder,
 };
 
+pub(crate) use blocks::block_form;
+
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 
 pub const MESSAGES_PATH: &str = "/v1/messages";

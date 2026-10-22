@@ -47,6 +47,9 @@ pub use profile::{
     ChatProfile, OutputLimit, ReplyProfile, ReplyReasoning, RequestProfile, SeedField,
 };
 
+pub(crate) use convert::{PartContext, part_form};
+pub(crate) use request::message_form;
+
 pub(crate) const DIALECT: DialectId = DialectId::OpenAiChat;
 
 pub(crate) fn kind_feature(kind: RequestKind) -> &'static str {
