@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use common::v1::{ANTHROPIC_SECRET, Capture, Env, OPENAI_SECRET, call, chat, messages};
 use http_body_util::BodyExt;
+use secrecy::ExposeSecret;
 use serde_json::json;
 use tower::ServiceExt;
 
@@ -973,36 +974,69 @@ async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_i
     let env = env().await;
     let state = &env.app.state;
     let project = common::uuid(&env.project);
-    let stale = (*kaeso_server::services::catalogue::project_models(state, project)
-        .await
-        .unwrap())
-    .clone();
+    let owner = common::uuid(&env.owner.user_id);
     let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
     let models = env
         .app
         .get(&format!("{base}/models"), &env.owner.cookie)
         .await;
-    let haiku = models.body["data"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|m| m["model_id"] == "claude-haiku-4-5")
-        .unwrap()["id"]
-        .clone();
-    let narrow = env
-        .app
-        .post(
-            &format!("{base}/keys"),
-            json!({ "name": "narrow", "models": [haiku] }),
-            Some(&env.owner.cookie),
-        )
-        .await;
-    let narrow_key = narrow.body["secret"].as_str().unwrap();
-    state
+    let haiku = common::uuid(
+        models.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == "claude-haiku-4-5")
+            .unwrap()["id"]
+            .as_str()
+            .unwrap(),
+    );
+    kaeso_server::services::catalogue::project_models(state, project)
+        .await
+        .unwrap();
+    let secret = kaeso_server::platform::keys::new_secret(kaeso_core::keys::KeyKind::Project);
+    let narrow = uuid::Uuid::now_v7();
+    let mut tx = state.pg.begin().await.unwrap();
+    kaeso_store::pg::keys::insert(
+        &mut *tx,
+        &kaeso_store::pg::keys::NewKey {
+            id: narrow,
+            org_id: common::uuid(&env.owner.org_id),
+            project_id: project,
+            user_id: Some(owner),
+            service_account_id: None,
+            name: "narrow",
+            secret_hash: &secret.hash,
+            secret_prefix: &secret.prefix,
+            secret_last4: &secret.last4,
+            inference: true,
+            platform: false,
+            expires_at: None,
+            created_by_kind: "user",
+            created_by_id: Some(owner),
+        },
+    )
+    .await
+    .unwrap();
+    kaeso_store::pg::catalogue::set_access(
+        &mut tx,
+        project,
+        kaeso_store::pg::catalogue::Subject::Key(narrow),
+        Some(&[haiku].into()),
+    )
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    let cached = state
         .caches
         .project_models
-        .put(&project.to_string(), stale)
-        .await;
+        .cached(&project.to_string())
+        .await
+        .unwrap();
+    assert!(
+        !cached.knows(Some(narrow), None),
+        "the cached models were loaded before the key existed"
+    );
+    let narrow_key = secret.secret.expose_secret();
     let r = call(
         &env,
         "/v1/chat/completions",
