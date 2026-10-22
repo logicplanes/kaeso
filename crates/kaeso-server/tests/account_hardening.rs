@@ -708,6 +708,41 @@ async fn sign_in_is_refused_while_its_throttles_cannot_be_counted() {
 }
 
 #[tokio::test]
+async fn a_session_from_an_ipv4_mapped_peer_shows_its_ipv4_address() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    let peer: std::net::IpAddr = "::ffff:203.0.113.9".parse().unwrap();
+    let r = app
+        .raw(
+            axum::http::Request::post("/platform/v1/auth/password")
+                .header(axum::http::header::ORIGIN, common::ORIGIN)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .extension(axum::extract::ConnectInfo(std::net::SocketAddr::new(
+                    peer, 40000,
+                )))
+                .body(axum::body::Body::from(
+                    json!({ "email": "owner@example.com", "password": PASSWORD }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = app
+        .get("/auth/sessions", &r.cookie().unwrap())
+        .await
+        .expect_status(StatusCode::OK);
+    let current = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current"] == true)
+        .unwrap();
+    assert_eq!(current["ip"], "203.0.113.9");
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_revoked_session_is_not_brought_back_by_its_next_use() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
