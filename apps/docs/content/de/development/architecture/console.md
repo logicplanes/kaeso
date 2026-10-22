@@ -43,7 +43,7 @@ Jedes Lesen ist eine TanStack-Query-Abfrage mit der Anfrage als Schlüssel, und 
 
 ## Styling
 
-Die Konsole hat keine eigenen Styles. `@logicplanes/kaeso-ui` liefert jedes sichtbare Element und das Stylesheet, und der Code der Konsole nutzt Tailwind nur für Layout, aus derselben Token-Skala. Ein Vite-Plugin liefert das Theme-Skript der Bibliothek, das vor dem ersten Zeichnen läuft, als `/theme-init.js` aus, sodass die Content Security Policy kein Inline-Skript erlaubt.
+Die Konsole hat keine eigenen Styles. `@logicplanes/kaeso-ui` liefert jedes sichtbare Element und das Stylesheet, und der Code der Konsole nutzt Tailwind nur für Layout, aus derselben Token-Skala. Ein Vite-Plugin liefert das Theme-Skript der Bibliothek, das vor dem ersten Zeichnen läuft, als `/theme-init.js` aus, sodass die Content Security Policy kein Inline-Skript erlaubt. Die Policy verlangt außerdem Trusted Types für Skripte, sodass kein Code eine Zeichenkette in HTML oder ein Skript verwandeln kann, und der Dev-Server der End-to-End-Tests sendet diese Regel ebenfalls.
 
 ## Bundles
 

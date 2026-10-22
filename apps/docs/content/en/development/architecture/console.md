@@ -43,7 +43,7 @@ Every read is a TanStack Query query keyed by the request, and every change is a
 
 ## Styling
 
-The console has no styles of its own. `@logicplanes/kaeso-ui` provides every visible element and the stylesheet, and console code uses Tailwind only for layout, from the same token scale. A Vite plugin serves the library's pre-paint theme script as `/theme-init.js`, so the content security policy allows no inline script.
+The console has no styles of its own. `@logicplanes/kaeso-ui` provides every visible element and the stylesheet, and console code uses Tailwind only for layout, from the same token scale. A Vite plugin serves the library's pre-paint theme script as `/theme-init.js`, so the content security policy allows no inline script. The policy also requires Trusted Types for scripts, so no code can turn a string into HTML or a script, and the end-to-end suite's dev server sends that rule too.
 
 ## Bundles
 
