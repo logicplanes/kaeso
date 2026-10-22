@@ -135,7 +135,7 @@ A request names a model in one of three forms. Kaeso looks in the project's cata
 | The provider and the model | `anthropic/claude-haiku-4-5` |
 | The model's own id | `claude-haiku-4-5` |
 
-Kaeso answers 404 for a model outside the catalogue, and 403 for one the key or its member may not use. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
+Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use, with the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
 
 ## Streaming
 
