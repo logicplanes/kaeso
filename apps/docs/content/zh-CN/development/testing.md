@@ -216,7 +216,7 @@ e2e/.venv/bin/pytest -q e2e/sdk
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-该套件构建网关和模拟服务商的镜像，并以 `e2e/install` 中的覆盖配置从干净状态运行 `deploy/compose.yaml`。它完成首次启动设置，并用两个 SDK 调用该实例。它还检查 PostgreSQL 和 ClickHouse 没有授予网关不需要的权限，以及 Valkey 会拒绝不带密码的连接。控制台的地址由一个替身提供。`KAESO_TEST_CONSOLE_IMAGE` 改为运行真实的控制台镜像，`KAESO_TEST_GATEWAY_IMAGE` 和 `KAESO_TEST_MOCK_IMAGE` 则使用已经构建好的镜像。
+该套件构建网关、模拟服务商、控制台和更新器的镜像，并以 `e2e/install` 中的覆盖配置从干净状态运行 `deploy/compose.yaml`。它完成首次启动设置，并用两个 SDK 调用该实例。它还检查 PostgreSQL 和 ClickHouse 没有授予网关不需要的权限，以及 Valkey 会拒绝不带密码的连接。和真实实例一样，控制台镜像同时运行 Caddy。`KAESO_TEST_GATEWAY_IMAGE`、`KAESO_TEST_MOCK_IMAGE`、`KAESO_TEST_CONSOLE_IMAGE` 和 `KAESO_TEST_UPDATER_IMAGE` 使用已经构建好的镜像。
 
 ## 模糊测试
 

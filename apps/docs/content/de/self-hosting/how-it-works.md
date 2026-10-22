@@ -22,7 +22,7 @@ flowchart TD
 
 ## Dienste
 
-`compose.yaml` startet sechs Dienste. Die Datei legt jedes Image auf eine Version und einen Digest fest: die Images von Gateway, Konsole und Updater auf die Version des Releases und die Digests, die sein Release-Workflow gebaut hat.
+`compose.yaml` startet sechs Dienste. Die Datei legt jedes Image auf eine Version und einen Digest fest: die Images von Gateway, Konsole und Updater auf die Version des Releases und die Digests, die sein Release-Workflow gebaut hat. Caddy läuft aus dem Image der Konsole, das Kaesos eigenen Build von Caddy enthält.
 
 | Dienst | Aufgabe | Seine Daten |
 | --- | --- | --- |
@@ -65,7 +65,7 @@ Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Back
 Die Dienste teilen so wenig wie möglich:
 
 - PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk ohne Weg nach außen, und nur das Gateway erreicht sie.
-- Kein Container kann Rechte hinzugewinnen, und jeder startet ohne Linux-Capabilities. Caddy, Gateway, Konsole und Updater laufen als Benutzer ohne Sonderrechte, alle außer Caddy auf schreibgeschützten Dateisystemen. Caddy behält nur das Recht, die Ports 80 und 443 zu belegen.
+- Kein Container kann Rechte hinzugewinnen, und jeder startet ohne Linux-Capabilities. Caddy, Gateway, Konsole und Updater laufen als Benutzer ohne Sonderrechte, alle außer Caddy auf schreibgeschützten Dateisystemen. Caddy belegt die Ports 80 und 443 ohne Capability, weil sein Container Benutzern ohne Sonderrechte jeden Port erlaubt.
 - Valkey läuft von Anfang an als der eigene Benutzer seines Images, ohne Capabilities. PostgreSQL und ClickHouse bekommen nur die Capabilities zurück, die ihre Images beim Start brauchen. Damit übergibt jeder sein Datenverzeichnis dem eigenen Benutzer und läuft danach nicht mehr als root. `caddy-init` bekommt nur die Rechte, jedes Verzeichnis zu lesen und Eigentümer zu ändern, und `updater-init` zusätzlich das Recht, die Rechte einer Datei zu ändern.
 - Jeder Dienst hat eine Speicher- und eine Prozessgrenze, und Docker rotiert sein Log bei 10 MB und behält fünf Dateien ([Container-Grenzen](configuration.md#container-grenzen)).
 - Das Gateway meldet sich bei PostgreSQL als `kaeso` an. Diesem Benutzer gehört die Kaeso-Datenbank, ein Superuser ist er nicht. Der ClickHouse-Benutzer `kaeso` kann keine Benutzer und Berechtigungen verwalten, und Valkey verlangt von jeder Verbindung ein Passwort, das es aus einer Datei liest statt von seiner Befehlszeile.

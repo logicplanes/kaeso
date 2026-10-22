@@ -29,7 +29,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, alle 5 Minuten |
 | Ausgehend | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy, um das Zertifikat zu holen und zu erneuern |
 | Ausgehend | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker, um die Images von Kaeso zu laden, wenn Sie installieren oder aktualisieren |
-| Ausgehend | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker, um die Images von Caddy, PostgreSQL, ClickHouse, Valkey und dem Socket-Proxy des Updaters zu laden |
+| Ausgehend | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker, um die Images von PostgreSQL, ClickHouse, Valkey und dem Socket-Proxy des Updaters zu laden |
 | Ausgehend | `github.com`, `release-assets.githubusercontent.com` | Der Download von `compose.yaml` und `release.json` eines Releases, von Hand oder durch den Updater |
 | Ausgehend | `api.github.com` | Der Updater und `gh attestation verify`, um die Attestierungen eines Releases zu holen |
 | Ausgehend | Ihr SMTP-Server | Anmeldelinks, Einladungen, Warnungen und Sicherheitshinweise ([E-Mail](email.md)) |

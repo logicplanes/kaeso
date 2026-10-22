@@ -17,7 +17,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 PROJECT = "kaeso-install-test"
 SETUP_LINK = re.compile(r"#token=(\S+)")
-CADDY = "caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f"
 UNREACHABLE = "Kaeso can't be reached right now; try again in a minute."
 UPDATING = "Kaeso is being updated; try again in a minute."
 
@@ -29,6 +28,7 @@ class Install(NamedTuple):
     run: Callable[..., subprocess.CompletedProcess]
     health: dict[str, str]
     work: Path
+    console: str
 
 
 def free_port() -> int:
@@ -46,11 +46,11 @@ def image(variable: str, target: str) -> str:
     return tag
 
 
-def updater_image() -> str:
-    if os.environ.get("KAESO_TEST_UPDATER_IMAGE"):
-        return os.environ["KAESO_TEST_UPDATER_IMAGE"]
-    tag = "kaeso-updater:install-test"
-    dockerfile = ROOT / "deploy" / "updater.Dockerfile"
+def built(variable: str, name: str) -> str:
+    if os.environ.get(variable):
+        return os.environ[variable]
+    tag = f"kaeso-{name}:install-test"
+    dockerfile = ROOT / "deploy" / f"{name}.Dockerfile"
     subprocess.run(["docker", "build", "-f", str(dockerfile), "-t", tag, str(ROOT)], check=True)
     return tag
 
@@ -70,12 +70,11 @@ def install(tmp_path_factory):
     work = tmp_path_factory.mktemp("install")
     shutil.copy(ROOT / "deploy" / "compose.yaml", work / "compose.yaml")
     shutil.copy(Path(__file__).with_name("compose.test.yaml"), work / "compose.test.yaml")
-    shutil.copy(Path(__file__).with_name("console-stub.yaml"), work / "console-stub.yaml")
     port = free_port()
     gateway = image("KAESO_TEST_GATEWAY_IMAGE", "gateway")
     mock = image("KAESO_TEST_MOCK_IMAGE", "mock")
-    console = os.environ.get("KAESO_TEST_CONSOLE_IMAGE")
-    updater = updater_image()
+    console = built("KAESO_TEST_CONSOLE_IMAGE", "console")
+    updater = built("KAESO_TEST_UPDATER_IMAGE", "updater")
     (work / "master-keys").write_text(
         subprocess.check_output(["docker", "run", "--rm", gateway, "master-key", "generate"], text=True)
     )
@@ -88,15 +87,13 @@ def install(tmp_path_factory):
         "KAESO_TEST_PORT": str(port),
         "KAESO_TEST_GATEWAY_IMAGE": gateway,
         "KAESO_TEST_MOCK_IMAGE": mock,
-        "KAESO_TEST_CONSOLE_IMAGE": console or "",
+        "KAESO_TEST_CONSOLE_IMAGE": console,
         "KAESO_TEST_UPDATER_IMAGE": updater,
         "KAESO_UPDATER_TOKEN": os.urandom(32).hex(),
         "COMPOSE_PROFILES": "updater",
     }
     (work / ".env").write_text("".join(f"{name}={value}\n" for name, value in env.items()))
     compose = ["docker", "compose", "-p", PROJECT, "-f", "compose.yaml", "-f", "compose.test.yaml"]
-    if not console:
-        compose += ["-f", "console-stub.yaml"]
 
     def run(*args: str, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
         return subprocess.run([*compose, *args], cwd=work, check=check, text=True, **kwargs)
@@ -112,7 +109,7 @@ def install(tmp_path_factory):
         logs = run("logs", "gateway", capture_output=True).stdout
         assert "kaeso setup-link" in logs, "the gateway's log points to the setup link command"
         assert token not in logs, "the setup token reached the gateway's log"
-        yield Install(url, token, env, run, health, work)
+        yield Install(url, token, env, run, health, work, console)
     finally:
         subprocess.run([*compose, "logs", "--no-color"], cwd=work, stdout=open(work / "compose.log", "w"))
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=work, check=False)
@@ -206,7 +203,7 @@ def test_the_updater_reaches_docker_only_through_its_proxy(install, owner):
     assert status.json()["updater"]["state"] == "ready", status.json()
     assert status.json()["settings"]["mode"] == "manual"
     stranger = subprocess.run(
-        ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--entrypoint", "wget", CADDY,
+        ["docker", "run", "--rm", "--network", f"{PROJECT}_docker", "--entrypoint", "wget", install.console,
          "-qO-", "-T", "5", "http://docker-proxy:2375/v1.44/version"],
         capture_output=True,
         text=True,
@@ -225,7 +222,7 @@ def test_the_updater_writes_its_files_without_root(install):
             ["docker", "run", "--rm", "--user", "65532:65532", "--network", "none",
              "-v", f"{install.work / 'compose.yaml'}:/kaeso/compose.yaml",
              "-v", f"{PROJECT}_maintenance:/maintenance", "-v", f"{PROJECT}_updater:/state",
-             "--entrypoint", "sh", CADDY, "-c", script],
+             "--entrypoint", "sh", install.console, "-c", script],
             capture_output=True,
             text=True,
         )
@@ -246,7 +243,7 @@ def test_the_init_services_run_again_over_directories_only_their_services_can_re
     for volume in ("caddy_data", "maintenance", "updater"):
         subprocess.run(
             ["docker", "run", "--rm", "--user", "65532:65532", "--network", "none", "-v", f"{PROJECT}_{volume}:/v",
-             "--entrypoint", "sh", CADDY, "-c", "mkdir -p -m 700 /v/private/inner && touch /v/private/inner/file"],
+             "--entrypoint", "sh", install.console, "-c", "mkdir -p -m 700 /v/private/inner && touch /v/private/inner/file"],
             check=True,
         )
     for service in ("caddy-init", "updater-init"):
@@ -260,10 +257,10 @@ def test_the_data_services_start_again_over_the_data_they_wrote(install, owner):
         assert again.returncode == 0, f"{service}: {again.stderr}"
 
 
-def flag(state: str | None) -> None:
+def flag(install: Install, state: str | None) -> None:
     command = f"printf '%s' '{state}' > /m/active" if state else "rm -f /m/active"
     subprocess.run(
-        ["docker", "run", "--rm", "-v", f"{PROJECT}_maintenance:/m", "--entrypoint", "sh", CADDY, "-c", command],
+        ["docker", "run", "--rm", "--user", "65532:65532", "-v", f"{PROJECT}_maintenance:/m", "--entrypoint", "sh", install.console, "-c", command],
         check=True,
     )
 
@@ -273,7 +270,7 @@ def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, o
     install.run("stop", "gateway", "console")
     try:
         for maintenance, message in [(None, UNREACHABLE), ('{"state":"updating","step":"migrating"}', UPDATING)]:
-            flag(maintenance)
+            flag(install, maintenance)
             platform = httpx.get(f"{url}/platform/v1/auth/session", timeout=10)
             assert platform.status_code == 503
             assert platform.headers["retry-after"] == "30"
@@ -303,7 +300,7 @@ def test_the_edge_answers_every_api_in_its_format_while_kaeso_is_away(install, o
             else:
                 assert status.status_code == 404
     finally:
-        flag(None)
+        flag(install, None)
         install.run("start", "gateway", "console")
 
     def back() -> bool:
