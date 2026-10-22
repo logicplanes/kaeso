@@ -1,5 +1,5 @@
 listen = "0.0.0.0:8080"
-metrics_listen = "0.0.0.0:9100"
+metrics_listen = "127.0.0.1:9100"
 public_url = "https://kaeso.example.com"
 trusted_proxies = "127.0.0.0/8,::1/128"
 shutdown_grace = "30s"

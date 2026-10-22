@@ -78,7 +78,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
 | `KAESO_LISTEN` | `listen` | 文本 | `0.0.0.0:8080` | 模型 API、Platform API 和健康检查的地址。 |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | 文本 | `0.0.0.0:9100` | Prometheus 指标的地址。切勿公开转发。 |
+| `KAESO_METRICS_LISTEN` | `metrics_listen` | 文本 | `127.0.0.1:9100` | Prometheus 指标的地址。切勿公开转发。网关镜像设置为 `0.0.0.0:9100`，使从容器发布的端口能够访问它；[健康状态和指标](monitoring.md#指标)说明了做法。 |
 | `KAESO_PUBLIC_URL` | `public_url` | 文本 | 必填 | 用户和应用使用的地址，例如 `https://kaeso.example.com`，不带路径。必须是 `https`，开发时可在回环地址上使用 `http`。 |
 | `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
 | `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |

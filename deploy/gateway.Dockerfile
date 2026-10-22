@@ -44,6 +44,8 @@ LABEL org.opencontainers.image.title="Kaeso gateway" \
       org.opencontainers.image.licenses="MIT"
 COPY --from=build --chmod=0555 /kaeso /usr/local/bin/kaeso
 USER nonroot:nonroot
+# Inside the container the metrics listen on every interface, so a port published to the
+# host's loopback reaches them; Compose publishes 9100 nowhere and Caddy never routes it.
 ENV KAESO_LISTEN=0.0.0.0:8080 KAESO_METRICS_LISTEN=0.0.0.0:9100
 EXPOSE 8080 9100
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 CMD ["/usr/local/bin/kaeso", "healthcheck"]

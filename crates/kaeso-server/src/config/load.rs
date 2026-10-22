@@ -365,7 +365,7 @@ mod tests {
     fn defaults_fill_everything_optional() {
         let c = load(&Map::minimal()).unwrap();
         assert_eq!(c.listen.to_string(), "0.0.0.0:8080");
-        assert_eq!(c.metrics_listen.port(), 9100);
+        assert_eq!(c.metrics_listen.to_string(), "127.0.0.1:9100");
         assert_eq!(c.postgres.pool_size, 20);
         assert_eq!(c.upstream.connect_timeout.as_secs(), 10);
         assert_eq!(c.upstream.request_timeout.as_secs(), 600);
