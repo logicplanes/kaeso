@@ -10,32 +10,33 @@ Every release gives all parts of Kaeso one version number and follows semantic v
 
 1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Settings** › **Instance** › **Updates**.
 2. [Back up](backups.md) PostgreSQL and ClickHouse, so you can [go back](#downgrade) if you need to.
-3. In the install's folder, download the new `compose.yaml` over the old one, and the release's `release.json` next to it. `.env`, `master-keys` and `compose.override.yaml` stay as they are.
+3. In the install's folder, set `version` to the release you update to, then download, check and start it. The commands download `compose.yaml` and `release.json` into a temporary folder and check them, with the [GitHub CLI](https://cli.github.com) signed in and `jq`:
+   - the signature of Kaeso's Release workflow on `release.json`;
+   - the hash of `compose.yaml` that `release.json` names, and with it the digest of each Kaeso image;
+   - the version `release.json` names.
+
+   Only then do they move both files into the install's folder, pull the images and start them. `.env`, `master-keys` and `compose.override.yaml` stay as they are.
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/release.json
+version={{version}}
+(
+  set -euo pipefail
+  dir="$(mktemp -d)"
+  curl -fsSL -o "$dir/compose.yaml" "https://github.com/logicplanes/kaeso/releases/download/v$version/compose.yaml"
+  curl -fsSL -o "$dir/release.json" "https://github.com/logicplanes/kaeso/releases/download/v$version/release.json"
+  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
+  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -
+  jq -e --arg version "$version" '.version == $version' "$dir/release.json"
+  mv "$dir/compose.yaml" "$dir/release.json" .
+  rmdir "$dir"
+  docker compose pull
+  docker compose up -d --wait
+)
 ```
 
-4. Check that Kaeso's Release workflow built the release. `release.json` carries the workflow's signature and names the hash of `compose.yaml`, which names each Kaeso image by its digest. With the [GitHub CLI](https://cli.github.com), signed in, and `jq`, check the signature, then the hash:
+The commands stop at the first one that fails and leave the install as it was. Docker checks every image it pulls against the digest in `compose.yaml`. The last command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
-```bash
-gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
-echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -
-```
-
-Both commands fail when anything differs. Docker then checks every image it pulls against the digest in `compose.yaml`.
-
-5. Pull the new images and start them:
-
-```bash
-docker compose pull
-docker compose up -d --wait
-```
-
-The command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
-
-When the updater can't install a release, the console shows the commands of steps 3 to 5 with the exact version.
+When the updater can't install a release, the console shows these commands with the exact version.
 
 ## New releases
 

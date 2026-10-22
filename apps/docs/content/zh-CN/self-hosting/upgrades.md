@@ -10,32 +10,33 @@ order: 8
 
 1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**设置** › **实例** › **更新**中。
 2. [备份](backups.md) PostgreSQL 和 ClickHouse，以便在需要时[回退](#降级)。
-3. 在实例文件夹中，下载新的 `compose.yaml` 覆盖旧文件，并把该版本的 `release.json` 下载到旁边。`.env`、`master-keys` 和 `compose.override.yaml` 保持不变。
+3. 在实例文件夹中，把 `version` 设为要更新到的版本，然后下载、检查并启动它。这些命令会把 `compose.yaml` 和 `release.json` 下载到一个临时文件夹，并借助已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 检查：
+   - `release.json` 上 Kaeso Release 工作流的签名；
+   - `release.json` 写明的 `compose.yaml` 哈希，进而检查每个 Kaeso 镜像的摘要；
+   - `release.json` 写明的版本号。
+
+   只有全部通过后，它们才会把这两个文件移到实例文件夹、拉取镜像并启动。`.env`、`master-keys` 和 `compose.override.yaml` 保持不变。
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/release.json
+version={{version}}
+(
+  set -euo pipefail
+  dir="$(mktemp -d)"
+  curl -fsSL -o "$dir/compose.yaml" "https://github.com/logicplanes/kaeso/releases/download/v$version/compose.yaml"
+  curl -fsSL -o "$dir/release.json" "https://github.com/logicplanes/kaeso/releases/download/v$version/release.json"
+  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
+  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -
+  jq -e --arg version "$version" '.version == $version' "$dir/release.json"
+  mv "$dir/compose.yaml" "$dir/release.json" .
+  rmdir "$dir"
+  docker compose pull
+  docker compose up -d --wait
+)
 ```
 
-4. 确认该版本由 Kaeso 的 Release 工作流构建。`release.json` 带有该工作流的签名，并写明 `compose.yaml` 的哈希；`compose.yaml` 则按摘要写明每个 Kaeso 镜像。用已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 先检查签名，再检查哈希：
+这些命令会在第一条失败的命令处停下，实例保持原样。Docker 会按 `compose.yaml` 中的摘要检查拉取的每个镜像。新的网关和控制台都健康后，最后一条命令才会返回；任一不健康时命令失败。网关启动时会迁移数据库。迁移只会向前、按顺序执行，因此可以跨版本升级。
 
-```bash
-gh attestation verify release.json --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
-echo "$(jq -r .compose.sha256 release.json)  compose.yaml" | sha256sum -c -
-```
-
-只要有任何不一致，两条命令都会失败。之后 Docker 会按 `compose.yaml` 中的摘要检查拉取的每个镜像。
-
-5. 拉取新镜像并启动：
-
-```bash
-docker compose pull
-docker compose up -d --wait
-```
-
-新的网关和控制台都健康后，命令才会返回；任一不健康时命令失败。网关启动时会迁移数据库。迁移只会向前、按顺序执行，因此可以跨版本升级。
-
-更新器无法安装某个版本时，控制台会显示第 3 步到第 5 步中带有确切版本号的命令。
+更新器无法安装某个版本时，控制台会显示带有确切版本号的这些命令。
 
 ## 新版本
 
