@@ -35,9 +35,11 @@ impl FromRequestParts<AppState> for ClientIp {
     }
 }
 
+// A dual-stack listener reports an IPv4 peer as ::ffff:a.b.c.d, which no IPv4 network of the
+// trusted proxies contains and which would count apart from the same client's other requests.
 pub fn resolve(peer: Option<IpAddr>, forwarded: &str, trusted: &[IpNet]) -> Option<IpAddr> {
     let is_trusted = |ip: &IpAddr| trusted.iter().any(|n| n.contains(ip));
-    let peer = peer?;
+    let peer = peer?.to_canonical();
     if !is_trusted(&peer) {
         return Some(peer);
     }
@@ -47,7 +49,9 @@ pub fn resolve(peer: Option<IpAddr>, forwarded: &str, trusted: &[IpNet]) -> Opti
         .map(str::trim)
         .filter(|h| !h.is_empty())
     {
-        let Ok(ip) = hop.parse::<IpAddr>() else { break };
+        let Ok(ip) = hop.parse::<IpAddr>().map(|ip| ip.to_canonical()) else {
+            break;
+        };
         client = ip;
         if !is_trusted(&ip) {
             break;
@@ -95,5 +99,27 @@ mod tests {
             ip("10.0.0.9")
         );
         assert_eq!(resolve(None, "1.2.3.4", &nets()), None);
+    }
+
+    #[test]
+    fn ipv4_mapped_addresses_are_the_ipv4_address() {
+        assert_eq!(
+            resolve(ip("::ffff:10.0.0.2"), "::ffff:198.51.100.7", &nets()),
+            ip("198.51.100.7"),
+            "a trusted proxy on a dual-stack socket is still trusted"
+        );
+        assert_eq!(
+            resolve(ip("::ffff:203.0.113.9"), "1.2.3.4", &nets()),
+            ip("203.0.113.9")
+        );
+        assert_eq!(
+            resolve(
+                ip("10.0.0.2"),
+                "::ffff:10.0.0.3, ::ffff:198.51.100.7, 10.0.0.4",
+                &nets()
+            ),
+            ip("198.51.100.7")
+        );
+        assert_eq!(resolve(ip("2001:db8::1"), "", &nets()), ip("2001:db8::1"));
     }
 }

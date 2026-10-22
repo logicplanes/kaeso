@@ -208,6 +208,56 @@ async fn email_changes_need_the_second_factor_and_can_be_cancelled_from_the_old_
     s.cleanup().await;
 }
 
+#[tokio::test]
+async fn an_email_change_tells_whether_an_address_is_taken_only_after_the_second_factor() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@example.com", "role": "member" }),
+        "Eve",
+    )
+    .await;
+    let (cookie, secret) = turn_on_totp(&app, &eve).await;
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com" }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        r.body["error"]["param"], "code",
+        "without the second factor the answer is the same for every address"
+    );
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com", "code": "000000" }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(r.body["error"]["message"], WRONG);
+    next_step(&app).await;
+    let r = app
+        .post(
+            "/me/email",
+            json!({ "email": "owner@example.com", "code": code(&secret, &app) }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::CONFLICT);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Another account uses this address."
+    );
+    s.cleanup().await;
+}
+
 async fn sign_in_as(app: &App, email: &str) -> String {
     app.post(
         "/auth/password",
@@ -708,6 +758,41 @@ async fn sign_in_is_refused_while_its_throttles_cannot_be_counted() {
 }
 
 #[tokio::test]
+async fn a_session_from_an_ipv4_mapped_peer_shows_its_ipv4_address() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    app.setup().await;
+    let peer: std::net::IpAddr = "::ffff:203.0.113.9".parse().unwrap();
+    let r = app
+        .raw(
+            axum::http::Request::post("/platform/v1/auth/password")
+                .header(axum::http::header::ORIGIN, common::ORIGIN)
+                .header(axum::http::header::CONTENT_TYPE, "application/json")
+                .extension(axum::extract::ConnectInfo(std::net::SocketAddr::new(
+                    peer, 40000,
+                )))
+                .body(axum::body::Body::from(
+                    json!({ "email": "owner@example.com", "password": PASSWORD }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = app
+        .get("/auth/sessions", &r.cookie().unwrap())
+        .await
+        .expect_status(StatusCode::OK);
+    let current = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["current"] == true)
+        .unwrap();
+    assert_eq!(current["ip"], "203.0.113.9");
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_revoked_session_is_not_brought_back_by_its_next_use() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
@@ -765,7 +850,7 @@ async fn turning_totp_off_needs_a_current_code() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
-    let (cookie, _) = turn_on_totp(&app, &owner.cookie).await;
+    let (cookie, _, old) = totp_with_recovery_codes(&app, &owner.cookie).await;
     let r = app
         .call(
             Method::DELETE,
@@ -779,8 +864,12 @@ async fn turning_totp_off_needs_a_current_code() {
         r.body["error"]["message"],
         "That code isn't valid or was already used."
     );
-    let recovery = app
-        .post("/me/recovery-codes", json!({}), Some(&cookie))
+    let new = app
+        .post(
+            "/me/recovery-codes",
+            json!({ "recovery_code": old[0] }),
+            Some(&cookie),
+        )
         .await
         .expect_status(StatusCode::OK)
         .body["recovery_codes"][0]
@@ -790,11 +879,56 @@ async fn turning_totp_off_needs_a_current_code() {
     app.call(
         Method::DELETE,
         "/me/totp",
-        Some(json!({ "recovery_code": recovery })),
+        Some(json!({ "recovery_code": old[1] })),
+        Some(&cookie),
+    )
+    .await
+    .expect_status(StatusCode::BAD_REQUEST);
+    app.call(
+        Method::DELETE,
+        "/me/totp",
+        Some(json!({ "recovery_code": new })),
         Some(&cookie),
     )
     .await
     .expect_status(StatusCode::NO_CONTENT);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn new_recovery_codes_need_the_second_factor() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (cookie, secret, recovery) = totp_with_recovery_codes(&app, &owner.cookie).await;
+    let regenerate = |factor: Value| {
+        let app = &app;
+        let cookie = cookie.clone();
+        async move { app.post("/me/recovery-codes", factor, Some(&cookie)).await }
+    };
+    let r = regenerate(json!({}))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (&r.body["error"]["param"], &r.body["error"]["message"]),
+        (
+            &json!("code"),
+            &json!("Enter a code from your authenticator app or a recovery code.")
+        ),
+        "a stolen session alone can't replace the recovery codes"
+    );
+    let r = regenerate(json!({ "code": wrong_code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(r.body["error"]["message"], WRONG);
+    next_step(&app).await;
+    let r = regenerate(json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["recovery_codes"].as_array().unwrap().len(), 10);
+    regenerate(json!({ "recovery_code": recovery[0] }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
     s.cleanup().await;
 }
 
@@ -1060,5 +1194,61 @@ async fn a_password_reset_by_email_unlocks_app_codes() {
     answer(&app, ip, &challenge, json!({ "code": code(&secret, &app) }))
         .await
         .expect_status(StatusCode::OK);
+    s.cleanup().await;
+}
+
+const APP_CODES_LOCKED: &str =
+    "Codes from your app are locked after too many wrong ones; use a recovery code.";
+
+#[tokio::test]
+async fn security_changes_count_wrong_codes_and_keep_to_their_lock() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (cookie, secret, recovery) = totp_with_recovery_codes(&app, &owner.cookie).await;
+    next_step(&app).await;
+    let bad = json!({ "code": wrong_code(&secret, &app) });
+    for n in 1..=3 {
+        let ip = format!("2001:db8:3:{n}::1");
+        let challenge = password_challenge(&app, &ip, PASSWORD).await;
+        for _ in 0..3 {
+            answer(&app, &ip, &challenge, bad.clone())
+                .await
+                .expect_status(StatusCode::UNAUTHORIZED);
+        }
+    }
+    let turn_off = |factor: Value| {
+        let app = &app;
+        let cookie = cookie.clone();
+        async move {
+            app.call(Method::DELETE, "/me/totp", Some(factor), Some(&cookie))
+                .await
+        }
+    };
+    let before = app.mail.to(OWNER).len();
+    let r = turn_off(bad.clone())
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        (&r.body["error"]["message"], &r.body["error"]["param"]),
+        (&json!(APP_CODES_LOCKED), &json!("code")),
+        "the tenth wrong code in a row locks app codes, wherever it was entered"
+    );
+    app.wait_for_mail(OWNER, before + 1).await;
+    assert_eq!(locked_emails(&app).len(), 1);
+
+    let r = turn_off(json!({ "code": code(&secret, &app) }))
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        r.body["error"]["message"], APP_CODES_LOCKED,
+        "a right code from the app doesn't pass the lock"
+    );
+    let challenge = password_challenge(&app, "2001:db8:3:9::1", PASSWORD).await;
+    assert_eq!(challenge["codes_locked"], true);
+
+    turn_off(json!({ "recovery_code": recovery[0] }))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
     s.cleanup().await;
 }

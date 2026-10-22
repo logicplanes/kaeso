@@ -186,12 +186,14 @@ pub async fn change_email(
             "Too many emails to this address; try again later.".to_owned()
         })
     })?;
+    require_second_factor(&state, &ctx, user, &req.second_factor).await?;
+    // Whether an address has an account is only told to someone who passed the second factor,
+    // so a session alone can't be used to find out which addresses have accounts.
     if users::email_taken(&state.pg, &email, Some(user.uuid())).await? {
         return Err(ApiError::Conflict(
             "Another account uses this address.".into(),
         ));
     }
-    require_second_factor(&state, &ctx, user, &req.second_factor).await?;
     let current = users::get(&state.pg, user.uuid())
         .await?
         .and_then(|u| u.email);
