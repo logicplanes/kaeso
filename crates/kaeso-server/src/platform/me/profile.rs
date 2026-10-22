@@ -266,8 +266,11 @@ pub struct EmailConfirm {
 #[utoipa::path(
     post,
     path = "/me/email/confirm",
-    summary = "Confirms a new address with the link sent to it, and tells the old\n\
-    address. Works without a session, so the link can be opened anywhere.",
+    summary = "Confirms a new address with the link sent to it, tells the old address\n\
+    and ends every other session of the account. Works without a session, so\n\
+    the link can be opened anywhere.",
+    description = "The session that opens the link stays signed in when it is the account's; \
+    otherwise the session that asked for the change stays.",
     tag = "me",
     request_body = EmailConfirm,
     responses((status = 200, body = UserView))
@@ -324,15 +327,23 @@ pub async fn confirm_email(
     ] {
         tokens::retire_all(&mut *tx, kind, Some(user_id), ctx.now).await?;
     }
+    let keep = ctx
+        .session()
+        .ok()
+        .filter(|s| s.user_id == user_id)
+        .map(|s| s.id)
+        .or(asked_by);
+    let ended = kaeso_store::pg::sessions::revoke_all(&mut *tx, user_id, keep, ctx.now).await?;
     let user_id = UserId::from_uuid(user_id);
     ctx.audit(None, "user.email_change")
         .by(user_id)
         .target("user", user_id)
         .before(serde_json::json!({ "email": user.email }))
-        .after(serde_json::json!({ "email": new_email }))
+        .after(serde_json::json!({ "email": new_email, "sessions_ended": ended.len() }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    crate::auth::sessions::forget(&state, &ended).await;
     if let Some(old) = &user.email {
         let lang =
             crate::services::mail_lang::of_user(&state.pg, user.id, ctx.accept_language.as_deref())

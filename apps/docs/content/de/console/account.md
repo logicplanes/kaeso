@@ -20,6 +20,8 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 
 Wählen Sie unter **Profil** die Option **E-Mail ändern** und geben Sie die neue Adresse ein, bei eingeschalteter Zwei-Faktor-Authentifizierung auch einen Code aus Ihrer Authenticator-App oder einen Wiederherstellungscode. Kaeso schickt einen Bestätigungslink an die neue Adresse und einen Link zum Abbrechen der Änderung an die alte. Die Änderung gilt, sobald Sie den Bestätigungslink öffnen. Melden Sie den Browser ab, der die Änderung angefordert hat, melden Sie sich überall ab oder setzen Sie Ihr Passwort zurück, ist die Änderung ebenfalls abgebrochen.
 
+Die Bestätigung meldet alle anderen Sitzungen Ihres Kontos ab. Der Browser, der den Link öffnet, bleibt angemeldet; öffnen Sie ihn dort, wo Sie nicht angemeldet sind, bleibt der Browser angemeldet, der die Änderung angefordert hat.
+
 ## Passwort ändern
 
 Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ihre anderen Sitzungen ab. Melden Sie sich nur mit Links oder Single Sign-on an, haben Sie kein Passwort, und **Passwort festlegen** fügt eines hinzu.

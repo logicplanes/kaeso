@@ -22,7 +22,7 @@ function EmailConfirm() {
   const state = useTokenAction(async (token) => {
     await api.POST("/platform/v1/me/email/confirm", { body: { token } });
     await queryClient.invalidateQueries();
-    toast.success(t("public.emailChanged", "Email address changed"));
+    toast.success(t("public.emailChanged", "Email address changed; your other sessions are signed out"));
     await navigate({ href: "/settings/account/profile", replace: true });
   });
   if (state.kind === "working" || state.kind === "done") {

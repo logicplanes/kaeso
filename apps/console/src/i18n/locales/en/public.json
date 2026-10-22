@@ -25,7 +25,7 @@
   "public.createToJoin": "{target, select, role {Create your account to join {org} as {role}.} org {Create your account to join {org}.} other {Create your account to join this Kaeso install.}}",
   "public.emailChangeCancelled": "The email change is cancelled",
   "public.emailChangeCancelledHint": "Your account keeps this address; if you didn't ask for the change, reset your password.",
-  "public.emailChanged": "Email address changed",
+  "public.emailChanged": "Email address changed; your other sessions are signed out",
   "public.emailMeLink": "Email me a link",
   "public.finishAccount": "Finish your account",
   "public.finishAccountHint": "Choose the name people see; a password is optional.",

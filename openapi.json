@@ -4045,8 +4045,8 @@
         "tags": [
           "me"
         ],
-        "summary": "Confirms a new address with the link sent to it, and tells the old\naddress. Works without a session, so the link can be opened anywhere.",
-        "description": "**Access:** public; no authentication.",
+        "summary": "Confirms a new address with the link sent to it, tells the old address\nand ends every other session of the account. Works without a session, so\nthe link can be opened anywhere.",
+        "description": "The session that opens the link stays signed in when it is the account's; otherwise the session that asked for the change stays.\n\n**Access:** public; no authentication.",
         "operationId": "postMeEmailConfirm",
         "requestBody": {
           "content": {
