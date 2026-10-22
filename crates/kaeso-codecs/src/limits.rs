@@ -41,8 +41,9 @@ pub struct RequestShape {
     /// between the tokens of the request object, its messages, items or inputs, their
     /// content blocks and the list of tools. Whitespace inside any other value counts,
     /// and so does all whitespace inside a message, item or block that its decoder keeps
-    /// raw, such as a content block of a type it doesn't know or any input item of an
-    /// OpenAI Responses request, since a raw value keeps it byte for byte.
+    /// raw, such as a content block that isn't an object or is of a type it doesn't
+    /// know, or any input item of an OpenAI Responses request, since a raw value keeps
+    /// it byte for byte.
     pub bytes: usize,
 }
 
@@ -73,9 +74,6 @@ enum Node {
 
 impl Node {
     fn form(self, raw: &RawValue) -> Form {
-        if !raw.get().starts_with('{') {
-            return Form::Typed;
-        }
         match self {
             Node::Item(DialectId::OpenAiChat) => crate::openai_chat::message_form(raw),
             Node::Item(DialectId::AnthropicMessages) => Form::Nests(Scope::Anthropic(0)),

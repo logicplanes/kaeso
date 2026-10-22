@@ -79,7 +79,11 @@ fn whitespace_inside_a_value_kept_raw_is_counted() {
 const PAD: usize = 4096;
 
 fn padding_kept_and_counted(dialect: DialectId, template: &str) -> Option<(bool, usize)> {
-    let pad = " ".repeat(PAD);
+    padded_by(dialect, template, PAD)
+}
+
+fn padded_by(dialect: DialectId, template: &str, pad: usize) -> Option<(bool, usize)> {
+    let pad = " ".repeat(pad);
     let tight = template.replace('~', "");
     let padded = template.replace('~', &pad);
     let kind = if dialect == E {
@@ -243,6 +247,40 @@ fn responses_counts_all_whitespace_inside_its_input_items() {
             Some((false, 0)),
             "{between}"
         );
+    }
+}
+
+#[test]
+fn whitespace_inside_an_array_shaped_block_or_item_is_counted() {
+    let mib = 1 << 20;
+    for (dialect, body) in [
+        (
+            C,
+            r#"{"model":"m","messages":[{"role":"user","content":[[~]]}]}"#,
+        ),
+        (
+            C,
+            r#"{"model":"m","messages":[{"role":"assistant","content":[[~"a"]]}]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[[~]]}]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"system":[[~]],"messages":[]}"#,
+        ),
+        (
+            A,
+            r#"{"model":"m","max_tokens":1,"messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"t","content":[[~]]}]}]}"#,
+        ),
+        (R, r#"{"model":"m","input":[[~]]}"#),
+        (
+            R,
+            r#"{"model":"m","input":[{"role":"user","content":[[~]]}]}"#,
+        ),
+    ] {
+        assert_eq!(padded_by(dialect, body, mib), Some((true, mib)), "{body}");
     }
 }
 

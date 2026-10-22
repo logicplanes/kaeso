@@ -726,8 +726,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
     let sent_req = (eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
+    let kept = retained(1 + u64::from(sent_req.is_some()));
+    let sent_bytes = encoded.body.len();
+    let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
+    // reqwest's redirect layer keeps a clone of the body until the provider answers, even
+    // with redirects off, however slowly the provider reads the upload.
     if let Some(held) = &mut rec.held {
-        held.keep(retained(1 + u64::from(sent_req.is_some())));
+        held.keep(kept.saturating_add(sent));
     }
     let base = base_url(state, eff.provider.id).ok_or_else(|| {
         fail(Stage::Setup)(error(
@@ -736,11 +741,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             "No base URL is configured for this provider.",
         ))
     })?;
-    let sent_bytes = encoded.body.len();
     let provider = eff.provider.id;
-    rec.sent_input = Some(estimate::tokens_of_bytes(
-        u64::try_from(sent_bytes).unwrap_or(u64::MAX),
-    ));
+    rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
     let resp = state
         .upstream
@@ -758,6 +760,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             count_upstream_error(transport_kind(&e), provider);
             fail(Stage::Upstream)(upstream_error(&e))
         })?;
+    if let Some(held) = &mut rec.held {
+        held.keep(kept);
+    }
     rec.outcome().ttfb = Some(sent_at.elapsed());
     rec.outcome().upstream_request_id = resp
         .headers

@@ -7,6 +7,9 @@ use axum::http::{Method, Request, StatusCode};
 use common::v1::{call, chat, messages};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::sync::oneshot;
 use tower::ServiceExt;
 
 fn nested_text(levels: usize) -> Vec<u8> {
@@ -404,6 +407,86 @@ async fn a_block_or_item_kept_raw_keeps_memory_for_its_padding_while_the_provide
     drop(streams);
 }
 
+fn stall_the_first_chat_upload(
+    listener: TcpListener,
+    provider: &str,
+) -> (oneshot::Receiver<()>, oneshot::Sender<()>) {
+    let provider = provider.trim_start_matches("http://").to_owned();
+    let (arrived, uploading) = oneshot::channel();
+    let (resume, resumed) = oneshot::channel();
+    tokio::spawn(async move {
+        let mut stall = Some((arrived, resumed));
+        loop {
+            let (mut inbound, _) = listener.accept().await.unwrap();
+            let mut head = Vec::new();
+            let mut buf = [0u8; 4096];
+            while !head.windows(4).any(|w| w == b"\r\n\r\n") {
+                let n = inbound.read(&mut buf).await.unwrap();
+                if n == 0 {
+                    break;
+                }
+                head.extend_from_slice(&buf[..n]);
+            }
+            if head.windows(17).any(|w| w == b"/chat/completions")
+                && let Some((arrived, resumed)) = stall.take()
+            {
+                arrived.send(()).unwrap();
+                resumed.await.unwrap();
+            }
+            let provider = provider.clone();
+            tokio::spawn(async move {
+                let mut outbound = TcpStream::connect(&provider).await.unwrap();
+                outbound.write_all(&head).await.unwrap();
+                let _ = tokio::io::copy_bidirectional(&mut inbound, &mut outbound).await;
+            });
+        }
+    });
+    (uploading, resume)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn the_body_sent_keeps_memory_until_the_provider_answers() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let slow = format!("http://{}", listener.local_addr().unwrap());
+    let env = common::v1::env(None, Some(&[("KAESO_PROVIDERS_GROQ_BASE_URL", &slow)])).await;
+    let (uploading, resume) = stall_the_first_chat_upload(listener, &env.mock.base_url);
+    let chat_model = add_chat_provider(&env).await;
+    without_content_logging(&env).await;
+    let budget = &env.app.state.translating;
+    let total = env.app.state.config.body_limits.in_flight.0;
+    let text: u64 = 1 << 20;
+    let body = serde_json::to_vec(&json!({
+        "model": chat_model,
+        "stream": true,
+        "messages": [{ "role": "user", "content": format!("[mock:stall] {}", "a".repeat(text as usize)) }],
+    }))
+    .unwrap();
+    let open = env
+        .app
+        .router
+        .clone()
+        .oneshot(post("/v1/chat/completions", &env.key, body));
+    let stalled = async {
+        uploading.await.unwrap();
+        let held = total - budget.free();
+        resume.send(()).unwrap();
+        held
+    };
+    let (stream, stalled) = tokio::join!(open, stalled);
+    let stream = stream.unwrap();
+    assert_eq!(stream.status(), StatusCode::OK);
+    let answering = total - budget.free();
+    assert!(
+        (text..text + (32 << 10)).contains(&answering),
+        "the open stream keeps its decoded request: {answering} bytes"
+    );
+    assert!(
+        (text..text + (16 << 10)).contains(&(stalled - answering)),
+        "while the provider reads the upload, the body sent is held as well: {stalled} bytes, then {answering}"
+    );
+    drop(stream);
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn embedding_token_ids_keep_their_decoded_size_while_the_provider_answers() {
     let env = common::v1::env(None, None).await;
@@ -427,9 +510,10 @@ async fn embedding_token_ids_keep_their_decoded_size_while_the_provider_answers(
     let check = async {
         gate.wait_for(1).await;
         let held = total - state.translating.free();
+        let kept = decoded + 2 * size;
         assert!(
-            (decoded..decoded + size + (16 << 10)).contains(&held),
-            "the open call keeps its token ids as decoded, four bytes each: {held} bytes"
+            (kept - (16 << 10)..kept + (16 << 10)).contains(&held),
+            "the open call keeps its token ids as decoded, four bytes each, and the body sent until the provider answers: {held} bytes"
         );
         gate.open();
     };
