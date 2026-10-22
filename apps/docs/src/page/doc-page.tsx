@@ -83,6 +83,7 @@ function Step({ to, label, name, end = false }: { to: { path: string; title: str
       <Text variant="small" tone="secondary">
         {label}
       </Text>
+      {/* The flex gap is no space in the link's text, which label-in-name (WCAG 2.5.3) would read as "NextChangelog". */}{" "}
       <span className="max-w-full wrap-break-word">{to.title}</span>
     </Link>
   );
