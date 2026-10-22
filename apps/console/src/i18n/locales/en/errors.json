@@ -228,6 +228,7 @@
   "errors.modelApi.timeout": "The provider did not answer in time ({stage}). Kaeso does not retry; try again or raise the model's timeout.",
   "errors.modelApi.transfer": "The connection to the provider failed before the response was complete.",
   "errors.modelApi.translateUnavailable": "Kaeso cannot translate this request right now. Try again shortly.",
+  "errors.modelApi.translatingBusy": "Kaeso is busy translating other requests; try again shortly.",
   "errors.modelApi.unreachable": "Kaeso cannot reach the provider. Try again shortly.",
   "errors.modelApi.unserved": "{provider} does not serve the model `{model}` to this project's provider key; check the key's access to it, or remove the model from the catalogue.",
   "errors.modelCannotTake": "The model cannot take this request as it is; check its settings.",

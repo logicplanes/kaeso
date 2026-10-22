@@ -3,7 +3,7 @@
 mod common;
 
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::{Method, Request, StatusCode};
 use common::v1::{call, chat, messages};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
@@ -125,20 +125,20 @@ async fn the_model_api_takes_bodies_up_to_8_mib_by_default() {
 }
 
 #[tokio::test]
-async fn requests_wait_while_others_hold_the_memory_for_translating() {
-    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "12KiB")])).await;
+async fn a_request_returns_its_translation_memory_before_the_provider_answers() {
+    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "48KiB")])).await;
     let state = &env.app.state;
-    assert_eq!(state.translating.free(), 12 << 10);
+    assert_eq!(state.translating.free(), 48 << 10);
     let mut gate = env.mock.gate();
     let mut held = messages("claude-haiku-4-5", &format!("Long {}", gate.marker()));
     held["stream"] = json!(true);
     let first = call(&env, "/v1/messages", Some(&env.key), true, Some(held));
     let second = async {
         gate.wait_for(1).await;
-        let left = state.translating.free();
-        assert!(
-            left < 6 << 10,
-            "the first request holds its estimate: {left} left"
+        assert_eq!(
+            state.translating.free(),
+            47 << 10,
+            "the open call keeps only its decoded request"
         );
         let next = call(
             &env,
@@ -146,31 +146,166 @@ async fn requests_wait_while_others_hold_the_memory_for_translating() {
             Some(&env.key),
             true,
             Some(messages("claude-haiku-4-5", "Short")),
-        );
-        let watch = async {
-            common::eventually("the second request waits for memory", || async {
-                state.translating.waiting() == 1
-            })
-            .await;
-            assert_eq!(
-                env.mock.received().len(),
-                1,
-                "only the first reached the provider"
-            );
-            gate.open();
-        };
-        let (r, ()) = tokio::join!(next, watch);
-        r
+        )
+        .await;
+        assert_eq!(state.translating.waiting(), 0);
+        gate.open();
+        next
     };
     let (first, second) = tokio::join!(first, second);
     assert_eq!(first.status, StatusCode::OK, "{}", first.text());
     assert_eq!(second.status, StatusCode::OK, "{}", second.text());
-    assert_eq!(env.mock.received().len(), 2);
     state.in_flight.settled().await;
     assert_eq!(
         (state.translating.free(), state.translating.waiting()),
-        (12 << 10, 0)
+        (48 << 10, 0)
     );
+}
+
+fn post(path: &str, key: &str, body: Vec<u8>) -> Request<Body> {
+    Request::builder()
+        .uri(path)
+        .method("POST")
+        .header("authorization", format!("Bearer {key}"))
+        .header("content-type", "application/json")
+        .body(Body::from(body))
+        .unwrap()
+}
+
+fn padded_stalled_stream() -> Vec<u8> {
+    let body = serde_json::to_vec(&json!({
+        "model": "gpt-4o",
+        "stream": true,
+        "messages": [{ "role": "user", "content": "[mock:stall]" }],
+    }))
+    .unwrap();
+    let mut out = b"{".to_vec();
+    out.extend(std::iter::repeat_n(b' ', (8 << 20) - body.len() - 64));
+    out.extend_from_slice(&body[1..]);
+    out
+}
+
+async fn new_key(env: &common::v1::Env, name: &str) -> (String, uuid::Uuid) {
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": name }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    (
+        r.body["secret"].as_str().unwrap().to_owned(),
+        common::uuid(r.body["id"].as_str().unwrap()),
+    )
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyone() {
+    let env = common::v1::env(None, None).await;
+    let budget = &env.app.state.translating;
+    let total = env.app.state.config.body_limits.in_flight.0;
+    let body = padded_stalled_stream();
+    assert_eq!(body.len(), (8 << 20) - 64);
+    let settings = format!(
+        "/orgs/{}/projects/{}/logs/settings",
+        env.owner.org_id, env.project
+    );
+    let content_logging = |on: bool| {
+        env.app.call(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "content_logging": on })),
+            Some(&env.owner.cookie),
+        )
+    };
+    assert_eq!(content_logging(false).await.status, StatusCode::OK);
+    let open = || async {
+        let r = env
+            .app
+            .router
+            .clone()
+            .oneshot(post("/v1/chat/completions", &env.key, body.clone()))
+            .await
+            .unwrap();
+        assert_eq!(r.status(), StatusCode::OK);
+        r
+    };
+    let mut streams = Vec::new();
+    for _ in 0..13 {
+        streams.push(open().await);
+    }
+    assert_eq!(
+        total - budget.free(),
+        13 << 10,
+        "each open stream keeps 1 KiB for its decoded request, not its padding"
+    );
+    assert_eq!(content_logging(true).await.status, StatusCode::OK);
+    streams.push(open().await);
+    assert!(
+        total - budget.free() >= (13 << 10) + body.len() as u64,
+        "a body kept for its log is counted until it is logged"
+    );
+    let (victim, _) = new_key(&env, "victim").await;
+    let answered = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&victim),
+        false,
+        Some(chat("gpt-4o", "Hi")),
+    )
+    .await;
+    assert_eq!(answered.status, StatusCode::OK, "{}", answered.text());
+    assert_eq!(budget.waiting(), 0);
+    drop(streams);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_key_over_its_share_is_refused_after_the_wait_while_other_keys_are_served() {
+    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "64MiB")])).await;
+    let budget = &env.app.state.translating;
+    assert_eq!(budget.share(), 16 << 20, "a key may hold a quarter");
+    let (greedy, greedy_id) = new_key(&env, "greedy").await;
+    let (other, _) = new_key(&env, "other").await;
+    let share = budget.hold(greedy_id, u64::MAX).await.unwrap();
+    let refused = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&greedy),
+        false,
+        Some(chat("gpt-4o", "Hi")),
+    );
+    let served = async {
+        common::eventually("the greedy key's request waits", || async {
+            budget.waiting() == 1
+        })
+        .await;
+        call(
+            &env,
+            "/v1/messages",
+            Some(&other),
+            true,
+            Some(messages("claude-haiku-4-5", "Hi")),
+        )
+        .await
+    };
+    let (refused, served) = tokio::join!(refused, served);
+    assert_eq!(served.status, StatusCode::OK, "{}", served.text());
+    assert_eq!(
+        refused.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.header("retry-after"), Some("10"));
+    let error = &refused.json()["error"];
+    assert_eq!(error["code"], "server_is_overloaded");
+    assert_eq!(
+        error["message"],
+        "Kaeso is busy translating other requests; try again shortly."
+    );
+    drop(share);
+    assert_eq!(budget.free(), 64 << 20);
 }
 
 #[tokio::test]

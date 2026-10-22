@@ -32,6 +32,9 @@ pub struct RequestShape {
     pub blocks: usize,
     /// Tool definitions.
     pub tools: usize,
+    /// Bytes of the body without the whitespace between its tokens: the most its
+    /// decoded values can hold.
+    pub bytes: usize,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -280,13 +283,14 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
 /// like the dialect's request, is counted as far as it can be read, and decoding it then
 /// reports what is wrong.
 pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, KppError> {
-    if nests_deeper_than(body, MAX_DEPTH) {
+    let Some(bytes) = significant_bytes(body, MAX_DEPTH) else {
         return Err(KppError::invalid_request(format!(
             "The body nests more than {MAX_DEPTH} levels deep; Kaeso takes at most {MAX_DEPTH}."
         ))
         .with_status(400));
-    }
+    };
     let mut tally = Tally::default();
+    tally.shape.bytes = bytes;
     let mut de = serde_json::Deserializer::from_slice(body);
     let walked = Walk {
         node: Node::Top(dialect),
@@ -301,11 +305,15 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
 
 // serde_json skips ignored and raw values without its recursion limit, so the codecs'
 // walks over them would follow any depth; this scan keeps no stack to overflow.
-fn nests_deeper_than(body: &[u8], limit: usize) -> bool {
+fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
     let mut depth = 0usize;
+    let mut bytes = 0usize;
     let mut in_string = false;
     let mut escaped = false;
     for &byte in body {
+        if in_string || !byte.is_ascii_whitespace() {
+            bytes += 1;
+        }
         if in_string {
             match byte {
                 _ if escaped => escaped = false,
@@ -319,13 +327,13 @@ fn nests_deeper_than(body: &[u8], limit: usize) -> bool {
             b'"' => in_string = true,
             b'{' | b'[' => {
                 depth += 1;
-                if depth > limit {
-                    return true;
+                if depth > depth_limit {
+                    return None;
                 }
             }
             b'}' | b']' => depth = depth.saturating_sub(1),
             _ => {}
         }
     }
-    false
+    Some(bytes)
 }

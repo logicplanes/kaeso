@@ -24,7 +24,19 @@ fn repeated(item: &str, n: usize) -> String {
 }
 
 fn shape(dialect: DialectId, body: &str) -> RequestShape {
-    request_shape(dialect, body.as_bytes()).unwrap()
+    let mut shape = request_shape(dialect, body.as_bytes()).unwrap();
+    shape.bytes = 0;
+    shape
+}
+
+#[test]
+fn the_bytes_left_without_whitespace_between_tokens_are_counted() {
+    let tight = r#"{"model":"m","input":"a  b\" {"}"#;
+    let loose = " {\n\t\"model\" : \"m\",\r\n  \"input\":   \"a  b\\\" {\"  } ";
+    for body in [tight, loose] {
+        let s = request_shape(R, body.as_bytes()).unwrap();
+        assert_eq!(s.bytes, tight.len(), "{body}");
+    }
 }
 
 fn refused(dialect: DialectId, body: &str) -> KppError {

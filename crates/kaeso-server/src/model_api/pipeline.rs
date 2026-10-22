@@ -428,6 +428,15 @@ where
     })
 }
 
+fn translating_busy() -> KppError {
+    error(
+        ErrorKind::Overloaded,
+        503,
+        "Kaeso is busy translating other requests; try again shortly.",
+    )
+    .with_retry_after(super::memory::WAIT)
+}
+
 pub(crate) fn unserved(eff: &Effective) -> KppError {
     error(
         ErrorKind::NotFound,
@@ -501,11 +510,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
+    let holder = caller
+        .key_id
+        .or(caller.user_id)
+        .or(caller.service_account_id)
+        .unwrap_or(caller.project_id);
+    // Held for the whole call, after the translation's share is returned: the app's
+    // decoded request, kept to encode the reply, and the raw body until it is logged.
+    let logged = if keep_content { request_bytes } else { 0 };
+    let retained = u64::try_from(shape.bytes.saturating_add(logged)).unwrap_or(u64::MAX);
     rec.held = Some(
         state
             .translating
-            .hold(super::memory::estimate(kind, request_bytes, &shape))
-            .await,
+            .hold(
+                holder,
+                super::memory::estimate(kind, &shape).saturating_add(retained),
+            )
+            .await
+            .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
     );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
@@ -701,6 +723,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    if let Some(held) = &mut rec.held {
+        held.keep(retained);
+    }
     let base = base_url(state, eff.provider.id).ok_or_else(|| {
         fail(Stage::Setup)(error(
             ErrorKind::ProviderError,

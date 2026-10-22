@@ -204,7 +204,7 @@ The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` 
 | Variable | TOML key | Type | Default | What it does |
 | --- | --- | --- | --- | --- |
 | `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | text | `8MiB` | Largest request body of the model API. It fits an image at Anthropic's 5 MB limit as base64; raise it for large PDFs. |
-| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once for the requests they translate, estimated from each body's size and its messages, blocks and tools. A request beyond it waits for others to finish; one larger than all of it runs alone. |
+| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body without its whitespace and from its messages, blocks and tools. A request holds its estimate while it's decoded and encoded, then until it ends only what stays allocated: its decoded request, and its raw body while content is logged. One key holds at most a quarter, and a request larger than that takes the quarter. A request that finds no room within 10 seconds gets 503 with `Retry-After: 10`. |
 | `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | text | `128MiB` | Largest response body the gateway reads from a provider when it doesn't stream. A larger one fails the request with 502. |
 

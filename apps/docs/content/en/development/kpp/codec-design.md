@@ -105,7 +105,7 @@ Decoding a request costs far more memory than its body: every message, content b
 
 serde skips ignored and raw values without its recursion limit, so the codecs could otherwise walk a raw value of any depth one stack frame per level. `request_shape` counts the depth in one pass over the bytes, outside strings, and refuses a deeper body without `param`. The Responses codec's diff against its canonical encoding also stops at `MAX_DEPTH` and keeps the rest of a provider's reply raw, so a deep reply can't overflow the stack either.
 
-A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it.
+A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts and the body's bytes without the whitespace between its tokens, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it and padding adds nothing.
 
 ## Server-sent events
 

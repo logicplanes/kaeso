@@ -597,6 +597,7 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.translateUnavailable", () =>
     t("errors.modelApi.translateUnavailable", "Kaeso cannot translate this request right now. Try again shortly."),
   ),
+  rule("errors.modelApi.translatingBusy", () => t("errors.modelApi.translatingBusy", "Kaeso is busy translating other requests; try again shortly.")),
   rule("errors.modelApi.unserved", (v) =>
     t(
       "errors.modelApi.unserved",
