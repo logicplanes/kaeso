@@ -46,6 +46,12 @@ pub struct SsoView {
     #[doc = "Whether ID tokens must mark the address as verified with\n\
         `email_verified`."]
     pub require_email_verified: bool,
+    #[doc = "Whether the provider's ID tokens say when the person signed in\n\
+        (`auth_time`): `true` once a token did, `false` once a confirmation's\n\
+        token didn't, `null` while unknown or after `issuer` or `client_id`\n\
+        changes. With `false`, its sign-ins never count as recent and it can't\n\
+        confirm one, so members confirm with a password or a sign-in link."]
+    pub sends_auth_time: Option<bool>,
     #[doc = "The org's start link, `GET auth/oidc/start?org=…`. With `auto_redirect`\n\
         on it goes on to the provider while nobody is signed in; otherwise it\n\
         opens the sign-in page, which asks for the address."]
@@ -117,6 +123,7 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         name: c.display_name,
         auto_redirect: c.auto_redirect,
         require_email_verified: c.require_email_verified,
+        sends_auth_time: c.sends_auth_time,
         sign_in_url: format!(
             "{}platform/v1/auth/oidc/start?org={}",
             state.config.public_url,
@@ -351,6 +358,7 @@ pub async fn put_sso(
             display_name: display_name.clone(),
             auto_redirect,
             require_email_verified,
+            sends_auth_time: None,
         },
     )
     .await?;

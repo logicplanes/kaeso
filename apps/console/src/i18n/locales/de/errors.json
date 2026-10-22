@@ -347,6 +347,7 @@
   "errors.ssoSignedInAsOther": "Dieser Browser ist bei einem anderen Konto angemeldet; melden Sie sich zuerst ab und dann erneut an.",
   "errors.ssoStaleSignIn": "Der Identitätsanbieter hat Sie nicht erneut nach der Anmeldung gefragt; versuchen Sie es noch einmal oder bestätigen Sie anders.",
   "errors.ssoNeedsDomain": "Mindestens eine E-Mail-Domain angeben, deren Benutzer sich über diesen Anbieter anmelden.",
+  "errors.ssoNoAuthTime": "Der Identitätsanbieter kann keine kürzliche Anmeldung bestätigen; nutzen Sie Ihr Passwort oder einen Link per E-Mail.",
   "errors.ssoNoOrg": "Keine Organisation nutzt SSO für diese Anmeldung; anders anmelden.",
   "errors.ssoNoOwners": "SSO kann keine Inhaber anlegen; eine andere Rolle wählen.",
   "errors.ssoNoVerifiedDomain": "Die SSO dieser Organisation hat noch keine bestätigte E-Mail-Domain; bitten Sie einen Admin, eine zu bestätigen.",

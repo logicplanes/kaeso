@@ -110,6 +110,8 @@ const OTHER_ACCOUNT: &str =
     "You signed in at the identity provider as someone else; sign in there as yourself.";
 const STALE_SIGN_IN: &str =
     "The identity provider didn't ask you to sign in again; try again or confirm another way.";
+const NO_AUTH_TIME: &str =
+    "The identity provider can't confirm a recent sign-in; use your password or an email link.";
 const DEACTIVATED: &str = "This account is deactivated.";
 const SIGNED_IN_AS_OTHER: &str =
     "This browser is signed in to another account; sign out first, then sign in again.";
@@ -129,6 +131,7 @@ const CODES: &[(&str, &str)] = &[
     (LINKED_ELSEWHERE, "linked_elsewhere"),
     (OTHER_ACCOUNT, "other_account"),
     (STALE_SIGN_IN, "stale_sign_in"),
+    (NO_AUTH_TIME, "no_auth_time"),
     (DEACTIVATED, "deactivated"),
     (SIGNED_IN_AS_OTHER, "signed_in_as_other"),
     (NO_VERIFIED_DOMAIN, "no_verified_domain"),
@@ -662,6 +665,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             tracing::info!(error = %e, "SSO answer refused");
             ApiError::Authentication(e.message().to_owned())
         })?;
+    note_auth_time(state, &connection, &identity, flow.confirm.is_some()).await?;
     let email = kaeso_core::email::normalize(&identity.email)
         .map_err(|_| ApiError::Authentication(INVALID_EMAIL.into()))?;
     check_domain(&connection, &email)?;
@@ -821,6 +825,25 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     Ok(response)
 }
 
+// auth_time is optional unless max_age is sent (OpenID Connect Core 1.0 §2), so only a
+// confirmation, which sends max_age=0, shows that a provider leaves it out.
+async fn note_auth_time(
+    state: &AppState,
+    connection: &oidc::Connection,
+    identity: &crate::auth::oidc::Identity,
+    asked: bool,
+) -> ApiResult<()> {
+    let sends = match (identity.auth_time, asked) {
+        (Some(_), _) => true,
+        (None, true) => false,
+        (None, false) => return Ok(()),
+    };
+    if connection.sends_auth_time != Some(sends) {
+        oidc::record_auth_time(&state.pg, connection.org_id, &connection.issuer, sends).await?;
+    }
+    Ok(())
+}
+
 // The provider may reuse its own older sign-in, so the age comes from its auth_time against the
 // token's iat (one clock); without auth_time the age is unknown and must not count as recent.
 fn signed_in_at(
@@ -852,6 +875,7 @@ async fn confirm(
     // §3.1.2.1). Both times come from the provider's clock, so a clock difference
     // between it and Kaeso can't make a fresh sign-in look stale.
     match (identity.auth_time, identity.issued_at) {
+        (None, _) => return Err(ApiError::PermissionDenied(NO_AUTH_TIME.into())),
         (Some(signed_in), Some(issued)) if issued - signed_in <= FLOW_LIFETIME + CLOCK_SKEW => {}
         _ => return Err(ApiError::PermissionDenied(STALE_SIGN_IN.into())),
     }

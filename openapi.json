@@ -5120,7 +5120,7 @@
           "me"
         ],
         "summary": "Starts confirming the sign-in at an org's identity provider: answers with\nthe provider's URL, which asks the person to sign in again.",
-        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account`, `link_required` or `stale_sign_in`.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account`, `link_required` or `stale_sign_in`. `no_auth_time` means the provider's answer didn't say when the person signed in; the org's connection is then marked so, and `GET me/sign-in-again` stops offering it.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "postMeSignInAgainSso",
         "requestBody": {
           "content": {
@@ -16340,7 +16340,7 @@
             "items": {
               "$ref": "#/components/schemas/ConfirmSsoView"
             },
-            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO."
+            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO. A provider\nwhose ID tokens are known to leave out `auth_time` can't confirm and isn't\nlisted (`sends_auth_time` in `GET orgs/{org}/security`)."
           }
         }
       },
@@ -23916,6 +23916,13 @@
           "require_email_verified": {
             "type": "boolean",
             "description": "Whether ID tokens must mark the address as verified with\n`email_verified`."
+          },
+          "sends_auth_time": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the provider's ID tokens say when the person signed in\n(`auth_time`): `true` once a token did, `false` once a confirmation's\ntoken didn't, `null` while unknown or after `issuer` or `client_id`\nchanges. With `false`, its sign-ins never count as recent and it can't\nconfirm one, so members confirm with a password or a sign-in link."
           },
           "sign_in_url": {
             "type": "string",

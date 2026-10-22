@@ -124,6 +124,7 @@ const messages = (): Rule[] => [
   rule("errors.ssoSignedInAsOther", () => t("errors.ssoSignedInAsOther", "This browser is signed in to another account; sign out first, then sign in again.")),
   rule("errors.ssoOtherAccount", () => t("errors.ssoOtherAccount", "You signed in at the identity provider as someone else; sign in there as yourself.")),
   rule("errors.ssoStaleSignIn", () => t("errors.ssoStaleSignIn", "The identity provider didn't ask you to sign in again; try again or confirm another way.")),
+  rule("errors.ssoNoAuthTime", () => t("errors.ssoNoAuthTime", "The identity provider can't confirm a recent sign-in; use your password or an email link.")),
   rule("errors.noOrgAccess", () => t("errors.noOrgAccess", "You have no access to this organization yet; ask an admin to invite you.")),
   rule("errors.sent.signInLink", () => t("errors.sent.signInLink", "If an account exists for this address, we sent it a sign-in link.")),
   rule("errors.sent.resetLink", () => t("errors.sent.resetLink", "If an account exists for this address, we sent it a password reset link.")),

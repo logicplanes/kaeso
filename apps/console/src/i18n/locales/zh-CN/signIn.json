@@ -33,6 +33,8 @@
   "signIn.ssoError.linkRequired": "您的账户尚未关联此单点登录；请用其他方式登录，并在“账户 › 安全”中关联。",
   "signIn.ssoError.linkedElsewhere": "此身份已关联到另一个 Kaeso 账户。",
   "signIn.ssoError.noAccess": "您尚无权访问此组织；请让管理员邀请您。",
+  "signIn.ssoError.noAuthTime": "身份提供方无法确认近期登录；请使用密码或电子邮件登录链接。",
+  "signIn.ssoError.noAuthTimeNamed": "{provider} 无法确认近期登录；请使用密码或电子邮件登录链接。",
   "signIn.ssoError.noSso": "没有组织为此登录使用单点登录；请用其他方式登录。",
   "signIn.ssoError.noVerifiedDomain": "此组织尚未为单点登录验证邮箱域名；请联系管理员。",
   "signIn.ssoError.orgScheduled": "此组织已计划删除。",

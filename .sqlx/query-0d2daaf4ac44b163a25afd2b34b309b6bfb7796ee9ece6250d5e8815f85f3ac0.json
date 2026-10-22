@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_oidc SET sends_auth_time = $3 WHERE org_id = $1 AND issuer = $2 AND sends_auth_time IS DISTINCT FROM $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0d2daaf4ac44b163a25afd2b34b309b6bfb7796ee9ece6250d5e8815f85f3ac0"
+}

@@ -62,6 +62,8 @@ DNS changes can take a while to show; choose **Verify** again later. Public mail
 
 Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
+Single sign-on confirms a recent sign-in only if your provider sends `auth_time` in its ID tokens. When a confirmation comes back without it, **Security** shows **Recent sign-in**: the provider's sign-ins never count as recent, so members confirm with a password or a sign-in link. With **Require single sign-on** on, they can't confirm at all until the provider sends it ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
+
 ## Require single sign-on or two-factor authentication
 
 Under **Security**, you can tighten how members get into the organization:

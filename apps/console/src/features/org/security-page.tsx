@@ -196,6 +196,16 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
                   : t("org.sso.addressesAny", "The provider's unverified addresses sign in too.")
               }
             />
+            {sso.sends_auth_time === false && (
+              <SettingsRow
+                title={t("org.sso.recentSignIn", "Recent sign-in")}
+                description={
+                  security.require_sso
+                    ? t("org.sso.recentSignInImpossible", "SSO never counts and is required, so members can't confirm.")
+                    : t("org.sso.recentSignInElsewhere", "SSO never counts; members confirm with a password or link.")
+                }
+              />
+            )}
             <SettingsRow title={t("org.sso.button", "Sign-in button")} description={buttonSentence(sso)} />
             <SettingsRow
               title={t("org.sso.signInLink", "Sign-in link")}

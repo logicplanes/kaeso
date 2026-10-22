@@ -265,6 +265,31 @@ describe("signing in again without a password", () => {
     expect(requests("PUT", "me/notifications")).toHaveLength(1);
   });
 
+  it("names a provider that can't confirm a recent sign-in, and offers only the other ways afterwards", async () => {
+    needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
+    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
+    popupWindow();
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID" }));
+    await within(box).findByRole("button", { name: "Open the window again" });
+    on("GET", "me/sign-in-again", { password: false, magic_link: true, set_password: false, sso: [] });
+    act(() => announceConfirmed("no_auth_time"));
+    expect((await screen.findAllByText("Acme ID can't confirm a recent sign-in; use your password or an email link.")).length).toBeGreaterThan(0);
+    expect(await within(box).findByRole("button", { name: "Email me a sign-in link" })).toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: "Continue with Acme ID" })).not.toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: "Continue with Acme ID instead" })).not.toBeInTheDocument();
+    expect(requests("PUT", "me/notifications")).toHaveLength(1);
+  });
+
+  it("offers to set a password when the only provider can't confirm and no link is sent", async () => {
+    needsRecentSignIn({ ways: { password: false, magic_link: false, set_password: true, sso: [] } });
+    const { user } = await renderApp(PATH);
+    const box = await toggle(user);
+    expect(await within(box).findByRole("button", { name: "Email me a link to set a password" })).toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: /Continue with/ })).not.toBeInTheDocument();
+  });
+
   it("goes to the identity provider in this tab when windows are blocked", async () => {
     needsRecentSignIn({ ways: { password: false, sso: [ACME_ID] } });
     on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));

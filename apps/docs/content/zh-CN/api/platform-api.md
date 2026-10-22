@@ -93,7 +93,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录：使用密码、单点登录或登录链接，取决于您的账户和实例允许哪种方式。密钥不受此限制。
 
-`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`、`sso` 中账户已关联其身份提供商的组织，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。为操作所在的组织传入 `org`；如果该组织要求单点登录，则只有它自己的身份提供商可以确认。`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。身份提供商会被要求进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认，会话会被替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account`、`link_required` 或 `stale_sign_in`。
+`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`、`sso` 中账户已关联其身份提供商的组织，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。为操作所在的组织传入 `org`；如果该组织要求单点登录，则只有它自己的身份提供商可以确认。`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。身份提供商会被要求进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认，会话会被替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account`、`link_required` 或 `stale_sign_in`。`no_auth_time` 表示身份提供商的答复没有说明用户何时登录；此后 `sso` 不再列出该组织，其连接在 `GET orgs/{org}/security` 中显示 `sends_auth_time: false`。
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
