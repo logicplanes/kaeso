@@ -21,6 +21,18 @@ use crate::platform::views::UserView;
 use crate::state::AppState;
 
 const EMAIL_CHANGE_LIFETIME: Duration = Duration::hours(24);
+const MANAGED_ADDRESS: &str =
+    "Your organization manages this address; change it at its identity provider.";
+
+async fn refuse_managed(state: &AppState, email: Option<&str>) -> ApiResult<()> {
+    let Some(email) = email else {
+        return Ok(());
+    };
+    match crate::services::managed::of_address(&state.pg, email).await? {
+        Some(_) => Err(ApiError::PermissionDenied(MANAGED_ADDRESS.into())),
+        None => Ok(()),
+    }
+}
 
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "The signed-in user's account.")]
@@ -162,6 +174,9 @@ pub struct EmailChange {
     and a link to cancel it to the current one. Needs a recent sign-in and,\n\
     while TOTP is on, a code. Ending the session that asked, or every\n\
     session, cancels the change.",
+    description = "Refused with `permission_denied` for an account an org manages (`managed_by` \
+    in `auth/session`): its identity provider owns the address, and a sign-in through it brings \
+    a new one within the org's verified domains.",
     tag = "me",
     request_body = EmailChange,
     responses((status = 200, body = EmailSent))
@@ -171,8 +186,12 @@ pub async fn change_email(
     ctx: Ctx,
     Body(req): Body<EmailChange>,
 ) -> ApiResult<Json<EmailSent>> {
-    ctx.require_recent_sign_in()?;
     let user = ctx.user_id()?;
+    let current = users::get(&state.pg, user.uuid())
+        .await?
+        .and_then(|u| u.email);
+    refuse_managed(&state, current.as_deref()).await?;
+    ctx.require_recent_sign_in()?;
     let email = validate_email("email", &req.email)?;
     throttle_ip(&state, &ctx, EMAILS_PER_IP).await?;
     throttle::hit(
@@ -194,9 +213,6 @@ pub async fn change_email(
             "Another account uses this address.".into(),
         ));
     }
-    let current = users::get(&state.pg, user.uuid())
-        .await?
-        .and_then(|u| u.email);
     let token = random_token();
     let cancel = random_token();
     let mut tx = state.pg.begin().await?;
@@ -317,6 +333,7 @@ pub async fn confirm_email(
         .await?
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
+    refuse_managed(&state, user.email.as_deref()).await?;
     if !users::set_email(&mut *tx, user_id, &new_email, ctx.now).await? {
         return Err(ApiError::Conflict(
             "Another account uses this address now.".into(),
