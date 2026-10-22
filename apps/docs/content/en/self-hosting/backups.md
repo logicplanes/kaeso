@@ -35,7 +35,7 @@ docker compose start gateway
 
 To restore on a new server:
 
-1. Put `compose.yaml`, `.env` and `master-keys` back in the install's folder.
+1. Put `compose.yaml`, `.env` and `master-keys` back in the install's folder, and give `master-keys` to the gateway's user as in [create the master key](../get-started/quick-start.md#create-the-master-key).
 2. Start only PostgreSQL with `docker compose up -d --wait postgres`.
 3. Restore the dump with the `pg_restore` command above.
 4. Start the rest with `docker compose up -d --wait`.
@@ -58,12 +58,13 @@ The master keys are the file `master-keys` next to `compose.yaml`. A stored prov
 
 `master-keys` holds one or more keys separated by commas, the active key first: `k7c21e9d04a:…,k3f9a01bc2d:…`. Kaeso encrypts new secrets with the first key and decrypts older ones with theirs.
 
-1. Generate a new key and put it in front of the old one:
+1. Generate a new key and write it in front of the old one. Writing into the existing file keeps its owner and mode. Nothing is written unless both keys were read, and the shell forgets both afterwards:
 
 ```bash
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
-mv master-keys.new master-keys
-chmod 644 master-keys
+new=$(docker compose exec -T gateway kaeso master-key generate) &&
+  old=$(sudo cat master-keys) &&
+  printf '%s,%s\n' "$new" "$old" | sudo tee master-keys > /dev/null
+unset new old
 ```
 
 2. Recreate the gateway, so it reads the new file:

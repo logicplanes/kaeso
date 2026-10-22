@@ -26,9 +26,10 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ## Die Einstellungen schreiben
 
-Legen Sie `.env` mit Ihrer Domain und vier zufälligen Passwörtern an:
+Legen Sie `.env` mit Ihrer Domain und vier zufälligen Passwörtern an. `umask 077` macht sie, und jede Datei, die Sie in dieser Shell danach anlegen, nur für Sie lesbar:
 
 ```bash
+umask 077
 cat > .env <<EOF
 KAESO_DOMAIN=kaeso.example.com
 POSTGRES_PASSWORD=$(openssl rand -hex 24)
@@ -61,10 +62,10 @@ Der Hauptschlüssel verschlüsselt die Anbieter-Schlüssel, die Kaeso speichert.
 
 ```bash
 docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
-chmod 644 master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 ```
 
-Das Gateway läuft in seinem Container als Benutzer ohne Sonderrechte, deshalb muss die Datei lesbar sein. Die Rechte des Ordners halten andere Benutzer des Servers fern.
+Das Gateway läuft in seinem Container als Benutzer 65532, deshalb gehört die Datei diesem Benutzer, und niemand sonst kann sie lesen. Docker Desktop und Colima lesen den Ordner als Sie, führen Sie dort also nur `chmod 0400 master-keys` aus. Mit rootless Docker übergeben Sie die Datei dem Benutzer, auf den 65532 auf dem Host abgebildet wird.
 
 > [!IMPORTANT]
 > Bewahren Sie eine Kopie von `master-keys` sicher auf, getrennt von Ihren Datenbank-Backups. Ohne sie kann Kaeso die gespeicherten Anbieter-Schlüssel nicht entschlüsseln, und Sie müssen sie neu eingeben.

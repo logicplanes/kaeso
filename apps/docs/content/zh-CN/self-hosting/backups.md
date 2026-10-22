@@ -35,7 +35,7 @@ docker compose start gateway
 
 在新服务器上恢复：
 
-1. 把 `compose.yaml`、`.env` 和 `master-keys` 放回实例文件夹。
+1. 把 `compose.yaml`、`.env` 和 `master-keys` 放回实例文件夹，并像[创建主密钥](../get-started/quick-start.md#创建主密钥)中那样把 `master-keys` 交给网关的用户。
 2. 用 `docker compose up -d --wait postgres` 只启动 PostgreSQL。
 3. 用上面的 `pg_restore` 命令恢复转储。
 4. 用 `docker compose up -d --wait` 启动其余服务。
@@ -58,12 +58,13 @@ docker compose stop clickhouse
 
 `master-keys` 包含一个或多个以逗号分隔的密钥，当前使用的密钥排在最前：`k7c21e9d04a:…,k3f9a01bc2d:…`。Kaeso 用第一个密钥加密新机密，旧机密仍用各自的密钥解密。
 
-1. 生成一个新密钥，放在旧密钥前面：
+1. 生成一个新密钥，写在旧密钥前面。命令直接写入现有文件，因此文件保留原有的所有者和权限。只有两个密钥都读取成功时才会写入，之后 shell 会清除这两个密钥：
 
 ```bash
-printf '%s,%s\n' "$(docker compose exec -T gateway kaeso master-key generate)" "$(cat master-keys)" > master-keys.new
-mv master-keys.new master-keys
-chmod 644 master-keys
+new=$(docker compose exec -T gateway kaeso master-key generate) &&
+  old=$(sudo cat master-keys) &&
+  printf '%s,%s\n' "$new" "$old" | sudo tee master-keys > /dev/null
+unset new old
 ```
 
 2. 重新创建网关，让它读取新文件：

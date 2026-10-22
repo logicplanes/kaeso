@@ -26,9 +26,10 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ## Write the settings
 
-Create `.env` with your domain and four random passwords:
+Create `.env` with your domain and four random passwords. `umask 077` makes it, and every file you create in this shell from now on, readable only by you:
 
 ```bash
+umask 077
 cat > .env <<EOF
 KAESO_DOMAIN=kaeso.example.com
 POSTGRES_PASSWORD=$(openssl rand -hex 24)
@@ -61,10 +62,10 @@ The master key encrypts the provider keys that Kaeso stores. Generate one into `
 
 ```bash
 docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
-chmod 644 master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 ```
 
-The gateway runs as an unprivileged user in its container, so the file must be readable. The folder's permissions keep other users of the server out.
+The gateway runs as user 65532 in its container, so the file belongs to that user, and no one else can read it. Docker Desktop and Colima read the folder as you, so there run only `chmod 0400 master-keys`. With rootless Docker, give the file to the user that 65532 maps to on the host.
 
 > [!IMPORTANT]
 > Keep a copy of `master-keys` somewhere safe, apart from your database backups. Without it, Kaeso can't decrypt the stored provider keys, and you have to enter them again.

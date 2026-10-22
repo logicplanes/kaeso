@@ -26,6 +26,7 @@
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
+umask 077
 curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
 cat > .env <<EOF
 KAESO_DOMAIN=localhost
@@ -36,12 +37,12 @@ CLICKHOUSE_PASSWORD=$(openssl rand -hex 24)
 VALKEY_PASSWORD=$(openssl rand -hex 24)
 EOF
 docker compose run --rm --no-deps gateway master-key generate > master-keys
-chmod 644 master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 docker compose up -d --wait
 docker compose exec gateway kaeso setup-link
 ```
 
-Open the link it prints to create the first user, then follow the [quick start](https://docs.kaeso.app/get-started/quick-start) to run Kaeso on your own domain, connect a provider and send the first request.
+Open the link it prints to create the first user, then follow the [quick start](https://docs.kaeso.app/get-started/quick-start) to run Kaeso on your own domain, connect a provider and send the first request. On Docker Desktop or Colima, which read the folder as you, run `chmod 0400 master-keys` instead of the `sudo` line.
 
 ## License
 

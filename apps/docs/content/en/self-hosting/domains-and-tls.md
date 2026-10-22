@@ -57,7 +57,7 @@ Then route these paths:
 Set up the proxy for Kaeso:
 
 - Turn off response buffering for `/v1/`, so streamed replies reach apps as they arrive.
-- Pass `X-Forwarded-For`. The gateway believes it only from `KAESO_TRUSTED_PROXIES`. The Compose package sets it to the loopback and private networks, which only its own containers and the host's published ports reach. Elsewhere it is loopback only, so set it to your proxy's address. Behind an untrusted proxy, logs and [API key throttling](configuration.md#api-key-throttling) see every client as the proxy.
+- Pass `X-Forwarded-For`, and set `KAESO_TRUSTED_PROXIES` in `.env` to your proxy's exact address. The gateway believes the header only from there. By default, the Compose package trusts loopback and the `edge` network, `EDGE_SUBNET`. A proxy on the server that calls the ports above reaches the gateway from the first address of `EDGE_SUBNET`, `172.30.83.1` by default. Behind an untrusted proxy, logs and [API key throttling](configuration.md#api-key-throttling) see every client as the proxy.
 - If people reach Kaeso at another address than `https://` and `KAESO_DOMAIN`, set `KAESO_PUBLIC_URL` in `.env` to that address.
 - Never route the metrics port, 9100.
 
@@ -66,7 +66,7 @@ Set up the proxy for Kaeso:
 When your proxy runs in Docker on the same server, connect it to Kaeso over a Docker network instead of published ports. Create a network for the proxy and Kaeso alone:
 
 ```bash
-docker network create kaeso-proxy
+docker network create --subnet 172.30.84.0/24 kaeso-proxy
 ```
 
 Then join the gateway and the console to it, with aliases that no other stack uses:
@@ -89,7 +89,7 @@ networks:
     external: true
 ```
 
-Join your proxy's container to `kaeso-proxy` and route to `kaeso-gateway:8080` and `kaeso-console:3000`. The aliases matter because Compose makes every service name a DNS name on each network it joins. On a network that other stacks share, `gateway` could reach another stack's container.
+Join your proxy's container to `kaeso-proxy` at a fixed address, such as `172.30.84.2`, set `KAESO_TRUSTED_PROXIES=172.30.84.2` in `.env`, and route to `kaeso-gateway:8080` and `kaeso-console:3000`. The aliases matter because Compose makes every service name a DNS name on each network it joins. On a network that other stacks share, `gateway` could reach another stack's container.
 
 ## Long streams
 

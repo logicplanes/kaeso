@@ -19,9 +19,15 @@ services:
     pids_limit: 32
     logging: *logging
     command: ["chown", "-R", "65532:65532", "/data", "/config"]
+    configs:
+      - source: caddyfile
+        target: /site/Caddyfile
+      - source: updating_page
+        target: /site/updating/index.html
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - caddy_site:/site
 
   caddy:
     image: ghcr.io/logicplanes/kaeso-console:0.3.6
@@ -31,6 +37,8 @@ services:
     cap_drop: [ALL]
     sysctls:
       net.ipv4.ip_unprivileged_port_start: 0
+    read_only: true
+    tmpfs: ["/tmp"]
     mem_limit: ${CADDY_MEMORY:-512m}
     pids_limit: ${CADDY_PIDS:-256}
     logging: *logging
@@ -43,14 +51,10 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-    configs:
-      - source: caddyfile
-        target: /etc/caddy/Caddyfile
-      - source: updating_page
-        target: /srv/updating/index.html
     volumes:
       - caddy_data:/data
       - caddy_config:/config
+      - caddy_site:/etc/caddy:ro
       - maintenance:/srv/maintenance:ro
     networks: [edge]
     healthcheck:
@@ -90,7 +94,7 @@ services:
       KAESO_SMTP_PASSWORD: ${KAESO_SMTP_PASSWORD:-}
       KAESO_SMTP_FROM: ${KAESO_SMTP_FROM:-Kaeso <kaeso@${KAESO_DOMAIN}>}
       KAESO_UPDATER_TOKEN: ${KAESO_UPDATER_TOKEN:-}
-      KAESO_TRUSTED_PROXIES: ${KAESO_TRUSTED_PROXIES:-127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7}
+      KAESO_TRUSTED_PROXIES: ${KAESO_TRUSTED_PROXIES:-127.0.0.0/8,::1/128,${EDGE_SUBNET:-172.30.83.0/24}}
       KAESO_LOG_FORMAT: json
     secrets: [master_keys]
     networks: [edge, data, updates]
@@ -277,6 +281,10 @@ configs:
       SQL
   caddyfile:
     content: |
+      {
+      	admin off
+      }
+
       {$$KAESO_DOMAIN} {
       	header {
       		Strict-Transport-Security "max-age=31536000"
@@ -336,7 +344,7 @@ configs:
       			header X-Content-Type-Options "nosniff"
       			header Referrer-Policy "no-referrer"
       			header Content-Security-Policy "default-src 'none'; style-src 'sha256-zTAZLTV1l4GwHyQWyKxSk9xuEFs1PNMQTIZp8Fe7M3s='; script-src 'sha256-quEAqQJHXl4kaAD+haGtPymUvwB46Ry7l7DCue2Cuu8='; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
-      			root * /srv/updating
+      			root * /etc/caddy/updating
       			rewrite * /index.html
       			file_server {
       				status 503
@@ -509,6 +517,9 @@ secrets:
 
 networks:
   edge:
+    ipam:
+      config:
+        - subnet: ${EDGE_SUBNET:-172.30.83.0/24}
   data:
     internal: true
   updates:
@@ -520,6 +531,7 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  caddy_site:
   postgres:
   clickhouse:
   valkey:

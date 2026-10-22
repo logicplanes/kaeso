@@ -160,9 +160,17 @@ def test_no_service_gains_privileges_or_keeps_capabilities_it_does_not_need(serv
 def test_the_edge_and_the_kaeso_images_run_without_root_on_read_only_file_systems(services):
     assert services["caddy"]["user"] == "65532:65532"
     assert services["valkey"]["user"] == "999:1000"
-    for name in ("gateway", "console", "updater", "docker-proxy"):
+    for name in ("caddy", "gateway", "console", "updater", "docker-proxy"):
         assert services[name]["read_only"] is True, name
     assert {t.split(":")[0] for t in services["console"]["tmpfs"]} == {"/tmp", "/var/lib/console/data", "/var/lib/console/config"}
+    assert services["caddy"]["tmpfs"] == ["/tmp"]
+    writable = {v["target"] for v in services["caddy"]["volumes"] if not v.get("read_only")}
+    assert writable == {"/data", "/config"}
+    assert "configs" not in services["caddy"]
+    assert [(c["source"], c["target"]) for c in services["caddy-init"]["configs"]] == [
+        ("caddyfile", "/site/Caddyfile"),
+        ("updating_page", "/site/updating/index.html"),
+    ]
     init = services["caddy-init"]
     assert init["network_mode"] == "none"
     assert init["command"] == ["chown", "-R", "65532:65532", "/data", "/config"]
@@ -214,3 +222,19 @@ def test_valkey_reads_its_password_from_a_file_and_never_evicts_counters():
     assert "maxmemory 300mb" in lines
     assert "maxmemory-policy noeviction" in lines
     assert "appendonly yes" in lines
+
+
+def test_the_edge_caddy_has_no_admin_endpoint():
+    caddyfile = config()["configs"]["caddyfile"]["content"]
+    assert caddyfile.startswith("{\n\tadmin off\n}\n")
+
+
+def test_the_gateway_trusts_forwarded_addresses_only_from_loopback_and_the_edge_network():
+    found = config()
+    assert found["networks"]["edge"]["ipam"]["config"] == [{"subnet": "172.30.83.0/24"}]
+    assert found["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "127.0.0.0/8,::1/128,172.30.83.0/24"
+    moved = config({"EDGE_SUBNET": "10.83.0.0/24"})
+    assert moved["networks"]["edge"]["ipam"]["config"] == [{"subnet": "10.83.0.0/24"}]
+    assert moved["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "127.0.0.0/8,::1/128,10.83.0.0/24"
+    own = config({"KAESO_TRUSTED_PROXIES": "172.30.84.2"})
+    assert own["services"]["gateway"]["environment"]["KAESO_TRUSTED_PROXIES"] == "172.30.84.2"

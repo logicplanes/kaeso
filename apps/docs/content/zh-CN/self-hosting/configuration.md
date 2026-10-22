@@ -32,6 +32,7 @@ services:
 | `KAESO_UPDATER_TOKEN`、`COMPOSE_PROFILES` | 否 | 网关和更新器共享的令牌，以及用于启动更新器的 `updater`（[更新器](upgrades.md#更新器)）。 |
 | `KAESO_DIR` | 使用更新器时 | 实例文件夹，也是更新器的 Docker 代理唯一允许绑定挂载的来源。 |
 | `DOCKER_SOCKET` | 否 | Docker 套接字不在 `/var/run/docker.sock` 时，供更新器使用的路径。 |
+| `EDGE_SUBNET` | 否 | `edge` 网络的子网，默认为 `172.30.83.0/24`，网关信任来自该子网的 `X-Forwarded-For`。服务器已在使用这个网段时请修改它。 |
 | `CADDY_MEMORY`、`GATEWAY_MEMORY` 等，`CADDY_PIDS`、`GATEWAY_PIDS` 等，以及 `VALKEY_MAXMEMORY` | 否 | 各服务的内存和进程数上限，以及 Valkey 存放数据的内存（[容器限制](#容器限制)）。 |
 
 密码中只用字母和数字，就像 `openssl rand -hex` 生成的那样，因为它们会写进连接 URL。PostgreSQL 保留卷创建时的密码，之后修改 `POSTGRES_PASSWORD` 会让网关无法登录。ClickHouse 和 Valkey 每次启动时都从 `.env` 读取密码。
@@ -254,6 +255,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 - 有效密钥从不计数。本实例在过去 30 秒内用过的密钥，即使来自被封锁的地址也能使用；其他有效密钥需要等窗口结束。
 - IPv6 地址按 /64 计数。
 - 在代理后面时，只有当代理位于 `KAESO_TRUSTED_PROXIES` 中，客户端地址才取自 `X-Forwarded-For`。否则所有客户端共用代理的额度。
+- Docker Desktop、Colima 和 rootless Docker 通过它们自己的代理转发发布的端口，因此 Caddy 看到的所有客户端都是同一个地址，所有客户端共用一份额度。如果需要按客户端限制，请在使用 root 网络模式的 Docker Engine 上运行 Kaeso。
 - Valkey 无法访问期间，失败不计数。
 
 每次封锁都会让 `kaeso_key_failure_blocks_total` 增加，并记录带有该地址的日志 `too many failed API key lookups from one address`（[健康状态和指标](monitoring.md)）。

@@ -57,7 +57,7 @@ Leiten Sie dann diese Pfade weiter:
 Richten Sie den Proxy für Kaeso ein:
 
 - Schalten Sie die Pufferung von Antworten für `/v1/` ab, damit gestreamte Antworten die Apps sofort erreichen.
-- Geben Sie `X-Forwarded-For` weiter. Das Gateway vertraut dem Header nur, wenn er von `KAESO_TRUSTED_PROXIES` kommt. Das Compose-Paket setzt dafür die Loopback- und privaten Netze, die nur seine eigenen Container und die veröffentlichten Ports des Hosts erreichen. Anderswo ist es nur Loopback, setzen Sie es also auf die Adresse Ihres Proxys. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
+- Geben Sie `X-Forwarded-For` weiter, und setzen Sie `KAESO_TRUSTED_PROXIES` in `.env` auf die genaue Adresse Ihres Proxys. Nur von dort glaubt das Gateway den Header. Standardmäßig vertraut das Compose-Paket Loopback und dem Netzwerk `edge`, `EDGE_SUBNET`. Ein Proxy auf dem Server, der die Ports oben aufruft, erreicht das Gateway von der ersten Adresse von `EDGE_SUBNET` aus, standardmäßig `172.30.83.1`. Hinter einem Proxy, dem es nicht vertraut, sehen Protokolle und die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) jeden Client als den Proxy.
 - Erreichen Personen Kaeso unter einer anderen Adresse als `https://` und `KAESO_DOMAIN`, setzen Sie `KAESO_PUBLIC_URL` in der `.env` auf diese Adresse.
 - Leiten Sie den Metrik-Port 9100 nie weiter.
 
@@ -66,7 +66,7 @@ Richten Sie den Proxy für Kaeso ein:
 Läuft Ihr Proxy in Docker auf demselben Server, verbinden Sie ihn über ein Docker-Netzwerk mit Kaeso statt über veröffentlichte Ports. Legen Sie ein Netzwerk nur für den Proxy und Kaeso an:
 
 ```bash
-docker network create kaeso-proxy
+docker network create --subnet 172.30.84.0/24 kaeso-proxy
 ```
 
 Verbinden Sie dann Gateway und Konsole damit, mit Aliasen, die kein anderer Stack verwendet:
@@ -89,7 +89,7 @@ networks:
     external: true
 ```
 
-Verbinden Sie den Container Ihres Proxys mit `kaeso-proxy` und leiten Sie an `kaeso-gateway:8080` und `kaeso-console:3000` weiter. Die Aliase sind nötig, weil Compose jeden Dienstnamen in jedem Netzwerk, dem der Dienst beitritt, zu einem DNS-Namen macht. In einem Netzwerk, das andere Stacks mitnutzen, könnte `gateway` sonst den Container eines anderen Stacks erreichen.
+Verbinden Sie den Container Ihres Proxys mit einer festen Adresse wie `172.30.84.2` mit `kaeso-proxy`, setzen Sie `KAESO_TRUSTED_PROXIES=172.30.84.2` in `.env` und leiten Sie an `kaeso-gateway:8080` und `kaeso-console:3000` weiter. Die Aliase sind nötig, weil Compose jeden Dienstnamen in jedem Netzwerk, dem der Dienst beitritt, zu einem DNS-Namen macht. In einem Netzwerk, das andere Stacks mitnutzen, könnte `gateway` sonst den Container eines anderen Stacks erreichen.
 
 ## Lange Streams
 

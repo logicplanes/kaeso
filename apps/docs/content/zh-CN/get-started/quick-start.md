@@ -26,9 +26,10 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compos
 
 ## 写入设置
 
-创建 `.env`，写入您的域名和四个随机密码：
+创建 `.env`，写入您的域名和四个随机密码。`umask 077` 让它以及您之后在这个 shell 中创建的每个文件都只有您自己可读：
 
 ```bash
+umask 077
 cat > .env <<EOF
 KAESO_DOMAIN=kaeso.example.com
 POSTGRES_PASSWORD=$(openssl rand -hex 24)
@@ -61,10 +62,10 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 
 ```bash
 docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
-chmod 644 master-keys
+sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 ```
 
-网关在容器内以非特权用户运行，因此该文件必须可读。文件夹的权限会挡住服务器上的其他用户。
+网关在容器内以用户 65532 运行，因此该文件归这个用户所有，其他人都无法读取。Docker Desktop 和 Colima 以您的身份读取该文件夹，因此在它们上面只需运行 `chmod 0400 master-keys`。使用 rootless Docker 时，请把文件交给 65532 在主机上映射到的用户。
 
 > [!IMPORTANT]
 > 将 `master-keys` 的副本保存在安全的地方，并与数据库备份分开存放。没有它，Kaeso 无法解密已保存的服务商密钥，您只能重新输入。
