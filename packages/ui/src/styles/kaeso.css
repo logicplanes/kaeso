@@ -1029,14 +1029,12 @@
   inset-inline: 16px;
   white-space: nowrap;
 }
-.k-toast::after {
+.k-toast[data-expanded][data-behind]::after {
   content: "";
   position: absolute;
   top: 100%;
-  left: 50%;
-  width: min(560px, calc(100vw - 32px));
+  inset-inline: 0;
   height: 9px;
-  transform: translateX(-50%);
 }
 .k-toast[data-expanded] {
   transform: translateY(calc(-1 * var(--toast-offset-y, 0px) - var(--toast-index, 0) * 8px + var(--toast-swipe-movement-y, 0px)))
