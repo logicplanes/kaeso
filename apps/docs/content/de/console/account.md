@@ -8,7 +8,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 
 | Seite | Inhalt |
 | --- | --- |
-| Profil | Bild, Name, E-Mail-Adresse und Konto-ID sowie das Löschen des Kontos |
+| Profil | Bild, Name, E-Mail-Adresse und Konto-ID, die Organisation, die das Konto verwaltet, sowie das Löschen des Kontos |
 | Sicherheit | Passwort, Zwei-Faktor-Authentifizierung, Wiederherstellungscodes und Verknüpfungen mit Single Sign-on |
 | Sitzungen | Die Browser, in denen Sie angemeldet sind |
 | API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
@@ -28,7 +28,7 @@ Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ih
 
 ## Zwei-Faktor-Authentifizierung einschalten
 
-Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code oder eine Anmeldung über ihren eigenen Identitätsanbieter.
+Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code oder eine Anmeldung über ihren eigenen Identitätsanbieter oder den der Organisation, die Ihr Konto verwaltet.
 
 Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmelden** nur, wenn Sie den Link selbst angefordert haben. Ist dieser Browser bei einem anderen Konto angemeldet, ersetzt die Anmeldung diese Sitzung hier.
 
@@ -69,11 +69,15 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 ## Nach einer Anmeldung über Single Sign-on
 
-Eine Anmeldung über den Identitätsanbieter einer Organisation öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
+Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen, und Änderungen an Ihrem Konto, die weiterhin eine kürzliche Anmeldung verlangen. Die Verwaltung der Instanz braucht eine weitere Anmeldung.
+
+Eine Anmeldung über den Anbieter einer Organisation, die Ihr Konto nicht verwaltet, öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Das geschieht, wenn Ihre Adresse zu einer anderen Domain gehört. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 
 - E-Mail-Adresse, Passwort oder Zwei-Faktor-Authentifizierung ändern;
 - eine Organisation erstellen, eine andere verlassen oder das Konto löschen;
 - eine andere Organisation öffnen oder die Instanz verwalten.
+
+Verlangt die Organisation, die Ihr Konto verwaltet, Single Sign-on, melden Sie sich nur über ihren Anbieter an, und er bestätigt auch kürzliche Anmeldungen ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 
 Ohne Passwort wählen Sie **Link per E-Mail senden** unter **Konto** › **Sicherheit** oder **Passwort vergessen?** auf der Anmeldeseite und legen eines über die E-Mail fest. Denselben Link bietet die Konsole an, wenn eine Aktion eine weitere Anmeldung verlangt und nichts anderes funktioniert.
 

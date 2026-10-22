@@ -76,7 +76,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 - **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
 - **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`。默认为 `inference`，授予平台访问权限需要 `keys.platform_access.grant` 权限（[API 密钥](../console/api-keys.md)）。
 - **平台密钥只能在会话中创建**，且创建者必须拥有管理员角色的全部权限。平台密钥从不调用模型。
-- **组织策略作用于会话。** 要求单点登录的组织会对其他会话返回 403。要求双重验证的组织会对没有第二重验证的会话返回 403，通过其自己的单点登录建立的会话除外。
+- **组织策略作用于会话。** 要求单点登录的组织会对其管理的账户的会话返回 403，除非会话来自其身份提供商；访客的会话可以通过。要求双重验证的组织会对没有第二重验证的会话返回 403，但来自在该组织有效的单点登录的会话除外：即其自己的单点登录，或管理该账户的组织的单点登录（见[受管理的账户](../self-hosting/sign-in.md#受管理的账户)）。
 - **未知密钥会被限流。** 来自同一地址、使用未知密钥的请求过多时（两个 API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`（[API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)）。
 
 ### 跨站请求
@@ -93,7 +93,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录：使用密码、单点登录或登录链接，取决于您的账户和实例允许哪种方式。密钥不受此限制。
 
-`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`、`sso` 中账户已关联其身份提供商的组织，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。为操作所在的组织传入 `org`；如果该组织要求单点登录，则只有它自己的身份提供商可以确认。`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。身份提供商会被要求进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认，会话会被替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account`、`link_required` 或 `stale_sign_in`。`no_auth_time` 表示身份提供商的答复没有说明用户何时登录；此后 `sso` 不再列出该组织，其连接在 `GET orgs/{org}/security` 中显示 `sends_auth_time: false`。
+`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`、`sso` 中账户已关联其身份提供商的组织，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。如果管理该账户的组织要求单点登录，则只有该组织的身份提供商可以确认。`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。身份提供商会被要求进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认，会话会被替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account`、`link_required` 或 `stale_sign_in`。`no_auth_time` 表示身份提供商的答复没有说明用户何时登录；此后 `sso` 不再列出该组织，其连接在 `GET orgs/{org}/security` 中显示 `sends_auth_time: false`。
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
@@ -157,6 +157,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 401 | `authentication` | 没有会话或密钥，或会话、密钥未知、已过期或已结束。 |
 | 403 | `permission_denied` | 缺少权限、密钥用于其不能访问的路由、缺少 `Origin`，或组织策略不允许。 |
 | 403 | `recent_sign_in_required` | 该操作需要[近期登录](#近期登录)。 |
+| 403 | `other_sign_in_required` | 会话来自不管理该账户的组织的单点登录，而操作不在该组织内；或者会话来自单点登录，而操作属于实例管理。请使用密码或登录链接登录。 |
 | 404 | `not_found` | 路径不存在，或对象不存在或调用方无权查看。 |
 | 405 | `invalid_request` | 路径不接受该方法。`Allow` 列出它接受的方法。 |
 | 409 | `conflict` | 更改与当前状态冲突，例如名称已被占用。 |
@@ -174,7 +175,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 | 路径 | 内容 |
 | --- | --- |
-| `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份，以及能否创建组织（`can_create_orgs`）。 |
+| `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份、管理该账户的组织（`managed_by`），以及能否创建组织（`can_create_orgs`）。 |
 | `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥和通知，以及创建组织和删除账户。 |
 | `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
 | `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容日志、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |

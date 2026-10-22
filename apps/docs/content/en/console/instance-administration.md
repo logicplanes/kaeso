@@ -12,7 +12,7 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 **Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
 
-Instance admins carry an **Instance admin** badge. Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
+Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 
 | Action | What it does |
 | --- | --- |

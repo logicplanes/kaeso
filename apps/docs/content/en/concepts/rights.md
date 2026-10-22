@@ -125,7 +125,7 @@ Every change of roles and rights follows these rules:
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `security.sso.manage` | Manage SSO | Configure the organization's identity provider and the role of people who arrive through it. | recent sign-in |
-| `security.sso.require` | Require SSO | Require members to sign in to this organization through SSO. | sensitive; recent sign-in |
+| `security.sso.require` | Require SSO | Require the accounts this organization manages to sign in only through its SSO. | sensitive; recent sign-in |
 | `security.2fa.require` | Require two-factor | Require two-factor authentication for members. | recent sign-in |
 | `security.key_policy.manage` | Set key lifetime | Set the organization's maximum key lifetime. |  |
 

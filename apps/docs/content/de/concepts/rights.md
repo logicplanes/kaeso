@@ -125,7 +125,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `security.sso.manage` | SSO verwalten | Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen festlegen, die darüber beitreten. | kürzliche Anmeldung |
-| `security.sso.require` | SSO verlangen | Von Mitgliedern die Anmeldung bei dieser Organisation per SSO verlangen. | sensibel; kürzliche Anmeldung |
+| `security.sso.require` | SSO verlangen | Von den Konten, die diese Organisation verwaltet, die Anmeldung nur über ihre SSO verlangen. | sensibel; kürzliche Anmeldung |
 | `security.2fa.require` | Zwei-Faktor verlangen | Zwei-Faktor-Authentifizierung für Mitglieder verlangen. | kürzliche Anmeldung |
 | `security.key_policy.manage` | Schlüssellaufzeit festlegen | Die maximale Schlüssellaufzeit der Organisation festlegen. |  |
 

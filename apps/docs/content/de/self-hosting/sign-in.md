@@ -26,7 +26,7 @@ Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Si
 
 Damit Single Sign-on eine kürzliche Anmeldung bestätigen kann, muss der Anbieter also in seinen ID-Tokens `auth_time` senden, den Zeitpunkt der Anmeldung. OpenID Connect verlangt das, sobald `max_age` gesendet wird, doch manche Anbieter senden es nie. Eine Antwort ohne `auth_time` wird mit `no_auth_time` abgelehnt, und Kaeso vermerkt an der Verbindung, dass der Anbieter nicht bestätigen kann. Bittet die Konsole dann um eine erneute Anmeldung, bietet sie diesen Anbieter nicht mehr an, sondern ein Passwort, einen Anmeldelink oder einen Link, um ein Passwort festzulegen.
 
-In einer Organisation, die Single Sign-on verlangt, bestätigt dort sonst nichts; ihre Mitglieder können Aktionen, die eine kürzliche Anmeldung verlangen, dann nicht ausführen. Die Seite **Sicherheit** der Organisation zeigt beide Fälle unter **Kürzliche Anmeldung**. Kaeso bietet den Anbieter wieder an, sobald eines seiner ID-Tokens `auth_time` enthält, und vergisst den Vermerk, wenn sich Issuer oder Client-ID ändern. Eine Anmeldung ohne `auth_time` vermerkt nichts, da Anbieter es weglassen dürfen, solange kein `max_age` gesendet wird.
+Für ein Konto, dessen Organisation Single Sign-on verlangt ([verwaltete Konten](#verwaltete-konten)), bestätigt sonst nichts; es kann Aktionen, die eine kürzliche Anmeldung verlangen, also nicht ausführen. Die Seite **Sicherheit** der Organisation zeigt beide Fälle unter **Kürzliche Anmeldung**. Kaeso bietet den Anbieter wieder an, sobald eines seiner ID-Tokens `auth_time` enthält, und vergisst den Vermerk, wenn sich Issuer oder Client-ID ändern. Eine Anmeldung ohne `auth_time` vermerkt nichts, da Anbieter es weglassen dürfen, solange kein `max_age` gesendet wird.
 
 ## Wer sich über Single Sign-on anmeldet
 
@@ -37,9 +37,30 @@ In einer Organisation, die Single Sign-on verlangt, bestätigt dort sonst nichts
 - Ein bestehendes Konto meldet sich über Single Sign-on erst an, wenn seine Inhaberin oder sein Inhaber es nach einer Anmeldung auf anderem Weg unter **Konto** › **Sicherheit** verknüpft ([Single Sign-on verknüpfen](../console/account.md#single-sign-on-verknüpfen)), und nur dort, wo es Mitglied ist. Um eine Einladung anzunehmen, meldet es sich zuerst auf anderem Weg an.
 - Eine Adresse unter einer anderen Domain, etwa der eines öffentlichen Mail-Anbieters, kann sich nicht über den Anbieter der Organisation anmelden, auch nicht mit Einladung.
 
-Eine Anmeldung über den Anbieter einer Organisation öffnet nur diese Organisation und liest das eigene Konto der Person. Andere Organisationen, die Verwaltung der Instanz und Änderungen an E-Mail, Passwort und Zwei-Faktor-Authentifizierung des Kontos brauchen eine weitere Anmeldung ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
+Was eine Anmeldung über einen Anbieter öffnet, hängt davon ab, ob seine Organisation das Konto verwaltet ([verwaltete Konten](#verwaltete-konten)).
 
 Eine Verbindung kann keine Domain eines öffentlichen Mail-Anbieters wie `gmail.com` enthalten: Jede Adresse dort würde sich über den Anbieter einer einzigen Organisation anmelden.
+
+## Verwaltete Konten
+
+Eine Organisation mit Single Sign-on verwaltet die Konten an ihren bestätigten E-Mail-Domains. Kaeso ermittelt das bei jeder Anfrage aus der Adresse des Kontos; eine neue Adresse, eine Domain, die ihre Bestätigung verliert, oder eine entfernte Verbindung ändert es also sofort. Jede Domain bestätigt eine Organisation, sodass höchstens eine Organisation ein Konto verwaltet. Die übrigen Mitglieder der Organisation sind Gäste: Personen, die ihr angehören, deren Adresse aber an einer anderen Domain liegt.
+
+Die Anmeldung eines verwalteten Kontos über den Anbieter seiner Organisation ist eine vollständige Anmeldung, wie bei einem Arbeitskonto, das zu einem Unternehmen gehört. Sie öffnet jede Organisation, der die Person angehört, jede mit ihren eigenen Anforderungen, und Änderungen am Konto. Eine Anmeldung über den Anbieter einer Organisation, die das Konto nicht verwaltet, öffnet nur diese Organisation. Das geschieht, wenn die Adresse an einer anderen Domain liegt, etwa nachdem sie sich geändert hat, oder wenn die Domain nicht mehr bestätigt ist.
+
+| | Verwaltetes Konto, über den Anbieter seiner Organisation | Über den Anbieter einer anderen Organisation | Passwort oder Anmeldelink |
+| --- | --- | --- | --- |
+| Organisationen | Jede, der die Person angehört | Nur die Organisation des Anbieters | Jede, außer einer, die das Konto verwaltet und Single Sign-on verlangt |
+| Zwei-Faktor-Pflicht einer Organisation | Durch den Anbieter erfüllt | In der Organisation des Anbieters erfüllt | Braucht einen Code |
+| Änderungen am Konto | Erlaubt, mit kürzlicher Anmeldung | Brauchen ein Passwort oder einen Anmeldelink | Erlaubt, mit kürzlicher Anmeldung |
+| Verwaltung der Instanz | Braucht ein Passwort oder einen Anmeldelink | Braucht ein Passwort oder einen Anmeldelink | Für Instanz-Admins erlaubt |
+
+**Konto** › **Profil** zeigt **Verwaltet von** und den Namen der Organisation, und die Seite **Mitglieder** einer Organisation kennzeichnet Gäste ([nach einer Anmeldung über Single Sign-on](../console/account.md#nach-einer-anmeldung-über-single-sign-on)).
+
+### Single Sign-on verlangen
+
+Ist **Single Sign-on verlangen** eingeschaltet, melden sich die Konten, die eine Organisation verwaltet, überall auf der Installation nur über ihren Anbieter an. Die Anmeldeseite bietet ihnen allein den Anbieter an, und ein Passwort, ein Anmeldelink, eine Registrierung oder eine Einladung ohne Konto wird mit `Your organization requires single sign-on; continue with its identity provider.` abgelehnt. Das Einschalten der Pflicht beendet ihre Sitzungen aus einem Passwort oder einem Anmeldelink, außer der Sitzung, die sie einschaltet; ebenso das Bestätigen einer weiteren Domain, während die Pflicht gilt.
+
+Gäste behalten ihre eigene Anmeldung und öffnen die Organisation damit, unter ihrer Zwei-Faktor-Pflicht. Ein Anmeldelink vom Server meldet ein verwaltetes Konto weiterhin an ([wieder hineinkommen](#wieder-hineinkommen)).
 
 ## Ohne Passwörter und Anmeldelinks betreiben
 
@@ -63,7 +84,7 @@ Die Anmeldeseite fragt weiterhin zuerst nach der E-Mail-Adresse und bietet den A
 Eine Anmeldung über Single Sign-on verwaltet die Instanz nicht. Für die Verwaltung der Instanz melden Sie sich mit einem [einmaligen Anmeldelink](#wieder-hineinkommen) vom Server an.
 
 > [!IMPORTANT]
-> Lassen Sie **Single Sign-on verlangen** ausgeschaltet, bis die Verbindung funktioniert. Auf einer Installation ohne Passwörter bringt es nichts, und es lehnt jede andere Sitzung ab, auch eine über den Anmeldelink eines Betreibers.
+> Lassen Sie **Single Sign-on verlangen** ausgeschaltet, bis die Verbindung funktioniert. Auf einer Installation ohne Passwörter bringt es nichts, und es sperrt die Organisation für jede Sitzung ihrer verwalteten Konten, die nicht von ihrem Anbieter stammt, auch für eine über den Anmeldelink eines Betreibers.
 
 ## Wieder hineinkommen
 
@@ -74,6 +95,8 @@ docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 
 Der Link funktioniert einmal, innerhalb von 15 Minuten, auch wenn Anmeldelinks per E-Mail abgeschaltet sind; Passwörter müssen Sie also nie wieder einschalten. Wer den Link hat, kann sich als diese Person anmelden. Kaeso gibt ihn nur in Ihrem Terminal aus, protokolliert oder sendet ihn nie, und das Audit-Log hält ihn als `user.sign_in_link` fest. Ein deaktiviertes Konto erhält erst einen Link, wenn Sie es wieder aktivieren. Bei eingeschalteter Zwei-Faktor-Authentifizierung fragt auch der Link nach einem Code; hat die Person ihren Authenticator verloren, entfernt `kaeso user reset-2fa` sie zuerst.
+
+Der Link meldet ein verwaltetes Konto auch an, während seine Organisation Single Sign-on verlangt. Diese Sitzung öffnet das Konto der Person, ihre anderen Organisationen und, bei einem Instanz-Admin, die Verwaltung der Instanz; die Organisation, die Single Sign-on verlangt, bleibt für sie gesperrt.
 
 ## Nächste Schritte
 

@@ -59,7 +59,9 @@ DNS changes can take a while to show; choose **Verify** again later. Public mail
 
 Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
-Single sign-on confirms a recent sign-in only if your provider sends `auth_time` in its ID tokens. When a confirmation comes back without it, **Security** shows **Recent sign-in**: the provider's sign-ins never count as recent, so members confirm with a password or a sign-in link. With **Require single sign-on** on, they can't confirm at all until the provider sends it ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
+Single sign-on confirms a recent sign-in only if your provider sends `auth_time` in its ID tokens. When a confirmation comes back without it, **Security** shows **Recent sign-in**: the provider's sign-ins never count as recent, so members confirm with a password or a sign-in link. With **Require single sign-on** on, the accounts it manages can't confirm at all until the provider sends it ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
+
+Once connected, the organization manages the accounts at its verified domains: a sign-in through its provider opens everything those accounts can open, except instance administration ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 
 ## Require single sign-on or two-factor authentication
 
@@ -67,11 +69,11 @@ Under **Security**, you can tighten how members get into the organization:
 
 | Setting | What it does |
 | --- | --- |
-| Require single sign-on | Members get into the organization only through its identity provider. Their other sessions keep working for their other organizations. It needs a connected provider |
-| Require two-factor authentication | Members need a sign-in with a code from their authenticator, with a password or a sign-in link. A sign-in through the organization's own identity provider is enough too |
+| Require single sign-on | Accounts at its verified domains sign in only through SSO; guests keep their own sign-in. The accounts it manages can't sign in with a password or a sign-in link anywhere on the install, and their other sessions end. It needs a connected provider |
+| Require two-factor authentication | Members need a sign-in with a code from their authenticator, with a password or a sign-in link. A sign-in through single sign-on is enough too, from the organization's own provider or the one that manages the member's account |
 | Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 
-Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console warns you before it saves. Disconnecting the identity provider turns off **Require single sign-on** as well.
+Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console asks before it saves. Requiring single sign-on keeps your own session, so a [sign-in link from the server](../self-hosting/sign-in.md#get-back-in) is never your only way back. Disconnecting the identity provider turns off **Require single sign-on** as well.
 
 ## Delete an organization
 
