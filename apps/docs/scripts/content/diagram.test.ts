@@ -67,7 +67,17 @@ describe("the look", () => {
     const light = mermaidConfig("light");
     const dark = mermaidConfig("dark");
     const vars = (c: Record<string, unknown>) => c.themeVariables as Record<string, string>;
-    expect(light).toMatchObject({ theme: "base", securityLevel: "strict", htmlLabels: false, fontFamily: font.sans, fontSize: 14 });
+    expect(light).toMatchObject({
+      theme: "base",
+      layout: "dagre",
+      look: "classic",
+      securityLevel: "strict",
+      htmlLabels: false,
+      fontFamily: font.sans,
+      fontSize: 14,
+      flowchart: { minNodeWidth: 0 },
+      state: { minNodeWidth: 0 },
+    });
     expect(vars(light)).toMatchObject({
       primaryColor: neutral["bg-raised"].light,
       primaryTextColor: neutral.text.light,
