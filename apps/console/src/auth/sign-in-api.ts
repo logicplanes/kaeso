@@ -61,10 +61,10 @@ export async function signInMethodsFor(email: string): Promise<SignInMethods> {
 export type ConfirmWays = ConfirmWaysView;
 export type ConfirmSso = ConfirmSsoView;
 
-export function confirmWaysQuery(org: string | undefined) {
+export function confirmWaysQuery() {
   return {
-    queryKey: ["me", "sign-in-again", org ?? null] as const,
-    queryFn: async (): Promise<ConfirmWays> => data(await api.GET("/platform/v1/me/sign-in-again", org ? { params: { query: { org } } } : {})),
+    queryKey: ["me", "sign-in-again"] as const,
+    queryFn: async (): Promise<ConfirmWays> => data(await api.GET("/platform/v1/me/sign-in-again")),
     staleTime: 0,
     retry: false,
   };

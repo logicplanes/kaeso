@@ -126,6 +126,7 @@
   "instance.loggingHint": "Wie lange Anfrageprotokolle bleiben: für neue Organisationen und höchstens.",
   "instance.logs": "Protokolle",
   "instance.mail": "E-Mail",
+  "instance.managedBy": "Verwaltet von",
   "instance.memberCount": "{count, plural, one {# Mitglied} other {# Mitglieder}} mit Rolle und Beitrittsdatum",
   "instance.metadataAboveMax": "Die Standard-Aufbewahrung für Metadaten liegt über ihrem Maximum",
   "instance.metadataDefault": "Metadaten, standardmäßig",

@@ -507,7 +507,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
           title={t("org.sso.require", "Require single sign-on")}
           description={
             security.sso
-              ? t("org.sso.requireHint", "Members get in only through the identity provider.")
+              ? t("org.sso.requireHint", "Accounts at its domains use only SSO; guests keep their own.")
               : t("org.sso.connectFirst", "Connect an identity provider first")
           }
           control={
@@ -517,13 +517,13 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
               disabled={!!ssoReason}
               {...(ssoReason ? { disabledReason: ssoReason } : {})}
               loading={requireSso.isPending}
-              onCheckedChange={(on) => (on && session.session.method !== "oidc" ? setConfirming("sso") : requireSso.mutate(on))}
+              onCheckedChange={(on) => (on ? setConfirming("sso") : requireSso.mutate(false))}
             />
           }
         />
         <SettingsRow
           title={t("org.twoFactor.require", "Require two-factor authentication")}
-          description={t("org.twoFactor.requireHint", "Needs a code at sign-in, or this organization's own SSO.")}
+          description={t("org.twoFactor.requireHint", "Needs a code at sign-in; single sign-on counts as one.")}
           control={
             <Switch
               aria-label={t("org.twoFactor.require", "Require two-factor authentication")}
@@ -541,10 +541,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
         onOpenChange={(o) => !o && setConfirming(null)}
         tone="warning"
         title={t("org.sso.requireConfirm", "Require single sign-on?")}
-        description={t(
-          "org.sso.requireConfirmHint",
-          "You signed in without the identity provider: the organization closes for you, and for every member who did, until you sign in through it.",
-        )}
+        description={t("org.sso.requireConfirmHint", "Accounts at its verified domains then sign in only through SSO, and their other sessions end.")}
         confirmLabel={t("org.sso.require", "Require single sign-on")}
         loading={requireSso.isPending}
         onConfirm={() => requireSso.mutateAsync(true)}

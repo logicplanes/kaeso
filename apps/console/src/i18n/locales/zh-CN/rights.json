@@ -143,7 +143,7 @@
   "rights.securityKeyPolicyProjectManage.name": "设置密钥有效期",
   "rights.securitySsoManage.description": "配置组织的身份提供商，以及经由它加入的人员的角色。",
   "rights.securitySsoManage.name": "管理 SSO",
-  "rights.securitySsoRequire.description": "要求成员通过 SSO 登录此组织。",
+  "rights.securitySsoRequire.description": "要求此组织管理的账户只能通过其 SSO 登录。",
   "rights.securitySsoRequire.name": "要求 SSO",
   "rights.serviceAccountsArchive.description": "归档服务账号及其密钥。",
   "rights.serviceAccountsArchive.name": "归档服务账号",

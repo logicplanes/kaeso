@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { notifications } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
-import { signedIn } from "~/test/fixtures";
+import { ORG, signedIn, whoAmI } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
 import { apiError, noContent, on, requests } from "~/test/network";
 
@@ -23,6 +23,23 @@ describe("profile page", () => {
     expect(screen.getByText("15 Oct 2026")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+  });
+
+  it("names the organization that manages the account", async () => {
+    signedIn({ session: whoAmI({ managed_by: { org: ORG, name: "Acme" } }) });
+    on("GET", "me", me());
+    await renderApp("/settings/account/profile");
+    expect(await screen.findByText("Managed by")).toBeInTheDocument();
+    expect(screen.getByText("Acme")).toBeInTheDocument();
+    expect(screen.getByText("Your address is at its domain; its SSO signs you in fully.")).toBeInTheDocument();
+  });
+
+  it("names no organization for an account none manages", async () => {
+    signedIn();
+    on("GET", "me", me());
+    await renderApp("/settings/account/profile");
+    await screen.findByRole("textbox", { name: "Name" });
+    expect(screen.queryByText("Managed by")).not.toBeInTheDocument();
   });
 
   it("saves a new name from the button and from Enter", async () => {

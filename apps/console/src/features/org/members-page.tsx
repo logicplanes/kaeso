@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Avatar, Badge, Button, Empty, FilterRow, List, SearchInput, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { orgMembersQuery } from "~/api/queries/orgs";
-import { useOrgRights, useSession } from "~/auth/session";
+import { useMembership, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { compareNames } from "~/format/collate";
 import { common } from "~/i18n/common";
@@ -119,6 +119,7 @@ function MembersPanel({
   onOpen: (member: string) => void;
 }) {
   const session = useSession();
+  const withSso = !!useMembership(org)?.sso;
   const rights = useOrgRights(org);
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const roles = rolesOfScope(useRoles(org), "org");
@@ -141,6 +142,7 @@ function MembersPanel({
     meta: (
       <>
         {m.user.state !== "active" && <Badge tone={m.user.state === "deleted" ? "neutral" : "warning"}>{userStateLabel(m.user.state)}</Badge>}
+        {withSso && !m.managed && <Badge>{t("org.members.guest", "Guest")}</Badge>}
         <Badge>{grantLabel(m.grant)}</Badge>
       </>
     ),

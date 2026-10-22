@@ -7,6 +7,7 @@ import { api, data } from "~/api/client";
 import { memberViews } from "~/api/queries/invalidation";
 import { meQuery } from "~/api/queries/me";
 import { useApiMutation } from "~/auth/mutation";
+import { useSession } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
@@ -34,6 +35,7 @@ export function ProfilePage() {
               <PictureRow name={m.name} src={m.avatar_url} />
               <NameRow name={m.name} />
               <EmailRow email={m.email ?? ""} twoFactor={m.totp_enabled} />
+              <ManagedByRow />
               <SettingsRow
                 title={t("account.accountId", "Account id")}
                 description={t("account.accountIdHint", "Used by instance administrators and in the audit log.")}
@@ -46,6 +48,18 @@ export function ProfilePage() {
         </>
       )}
     </SettingsPage>
+  );
+}
+
+export function ManagedByRow() {
+  const managedBy = useSession().managed_by;
+  if (!managedBy) return null;
+  return (
+    <SettingsRow
+      title={t("account.managedBy", "Managed by")}
+      description={t("account.managedByHint", "Your address is at its domain; its SSO signs you in fully.")}
+      control={<Text tone="secondary">{managedBy.name}</Text>}
+    />
   );
 }
 

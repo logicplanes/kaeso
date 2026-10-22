@@ -389,7 +389,7 @@ describe("security requirements", () => {
     }
   });
 
-  it("asks before requiring single sign-on of someone who signed in with a password", async () => {
+  it("asks before requiring single sign-on", async () => {
     signedIn();
     serveSecurity(security({ sso: sso() }));
     on("PUT", "orgs/:org/security/require-sso", security({ sso: sso(), require_sso: true }));
@@ -402,15 +402,18 @@ describe("security requirements", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
-  it("requires single sign-on straight away for someone who signed in through it", async () => {
+  it("says which sessions end before requiring single sign-on, also to someone who signed in through it", async () => {
     const session = whoAmI();
     signedIn({ session: { ...session, session: { ...session.session, method: "oidc" } } });
     serveSecurity(security({ sso: sso() }));
     on("PUT", "orgs/:org/security/require-sso", apiError(409, "conflict", "Members are still signed in with passwords."));
     const { user } = await renderApp(PATH);
+    expect(await screen.findByText("Accounts at its domains use only SSO; guests keep their own.")).toBeInTheDocument();
     await user.click(await screen.findByRole("switch", { name: "Require single sign-on" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Require single sign-on?" });
+    expect(within(confirm).getByText("Accounts at its verified domains then sign in only through SSO, and their other sessions end.")).toBeInTheDocument();
+    await user.click(within(confirm).getByRole("button", { name: "Require single sign-on" }));
     expect((await notifications().findAllByText("Members are still signed in with passwords.")).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/security/require-sso").map((r) => r.body)).toEqual([{ enabled: true }]);
   });
 

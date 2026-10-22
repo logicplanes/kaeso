@@ -126,6 +126,7 @@
   "instance.loggingHint": "请求日志的保留时长：新组织的默认值和上限。",
   "instance.logs": "日志",
   "instance.mail": "邮件",
+  "instance.managedBy": "管理方",
   "instance.memberCount": "{count, plural, other {# 名成员}}，含角色和加入日期",
   "instance.metadataAboveMax": "元数据的默认保留期超过了上限",
   "instance.metadataDefault": "元数据（默认）",

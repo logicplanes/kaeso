@@ -87,6 +87,7 @@ export function instanceUser(overrides: Partial<InstanceUserView> = {}): Instanc
     avatar_url: null,
     created_at: NOW,
     totp_enabled: false,
+    managed_by: null,
     ...overrides,
   };
 }
@@ -122,6 +123,7 @@ export function member(overrides: { id?: string; name?: string; email?: string |
   return {
     id: `mem_${overrides.id ?? "grace"}`,
     joined_at: NOW,
+    managed: false,
     user: {
       id: overrides.id ?? "usr_grace",
       name: overrides.name ?? "Grace Hopper",

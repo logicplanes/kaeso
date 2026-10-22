@@ -356,6 +356,7 @@
   "errors.ssoRequiredStopFirst": "SSO ist in dieser Organisation Pflicht; diese Pflicht zuerst aufheben.",
   "errors.ssoSecretAgain": "Senden Sie `client_secret` erneut, wenn Sie `issuer` oder `client_id` ändern.",
   "errors.ssoSessionOnly": "Nur eine Konsolensitzung kann SSO ändern, API-Schlüssel nicht.",
+  "errors.ssoOnly": "Ihre Organisation verlangt Single Sign-on; fahren Sie bei ihrem Identitätsanbieter fort.",
   "errors.stale.catalogueModel": "Dieses Katalogmodell wurde inzwischen geändert; neu laden und erneut versuchen.",
   "errors.stale.limit": "Dieses Limit wurde inzwischen geändert; neu laden und erneut versuchen.",
   "errors.timeoutRange": "Das Zeitlimit muss 1 bis 3600 Sekunden betragen.",

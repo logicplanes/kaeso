@@ -126,6 +126,7 @@
   "instance.loggingHint": "How long request logs are kept, for new organizations and at most.",
   "instance.logs": "Logs",
   "instance.mail": "Mail",
+  "instance.managedBy": "Managed by",
   "instance.memberCount": "{count, plural, one {# member} other {# members}}, with their role and the day they joined",
   "instance.metadataAboveMax": "The default metadata retention is above its maximum",
   "instance.metadataDefault": "Metadata, by default",

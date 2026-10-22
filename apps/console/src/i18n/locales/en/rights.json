@@ -143,7 +143,7 @@
   "rights.securityKeyPolicyProjectManage.name": "Set key lifetime",
   "rights.securitySsoManage.description": "Configure the organization's identity provider and the role of people who arrive through it.",
   "rights.securitySsoManage.name": "Manage SSO",
-  "rights.securitySsoRequire.description": "Require members to sign in to this organization through SSO.",
+  "rights.securitySsoRequire.description": "Require the accounts this organization manages to sign in only through its SSO.",
   "rights.securitySsoRequire.name": "Require SSO",
   "rights.serviceAccountsArchive.description": "Archive service accounts and their keys.",
   "rights.serviceAccountsArchive.name": "Archive service accounts",

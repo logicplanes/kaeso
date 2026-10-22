@@ -70,7 +70,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "security.sso.require": () => [
     t("rights.securitySsoRequire.name", "Require SSO"),
-    t("rights.securitySsoRequire.description", "Require members to sign in to this organization through SSO."),
+    t("rights.securitySsoRequire.description", "Require the accounts this organization manages to sign in only through its SSO."),
   ],
   "security.2fa.require": () => [
     t("rights.security2faRequire.name", "Require two-factor"),

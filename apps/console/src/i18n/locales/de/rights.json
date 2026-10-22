@@ -143,7 +143,7 @@
   "rights.securityKeyPolicyProjectManage.name": "Schlüssellaufzeit festlegen",
   "rights.securitySsoManage.description": "Den Identitätsanbieter der Organisation einrichten und die Rolle der Personen festlegen, die darüber beitreten.",
   "rights.securitySsoManage.name": "SSO verwalten",
-  "rights.securitySsoRequire.description": "Von Mitgliedern die Anmeldung bei dieser Organisation per SSO verlangen.",
+  "rights.securitySsoRequire.description": "Von den Konten, die diese Organisation verwaltet, die Anmeldung nur über ihre SSO verlangen.",
   "rights.securitySsoRequire.name": "SSO verlangen",
   "rights.serviceAccountsArchive.description": "Dienstkonten samt ihren Schlüsseln archivieren.",
   "rights.serviceAccountsArchive.name": "Dienstkonten archivieren",
