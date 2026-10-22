@@ -89,8 +89,7 @@ describe("organization security", () => {
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByText("Says Continue with SSO.")).toBeInTheDocument();
     expect(screen.getByText("Only addresses the provider marks verified sign in.")).toBeInTheDocument();
-    expect(screen.getByText("Opens sign-in, which asks for the email first.")).toBeInTheDocument();
-    expect(screen.getByText("https://console.northwind.test/platform/v1/auth/oidc/start?org=org_northwind")).toBeInTheDocument();
+    expect(screen.queryByText("Sign-in link")).not.toBeInTheDocument();
   });
 
   it("shows the name on the sign-in button and whether it starts on its own", async () => {
@@ -98,7 +97,6 @@ describe("organization security", () => {
     serveSecurity(security({ sso: sso({ name: "Northwind ID", auto_redirect: true }) }));
     await renderApp(PATH);
     expect(await screen.findByText("Says Continue with Northwind ID and starts on its own.")).toBeInTheDocument();
-    expect(screen.getByText("Goes straight to the provider, without asking for an email.")).toBeInTheDocument();
   });
 
   it("says when the provider's unverified addresses sign in too", async () => {
@@ -237,6 +235,7 @@ describe("connecting an identity provider", () => {
     expect(within(dialog).getByText("Leave it empty to say SSO.")).toBeInTheDocument();
     const auto = within(dialog).getByRole("switch", { name: "Start without a click" });
     expect(auto).not.toBeChecked();
+    expect(within(dialog).getByText("After the email, sign-in goes straight to the provider when it's the only way in.")).toBeInTheDocument();
     await user.click(auto);
     await user.click(within(dialog).getByRole("button", { name: "Connect" }));
     expect(await notifications().findByText("Identity provider connected")).toBeInTheDocument();

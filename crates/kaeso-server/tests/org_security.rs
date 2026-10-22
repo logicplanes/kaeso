@@ -384,7 +384,7 @@ async fn an_internationalised_sso_domain_is_one_domain_however_it_is_typed() {
 }
 
 #[tokio::test]
-async fn an_sso_connection_names_its_button_and_its_sign_in_link() {
+async fn an_sso_connection_names_its_button_and_whether_it_starts_without_a_click() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -408,13 +408,9 @@ async fn an_sso_connection_names_its_button_and_its_sign_in_link() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.body["sso"]["name"], Value::Null);
     assert_eq!(r.body["sso"]["auto_redirect"], false);
-    assert_eq!(
-        r.body["sso"]["sign_in_url"],
-        format!(
-            "{}/platform/v1/auth/oidc/start?org={}",
-            common::ORIGIN,
-            owner.org_id
-        )
+    assert!(
+        r.body["sso"].get("sign_in_url").is_none(),
+        "an org has no start link of its own"
     );
 
     let r = put(

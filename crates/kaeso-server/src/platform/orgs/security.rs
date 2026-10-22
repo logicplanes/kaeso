@@ -39,9 +39,8 @@ pub struct SsoView {
     #[doc = "The name on the sign-in button, such as `Acme ID`; `null`: the button\n\
         says SSO."]
     pub name: Option<String>,
-    #[doc = "Start without a click: the start link `sign_in_url` goes on to the\n\
-        provider, and after the address a sign-in page that offers this provider\n\
-        alone goes on without asking."]
+    #[doc = "Start without a click: after the address, a sign-in page that offers\n\
+        this provider alone goes on to it without showing the button."]
     pub auto_redirect: bool,
     #[doc = "Whether ID tokens must mark the address as verified with\n\
         `email_verified`."]
@@ -52,10 +51,6 @@ pub struct SsoView {
         changes. With `false`, its sign-ins never count as recent and it can't\n\
         confirm one, so members confirm with a password or a sign-in link."]
     pub sends_auth_time: Option<bool>,
-    #[doc = "The org's start link, `GET auth/oidc/start?org=…`. With `auto_redirect`\n\
-        on it goes on to the provider while nobody is signed in; otherwise it\n\
-        opens the sign-in page, which asks for the address."]
-    pub sign_in_url: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -124,11 +119,6 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         auto_redirect: c.auto_redirect,
         require_email_verified: c.require_email_verified,
         sends_auth_time: c.sends_auth_time,
-        sign_in_url: format!(
-            "{}platform/v1/auth/oidc/start?org={}",
-            state.config.public_url,
-            OrgId::from_uuid(org.id)
-        ),
     });
     let sso_default_role = match (org.sso_default_preset.as_deref(), org.sso_default_role_id) {
         (None, _) => None,
@@ -197,10 +187,9 @@ pub struct SsoRequest {
         Leave out to keep the stored one; an empty string removes it."]
     #[schema(example = "Acme ID")]
     pub name: Option<String>,
-    #[doc = "Send people to the provider without a click when the sign-in page\n\
-        offers it alone: through the org's sign-in link, or as the only\n\
-        provider of an install that signs in only with SSO. Leave out to keep\n\
-        the stored choice; off for a new connection."]
+    #[doc = "Send people on to the provider right after they enter their address,\n\
+        when the sign-in page offers it alone, without showing its button.\n\
+        Leave out to keep the stored choice; off for a new connection."]
     pub auto_redirect: Option<bool>,
     #[doc = "Refuse ID tokens that don't mark the address as verified with\n\
         `email_verified`. Turn off only for a provider that never sends the\n\

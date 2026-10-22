@@ -5,7 +5,7 @@ import { SignInPage } from "~/features/sign-in/sign-in-page";
 import { takeFragment } from "~/auth/fragment";
 import { internalPath, safeNext } from "~/auth/next";
 import { sessionQuery } from "~/auth/session-queries";
-import { signInPageQuery, type SignInMethods } from "~/auth/sign-in-api";
+import { signInMethodsQuery, type SignInMethods } from "~/auth/sign-in-api";
 import { t } from "~/i18n";
 
 const NOTICES: Record<string, () => string> = {
@@ -13,31 +13,22 @@ const NOTICES: Record<string, () => string> = {
   "signed-out": () => t("auth.notice.signedOut", "You're signed out"),
 };
 
-const ORG_ID = /^org_[A-Za-z0-9]{1,64}$/;
-
-const text = (search: Record<string, unknown>, key: string) => (typeof search[key] === "string" ? { [key]: search[key] } : {});
-
-type SignInSearch = { next?: string; org?: string; done?: string; start?: string };
+type SignInSearch = { next?: string; done?: string };
 
 const signInSearch = (search: Record<string, unknown>): SignInSearch => ({
   ...(typeof search.next === "string" && internalPath(search.next) ? { next: search.next } : {}),
-  ...text(search, "org"),
-  ...text(search, "done"),
-  ...(search.start === "sso" ? { start: "sso" } : {}),
+  ...(typeof search.done === "string" ? { done: search.done } : {}),
 });
-
-const startLinkOrg = (search: SignInSearch): string | undefined => (search.start === "sso" && search.org && ORG_ID.test(search.org) ? search.org : undefined);
 
 export const Route = createFileRoute("/sign-in")({
   validateSearch: signInSearch,
-  beforeLoad: async ({ context, search }): Promise<{ signedInAs: string | null }> => {
+  beforeLoad: async ({ context, search }) => {
     const current = await context.queryClient.fetchQuery({ ...sessionQuery, staleTime: 0, retry: false }).then(
       (who) => who,
       () => null,
     );
-    if (!current) return { signedInAs: null };
+    if (!current) return;
     const failed = new URLSearchParams(window.location.hash.slice(1)).get("sso_error");
-    if (!failed && startLinkOrg(search)) return { signedInAs: current.user.email ?? current.user.name };
     const next = safeNext(search.next);
     throw redirect({ href: failed ? `${next}#sso_error=${encodeURIComponent(failed)}` : next, replace: true });
   },
@@ -46,32 +37,19 @@ export const Route = createFileRoute("/sign-in")({
 
 function SignIn() {
   const search = Route.useSearch({ select: signInSearch, structuralSharing: true });
-  const org = startLinkOrg(search);
   const done = search.done && Object.hasOwn(NOTICES, search.done) ? search.done : undefined;
   const [ssoError] = useState(() => takeFragment("sso_error"));
-  const [quiet] = useState(() => ssoError !== null || done === "signed-out");
   const queryClient = useQueryClient();
-  const signedInAs = Route.useRouteContext({ select: (c) => c.signedInAs });
-  const [page, setPage] = useState<SignInMethods | null | undefined>(() => queryClient.getQueryData(signInPageQuery(org).queryKey));
+  const [page, setPage] = useState<SignInMethods | null | undefined>(() => queryClient.getQueryData(signInMethodsQuery.queryKey));
   useEffect(() => {
     let current = true;
-    queryClient.fetchQuery(signInPageQuery(org)).then(
+    queryClient.fetchQuery(signInMethodsQuery).then(
       (methods) => current && setPage(methods),
       () => current && setPage(null),
     );
     return () => {
       current = false;
     };
-  }, [org, queryClient]);
-  return (
-    <SignInPage
-      next={search.next}
-      page={page}
-      ssoError={ssoError}
-      notice={done ? NOTICES[done]?.() : undefined}
-      quiet={quiet}
-      startLink={org !== undefined}
-      signedInAs={signedInAs}
-    />
-  );
+  }, [queryClient]);
+  return <SignInPage next={search.next} page={page} ssoError={ssoError} notice={done ? NOTICES[done]?.() : undefined} />;
 }

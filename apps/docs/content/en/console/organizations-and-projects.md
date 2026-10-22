@@ -41,12 +41,9 @@ Single sign-on lets members sign in through your OpenID Connect identity provide
 2. **Which app signs people in?** Enter its client id and client secret.
 3. **Which email domains sign in with it?** The sign-in page sends people with an address at these domains to your provider. Internationalized domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
 4. **Can people join without an invitation?** Choose **Invite only**, or the role that people new to Kaeso join with. That role can't be Owner.
-5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". **Start without a click** lets the organization's sign-in link go straight to your provider, and after someone enters an address at your verified domains, the sign-in page goes on to your provider without asking when it is their only way in. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
+5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". With **Start without a click**, after someone enters an address at your verified domains, the sign-in page goes on to your provider without showing its button when it is their only way in. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
 
-Once you connect, the page shows two addresses:
-
-- The **Redirect URL**: register it at your provider as the sign-in callback.
-- The **Sign-in link**, the organization's start link: with **Start without a click** on, it goes straight to your provider, so members don't type their address; otherwise it opens the sign-in page, which asks for the address first. Share it, for example on your intranet.
+Once you connect, the page shows the **Redirect URL**: register it at your provider as the sign-in callback. To send members to single sign-on from your intranet or a bookmark, link to your install's sign-in page, such as `https://kaeso.example.com/sign-in`; it asks for their address first ([the sign-in page](../self-hosting/sign-in.md#the-sign-in-page)).
 
 ### Verify your email domains
 

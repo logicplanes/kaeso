@@ -86,8 +86,8 @@ docker compose exec gateway kaeso openapi > openapi.json
 这样，其他网站既无法借用您的会话执行操作，也无法让您的浏览器登录到他们的账户。
 
 - 使用 API 密钥或平台密钥的请求不需要 `Origin`。
-- `GET`、`HEAD` 和 `OPTIONS` 从不需要它，`GET auth/methods` 和 `GET auth/oidc/start` 也不例外。
-- 调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送实例的源。若要从其他网站把人员送往身份提供商，请改为链接到 `GET auth/oidc/start`（[登录和单点登录](../self-hosting/sign-in.md#直接前往身份提供商的链接)）。
+- `GET`、`HEAD` 和 `OPTIONS` 从不需要它，`GET auth/methods` 也不例外。
+- 调用 `POST auth/methods`、`POST auth/password` 或 `POST auth/oidc/start` 的服务器需发送实例的源。若要从其他网站把人员送往单点登录，请链接到控制台的登录页，它会先询问地址（[登录和单点登录](../self-hosting/sign-in.md#登录页)）。
 
 ### 近期登录
 

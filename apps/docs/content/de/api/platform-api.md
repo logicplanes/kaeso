@@ -86,8 +86,8 @@ Eine Anfrage, die das Sitzungs-Cookie trägt und etwas ändert, muss `Origin` mi
 So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in ein eigenes Konto anmelden.
 
 - Anfragen mit einem API-Schlüssel oder einem Plattform-Schlüssel brauchen kein `Origin`.
-- `GET`, `HEAD` und `OPTIONS` brauchen es nie, auch nicht `GET auth/methods` und `GET auth/oidc/start`.
-- Ein Server, der `POST auth/methods`, `POST auth/password` oder `POST auth/oidc/start` aufruft, sendet den Origin der Installation. Um Personen von einer anderen Website zu einem Identitätsanbieter zu schicken, verlinken Sie stattdessen auf `GET auth/oidc/start` ([Anmeldung und Single Sign-on](../self-hosting/sign-in.md#links-die-direkt-zum-anbieter-führen)).
+- `GET`, `HEAD` und `OPTIONS` brauchen es nie, auch nicht `GET auth/methods`.
+- Ein Server, der `POST auth/methods`, `POST auth/password` oder `POST auth/oidc/start` aufruft, sendet den Origin der Installation. Um Personen von einer anderen Website zu Single Sign-on zu schicken, verlinken Sie die Anmeldeseite der Konsole, die zuerst nach ihrer Adresse fragt ([Anmeldung und Single Sign-on](../self-hosting/sign-in.md#die-anmeldeseite)).
 
 ### Kürzliche Anmeldung
 

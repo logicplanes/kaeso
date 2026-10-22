@@ -45,18 +45,14 @@ export function here(): string {
 export type SignInMethods = SignInMethodsView;
 export type SsoProvider = SsoProviderView;
 
-export const signInMethodsQuery = signInPageQuery();
-
-export function signInPageQuery(org?: string) {
-  return {
-    queryKey: ["auth", "methods", org ?? null] as const,
-    queryFn: async (): Promise<SignInMethods> => data(await api.GET("/platform/v1/auth/methods", org ? { params: { query: { org } } } : {})),
-    staleTime: 5 * 60_000,
-    retry: false,
-    retryOnMount: false,
-    networkMode: "always" as const,
-  };
-}
+export const signInMethodsQuery = {
+  queryKey: ["auth", "methods"] as const,
+  queryFn: async (): Promise<SignInMethods> => data(await api.GET("/platform/v1/auth/methods")),
+  staleTime: 5 * 60_000,
+  retry: false,
+  retryOnMount: false,
+  networkMode: "always" as const,
+};
 
 export async function signInMethodsFor(email: string): Promise<SignInMethods> {
   return data(await api.POST("/platform/v1/auth/methods", { body: { email } }));

@@ -42,9 +42,8 @@ pub fn secret_aad(org: OrgId) -> Vec<u8> {
 #[derive(Debug, Deserialize, ToSchema)]
 #[schema(description = "Which org to sign in to, and where to go afterwards.")]
 pub struct StartRequest {
-    #[doc = "The org, from `provider` in `GET auth/methods?org=…`: accepted while its\n\
-        connection has **Start without a click** on, or from a signed-in member\n\
-        of the org; otherwise send `email`."]
+    #[doc = "The org, only from a signed-in member of it, such as on the page that\n\
+        says the org requires single sign-on; otherwise send `email`."]
     pub org: Option<OrgId>,
     #[doc = "Or the user's email address, whose verified domain names the org."]
     #[schema(example = "ada@acme.example")]
@@ -53,15 +52,6 @@ pub struct StartRequest {
         another site, the Platform API or the model API. Without it, the\n\
         console's start page."]
     #[schema(example = "/settings/account")]
-    pub next: Option<String>,
-}
-
-#[derive(Debug, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct StartLink {
-    #[doc = "The org whose identity provider signs in."]
-    pub org: OrgId,
-    #[doc = "The console path to open once signed in, as in `POST auth/oidc/start`."]
     pub next: Option<String>,
 }
 
@@ -268,8 +258,8 @@ async fn begin(
     summary = "Starts SSO for an org: answers with the provider's URL and sets a cookie\n\
     that binds the flow to this browser.",
     description = "With `email`, the org whose verified domain the address is at. With `org`, \
-    only an org whose connection has Start without a click on, as its start link hands it to \
-    the sign-in page, or one the signed-in user is a member of; any other org answers 400.",
+    only an org the signed-in user is a member of; without a session, or for another org, it \
+    answers 400 and asks for `email`.",
     tag = "auth",
     request_body = StartRequest,
     responses((status = 200, body = StartResponse))
@@ -283,7 +273,7 @@ pub async fn start(
     let next = next::validate(&state.config.public_url, req.next.as_deref())?;
     let org = match (req.org, req.email) {
         (Some(org), None) => {
-            named_org(&state, &ctx, org).await?;
+            member_org(&state, &ctx, org).await?;
             org
         }
         (None, Some(email)) => {
@@ -306,73 +296,21 @@ pub async fn start(
         .into_response())
 }
 
-// Single sign-on belongs to the org of the person's verified email domain, so an org named
-// without an address is only offered where it chose a start link or the person is its member.
-async fn named_org(state: &AppState, ctx: &Ctx, org: OrgId) -> ApiResult<()> {
-    let connection = oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
-    if connection.auto_redirect {
-        return Ok(());
-    }
+// Single sign-on belongs to the org of the person's verified email domain. A named org would
+// let a link from another site sign a signed-out browser in to that org's account, so only a
+// signed-in member may name its own org.
+async fn member_org(state: &AppState, ctx: &Ctx, org: OrgId) -> ApiResult<()> {
     let member = match ctx.session() {
         Ok(current) => members::get_org(&state.pg, org.uuid(), current.user_id)
             .await?
             .is_some(),
         Err(_) => false,
     };
-    if member {
-        Ok(())
-    } else {
-        Err(ApiError::invalid("email", ENTER_EMAIL))
+    if !member {
+        return Err(ApiError::invalid("email", ENTER_EMAIL));
     }
-}
-
-#[utoipa::path(
-    get,
-    path = "/auth/oidc/start",
-    summary = "An org's start link: while its connection has Start without a click on, sends\n\
-    the browser to the console's sign-in page for the org\n\
-    (`/sign-in?next=…&org=…&start=sso`), which goes on to its identity provider;\n\
-    otherwise to the sign-in page (`/sign-in?next=…`), which asks for the address.\n\
-    On failure, to the sign-in page with an error code in `#sso_error=`.",
-    description = "For links from an intranet page or a bookmark. It begins no sign-in itself: \
-    the page starts one with `POST auth/oidc/start`, at once in a browser without a session, \
-    and only when the person chooses to in a browser that is signed in already. The callback \
-    never replaces another account's session, so a link planted on another site can neither \
-    sign that browser in to someone else's account nor end its session.",
-    tag = "auth",
-    params(StartLink),
-    responses((status = 303, description = "Redirect to the sign-in page, with `#sso_error=` on failure."))
-)]
-pub async fn start_link(
-    State(state): State<AppState>,
-    link: Result<Query<StartLink>, ApiError>,
-) -> Response {
-    let link = match link {
-        Ok(Query(link)) => link,
-        Err(e) => return refused(&state, &e, &Back::default(), false),
-    };
-    let page = async {
-        let next = next::validate(&state.config.public_url, link.next.as_deref())?;
-        let connection = oidc::get(&state.pg, link.org.uuid())
-            .await?
-            .ok_or_else(no_sso)?;
-        Ok((next, connection.auto_redirect))
-    };
-    match page.await {
-        Ok((next, true)) => {
-            let page = sign_in_location(&state, next.as_deref());
-            let joiner = if page.contains('?') { '&' } else { '?' };
-            redirect(&format!("{page}{joiner}org={}&start=sso", link.org))
-        }
-        Ok((next, false)) => redirect(&sign_in_location(&state, next.as_deref())),
-        Err(e) => {
-            let back = Back {
-                next: link.next,
-                to_page: false,
-            };
-            refused(&state, &e, &back, false)
-        }
-    }
+    oidc::get(&state.pg, org.uuid()).await?.ok_or_else(no_sso)?;
+    Ok(())
 }
 
 async fn provider(state: &AppState, org: OrgId, c: &oidc::Connection) -> ApiResult<Provider> {
@@ -451,12 +389,12 @@ fn sign_in_location(state: &AppState, next: Option<&str>) -> String {
     format!("{}sign-in{query}", state.config.public_url)
 }
 
-fn refused(state: &AppState, e: &ApiError, back: &Back, clear_binding: bool) -> Response {
+fn refused(state: &AppState, e: &ApiError, back: &Back) -> Response {
     metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "oidc", "reason" => e.kind())
         .increment(1);
     tracing::info!(error = %e, "SSO sign-in failed");
     let mut response = redirect(&failed_location(state, failure_code(e), back));
-    if clear_binding && let Ok(v) = binding_cookie(state, "", 0) {
+    if let Ok(v) = binding_cookie(state, "", 0) {
         response.headers_mut().append(header::SET_COOKIE, v);
     }
     response
@@ -502,7 +440,7 @@ pub async fn callback(
         Ok(Query(cb)) => answer(&state, &ctx, &headers, cb).await,
         Err(e) => (Back::default(), Err(e)),
     };
-    outcome.unwrap_or_else(|e| refused(&state, &e, &back, true))
+    outcome.unwrap_or_else(|e| refused(&state, &e, &back))
 }
 
 async fn answer(

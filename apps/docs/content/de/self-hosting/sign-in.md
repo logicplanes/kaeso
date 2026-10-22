@@ -12,7 +12,9 @@ Die Anmeldeseite fragt immer zuerst nach der E-Mail-Adresse. Dann bietet sie an,
 
 Auf dem Button steht **Weiter mit** und der Name, den der Admin dem Anbieter gegeben hat, ohne Namen **Weiter mit SSO**. Ist Single Sign-on der einzige Weg hinein für die Adresse und hat die Verbindung **Ohne Klick starten** eingeschaltet, geht die Seite gleich nach der Adresse zum Anbieter weiter, ohne den Button. Nach einer Abmeldung oder wenn der Anbieter eine Anmeldung abgelehnt hat, fragt die Seite erneut nach der Adresse und zeigt den Grund.
 
-Der einzige Weg zu Single Sign-on, ohne eine E-Mail-Adresse einzugeben, ist der eigene Startlink der Organisation, und nur solange ihre Verbindung **Ohne Klick starten** eingeschaltet hat ([Links, die direkt zum Anbieter führen](#links-die-direkt-zum-anbieter-führen)).
+Single Sign-on gibt es erst nach der Adresse: Kein Link startet es für eine Organisation, sodass ein Link auf einer anderen Website einen Browser nicht über einen Identitätsanbieter in das Konto einer anderen Person bringen kann. Für ein Lesezeichen oder eine Intranetseite verlinken Sie die Anmeldeseite, etwa `https://kaeso.example.com/sign-in`; mit **Ohne Klick starten** gehen Mitglieder zum Anbieter weiter, sobald sie ihre Adresse eingegeben haben.
+
+Single Sign-on ersetzt auch nie die Sitzung eines anderen Kontos. Kommt vom Anbieter ein anderes Konto zurück, während der Browser angemeldet ist, bleibt er angemeldet, und die Seite meldet `signed_in_as_other`; zum Wechseln melden Sie sich zuerst ab.
 
 Nach der Anmeldung kehren Personen zu der Konsolenseite zurück, die sie zuerst geöffnet hatten, auch über den Identitätsanbieter.
 
@@ -25,18 +27,6 @@ Ein Anbieter kann eine Person auch ohne Nachfrage mit einer eigenen, älteren Si
 Damit Single Sign-on eine kürzliche Anmeldung bestätigen kann, muss der Anbieter also in seinen ID-Tokens `auth_time` senden, den Zeitpunkt der Anmeldung. OpenID Connect verlangt das, sobald `max_age` gesendet wird, doch manche Anbieter senden es nie. Eine Antwort ohne `auth_time` wird mit `no_auth_time` abgelehnt, und Kaeso vermerkt an der Verbindung, dass der Anbieter nicht bestätigen kann. Bittet die Konsole dann um eine erneute Anmeldung, bietet sie diesen Anbieter nicht mehr an, sondern ein Passwort, einen Anmeldelink oder einen Link, um ein Passwort festzulegen.
 
 In einer Organisation, die Single Sign-on verlangt, bestätigt dort sonst nichts; ihre Mitglieder können Aktionen, die eine kürzliche Anmeldung verlangen, dann nicht ausführen. Die Seite **Sicherheit** der Organisation zeigt beide Fälle unter **Kürzliche Anmeldung**. Kaeso bietet den Anbieter wieder an, sobald eines seiner ID-Tokens `auth_time` enthält, und vergisst den Vermerk, wenn sich Issuer oder Client-ID ändern. Eine Anmeldung ohne `auth_time` vermerkt nichts, da Anbieter es weglassen dürfen, solange kein `max_age` gesendet wird.
-
-## Links, die direkt zum Anbieter führen
-
-Der Startlink einer Organisation, der **Anmeldelink** auf ihrer Seite **Sicherheit**, schickt einen Browser ohne Anmeldung direkt zum Identitätsanbieter, etwa für ein Lesezeichen oder eine Intranetseite:
-
-```text
-https://kaeso.example.com/platform/v1/auth/oidc/start?org=org_01J9ZKX3M7Q2V8R4T6Y0B1C5D&next=/settings/account
-```
-
-`org` nennt die Organisation, `next` die Konsolenseite, die sich danach öffnet. Solange die Verbindung der Organisation **Ohne Klick starten** eingeschaltet hat, öffnet der Link die Anmeldeseite der Organisation, die Organisation und Anbieter nennt und sofort zum Anbieter weitergeht. Ist es ausgeschaltet, öffnet der Link die Anmeldeseite, die zuerst nach der E-Mail-Adresse fragt und `next` behält.
-
-Ist der Browser schon bei Kaeso angemeldet, fragt die Seite zuerst: Sie nennt das angemeldete Konto und wartet auf einen Klick. Single Sign-on ersetzt nie die Sitzung eines anderen Kontos. Kommt vom Anbieter ein anderes Konto zurück, bleibt der Browser angemeldet, und die Seite meldet `signed_in_as_other`; zum Wechseln melden Sie sich zuerst ab. Ein auf einer anderen Website platzierter Link kann einen angemeldeten Browser also weder abmelden noch im Konto einer anderen Person anmelden.
 
 ## Wer sich über Single Sign-on anmeldet
 

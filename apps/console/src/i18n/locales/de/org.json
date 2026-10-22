@@ -348,7 +348,7 @@
   "org.sso.addressesAny": "Auch unbestätigte Adressen des Anbieters melden sich an.",
   "org.sso.addressesVerified": "Nur vom Anbieter als bestätigt markierte Adressen melden sich an.",
   "org.sso.autoRedirect": "Ohne Klick starten",
-  "org.sso.autoRedirectHint": "Der Anmeldelink führt direkt zum Anbieter, und nach der E-Mail-Adresse fragt Kaeso nicht noch einmal.",
+  "org.sso.autoRedirectHint": "Nach der E-Mail-Adresse führt die Anmeldung direkt zum Anbieter, wenn er der einzige Weg ist.",
   "org.sso.button": "Anmeldeschaltfläche",
   "org.sso.buttonName": "Name auf der Schaltfläche",
   "org.sso.buttonNameExample": "Acme ID",
@@ -368,7 +368,6 @@
   "org.sso.connected": "Identitätsanbieter verbunden",
   "org.sso.copyRecord": "TXT-Wert kopieren",
   "org.sso.copyRedirect": "Weiterleitungs-URL kopieren",
-  "org.sso.copySignInLink": "Anmeldelink kopieren",
   "org.sso.description": "Mitglieder melden sich über Ihren Identitätsanbieter an (OpenID Connect).",
   "org.sso.disconnect": "Trennen",
   "org.sso.disconnectConfirm": "Identitätsanbieter trennen?",
@@ -419,8 +418,6 @@
   "org.sso.requiredOff": "Single Sign-on ist nicht mehr Pflicht",
   "org.sso.requiredOn": "Single Sign-on ist jetzt Pflicht",
   "org.sso.saved": "Single Sign-on gespeichert",
-  "org.sso.signInLink": "Anmeldelink",
-  "org.sso.signInLinkHint": "Öffnet die Anmeldung, die zuerst nach der E-Mail-Adresse fragt.",
   "org.sso.signInStep": "Wie bietet die Anmeldeseite ihn an?",
   "org.sso.signInStepHint": "Der Name auf der Schaltfläche, und ob die Anmeldung ohne Klick beim Anbieter beginnt.",
   "org.sso.title": "Single Sign-on",
@@ -435,6 +432,5 @@
   "org.twoFactor.requireHint": "Verlangt einen Code bei der Anmeldung, außer über das eigene SSO.",
   "org.twoFactor.requiredOff": "Zwei-Faktor-Authentifizierung ist nicht mehr Pflicht",
   "org.twoFactor.requiredOn": "Zwei-Faktor-Authentifizierung ist jetzt Pflicht",
-  "org.wholeDays": "Ganze Tage eingeben, mindestens 1",
-  "org.sso.signInLinkStraight": "Führt direkt zum Anbieter, ohne nach der E-Mail-Adresse zu fragen."
+  "org.wholeDays": "Ganze Tage eingeben, mindestens 1"
 }

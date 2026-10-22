@@ -1,11 +1,8 @@
 import { Button, Input, Link, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
-import { useEffect, useRef, useState } from "react";
-import { toastApiError } from "~/api/toast-error";
-import { startSso, type SignInMethods, type SsoProvider } from "~/auth/sign-in-api";
+import type { SignInMethods, SsoProvider } from "~/auth/sign-in-api";
 import { PublicPage } from "~/shell/public-page";
-import { safeNext } from "~/auth/next";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 export { showSsoError } from "~/auth/sso-errors";
@@ -20,61 +17,6 @@ export async function requestSignUp(email: string): Promise<string> {
 
 function ssoLabel(provider: SsoProvider | null | undefined): string {
   return provider?.name ? t("signIn.ssoWith", "Continue with {provider}", { provider: provider.name }) : t("signIn.sso", "Continue with SSO");
-}
-
-function providerDescription(provider: SsoProvider, signedInAs: string | null): string {
-  if (signedInAs)
-    return t("signIn.providerSignedIn", "You're signed in as {current} here; to sign in to {org} as someone else, sign out first.", {
-      current: signedInAs,
-      org: provider.org_name,
-    });
-  return provider.name
-    ? t("signIn.providerFor", "{provider} signs you in to {org}.", { provider: provider.name, org: provider.org_name })
-    : t("signIn.ssoFor", "Single sign-on signs you in to {org}.", { org: provider.org_name });
-}
-
-export function ProviderStep({
-  provider,
-  next,
-  auto,
-  signedInAs,
-}: {
-  provider: SsoProvider;
-  next: string | undefined;
-  auto: boolean;
-  signedInAs: string | null;
-}) {
-  const [starting, setStarting] = useState(false);
-  const started = useRef(false);
-  const onStart = async () => {
-    setStarting(true);
-    try {
-      window.location.assign(await startSso({ org: provider.org, ...(next ? { next } : {}) }));
-    } catch (e) {
-      toastApiError(e);
-    } finally {
-      setStarting(false);
-    }
-  };
-  useEffect(() => {
-    if (!auto || started.current) return;
-    started.current = true;
-    void onStart();
-  });
-  return (
-    <PublicPage title={t("signIn.title", "Sign in")} description={providerDescription(provider, signedInAs)}>
-      <div className="flex flex-col gap-16">
-        <Button variant="primary" size="xl" fullWidth loading={starting} onClick={() => void onStart()} autoFocus>
-          {ssoLabel(provider)}
-        </Button>
-        {signedInAs && (
-          <Button size="xl" fullWidth href={safeNext(next)}>
-            {t("public.staySignedInAs", "Stay signed in as {email}", { email: signedInAs })}
-          </Button>
-        )}
-      </div>
-    </PublicPage>
-  );
 }
 
 export function MethodsStep({

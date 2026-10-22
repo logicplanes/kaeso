@@ -86,8 +86,8 @@ A request that carries the session cookie and changes something must send `Origi
 This keeps other sites from acting with your session, or from signing your browser in to an account of theirs.
 
 - Requests with an API key or a platform key need no `Origin`.
-- `GET`, `HEAD` and `OPTIONS` never need it, `GET auth/methods` and `GET auth/oidc/start` included.
-- A server that calls `POST auth/methods`, `POST auth/password` or `POST auth/oidc/start` sends the install's origin. To send people from another site to an identity provider, link to `GET auth/oidc/start` instead ([sign-in and single sign-on](../self-hosting/sign-in.md#links-that-go-straight-to-the-provider)).
+- `GET`, `HEAD` and `OPTIONS` never need it, `GET auth/methods` included.
+- A server that calls `POST auth/methods`, `POST auth/password` or `POST auth/oidc/start` sends the install's origin. To send people from another site to single sign-on, link to the console's sign-in page, which asks for their address first ([sign-in and single sign-on](../self-hosting/sign-in.md#the-sign-in-page)).
 
 ### Recent sign-in
 

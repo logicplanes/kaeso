@@ -112,7 +112,6 @@ export function sso(overrides: Partial<SsoView> = {}): SsoView {
     auto_redirect: false,
     require_email_verified: true,
     sends_auth_time: true,
-    sign_in_url: "https://console.northwind.test/platform/v1/auth/oidc/start?org=org_northwind",
     ...overrides,
   };
 }
