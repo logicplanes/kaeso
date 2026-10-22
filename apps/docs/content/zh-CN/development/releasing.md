@@ -121,6 +121,10 @@ GitHub 发布页显示该分节的简短版本：一句话、最多五个亮点�
 
 镜像以版本号作为标签；稳定版本还会打上 `MAJOR.MINOR` 和 `latest`，从 1.0.0 起还有 `MAJOR`。
 
+### 干净构建
+
+发布作业不会恢复任何可能由其他运行写入的缓存。镜像以 `no-cache` 构建，pnpm 和 Cargo 从空的存储开始。npm 软件包从不运行生命周期脚本的安装中打包。**crates.io build** 作业在没有发布令牌的情况下打包并编译 `kaeso-kpp` 和 `kaeso-codecs`。随后 **crates.io** 作业持有令牌，用 `cargo publish --no-verify` 上传它们，因此不会运行任何构建脚本。
+
 ### 提交与证明
 
 运行从 `prod` 的提交开始。版本需要变化时，Tag 作业会在其上提交 `Release X.Y.Z`，并把这个提交标记为 `vX.Y.Z`。这个版本提交只修改 `CHANGELOG.md` 和 `node scripts/version.mjs files` 列出的文件。提交之前，Tag 作业会检查除 `CHANGELOG.md` 外的这些修改，与 `node scripts/version.mjs set` 在单独作业中写出的内容完全相同。

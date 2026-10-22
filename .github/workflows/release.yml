@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
-          cache: pnpm
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Collect the pull requests merged since the latest release
         env:
@@ -132,7 +132,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
-          cache: pnpm
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
@@ -174,10 +174,6 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
-        with:
-          shared-key: openapi
-          save-if: false
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
         with:
           tool: cargo-edit
@@ -185,7 +181,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
-          cache: pnpm
+          package-manager-cache: false
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Set the version
         run: node scripts/version.mjs set "$VERSION"
@@ -259,16 +255,13 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
-        with:
-          shared-key: openapi
-          save-if: false
       - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
         with:
           tool: cargo-edit
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - name: Set the version apart from Prepare
         run: |
           set -euo pipefail
@@ -311,6 +304,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - name: Commit as github-actions[bot]
         run: |
           git config user.name "github-actions[bot]"
@@ -506,8 +500,7 @@ jobs:
           provenance: mode=max
           sbom: true
           outputs: type=image,name=ghcr.io/logicplanes/kaeso-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=release-${{ matrix.image }}-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=release-${{ matrix.image }}-${{ matrix.arch }}
+          no-cache: true
       - name: Keep the digest
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
@@ -643,8 +636,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm build:packages
       - run: pnpm --filter kaeso-showcase gen
       - run: node scripts/check-pack.mjs --out "$RUNNER_TEMP/pack" --version "$VERSION"
@@ -676,6 +669,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: npm-packages
@@ -695,17 +689,17 @@ jobs:
             echo "Published [$name@$VERSION](https://www.npmjs.com/package/$name/v/$VERSION) with the \`$channel\` tag." >> "$GITHUB_STEP_SUMMARY"
           done
 
-  crates:
-    name: crates.io
+  crates-verify:
+    name: crates.io build
     needs: [validate, tag]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    environment: release
     permissions:
       contents: read
-      id-token: write
     env:
       VERSION: ${{ needs.validate.outputs.version }}
+    outputs:
+      crates: ${{ steps.pending.outputs.crates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -727,18 +721,47 @@ jobs:
           echo "crates=${pending[*]}" >> "$GITHUB_OUTPUT"
       - if: steps.pending.outputs.crates != ''
         run: rustup toolchain install
-      - if: steps.pending.outputs.crates != ''
-        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
-        id: auth
-      - name: Publish kaeso-kpp and kaeso-codecs
+      - name: Package and build kaeso-kpp and kaeso-codecs as published
         if: steps.pending.outputs.crates != ''
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
           CRATES: ${{ steps.pending.outputs.crates }}
         run: |
           set -euo pipefail
+          packages=()
+          for crate in $CRATES; do packages+=(-p "$crate"); done
+          cargo publish --dry-run --locked "${packages[@]}"
+
+  crates:
+    name: crates.io
+    needs: [validate, crates-verify]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+          persist-credentials: false
+      - if: needs.crates-verify.outputs.crates != ''
+        run: rustup toolchain install
+      - if: needs.crates-verify.outputs.crates != ''
+        uses: rust-lang/crates-io-auth-action@c6f97d42243bad5fab37ca0427f495c86d5b1a18
+        id: auth
+      # --no-verify: build scripts run only in crates.io build, which holds no OIDC token.
+      - name: Publish kaeso-kpp and kaeso-codecs
+        if: needs.crates-verify.outputs.crates != ''
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CRATES: ${{ needs.crates-verify.outputs.crates }}
+        run: |
+          set -euo pipefail
           for crate in $CRATES; do
-            cargo publish --locked -p "$crate"
+            cargo publish --locked --no-verify -p "$crate"
             echo "Published [$crate $VERSION](https://crates.io/crates/$crate/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
           done
 
@@ -762,6 +785,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: published-*
@@ -843,6 +867,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
+          package-manager-cache: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: release-manifest

@@ -121,6 +121,10 @@ Ein Release veröffentlicht:
 
 Images bekommen die Version als Tag und bei stabilen Releases außerdem `MAJOR.MINOR`, `latest` und ab 1.0.0 `MAJOR`.
 
+### Saubere Builds
+
+Release-Jobs stellen keinen Cache wieder her, den ein anderer Lauf geschrieben haben könnte. Die Images bauen mit `no-cache`, pnpm und Cargo beginnen mit einem leeren Speicher. Die npm-Pakete werden aus einer Installation ohne Lifecycle-Skripte gepackt. Der Job **crates.io build** packt und kompiliert `kaeso-kpp` und `kaeso-codecs` ohne Veröffentlichungstoken. Erst der Job **crates.io** hält das Token und lädt sie mit `cargo publish --no-verify` hoch, sodass er kein Build-Skript ausführt.
+
 ### Commits und Attestierungen
 
 Der Lauf beginnt auf dem Commit von `prod`. Ändert sich die Version, committet der Job Tag darauf `Release X.Y.Z` und taggt diesen Commit als `vX.Y.Z`. Der Release-Commit ändert nur `CHANGELOG.md` und die Dateien, die `node scripts/version.mjs files` auflistet. Vor dem Commit prüft der Job Tag, dass diese Änderungen außer `CHANGELOG.md` dem entsprechen, was `node scripts/version.mjs set` in einem eigenen Job schreibt.

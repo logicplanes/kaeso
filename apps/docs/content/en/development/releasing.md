@@ -121,6 +121,10 @@ A release publishes:
 
 Images are tagged with the version and, for stable releases, with `MAJOR.MINOR`, `latest` and, from 1.0.0 on, `MAJOR`.
 
+### Clean builds
+
+Release jobs restore no cache that another run could have written. The images build with `no-cache`, and pnpm and Cargo start from an empty store. The npm packages are packed from an install without lifecycle scripts. The **crates.io build** job packages and compiles `kaeso-kpp` and `kaeso-codecs` without a publishing token. The **crates.io** job then holds the token and uploads them with `cargo publish --no-verify`, so it runs no build script.
+
 ### Commits and attestations
 
 The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it and tags that commit `vX.Y.Z`. The release commit changes only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists. Before it commits, the Tag job checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own.
