@@ -52,7 +52,10 @@ Every line of the notes, from the model or from a title, passes these checks:
 
 - No addresses: no URLs, email addresses or IP addresses.
 - No host names but `kaeso.app` and its subdomains, `github.com/logicplanes/kaeso` and Kaeso's images on `ghcr.io/logicplanes`. `crates.io` and `models.dev` may appear without a path. A name ending in a common top-level domain, such as `.com` or `.example`, counts as a host name, in code spans too.
-- No shell pipelines such as `| sh`, and no download commands such as `curl -fsSL` or `wget`.
+- No image references outside `ghcr.io/logicplanes/`, such as `caddy:2.11.7-alpine` or `example/kaeso-gateway@sha256:…`.
+- No shell pipelines such as `| sh` or `curl … | jq`, and no download commands such as `curl -fsSL` or `wget`.
+- No commands that pull, install or run something: `docker run`, `docker pull`, `npx`, `pnpm dlx`, `npm install`, `npm i` or `pip install`.
+- No instructions to set an environment variable, such as `set KAESO_…`, `export KAESO_…` or `KAESO_…=…`. Naming a setting is fine.
 
 A draft that still fails after one correction falls back to the titles. A title that fails stops the **Prepare** job and names the pull request. Write a line for it under `[Unreleased]` on `dev`, linking the pull request, and run Release again.
 

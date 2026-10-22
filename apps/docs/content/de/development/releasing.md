@@ -52,7 +52,10 @@ Jede Zeile der Notizen, vom Modell oder aus einem Titel, besteht diese Prüfunge
 
 - Keine Adressen: keine URLs, E-Mail-Adressen oder IP-Adressen.
 - Keine Hostnamen außer `kaeso.app` und seinen Subdomains, `github.com/logicplanes/kaeso` und Kaesos Images unter `ghcr.io/logicplanes`. `crates.io` und `models.dev` dürfen ohne Pfad vorkommen. Ein Name, der auf eine gängige Top-Level-Domain wie `.com` oder `.example` endet, zählt als Hostname, auch in Code-Spans.
-- Keine Shell-Pipelines wie `| sh` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
+- Keine Image-Referenzen außerhalb von `ghcr.io/logicplanes/`, etwa `caddy:2.11.7-alpine` oder `example/kaeso-gateway@sha256:…`.
+- Keine Shell-Pipelines wie `| sh` oder `curl … | jq` und keine Download-Befehle wie `curl -fsSL` oder `wget`.
+- Keine Befehle, die etwas laden, installieren oder ausführen: `docker run`, `docker pull`, `npx`, `pnpm dlx`, `npm install`, `npm i` oder `pip install`.
+- Keine Anweisungen, eine Umgebungsvariable zu setzen, etwa `set KAESO_…`, `export KAESO_…` oder `KAESO_…=…`. Eine Einstellung zu nennen ist erlaubt.
 
 Ein Entwurf, der nach einer Korrektur noch scheitert, fällt auf die Titel zurück. Ein Titel, der scheitert, hält den Job **Prepare** an und nennt den Pull Request. Schreiben Sie dafür eine Zeile unter `[Unreleased]` auf `dev`, die den Pull Request verlinkt, und starten Sie Release erneut.
 

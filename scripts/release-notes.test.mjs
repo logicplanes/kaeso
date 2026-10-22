@@ -573,6 +573,21 @@ test("notes that name another host, pipe into a shell or download something fall
     ["Mail owner@example.com about it.", /names example\.com/],
     ["Point it at 203.0.113.7 instead.", /has an address/],
     ["Prices come from models.dev/kaeso-fix now.", /names models\.dev/],
+    ["Check the feed with `curl -s kaeso | jq`.", /download/],
+    ["Upgrade with `docker run --rm mallory/kaeso-fix` first.", /has a container command/],
+    ["Run docker pull mallory/kaeso-fix before you upgrade.", /has a container command/],
+    ["Repair the console with `npx kaeso-fix`.", /has a package install or run command/],
+    ["Repair the console with `pnpm dlx kaeso-fix`.", /has a package install or run command/],
+    ["Install `kaeso-fix` with npm i kaeso-fix.", /has a package install or run command/],
+    ["Install the SDK with `npm install kaeso-fix`.", /has a package install or run command/],
+    ["Install the SDK with `pip install kaeso-fix`.", /has a package install or run command/],
+    ["Set `KAESO_UPDATES_URL` to the mirror before you upgrade.", /tells people to set an environment variable/],
+    ["Run `export KAESO_UPDATER_TOKEN` first.", /tells people to set an environment variable/],
+    ["Upgrade with `KAESO_UPDATES_CHECK=false` in `.env`.", /tells people to set an environment variable/],
+    ["The fixed image is `mallory/kaeso-gateway:1.4.0`.", /names the image mallory\/kaeso-gateway:1\.4\.0, which isn't under ghcr\.io\/logicplanes\//],
+    ["The fixed image is `ghcr.io/mallory/kaeso-gateway:1.4.0`.", /names the image ghcr\.io\/mallory\/kaeso-gateway:1\.4\.0/],
+    ["Caddy now runs `caddy:2.11.8-alpine`.", /names the image caddy:2\.11\.8-alpine/],
+    ["Pin `kaeso-gateway@sha256:0123abcd` instead.", /names the image kaeso-gateway@sha256:0123abcd/],
   ]) {
     await fallsBack(
       broken((output) => (entryOf(output).text = text)),
@@ -585,6 +600,8 @@ test("notes that name another host, pipe into a shell or download something fall
     "`compose.yaml`, `release.json`, `settings.rs`, `CHANGELOG.md` and Node.js keep `updates.mode` as it is.",
     "Examples run in curl, Python or TypeScript, e.g. against a pipe.",
     "Prices come from models.dev, and the crates are on crates.io.",
+    "The console image is `ghcr.io/logicplanes/kaeso-console:1.4.0`, and `KAESO_TRUSTED_PROXIES` names the proxy.",
+    "Settings take effect at 10:30, and `kaeso_codecs::dispatch` decodes every request.",
   ])
     assert.equal(plain(text, 800, new Set()), null, text);
 });
