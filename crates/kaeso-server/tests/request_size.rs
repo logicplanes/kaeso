@@ -126,9 +126,9 @@ async fn the_model_api_takes_bodies_up_to_8_mib_by_default() {
 
 #[tokio::test]
 async fn a_request_returns_its_translation_memory_before_the_provider_answers() {
-    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "48KiB")])).await;
+    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "128KiB")])).await;
     let state = &env.app.state;
-    assert_eq!(state.translating.free(), 48 << 10);
+    assert_eq!(state.translating.free(), 128 << 10);
     let mut gate = env.mock.gate();
     let mut held = messages("claude-haiku-4-5", &format!("Long {}", gate.marker()));
     held["stream"] = json!(true);
@@ -137,8 +137,8 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
         gate.wait_for(1).await;
         assert_eq!(
             state.translating.free(),
-            47 << 10,
-            "the open call keeps only its decoded request"
+            121 << 10,
+            "the open call keeps only its decoded request: its content, one message and one block"
         );
         let next = call(
             &env,
@@ -158,7 +158,7 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
     state.in_flight.settled().await;
     assert_eq!(
         (state.translating.free(), state.translating.waiting()),
-        (48 << 10, 0)
+        (128 << 10, 0)
     );
 }
 
@@ -237,13 +237,13 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     }
     assert_eq!(
         total - budget.free(),
-        13 << 10,
-        "each open stream keeps 1 KiB for its decoded request, not its padding"
+        13 * (7 << 10),
+        "each open stream keeps 7 KiB for its decoded request, one message and one block, not its padding"
     );
     assert_eq!(content_logging(true).await.status, StatusCode::OK);
     streams.push(open().await);
     assert!(
-        total - budget.free() >= (13 << 10) + body.len() as u64,
+        total - budget.free() >= 13 * (7 << 10) + body.len() as u64,
         "a body kept for its log is counted until it is logged"
     );
     let (victim, _) = new_key(&env, "victim").await;
@@ -258,6 +258,69 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     assert_eq!(answered.status, StatusCode::OK, "{}", answered.text());
     assert_eq!(budget.waiting(), 0);
     drop(streams);
+}
+
+async fn open_stalled_chat(env: &common::v1::Env, body: Vec<u8>) -> axum::response::Response {
+    let settings = format!(
+        "/orgs/{}/projects/{}/logs/settings",
+        env.owner.org_id, env.project
+    );
+    let off = json!({ "content_logging": false });
+    let r = env
+        .app
+        .call(Method::PATCH, &settings, Some(off), Some(&env.owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::OK);
+    let r = env
+        .app
+        .router
+        .clone()
+        .oneshot(post("/v1/chat/completions", &env.key, body))
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::OK);
+    r
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_tool_schema_padded_with_whitespace_keeps_memory_for_its_padding() {
+    let env = common::v1::env(None, None).await;
+    let budget = &env.app.state.translating;
+    let total = env.app.state.config.body_limits.in_flight.0;
+    let padding: usize = 1 << 20;
+    let body = format!(
+        r#"{{"model":"gpt-4o","stream":true,"messages":[{{"role":"user","content":"[mock:stall]"}}],"tools":[{{"type":"function","function":{{"name":"lookup","parameters":{{"type":"object"{}}}}}}}]}}"#,
+        " ".repeat(padding)
+    );
+    let stream = open_stalled_chat(&env, body.into_bytes()).await;
+    let held = total - budget.free();
+    assert!(
+        (padding as u64..padding as u64 + (16 << 10)).contains(&held),
+        "the schema keeps its padding in the decoded request, so the open stream keeps memory for it: {held} bytes"
+    );
+    drop(stream);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn many_tiny_messages_keep_their_structure_while_the_provider_answers() {
+    let env = common::v1::env(None, None).await;
+    let budget = &env.app.state.translating;
+    let total = env.app.state.config.body_limits.in_flight.0;
+    let mut said: Vec<Value> = (0..2_000)
+        .map(|_| json!({ "role": "user", "content": "a" }))
+        .collect();
+    said.push(json!({ "role": "user", "content": "[mock:stall]" }));
+    let body = serde_json::to_vec(&json!({ "model": "gpt-4o", "stream": true, "messages": said }))
+        .unwrap();
+    let structure = 2_001 * (6 << 10);
+    let content = body.len() as u64;
+    let stream = open_stalled_chat(&env, body).await;
+    let held = total - budget.free();
+    assert!(
+        (structure..structure + content + (1 << 10)).contains(&held),
+        "2,001 messages of one block each keep 6 KiB apiece besides their content: {held} bytes"
+    );
+    drop(stream);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

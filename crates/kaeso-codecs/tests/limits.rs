@@ -5,7 +5,7 @@ use kaeso_codecs::limits::{
     request_shape,
 };
 use kaeso_codecs::{HeaderList, dispatch};
-use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, Request, RequestKind, ToolDef};
 
 const A: DialectId = DialectId::AnthropicMessages;
 const C: DialectId = DialectId::OpenAiChat;
@@ -37,6 +37,43 @@ fn the_bytes_left_without_whitespace_between_tokens_are_counted() {
         let s = request_shape(R, body.as_bytes()).unwrap();
         assert_eq!(s.bytes, tight.len(), "{body}");
     }
+}
+
+#[test]
+fn whitespace_inside_a_value_kept_raw_is_counted() {
+    let p = " ".repeat(1 << 20);
+    let tight = r#"{"model":"m","messages":[{"role":"user","content":"hi"}],"tools":[{"type":"function","function":{"name":"f","parameters":{"type":"object"}}}]}"#;
+    let schema = format!(r#"{{{p}"type"{p}:{p}"object"{p}}}"#);
+    let padded = tight.replace(r#"{"type":"object"}"#, &schema);
+    assert_eq!(
+        request_shape(C, padded.as_bytes()).unwrap().bytes,
+        tight.len() + 4 * p.len()
+    );
+    let Request::Generate(decoded) = dispatch::decode_request(
+        C,
+        RequestKind::Generate,
+        padded.as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!("a generate request");
+    };
+    let [ToolDef::Function(tool)] = decoded.tools.as_slice() else {
+        panic!("one function tool");
+    };
+    assert_eq!(
+        tool.parameters.as_ref().unwrap().get(),
+        schema,
+        "the decoded request keeps the padding, so the count does too"
+    );
+    let between = format!(
+        r#"{{{p}"model":"m",{p}"messages":[{p}{{"role":{p}"user","content":"hi"}}{p}],{p}"tools":[{p}{{"type":"function","function":{{"name":"f","parameters":{{"type":"object"}}}}}}{p}]{p}}}"#
+    );
+    assert_eq!(
+        request_shape(C, between.as_bytes()).unwrap().bytes,
+        tight.len(),
+        "whitespace that decoding drops is not counted"
+    );
 }
 
 fn refused(dialect: DialectId, body: &str) -> KppError {

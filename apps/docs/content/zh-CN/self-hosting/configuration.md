@@ -204,7 +204,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量 | TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- | --- |
 | `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | 文本 | `8MiB` | 模型 API 请求体的上限。它能容纳一张达到 Anthropic 5 MB 上限、以 base64 编码的图片；处理大型 PDF 时请调高。 |
-| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据去掉空白后的每个请求体及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`。 |
+| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据每个请求体（不含解码时丢弃的空白）及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求及其消息、内容块和工具，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`。 |
 | `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限，包括 Playground 请求。 |
 | `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |
 

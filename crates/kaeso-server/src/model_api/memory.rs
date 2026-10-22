@@ -22,18 +22,30 @@ pub const WAIT: Duration = Duration::from_secs(10);
 
 const SHARES_PER_BUDGET: u32 = 4;
 
+fn count(n: usize) -> u64 {
+    u64::try_from(n).unwrap_or(u64::MAX)
+}
+
+fn structure(shape: &RequestShape) -> u64 {
+    count(shape.items)
+        .saturating_mul(PER_ITEM)
+        .saturating_add(count(shape.blocks).saturating_mul(PER_BLOCK))
+        .saturating_add(count(shape.tools).saturating_mul(PER_TOOL))
+}
+
 pub fn estimate(kind: RequestKind, shape: &RequestShape) -> u64 {
     let per_byte = if kind == RequestKind::Embed {
         PER_EMBEDDING_BODY_BYTE
     } else {
         PER_BODY_BYTE
     };
-    let count = |n: usize| u64::try_from(n).unwrap_or(u64::MAX);
     count(shape.bytes)
         .saturating_mul(per_byte)
-        .saturating_add(count(shape.items).saturating_mul(PER_ITEM))
-        .saturating_add(count(shape.blocks).saturating_mul(PER_BLOCK))
-        .saturating_add(count(shape.tools).saturating_mul(PER_TOOL))
+        .saturating_add(structure(shape))
+}
+
+pub fn decoded(shape: &RequestShape) -> u64 {
+    count(shape.bytes).saturating_add(structure(shape))
 }
 
 type Holders = Arc<Mutex<HashMap<Uuid, Arc<Semaphore>>>>;
@@ -179,6 +191,15 @@ mod tests {
             estimate(RequestKind::Generate, &shape(usize::MAX, usize::MAX, 0, 0)),
             u64::MAX
         );
+    }
+
+    #[test]
+    fn a_decoded_request_keeps_its_content_and_every_counted_structure() {
+        assert_eq!(
+            decoded(&shape(1000, 2, 3, 1)),
+            1000 + 2 * 4096 + 3 * 2048 + 1024
+        );
+        assert_eq!(decoded(&shape(usize::MAX, 1, 0, 0)), u64::MAX);
     }
 
     #[test]

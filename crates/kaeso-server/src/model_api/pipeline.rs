@@ -518,7 +518,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     // Held for the whole call, after the translation's share is returned: the app's
     // decoded request, kept to encode the reply, and the raw body until it is logged.
     let logged = if keep_content { request_bytes } else { 0 };
-    let retained = u64::try_from(shape.bytes.saturating_add(logged)).unwrap_or(u64::MAX);
+    let retained =
+        super::memory::decoded(&shape).saturating_add(u64::try_from(logged).unwrap_or(u64::MAX));
     rec.held = Some(
         state
             .translating

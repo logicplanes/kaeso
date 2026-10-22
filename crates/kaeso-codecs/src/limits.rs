@@ -2,7 +2,8 @@ use std::borrow::Cow;
 use std::fmt;
 
 use kaeso_kpp::{DialectId, KppError};
-use serde::de::{DeserializeSeed, IgnoredAny, MapAccess, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde_json::value::RawValue;
 
 /// The most messages (Anthropic Messages, OpenAI Chat Completions) or input items
 /// (OpenAI Responses) one request may hold: Anthropic's documented limit per request.
@@ -32,8 +33,10 @@ pub struct RequestShape {
     pub blocks: usize,
     /// Tool definitions.
     pub tools: usize,
-    /// Bytes of the body without the whitespace between its tokens: the most its
-    /// decoded values can hold.
+    /// Bytes of the body without the whitespace between the tokens of the request
+    /// object, its messages, items or inputs, their content blocks and the list of
+    /// tools: the most its decoded values can hold. Whitespace inside any other value
+    /// counts, since a value kept raw, such as a tool's parameters, keeps it.
     pub bytes: usize,
 }
 
@@ -205,7 +208,7 @@ impl<'de> Visitor<'de> for Walk<'_> {
             }
             let more = match element {
                 Some(node) => seq.next_element_seed(self.at(node))?.is_some(),
-                None => seq.next_element::<IgnoredAny>()?.is_some(),
+                None => seq.next_element_seed(Opaque(&mut *self.tally))?.is_some(),
             };
             if !more {
                 return Ok(());
@@ -228,13 +231,39 @@ impl<'de> Visitor<'de> for Walk<'_> {
                     }
                     map.next_value_seed(self.at(node))?;
                 }
-                None => {
-                    map.next_value::<IgnoredAny>()?;
-                }
+                None => map.next_value_seed(Opaque(&mut *self.tally))?,
             }
         }
         Ok(())
     }
+}
+
+struct Opaque<'t>(&'t mut Tally);
+
+impl<'de> DeserializeSeed<'de> for Opaque<'_> {
+    type Value = ();
+
+    fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
+        let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
+        self.0.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+        Ok(())
+    }
+}
+
+fn whitespace_outside_strings(json: &[u8]) -> usize {
+    let mut whitespace = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for &byte in json {
+        match byte {
+            _ if escaped => escaped = false,
+            b'\\' if in_string => escaped = true,
+            b'"' => in_string = !in_string,
+            _ if !in_string && byte.is_ascii_whitespace() => whitespace += 1,
+            _ => {}
+        }
+    }
+    whitespace
 }
 
 fn refusal(dialect: DialectId, over: Over) -> KppError {
