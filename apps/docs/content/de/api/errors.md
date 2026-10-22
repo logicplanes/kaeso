@@ -163,7 +163,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 401 | Das Mitglied oder Dienstkonto des Schlüssels ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar. |
 | 403 | Der Schlüssel hat nur Plattformzugriff, oder es ist ein Plattform-Schlüssel. Beide rufen keine Modelle auf. |
 | 403 | Dem Mitglied oder Dienstkonto des Schlüssels fehlt das Recht `api.request`. |
-| 403 | Ein Ausgabenbudget gilt, und die Anfrage nutzt eine Funktion, die der Anbieter über Tokens hinaus abrechnet, etwa ein Werkzeug des Anbieters oder `service_tier: priority` ([Limits und Budgets](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)). |
+| 403 | Ein Ausgabenbudget gilt, und die Anfrage nutzt eine Funktion, die der Anbieter über Tokens hinaus abrechnet, etwa ein Werkzeug des Anbieters oder `service_tier: priority`, oder ein Modell ohne Preis ([Limits und Budgets](../console/limits-and-budgets.md#funktionen-die-ein-ausgabenbudget-nicht-bepreisen-kann)). |
 | 404 | Das Modell steht nicht im Katalog des Projekts, der Schlüssel oder sein Mitglied darf es nicht verwenden, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. Ein Modell, das der Schlüssel nicht verwenden darf, antwortet wie eines, das es nicht gibt, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
