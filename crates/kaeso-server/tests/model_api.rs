@@ -279,11 +279,10 @@ async fn errors_arrive_in_the_apps_format() {
     )
     .await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
-    assert!(
-        r.json()["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("catalogue")
+    let unknown = r.json();
+    assert_eq!(
+        unknown["error"]["message"],
+        "The model `claude-opus-4-6` does not exist or this key may not use it."
     );
     let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
     let models = env
@@ -314,12 +313,31 @@ async fn errors_arrive_in_the_apps_format() {
         Some(messages("claude-haiku-4-5", "x")),
     )
     .await;
-    assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.text());
-    assert!(
-        r.json()["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("key's model list")
+    assert_eq!(
+        r.status,
+        StatusCode::NOT_FOUND,
+        "a known model the key may not use answers like an unknown one: {}",
+        r.text()
+    );
+    let disallowed = r.json();
+    assert_eq!(
+        disallowed["error"]["message"],
+        "The model `claude-haiku-4-5` does not exist or this key may not use it."
+    );
+    assert_eq!(disallowed["error"]["type"], unknown["error"]["type"]);
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(narrow_key),
+        true,
+        Some(messages("claude-opus-4-6", "x")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND);
+    assert_eq!(
+        r.json()["error"],
+        unknown["error"],
+        "the narrow key sees the same"
     );
     let before = env.mock.received().len();
     let mut body = messages("gpt-4o", "x");
@@ -1045,7 +1063,7 @@ async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_i
         Some(chat("gpt-4o", "x")),
     )
     .await;
-    assert_eq!(r.status, StatusCode::FORBIDDEN, "{}", r.text());
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
     let r = call(&env, "/v1/models", Some(narrow_key), false, None).await;
     let listed = r.json();
     let listed: Vec<&str> = listed["data"]

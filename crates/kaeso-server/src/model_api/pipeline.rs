@@ -9,7 +9,7 @@ use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::continuity::reasoning_for_tool_calls;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_core::catalogue::resolve::{ResolveError, access_message};
+use kaeso_core::catalogue::resolve::ResolveError;
 use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
@@ -428,6 +428,17 @@ where
     })
 }
 
+// A model the key may not use answers like one that doesn't exist, so a restricted key
+// can't list the project's catalogue by trying names.
+fn no_such_model(model: &str) -> KppError {
+    error(
+        ErrorKind::NotFound,
+        404,
+        format!("The model `{model}` does not exist or this key may not use it."),
+    )
+    .with_param("model")
+}
+
 fn translating_busy() -> KppError {
     error(
         ErrorKind::Overloaded,
@@ -566,26 +577,20 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .catalogue
         .resolve(req.model())
         .map_err(|e| match &e {
-            ResolveError::NotInCatalogue(name) => Failure::new(
-                error(ErrorKind::NotFound, 404, e.to_string()).with_param("model"),
-                Stage::UnknownModel(name.clone()),
-            ),
+            ResolveError::NotInCatalogue(name) => {
+                Failure::new(no_such_model(name), Stage::UnknownModel(name.clone()))
+            }
             ResolveError::Ambiguous { name, .. } => Failure::new(
                 error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model"),
                 Stage::AmbiguousModel(name.clone()),
             ),
         })?;
-    if let Err(level) = models
+    if !models
         .access(caller.key_id, caller.user_id, caller.service_account_id)
-        .check(entry.id)
+        .allows(entry.id)
     {
         return Err(Failure::new(
-            error(
-                ErrorKind::PermissionDenied,
-                403,
-                access_message(req.model(), level),
-            )
-            .with_param("model"),
+            no_such_model(req.model()),
             Stage::ModelAccess(req.model().to_owned()),
         ));
     }

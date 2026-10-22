@@ -432,6 +432,50 @@ fn a_provider_prefix_wins_over_a_native_id_that_reads_the_same() {
 }
 
 #[test]
+fn every_name_form_of_a_model_a_key_may_not_use_resolves_to_it_or_to_nothing() {
+    let allowed = entry("openai", "gpt-4o-mini");
+    let forbidden = entry("openai", "gpt-4o");
+    let routed = entry("openrouter", "openai/gpt-4o");
+    let cat = Catalogue::new(
+        vec![allowed.clone(), forbidden.clone(), routed.clone()],
+        vec![
+            Alias {
+                name: "cheap".into(),
+                target: allowed.id,
+            },
+            Alias {
+                name: "gpt-4o-mini-x".into(),
+                target: forbidden.id,
+            },
+        ],
+    );
+    let key: BTreeSet<Uuid> = [allowed.id].into();
+    let access = Access {
+        member: None,
+        key: Some(&key),
+    };
+    for name in [
+        "gpt-4o",
+        "openai/gpt-4o",
+        "openrouter/openai/gpt-4o",
+        "gpt-4o-mini-x",
+        "GPT-4O",
+        "openai/GPT-4o",
+        "gpt\u{2010}4o",
+        "gpt-4o\u{200b}",
+        " gpt-4o",
+        "openai//gpt-4o",
+        "openai/gpt-4o/",
+    ] {
+        if let Ok((e, _)) = cat.resolve(name) {
+            assert_ne!(e.id, allowed.id, "{name} resolved to the allowed model");
+            assert_eq!(access.check(e.id), Err(AccessLevel::Key), "{name} passed");
+        }
+    }
+    assert!(access.allows(cat.resolve("cheap").unwrap().0.id));
+}
+
+#[test]
 fn access_lists_narrow_level_by_level() {
     let (a, b, c) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
     let all = Access::default();

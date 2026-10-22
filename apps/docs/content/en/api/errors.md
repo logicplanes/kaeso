@@ -49,7 +49,7 @@ Chat Completions, Responses and Embeddings share one error body:
 ```json
 {
   "error": {
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models.",
+    "message": "The model `gpt-9` does not exist or this key may not use it.",
     "type": "invalid_request_error",
     "param": "model",
     "code": null
@@ -126,7 +126,7 @@ The error body carries the request's id in `request_id`, also when the error com
   "type": "error",
   "error": {
     "type": "not_found_error",
-    "message": "The model `gpt-9` is not in this project's model catalogue. A project admin can add it under the project's models."
+    "message": "The model `gpt-9` does not exist or this key may not use it."
   },
   "request_id": "req_…"
 }
@@ -162,9 +162,9 @@ The message names the cause and what to do. These are the causes behind each sta
 | 401 | The key is missing, unknown, disabled, archived or expired. |
 | 401 | The key's member or service account is no longer active, or its project or organization can't be used. |
 | 403 | The key has platform access only, or it is a platform key. Neither calls models. |
-| 403 | The key's member or service account lacks the right `api.request`, or may not use this model. |
+| 403 | The key's member or service account lacks the right `api.request`. |
 | 403 | A spend budget applies, and the request uses a feature the provider bills beyond tokens, such as a provider-run tool or `service_tier: priority` ([limits and budgets](../console/limits-and-budgets.md#features-a-spend-budget-cant-price)). |
-| 404 | The model isn't in the project's catalogue, or the provider doesn't serve it to the project's provider key. |
+| 404 | The model isn't in the project's catalogue, the key or its member may not use it, or the provider doesn't serve it to the project's provider key. A model the key may not use answers like one that doesn't exist, so a key can't learn which other models the project has. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |
 | 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. |

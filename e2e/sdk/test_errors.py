@@ -21,9 +21,9 @@ def test_authentication(install):
 
 def test_permission(install):
     narrow = anthropic.Anthropic(base_url=install.url, api_key=install.narrow_key, max_retries=0)
-    with pytest.raises(anthropic.PermissionDeniedError) as e:
+    with pytest.raises(anthropic.NotFoundError) as e:
         narrow.messages.create(model="claude-haiku-4-5", max_tokens=10, messages=user("x"))
-    assert "key's model list" in str(e.value)
+    assert "does not exist or this key may not use it" in str(e.value)
     platform = openai.OpenAI(base_url=f"{install.url}/v1", api_key=install.platform_key, max_retries=0)
     with pytest.raises(openai.PermissionDeniedError):
         platform.chat.completions.create(model="gpt-4o", messages=user("x"))
