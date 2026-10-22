@@ -43,6 +43,7 @@ const messages = (): Rule[] => [
   rule("errors.otherSignIn", () => t("errors.otherSignIn", "You signed in with SSO; sign in with your password or a sign-in link to do this.")),
   rule("errors.ssoSessionOnly", () => t("errors.ssoSessionOnly", "Only a console session can change SSO; API keys can't.")),
   rule("errors.ssoOnly", () => t("errors.ssoOnly", "Your organization requires single sign-on; continue with its identity provider.")),
+  rule("errors.managedAddress", () => t("errors.managedAddress", "Your organization manages this address; change it at its identity provider.")),
   rule("errors.adminSsoNoConnection", () => t("errors.adminSsoNoConnection", "This organization has no SSO connection; connect one first.")),
   rule("errors.orgRequires2fa", () => t("errors.orgRequires2fa", "This organization requires two-factor authentication; set it up, then sign in again.")),
   rule("errors.orgReadOnly", () => t("errors.orgReadOnly", "This organization is scheduled for deletion; nothing in it can be changed.")),

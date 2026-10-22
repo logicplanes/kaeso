@@ -119,6 +119,10 @@ function NameRow({ name }: { name: string }) {
 function EmailRow({ email, twoFactor }: { email: string; twoFactor: boolean }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  if (useSession().managed_by)
+    return (
+      <SettingsRow title={t("common.email", "Email")} description={t("account.emailManaged", "{email}; change it at your identity provider.", { email })} />
+    );
   return (
     <>
       <SettingsRow

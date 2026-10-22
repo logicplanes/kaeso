@@ -34,6 +34,14 @@ describe("profile page", () => {
     expect(screen.getByText("Your address is at its domain; its SSO signs you in fully.")).toBeInTheDocument();
   });
 
+  it("leaves a managed address to the identity provider", async () => {
+    signedIn({ session: whoAmI({ managed_by: { org: ORG, name: "Acme" } }) });
+    on("GET", "me", me({ email: "ada@acme.example" }));
+    await renderApp("/settings/account/profile");
+    expect(await screen.findByText("ada@acme.example; change it at your identity provider.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Change email" })).not.toBeInTheDocument();
+  });
+
   it("names no organization for an account none manages", async () => {
     signedIn();
     on("GET", "me", me());

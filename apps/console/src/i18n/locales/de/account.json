@@ -153,5 +153,6 @@
   "account.unknownAddress": "Unbekannte Adresse",
   "account.useAppCode": "Authenticator-App verwenden",
   "account.useRecoveryCode": "Wiederherstellungscode verwenden",
-  "account.yourKeys": "Ihre Schlüssel"
+  "account.yourKeys": "Ihre Schlüssel",
+  "account.emailManaged": "{email}; ändern Sie sie bei Ihrem Identitätsanbieter."
 }
