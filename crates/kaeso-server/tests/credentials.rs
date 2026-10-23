@@ -1592,6 +1592,7 @@ async fn a_grok_account_signs_in_with_a_device_code_checked_once_per_call() {
         )
     );
     assert_eq!(device["interval"], 5);
+    assert_eq!(started.body["expires_in"], 600);
     let expires_at = time::OffsetDateTime::parse(
         started.body["expires_at"].as_str().unwrap(),
         &time::format_description::well_known::Rfc3339,
@@ -1624,7 +1625,9 @@ async fn a_grok_account_signs_in_with_a_device_code_checked_once_per_call() {
     let attempt = started.attempt.as_str();
     still_pending(&common::poll_grok(&app, &owner, attempt).await, 5);
     assert_eq!(grok.polls(), 0, "nobody asks before the interval");
-    still_pending(&wait_and_poll(&app, &owner, attempt, 5).await, 5);
+    let first = wait_and_poll(&app, &owner, attempt, 5).await;
+    still_pending(&first, 5);
+    assert_eq!(first.body["expires_in"], 595);
     assert_eq!(grok.polls(), 1, "authorization_pending");
 
     grok.slow_down_next();
@@ -1736,12 +1739,28 @@ async fn a_device_sign_in_ends_without_a_key_when_it_is_declined_or_expires() {
     let kept = common::begin_grok(&app, &owner, "Kept").await;
     grok.approve(&kept.user_code, "sub-ada", "ada@example.com");
     grok.set_fault(Fault::Down);
+    let polls = grok.polls();
     refused_with(
         &wait_and_poll(&app, &owner, &kept.attempt, 5).await,
         StatusCode::SERVICE_UNAVAILABLE,
         "Grok can't be reached right now; try again shortly.",
     );
+    assert_eq!(grok.polls(), polls + 1);
+    still_pending(&common::poll_grok(&app, &owner, &kept.attempt).await, 5);
+    assert_eq!(
+        grok.polls(),
+        polls + 1,
+        "a retry right after an outage waits for the interval"
+    );
+    refused_with(
+        &wait_and_poll(&app, &owner, &kept.attempt, 5).await,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "Grok can't be reached right now; try again shortly.",
+    );
+    assert_eq!(grok.polls(), polls + 2);
     grok.set_fault(Fault::None);
+    still_pending(&common::poll_grok(&app, &owner, &kept.attempt).await, 5);
+    app.clock.advance(time::Duration::seconds(5));
     let (eve, _) = common::join(
         &app,
         &owner,
@@ -2023,5 +2042,179 @@ async fn deleting_a_grok_account_revokes_it_even_when_xai_is_down() {
     assert_eq!(grok.revoked().len(), 1);
     let list = app.get(&base, &owner.cookie).await;
     assert_eq!(list.body["data"], json!([]));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_granted_sign_in_that_cannot_be_finished_ends_its_tokens_at_xai() {
+    let s = TestServices::start().await;
+    let grok = MockGrok::start().await;
+    let app = App::start_with_grok(&s, &grok).await;
+    let owner = app.setup().await;
+    let last_refresh = || {
+        let issued = grok.issued();
+        let at = issued
+            .iter()
+            .rposition(|t| t.starts_with("xai-refresh-"))
+            .unwrap();
+        (issued[at].clone(), issued[at - 1].clone())
+    };
+    for (fault, refresh) in [
+        (Fault::UserInfoDown, true),
+        (Fault::WrongIssuer, true),
+        (Fault::NoRefreshToken, false),
+    ] {
+        grok.set_fault(Fault::None);
+        let started = common::begin_grok(&app, &owner, "Grok").await;
+        grok.approve(&started.user_code, "sub-ada", "ada@example.com");
+        grok.set_fault(fault);
+        let revoked = grok.revoked().len();
+        refused_with(
+            &wait_and_poll(&app, &owner, &started.attempt, 5).await,
+            StatusCode::BAD_REQUEST,
+            "The answer from Grok could not be verified; start again.",
+        );
+        let ended = grok.revoked();
+        assert_eq!(ended.len(), revoked + 1, "{fault:?}");
+        let ended = ended.last().unwrap();
+        assert_eq!(
+            (ended.0.as_str(), ended.1.as_str()),
+            (
+                if refresh {
+                    last_refresh().0
+                } else {
+                    last_refresh().1
+                }
+                .as_str(),
+                GROK_CLIENT
+            ),
+            "{fault:?}"
+        );
+        refused_with(
+            &wait_and_poll(&app, &owner, &started.attempt, 5).await,
+            StatusCode::BAD_REQUEST,
+            EXPIRED,
+        );
+    }
+
+    grok.set_fault(Fault::None);
+    let created = common::sign_in_grok(&app, &owner, &grok, "Grok", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let kept = common::account_tokens(&app, &owner, &id).await;
+    let again = begin_grok_again(&app, &owner, &id).await;
+    grok.approve(&again.user_code, "sub-eve", "eve@example.com");
+    refused_with(
+        &poll_grok_again(&app, &owner, &id, &again.attempt).await,
+        StatusCode::BAD_REQUEST,
+        "You signed in to another Grok account; sign in as ada@example.com.",
+    );
+    assert_eq!(
+        grok.revoked().last().unwrap().0,
+        last_refresh().0,
+        "the other account's session ends"
+    );
+    assert_eq!(
+        common::account_tokens(&app, &owner, &id)
+            .await
+            .refresh_token,
+        kept.refresh_token
+    );
+    let list = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(list.body["data"].as_array().unwrap().len(), 1);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn only_xais_own_refusal_reads_as_a_plan_without_api_access() {
+    let s = TestServices::start().await;
+    let grok = MockGrok::start().await;
+    let app = App::start_with_grok(&s, &grok).await;
+    let owner = app.setup().await;
+    grok.set_fault(Fault::NoApiAccess);
+    let r = app
+        .post(
+            &format!("/orgs/{}/credentials/oauth", owner.org_id),
+            json!({ "provider": "xai", "name": "Grok" }),
+            Some(&owner.cookie),
+        )
+        .await;
+    refused_with(
+        &r,
+        StatusCode::BAD_REQUEST,
+        "Grok refused the sign-in; start again.",
+    );
+
+    grok.set_fault(Fault::None);
+    let created = common::sign_in_grok(&app, &owner, &grok, "Grok", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let project = default_project(&app, &owner).await;
+    let first = secret_for(&app, &owner, &project, "xai").await.unwrap();
+    app.clock.advance(time::Duration::minutes(29));
+    grok.set_fault(Fault::Challenge);
+    assert_eq!(
+        secret_for(&app, &owner, &project, "xai").await.unwrap(),
+        first,
+        "a 403 page in front of xAI is an outage, and the token is still valid"
+    );
+    assert_eq!(grok.refreshes(), 1);
+    let view = app
+        .get(
+            &format!("/orgs/{}/credentials/{id}", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(view.body["auth_error"], json!(null));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_granted_sign_in_is_saved_even_when_its_request_goes_away() {
+    let s = TestServices::start().await;
+    let grok = MockGrok::start().await;
+    let app = App::start_with_grok(&s, &grok).await;
+    let owner = app.setup().await;
+    let started = common::begin_grok(&app, &owner, "Grok").await;
+    grok.approve(&started.user_code, "sub-ada", "ada@example.com");
+    grok.set_fault(Fault::IdTokenWithoutEmail);
+    app.clock.advance(time::Duration::seconds(5));
+    let mut held = grok.hold_next_user_info();
+    let request = axum::http::Request::post(format!(
+        "/platform/v1/orgs/{}/credentials/oauth/{}",
+        owner.org_id, started.attempt
+    ))
+    .header(
+        axum::http::header::COOKIE,
+        format!("__Host-kaeso_session={}", owner.cookie),
+    )
+    .header(axum::http::header::ORIGIN, common::ORIGIN)
+    .header(axum::http::header::CONTENT_TYPE, "application/json")
+    .body(axum::body::Body::from("{}"))
+    .unwrap();
+    let router = app.router.clone();
+    let polling = tokio::spawn(async move {
+        use tower::ServiceExt;
+        router.oneshot(request).await
+    });
+    held.reached().await;
+    polling.abort();
+    assert!(polling.await.unwrap_err().is_cancelled());
+    held.release();
+    common::eventually("the granted account is saved", || async {
+        app.get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await
+        .body["data"]
+            .as_array()
+            .is_some_and(|keys| keys.len() == 1)
+    })
+    .await;
+    assert!(grok.revoked().is_empty());
     s.cleanup().await;
 }

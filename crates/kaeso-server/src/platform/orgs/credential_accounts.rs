@@ -156,6 +156,10 @@ pub struct AccountAttempt {
     #[doc = "When the attempt expires, at most ten minutes after it began."]
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+    #[doc = "Seconds until the attempt expires, counted from this answer, for a\n\
+        countdown that doesn't depend on the caller's clock."]
+    #[schema(example = 600)]
+    pub expires_in: i64,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -185,6 +189,9 @@ pub struct AccountPending {
     #[doc = "When the attempt expires."]
     #[serde(with = "time::serde::rfc3339")]
     pub expires_at: OffsetDateTime,
+    #[doc = "Seconds until the attempt expires, counted from this answer."]
+    #[schema(example = 540)]
+    pub expires_in: i64,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -284,6 +291,10 @@ fn hosts(state: &AppState, sign_in: AccountSignIn) -> ApiResult<&Hosts> {
         .ok_or_else(|| ApiError::internal("no sign-in hosts for an account method"))
 }
 
+fn seconds_until(ctx: &Ctx, at: OffsetDateTime) -> i64 {
+    (at - ctx.now).whole_seconds().max(0)
+}
+
 fn device_aad(org: Uuid, user: UserId) -> Vec<u8> {
     format!("provider_device:{org}:{}", user.uuid()).into_bytes()
 }
@@ -342,6 +353,7 @@ async fn begin_callback(
         authorize_url: Some(begun.url),
         device: None,
         expires_at,
+        expires_in: seconds_until(ctx, expires_at),
     }))
 }
 
@@ -396,6 +408,7 @@ async fn begin_device(
             interval,
         }),
         expires_at,
+        expires_in: seconds_until(ctx, expires_at),
     }))
 }
 
@@ -605,7 +618,8 @@ async fn signed_in(
         hosts: hosts.clone(),
         method: sign_in.method,
         client_id: client_id.clone(),
-        refresh_token: token.to_owned(),
+        token: token.to_owned(),
+        hint: "refresh_token",
     });
     let checked = checked(ctx, hosts, product, pending, nonce, &client_id, granted).await;
     if checked.is_err() {
@@ -656,7 +670,7 @@ fn signed(
 
 enum Polling {
     Waiting(AccountPending),
-    Done(Box<Pending>, Signed),
+    Granted(Box<Pending>, Granted),
 }
 
 fn device_code(state: &AppState, pending: &Pending, user: UserId) -> ApiResult<String> {
@@ -675,19 +689,29 @@ fn device_code(state: &AppState, pending: &Pending, user: UserId) -> ApiResult<S
     String::from_utf8(plain.expose_secret().clone()).map_err(ApiError::internal)
 }
 
-async fn poll_device(
-    state: &AppState,
+fn waiting(ctx: &Ctx, interval: i64, expires_at: OffsetDateTime) -> Polling {
+    Polling::Waiting(AccountPending {
+        interval,
+        expires_at,
+        expires_in: seconds_until(ctx, expires_at),
+    })
+}
+
+struct Locked {
+    pending: Pending,
+    expires_at: OffsetDateTime,
+}
+
+async fn lock_device(
+    tx: &mut sqlx::PgConnection,
     ctx: &Ctx,
-    attempt: &str,
+    attempt: Uuid,
     credential: Option<Uuid>,
-) -> ApiResult<Polling> {
-    let user = ctx.user_id()?;
-    let attempt = Uuid::parse_str(attempt).map_err(|_| expired(None))?;
-    let mut tx = state.pg.begin().await?;
-    let found = tokens::lock_attempt(&mut tx, attempt, ctx.now)
+) -> ApiResult<Locked> {
+    let found = tokens::lock_attempt(tx, attempt, ctx.now)
         .await?
         .ok_or_else(|| expired(None))?;
-    let mut pending: Pending =
+    let pending: Pending =
         serde_json::from_value(found.token.data.clone()).map_err(|_| expired(None))?;
     if !owned_by(ctx, &found.token, &pending, attempt, credential)? {
         return Err(expired(None));
@@ -698,6 +722,42 @@ async fn poll_device(
             "`callback_url` is required.",
         ));
     }
+    Ok(Locked {
+        pending,
+        expires_at: found.token.expires_at,
+    })
+}
+
+fn schedule(pending: &mut Pending, now: OffsetDateTime, grow: i64) -> Option<i64> {
+    let Flow::Device {
+        interval,
+        poll_after,
+        ..
+    } = &mut pending.flow
+    else {
+        return None;
+    };
+    *interval += grow;
+    *poll_after = now + Duration::seconds(*interval);
+    Some(*interval)
+}
+
+// Each check takes the attempt's next slot before it asks xAI, and no row lock is held while
+// it waits for the answer: a caller that loops, or retries after an outage, reaches the token
+// endpoint at most once per interval, and a slow answer doesn't hold a pool connection.
+async fn poll_device(
+    state: &AppState,
+    ctx: &Ctx,
+    attempt: &str,
+    credential: Option<Uuid>,
+) -> ApiResult<Polling> {
+    let user = ctx.user_id()?;
+    let attempt = Uuid::parse_str(attempt).map_err(|_| expired(None))?;
+    let mut tx = state.pg.begin().await?;
+    let Locked {
+        mut pending,
+        expires_at,
+    } = lock_device(&mut tx, ctx, attempt, credential).await?;
     let provider = validate_provider(&pending.provider)?;
     let sign_in = sign_in_of(provider, Some(AuthMethod::Grok)).ok_or_else(|| expired(None))?;
     let product = sign_in.product;
@@ -709,68 +769,114 @@ async fn poll_device(
     else {
         return Err(expired(None));
     };
-    let (interval, poll_after) = (*interval, *poll_after);
-    let waiting = |interval| {
-        Polling::Waiting(AccountPending {
-            interval,
-            expires_at: found.token.expires_at,
-        })
-    };
-    if ctx.now < poll_after {
-        return Ok(waiting(interval));
+    let interval = *interval;
+    if ctx.now < *poll_after {
+        return Ok(waiting(ctx, interval, expires_at));
     }
+    schedule(&mut pending, ctx.now, 0);
+    let data = serde_json::to_value(&pending).map_err(ApiError::internal)?;
+    tokens::keep_data(&mut *tx, attempt, &data).await?;
+    tx.commit().await?;
+
     let code = device_code(state, &pending, user)?;
     let hosts = hosts(state, sign_in)?;
     let polled = match accounts::poll(hosts, &code).await {
         Ok(polled) => polled,
         Err(e @ AccountError::Unreachable(_)) => return Err(failed(None, product, &e)),
         Err(e) => {
-            tokens::use_up(&mut *tx, attempt, ctx.now).await?;
-            tx.commit().await?;
+            tokens::use_up(&state.pg, attempt, ctx.now).await?;
             return Err(failed(None, product, &e));
         }
     };
-    let granted = match polled {
-        Polled::Pending | Polled::SlowDown => {
-            let interval = if matches!(polled, Polled::SlowDown) {
-                interval + SLOW_DOWN_STEP
-            } else {
-                interval
-            };
-            if let Flow::Device {
-                interval: kept,
-                poll_after: after,
-                ..
-            } = &mut pending.flow
-            {
-                *kept = interval;
-                *after = ctx.now + Duration::seconds(interval);
-            }
+    match polled {
+        Polled::Pending => Ok(waiting(ctx, interval, expires_at)),
+        Polled::SlowDown => {
+            let mut tx = state.pg.begin().await?;
+            let Locked {
+                mut pending,
+                expires_at,
+            } = lock_device(&mut tx, ctx, attempt, credential).await?;
+            let interval =
+                schedule(&mut pending, ctx.now, SLOW_DOWN_STEP).ok_or_else(|| expired(None))?;
             let data = serde_json::to_value(&pending).map_err(ApiError::internal)?;
             tokens::keep_data(&mut *tx, attempt, &data).await?;
             tx.commit().await?;
-            return Ok(waiting(interval));
+            Ok(waiting(ctx, interval, expires_at))
         }
         Polled::Denied | Polled::Expired => {
-            tokens::use_up(&mut *tx, attempt, ctx.now).await?;
-            tx.commit().await?;
-            return Err(if matches!(polled, Polled::Denied) {
+            tokens::use_up(&state.pg, attempt, ctx.now).await?;
+            Err(if matches!(polled, Polled::Denied) {
                 denied(None, product)
             } else {
                 expired(None)
-            });
+            })
         }
-        Polled::Granted(granted) => granted,
-    };
-    tokens::use_up(&mut *tx, attempt, ctx.now).await?;
-    tx.commit().await?;
+        Polled::Granted(granted) => {
+            if tokens::use_up(&state.pg, attempt, ctx.now).await? {
+                Ok(Polling::Granted(Box::new(pending), granted))
+            } else {
+                unsaved(Revocable::grok_grant(state, sign_in, &granted)).await;
+                Err(expired(None))
+            }
+        }
+    }
+}
+
+fn start_over(product: &str, e: &AccountError) -> ApiError {
+    tracing::info!(error = %e, "a granted account sign-in could not be finished");
+    match e {
+        AccountError::Unreachable(_) | AccountError::Unverified(_) => unverified(None, product),
+        AccountError::Refused { .. } => refused(None, product),
+        AccountError::NoApiAccess => no_api_access(product),
+    }
+}
+
+// xAI has issued tokens by now. Finishing in a task of its own keeps a request that goes away
+// from leaving them live and unsaved, and every failure past this point ends them at xAI.
+async fn settled(
+    state: &AppState,
+    ctx: &Ctx,
+    pending: Pending,
+    sign_in: AccountSignIn,
+    granted: Granted,
+    credential: Option<Uuid>,
+) -> ApiResult<CredentialView> {
+    let (done, outcome) = tokio::sync::oneshot::channel();
+    let (st, cx) = (state.clone(), ctx.clone());
+    state.in_flight.finish(async move {
+        let issued = Revocable::grok_grant(&st, sign_in, &granted);
+        let kept = keep_grant(&st, &cx, &pending, sign_in, granted, credential).await;
+        if kept.is_err() {
+            unsaved(issued).await;
+        }
+        let _ = done.send(kept);
+    });
+    outcome
+        .await
+        .map_err(|_| ApiError::internal("a granted sign-in ended without an answer"))?
+}
+
+async fn keep_grant(
+    state: &AppState,
+    ctx: &Ctx,
+    pending: &Pending,
+    sign_in: AccountSignIn,
+    granted: Granted,
+    credential: Option<Uuid>,
+) -> ApiResult<CredentialView> {
+    let product = sign_in.product;
+    let hosts = hosts(state, sign_in)?;
     let identity = accounts::grok_identity(hosts, &granted)
         .await
-        .map_err(|e| failed(None, product, &e))?;
-    let (subject, account) = account_of(None, product, &pending, identity)?;
+        .map_err(|e| start_over(product, &e))?;
+    let (subject, account) = account_of(None, product, pending, identity)?;
     let signed = signed(ctx, granted, GROK_CLIENT, &subject, account)
-        .map_err(|e| failed(None, product, &e))?;
-    Ok(Polling::Done(Box::new(pending), signed))
+        .map_err(|e| start_over(product, &e))?;
+    let provider = validate_provider(&pending.provider)?;
+    match credential {
+        Some(id) => save_again(state, ctx, id, provider, sign_in, &signed).await,
+        None => save_new(state, ctx, pending, sign_in, &signed).await,
+    }
 }
 
 fn sealed_form(tokens: &Tokens) -> ApiResult<String> {
@@ -793,20 +899,26 @@ impl IntoResponse for Finished {
     }
 }
 
+enum Answered {
+    Waiting(AccountPending),
+    Signed(Pending, AccountSignIn, Signed),
+    Granted(Pending, AccountSignIn, Granted),
+}
+
 async fn answered(
     state: &AppState,
     ctx: &Ctx,
     attempt: &str,
     callback_url: Option<&str>,
     credential: Option<Uuid>,
-) -> ApiResult<Result<(Pending, AccountSignIn, Signed), AccountPending>> {
+) -> ApiResult<Answered> {
     let Some(pasted) = callback_url else {
         return match poll_device(state, ctx, attempt, credential).await? {
-            Polling::Waiting(waiting) => Ok(Err(waiting)),
-            Polling::Done(pending, signed) => {
+            Polling::Waiting(waiting) => Ok(Answered::Waiting(waiting)),
+            Polling::Granted(pending, granted) => {
                 let provider = validate_provider(&pending.provider)?;
                 let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
-                Ok(Ok((*pending, sign_in, signed)))
+                Ok(Answered::Granted(*pending, sign_in, granted))
             }
         };
     };
@@ -814,7 +926,37 @@ async fn answered(
     let provider = validate_provider(&pending.provider)?;
     let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
     let signed = signed_in(state, ctx, sign_in, &pending, callback.answer).await?;
-    Ok(Ok((pending, sign_in, signed)))
+    Ok(Answered::Signed(pending, sign_in, signed))
+}
+
+async fn save_new(
+    state: &AppState,
+    ctx: &Ctx,
+    pending: &Pending,
+    sign_in: AccountSignIn,
+    signed: &Signed,
+) -> ApiResult<CredentialView> {
+    let org = ctx.org()?.org.id;
+    let secret = sealed_form(&signed.tokens)?;
+    add(
+        state,
+        ctx,
+        org,
+        Added {
+            id: CredentialId::new(),
+            provider: &pending.provider,
+            name: &pending.name,
+            make_default: pending.make_default,
+            secret: &secret,
+            auth: Auth {
+                method: sign_in.method,
+                last4: "",
+                expires_at: Some(signed.expires_at),
+                account: Some(&signed.account),
+            },
+        },
+    )
+    .await
 }
 
 #[utoipa::path(
@@ -841,32 +983,17 @@ pub async fn finish(
     Path((_org, attempt)): Path<(String, String)>,
     Body(req): Body<AccountFinish>,
 ) -> ApiResult<Finished> {
-    let org = ctx.org()?.org.id;
     let (pending, sign_in, signed) =
         match answered(&state, &ctx, &attempt, req.callback_url.as_deref(), None).await? {
-            Ok(done) => done,
-            Err(waiting) => return Ok(Finished::Waiting(waiting)),
+            Answered::Waiting(waiting) => return Ok(Finished::Waiting(waiting)),
+            Answered::Granted(pending, sign_in, granted) => {
+                return Ok(Finished::Created(
+                    settled(&state, &ctx, pending, sign_in, granted, None).await?,
+                ));
+            }
+            Answered::Signed(pending, sign_in, signed) => (pending, sign_in, signed),
         };
-    let secret = sealed_form(&signed.tokens)?;
-    let added = add(
-        &state,
-        &ctx,
-        org,
-        Added {
-            id: CredentialId::new(),
-            provider: &pending.provider,
-            name: &pending.name,
-            make_default: pending.make_default,
-            secret: &secret,
-            auth: Auth {
-                method: sign_in.method,
-                last4: "",
-                expires_at: Some(signed.expires_at),
-                account: Some(&signed.account),
-            },
-        },
-    )
-    .await;
+    let added = save_new(&state, &ctx, &pending, sign_in, &signed).await;
     if added.is_err() {
         unsaved(Revocable::of(&state, sign_in, &signed.tokens)).await;
     }
@@ -912,8 +1039,13 @@ pub async fn finish_again(
     )
     .await?
     {
-        Ok(done) => done,
-        Err(waiting) => return Ok(Finished::Waiting(waiting)),
+        Answered::Waiting(waiting) => return Ok(Finished::Waiting(waiting)),
+        Answered::Granted(pending, sign_in, granted) => {
+            return Ok(Finished::Updated(
+                settled(&state, &ctx, pending, sign_in, granted, Some(id)).await?,
+            ));
+        }
+        Answered::Signed(pending, sign_in, signed) => (pending, sign_in, signed),
     };
     let provider = validate_provider(&pending.provider)?;
     let saved = save_again(&state, &ctx, id, provider, sign_in, &signed).await;
@@ -959,7 +1091,7 @@ async fn save_again(
     )
     .await?;
     if let Some(previous) = previous
-        && previous.refresh_token != signed.tokens.refresh_token
+        && previous.token != signed.tokens.refresh_token
     {
         previous.revoke().await;
     }
@@ -970,7 +1102,8 @@ pub(super) struct Revocable {
     hosts: Hosts,
     method: AuthMethod,
     client_id: String,
-    refresh_token: String,
+    token: String,
+    hint: &'static str,
 }
 
 impl Revocable {
@@ -979,7 +1112,23 @@ impl Revocable {
             hosts: state.accounts.hosts(sign_in.method)?.clone(),
             method: sign_in.method,
             client_id: tokens.client_id.clone(),
-            refresh_token: tokens.refresh_token.clone(),
+            token: tokens.refresh_token.clone(),
+            hint: "refresh_token",
+        })
+    }
+
+    fn grok_grant(
+        state: &AppState,
+        sign_in: AccountSignIn,
+        granted: &Granted,
+    ) -> Option<Revocable> {
+        let (token, hint) = granted.kept_token();
+        Some(Revocable {
+            hosts: state.accounts.hosts(sign_in.method)?.clone(),
+            method: sign_in.method,
+            client_id: GROK_CLIENT.to_owned(),
+            token: token.to_owned(),
+            hint,
         })
     }
 
@@ -988,7 +1137,8 @@ impl Revocable {
             &self.hosts,
             self.method,
             &self.client_id,
-            &self.refresh_token,
+            &self.token,
+            self.hint,
         )
         .await
         {
@@ -1021,7 +1171,8 @@ pub(super) async fn revocable(
             hosts,
             method,
             client_id: tokens.client_id,
-            refresh_token: tokens.refresh_token,
+            token: tokens.refresh_token,
+            hint: "refresh_token",
         }),
         Err(e) => {
             tracing::warn!(error = %e, "cannot open an account's tokens to end its session");

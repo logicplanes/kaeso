@@ -36,6 +36,9 @@ pub enum Fault {
     WrongIssuer,
     WrongAudience,
     OtherUserInfo,
+    UserInfoDown,
+    NoRefreshToken,
+    Challenge,
     SignedOut,
     Down,
     RevokeDown,
@@ -84,6 +87,7 @@ struct Inner {
     fault: Mutex<Fault>,
     reply: Mutex<Reply>,
     hold: Mutex<Option<Hold>>,
+    info_hold: Mutex<Option<Hold>>,
 }
 
 fn locked<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -117,6 +121,7 @@ impl MockGrok {
             fault: Mutex::default(),
             reply: Mutex::default(),
             hold: Mutex::default(),
+            info_hold: Mutex::default(),
         });
         let app = Router::new()
             .route("/.well-known/jwks.json", get(jwks))
@@ -199,6 +204,12 @@ impl MockGrok {
     pub fn hold_next_refresh(&self) -> Held {
         let (hold, held) = hold();
         *locked(&self.inner.hold) = Some(hold);
+        held
+    }
+
+    pub fn hold_next_user_info(&self) -> Held {
+        let (hold, held) = hold();
+        *locked(&self.inner.info_hold) = Some(hold);
         held
     }
 
@@ -288,8 +299,12 @@ async fn device_code(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: 
         return not_a_form();
     };
     locked(&inner.asked).push(form.clone());
-    if *locked(&inner.fault) == Fault::Down {
-        return oauth_error(StatusCode::SERVICE_UNAVAILABLE, "temporarily_unavailable");
+    match *locked(&inner.fault) {
+        Fault::Down => {
+            return oauth_error(StatusCode::SERVICE_UNAVAILABLE, "temporarily_unavailable");
+        }
+        Fault::NoApiAccess => return oauth_error(StatusCode::FORBIDDEN, "unauthorized_client"),
+        _ => {}
     }
     if form.get("client_id").map(String::as_str) != Some(CLIENT_ID) {
         return oauth_error(StatusCode::BAD_REQUEST, "invalid_client");
@@ -344,6 +359,11 @@ fn granted(inner: &Inner, subject: &str, email: &str, with_id_token: bool) -> Re
         "expires_in": LIFETIME,
         "scope": SCOPES,
     });
+    if fault == Fault::NoRefreshToken
+        && let Some(fields) = body.as_object_mut()
+    {
+        fields.remove("refresh_token");
+    }
     if with_id_token && fault != Fault::NoIdToken {
         let issuer = if fault == Fault::WrongIssuer {
             "https://evil.example".to_owned()
@@ -356,7 +376,10 @@ fn granted(inner: &Inner, subject: &str, email: &str, with_id_token: bool) -> Re
             CLIENT_ID
         };
         let mut claims = json!({ "iss": issuer, "aud": audience, "sub": subject, "iat": issued, "exp": issued + 3600 });
-        if !matches!(fault, Fault::IdTokenWithoutEmail | Fault::OtherUserInfo) {
+        if !matches!(
+            fault,
+            Fault::IdTokenWithoutEmail | Fault::OtherUserInfo | Fault::UserInfoDown
+        ) {
             claims["email"] = json!(email);
             claims["email_verified"] = json!(true);
         }
@@ -371,6 +394,9 @@ async fn token(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes)
     };
     let field = |k: &str| form.get(k).cloned().unwrap_or_default();
     let fault = *locked(&inner.fault);
+    if field("grant_type") == "urn:ietf:params:oauth:grant-type:device_code" {
+        inner.polls.fetch_add(1, Ordering::SeqCst);
+    }
     if fault == Fault::Down {
         return oauth_error(StatusCode::SERVICE_UNAVAILABLE, "temporarily_unavailable");
     }
@@ -382,7 +408,6 @@ async fn token(State(inner): State<Arc<Inner>>, headers: HeaderMap, body: Bytes)
     }
     match field("grant_type").as_str() {
         "urn:ietf:params:oauth:grant-type:device_code" => {
-            inner.polls.fetch_add(1, Ordering::SeqCst);
             device_grant(&inner, &field("device_code"))
         }
         "refresh_token" => {
@@ -427,6 +452,14 @@ fn refresh_grant(inner: &Inner, refresh: &str) -> Response {
     match *locked(&inner.fault) {
         Fault::SignedOut => return oauth_error(StatusCode::BAD_REQUEST, "invalid_grant"),
         Fault::NoApiAccess => return oauth_error(StatusCode::FORBIDDEN, "unauthorized_client"),
+        Fault::Challenge => {
+            return (
+                StatusCode::FORBIDDEN,
+                [(header::CONTENT_TYPE, "text/html")],
+                "<html><title>Just a moment...</title></html>",
+            )
+                .into_response();
+        }
         _ => {}
     }
     let mut sessions = locked(&inner.sessions);
@@ -462,7 +495,14 @@ fn bearer(headers: &HeaderMap) -> String {
 }
 
 async fn user_info(State(inner): State<Arc<Inner>>, headers: HeaderMap) -> Response {
+    let hold = locked(&inner.info_hold).take();
+    if let Some(hold) = hold {
+        hold.wait().await;
+    }
     inner.user_infos.fetch_add(1, Ordering::SeqCst);
+    if *locked(&inner.fault) == Fault::UserInfoDown {
+        return oauth_error(StatusCode::SERVICE_UNAVAILABLE, "temporarily_unavailable");
+    }
     let access = bearer(&headers);
     let sessions = locked(&inner.sessions);
     let Some(session) = sessions.iter().find(|s| s.access == access) else {

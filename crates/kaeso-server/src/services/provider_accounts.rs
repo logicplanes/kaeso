@@ -477,8 +477,11 @@ fn granted(body: &[u8]) -> Result<Granted, AccountError> {
         .map_err(|_| AccountError::Unverified("the token answer is not a token response".into()))
 }
 
+// Only xAI's own JSON answer says the plan lacks API access; a 403 page from a proxy or a
+// bot check in front of auth.x.ai is an outage, and must not stop a working key.
 fn token_refusal(method: AuthMethod, status: u16, body: &[u8]) -> AccountError {
-    if method == AuthMethod::Grok && status == 403 {
+    let answered = serde_json::from_slice::<Value>(body).is_ok_and(|v| v.get("error").is_some());
+    if method == AuthMethod::Grok && status == 403 && answered {
         AccountError::NoApiAccess
     } else {
         refusal(status, body)
@@ -535,17 +538,27 @@ pub async fn refresh(
     token(hosts, method, &form).await
 }
 
+impl Granted {
+    pub fn kept_token(&self) -> (&str, &'static str) {
+        match &self.refresh_token {
+            Some(token) => (token, "refresh_token"),
+            None => (&self.access_token, "access_token"),
+        }
+    }
+}
+
 pub async fn revoke(
     hosts: &Hosts,
     method: AuthMethod,
     client_id: &str,
-    refresh_token: &str,
+    token: &str,
+    hint: &str,
 ) -> Result<(), AccountError> {
     let (status, body) = post_form(
         &hosts.at(revoke_path(method)),
         &[
-            ("token", refresh_token),
-            ("token_type_hint", "refresh_token"),
+            ("token", token),
+            ("token_type_hint", hint),
             ("client_id", client_id),
         ],
     )
@@ -668,7 +681,7 @@ pub async fn device_code(hosts: &Hosts) -> Result<DeviceCode, AccountError> {
     )
     .await?;
     if !(200..300).contains(&status) {
-        return Err(token_refusal(AuthMethod::Grok, status, &body));
+        return Err(refusal(status, &body));
     }
     let mut code: DeviceCode = serde_json::from_slice(&body).map_err(|_| {
         AccountError::Unverified("the device answer is not a device authorization".into())
@@ -946,10 +959,19 @@ mod tests {
             token_refusal(AuthMethod::Grok, 403, body),
             AccountError::NoApiAccess
         ));
-        assert!(matches!(
-            token_refusal(AuthMethod::Grok, 403, b""),
-            AccountError::NoApiAccess
-        ));
+        for page in [
+            &b""[..],
+            b"<html><title>Just a moment...</title></html>",
+            b"{}",
+        ] {
+            assert!(
+                matches!(
+                    token_refusal(AuthMethod::Grok, 403, page),
+                    AccountError::Unreachable(_)
+                ),
+                "a 403 page that isn't xAI's answer is an outage"
+            );
+        }
         assert!(matches!(
             token_refusal(AuthMethod::ChatGpt, 403, body),
             AccountError::Refused { status: 403, .. }

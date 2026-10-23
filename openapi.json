@@ -16003,7 +16003,8 @@
         "description": "A sign-in waiting for the account's owner.",
         "required": [
           "attempt",
-          "expires_at"
+          "expires_at",
+          "expires_in"
         ],
         "properties": {
           "attempt": {
@@ -16033,6 +16034,12 @@
             "type": "string",
             "format": "date-time",
             "description": "When the attempt expires, at most ten minutes after it began."
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds until the attempt expires, counted from this answer, for a\ncountdown that doesn't depend on the caller's clock.",
+            "example": 600
           }
         }
       },
@@ -16087,13 +16094,20 @@
         "description": "A device sign-in the account's owner hasn't confirmed yet.",
         "required": [
           "interval",
-          "expires_at"
+          "expires_at",
+          "expires_in"
         ],
         "properties": {
           "expires_at": {
             "type": "string",
             "format": "date-time",
             "description": "When the attempt expires."
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds until the attempt expires, counted from this answer.",
+            "example": 540
           },
           "interval": {
             "type": "integer",
