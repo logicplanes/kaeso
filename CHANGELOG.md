@@ -4,6 +4,30 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-10-23
+
+Kaeso 0.3.9 changes the sign-in-again dialog so that single sign-on is offered only when no password or sign-in link can confirm a recent sign-in, and providers that cannot confirm one are no longer offered. Integrations that read the sign-in-again, security or SSO fields, or handle the sso_error codes, must be updated because `sends_auth_time` is renamed and two codes are replaced. Operators gain the `kaeso instance admin-sso` command for choosing the organization whose single sign-on may administer an instance.
+
+- **Breaking:** The `sends_auth_time` field of the security and SSO endpoints is renamed to `confirms_sign_in`, and the `stale_sign_in` and `no_auth_time` codes are replaced by `cannot_confirm`. Integrations should read the new field, handle the new code, and expect `sso` to be empty whenever a password, sign-in link or set-password option is available. ([#361](https://github.com/logicplanes/kaeso/pull/361))
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.3.8...v0.3.9](https://github.com/logicplanes/kaeso/compare/v0.3.8...v0.3.9)
+
+### Added
+
+- The `kaeso instance admin-sso` command sets the organization whose single sign-on may administer the instance, or clears it with `none`, from the server's shell. Installs without passwords or sign-in links could not set this before without editing the database. Each change is written to the audit log and applies at once. ([#360](https://github.com/logicplanes/kaeso/pull/360))
+
+### Changed
+
+#### Documentation
+
+- The GitHub release page keeps its tagline, highlights and breaking changes, then lists every changelog entry under its section heading instead of linking to the full changelog. ([#359](https://github.com/logicplanes/kaeso/pull/359))
+
+### Fixed
+
+- Sign-in again offers single sign-on only when no password or sign-in link can confirm the account, so people are no longer sent back to a dialog that single sign-on cannot satisfy. A confirmation whose ID token has no `auth_time`, or a stale one, is refused with the `cannot_confirm` code, and the provider is no longer offered for recent sign-in. ([#361](https://github.com/logicplanes/kaeso/pull/361))
+
 ## [0.3.8] - 2026-10-23
 
 Kaeso 0.3.8 contains no change that operators must act on when they upgrade. It moves the console, gateway and updater images to newer Go, Node and distroless bases, pins newer ClickHouse and Mailpit versions in the Compose files, and updates Rust and JavaScript dependencies. The console's API client no longer relies on the Redocly OpenAPI core package, and toasts in the UI library no longer catch clicks meant for buttons beside them.
@@ -656,7 +680,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.8...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.9...HEAD
+[0.3.9]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.9
 [0.3.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.8
 [0.3.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.7
 [0.3.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.6
