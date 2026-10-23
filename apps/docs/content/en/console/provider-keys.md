@@ -61,7 +61,7 @@ The list shows each key's name, its last four characters, the projects that use 
 | Action | What it does |
 | --- | --- |
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider |
-| Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** |
+| Sign in again | For an account: signs the same account in again, for example after it shows **Signed out**, and ends its previous session at OpenAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
 | Rename | Changes the name the console shows |
 | Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI |

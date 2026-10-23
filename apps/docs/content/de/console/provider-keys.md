@@ -61,7 +61,7 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 | Aktion | Wirkung |
 | --- | --- |
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben |
-| Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** zeigt |
+| Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** zeigt, und beendet seine vorherige Sitzung bei OpenAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
 | Umbenennen | Ändert den Namen, den die Konsole zeigt |
 | Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI |
