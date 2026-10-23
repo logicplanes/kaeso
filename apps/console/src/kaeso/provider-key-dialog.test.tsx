@@ -33,6 +33,7 @@ function grokAttempt(seconds = 600, code = "FKFF-E5EP") {
     authorize_url: null,
     device: { user_code: code, verification_uri: GROK_PAGE, verification_uri_complete: `${GROK_PAGE}?user_code=${code}`, interval: 5 },
     expires_at: new Date(Date.now() + seconds * 1000).toISOString(),
+    expires_in: seconds,
   };
 }
 
@@ -600,7 +601,7 @@ describe("ProviderKeyDialog", () => {
     const opened = vi.spyOn(window, "open");
     const started = grokAttempt();
     on("POST", `${CREDENTIALS}/oauth`, started);
-    const later5 = { interval: 5, expires_at: started.expires_at };
+    const later5 = { interval: 5, expires_at: started.expires_at, expires_in: 595 };
     on("POST", `${CREDENTIALS}/oauth/:attempt`, answers(later5, { ...later5, interval: 10 }, { ...later5, interval: 10 }, grokKey));
     const { user, dialog, onClose } = await open();
 
@@ -676,7 +677,11 @@ describe("ProviderKeyDialog", () => {
   it("stops checking a Grok code once it expires", async () => {
     const started = { ...grokAttempt(12), device: { ...grokAttempt().device, verification_uri_complete: null } };
     on("POST", `${CREDENTIALS}/oauth`, started);
-    on("POST", `${CREDENTIALS}/oauth/:attempt`, { interval: 5, expires_at: started.expires_at });
+    on(
+      "POST",
+      `${CREDENTIALS}/oauth/:attempt`,
+      answers({ interval: 5, expires_at: started.expires_at, expires_in: 7 }, { interval: 5, expires_at: started.expires_at, expires_in: 2 }),
+    );
     const { user, dialog } = await open();
     await choose(user, dialog, "SpaceX");
     await user.click(within(dialog).getByRole("radio", { name: /^Grok account/ }));
@@ -693,6 +698,75 @@ describe("ProviderKeyDialog", () => {
     await later(30000);
     expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`)).toHaveLength(2);
     expect(within(dialog).getByRole("button", { name: "Get a new code" })).toBeInTheDocument();
+  });
+
+  async function waitingForGrok(started = grokAttempt()) {
+    on("POST", `${CREDENTIALS}/oauth`, started);
+    const view = await open();
+    await choose(view.user, view.dialog, "SpaceX");
+    await view.user.click(within(view.dialog).getByRole("radio", { name: /^Grok account/ }));
+    await view.user.click(within(view.dialog).getByRole("button", { name: "Continue" }));
+    await view.user.type(await within(view.dialog).findByRole("textbox", { name: "Name" }), "Grok");
+    await getCode(view.dialog);
+    return view;
+  }
+
+  const polled = () => requests("POST", `${CREDENTIALS}/oauth/:attempt`);
+
+  it("counts a Grok code down from the seconds the gateway gave, whatever the clocks say", async () => {
+    const { dialog } = await waitingForGrok({ ...grokAttempt(), expires_at: "2020-01-01T00:00:00Z" });
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Waiting for your approval; the code expires in 10 min.");
+  });
+
+  it("stops checking a Grok code once the method goes back to an API key", async () => {
+    const started = grokAttempt();
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, { interval: 5, expires_at: started.expires_at, expires_in: 595 });
+    const { dialog } = await waitingForGrok(started);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Back" }));
+    await later(0);
+    fireEvent.click(within(dialog).getByRole("radio", { name: /^API key/ }));
+    await later(30000);
+    expect(polled()).toHaveLength(0);
+  });
+
+  it("keeps checking a Grok code through an outage and ends it only when the gateway refuses it", async () => {
+    const started = grokAttempt();
+    on(
+      "POST",
+      `${CREDENTIALS}/oauth/:attempt`,
+      answers(
+        apiError(503, "unavailable", "Grok can't be reached right now; try again shortly."),
+        { interval: 5, expires_at: started.expires_at, expires_in: 590 },
+        apiError(400, "invalid_request", "You declined the sign-in at Grok; start again."),
+      ),
+    );
+    const { dialog } = await waitingForGrok(started);
+    await later(5000);
+    expect(polled()).toHaveLength(1);
+    expect(within(dialog).getByRole("status")).toHaveTextContent(/^Waiting for your approval/);
+    await later(5000);
+    expect(polled()).toHaveLength(2);
+    await later(5000);
+    expect(polled()).toHaveLength(3);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("This sign-in ended; get a new code to try again.");
+    await later(30000);
+    expect(polled()).toHaveLength(3);
+  });
+
+  it("drops a Grok check that was still on its way when the name changed", async () => {
+    const started = grokAttempt();
+    let answer: (reply: unknown) => void = () => undefined;
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, () => new Promise((resolve) => (answer = resolve)));
+    const { dialog } = await waitingForGrok(started);
+    await later(5000);
+    expect(polled()).toHaveLength(1);
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Name" }), { target: { value: "Renamed" } });
+    answer({ interval: 5, expires_at: started.expires_at, expires_in: 590 });
+    await later(0);
+    await later(30000);
+    expect(polled()).toHaveLength(1);
+    expect(within(dialog).queryByText("FKFF-E5EP")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Get a sign-in code" })).toBeInTheDocument();
   });
 
   it("signs in again to a Grok key with a new code", async () => {

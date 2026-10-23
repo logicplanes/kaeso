@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { Badge, Button, Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
+import { isApiError } from "~/api/errors";
 import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
@@ -35,6 +36,8 @@ function keyPlaceholder(provider: ProviderView | undefined): string {
 }
 
 const pending = (answer: CredentialView | AccountPending): answer is AccountPending => "interval" in answer;
+
+const receivedAt = (): number => Date.now();
 
 function openBlankTab(): Window | null {
   const tab = window.open("about:blank", "_blank");
@@ -72,13 +75,14 @@ export function ProviderKeyDialog({
   const [polls, setPolls] = useState(0);
   const [ended, setEnded] = useState<"ended" | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [deadline, setDeadline] = useState(0);
   const chosen = provider ?? "";
   const label = provider ? providers.name(provider) : "";
   const known = provider ? providers.get(provider) : undefined;
   const account: AccountSignInView | null = known?.account ?? null;
   const signingIn = method === "account" && account !== null;
   const device = attempt?.device ?? null;
-  const left = attempt ? Date.parse(attempt.expires_at) - now : 0;
+  const left = attempt ? deadline - now : 0;
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
   const choices = useMemo(() => providerOptions(providers, keys), [providers, keys]);
   const begin = useApiMutation({
@@ -101,6 +105,7 @@ export function ProviderKeyDialog({
       setBlocked(!tab);
       setEnded(null);
       setNow(Date.now());
+      setDeadline(Date.now() + started.expires_in * 1000);
       setEvery(started.device?.interval ?? 0);
       if (tab && started.authorize_url) tab.location.href = started.authorize_url;
     },
@@ -120,28 +125,36 @@ export function ProviderKeyDialog({
     );
     onClose();
   };
-  const answered = (answer: CredentialView | AccountPending) => {
+  const answered = (answer: CredentialView | AccountPending, received: number) => {
     if (!pending(answer)) return added(answer);
     setEvery(answer.interval);
+    setDeadline(received + answer.expires_in * 1000);
     setPolls((n) => n + 1);
   };
   const poll = useApiMutation({
     mutationFn: async (at: string) => {
-      if (replace)
-        return data(
-          await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth/{attempt}", {
-            params: { path: { org, credential: replace.id, attempt: at } },
-            body: {},
-          }),
-        );
-      return data(await api.POST("/platform/v1/orgs/{org}/credentials/oauth/{attempt}", { params: { path: { org, attempt: at } }, body: {} }));
+      const answer = replace
+        ? data(
+            await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth/{attempt}", {
+              params: { path: { org, credential: replace.id, attempt: at } },
+              body: {},
+            }),
+          )
+        : data(await api.POST("/platform/v1/orgs/{org}/credentials/oauth/{attempt}", { params: { path: { org, attempt: at } }, body: {} }));
+      return { answer, received: receivedAt() };
     },
     invalidates: [["orgs", org, "credentials"]],
-    onSuccess: (answer) => answered(answer),
-    onError: () => setEnded("ended"),
+    onSuccess: ({ answer, received }, at) => {
+      if (at === attempt?.attempt || !pending(answer)) answered(answer, received);
+    },
+    onSettled: (_answer, error, at) => {
+      if (!error || at !== attempt?.attempt) return;
+      if (isApiError(error) && error.status === 400) setEnded("ended");
+      else setPolls((n) => n + 1);
+    },
   });
   const state: DeviceState = ended ?? (left <= 0 ? "expired" : "waiting");
-  const waiting = !!device && state === "waiting";
+  const waiting = signingIn && !!device && state === "waiting";
   const check = poll.mutate;
   useEffect(() => {
     if (!waiting || !attempt) return;
@@ -183,7 +196,9 @@ export function ProviderKeyDialog({
       );
     },
     invalidates: [["orgs", org, "credentials"]],
-    onSuccess: (answer) => answered(answer),
+    onSuccess: (answer) => {
+      if (!pending(answer)) added(answer);
+    },
   });
 
   const keyStep: DialogStep = {
