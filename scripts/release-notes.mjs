@@ -528,25 +528,35 @@ export function body({ changelog, version, brief = null, docs = DOCS_URL, notify
     return `- ${firstSentence(text.trim())}${refs(found)}`;
   };
   const tagline = short ? [escaped(short.tagline.trim())] : [];
-  const entries = found.sections.flatMap((section) => [section.markdown, ...section.topics.map(({ markdown }) => markdown)]).flatMap(items);
   const highlights = short
     ? short.highlights.map(({ title, text, prs }) => `- **${escaped(title.trim().replace(TITLE_END, ""))}.** ${escaped(text.trim())}${refs(numbered(prs))}`)
-    : entries.slice(0, HIGHLIGHTS).map(cut);
+    : [];
+  const listed = (markdown, topic) =>
+    items(markdown).map((line) => {
+      const { text, refs: found } = split(line);
+      return `- ${topic ? `**${topic}:** ` : ""}${text.trim()}${refs(found)}`;
+    });
+  const changes = found.sections.map((section) => [
+    `### ${section.name}`,
+    "",
+    ...listed(section.markdown, null),
+    ...section.topics.flatMap((topic) => listed(topic.markdown, topic.name)),
+  ]);
   const breaking = short
     ? short.breaking.map(({ text, prs }) => `- ${escaped(text.trim())}${refs(numbered(prs))}`)
     : intro
         .map((line) => BREAKING_LINE.exec(line)?.[1])
         .filter(Boolean)
         .map(cut);
-  const more = short ? 0 : Math.max(0, entries.length - HIGHLIGHTS);
   const footer = [
     `[Full changelog](${docs}/changelog#v${version})`,
     ...(found.compare && found.previous ? [`[v${found.previous}...v${version}](${found.compare})`] : []),
   ].join(" · ");
   return paragraphs([
     tagline,
-    highlights.length ? ["### Highlights", "", ...highlights, ...(more ? ["", `And ${more} more in the full changelog.`] : [])] : [],
+    highlights.length ? ["### Highlights", "", ...highlights] : [],
     breaking.length ? ["### Breaking", "", ...breaking] : [],
+    ...changes,
     contributors ? [`**Contributors:** ${contributors}`] : [],
     [footer],
   ]);
