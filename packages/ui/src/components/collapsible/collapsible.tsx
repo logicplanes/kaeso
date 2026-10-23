@@ -38,7 +38,7 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       className={cn("flex flex-col", className)}
     >
-      <BaseCollapsible.Trigger className={TRIGGER}>
+      <BaseCollapsible.Trigger className={cn(TRIGGER, "-mx-12 w-auto")}>
         <Icon
           icon={icons.chevronRight}
           size="sm"
@@ -48,7 +48,7 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
         {hint && <span className="text-small font-regular text-fg-secondary">{hint}</span>}
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
-        <div className="pt-4 pr-12 pb-12 pl-36">{children}</div>
+        <div className="pt-4 pb-12 pl-24">{children}</div>
       </BaseCollapsible.Panel>
     </BaseCollapsible.Root>
   );
