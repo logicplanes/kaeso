@@ -77,6 +77,34 @@ describe("LimitsPage", () => {
     ]);
   });
 
+  it("gives every limit the same columns, so the meters start and end on one line", async () => {
+    signedIn();
+    stubProject();
+    await renderApp(projectPath("limits"));
+
+    await screen.findByText("Grace Hopper");
+    const rows = screen.getAllByRole("gridcell").filter((c) => c.querySelector('[role="meter"], [role="progressbar"]'));
+    expect(rows).toHaveLength(5);
+    for (const row of rows) {
+      expect(within(row).getByText(/ of /)).toHaveClass("md:w-160", "md:text-right");
+      expect(
+        within(row)
+          .getByText(/^(Last minute|Never resets|Resets )/)
+          .closest("span.flex"),
+      ).toHaveClass("md:w-120", "justify-end");
+    }
+  });
+
+  it("gives the longer German reset texts a wider column", async () => {
+    signedIn();
+    stubProject();
+    await renderApp(projectPath("limits"), { locale: "de" });
+
+    const reset = await screen.findAllByText(/zurückgesetzt$/);
+    expect(reset.length).toBeGreaterThan(0);
+    for (const text of reset) expect(text).toHaveClass("md:w-180");
+  });
+
   it("lists a limit on an archived key last, marked as no longer applying", async () => {
     signedIn();
     stubProject({

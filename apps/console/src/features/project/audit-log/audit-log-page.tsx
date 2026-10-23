@@ -24,7 +24,7 @@ export function ProjectAuditLogPage({ org, project, search }: { org: string; pro
   return (
     <>
       <ProjectHeader org={org} project={project} page={t("project.auditLog.title", "Audit log")} path="audit-log" />
-      <AppFrame.Body padding="list">
+      <AppFrame.Body padding="none">
         <AuditLog
           scope={{ org, project }}
           search={search}

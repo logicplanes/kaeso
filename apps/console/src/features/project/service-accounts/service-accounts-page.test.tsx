@@ -53,6 +53,7 @@ describe("ServiceAccountsPage", () => {
     expect(rows[0]).toHaveTextContent("Created by Ada Okafor");
     await waitFor(() => expect(rows[0]).toHaveTextContent("2 keys"));
     expect(rows[0]).toHaveTextContent("Developer");
+    expect(within(rows[0] as HTMLElement).getByText("Developer")).toHaveClass("bg-fill-2");
     expect(rows[1]).toHaveTextContent("zeta-sync");
     expect(rows[1]).toHaveTextContent("0 keys");
     expect(rows[1]).toHaveTextContent("Viewer · customized");

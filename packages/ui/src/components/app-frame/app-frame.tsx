@@ -296,9 +296,9 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
       <MenuButton className="absolute top-10 left-24 z-10" />
       <div className={cn("mx-auto w-full max-w-settings px-24 pt-64 pb-96", className)} {...props}>
         <header className="flex flex-col gap-8">
-          <div className="flex items-start justify-between gap-16">
+          <div className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8">
             <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance">{title}</h1>
-            {actions && <div className="flex h-34 shrink-0 items-center gap-8">{actions}</div>}
+            {actions && <div className="ml-auto flex h-34 shrink-0 items-center gap-8">{actions}</div>}
           </div>
           {description && <p className="text-body-lg font-regular text-fg-secondary">{description}</p>}
         </header>

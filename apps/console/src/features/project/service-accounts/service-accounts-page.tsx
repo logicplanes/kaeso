@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Badge, Button, Empty, Icon, icons, Input, List, Pill, StepDialog, Text } from "@logicplanes/kaeso-ui";
+import { AppFrame, Badge, Button, Empty, Icon, icons, Input, List, StepDialog, Text } from "@logicplanes/kaeso-ui";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
@@ -71,7 +71,7 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
               {t("project.serviceAccounts.keyCount", "{count, plural, one {# key} other {# keys}}", { count: n })}
             </Text>
           )}
-          <Pill size="sm">{grantLabel(a.grant)}</Pill>
+          <Badge>{grantLabel(a.grant)}</Badge>
         </span>
       ),
       date: formatDate(a.created_at),

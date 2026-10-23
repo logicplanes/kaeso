@@ -35,6 +35,8 @@ describe("MembersPage", () => {
       expect.stringContaining("Zoe Quinn"),
     ]);
     expect(rows[0]).toHaveTextContent("Admin");
+    expect(within(rows[0] as HTMLElement).getByText("Admin")).toHaveClass("bg-fill-2");
+    expect(within(rows[0] as HTMLElement).getByText("Admin")).not.toHaveClass("shadow-control");
     expect(rows[1]).toHaveTextContent("Viewer · customized");
     expect(rows[2]).toHaveTextContent("Suspended");
     expect(rows[3]).toHaveTextContent("Deleted");

@@ -223,6 +223,19 @@ describe("AuditLog", () => {
     expect(to).toBe(from);
   });
 
+  it("lets the filters share each row on a phone and keeps them 160px wide beside each other", async () => {
+    orgLog();
+    await renderApp(PATH);
+    await table();
+    const filters = screen.getByRole("toolbar", { name: "Filter the audit log" });
+    for (const name of ["Actor", "Action", "Target id"]) {
+      const field = within(filters)
+        .getByRole(name === "Target id" ? "searchbox" : "combobox", { name })
+        .closest("div.flex-1");
+      expect(field).toHaveClass("basis-120", "min-w-0", "sm:w-160", "sm:flex-none");
+    }
+  });
+
   it("loads the next page of events", async () => {
     orgLog();
     on("GET", ORG_LOG, ({ query }: { query: URLSearchParams }) =>

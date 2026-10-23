@@ -48,7 +48,7 @@ describe("an organization seen from the instance", () => {
     expect(await within(usage).findByText("3,000")).toBeInTheDocument();
     expect(usage).toHaveClass("lg:grid-cols-4");
     expect(usage).not.toHaveClass("grid-cols-1");
-    expect(within(usage).getByText("100 a day on average")).toBeInTheDocument();
+    expect(within(usage).getByText("100 per day")).toBeInTheDocument();
     expect(within(usage).getByText("1.5M")).toBeInTheDocument();
     expect(within(usage).getByText("500 per request")).toBeInTheDocument();
     expect(within(usage).getByText("$12.50")).toBeInTheDocument();
@@ -65,6 +65,7 @@ describe("an organization seen from the instance", () => {
     expect(within(members).getByText("Grace Hopper")).toBeInTheDocument();
     expect(within(members).getByText("grace@example.com")).toBeInTheDocument();
     expect(within(members).getByText("Owner")).toBeInTheDocument();
+    expect(within(members).getByText("Owner")).toHaveClass("bg-fill-2");
     expect(within(members).getAllByText("Member")).toHaveLength(2);
     expect(within(members).getByText("Deactivated")).toBeInTheDocument();
     expect(screen.getByText("3 members, with their role and the day they joined")).toBeInTheDocument();

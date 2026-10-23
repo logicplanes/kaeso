@@ -33,6 +33,7 @@ describe("organization members", () => {
     expect(ada).toHaveTextContent("Ada Okafor (you)");
     expect(ada).toHaveTextContent("owner@example.com");
     expect(ada).toHaveTextContent("Owner");
+    expect(within(ada).getByText("Owner")).toHaveClass("bg-fill-2");
     expect(grace).toHaveTextContent("Admin · customized");
     expect(linus).toHaveTextContent("Suspended");
     expect(linus).toHaveTextContent("Member");
