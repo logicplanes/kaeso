@@ -1208,3 +1208,68 @@ async fn a_sign_in_that_cannot_be_saved_ends_its_session_at_openai() {
     assert_eq!(list.body["data"], json!([]));
     s.cleanup().await;
 }
+
+fn newest_refresh_token(oauth: &MockOAuth) -> String {
+    oauth
+        .issued()
+        .into_iter()
+        .rfind(|t| t.starts_with("rt_"))
+        .unwrap()
+}
+
+#[tokio::test]
+async fn a_sign_in_refused_after_openai_issued_tokens_ends_that_session() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-eve", "eve@example.com");
+    refused_with(
+        &finish_again(&app, &owner, &id, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        "You signed in to another ChatGPT account; sign in as ada@example.com.",
+    );
+    assert_eq!(
+        oauth.revoked(),
+        [(newest_refresh_token(&oauth), "oaiapp_mock0".to_owned())]
+    );
+
+    for (fault, message) in [
+        (
+            Fault::WithoutPlan,
+            "The account didn't allow using its ChatGPT plan; start again and allow it.",
+        ),
+        (
+            Fault::WrongNonce,
+            "The answer from ChatGPT could not be verified; start again.",
+        ),
+    ] {
+        oauth.set_fault(Fault::None);
+        let (attempt, url) = common::begin_sign_in(&app, &owner, "Second").await;
+        let back = oauth.approve(&url, "sub-bob", "bob@example.com");
+        oauth.set_fault(fault);
+        refused_with(
+            &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+            StatusCode::BAD_REQUEST,
+            message,
+        );
+        assert_eq!(
+            oauth.revoked().pop().unwrap().0,
+            newest_refresh_token(&oauth),
+            "{fault:?}"
+        );
+    }
+    assert_eq!(oauth.revoked().len(), 3);
+    let list = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(list.body["data"].as_array().unwrap().len(), 1);
+    s.cleanup().await;
+}

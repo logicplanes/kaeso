@@ -159,6 +159,10 @@ impl Granted {
         self.id_token.as_deref()
     }
 
+    pub fn refresh_token(&self) -> Option<&str> {
+        self.refresh_token.as_deref()
+    }
+
     pub fn scopes(&self) -> Vec<String> {
         self.scope
             .as_deref()
@@ -480,13 +484,17 @@ pub async fn refresh(hosts: &Hosts, tokens: &Tokens) -> Result<Granted, AccountE
     .await
 }
 
-pub async fn revoke(hosts: &Hosts, tokens: &Tokens) -> Result<(), AccountError> {
+pub async fn revoke(
+    hosts: &Hosts,
+    client_id: &str,
+    refresh_token: &str,
+) -> Result<(), AccountError> {
     let (status, body) = post_form(
         &hosts.at("/api/accounts/oauth/revoke"),
         &[
-            ("token", &tokens.refresh_token),
+            ("token", refresh_token),
             ("token_type_hint", "refresh_token"),
-            ("client_id", &tokens.client_id),
+            ("client_id", client_id),
         ],
     )
     .await?;

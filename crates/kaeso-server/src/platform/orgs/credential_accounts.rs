@@ -386,6 +386,26 @@ async fn signed_in(
     )
     .await
     .map_err(|e| failed(product, &e))?;
+    let issued = granted.refresh_token().map(|token| Revocable {
+        hosts: hosts.clone(),
+        client_id: client_id.clone(),
+        refresh_token: token.to_owned(),
+    });
+    let checked = checked(ctx, hosts, product, pending, &client_id, granted).await;
+    if checked.is_err() {
+        unsaved(issued).await;
+    }
+    checked
+}
+
+async fn checked(
+    ctx: &Ctx,
+    hosts: &Hosts,
+    product: &str,
+    pending: &Pending,
+    client_id: &str,
+    granted: accounts::Granted,
+) -> ApiResult<Signed> {
     if !granted.scopes().iter().any(|s| s == CHATGPT_PLAN_SCOPE) {
         return Err(no_plan(product));
     }
@@ -393,7 +413,7 @@ async fn signed_in(
         .id_token()
         .ok_or_else(|| incomplete(product))?
         .to_owned();
-    let identity = accounts::verify(hosts, &id_token, &client_id, &pending.nonce)
+    let identity = accounts::verify(hosts, &id_token, client_id, &pending.nonce)
         .await
         .map_err(|e| failed(product, &e))?;
     if let Some(sub) = &pending.sub
@@ -410,7 +430,7 @@ async fn signed_in(
         .ok_or_else(|| incomplete(product))?;
     let expires_at = granted.expires_at(ctx.now);
     let tokens = granted
-        .first_tokens(&client_id, &identity.subject)
+        .first_tokens(client_id, &identity.subject)
         .map_err(|e| failed(product, &e))?;
     Ok(Signed {
         tokens,
@@ -468,21 +488,16 @@ pub async fn finish(
     )
     .await;
     if added.is_err() {
-        unsaved(&state, sign_in, signed.tokens).await;
+        unsaved(Revocable::of(&state, sign_in, &signed.tokens)).await;
     }
     Ok((StatusCode::CREATED, Json(added?)))
 }
 
 // A session OpenAI opened for a key that was never saved would stay usable until it
 // expires, with nobody able to see or end it from Kaeso.
-async fn unsaved(state: &AppState, sign_in: AccountSignIn, tokens: Tokens) {
-    if let Some(hosts) = state.accounts.hosts(sign_in.method) {
-        Revocable {
-            hosts: hosts.clone(),
-            tokens,
-        }
-        .revoke()
-        .await;
+async fn unsaved(issued: Option<Revocable>) {
+    if let Some(issued) = issued {
+        issued.revoke().await;
     }
 }
 
@@ -511,7 +526,7 @@ pub async fn finish_again(
     let signed = signed_in(&state, &ctx, sign_in, &pending, callback.answer).await?;
     let saved = save_again(&state, &ctx, id, provider, sign_in, &signed).await;
     if saved.is_err() {
-        unsaved(&state, sign_in, signed.tokens).await;
+        unsaved(Revocable::of(&state, sign_in, &signed.tokens)).await;
     }
     Ok(Json(saved?))
 }
@@ -554,12 +569,21 @@ async fn save_again(
 
 pub(super) struct Revocable {
     hosts: Hosts,
-    tokens: Tokens,
+    client_id: String,
+    refresh_token: String,
 }
 
 impl Revocable {
+    fn of(state: &AppState, sign_in: AccountSignIn, tokens: &Tokens) -> Option<Revocable> {
+        Some(Revocable {
+            hosts: state.accounts.hosts(sign_in.method)?.clone(),
+            client_id: tokens.client_id.clone(),
+            refresh_token: tokens.refresh_token.clone(),
+        })
+    }
+
     pub(super) async fn revoke(self) {
-        match accounts::revoke(&self.hosts, &self.tokens).await {
+        match accounts::revoke(&self.hosts, &self.client_id, &self.refresh_token).await {
             Ok(()) => tracing::info!("ended an account's session at the provider"),
             Err(e) => tracing::warn!(
                 error = %e,
@@ -584,7 +608,11 @@ pub(super) async fn revocable(
         }
     };
     match service::tokens(&state.keyring, &row) {
-        Ok(tokens) => Some(Revocable { hosts, tokens }),
+        Ok(tokens) => Some(Revocable {
+            hosts,
+            client_id: tokens.client_id,
+            refresh_token: tokens.refresh_token,
+        }),
         Err(e) => {
             tracing::warn!(error = %e, "cannot open a deleted account's tokens to end its session");
             None
