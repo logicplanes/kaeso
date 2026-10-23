@@ -295,6 +295,14 @@ order: 6
 
 `GET /v1/models` 和 `GET /v1/models/{model}` 在所有 OpenAI API 中结构相同。本编解码器使用 [OpenAI Chat Completions](openai-chat.md) 页面所述的共享实现对其编码和解码（fixture 位于 `fixtures/openai_chat/models/`）。解码出的 extras 带有来源 `openai_responses`。
 
+## ChatGPT 套餐用量
+
+`openai_responses::for_chatgpt_plan` 会为通过 Sign in with ChatGPT 提供 ChatGPT 套餐的 Responses 路由改写 `GenerateRequest`（[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)）。网关会对属于 ChatGPT 账户的服务商密钥调用它。
+
+- 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`：包括类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
+- 它会设置 `stream: true` 和 `store: false`。
+- 它会删除形式标记 `input`、`system_items` 和 `instructions`，因此 `input` 为数组，开头的系统文本成为 `instructions`。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
+
 ## 使用此格式的服务商
 
 提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。

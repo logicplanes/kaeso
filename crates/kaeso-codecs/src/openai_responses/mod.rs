@@ -3,6 +3,7 @@ mod input;
 mod node;
 mod overrides;
 mod parts;
+mod plan;
 mod request;
 mod response;
 pub(crate) mod stream;
@@ -25,6 +26,8 @@ const DIALECT: DialectId = DialectId::OpenAiResponses;
 pub const RESPONSES_PATH: &str = "/v1/responses";
 
 pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
+
+pub use plan::for_chatgpt_plan;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]

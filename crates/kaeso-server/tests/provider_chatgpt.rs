@@ -225,6 +225,57 @@ async fn every_request_goes_to_the_responses_api_as_a_stream_without_refused_fie
 }
 
 #[tokio::test]
+async fn explicit_defaults_and_later_system_items_never_reach_the_plan_route() {
+    let p = plan().await;
+    let r = p
+        .call(
+            "/v1/responses",
+            false,
+            json!({
+                "model": "openai/gpt-4o",
+                "input": [
+                    { "role": "user", "content": "Hi" },
+                    { "role": "system", "content": "be brief" },
+                    { "role": "user", "content": "Go" },
+                ],
+                "background": false,
+                "metadata": {},
+                "truncation": "disabled",
+                "temperature": null,
+                "max_output_tokens": null,
+                "user": null,
+                "previous_response_id": null,
+            }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let body = p.sent().pop().unwrap().json();
+    for field in [
+        "background",
+        "metadata",
+        "truncation",
+        "temperature",
+        "max_output_tokens",
+        "user",
+        "previous_response_id",
+    ] {
+        assert!(body.get(field).is_none(), "{field} in {body}");
+    }
+    let roles: Vec<&str> = body["input"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|i| i["role"].as_str())
+        .collect();
+    assert_eq!(roles, ["user", "developer", "user"], "{body}");
+    assert_eq!(
+        (body["store"].clone(), body["stream"].clone()),
+        (json!(false), json!(true))
+    );
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn embeddings_and_token_counts_need_an_api_key() {
     let p = plan().await;
     let r = p

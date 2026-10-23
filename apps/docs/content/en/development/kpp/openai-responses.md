@@ -295,6 +295,14 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 
 `GET /v1/models` and `GET /v1/models/{model}` use the same shape in every OpenAI API. This codec encodes and decodes it with the shared implementation described on the [OpenAI Chat Completions](openai-chat.md) page (fixtures `fixtures/openai_chat/models/`). Decoded extras carry the origin `openai_responses`.
 
+## ChatGPT plan usage
+
+`openai_responses::for_chatgpt_plan` rewrites a `GenerateRequest` for the Responses route that serves a ChatGPT plan through Sign in with ChatGPT ([preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). The gateway calls it for a provider key that is a ChatGPT account.
+
+- It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`: the typed fields, extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
+- It sets `stream: true` and `store: false`.
+- It drops forms `input`, `system_items` and `instructions`, so `input` is an array and leading system text is `instructions`. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
+
 ## Providers that use this format
 
 Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
