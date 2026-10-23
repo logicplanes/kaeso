@@ -20,13 +20,13 @@ After signing in, people return to the console page they first opened, through t
 
 ## Recent sign-ins
 
-When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. An answer that says the last sign-in is older than the request is refused with `stale_sign_in`, so a confirmation always means a fresh sign-in.
+When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. Only an answer that says the person signed in during the confirmation counts, so a confirmation always means a fresh sign-in.
 
 A provider can also sign someone in with a session of its own from earlier, without asking. So a session from single sign-on dates from the provider's `auth_time`, not from when it came back to Kaeso, and counts as a recent sign-in only while that time is within 15 minutes. Kaeso measures it against the token's issue time `iat`, on the provider's clock, so the two servers' clocks needn't agree. Without `auth_time`, the session counts as older than 15 minutes from the start.
 
-So the provider must send `auth_time`, the time of the sign-in, in its ID tokens for single sign-on to confirm a recent sign-in. OpenID Connect requires it once `max_age` is sent, but some providers never send it. An answer without it is refused with `no_auth_time`, and Kaeso notes on the connection that the provider can't confirm. The console then stops offering that provider when it asks someone to sign in again, and offers a password, a sign-in link or a link to set a password instead.
+Some providers can't confirm a recent sign-in: they leave `auth_time` out, or ignore `max_age=0` and answer with an earlier sign-in of their own. OpenID Connect requires a fresh sign-in and `auth_time` once `max_age` is sent, but Kaeso can't tell a provider that ignores this apart until a confirmation fails. So the console offers single sign-on to confirm only when the account has no other way: no password, no sign-in link and no link to set a password.
 
-For an account whose organization requires single sign-on ([managed accounts](#managed-accounts)), nothing else confirms, so it can't take actions that need a recent sign-in. The organization's **Security** page shows either case under **Recent sign-in**. Kaeso offers the provider again once one of its ID tokens carries `auth_time`, and forgets what it noted when the issuer or client id changes. A sign-in without `auth_time` notes nothing, since providers may leave it out while `max_age` isn't sent.
+A confirmation without a fresh sign-in is refused with `cannot_confirm`, and Kaeso notes on the connection that the provider can't confirm. The console then stops offering it, and the organization's **Security** page shows **Recent sign-in**. For an account whose organization requires single sign-on ([managed accounts](#managed-accounts)), nothing else confirms, so it can't take actions that need a recent sign-in. Kaeso forgets the note when the issuer or client id changes; other sign-ins note nothing, since without `max_age` a provider may reuse its sign-in.
 
 ## Who signs in through single sign-on
 

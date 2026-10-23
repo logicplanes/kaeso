@@ -98,9 +98,7 @@ const LINK_REQUIRED: &str =
 const LINKED_ELSEWHERE: &str = "This SSO identity is already linked to another Kaeso account.";
 const OTHER_ACCOUNT: &str =
     "You signed in at the identity provider as someone else; sign in there as yourself.";
-const STALE_SIGN_IN: &str =
-    "The identity provider didn't ask you to sign in again; try again or confirm another way.";
-const NO_AUTH_TIME: &str =
+const CANNOT_CONFIRM: &str =
     "The identity provider can't confirm a recent sign-in; use your password or an email link.";
 const DEACTIVATED: &str = "This account is deactivated.";
 const SIGNED_IN_AS_OTHER: &str =
@@ -120,8 +118,7 @@ const CODES: &[(&str, &str)] = &[
     (LINK_REQUIRED, "link_required"),
     (LINKED_ELSEWHERE, "linked_elsewhere"),
     (OTHER_ACCOUNT, "other_account"),
-    (STALE_SIGN_IN, "stale_sign_in"),
-    (NO_AUTH_TIME, "no_auth_time"),
+    (CANNOT_CONFIRM, "cannot_confirm"),
     (DEACTIVATED, "deactivated"),
     (SIGNED_IN_AS_OTHER, "signed_in_as_other"),
     (NO_VERIFIED_DOMAIN, "no_verified_domain"),
@@ -618,7 +615,6 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             tracing::info!(error = %e, "SSO answer refused");
             ApiError::Authentication(e.message().to_owned())
         })?;
-    note_auth_time(state, &connection, &identity, flow.confirm.is_some()).await?;
     let email = kaeso_core::email::normalize(&identity.email)
         .map_err(|_| ApiError::Authentication(INVALID_EMAIL.into()))?;
     check_domain(&connection, &email)?;
@@ -825,25 +821,6 @@ async fn follow_address(
     Ok(())
 }
 
-// auth_time is optional unless max_age is sent (OpenID Connect Core 1.0 §2), so only a
-// confirmation, which sends max_age=0, shows that a provider leaves it out.
-async fn note_auth_time(
-    state: &AppState,
-    connection: &oidc::Connection,
-    identity: &crate::auth::oidc::Identity,
-    asked: bool,
-) -> ApiResult<()> {
-    let sends = match (identity.auth_time, asked) {
-        (Some(_), _) => true,
-        (None, true) => false,
-        (None, false) => return Ok(()),
-    };
-    if connection.sends_auth_time != Some(sends) {
-        oidc::record_auth_time(&state.pg, connection.org_id, &connection.issuer, sends).await?;
-    }
-    Ok(())
-}
-
 // The provider may reuse its own older sign-in, so the age comes from its auth_time against the
 // token's iat (one clock); without auth_time the age is unknown and must not count as recent.
 fn signed_in_at(
@@ -856,6 +833,17 @@ fn signed_in_at(
         }
         _ => now - RECENT_SIGN_IN - Duration::SECOND,
     }
+}
+
+// max_age=0 makes auth_time required in the answer (OpenID Connect Core 1.0 §2 and §3.1.2.1);
+// a provider that leaves it out, or ignores max_age and reuses its own older sign-in, can't
+// confirm. Both times come from the provider's clock, so a clock difference between it and Kaeso
+// can't make a fresh sign-in look stale.
+fn signed_in_afresh(identity: &crate::auth::oidc::Identity) -> bool {
+    matches!(
+        (identity.auth_time, identity.issued_at),
+        (Some(signed_in), Some(issued)) if issued - signed_in <= FLOW_LIFETIME + CLOCK_SKEW
+    )
 }
 
 // A confirmation proves the signed-in person is at the keyboard, so it must come back as the
@@ -871,13 +859,13 @@ async fn confirm(
     user: UserId,
     session: SessionId,
 ) -> ApiResult<Response> {
-    // max_age=0 makes auth_time required in the answer (OpenID Connect Core 1.0 §2 and
-    // §3.1.2.1). Both times come from the provider's clock, so a clock difference
-    // between it and Kaeso can't make a fresh sign-in look stale.
-    match (identity.auth_time, identity.issued_at) {
-        (None, _) => return Err(ApiError::PermissionDenied(NO_AUTH_TIME.into())),
-        (Some(signed_in), Some(issued)) if issued - signed_in <= FLOW_LIFETIME + CLOCK_SKEW => {}
-        _ => return Err(ApiError::PermissionDenied(STALE_SIGN_IN.into())),
+    let afresh = signed_in_afresh(identity);
+    if connection.confirms_sign_in != Some(afresh) {
+        oidc::record_confirms_sign_in(&state.pg, connection.org_id, &connection.issuer, afresh)
+            .await?;
+    }
+    if !afresh {
+        return Err(ApiError::PermissionDenied(CANNOT_CONFIRM.into()));
     }
     let org = flow.org;
     let mut tx = state.pg.begin().await?;
@@ -1062,15 +1050,33 @@ mod tests {
 
     use super::*;
 
-    fn signed_in(auth_time: Option<time::OffsetDateTime>) -> time::OffsetDateTime {
-        let identity = crate::auth::oidc::Identity {
+    fn identity(auth_time: Option<time::OffsetDateTime>) -> crate::auth::oidc::Identity {
+        crate::auth::oidc::Identity {
             subject: "sub".into(),
             email: "ada@acme.example".into(),
             name: None,
             auth_time,
             issued_at: Some(datetime!(2026-10-21 12:00 UTC)),
-        };
-        signed_in_at(&identity, datetime!(2026-10-21 18:30 UTC))
+        }
+    }
+
+    fn signed_in(auth_time: Option<time::OffsetDateTime>) -> time::OffsetDateTime {
+        signed_in_at(&identity(auth_time), datetime!(2026-10-21 18:30 UTC))
+    }
+
+    #[test]
+    fn only_a_sign_in_during_the_confirmation_confirms() {
+        assert!(signed_in_afresh(&identity(Some(
+            datetime!(2026-10-21 11:49 UTC)
+        ))));
+        assert!(
+            !signed_in_afresh(&identity(Some(datetime!(2026-10-21 11:48:59 UTC)))),
+            "a sign-in from before the confirmation began is the provider's own, reused"
+        );
+        assert!(!signed_in_afresh(&identity(None)));
+        let mut unissued = identity(Some(datetime!(2026-10-21 12:00 UTC)));
+        unissued.issued_at = None;
+        assert!(!signed_in_afresh(&unissued));
     }
 
     #[test]

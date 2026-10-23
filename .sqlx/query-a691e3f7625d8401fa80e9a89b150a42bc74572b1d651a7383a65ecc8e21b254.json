@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO org_oidc (org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, display_name, auto_redirect, verification_token, require_email_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) ON CONFLICT (org_id) DO UPDATE SET issuer = $2, client_id = $3, secret_ciphertext = $4, secret_nonce = $5, wrapped_key = $6, key_id = $7, display_name = $8, auto_redirect = $9, require_email_verified = $11, updated_at = now(), confirms_sign_in = CASE WHEN org_oidc.issuer = $2 AND org_oidc.client_id = $3 THEN org_oidc.confirms_sign_in END",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Text",
+        "Bool",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a691e3f7625d8401fa80e9a89b150a42bc74572b1d651a7383a65ecc8e21b254"
+}

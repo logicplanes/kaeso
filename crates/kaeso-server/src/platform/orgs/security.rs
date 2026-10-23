@@ -47,12 +47,12 @@ pub struct SsoView {
     #[doc = "Whether ID tokens must mark the address as verified with\n\
         `email_verified`."]
     pub require_email_verified: bool,
-    #[doc = "Whether the provider's ID tokens say when the person signed in\n\
-        (`auth_time`): `true` once a token did, `false` once a confirmation's\n\
-        token didn't, `null` while unknown or after `issuer` or `client_id`\n\
-        changes. With `false`, its sign-ins never count as recent and it can't\n\
-        confirm one, so members confirm with a password or a sign-in link."]
-    pub sends_auth_time: Option<bool>,
+    #[doc = "Whether the provider confirms a recent sign-in: `true` once a\n\
+        confirmation's ID token showed a fresh sign-in, `false` once one left out\n\
+        `auth_time` or carried an older sign-in the provider reused, `null` while\n\
+        unknown or after `issuer` or `client_id` changes. With `false`, it isn't\n\
+        offered to confirm one, so members confirm with a password or a sign-in link."]
+    pub confirms_sign_in: Option<bool>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -121,7 +121,7 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         name: c.display_name,
         auto_redirect: c.auto_redirect,
         require_email_verified: c.require_email_verified,
-        sends_auth_time: c.sends_auth_time,
+        confirms_sign_in: c.confirms_sign_in,
     });
     let sso_default_role = match (org.sso_default_preset.as_deref(), org.sso_default_role_id) {
         (None, _) => None,
@@ -355,7 +355,7 @@ pub async fn put_sso(
             display_name: display_name.clone(),
             auto_redirect,
             require_email_verified,
-            sends_auth_time: None,
+            confirms_sign_in: None,
         },
     )
     .await?;

@@ -24,11 +24,10 @@ const MESSAGES: Record<string, (provider?: string) => string> = {
   other_account: () => t("signIn.ssoError.otherAccount", "You signed in at the identity provider as someone else; sign in there as yourself."),
   signed_in_as_other: () =>
     t("signIn.ssoError.signedInAsOther", "This browser is signed in to another account, which stays signed in; sign out first to switch."),
-  stale_sign_in: () => t("signIn.ssoError.staleSignIn", "The identity provider didn't ask you to sign in again; try again or confirm another way."),
-  no_auth_time: (provider) =>
+  cannot_confirm: (provider) =>
     provider
-      ? t("signIn.ssoError.noAuthTimeNamed", "{provider} can't confirm a recent sign-in; use your password or an email link.", { provider })
-      : t("signIn.ssoError.noAuthTime", "The identity provider can't confirm a recent sign-in; use your password or an email link."),
+      ? t("signIn.ssoError.cannotConfirmNamed", "{provider} can't confirm a recent sign-in; use your password or an email link.", { provider })
+      : t("signIn.ssoError.cannotConfirm", "The identity provider can't confirm a recent sign-in; use your password or an email link."),
   org_scheduled: () => t("signIn.ssoError.orgScheduled", "This organization is scheduled for deletion."),
   throttled: () => t("signIn.ssoError.throttled", "Too many sign-in attempts; try again in a few minutes."),
 };

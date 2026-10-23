@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT o.id AS org_id, o.name AS org_name, c.display_name AS provider_name, i.linked_at, c.sends_auth_time FROM org_memberships m JOIN organizations o ON o.id = m.org_id JOIN org_oidc c ON c.org_id = m.org_id LEFT JOIN sso_identities i ON i.org_id = m.org_id AND i.user_id = m.user_id AND i.issuer = c.issuer WHERE m.user_id = $1 ORDER BY o.name, o.id",
+  "query": "SELECT o.id AS org_id, o.name AS org_name, c.display_name AS provider_name, i.linked_at, c.confirms_sign_in FROM org_memberships m JOIN organizations o ON o.id = m.org_id JOIN org_oidc c ON c.org_id = m.org_id LEFT JOIN sso_identities i ON i.org_id = m.org_id AND i.user_id = m.user_id AND i.issuer = c.issuer WHERE m.user_id = $1 ORDER BY o.name, o.id",
   "describe": {
     "columns": [
       {
@@ -49,12 +49,12 @@
       },
       {
         "ordinal": 4,
-        "name": "sends_auth_time",
+        "name": "confirms_sign_in",
         "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "org_oidc",
-            "name": "sends_auth_time"
+            "name": "confirms_sign_in"
           }
         }
       }
@@ -72,5 +72,5 @@
       true
     ]
   },
-  "hash": "b29e29d5d4ee4670cd9e01c8476f404739b2950e702812a13b05e8b418de2619"
+  "hash": "8c3d90a754a16ccaecb166c5cd201f3d6e0d2b324a2d012b205e369b64e19b68"
 }

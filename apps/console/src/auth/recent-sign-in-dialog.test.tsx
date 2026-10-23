@@ -205,15 +205,13 @@ describe("signing in again with a password", () => {
     expect(requests("POST", "auth/totp").map((r) => r.body)).toEqual([{ challenge: "chl_42", recovery_code: "abcd-efgh" }]);
   });
 
-  it("offers single sign-on next to the password", async () => {
-    needsRecentSignIn({ ways: { sso: [ACME_ID] } });
-    on("POST", "me/sign-in-again/sso", ssoStart("https://idp.example.com/authorize?state=again"));
-    const { popup } = popupWindow();
+  it("offers no single sign-on beside the password, even after a sign-in through it", async () => {
+    needsRecentSignIn({ session: { session: { ...whoAmI().session, method: "oidc", sso_org: ACME_ID.org_id } } });
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID instead" }));
-    await waitFor(() => expect(popup.location.href).toBe("https://idp.example.com/authorize?state=again"));
-    expect(requests("POST", "me/sign-in-again/sso").map((r) => r.body)).toEqual([{ org: ACME_ID.org_id, next: "/signed-in-again" }]);
+    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
+    expect(within(box).getByRole("button", { name: "Email me a sign-in link instead" })).toBeInTheDocument();
+    expect(within(box).queryByRole("button", { name: /Continue with/ })).not.toBeInTheDocument();
   });
 });
 
@@ -274,7 +272,7 @@ describe("signing in again without a password", () => {
     await user.click(await within(box).findByRole("button", { name: "Continue with Acme ID" }));
     await within(box).findByRole("button", { name: "Open the window again" });
     on("GET", "me/sign-in-again", { password: false, magic_link: true, set_password: false, sso: [] });
-    act(() => announceConfirmed("no_auth_time"));
+    act(() => announceConfirmed("cannot_confirm"));
     expect((await screen.findAllByText("Acme ID can't confirm a recent sign-in; use your password or an email link.")).length).toBeGreaterThan(0);
     expect(await within(box).findByRole("button", { name: "Email me a sign-in link" })).toBeInTheDocument();
     expect(within(box).queryByRole("button", { name: "Continue with Acme ID" })).not.toBeInTheDocument();
@@ -403,46 +401,26 @@ describe("signing in again from the organization that manages the account", () =
     managed_by: { org: ACME_ID.org_id, name: "Acme" },
   };
 
-  it("offers its identity provider first, then the password and an email link", async () => {
-    needsRecentSignIn({ session: managed, ways: { password: true, magic_link: true, sso: [ACME_ID] } });
+  it("asks for the password, and offers no single sign-on, when the account has one", async () => {
+    needsRecentSignIn({ session: managed, ways: { password: true, magic_link: true, sso: [] } });
     on("POST", "auth/password", signedInReply());
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
-    expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
+    const password = await within(box).findByLabelText("Password");
+    expect(within(box).queryByRole("button", { name: /Continue with/ })).not.toBeInTheDocument();
     expect(within(box).getByRole("button", { name: "Email me a sign-in link instead" })).toBeInTheDocument();
-    expect(within(box).queryByLabelText("Password")).not.toBeInTheDocument();
-    await user.click(within(box).getByRole("button", { name: "Use your password instead" }));
-    await user.type(await within(box).findByLabelText("Password"), "correct horse battery");
+    await user.type(password, "correct horse battery");
     await user.click(within(box).getByRole("button", { name: "Sign in" }));
     expect(await (await notifications()).findByText("Notifications saved")).toBeInTheDocument();
   });
 
-  it("puts the managing organization's provider ahead of the others", async () => {
+  it("offers its provider first when single sign-on is the only way", async () => {
     const globex = { org_id: "org_01hxglobex", org_name: "Globex", provider_name: null };
-    needsRecentSignIn({ session: managed, ways: { password: false, magic_link: false, sso: [globex, ACME_ID] } });
+    needsRecentSignIn({ session: managed, ways: { password: false, magic_link: false, sso: [ACME_ID, globex] } });
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     expect(await within(box).findByRole("button", { name: "Continue with Acme ID" })).toBeInTheDocument();
     expect(within(box).getByRole("button", { name: "Continue with Globex instead" })).toBeInTheDocument();
-  });
-
-  it("asks for the password first when the provider can't confirm", async () => {
-    needsRecentSignIn({ session: managed, ways: { password: true, magic_link: true, sso: [] } });
-    const { user } = await renderApp(PATH);
-    const box = await toggle(user);
-    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
-    expect(within(box).queryByRole("button", { name: "Use your password instead" })).not.toBeInTheDocument();
-  });
-
-  it("keeps the password first for a session from another organization's provider", async () => {
-    needsRecentSignIn({
-      session: { ...managed, managed_by: { org: "org_01hxglobex", name: "Globex" } },
-      ways: { password: true, magic_link: false, sso: [ACME_ID] },
-    });
-    const { user } = await renderApp(PATH);
-    const box = await toggle(user);
-    expect(await within(box).findByLabelText("Password")).toBeInTheDocument();
-    expect(within(box).getByRole("button", { name: "Continue with Acme ID instead" })).toBeInTheDocument();
   });
 });
 

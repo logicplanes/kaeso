@@ -67,9 +67,11 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
 - Als Instanz-Admin: jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen.
 
+Die Konsole fragt nach Ihrem Passwort oder sendet einen Anmeldelink oder einen Link, um ein Passwort festzulegen. Nur wenn Ihr Konto nichts davon hat, etwa weil die Organisation, die es verwaltet, Single Sign-on verlangt, bestätigt sie über Ihren Identitätsanbieter.
+
 Über Single Sign-on öffnet die Konsole Ihren Identitätsanbieter in einem kleinen Fenster und bittet Sie, sich dort erneut anzumelden. Die Seite und Ihre Eingaben bleiben, wie sie sind, und die Aktion läuft weiter, sobald Sie sich angemeldet haben. Nur Ihre eigene verknüpfte Identität bestätigt, aus einer frischen Anmeldung, und eine Ablehnung nennt den Grund. Blockiert der Browser das Fenster, geht die Konsole in diesem Tab zum Anbieter und bringt Sie zur Seite zurück. Eine Bestätigung über den Anbieter einer Organisation macht die Sitzung zu einer aus dem Single Sign-on dieser Organisation.
 
-Haben Sie sich über den Anbieter der Organisation angemeldet, die Ihr Konto verwaltet, bietet die Konsole diesen Anbieter zuerst an, daneben **Stattdessen Ihr Passwort verwenden** oder einen Anmeldelink. Einen Anbieter, der keine kürzliche Anmeldung bestätigen kann, bietet sie nicht an, und sie fragt zuerst nach Ihrem Passwort.
+Einen Anbieter, der einmal ohne frische Anmeldung geantwortet hat, bietet sie nicht mehr an ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
 
 ## Nach einer Anmeldung über Single Sign-on
 

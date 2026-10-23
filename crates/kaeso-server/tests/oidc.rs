@@ -65,7 +65,7 @@ async fn connect_org_with(
             display_name: name.map(str::to_owned),
             auto_redirect,
             require_email_verified: true,
-            sends_auth_time: None,
+            confirms_sign_in: None,
         },
     )
     .await
@@ -2051,8 +2051,11 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
         ways.body["set_password"], false,
         "the owner has a password already"
     );
-    assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
-    assert_eq!(ways.body["sso"][0]["provider_name"], "Acme ID");
+    assert_eq!(
+        ways.body["sso"],
+        json!([]),
+        "with a password, single sign-on isn't offered"
+    );
     sqlx::query("UPDATE organizations SET require_sso = true")
         .execute(&app.state.pg)
         .await
@@ -2062,7 +2065,8 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(
-        guest.body["password"], true,
+        (&guest.body["password"], &guest.body["sso"]),
+        (&json!(true), &json!([])),
         "requiring SSO leaves a guest's own sign-in alone"
     );
     common::manage_domain(&app, &owner.org_id, "example.com").await;
@@ -2075,7 +2079,10 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
         (&json!(false), &json!(false)),
         "an account whose org requires SSO is confirmed only through it"
     );
-    assert_eq!(managed.body["sso"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        managed.body["sso"],
+        json!([{ "org_id": owner.org_id, "org_name": "Acme", "provider_name": "Acme ID" }])
+    );
     sqlx::query("UPDATE organizations SET require_sso = false")
         .execute(&app.state.pg)
         .await
@@ -2138,6 +2145,11 @@ async fn an_sso_session_confirms_a_recent_sign_in_at_its_provider_and_keeps_its_
     .await
     .unwrap();
     assert_eq!(audited, 1);
+    assert_eq!(
+        confirms_sign_in(&app, &owner.org_id, &confirmed).await,
+        json!(true),
+        "a fresh sign-in shows the provider confirms"
+    );
     s.cleanup().await;
 }
 
@@ -2240,7 +2252,7 @@ async fn a_confirmation_never_switches_accounts_and_comes_back_to_the_page_with_
         "owner@acme.example",
     )
     .await;
-    back(&r, "stale_sign_in");
+    back(&r, "cannot_confirm");
     idp.set_fault(Fault::None);
     let who = app.get("/auth/session", &owner.cookie).await;
     assert_eq!(
@@ -2336,7 +2348,7 @@ async fn an_sso_sign_in_is_only_as_recent_as_the_sign_in_at_the_provider() {
     .await;
     assert_eq!(
         location(&r),
-        format!("{ORIGIN}/orgs/x/providers#sso_error=no_auth_time"),
+        format!("{ORIGIN}/orgs/x/providers#sso_error=cannot_confirm"),
         "a confirmation without auth_time can't prove a fresh sign-in"
     );
     assert!(r.cookie().is_none());
@@ -2373,33 +2385,19 @@ async fn an_account_without_a_password_is_offered_one_by_email_to_confirm_with()
         .expect_status(StatusCode::OK);
     assert_eq!(ways.body["password"], false);
     assert_eq!(ways.body["set_password"], true);
-    assert_eq!(ways.body["sso"][0]["org_id"], owner.org_id.as_str());
-
-    oidc::record_auth_time(
-        &app.state.pg,
-        common::uuid(&owner.org_id),
-        idp.issuer(),
-        false,
-    )
-    .await
-    .unwrap();
-    let ways = app
-        .get("/me/sign-in-again", &sso)
-        .await
-        .expect_status(StatusCode::OK);
-    assert_eq!(ways.body["sso"], json!([]));
     assert_eq!(
-        ways.body["set_password"], true,
-        "without a provider that can confirm, the account is still offered a password"
+        ways.body["sso"],
+        json!([]),
+        "a password set by email confirms, so single sign-on isn't offered"
     );
     s.cleanup().await;
 }
 
-async fn sends_auth_time(app: &App, owner: &Owner) -> serde_json::Value {
-    app.get(&format!("/orgs/{}/security", owner.org_id), &owner.cookie)
+async fn confirms_sign_in(app: &App, org: &str, cookie: &str) -> serde_json::Value {
+    app.get(&format!("/orgs/{org}/security"), cookie)
         .await
         .expect_status(StatusCode::OK)
-        .body["sso"]["sends_auth_time"]
+        .body["sso"]["confirms_sign_in"]
         .clone()
 }
 
@@ -2415,10 +2413,9 @@ async fn confirming_providers(app: &App, cookie: &str) -> Vec<String> {
         .collect()
 }
 
-#[tokio::test]
-async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_sign_in() {
+async fn a_provider_that_cant_confirm_is_no_longer_offered(fault: Fault) {
     let s = TestServices::start().await;
-    let app = App::start(&s).await;
+    let app = App::start_with(&s, &WITHOUT_PASSWORDS).await;
     let owner = app.setup().await;
     let idp = MockIdp::start("kaeso", "client-secret").await;
     connect_org(
@@ -2430,9 +2427,6 @@ async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_
         false,
     )
     .await;
-    assert_eq!(sends_auth_time(&app, &owner).await, json!(null));
-
-    idp.set_fault(Fault::NoAuthTime);
     link_account(
         &app,
         &idp,
@@ -2442,16 +2436,21 @@ async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_
         "owner@acme.example",
     )
     .await;
+    idp.set_fault(fault);
     let sso = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
         .await
         .cookie()
         .unwrap();
     assert_eq!(
-        sends_auth_time(&app, &owner).await,
+        confirms_sign_in(&app, &owner.org_id, &sso).await,
         json!(null),
-        "without max_age a provider may leave auth_time out, so a sign-in proves nothing"
+        "a sign-in without max_age=0 proves nothing about a confirmation"
     );
-    assert_eq!(confirming_providers(&app, &sso).await, ["Acme ID"]);
+    assert_eq!(
+        confirming_providers(&app, &sso).await,
+        ["Acme ID"],
+        "with nothing else to confirm with, single sign-on is offered"
+    );
 
     let (_, r) = confirm_as(
         &app,
@@ -2462,19 +2461,17 @@ async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_
         "owner@acme.example",
     )
     .await;
-    refused_with(&r, "no_auth_time");
+    refused_with(&r, "cannot_confirm");
     assert_eq!(app.get("/auth/session", &sso).await.status, StatusCode::OK);
-    assert_eq!(sends_auth_time(&app, &owner).await, json!(false));
-    let ways = app
-        .get("/me/sign-in-again", &sso)
-        .await
-        .expect_status(StatusCode::OK);
     assert_eq!(
-        ways.body["sso"],
-        json!([]),
+        confirms_sign_in(&app, &owner.org_id, &sso).await,
+        json!(false)
+    );
+    assert_eq!(
+        confirming_providers(&app, &sso).await,
+        Vec::<String>::new(),
         "a provider that can't confirm isn't offered again"
     );
-    assert_eq!(ways.body["password"], true, "the password still confirms");
     let linked = app
         .get("/me/sso-links", &sso)
         .await
@@ -2484,37 +2481,47 @@ async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_
         "the account stays linked and signs in through it"
     );
 
-    sso_as(&app, &idp, "sub-owner", "owner@acme.example").await;
-    assert_eq!(
-        sends_auth_time(&app, &owner).await,
-        json!(false),
-        "another sign-in without auth_time changes nothing"
-    );
-
     idp.set_fault(Fault::None);
-    let fresh = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+    let later = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
         .await
         .cookie()
         .unwrap();
-    assert_eq!(sends_auth_time(&app, &owner).await, json!(true));
-    assert_eq!(confirming_providers(&app, &fresh).await, ["Acme ID"]);
+    assert_eq!(
+        confirms_sign_in(&app, &owner.org_id, &later).await,
+        json!(false),
+        "a later sign-in with auth_time doesn't show that the provider honours max_age=0"
+    );
     app.clock.advance(time::Duration::minutes(16));
     let (_, r) = confirm_as(
         &app,
         &idp,
-        &fresh,
+        &later,
         &owner.org_id,
         "sub-owner",
         "owner@acme.example",
     )
     .await;
-    assert_eq!(location(&r), format!("{ORIGIN}/orgs/x/providers"));
-    assert!(r.cookie().is_some(), "the provider confirms again");
+    assert!(r.cookie().is_some(), "a fresh sign-in still confirms");
+    let confirmed = r.cookie().unwrap();
+    assert_eq!(
+        confirms_sign_in(&app, &owner.org_id, &confirmed).await,
+        json!(true)
+    );
     s.cleanup().await;
 }
 
 #[tokio::test]
-async fn a_new_issuer_or_client_id_forgets_whether_tokens_carry_auth_time() {
+async fn a_provider_that_leaves_out_auth_time_is_no_longer_offered_to_confirm_a_sign_in() {
+    a_provider_that_cant_confirm_is_no_longer_offered(Fault::NoAuthTime).await;
+}
+
+#[tokio::test]
+async fn a_provider_that_reuses_its_own_sign_in_is_no_longer_offered_to_confirm_a_sign_in() {
+    a_provider_that_cant_confirm_is_no_longer_offered(Fault::StaleAuthTime).await;
+}
+
+#[tokio::test]
+async fn a_new_issuer_or_client_id_forgets_whether_the_provider_confirms_a_sign_in() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -2534,7 +2541,7 @@ async fn a_new_issuer_or_client_id_forgets_whether_tokens_carry_auth_time() {
             Some(&owner.cookie),
         )
     };
-    oidc::record_auth_time(
+    oidc::record_confirms_sign_in(
         &app.state.pg,
         common::uuid(&owner.org_id),
         idp.issuer(),
@@ -2545,14 +2552,14 @@ async fn a_new_issuer_or_client_id_forgets_whether_tokens_carry_auth_time() {
 
     let kept = save("kaeso", None).await.expect_status(StatusCode::OK);
     assert_eq!(
-        kept.body["sso"]["sends_auth_time"],
+        kept.body["sso"]["confirms_sign_in"],
         json!(false),
-        "the same provider and app keep what their tokens showed"
+        "the same provider and app keep what their confirmations showed"
     );
     let changed = save("kaeso-new", Some("client-secret"))
         .await
         .expect_status(StatusCode::OK);
-    assert_eq!(changed.body["sso"]["sends_auth_time"], json!(null));
+    assert_eq!(changed.body["sso"]["confirms_sign_in"], json!(null));
     s.cleanup().await;
 }
 
@@ -2767,7 +2774,7 @@ async fn the_identity_provider_owns_a_managed_accounts_address() {
 }
 
 #[tokio::test]
-async fn signing_in_again_offers_the_managing_orgs_provider_first() {
+async fn signing_in_again_offers_single_sign_on_only_when_nothing_else_confirms() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
@@ -2820,25 +2827,38 @@ async fn signing_in_again_offers_the_managing_orgs_provider_first() {
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(
+        (&ways.body["password"], &ways.body["magic_link"]),
+        (&json!(true), &json!(true))
+    );
+    assert_eq!(
+        ways.body["sso"],
+        json!([]),
+        "with a password, not even the managing org's provider is offered"
+    );
+
+    let without_passwords = App::start_with(&s, &WITHOUT_PASSWORDS).await;
+    let ways = without_passwords
+        .get("/me/sign-in-again", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
         orgs_offered(&ways),
         ["Beta", "Acme"],
         "Beta manages the account, so it comes first"
     );
-    assert_eq!(
-        (&ways.body["password"], &ways.body["magic_link"]),
-        (&json!(true), &json!(true))
-    );
 
-    sqlx::query("UPDATE org_oidc SET sends_auth_time = false WHERE org_id = $1")
+    sqlx::query("UPDATE org_oidc SET confirms_sign_in = false WHERE org_id = $1")
         .bind(common::uuid(&beta))
         .execute(&app.state.pg)
         .await
         .unwrap();
-    let ways = app.get("/me/sign-in-again", &owner.cookie).await;
+    let ways = without_passwords
+        .get("/me/sign-in-again", &owner.cookie)
+        .await;
     assert_eq!(
         orgs_offered(&ways),
         ["Acme"],
-        "a provider known to leave out auth_time can't confirm"
+        "a provider that couldn't confirm isn't offered"
     );
     s.cleanup().await;
 }

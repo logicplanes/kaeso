@@ -106,24 +106,24 @@ describe("organization security", () => {
     expect(await screen.findByText("The provider's unverified addresses sign in too.")).toBeInTheDocument();
   });
 
-  it("says when the provider's sign-ins can't confirm a recent sign-in", async () => {
+  it("says when the provider can't confirm a recent sign-in", async () => {
     signedIn();
-    serveSecurity(security({ sso: sso({ sends_auth_time: false }) }));
+    serveSecurity(security({ sso: sso({ confirms_sign_in: false }) }));
     await renderApp(PATH);
-    expect(await screen.findByText("SSO never counts; members confirm with a password or link.")).toBeInTheDocument();
+    expect(await screen.findByText("SSO can't confirm one; members use a password or a link.")).toBeInTheDocument();
     expect(screen.getByText("Recent sign-in")).toBeInTheDocument();
   });
 
   it("says members can't confirm a recent sign-in while the provider can't and SSO is required", async () => {
     signedIn();
-    serveSecurity(security({ require_sso: true, sso: sso({ sends_auth_time: false }) }));
+    serveSecurity(security({ require_sso: true, sso: sso({ confirms_sign_in: false }) }));
     await renderApp(PATH);
-    expect(await screen.findByText("SSO never counts and is required, so members can't confirm.")).toBeInTheDocument();
+    expect(await screen.findByText("SSO can't confirm one and is required, so members can't.")).toBeInTheDocument();
   });
 
-  it.each([true, null])("says nothing about recent sign-ins while what the tokens carry is %s", async (sends) => {
+  it.each([true, null])("says nothing about recent sign-ins while whether the provider confirms one is %s", async (confirms) => {
     signedIn();
-    serveSecurity(security({ sso: sso({ sends_auth_time: sends }) }));
+    serveSecurity(security({ sso: sso({ confirms_sign_in: confirms }) }));
     await renderApp(PATH);
     expect(await screen.findByText("Only addresses the provider marks verified sign in.")).toBeInTheDocument();
     expect(screen.queryByText("Recent sign-in")).not.toBeInTheDocument();
