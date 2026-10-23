@@ -174,7 +174,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
+      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
         with:
           tool: cargo-edit
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
@@ -255,7 +255,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8
+      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
         with:
           tool: cargo-edit
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
