@@ -33,7 +33,9 @@ test("a Grok account becomes a SpaceX key once its code is approved on another d
 
   const status = add.getByRole("status");
   await expect(status).toContainText("Waiting for your approval; the code expires in");
-  await expect(add.getByRole("img", { name: "QR code to open the Grok sign-in page" })).toBeVisible();
+  const qr = add.getByRole("img", { name: "QR code to open the Grok sign-in page" });
+  await expect(qr).toBeVisible();
+  expect(await qr.boundingBox()).toMatchObject({ width: 160, height: 160 });
   await expect(add.getByRole("button", { name: "Copy code" })).toBeVisible();
   const link = add.getByRole("link", { name: /^accounts\.x\.ai/ });
   const code = (await link.getAttribute("href"))?.split("user_code=")[1] ?? "";
