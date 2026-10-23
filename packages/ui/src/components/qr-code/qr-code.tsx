@@ -31,7 +31,7 @@ export const QRCode = forwardRef<SVGSVGElement, QRCodeProps>(function QRCode({ v
       role="img"
       aria-label={label}
       shapeRendering="crispEdges"
-      className={cn("block rounded-well bg-scan text-on-scan shadow-ring", KAESO_QR_CODE_VARIANTS.size[size].classes, className)}
+      className={cn("block shrink-0 rounded-well bg-scan text-on-scan shadow-ring", KAESO_QR_CODE_VARIANTS.size[size].classes, className)}
     >
       <path d={path} fill="currentColor" />
     </svg>
