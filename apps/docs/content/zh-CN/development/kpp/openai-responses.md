@@ -170,14 +170,14 @@ order: 6
 | `response.reasoning_text.done`、`response.content_part.done`（推理） | 附加到下一个部分或 `BlockStop`（`@rdone`、`@rpdone`） |
 | `response.output_item.done`（`reasoning`） | `BlockDelta` `Opaque`（如有 `encrypted_content`）+ `BlockStop` |
 | `response.output_item.added` / `.done`（其他 item 类型） | `BlockStart` `Unknown` / `BlockDelta` `Unknown`（最终的 item）+ `BlockStop` |
-| `response.completed`、`response.incomplete` | `ResponseDelta`（`stop`、`usage`）+ `ResponseStop`（最终回复对象的覆盖项，例如 `completed_at`） |
+| `response.completed`、`response.incomplete` | `ResponseDelta`（`stop`、`usage`）+ `ResponseStop`（最终回复对象的覆盖项，例如 `completed_at`）。当流中宣告过 `function_call` 项时，即使最终 `output` 未列出它，`stop` 也为 `ToolUse`：ChatGPT 套餐的 Responses 路由以 `output: []` 结束 |
 | `response.failed` | `StreamEvent::Error`（错误类型取自 `error.code`；事件存于 `raw`，原样回放） |
 | `error`（`ResponseErrorEvent`，扁平的 `code`/`message`/`param`） | `StreamEvent::Error`（事件存于 `raw`，原样回放）。有嵌套的 `error` 对象时，从中读取 `code`、`message`、`param` 和 `type`，否则从事件本身读取。错误类型取自 `code` 和 `type`（忽略 `type: "error"`），与没有状态码时的[错误表](#错误errorresponse)相同，因此每个列出的错误码都起决定作用；否则为 `ProviderError`。没有消息时：`The provider reported an error in the middle of the stream.` |
 | 内容之前没有 `response.created` | 合成一个 `ResponseStart`（ID 和模型为空，带形式标记 `skip`，因此不会被写回；最终的回复对象仍带有真实 ID） |
 | 已知事件引用了流从未声明过的输出 item 或部分，或缺少必填字段 | `StreamEvent::Error`（`ProviderError`，``The provider sent a `<type>` event that refers to an output item or part it never announced, or lacks required fields.``）；之后不再解码任何内容 |
 | `error` 紧接着 `response.failed` | 一个 `StreamEvent::Error`（两个事件都存于 `raw`，都会回放） |
 | `response.completed`/`.incomplete`、`response.failed` 或 `error` 之后的任何内容 | 不解码 |
-| 其他所有事件（`response.queued`、`response.web_search_call.*`、`response.file_search_call.*`、`response.mcp_*`、`response.image_generation_call.*`、`response.audio.*`、未来的事件、开始之后出现或没有可读 `response` 的 `response.created`）、SSE 注释、没有 `data:` 行的帧（例如单独的 `retry: 3000`）、数据为空或 JSON 数据没有 `type` 的帧 | `StreamEvent::Extra`（`{event, data}` / `{comment}`），仅限同一方言。没有数据的帧不含 `data` 键，写回时也没有 `data:` 行；空数据作为文本保留（`text: true`）；帧的 `id`、`retry` 和未知 SSE 字段保留为 `id`、`retry` 和 `other`。 |
+| 其他所有事件（`response.queued`、`response.metadata`（ChatGPT 套餐的审核元数据）、`response.web_search_call.*`、`response.file_search_call.*`、`response.mcp_*`、`response.image_generation_call.*`、`response.audio.*`、未来的事件、开始之后出现或没有可读 `response` 的 `response.created`）、SSE 注释、没有 `data:` 行的帧（例如单独的 `retry: 3000`）、数据为空或 JSON 数据没有 `type` 的帧 | `StreamEvent::Extra`（`{event, data}` / `{comment}`），仅限同一方言。没有数据的帧不含 `data` 键，写回时也没有 `data:` 行；空数据作为文本保留（`text: true`）；帧的 `id`、`retry` 和未知 SSE 字段保留为 `id`、`retry` 和 `other`。 |
 | 不是 JSON 的数据 | `StreamEvent::Error`（`ProviderError`，`The provider sent a stream event that is not valid JSON: …`）；之后不再解码 |
 | 已开始的流在 `response.completed`/`.incomplete`、`response.failed` 或 `error` 之前结束；流在事件中途结束；某行不是 UTF-8；帧超过 16 MiB | `StreamEvent::Error`（`ProviderError`：`The provider's stream ended before the response was complete.`、`the provider's event stream ended in the middle of an event`、`the provider's event stream contains a line that is not valid UTF-8`、`the provider sent a streamed event larger than Kaeso's limit of 16777216 bytes`） |
 | 出现在不寻常位置的冗余事件 | `StreamEvent::Extra`，本应产生它们的生命周期事件带形式标记 `skip` |

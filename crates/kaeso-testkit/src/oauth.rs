@@ -50,6 +50,7 @@ pub enum Reply {
     UsageLimitInStream,
     ModelNotFound,
     Trickle,
+    ToolCall,
 }
 
 struct Grant {
@@ -572,6 +573,10 @@ async fn api(
                     .unwrap_or_default()
             };
             match *locked(&inner.reply) {
+                Reply::ToolCall => {
+                    let path = kpp_fixtures().join("openai_responses/streams/plan-function-call-stream.sse");
+                    stream(std::fs::read_to_string(path).expect("the plan's tool call stream fixture"))
+                }
                 Reply::Text => {
                     let path = kpp_fixtures().join("openai_responses/streams/text-basic-stream.sse");
                     stream(std::fs::read_to_string(path).expect("the text stream fixture"))

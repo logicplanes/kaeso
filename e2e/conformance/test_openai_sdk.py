@@ -99,9 +99,12 @@ def test_responses(base_url, scenario):
         response = None
         streamed: dict[tuple[str, int], str] = {}
         done: dict[tuple[str, int], str] = {}
+        items = []
         with c.responses.stream(model=model, input="What is the weather in Paris?") as s:
             for event in s:
-                if event.type == "response.reasoning_summary_text.delta":
+                if event.type == "response.output_item.done":
+                    items.append(event.item)
+                elif event.type == "response.reasoning_summary_text.delta":
                     key = (event.item_id, event.summary_index)
                     streamed[key] = streamed.get(key, "") + event.delta
                 elif event.type == "response.reasoning_summary_text.done":
@@ -109,6 +112,8 @@ def test_responses(base_url, scenario):
                 elif event.type in ("response.completed", "response.incomplete"):
                     response = event.response
         assert response is not None, "no final response event"
+        if not response.output:
+            response = response.model_copy(update={"output": items})
         assert streamed == done
         final = {
             (item.id, i): part.text

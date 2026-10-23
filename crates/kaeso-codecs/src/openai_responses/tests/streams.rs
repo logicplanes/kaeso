@@ -46,6 +46,33 @@ fn every_stream_fixture_round_trips_under_every_chunking() {
     }
 }
 
+#[test]
+fn a_call_only_the_stream_lists_still_stops_for_tool_use() {
+    let ev = stream("plan-function-call-stream");
+    assert!(ev.iter().any(|e| matches!(e, StreamEvent::BlockStart(BlockStart { block: BlockHeader::ToolCall(h), .. }) if h.id == "call_FZvZ4z9nfBwwEojBsK1nrJcS" && h.name == "get_weather")));
+    let stops: Vec<StopReason> = ev
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => d.stop.clone(),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(stops, [StopReason::ToolUse]);
+    let kept: Vec<Value> = ev
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::Extra(item) => item.raw.to_value().ok(),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        kept.iter()
+            .map(|v| v["data"]["type"].as_str().unwrap_or_default())
+            .collect::<Vec<_>>(),
+        ["response.metadata"]
+    );
+}
+
 pub(super) fn stream(name: &str) -> Vec<StreamEvent> {
     decode_stream_chunked(&fixture("streams", name, "sse"), usize::MAX)
 }
