@@ -1,5 +1,6 @@
 {
   "orgHome.aboutProviderKeys": "About provider keys",
+  "orgHome.account": "Account",
   "orgHome.actionsFor": "Actions for {name}",
   "orgHome.actionsForKey": "Actions for {title}",
   "orgHome.addProviderKey": "Add provider key",
@@ -53,6 +54,7 @@
   "orgHome.makeDefaultHint": "People who join the organization from now on start there; current members don't join it.",
   "orgHome.makeDefaultProject": "Make default project",
   "orgHome.makeDefaultQuestion": "Make {name} the default?",
+  "orgHome.manageUsage": "Manage usage",
   "orgHome.masterKeyId": "Encrypted with the master key {id}",
   "orgHome.member": "Member",
   "orgHome.nameYou": "{name} (you)",
@@ -94,6 +96,8 @@
   "orgHome.searchProviderKeys": "Search provider keys",
   "orgHome.serviceAccount": "Service account",
   "orgHome.serviceAccountIn": "Service account in {project}",
+  "orgHome.signInAgain": "Sign in again",
+  "orgHome.signedOut": "Signed out",
   "orgHome.usageBreakdown": "Usage breakdown",
   "orgHome.usesKeyNow": "Uses {name} now"
 }

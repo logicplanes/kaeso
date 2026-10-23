@@ -45,7 +45,7 @@ type Row = { id: string; provider: string; key: CredentialView; first: boolean }
 export const SEARCH_ABOVE = 8;
 
 const searchWords = (key: CredentialView, catalog: Providers) =>
-  [catalog.name(key.provider), key.provider, key.name, ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
+  [catalog.name(key.provider), key.provider, key.name, key.account ?? "", ...key.projects.map((p) => p.name)].map((w) => w.toLocaleLowerCase());
 
 function rowsOf(keys: CredentialView[], catalog: Providers): Row[] {
   const byProvider = new Map<string, CredentialView[]>();
@@ -127,7 +127,9 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const setDefault = makeDefault.mutate;
   const columns = useMemo(() => {
     const menu = (k: CredentialView) => {
-      if (!canChange && !canDelete) return null;
+      const signIn = k.auth_method === "api_key" ? undefined : providers.get(k.provider)?.account;
+      const usage = signIn?.usage_url;
+      if (!canChange && !canDelete && !usage) return null;
       return (
         <Menu>
           <Menu.Trigger>
@@ -144,10 +146,20 @@ export function OrgProvidersPage({ org }: { org: string }) {
                 {t("orgHome.assignToProjects", "Assign to projects")}
               </Menu.Item>
             )}
-            {canChange && (
-              <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
-                {t("orgHome.replace", "Replace")}
-              </Menu.Item>
+            {canChange &&
+              (k.auth_method === "api_key" ? (
+                <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
+                  {t("orgHome.replace", "Replace")}
+                </Menu.Item>
+              ) : (
+                <Menu.Item icon={icons.session} onClick={() => setReplacing(k)}>
+                  {t("orgHome.signInAgain", "Sign in again")}
+                </Menu.Item>
+              ))}
+            {usage && (
+              <Menu.LinkItem icon={icons.usage} href={usage} external>
+                {t("orgHome.manageUsage", "Manage usage")}
+              </Menu.LinkItem>
             )}
             {canChange && (
               <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
@@ -184,6 +196,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
         (r: Row) => r,
         (r: Row) => {
           const under = [
+            r.key.account ? { label: t("orgHome.account", "Account"), value: r.key.account } : null,
             hidden.includes("projects") ? { label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
             hidden.includes("used") ? { label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
             hidden.includes("added") ? { label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
@@ -192,9 +205,14 @@ export function OrgProvidersPage({ org }: { org: string }) {
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
                 <Text truncate>{r.key.name}</Text>
-                <Tooltip content={t("orgHome.masterKeyId", "Encrypted with the master key {id}", { id: r.key.key_id })}>
-                  <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
-                </Tooltip>
+                {r.key.account ? (
+                  <Badge tone="outline">{providers.product(r.provider)}</Badge>
+                ) : (
+                  <Tooltip content={t("orgHome.masterKeyId", "Encrypted with the master key {id}", { id: r.key.key_id })}>
+                    <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
+                  </Tooltip>
+                )}
+                {r.key.auth_error && <Badge tone="warning">{t("orgHome.signedOut", "Signed out")}</Badge>}
                 {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
               </span>
               {under.length > 0 &&

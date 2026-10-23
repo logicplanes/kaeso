@@ -31,6 +31,7 @@ Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway w
 | `provider` | Eine Mock-API für OpenAI und Anthropic, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
 | `idp` | Ein Mock-Identitätsanbieter (OpenID Connect) für Single Sign-on | `http://idp.localhost:18091` |
 | `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Einstellungen** › **Instanz** › **Updates** | `http://127.0.0.1:18092` |
+| `chatgpt` | Ein Mock der ChatGPT-Anmeldung unter `auth.openai.com` im Stack, mit einem Testzertifikat, dem das Gateway vertraut | `http://127.0.0.1:18093` |
 | `master-key` | Schreibt den Hauptschlüssel des Gateways in ein Volume, bevor das Gateway startet | |
 
 `pnpm stack:up` gibt den Einrichtungslink aus, solange die Installation keine Benutzer hat. Es liest den Link aus `kaeso setup-link` im Container des Gateways.
@@ -71,7 +72,7 @@ Das nächste `pnpm stack:up` beginnt leer.
 
 ## Ports und Images ändern
 
-Setzen Sie diese Variablen vor `pnpm stack:up`, um einen Dienst auf einen anderen Port zu legen: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT`, `KAESO_IDP_PORT` und `KAESO_RELEASES_PORT`. `KAESO_PUBLIC_URL` legt die Adresse der Konsole fest. Die Standardwerte stehen in `apps/console/scripts/stack.mjs`.
+Setzen Sie diese Variablen vor `pnpm stack:up`, um einen Dienst auf einen anderen Port zu legen: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT`, `KAESO_IDP_PORT`, `KAESO_RELEASES_PORT` und `KAESO_CHATGPT_PORT`. `KAESO_PUBLIC_URL` legt die Adresse der Konsole fest. Die Standardwerte stehen in `apps/console/scripts/stack.mjs`.
 
 Um ein anderswo gebautes Image des Gateways zu nutzen, etwa ein Release, geben Sie es an. Der Stack überspringt dann den Build:
 
@@ -89,7 +90,7 @@ Wählen Sie im zweiten Klon einen Projektnamen und freie Ports und starten Sie d
 
 ```bash
 export KAESO_STACK_PROJECT=kaeso-two KAESO_PUBLIC_URL=http://localhost:3001
-export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192
+export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192 KAESO_CHATGPT_PORT=18193
 export KAESO_MAIL_PORT=58125 KAESO_MAIL_SMTP_PORT=51125
 export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223 KAESO_VALKEY_PORT=56479
 pnpm dev --port 3001

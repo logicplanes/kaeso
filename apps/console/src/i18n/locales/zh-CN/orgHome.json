@@ -1,5 +1,6 @@
 {
   "orgHome.aboutProviderKeys": "了解服务商密钥",
+  "orgHome.account": "账户",
   "orgHome.actionsFor": "{name} 的操作",
   "orgHome.actionsForKey": "{title} 的操作",
   "orgHome.addProviderKey": "添加服务商密钥",
@@ -95,5 +96,8 @@
   "orgHome.serviceAccount": "服务账号",
   "orgHome.serviceAccountIn": "{project} 中的服务账号",
   "orgHome.usageBreakdown": "用量明细",
-  "orgHome.usesKeyNow": "当前使用 {name}"
+  "orgHome.usesKeyNow": "当前使用 {name}",
+  "orgHome.signInAgain": "重新登录",
+  "orgHome.manageUsage": "管理用量",
+  "orgHome.signedOut": "已退出登录"
 }

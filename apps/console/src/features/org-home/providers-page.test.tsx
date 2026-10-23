@@ -163,6 +163,56 @@ describe("organization providers", () => {
     expect(await screen.findByRole("dialog", { name: /Add provider key/ })).toBeInTheDocument();
   });
 
+  it("shows an account's email and product, and offers to sign in again and manage its usage", async () => {
+    signedIn();
+    const plan = credential({ id: "cred_plan", name: "Ada's plan", is_default: false, auth_method: "chatgpt", account: "ada@example.com", last4: "" });
+    const lapsed = credential({
+      id: "cred_lapsed",
+      name: "Old plan",
+      is_default: false,
+      auth_method: "chatgpt",
+      account: "grace@example.com",
+      last4: "",
+      auth_error: "signed_out",
+    });
+    keys([production, plan, lapsed]);
+    const { user } = await renderApp(PATH);
+
+    const account = await row("Ada's plan");
+    expect(account).toHaveTextContent("ada@example.com");
+    expect(within(account).getByText("ChatGPT")).toBeInTheDocument();
+    expect(account).not.toHaveTextContent("…");
+    expect(account).not.toHaveTextContent("Signed out");
+    expect(await row("Old plan")).toHaveTextContent("Signed out");
+    expect(await row("OpenAI production")).toHaveTextContent("…9f3c");
+
+    const menu = await openMenu(user, "Ada's plan");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual(["Make default", "Assign to projects", "Sign in again", expect.stringMatching(/^Manage usage/), "Rename", "Delete"]);
+    const usage = within(menu).getByRole("menuitem", { name: /Manage usage/ });
+    expect(usage).toHaveAttribute("href", "https://chatgpt.com/settings/usage");
+    expect(usage).toHaveAttribute("target", "_blank");
+    await user.click(within(menu).getByRole("menuitem", { name: "Sign in again" }));
+    expect(await screen.findByRole("dialog", { name: /Sign in again to OpenAI · Ada's plan/ })).toBeInTheDocument();
+  });
+
+  it("lets people who can only view keys reach an account's usage", async () => {
+    withRights(["org.view", "provider_credentials.view"]);
+    keys([production, credential({ id: "cred_plan", name: "Ada's plan", is_default: false, auth_method: "chatgpt", account: "ada@example.com", last4: "" })]);
+    const { user } = await renderApp(PATH);
+    await row("Ada's plan");
+    expect(screen.queryByRole("button", { name: "Actions for OpenAI · OpenAI production" })).not.toBeInTheDocument();
+    const menu = await openMenu(user, "Ada's plan");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual([expect.stringMatching(/^Manage usage/)]);
+  });
+
   it("makes a key the provider's default", async () => {
     signedIn();
     keys([production, staging]);

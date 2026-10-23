@@ -31,6 +31,7 @@ flowchart TD
 | `provider` | 模拟的 OpenAI 和 Anthropic API，因此不需要服务商密钥 | 仅在栈内部 |
 | `idp` | 用于单点登录的模拟 OpenID Connect 身份提供商 | `http://idp.localhost:18091` |
 | `releases` | 模拟的 Kaeso 版本和更新器，供**设置** › **实例** › **更新**使用 | `http://127.0.0.1:18092` |
+| `chatgpt` | 栈内位于 `auth.openai.com` 的模拟 ChatGPT 登录，带有网关信任的测试证书 | `http://127.0.0.1:18093` |
 | `master-key` | 在网关启动前把网关的主密钥写入一个卷 | |
 
 只要实例中还没有用户，`pnpm stack:up` 就会输出设置链接。它从网关容器中的 `kaeso setup-link` 读取这个链接。
@@ -71,7 +72,7 @@ pnpm stack:down
 
 ## 更改端口和镜像
 
-在 `pnpm stack:up` 之前设置这些变量，可以把服务移到其他端口：`KAESO_GATEWAY_PORT`、`KAESO_POSTGRES_PORT`、`KAESO_CLICKHOUSE_PORT`、`KAESO_VALKEY_PORT`、`KAESO_MAIL_PORT`、`KAESO_MAIL_SMTP_PORT`、`KAESO_IDP_PORT` 和 `KAESO_RELEASES_PORT`。`KAESO_PUBLIC_URL` 设置控制台的地址。默认值在 `apps/console/scripts/stack.mjs` 中。
+在 `pnpm stack:up` 之前设置这些变量，可以把服务移到其他端口：`KAESO_GATEWAY_PORT`、`KAESO_POSTGRES_PORT`、`KAESO_CLICKHOUSE_PORT`、`KAESO_VALKEY_PORT`、`KAESO_MAIL_PORT`、`KAESO_MAIL_SMTP_PORT`、`KAESO_IDP_PORT`、`KAESO_RELEASES_PORT` 和 `KAESO_CHATGPT_PORT`。`KAESO_PUBLIC_URL` 设置控制台的地址。默认值在 `apps/console/scripts/stack.mjs` 中。
 
 要使用在别处构建的网关镜像，例如某个版本，指定它即可。开发栈随后会跳过构建：
 
@@ -89,7 +90,7 @@ KAESO_GATEWAY_IMAGE=ghcr.io/logicplanes/kaeso-gateway:{{version}} pnpm stack:up
 
 ```bash
 export KAESO_STACK_PROJECT=kaeso-two KAESO_PUBLIC_URL=http://localhost:3001
-export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192
+export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192 KAESO_CHATGPT_PORT=18193
 export KAESO_MAIL_PORT=58125 KAESO_MAIL_SMTP_PORT=51125
 export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223 KAESO_VALKEY_PORT=56479
 pnpm dev --port 3001

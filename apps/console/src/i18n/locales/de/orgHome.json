@@ -1,5 +1,6 @@
 {
   "orgHome.aboutProviderKeys": "Über Anbieter-Schlüssel",
+  "orgHome.account": "Konto",
   "orgHome.actionsFor": "Aktionen für {name}",
   "orgHome.actionsForKey": "Aktionen für {title}",
   "orgHome.addProviderKey": "Anbieter-Schlüssel hinzufügen",
@@ -95,5 +96,8 @@
   "orgHome.serviceAccount": "Dienstkonto",
   "orgHome.serviceAccountIn": "Dienstkonto in {project}",
   "orgHome.usageBreakdown": "Nutzung im Detail",
-  "orgHome.usesKeyNow": "Nutzt derzeit {name}"
+  "orgHome.usesKeyNow": "Nutzt derzeit {name}",
+  "orgHome.signInAgain": "Erneut anmelden",
+  "orgHome.manageUsage": "Nutzung verwalten",
+  "orgHome.signedOut": "Abgemeldet"
 }
