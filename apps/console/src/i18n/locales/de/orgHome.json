@@ -95,5 +95,8 @@
   "orgHome.serviceAccount": "Dienstkonto",
   "orgHome.serviceAccountIn": "Dienstkonto in {project}",
   "orgHome.usageBreakdown": "Nutzung im Detail",
-  "orgHome.usesKeyNow": "Nutzt derzeit {name}"
+  "orgHome.usesKeyNow": "Nutzt derzeit {name}",
+  "orgHome.signInAgain": "Erneut anmelden",
+  "orgHome.manageUsage": "Nutzung verwalten",
+  "orgHome.signedOut": "Abgemeldet"
 }

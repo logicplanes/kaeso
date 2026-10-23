@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ORG, providers } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { credential } from "~/test/fixtures/shell";
@@ -8,6 +8,18 @@ import { renderUi } from "~/test/render";
 import { ProviderKeyDialog } from "./provider-key-dialog";
 
 const CREDENTIALS = "orgs/:org/credentials";
+const AUTHORIZE = "https://auth.openai.com/api/accounts/authorize?client_id=dynamic_agent_client&state=abc";
+const CALLBACK = "http://127.0.0.1:51234/auth/callback?code=c-1&state=abc&client_id=oaiapp_1";
+const ATTEMPT = { attempt: "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5b", authorize_url: AUTHORIZE, expires_at: "2026-10-23T12:10:00Z" };
+const plan = credential({ id: "cred_plan", name: "Ada's plan", auth_method: "chatgpt", account: "ada@example.com", last4: "" });
+
+function newTab() {
+  const tab = { opener: window as unknown, location: { href: "" }, close: vi.fn() };
+  const open = vi.spyOn(window, "open").mockReturnValue(tab as unknown as Window);
+  return { tab, open };
+}
+
+afterEach(() => vi.restoreAllMocks());
 
 function expectKeyHint(dialog: HTMLElement, host: string, url: string, page: string, prefix: string) {
   const link = within(dialog).getByRole("link", { name: (name) => name.startsWith(host) });
@@ -201,7 +213,11 @@ describe("ProviderKeyDialog", () => {
     const { user, dialog } = await open({ keys: [credential()] });
 
     await choose(user, dialog, "OpenAI");
-    expect(within(dialog).getByText("Step 2 of 3")).toBeInTheDocument();
+    expect(within(dialog).getByText("Step 2 of 4")).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Add an API key or sign in with ChatGPT?" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("radio", { name: /^API key/ })).toHaveAttribute("aria-checked", "true");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(within(dialog).getByText("Step 3 of 4")).toBeInTheDocument();
     expectKeyHint(dialog, "platform.openai.com", "https://platform.openai.com/api-keys", "API keys", "sk-");
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-new");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Backup{Enter}");
@@ -275,9 +291,158 @@ describe("ProviderKeyDialog", () => {
     const { user, dialog, onClose } = await open();
 
     await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.type(within(dialog).getByLabelText("OpenAI API key"), "sk-bad");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bad{Enter}");
     expect((await notifications().findAllByText("OpenAI rejected this key.")).length).toBeGreaterThan(0);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("signs in to a ChatGPT account as a new OpenAI key", async () => {
+    const { tab, open: opened } = newTab();
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, plan);
+    const { user, dialog, onClose } = await open();
+
+    await choose(user, dialog, "OpenAI");
+    expect(within(dialog).getByText("Requests use the plan of the ChatGPT account you sign in with.")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Sign in with your ChatGPT account" })).toBeVisible();
+    expect(within(dialog).getByText("Use your own account only; sharing it breaks OpenAI's terms.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Step 3 of 3")).toBeInTheDocument();
+    const add = () => within(dialog).getByRole("button", { name: "Add account" });
+    await hoverReason(user, add(), "Give the key a name");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Continue with ChatGPT" }), "Give the key a name");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), " Ada's plan ");
+    await hoverReason(user, add(), "Continue with ChatGPT first");
+    expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await waitFor(() => expect(tab.location.href).toBe(AUTHORIZE));
+    expect(opened).toHaveBeenCalledWith("about:blank", "_blank");
+    expect(tab.opener).toBeNull();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([{ provider: "openai", name: "Ada's plan", make_default: false }]);
+    expect(within(dialog).getByRole("link", { name: /Open the ChatGPT sign-in page/ })).toHaveAttribute("href", AUTHORIZE);
+    const pasted = within(dialog).getByRole("textbox", { name: "Address of the page" });
+    expect(pasted).toHaveAccessibleDescription("After you approve, the page can't load. That's expected. Paste its address here.");
+    await hoverReason(user, add(), "Paste the address of the page that didn't load");
+    await user.type(pasted, ` ${CALLBACK} `);
+    await user.click(add());
+
+    expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`).map((r) => [r.params.attempt, r.body])).toEqual([[ATTEMPT.attempt, { callback_url: CALLBACK }]]);
+    expect(requests("POST", CREDENTIALS)).toHaveLength(0);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("asks about the default before the sign-in and starts over when the name changes", async () => {
+    newTab();
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, { ...plan, is_default: false });
+    const { user, dialog } = await open({ keys: [credential()] });
+
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Make it the OpenAI default?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("radio", { name: /Make this key the default/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByText("Step 4 of 4")).toBeInTheDocument();
+
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.type(name, "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    expect(await within(dialog).findByRole("textbox", { name: "Address of the page" })).toBeInTheDocument();
+    await user.type(name, "s");
+    expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+
+    expect(await notifications().findByText("OpenAI · Ada's plan added")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([
+      { provider: "openai", name: "Plan", make_default: true },
+      { provider: "openai", name: "Plans", make_default: true },
+    ]);
+  });
+
+  it("goes back to an API key when another provider is chosen", async () => {
+    const { user, dialog } = await open();
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^API key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Paste your OpenAI API key" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await choose(user, dialog, "Anthropic");
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await choose(user, dialog, "OpenAI");
+    expect(within(dialog).getByRole("radio", { name: /^API key/ })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("closes the new tab when the sign-in can't begin and links the page when the browser blocks the tab", async () => {
+    const { tab, open: opened } = newTab();
+    on("POST", `${CREDENTIALS}/oauth`, apiError(503, "unavailable", "ChatGPT can't be reached right now; try again shortly."));
+    const { user, dialog, onClose } = await open();
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    expect((await notifications().findAllByText("ChatGPT can't be reached right now; try again shortly.")).length).toBeGreaterThan(0);
+    expect(tab.close).toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+
+    opened.mockReturnValue(null);
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    expect(await within(dialog).findByRole("link", { name: /Open the ChatGPT sign-in page/ })).toHaveAttribute("href", AUTHORIZE);
+  });
+
+  it("signs in again to an account's key", async () => {
+    const { tab } = newTab();
+    on("POST", `${CREDENTIALS}/:credential/oauth`, ATTEMPT);
+    on("POST", `${CREDENTIALS}/:credential/oauth/:attempt`, plan);
+    const { user, dialog, onClose } = await open({ keys: [plan], replace: plan });
+
+    expect(within(dialog).getByRole("heading", { name: "Sign in again to OpenAI · Ada's plan" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Sign in with your ChatGPT account" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await waitFor(() => expect(tab.location.href).toBe(AUTHORIZE));
+    expect(requests("POST", `${CREDENTIALS}/:credential/oauth`).map((r) => r.params.credential)).toEqual(["cred_plan"]);
+    await user.type(within(dialog).getByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(within(dialog).getByRole("button", { name: "Sign in again" }));
+
+    expect(await notifications().findByText("OpenAI · Ada's plan signed in again")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/:credential/oauth/:attempt`).map((r) => [r.params.credential, r.params.attempt, r.body])).toEqual([
+      ["cred_plan", ATTEMPT.attempt, { callback_url: CALLBACK }],
+    ]);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("shows why an address was refused and keeps the dialog open", async () => {
+    newTab();
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    on(
+      "POST",
+      `${CREDENTIALS}/oauth/:attempt`,
+      apiError(400, "invalid_request", "Paste the address of the page that didn't load; it starts with `http://127.0.0.1`.", { param: "callback_url" }),
+    );
+    const { user, dialog, onClose } = await open();
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), "https://example.com");
+    await user.click(within(dialog).getByRole("button", { name: "Add account" }));
+    expect((await notifications().findAllByText(/Paste the address of the page that didn't load; it starts with/)).length).toBeGreaterThan(0);
     expect(onClose).not.toHaveBeenCalled();
   });
 

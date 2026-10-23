@@ -14,6 +14,12 @@ describe("the provider catalog", () => {
     expect(catalog.get("cohere")).toBeUndefined();
   });
 
+  it("names the product of a provider's accounts, and the provider when it has none", () => {
+    expect(catalog.product("openai")).toBe("ChatGPT");
+    expect(catalog.product("anthropic")).toBe("Anthropic");
+    expect(catalog.product("cohere")).toBe("Cohere");
+  });
+
   it("offers a provider's own formats, and every format for one it doesn't list", () => {
     expect(catalog.dialects("anthropic")).toEqual(["anthropic_messages"]);
     expect(catalog.dialects("openai")).toEqual(["openai_responses", "openai_chat", "openai_embeddings"]);

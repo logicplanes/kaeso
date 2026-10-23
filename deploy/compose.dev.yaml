@@ -91,10 +91,12 @@ services:
       KAESO_UPDATER_URL: http://releases:8080/updater/
       KAESO_UPDATER_TOKEN: development-updater-token-not-a-secret
       KAESO_LOG_FORMAT: json
+      SSL_CERT_FILE: /run/chatgpt/ca.pem
     ports:
       - 127.0.0.1:${KAESO_GATEWAY_PORT:-18080}:8080
     volumes:
       - master-key:/run/kaeso:ro
+      - chatgpt-ca:/run/chatgpt:ro
     depends_on:
       master-key:
         condition: service_completed_successfully
@@ -109,6 +111,8 @@ services:
       provider:
         condition: service_healthy
       releases:
+        condition: service_healthy
+      chatgpt:
         condition: service_healthy
 
   sso-database:
@@ -142,6 +146,7 @@ services:
       - 127.0.0.1:${KAESO_SSO_GATEWAY_PORT:-18081}:8080
     volumes:
       - master-key:/run/kaeso:ro
+      - chatgpt-ca:/run/chatgpt:ro
     depends_on:
       gateway:
         condition: service_healthy
@@ -183,6 +188,27 @@ services:
       timeout: 3s
       retries: 30
 
+  chatgpt:
+    <<: *node
+    command: ["node", "chatgpt.mjs"]
+    environment:
+      PORT: "8080"
+    volumes:
+      - ../apps/console/stack:/stack:ro
+      - chatgpt-ca:/run/chatgpt
+    ports:
+      - 127.0.0.1:${KAESO_CHATGPT_PORT:-18093}:8080
+    networks:
+      default:
+        aliases:
+          - auth.openai.com
+          - api.openai.com
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
   idp:
     <<: *node
     command: ["node", "idp.mjs"]
@@ -203,5 +229,6 @@ services:
 
 volumes:
   master-key:
+  chatgpt-ca:
   postgres:
   clickhouse:
