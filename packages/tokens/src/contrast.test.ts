@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerFill, neutral, semantic, viz } from "./tokens.js";
+import { dangerFill, neutral, semantic, shadow, viz } from "./tokens.js";
 
 type Rgb = readonly [number, number, number];
 type Mode = "light" | "dark";
@@ -42,6 +42,9 @@ const neutralRules: readonly (readonly [keyof typeof neutral, keyof typeof neutr
   ...(["line-field", "line-field-hover"] as const).flatMap((edge) => surfaces.map((bg) => [edge, bg, 3] as const)),
   ...(["item-hover", "item-pressed"] as const).map((row) => ["line-field", row, 3] as const),
 ];
+const darkSwitchThumbRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = (
+  ["fill-3", "line-strong", "bg-panel", "bg-raised"] as const
+).map((bg) => ["switch-thumb", bg, 3] as const);
 
 describe.each(MODES)("contrast in %s mode", (mode) => {
   it.each(neutralRules)("%s on %s reaches %d:1", (fg, bg, min) => {
@@ -64,6 +67,15 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
   it.each(viz.map((v) => [v.name, v] as const))("chart colour %s stands out from the panel", (_, colour) => {
     expect(ratio(mode === "light" ? colour.thin : colour.dark, neutral["bg-panel"][mode])).toBeGreaterThanOrEqual(3);
   });
+});
+
+it.each(darkSwitchThumbRules)("in dark mode the off switch's %s stands out from %s by %d:1", (fg, bg, min) => {
+  expect(ratio(neutral[fg].dark, neutral[bg].dark)).toBeGreaterThanOrEqual(min);
+});
+
+it("draws select and date triggers with the same ring as text inputs", () => {
+  expect(shadow.selector).toEqual(shadow.field);
+  expect(shadow["selector-hover"]).toEqual(shadow["field-hover"]);
 });
 
 it("refuses colours that are not #rrggbb", () => {

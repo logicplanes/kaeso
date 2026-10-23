@@ -18,8 +18,14 @@ export const KAESO_SHEET_VARIANTS = {
     lg: { classes: "w-800", description: "800px" },
   },
   side: {
-    right: { classes: "top-8 right-8 bottom-8 sheet-limits-x", description: "From the right (default)" },
-    left: { classes: "top-8 bottom-8 left-8 sheet-limits-x", description: "From the left: the mobile sidebar" },
+    right: {
+      classes: "top-8 right-8 bottom-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none",
+      description: "From the right (default); fills a phone's screen",
+    },
+    left: {
+      classes: "top-8 bottom-8 left-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none",
+      description: "From the left: the mobile sidebar; fills a phone's screen",
+    },
     bottom: { classes: "right-8 bottom-8 left-8 sheet-limits-y", description: "From the bottom: mobile menus" },
   },
 } as const;

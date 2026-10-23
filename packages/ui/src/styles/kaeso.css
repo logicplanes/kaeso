@@ -303,6 +303,42 @@
   }
 }
 
+@utility material-selector {
+  background-color: var(--k-fill-control, var(--k-bg-raised));
+  color: var(--k-text);
+  box-shadow: var(--k-shadow-selector);
+  @media (hover: hover) {
+    &:hover:not(:disabled, [data-disabled], [aria-disabled="true"]) {
+      box-shadow: var(--k-shadow-selector-hover);
+    }
+  }
+  &[data-force~="hover"],
+  &[data-popup-open],
+  &[data-force~="open"] {
+    box-shadow: var(--k-shadow-selector-hover);
+  }
+  :root:not([data-k-pointer]) &:focus-visible,
+  &[data-force~="focus"] {
+    box-shadow:
+      inset 0 0 0 1px var(--k-text),
+      0 0 0 3px color-mix(in srgb, var(--k-text) 10%, transparent);
+  }
+  &[aria-invalid="true"],
+  &[data-force~="invalid"] {
+    box-shadow:
+      inset 0 0 0 1px var(--k-danger),
+      0 0 0 3px color-mix(in srgb, var(--k-danger) 12%, transparent);
+  }
+  &:disabled,
+  &[data-disabled],
+  &[aria-disabled="true"],
+  &[data-force~="disabled"] {
+    background-color: var(--k-fill-1);
+    color: var(--k-text-disabled);
+    box-shadow: none;
+  }
+}
+
 @utility material-composer {
   background-color: var(--k-fill-control, var(--k-bg-raised));
   color: var(--k-text);

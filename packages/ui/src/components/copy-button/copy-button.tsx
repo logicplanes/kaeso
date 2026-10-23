@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { forwardRef, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useCallback, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useCopy } from "../../hooks/use-copy.js";
 import { useTruncated } from "../../hooks/use-truncated.js";
@@ -104,12 +104,65 @@ export interface InlineCopyTextProps extends Omit<HTMLAttributes<HTMLButtonEleme
   "data-force"?: string | undefined;
 }
 
+const ICON_ROOM = 18;
+
+function sharesLine(sibling: Node, parent: CSSStyleDeclaration): boolean {
+  if (sibling.nodeType === Node.TEXT_NODE) return !!sibling.textContent?.trim();
+  if (!(sibling instanceof Element)) return false;
+  const style = getComputedStyle(sibling);
+  if (style.display === "none" || style.position === "absolute" || style.position === "fixed") return false;
+  if (parent.display.endsWith("flex")) return !parent.flexDirection.startsWith("column");
+  if (parent.display === "block" || parent.display === "flow-root" || parent.display === "list-item") return style.display.startsWith("inline");
+  return true;
+}
+
+function hasRoomAfter(el: Element): boolean {
+  let node = el;
+  for (let parent = el.parentElement; parent; node = parent, parent = parent.parentElement) {
+    const style = getComputedStyle(parent);
+    for (let sibling = node.nextSibling; sibling; sibling = sibling.nextSibling) if (sharesLine(sibling, style)) return false;
+    if ((parseFloat(style.direction === "rtl" ? style.paddingLeft : style.paddingRight) || 0) >= ICON_ROOM) return true;
+    const overflow = style.overflowX || style.overflow;
+    if (overflow && overflow !== "visible") return false;
+  }
+  return true;
+}
+
+function useRoomAfter() {
+  const [button, setButton] = useState<HTMLButtonElement | null>(null);
+  const [room, setRoom] = useState(false);
+  useLayoutEffect(() => {
+    const parent = button?.parentElement;
+    if (!button || !parent) return;
+    const touch = typeof window.matchMedia === "function" ? window.matchMedia("(pointer: coarse)") : null;
+    const check = () => setRoom(!touch?.matches && hasRoomAfter(button));
+    check();
+    const watch = new MutationObserver(check);
+    watch.observe(parent, { childList: true });
+    touch?.addEventListener("change", check);
+    return () => {
+      watch.disconnect();
+      touch?.removeEventListener("change", check);
+    };
+  }, [button]);
+  return [room, setButton] as const;
+}
+
 export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>(function InlineCopyText(
   { value, children, label, onCopy, className, ...props },
   ref,
 ) {
   const { copied, copy } = useCopy();
   const [hover, setHover] = useState(false);
+  const [room, setButton] = useRoomAfter();
+  const buttonRef = useCallback(
+    (el: HTMLButtonElement | null) => {
+      setButton(el);
+      if (typeof ref === "function") ref(el);
+      else if (ref) ref.current = el;
+    },
+    [ref, setButton],
+  );
   const text = useRef<HTMLSpanElement>(null);
   const cut = useTruncated(text);
   const t = useUiText();
@@ -122,7 +175,7 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
       onOpenChange={setHover}
     >
       <button
-        ref={ref}
+        ref={buttonRef}
         type="button"
         onClick={async () => {
           if (await copy(value)) onCopy?.(value);
@@ -141,8 +194,9 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
           icon={copied ? icons.check : icons.copy}
           size="xs"
           className={cn(
+            room && "pointer-events-none absolute start-full group-hover/copy:pointer-events-auto group-focus-visible/copy:pointer-events-auto",
             "text-fg-tertiary opacity-0 transition-control group-hover/copy:opacity-100 coarse:opacity-100 group-focus-visible/copy:opacity-100",
-            copied && "opacity-100 text-fg",
+            copied && "pointer-events-auto opacity-100 text-fg",
           )}
         />
         <span className="sr-only" aria-live="polite">

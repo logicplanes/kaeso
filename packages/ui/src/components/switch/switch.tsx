@@ -78,17 +78,17 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       {...aria}
       {...named.aria}
       className={cn(
-        "group/sw relative inline-flex shrink-0 cursor-pointer items-center rounded-pill bg-fill-3 transition-control focus-ring tap-target",
-        "hover:bg-line-strong checked:bg-ink checked:hover:bg-ink",
+        "group/sw relative inline-flex shrink-0 cursor-pointer items-center rounded-pill bg-fill-3 shadow-selector transition-control focus-ring tap-target",
+        "hover:bg-line-strong hover:shadow-selector-hover checked:bg-ink checked:shadow-none checked:hover:bg-ink checked:hover:shadow-none",
         "disabled:cursor-not-allowed disabled:opacity-40",
-        soft && "cursor-not-allowed opacity-40 hover:bg-fill-3 checked:hover:bg-ink",
+        soft && "cursor-not-allowed opacity-40 hover:bg-fill-3 hover:shadow-selector checked:hover:bg-ink checked:hover:shadow-none",
         KAESO_SWITCH_VARIANTS.size[size].classes,
         !label && className,
       )}
     >
       <BaseSwitch.Thumb
         className={cn(
-          "block rounded-pill bg-raised shadow-thumb indicator-motion data-checked:bg-on-ink data-checked:shadow-none",
+          "block rounded-pill bg-switch-thumb shadow-thumb indicator-motion data-checked:bg-on-ink data-checked:shadow-none",
           THUMB[size],
           loading && "animate-pulse-quiet",
         )}

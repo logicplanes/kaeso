@@ -65,7 +65,7 @@ describe("ThemeSelect", () => {
     expect(trigger).toHaveClass("h-32", "material-ghost");
     expect(trigger).not.toHaveClass("w-full");
     rerender(<ThemeSelect ref={ref} size="md" appearance="default" fullWidth data-force="hover" />);
-    expect(trigger).toHaveClass("h-36", "material-secondary", "w-full");
+    expect(trigger).toHaveClass("h-36", "material-selector", "w-full");
     expect(trigger).toHaveAttribute("data-force", "hover");
   });
 });

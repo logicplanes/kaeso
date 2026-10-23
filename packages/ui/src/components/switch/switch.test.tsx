@@ -70,4 +70,23 @@ describe("Segmented", () => {
     await userEvent.click(screen.getByText("An email when spend passes 80% of the budget."));
     expect(onChange).toHaveBeenCalledWith(true);
   });
+
+  it("draws an off switch with a text input's ring and a light thumb, and keeps both while disabled", () => {
+    render(
+      <>
+        <Switch aria-label="Require two-factor authentication" />
+        <Switch aria-label="Require single sign-on" disabled />
+        <Switch aria-label="No limit" defaultChecked />
+      </>,
+    );
+    for (const name of ["Require two-factor authentication", "Require single sign-on"]) {
+      const track = screen.getByRole("switch", { name });
+      expect(track).toHaveClass("shadow-selector", "hover:shadow-selector-hover");
+      expect(track.className).not.toMatch(/disabled:shadow-none/);
+      expect(track.firstElementChild).toHaveClass("bg-switch-thumb");
+    }
+    const on = screen.getByRole("switch", { name: "No limit" });
+    expect(on).toHaveClass("checked:bg-ink", "checked:shadow-none");
+    expect(on.firstElementChild).toHaveClass("data-checked:bg-on-ink");
+  });
 });

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
@@ -75,5 +77,21 @@ describe("Select", () => {
       </Field>,
     );
     expect(screen.getByRole("combobox", { name: "Region" })).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("draws its trigger like a text input: the same ring, hover and focus", () => {
+    render(<Select aria-label="Account creation" options={[{ value: "invite", label: "Invitation only" }]} defaultValue="invite" />);
+    const trigger = screen.getByRole("combobox", { name: "Account creation" });
+    expect(trigger).toHaveClass("material-selector");
+    expect(trigger).not.toHaveClass("material-secondary", "focus-ring");
+    const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
+    const block = (name: string) => css.slice(css.indexOf(`@utility ${name} {`), css.indexOf("\n}", css.indexOf(`@utility ${name} {`)));
+    const selector = block("material-selector");
+    expect(selector).toContain("box-shadow: var(--k-shadow-selector);");
+    expect(selector).toContain("box-shadow: var(--k-shadow-selector-hover);");
+    expect(selector).toContain("[data-popup-open]");
+    const focus = /inset 0 0 0 1px var\(--k-text\),\s+0 0 0 3px color-mix\(in srgb, var\(--k-text\) 10%, transparent\)/;
+    expect(block("material-field")).toMatch(focus);
+    expect(selector).toMatch(focus);
   });
 });
