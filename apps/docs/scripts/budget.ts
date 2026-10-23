@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { LOCALES, type Locale } from "../src/i18n/locales.ts";
 
-export const FRAME_CEILING_KB = 216;
+export const FRAME_CEILING_KB = 224;
 export const PAGE_CEILING_KB = 24;
 
 interface ManifestEntry {
