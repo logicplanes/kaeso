@@ -38,14 +38,17 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       className={cn("flex flex-col", className)}
     >
-      <BaseCollapsible.Trigger className={cn(TRIGGER, "-mx-12 w-auto")}>
+      <BaseCollapsible.Trigger className="group/dt flex min-h-40 w-full cursor-pointer items-center gap-8 rounded-item text-left text-body font-medium text-fg focus-ring">
         <Icon
           icon={icons.chevronRight}
           size="sm"
-          className={cn("text-fg-tertiary transition-transform duration-180 ease-overlay", KAESO_COLLAPSIBLE_VARIANTS.state.open.classes)}
+          className={cn(
+            "text-fg-tertiary transition-transform duration-180 ease-overlay group-hover/dt:text-fg",
+            KAESO_COLLAPSIBLE_VARIANTS.state.open.classes,
+          )}
         />
         <span className="min-w-0 flex-1">{title}</span>
-        {hint && <span className="text-small font-regular text-fg-secondary">{hint}</span>}
+        {hint && <span className="text-small font-regular text-fg-secondary transition-control group-hover/dt:text-fg">{hint}</span>}
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
         <div className="pt-4 pb-12 pl-24">{children}</div>
