@@ -1,5 +1,6 @@
 {
   "orgHome.aboutProviderKeys": "About provider keys",
+  "orgHome.account": "Account",
   "orgHome.actionsFor": "Actions for {name}",
   "orgHome.actionsForKey": "Actions for {title}",
   "orgHome.addProviderKey": "Add provider key",

@@ -196,6 +196,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
         (r: Row) => r,
         (r: Row) => {
           const under = [
+            r.key.account ? { label: t("orgHome.account", "Account"), value: r.key.account } : null,
             hidden.includes("projects") ? { label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
             hidden.includes("used") ? { label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
             hidden.includes("added") ? { label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
@@ -203,16 +204,9 @@ export function OrgProvidersPage({ org }: { org: string }) {
           return (
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
-                <Text truncate className={r.key.account ? "sm:max-w-1/2 sm:shrink-0" : undefined}>
-                  {r.key.name}
-                </Text>
+                <Text truncate>{r.key.name}</Text>
                 {r.key.account ? (
-                  <>
-                    <Text variant="small" tone="secondary" className="hidden sm:inline" truncate>
-                      {r.key.account}
-                    </Text>
-                    <Badge tone="outline">{providers.product(r.provider)}</Badge>
-                  </>
+                  <Badge tone="outline">{providers.product(r.provider)}</Badge>
                 ) : (
                   <Tooltip content={t("orgHome.masterKeyId", "Encrypted with the master key {id}", { id: r.key.key_id })}>
                     <Code className="hidden sm:inline">{`…${r.key.last4}`}</Code>
