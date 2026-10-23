@@ -4,6 +4,39 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-23
+
+Kaeso 0.4.1 is a patch release with no breaking changes, so existing provider keys, integrations and configuration need no change. It fixes the stop reason that Chat Completions and Messages clients receive when a ChatGPT account calls a tool, and it corrects many console and UI library layouts, most visibly on phones. Dependency updates for the gateway, console, docs and showcase are included.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.4.0...v0.4.1](https://github.com/logicplanes/kaeso/compare/v0.4.0...v0.4.1)
+
+### Changed
+
+- The Rust workspace moves the `p256` crate from 0.13.2 to 0.14.0. Installs need no configuration change. ([#372](https://github.com/logicplanes/kaeso/pull/372))
+- The pnpm workspace moves React and React DOM to 19.3.1 and `happy-dom` to 21.0.3 across the console, docs, showcase and UI library, with their type packages and `@tanstack/react-virtual` updated alongside. ([#376](https://github.com/logicplanes/kaeso/pull/376))
+
+#### UI library
+
+- The showcase app moves `@astrojs/react` to 7.1.0 and `@astrojs/mdx` to 8.1.0, which raise the minimum Node.js version to 22.22.0 for the showcase. ([#374](https://github.com/logicplanes/kaeso/pull/374), [#375](https://github.com/logicplanes/kaeso/pull/375))
+
+### Fixed
+
+- The QR code keeps its square size beside text, so the Grok sign-in code and the authenticator setup code on Security no longer sit small in a tall box. ([#377](https://github.com/logicplanes/kaeso/pull/377))
+- Chat Completions and Messages clients now get `finish_reason` `tool_calls` and `stop_reason` `tool_use` when a ChatGPT account calls a tool, streamed or not, instead of `stop` or `end_turn`. The `openai_responses` mapping page now describes how the stop reason is derived. ([#379](https://github.com/logicplanes/kaeso/pull/379))
+- Project limit meters, audit log filters, the instance organization stat captions, settings page headers and role badges now line up across the console, including on phones. The settings header wraps like the page header, and role badges use one neutral style everywhere. ([#380](https://github.com/logicplanes/kaeso/pull/380))
+
+#### Console
+
+- Console tables give room to the columns that hold the most text, so names, models, targets and costs stay readable on phones and desktop. The org overview breakdown is now a data table on phones, where it previously ran off screen. ([#383](https://github.com/logicplanes/kaeso/pull/383))
+
+#### UI library
+
+- Collapsible rows such as Customize and Every right are now plain disclosures without a box or padding, so their chevrons and hints line up with the section around them. ([#378](https://github.com/logicplanes/kaeso/pull/378))
+- Settings rows stack their controls under their text on phones, and ghost buttons at a row's end align with outlined buttons. Chart table toggles get their own line on phones, code blocks fade out at the edge they can scroll to, and pinned table headers run straight to the edge. ([#381](https://github.com/logicplanes/kaeso/pull/381))
+- Off switches read clearly in dark mode, and select and date triggers share the outline of text inputs. Side sheets fill the phone screen, copyable ids keep their copy icon inside the card edge, and picker option counts line up with the values beside them. ([#382](https://github.com/logicplanes/kaeso/pull/382))
+
 ## [0.4.0] - 2026-10-23
 
 Kaeso 0.4.0 lets organizations add ChatGPT accounts as OpenAI provider keys, and Grok accounts as an experimental SpaceX provider key, so projects can draw on those plans instead of API accounts. Nothing in this release is breaking, so existing provider keys and integrations need no change. The gateway's ctutils dependency moves to 0.4.4 to fix a timing advisory in encryption and password hashing, so upgrading is recommended for every install.
@@ -703,7 +736,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.1
 [0.4.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.0
 [0.3.9]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.9
 [0.3.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.8
