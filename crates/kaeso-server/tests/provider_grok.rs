@@ -97,7 +97,12 @@ async fn plan() -> Plan {
 async fn requests_go_to_xai_with_the_accounts_bearer_token_as_the_app_asked() {
     let p = plan().await;
     let r = p
-        .call("/v1/chat/completions", false, chat("xai/grok-4.3", "Hi"))
+        .call("/v1/chat/completions", false, {
+            let mut asked = chat("xai/grok-4.3", "Hi");
+            asked["max_completion_tokens"] = json!(64);
+            asked["temperature"] = json!(0.2);
+            asked
+        })
         .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.json()["choices"][0]["message"]["content"], STORY);
@@ -116,6 +121,11 @@ async fn requests_go_to_xai_with_the_accounts_bearer_token_as_the_app_asked() {
     let body = sent[0].json();
     assert_eq!(body["model"], "grok-4.3");
     assert_ne!(body["stream"], true, "a whole reply is asked for as one");
+    assert_eq!(
+        (&body["max_output_tokens"], &body["temperature"]),
+        (&json!(64), &json!(0.2)),
+        "the ChatGPT plan rewrite leaves a Grok request as the app sent it"
+    );
     for header in ["x-grok-conv-id", "x-xai-token-source", "x-grok-client"] {
         assert!(sent[0].header(header).is_none(), "{header}");
     }
