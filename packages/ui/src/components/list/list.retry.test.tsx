@@ -21,12 +21,12 @@ await vi.importActual("./virtual-rows.js");
 describe("a list whose code failed to load", () => {
   const scroller = () => (document.scrollingElement ?? document.documentElement) as HTMLElement;
   beforeAll(() => {
-    Object.defineProperty(scroller(), "offsetHeight", { configurable: true, value: 800 });
-    Object.defineProperty(scroller(), "offsetWidth", { configurable: true, value: 1280 });
+    Object.defineProperty(scroller(), "clientHeight", { configurable: true, value: 800 });
+    Object.defineProperty(scroller(), "clientWidth", { configurable: true, value: 1280 });
   });
   afterAll(() => {
-    delete (scroller() as unknown as Record<string, unknown>).offsetHeight;
-    delete (scroller() as unknown as Record<string, unknown>).offsetWidth;
+    delete (scroller() as unknown as Record<string, unknown>).clientHeight;
+    delete (scroller() as unknown as Record<string, unknown>).clientWidth;
   });
 
   it("keeps a long list's first rows, and loads the rest of it again when the person reaches for the list", async () => {

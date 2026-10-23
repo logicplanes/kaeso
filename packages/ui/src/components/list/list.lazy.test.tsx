@@ -20,12 +20,12 @@ const items = ["checkout-web", "checkout-worker", "ci-runner"].map((n) => ({ id:
 describe("List, loading what it needs", () => {
   const scroller = () => (document.scrollingElement ?? document.documentElement) as HTMLElement;
   beforeAll(() => {
-    Object.defineProperty(scroller(), "offsetHeight", { configurable: true, value: 800 });
-    Object.defineProperty(scroller(), "offsetWidth", { configurable: true, value: 1280 });
+    Object.defineProperty(scroller(), "clientHeight", { configurable: true, value: 800 });
+    Object.defineProperty(scroller(), "clientWidth", { configurable: true, value: 1280 });
   });
   afterAll(() => {
-    delete (scroller() as unknown as Record<string, unknown>).offsetHeight;
-    delete (scroller() as unknown as Record<string, unknown>).offsetWidth;
+    delete (scroller() as unknown as Record<string, unknown>).clientHeight;
+    delete (scroller() as unknown as Record<string, unknown>).clientWidth;
   });
 
   it("draws a long list's first rows at once and keeps its height when the virtualizer arrives", async () => {
