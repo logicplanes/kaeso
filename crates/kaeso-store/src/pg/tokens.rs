@@ -1,5 +1,5 @@
 use serde_json::Value;
-use sqlx::PgExecutor;
+use sqlx::{PgConnection, PgExecutor};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -16,6 +16,7 @@ pub enum TokenKind {
     Signup,
     OidcState,
     ProviderOAuth,
+    ProviderDevice,
 }
 
 impl TokenKind {
@@ -30,6 +31,7 @@ impl TokenKind {
             TokenKind::Signup => "signup",
             TokenKind::OidcState => "oidc_state",
             TokenKind::ProviderOAuth => "provider_oauth",
+            TokenKind::ProviderDevice => "provider_device",
         }
     }
 }
@@ -158,6 +160,65 @@ pub async fn peek(
     .fetch_optional(db)
     .await?;
     Ok(row)
+}
+
+#[derive(Clone, Debug)]
+pub struct Attempt {
+    pub kind: String,
+    pub token: Token,
+}
+
+pub async fn lock_attempt(
+    db: &mut PgConnection,
+    id: Uuid,
+    now: OffsetDateTime,
+) -> Result<Option<Attempt>, StoreError> {
+    let row = sqlx::query!(
+        "SELECT id, kind, user_id, email, data, expires_at FROM sign_in_tokens \
+         WHERE id = $1 AND kind IN ('provider_oauth', 'provider_device') AND used_at IS NULL \
+         AND expires_at > $2 FOR UPDATE",
+        id,
+        now,
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row.map(|r| Attempt {
+        kind: r.kind,
+        token: Token {
+            id: r.id,
+            user_id: r.user_id,
+            email: r.email,
+            data: r.data,
+            expires_at: r.expires_at,
+        },
+    }))
+}
+
+pub async fn keep_data(db: impl PgExecutor<'_>, id: Uuid, data: &Value) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE sign_in_tokens SET data = $2 WHERE id = $1 AND used_at IS NULL",
+        id,
+        data
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn use_up(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    now: OffsetDateTime,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE sign_in_tokens SET used_at = $2 WHERE id = $1 AND used_at IS NULL",
+        id,
+        now
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
 }
 
 pub async fn delete_of_user(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<u64, StoreError> {

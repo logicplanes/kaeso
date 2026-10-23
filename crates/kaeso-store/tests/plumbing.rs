@@ -526,3 +526,122 @@ async fn the_agent_host_id_is_chosen_once_per_install() {
     assert_eq!(again, first);
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_device_attempt_is_locked_kept_and_used_up_by_its_id() {
+    use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
+    let s = TestServices::start().await;
+    let now = time::OffsetDateTime::now_utc()
+        .replace_nanosecond(0)
+        .unwrap();
+    let token = |kind, hash: &'static [u8]| NewToken {
+        kind,
+        hash,
+        user_id: None,
+        email: None,
+        data: serde_json::json!({ "interval": 5 }),
+        expires_at: now + time::Duration::minutes(10),
+    };
+    let device = tokens::insert(&s.pg, token(TokenKind::ProviderDevice, b"device"))
+        .await
+        .unwrap();
+    let link = tokens::insert(&s.pg, token(TokenKind::MagicLink, b"link"))
+        .await
+        .unwrap();
+
+    let mut tx = s.pg.begin().await.unwrap();
+    let found = tokens::lock_attempt(&mut tx, device, now)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(found.kind, "provider_device");
+    assert_eq!(found.token.data["interval"], 5);
+    tokens::keep_data(&mut *tx, device, &serde_json::json!({ "interval": 10 }))
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    let mut conn = s.pg.acquire().await.unwrap();
+    assert!(
+        tokens::lock_attempt(&mut conn, link, now)
+            .await
+            .unwrap()
+            .is_none(),
+        "only sign-in attempts of provider accounts are found by id"
+    );
+    let kept = tokens::lock_attempt(&mut conn, device, now)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(kept.token.data["interval"], 10);
+    assert!(
+        tokens::lock_attempt(&mut conn, device, now + time::Duration::minutes(10))
+            .await
+            .unwrap()
+            .is_none(),
+        "an expired attempt is gone"
+    );
+    assert!(tokens::use_up(&mut *conn, device, now).await.unwrap());
+    assert!(!tokens::use_up(&mut *conn, device, now).await.unwrap());
+    assert!(
+        tokens::lock_attempt(&mut conn, device, now)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    drop(conn);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_grok_account_can_lose_its_api_access() {
+    use kaeso_store::pg::credentials::{self, NewCredential};
+    let s = TestServices::start().await;
+    let org = uuid::Uuid::now_v7();
+    kaeso_store::pg::orgs::insert(&s.pg, org, "Acme", 30, 30)
+        .await
+        .unwrap();
+    let now = time::OffsetDateTime::now_utc();
+    let new = |id, auth_method| NewCredential {
+        id,
+        org_id: org,
+        provider: "xai",
+        name: "Grok",
+        ciphertext: &[1],
+        nonce: &[2],
+        wrapped_key: &[3],
+        key_id: "k1",
+        last4: "",
+        created_by_kind: "system",
+        created_by_id: None,
+        auth_method,
+        expires_at: Some(now),
+        account_label: Some("ada@example.com"),
+    };
+    let grok = uuid::Uuid::now_v7();
+    credentials::insert(&s.pg, &new(grok, "grok"))
+        .await
+        .unwrap();
+    assert!(
+        credentials::insert(&s.pg, &new(uuid::Uuid::now_v7(), "password"))
+            .await
+            .is_err()
+    );
+    credentials::sign_out(&s.pg, grok, "no_api_access")
+        .await
+        .unwrap();
+    let row = credentials::sealed(&s.pg, org, grok)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (row.auth_method.as_str(), row.auth_error.as_deref()),
+        ("grok", Some("no_api_access"))
+    );
+    assert!(
+        credentials::sign_out(&s.pg, grok, "forgotten")
+            .await
+            .is_err(),
+        "an account stops only for a known reason"
+    );
+    s.cleanup().await;
+}
