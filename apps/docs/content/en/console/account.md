@@ -67,9 +67,11 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
 - As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner.
 
+The console asks for your password, or sends a sign-in link or a link to set a password. Only when your account has none of these, such as when the organization that manages it requires single sign-on, does it confirm through your identity provider.
+
 Through single sign-on, the console opens your identity provider in a small window and asks you to sign in there again. The page and what you entered stay as they are, and the action continues once you have. Only your own linked identity confirms, from a fresh sign-in, and a refusal says why. When the browser blocks the window, the console goes to the provider in this tab and brings you back to the page. A confirmation through an organization's provider makes the session one from that organization's single sign-on.
 
-When you signed in through the provider of the organization that manages your account, the console offers that provider first, and **Use your password instead** or a sign-in link beside it. A provider that can't confirm a recent sign-in isn't offered, and the console asks for your password first.
+A provider that once answered without a fresh sign-in isn't offered again ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
 
 ## After signing in through single sign-on
 

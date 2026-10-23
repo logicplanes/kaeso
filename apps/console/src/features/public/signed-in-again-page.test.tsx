@@ -25,12 +25,12 @@ describe("the window that confirms a sign-in", () => {
   it("passes on why the identity provider didn't confirm, and says it in the window", async () => {
     vi.spyOn(window, "close").mockImplementation(() => undefined);
     const { heard, stop } = listen();
-    await renderApp("/signed-in-again#sso_error=stale_sign_in");
+    await renderApp("/signed-in-again#sso_error=cannot_confirm");
     expect(await screen.findByRole("heading", { name: "Not confirmed" })).toBeInTheDocument();
     expect(
-      screen.getByText("The identity provider didn't ask you to sign in again; try again or confirm another way. Close this window and try again in Kaeso."),
+      screen.getByText("The identity provider can't confirm a recent sign-in; use your password or an email link. Close this window and try again in Kaeso."),
     ).toBeInTheDocument();
-    await waitFor(() => expect(heard).toEqual([{ error: "stale_sign_in" }]));
+    await waitFor(() => expect(heard).toEqual([{ error: "cannot_confirm" }]));
     stop();
   });
 });

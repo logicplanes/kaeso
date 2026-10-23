@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.org_id, c.issuer, c.client_id, c.secret_ciphertext, c.secret_nonce, c.wrapped_key, c.key_id, COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.domain IS NOT NULL), '{}') AS \"domains!\", COALESCE(array_agg(d.domain ORDER BY d.domain) FILTER (WHERE d.verified_at IS NOT NULL), '{}') AS \"verified_domains!\", c.verification_token, c.display_name, c.auto_redirect, c.require_email_verified, c.sends_auth_time FROM org_oidc c LEFT JOIN org_oidc_domains d ON d.org_id = c.org_id WHERE c.org_id = $1 GROUP BY c.org_id",
+  "query": "SELECT org_id, issuer, client_id, secret_ciphertext, secret_nonce, wrapped_key, key_id, '{}'::text[] AS \"domains!\", '{}'::text[] AS \"verified_domains!\", verification_token, display_name, auto_redirect, require_email_verified, confirms_sign_in FROM org_oidc",
   "describe": {
     "columns": [
       {
@@ -138,20 +138,18 @@
       },
       {
         "ordinal": 13,
-        "name": "sends_auth_time",
+        "name": "confirms_sign_in",
         "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "org_oidc",
-            "name": "sends_auth_time"
+            "name": "confirms_sign_in"
           }
         }
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -170,5 +168,5 @@
       true
     ]
   },
-  "hash": "0d4076767b595b03f3c9d80a34d325846a1e63a0090cdc1a3aad7ddcc36a6bd6"
+  "hash": "e64179a34b5e61f0b8b457d47c8ae004beee4b3f8959e2530ab074b3c927be94"
 }

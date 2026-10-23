@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Dialog, OTPInput, SensitiveInput, Text } from "@logicplanes/kaeso-ui";
-import type { WhoAmI } from "~/api/generated/types";
 import { toastApiError } from "~/api/toast-error";
 import { t } from "~/i18n";
 import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
@@ -31,22 +30,16 @@ type Way = "password" | "sso" | "link" | "set-password" | "none";
 
 export function confirmChoices(
   ways: ConfirmWays | undefined,
-  options: { withoutSso: boolean; ssoOrg: string | null | undefined; managingSso?: string | null },
-): { primary: Way; sso: ConfirmSso[]; link: boolean; password: boolean } {
-  if (!ways) return { primary: "none", sso: [], link: false, password: false };
-  const rank = (p: ConfirmSso) => (p.org_id === options.managingSso ? 2 : p.org_id === options.ssoOrg ? 1 : 0);
-  const sso = options.withoutSso ? [] : [...ways.sso].sort((a, b) => rank(b) - rank(a));
-  const managingFirst = !!options.managingSso && sso[0]?.org_id === options.managingSso;
-  if (ways.password && !managingFirst) return { primary: "password", sso, link: ways.magic_link, password: false };
-  if (sso.length) return { primary: "sso", sso, link: ways.magic_link, password: ways.password };
-  if (ways.magic_link) return { primary: "link", sso: [], link: false, password: false };
-  if (ways.set_password) return { primary: "set-password", sso: [], link: false, password: false };
-  return { primary: "none", sso: [], link: false, password: false };
-}
-
-function managingSso(session: WhoAmI): string | null {
-  const managing = session.managed_by?.org ?? null;
-  return session.session.method === "oidc" && session.session.sso_org === managing ? managing : null;
+  options: { withoutSso: boolean; ssoOrg: string | null | undefined },
+): { primary: Way; sso: ConfirmSso[]; link: boolean } {
+  if (!ways) return { primary: "none", sso: [], link: false };
+  const own = (p: ConfirmSso) => Number(p.org_id === options.ssoOrg);
+  const sso = options.withoutSso ? [] : [...ways.sso].sort((a, b) => own(b) - own(a));
+  if (ways.password) return { primary: "password", sso, link: ways.magic_link };
+  if (sso.length) return { primary: "sso", sso, link: ways.magic_link };
+  if (ways.magic_link) return { primary: "link", sso: [], link: false };
+  if (ways.set_password) return { primary: "set-password", sso: [], link: false };
+  return { primary: "none", sso: [], link: false };
 }
 
 const providerName = (p: ConfirmSso) => p.provider_name ?? p.org_name;
@@ -68,14 +61,9 @@ export default function RecentSignInDialog() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [passwordInstead, setPasswordInstead] = useState(false);
   const email = session.user.email ?? "";
   const loading = confirm.isPending;
-  const ways = confirmChoices(confirm.data, {
-    withoutSso,
-    ssoOrg: session.session.sso_org,
-    managingSso: passwordInstead ? null : managingSso(session),
-  });
+  const ways = confirmChoices(confirm.data, { withoutSso, ssoOrg: session.session.sso_org });
 
   const finish = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
@@ -256,13 +244,8 @@ export default function RecentSignInDialog() {
         {step.kind === "choose" && !loading && !confirm.isError && ways.primary === "none" && (
           <Text tone="secondary">{t("auth.recent.noWay", "No sign-in method this install offers works for your account; ask an instance admin.")}</Text>
         )}
-        {step.kind === "choose" && !loading && (others.length > 0 || ways.password || (ways.primary !== "link" && ways.link)) && (
+        {step.kind === "choose" && !loading && (others.length > 0 || (ways.primary !== "link" && ways.link)) && (
           <div className="flex flex-col items-start gap-4">
-            {ways.password && (
-              <Button variant="link" disabled={busy} onClick={() => setPasswordInstead(true)}>
-                {t("auth.recent.passwordInstead", "Use your password instead")}
-              </Button>
-            )}
             {others.map((p) => (
               <Button key={p.org_id} variant="link" disabled={busy} onClick={() => continueWithSso(p)}>
                 {t("auth.recent.continueWithInstead", "Continue with {provider} instead", { provider: providerName(p) })}

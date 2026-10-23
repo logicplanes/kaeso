@@ -112,7 +112,7 @@ export function sso(overrides: Partial<SsoView> = {}): SsoView {
     name: null,
     auto_redirect: false,
     require_email_verified: true,
-    sends_auth_time: true,
+    confirms_sign_in: true,
     ...overrides,
   };
 }

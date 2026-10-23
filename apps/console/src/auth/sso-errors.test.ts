@@ -22,7 +22,7 @@ const CODES = [
   "signed_in_as_other",
   "org_scheduled",
   "throttled",
-  "no_auth_time",
+  "cannot_confirm",
 ];
 
 describe("single sign-on error codes", () => {
@@ -34,8 +34,8 @@ describe("single sign-on error codes", () => {
   });
 
   it("names the identity provider that can't confirm a recent sign-in when it's known", () => {
-    expect(ssoErrorMessage("no_auth_time", "Acme ID")).toBe("Acme ID can't confirm a recent sign-in; use your password or an email link.");
-    expect(ssoErrorMessage("no_auth_time")).toBe("The identity provider can't confirm a recent sign-in; use your password or an email link.");
+    expect(ssoErrorMessage("cannot_confirm", "Acme ID")).toBe("Acme ID can't confirm a recent sign-in; use your password or an email link.");
+    expect(ssoErrorMessage("cannot_confirm")).toBe("The identity provider can't confirm a recent sign-in; use your password or an email link.");
   });
 
   it("falls back to a general message for anything else", () => {

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_oidc SET confirms_sign_in = $3 WHERE org_id = $1 AND issuer = $2 AND confirms_sign_in IS DISTINCT FROM $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a4165688ab39fd7c0cc0bda2e8f064ee526643746084b1e589d69de42cab4e3e"
+}

@@ -5075,7 +5075,7 @@
           "me"
         ],
         "summary": "The ways the signed-in user can confirm it's them when an action needs a\nsign-in within the last 15 minutes.",
-        "description": "When the org that manages the account requires SSO, only its identity provider confirms, since the account can't sign in another way.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Single sign-on is listed only when the account has no other way to confirm, since an identity provider may ignore the request for a fresh sign-in. When the org that manages the account requires SSO, only its identity provider confirms, since the account can't sign in another way.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "getMeSignInAgain",
         "responses": {
           "200": {
@@ -5126,7 +5126,7 @@
           "me"
         ],
         "summary": "Starts confirming the sign-in at an org's identity provider: answers with\nthe provider's URL, which asks the person to sign in again.",
-        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account`, `link_required` or `stale_sign_in`. `no_auth_time` means the provider's answer didn't say when the person signed in; the org's connection is then marked so, and `GET me/sign-in-again` stops offering it.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account` or `link_required`. `cannot_confirm` means the provider's answer didn't show a fresh sign-in: it left out `auth_time`, or carried an older sign-in the provider reused. The org's connection is then marked so, and `GET me/sign-in-again` stops offering it.\n\n**Access:** a signed-in console session; no right is needed.",
         "operationId": "postMeSignInAgainSso",
         "requestBody": {
           "content": {
@@ -16387,7 +16387,7 @@
             "items": {
               "$ref": "#/components/schemas/ConfirmSsoView"
             },
-            "description": "Through these orgs' identity providers, which the account is linked to; a\nconfirmation there makes the session one from that org's SSO. A provider\nwhose ID tokens are known to leave out `auth_time` can't confirm and isn't\nlisted (`sends_auth_time` in `GET orgs/{org}/security`). The org that\nmanages the account comes first."
+            "description": "Through these orgs' identity providers, which the account is linked to;\nlisted only while `password`, `magic_link` and `set_password` are all\n`false`. A confirmation there makes the session one from that org's SSO.\nA provider that couldn't confirm one isn't listed (`confirms_sign_in` in\n`GET orgs/{org}/security`). The org that manages the account comes first."
           }
         }
       },
@@ -23999,6 +23999,13 @@
             "type": "string",
             "description": "The client id Kaeso uses."
           },
+          "confirms_sign_in": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the provider confirms a recent sign-in: `true` once a\nconfirmation's ID token showed a fresh sign-in, `false` once one left out\n`auth_time` or carried an older sign-in the provider reused, `null` while\nunknown or after `issuer` or `client_id` changes. With `false`, it isn't\noffered to confirm one, so members confirm with a password or a sign-in link."
+          },
           "domains": {
             "type": "array",
             "items": {
@@ -24029,13 +24036,6 @@
           "require_email_verified": {
             "type": "boolean",
             "description": "Whether ID tokens must mark the address as verified with\n`email_verified`."
-          },
-          "sends_auth_time": {
-            "type": [
-              "boolean",
-              "null"
-            ],
-            "description": "Whether the provider's ID tokens say when the person signed in\n(`auth_time`): `true` once a token did, `false` once a confirmation's\ntoken didn't, `null` while unknown or after `issuer` or `client_id`\nchanges. With `false`, its sign-ins never count as recent and it can't\nconfirm one, so members confirm with a password or a sign-in link."
           }
         }
       },
