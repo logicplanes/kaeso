@@ -67,9 +67,28 @@ struct Session {
     refresh: String,
 }
 
-struct Hold {
+pub(crate) struct Hold {
     reached: tokio::sync::oneshot::Sender<()>,
     release: tokio::sync::oneshot::Receiver<()>,
+}
+
+impl Hold {
+    pub(crate) async fn wait(self) {
+        let _ = self.reached.send(());
+        let _ = self.release.await;
+    }
+}
+
+pub(crate) fn hold() -> (Hold, Held) {
+    let (reached_tx, reached) = tokio::sync::oneshot::channel();
+    let (release, release_rx) = tokio::sync::oneshot::channel();
+    (
+        Hold {
+            reached: reached_tx,
+            release: release_rx,
+        },
+        Held { reached, release },
+    )
 }
 
 pub struct Held {
@@ -175,13 +194,9 @@ impl MockOAuth {
     }
 
     pub fn hold_next_refresh(&self) -> Held {
-        let (reached_tx, reached) = tokio::sync::oneshot::channel();
-        let (release, release_rx) = tokio::sync::oneshot::channel();
-        *locked(&self.inner.hold) = Some(Hold {
-            reached: reached_tx,
-            release: release_rx,
-        });
-        Held { reached, release }
+        let (hold, held) = hold();
+        *locked(&self.inner.hold) = Some(hold);
+        held
     }
 
     pub fn refreshes(&self) -> usize {
@@ -376,8 +391,7 @@ async fn token(
         "refresh_token" => {
             let hold = locked(&inner.hold).take();
             if let Some(hold) = hold {
-                let _ = hold.reached.send(());
-                let _ = hold.release.await;
+                hold.wait().await;
             }
             inner.refreshes.fetch_add(1, Ordering::SeqCst);
             refresh_grant(&inner, &field("client_id"), &field("refresh_token"))

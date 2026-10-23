@@ -2,12 +2,12 @@ import { STACK_URLS } from "./stack";
 import { expect, signInAsOwner, test, toastText } from "./support";
 
 test("a ChatGPT account becomes an OpenAI key by pasting the address the browser couldn't load", async ({ page, context }) => {
-  const revokedSoFar = async () => ((await (await fetch(`${STACK_URLS.chatgpt}/__mock/revoked`)).json()) as { revoked: number }).revoked;
+  const revokedSoFar = async () => ((await (await fetch(`${STACK_URLS.accounts}/__mock/revoked`)).json()) as { revoked: number }).revoked;
   const before = await revokedSoFar();
   let callback = "";
   await context.route("https://auth.openai.com/**", async (route) => {
     const asked = new URL(route.request().url());
-    const answer = await fetch(`${STACK_URLS.chatgpt}${asked.pathname}${asked.search}`, { redirect: "manual" });
+    const answer = await fetch(`${STACK_URLS.accounts}${asked.pathname}${asked.search}`, { redirect: "manual" });
     callback = answer.headers.get("location") ?? "";
     await route.fulfill({ status: 200, contentType: "text/plain", body: "" });
   });

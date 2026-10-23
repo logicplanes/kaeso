@@ -144,8 +144,12 @@ impl Asked<'_> {
         self.state.accounts.hosts(self.credential.method)
     }
 
+    fn plan_catalogue(&self) -> bool {
+        self.credential.method == kaeso_core::provider::AuthMethod::ChatGpt
+    }
+
     fn dialect(&self) -> DialectId {
-        if self.account().is_some() {
+        if self.plan_catalogue() {
             DialectId::OpenAiResponses
         } else {
             self.eff.dialect
@@ -200,7 +204,7 @@ impl Asked<'_> {
         let (status, headers, body) = self.send(request).await?;
         let mut page = dispatch::decode_models(self.dialect(), status, &headers, &body)
             .map_err(|e| without_key_fragments(declared_key_refusal(self.eff.provider, e)))?;
-        if self.account().is_some() {
+        if self.plan_catalogue() {
             page.models.retain(listed);
         }
         Ok(page)
@@ -265,7 +269,7 @@ pub async fn probe(
         credential,
         eff,
     };
-    if asked.account().is_some() {
+    if asked.plan_catalogue() {
         let listing = listings
             .get((eff.provider.id, asked.dialect(), credential.key()), &asked)
             .await;

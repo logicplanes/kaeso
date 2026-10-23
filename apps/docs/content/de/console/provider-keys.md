@@ -48,6 +48,23 @@ Ein ChatGPT-Konto bedient Anfragen nach den Regeln von OpenAI für die Nutzung v
 - Ist das Nutzungslimit des Abos erreicht, erhalten Apps eine `429`, die auf die [Nutzungseinstellungen von ChatGPT](https://chatgpt.com/settings/usage) verweist.
 - **Verfügbarkeit prüfen** bietet nur die Modelle an, die das Konto für sein Abo listet.
 
+## Mit einem Grok-Konto anmelden
+
+Für SpaceX kann ein Anbieter-Schlüssel auch ein Grok-Konto sein. Seine Anfragen nutzen dann das Grok-Abo des Kontos statt eines xAI-API-Kontos, sofern das Abo API-Zugang enthält.
+
+> [!WARNING]
+> Grok-Konten sind experimentell: xAI kann ändern, wie seine Anmeldung funktioniert. Nutzen Sie nur Ihr eigenes Konto; es zu teilen verstößt gegen die Bedingungen von SpaceX.
+
+1. Wählen Sie unter **Anbieter** **Anbieter-Schlüssel hinzufügen** und dann **SpaceX**.
+2. Wählen Sie **Grok-Konto**, markiert als **Experimentell**. Hat SpaceX schon einen Standardschlüssel, wählen Sie, ob das Konto zum Standard wird.
+3. Geben Sie dem Schlüssel einen Namen und wählen Sie **Anmeldecode holen**. Der Dialog zeigt einen Code, einen Link zur Anmeldeseite von xAI und einen QR-Code dieses Links.
+4. Öffnen Sie die Seite auf einem beliebigen Gerät, melden Sie sich bei Grok an und geben Sie den Code ein.
+5. Kaeso fügt den Schlüssel selbst hinzu, sobald Sie zustimmen. Lehnen Sie ab oder läuft der Code ab, wählen Sie **Neuen Code holen**.
+
+Schließen Sie innerhalb von zehn Minuten ab, als die Person, die begonnen hat. Kaeso speichert die Tokens des Kontos verschlüsselt wie jeden anderen Schlüssel und erneuert sie selbst in den letzten zwei Minuten, bevor sie ablaufen.
+
+Ein Grok-Konto bedient Anfragen wie ein xAI-API-Schlüssel, unter `https://api.x.ai/v1` mit dem Token des Kontos, unabhängig von der Basis-URL, die die Installation für SpaceX festlegt. Lehnt xAI das Konto ab, weil sein Abo keinen API-Zugang hat, zeigt der Schlüssel **Kein API-Zugang** und seine Anfragen schlagen fehl.
+
 ## Schlüssel eines Projekts wählen
 
 Jeder Anbieter hat einen Standardschlüssel, den jedes Projekt ohne zugewiesenen Schlüssel nutzt. Der erste Schlüssel, den Sie für einen Anbieter hinzufügen, wird sein Standard. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Schlüssels.
@@ -56,17 +73,17 @@ Um einigen Projekten einen anderen Schlüssel zu geben, wählen Sie **Projekten 
 
 ## Schlüssel ersetzen, umbenennen oder löschen
 
-Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die Projekte, die ihn nutzen, wer ihn hinzugefügt hat und wann er zuletzt genutzt wurde. Ein Konto zeigt statt der letzten vier Zeichen seine E-Mail-Adresse und sein Produkt, etwa **ChatGPT**. Das Menü eines Schlüssels hat diese Aktionen:
+Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die Projekte, die ihn nutzen, wer ihn hinzugefügt hat und wann er zuletzt genutzt wurde. Ein Konto zeigt statt der letzten vier Zeichen seine E-Mail-Adresse und sein Produkt, etwa **ChatGPT** oder **Grok**; ein Grok-Konto ist zusätzlich als **Experimentell** markiert. Das Menü eines Schlüssels hat diese Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben |
-| Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** zeigt, und beendet seine vorherige Sitzung bei OpenAI |
+| Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
 | Umbenennen | Ändert den Namen, den die Konsole zeigt |
-| Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI |
+| Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
 
-Ein Konto zeigt **Abgemeldet**, wenn OpenAI seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Seine Anfragen schlagen dann fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.
+Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat, und ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. Seine Anfragen schlagen dann fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.
 
 Wenn Sie den Standard löschen, wird der zuletzt hinzugefügte andere Schlüssel des Anbieters zum Standard. Gibt es keinen, schlagen Anfragen an diesen Anbieter fehl. Der Dialog sagt Ihnen, was zutrifft.
 

@@ -14,6 +14,7 @@ use kaeso_core::catalogue::{Availability, Effective, capability};
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
 use kaeso_core::limits::WorstCase;
+use kaeso_core::provider::AuthMethod;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
 use kaeso_store::pg::catalogue::Answer;
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
@@ -197,6 +198,7 @@ pub enum Stage {
     Limits,
     MissingCredential(&'static str),
     SignedOut(&'static str),
+    NoApiAccess(&'static str),
     Credential,
     Upstream,
     Provider,
@@ -674,6 +676,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             502,
             format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name),
         )),
+        CredentialError::NoApiAccess { product } => fail(Stage::NoApiAccess(product))(error(
+            ErrorKind::ProviderError,
+            502,
+            format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name),
+        )),
         CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
             ErrorKind::ProviderError,
             503,
@@ -684,7 +691,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .provider
         .account
         .filter(|a| a.method == credential.method);
-    if let Some(a) = account {
+    let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
+    if let Some(a) = chatgpt {
         plan.dialect =
             super::accounts::prepare(&mut req, a, eff.provider).map_err(fail(Stage::Capability))?;
         rec.outcome().egress = Some(plan.dialect);
@@ -761,8 +769,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
-    let sent_req =
-        (account.is_none() && eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
+    let sent_req = counted_at_provider(account, eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
     let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
@@ -801,7 +808,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let provider = eff.provider.id;
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
-    let gathers = account.is_some() && !stream && kind == RequestKind::Generate;
+    let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {
         let e = UpstreamError::Timeout("request");
@@ -813,7 +820,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         auth: eff.provider.auth,
         credential: &credential.secret,
         request: Outgoing::from(encoded),
-        stream: (stream || account.is_some()) && kind == RequestKind::Generate,
+        stream: (stream || chatgpt.is_some()) && kind == RequestKind::Generate,
         timeouts,
         max_body: state.config.body_limits.provider_response.as_usize(),
     });
@@ -868,7 +875,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
 
     match resp.body {
-        ResponseBody::Stream(chunks) if success && account.is_some() && !stream => {
+        ResponseBody::Stream(chunks) if success && chatgpt.is_some() && !stream => {
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
             let max = state.config.body_limits.provider_response.as_usize();
@@ -1101,8 +1108,31 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
 
+// An account's token is valid only at its own API host; the input count goes to the
+// provider's configured base URL, so no account request may reach it.
+fn counted_at_provider(
+    account: Option<kaeso_core::provider::AccountSignIn>,
+    provider: &kaeso_core::provider::Provider,
+    dialect: DialectId,
+) -> bool {
+    account.is_none() && provider.count_tokens == Some(dialect)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn no_account_request_is_counted_at_the_providers_base_url() {
+        let openai = kaeso_core::provider::provider("openai").unwrap();
+        let grok = kaeso_core::provider::provider("xai")
+            .and_then(|p| p.account)
+            .unwrap();
+        let counted =
+            |account| super::counted_at_provider(account, openai, DialectId::OpenAiResponses);
+        assert!(counted(None));
+        assert!(!counted(Some(grok)));
+        assert!(!counted(openai.account));
+    }
+
     use super::*;
 
     #[test]

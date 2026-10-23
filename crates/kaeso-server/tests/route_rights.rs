@@ -369,3 +369,36 @@ async fn every_org_and_project_route_hides_other_organizations() {
     assert!(checked > 100, "only {checked} routes were checked");
     s.cleanup().await;
 }
+
+#[test]
+fn account_sign_in_checks_the_right_of_the_key_it_adds_or_signs_in_again() {
+    let rights: BTreeMap<String, String> = routes()
+        .into_iter()
+        .filter(|r| r.path.contains("/oauth"))
+        .map(|r| (r.to_string(), r.right))
+        .collect();
+    let create = "provider_credentials.create".to_owned();
+    let replace = "provider_credentials.replace".to_owned();
+    assert_eq!(
+        rights,
+        BTreeMap::from([
+            (
+                "POST /platform/v1/orgs/{org}/credentials/oauth".to_owned(),
+                create.clone()
+            ),
+            (
+                "POST /platform/v1/orgs/{org}/credentials/oauth/{attempt}".to_owned(),
+                create
+            ),
+            (
+                "POST /platform/v1/orgs/{org}/credentials/{credential}/oauth".to_owned(),
+                replace.clone()
+            ),
+            (
+                "POST /platform/v1/orgs/{org}/credentials/{credential}/oauth/{attempt}".to_owned(),
+                replace
+            ),
+        ]),
+        "starting and checking a ChatGPT or Grok sign-in need the same right"
+    );
+}

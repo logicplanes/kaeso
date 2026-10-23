@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { Button, Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog, icons } from "@logicplanes/kaeso-ui";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { Badge, Button, Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
-import type { AccountAttempt, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
+import { isApiError } from "~/api/errors";
+import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { toast } from "~/shell/toast";
+import { DeviceCode, type DeviceState } from "./device-sign-in";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
@@ -32,6 +34,10 @@ function keyHelp(provider: ProviderView | undefined): ReactNode {
 function keyPlaceholder(provider: ProviderView | undefined): string {
   return `${provider ? (provider.key_prefix ?? "") : "sk-"}…`;
 }
+
+const pending = (answer: CredentialView | AccountPending): answer is AccountPending => "interval" in answer;
+
+const receivedAt = (): number => Date.now();
 
 function openBlankTab(): Window | null {
   const tab = window.open("about:blank", "_blank");
@@ -65,11 +71,18 @@ export function ProviderKeyDialog({
     setAttempt(null);
     setCallback("");
   };
+  const [every, setEvery] = useState(0);
+  const [polls, setPolls] = useState(0);
+  const [ended, setEnded] = useState<"ended" | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [deadline, setDeadline] = useState(0);
   const chosen = provider ?? "";
   const label = provider ? providers.name(provider) : "";
   const known = provider ? providers.get(provider) : undefined;
   const account: AccountSignInView | null = known?.account ?? null;
   const signingIn = method === "account" && account !== null;
+  const device = attempt?.device ?? null;
+  const left = attempt ? deadline - now : 0;
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
   const choices = useMemo(() => providerOptions(providers, keys), [providers, keys]);
   const begin = useApiMutation({
@@ -90,10 +103,68 @@ export function ProviderKeyDialog({
       setAttempt(started);
       setCallback("");
       setBlocked(!tab);
-      if (tab) tab.location.href = started.authorize_url;
+      setEnded(null);
+      setNow(Date.now());
+      setDeadline(Date.now() + started.expires_in * 1000);
+      setEvery(started.device?.interval ?? 0);
+      if (tab && started.authorize_url) tab.location.href = started.authorize_url;
     },
     onError: (_error, { tab }) => tab?.close(),
   });
+  const added = (k: CredentialView) => {
+    setSecret("");
+    setCallback("");
+    toast.success(
+      replace && signingIn
+        ? t("kaeso.providerKey.signedInAgain", "{title} signed in again", { title: keyTitle(k, providers) })
+        : replace
+          ? t("kaeso.providerKey.replaced", "{title} replaced", { title: keyTitle(k, providers) })
+          : k.is_default
+            ? t("kaeso.providerKey.isDefault", "{name} is the {provider} default", { name: k.name, provider: label })
+            : t("kaeso.providerKey.added", "{title} added", { title: keyTitle(k, providers) }),
+    );
+    onClose();
+  };
+  const answered = (answer: CredentialView | AccountPending, received: number) => {
+    if (!pending(answer)) return added(answer);
+    setEvery(answer.interval);
+    setDeadline(received + answer.expires_in * 1000);
+    setPolls((n) => n + 1);
+  };
+  const poll = useApiMutation({
+    mutationFn: async (at: string) => {
+      const answer = replace
+        ? data(
+            await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth/{attempt}", {
+              params: { path: { org, credential: replace.id, attempt: at } },
+              body: {},
+            }),
+          )
+        : data(await api.POST("/platform/v1/orgs/{org}/credentials/oauth/{attempt}", { params: { path: { org, attempt: at } }, body: {} }));
+      return { answer, received: receivedAt() };
+    },
+    invalidates: [["orgs", org, "credentials"]],
+    onSuccess: ({ answer, received }, at) => {
+      if (at === attempt?.attempt || !pending(answer)) answered(answer, received);
+    },
+    onSettled: (_answer, error, at) => {
+      if (!error || at !== attempt?.attempt) return;
+      if (isApiError(error) && error.status === 400) setEnded("ended");
+      else setPolls((n) => n + 1);
+    },
+  });
+  const state: DeviceState = ended ?? (left <= 0 ? "expired" : "waiting");
+  const waiting = signingIn && !!device && state === "waiting";
+  const check = poll.mutate;
+  useEffect(() => {
+    if (!waiting || !attempt) return;
+    const tick = window.setInterval(() => setNow(Date.now()), 1000);
+    const next = window.setTimeout(() => check(attempt.attempt), every * 1000);
+    return () => {
+      window.clearInterval(tick);
+      window.clearTimeout(next);
+    };
+  }, [waiting, attempt, every, polls, check]);
   const save = useApiMutation({
     mutationFn: async () => {
       if (signingIn && attempt && replace)
@@ -125,19 +196,8 @@ export function ProviderKeyDialog({
       );
     },
     invalidates: [["orgs", org, "credentials"]],
-    onSuccess: (k) => {
-      setSecret("");
-      setCallback("");
-      toast.success(
-        replace && signingIn
-          ? t("kaeso.providerKey.signedInAgain", "{title} signed in again", { title: keyTitle(k, providers) })
-          : replace
-            ? t("kaeso.providerKey.replaced", "{title} replaced", { title: keyTitle(k, providers) })
-            : k.is_default
-              ? t("kaeso.providerKey.isDefault", "{name} is the {provider} default", { name: k.name, provider: label })
-              : t("kaeso.providerKey.added", "{title} added", { title: keyTitle(k, providers) }),
-      );
-      onClose();
+    onSuccess: (answer) => {
+      if (!pending(answer)) added(answer);
     },
   });
 
@@ -180,44 +240,75 @@ export function ProviderKeyDialog({
     ),
   };
   const product = account?.product ?? "";
+  const pastes = account?.method === "chatgpt";
+  const nameField = !replace && (
+    <Input
+      className="w-full"
+      label={t("common.name", "Name")}
+      placeholder={t("kaeso.providerKey.accountNamePlaceholder", "My {product} plan", { product })}
+      value={name}
+      onChange={(e) => {
+        setName(e.target.value);
+        forgetAttempt();
+      }}
+      maxLength={100}
+      autoFocus
+    />
+  );
+  const nameMissing = !replace && !name.trim();
+  const deviceStep: DialogStep = {
+    id: "account",
+    title: t("kaeso.providerKey.signInTitle", "Sign in with your {product} account", { product }),
+    description: t("kaeso.providerKey.ownAccount", "Use your own account only; sharing it breaks {provider}'s terms.", { provider: label }),
+    blockedReason: nameMissing
+      ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+      : !device
+        ? t("kaeso.providerKey.codeFirst", "Get a sign-in code first")
+        : !waiting
+          ? t("kaeso.providerKey.newCodeFirst", "Get a new code first")
+          : undefined,
+    content: (
+      <div className="flex flex-col items-start gap-12">
+        {nameField}
+        {!waiting && (
+          <Button
+            leadingIcon={icons.session}
+            loading={begin.isPending}
+            disabled={nameMissing}
+            {...(nameMissing ? { disabledReason: t("kaeso.providerKey.nameBlocked", "Give the key a name") } : {})}
+            onClick={() => begin.mutate({ tab: null, inputs: inputs.current })}
+          >
+            {device ? t("kaeso.providerKey.newCode", "Get a new code") : t("kaeso.providerKey.getCode", "Get a sign-in code")}
+          </Button>
+        )}
+        {device && <DeviceCode device={device} product={product} left={left} every={every} state={state} />}
+      </div>
+    ),
+  };
   const accountStep: DialogStep = {
     id: "account",
     title: t("kaeso.providerKey.signInTitle", "Sign in with your {product} account", { product }),
     description: t("kaeso.providerKey.ownAccount", "Use your own account only; sharing it breaks {provider}'s terms.", { provider: label }),
-    blockedReason:
-      !replace && !name.trim()
-        ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
-        : !attempt
-          ? t("kaeso.providerKey.continueFirst", "Continue with {product} first", { product })
-          : !callback.trim()
-            ? t("kaeso.providerKey.pasteAddressBlocked", "Paste the address of the page that didn't load")
-            : undefined,
+    blockedReason: nameMissing
+      ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+      : !attempt
+        ? t("kaeso.providerKey.continueFirst", "Continue with {product} first", { product })
+        : !callback.trim()
+          ? t("kaeso.providerKey.pasteAddressBlocked", "Paste the address of the page that didn't load")
+          : undefined,
     content: (
       <div className="flex flex-col items-start gap-12">
-        {!replace && (
-          <Input
-            className="w-full"
-            label={t("common.name", "Name")}
-            placeholder={t("kaeso.providerKey.accountNamePlaceholder", "My {product} plan", { product })}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              forgetAttempt();
-            }}
-            maxLength={100}
-            autoFocus
-          />
-        )}
+        {nameField}
         <Button
           leadingIcon={icons.openExternal}
           loading={begin.isPending}
-          disabled={!replace && !name.trim()}
-          {...(!replace && !name.trim() ? { disabledReason: t("kaeso.providerKey.nameBlocked", "Give the key a name") } : {})}
+          disabled={nameMissing}
+          {...(nameMissing ? { disabledReason: t("kaeso.providerKey.nameBlocked", "Give the key a name") } : {})}
           onClick={() => begin.mutate({ tab: openBlankTab(), inputs: inputs.current })}
         >
           {t("kaeso.providerKey.continueWith", "Continue with {product}", { product })}
         </Button>
-        {attempt && (
+        {attempt?.authorize_url && (
           <>
             {blocked && (
               <Link href={attempt.authorize_url} external>
@@ -257,7 +348,16 @@ export function ProviderKeyDialog({
         />
         <Radio
           value="account"
-          label={t("kaeso.providerKey.account", "{product} account", { product })}
+          label={
+            account?.experimental ? (
+              <span className="flex items-center gap-8">
+                {t("kaeso.providerKey.account", "{product} account", { product })}
+                <Badge tone="info">{t("kaeso.providerKey.experimental", "Experimental")}</Badge>
+              </span>
+            ) : (
+              t("kaeso.providerKey.account", "{product} account", { product })
+            )
+          }
           description={t("kaeso.providerKey.accountHint", "Requests use the plan of the {product} account you sign in with.", { product })}
         />
       </RadioCards>
@@ -306,10 +406,15 @@ export function ProviderKeyDialog({
       <ProviderPicker aria-label={t("common.provider", "Provider")} providers={choices} value={provider} onValueChange={(p) => p && choose(p)} autoFocus />
     ),
   };
+  const signInStep = pastes ? accountStep : deviceStep;
   const steps: DialogStep[] = replace
-    ? [signingIn ? accountStep : keyStep]
-    : [providerStep, ...(account ? [methodStep] : []), ...(signingIn ? [...defaultStep, accountStep] : [keyStep, ...defaultStep])];
-  const ready = signingIn ? !!attempt && !!callback.trim() && (replace || name.trim()) : secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim());
+    ? [signingIn ? signInStep : keyStep]
+    : [providerStep, ...(account ? [methodStep] : []), ...(signingIn ? [...defaultStep, signInStep] : [keyStep, ...defaultStep])];
+  const ready = signingIn
+    ? pastes
+      ? !!attempt && !!callback.trim() && (replace || name.trim())
+      : waiting && (replace || name.trim())
+    : secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim());
 
   return (
     <StepDialog
@@ -332,7 +437,7 @@ export function ProviderKeyDialog({
               : t("kaeso.providerKey.add", "Add key")
       }
       submitting={save.isPending}
-      onSubmit={() => provider && ready && save.mutate()}
+      onSubmit={() => provider && ready && (signingIn && !pastes && attempt ? poll.mutate(attempt.attempt) : save.mutate())}
       steps={steps}
     />
   );

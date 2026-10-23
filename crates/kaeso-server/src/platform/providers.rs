@@ -53,6 +53,8 @@ pub struct AccountSignInView {
         Kaeso uses; `null` without one."]
     #[schema(example = "https://chatgpt.com/settings/usage")]
     pub usage_url: Option<&'static str>,
+    #[doc = "The sign-in works but may change or stop when the provider changes it."]
+    pub experimental: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -83,6 +85,7 @@ impl ProviderView {
                 method: a.method.into(),
                 product: a.product,
                 usage_url: a.usage_url,
+                experimental: a.experimental,
             }),
         }
     }

@@ -53,14 +53,16 @@ pub struct CredentialView {
         an account."]
     #[schema(example = "wxyz")]
     pub last4: String,
-    #[doc = "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\n\
-        signed in with OAuth, whose tokens Kaeso renews by itself."]
+    #[doc = "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n\
+        `grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\n\
+        renews by itself."]
     pub auth_method: AuthMethodView,
     #[doc = "The signed-in account's email address; `null` for an API key."]
     #[schema(example = "owner@example.com")]
     pub account: Option<String>,
     #[doc = "Why the account can't make requests until someone signs in again:\n\
-        `signed_out` when the provider ended its session; `null` while it works."]
+        `signed_out` when the provider ended its session, `no_api_access` when its\n\
+        plan doesn't include API access; `null` while it works."]
     pub auth_error: Option<AuthErrorView>,
     #[doc = "The id of the master key that wraps it (never the key)."]
     #[schema(example = "k1")]
@@ -87,6 +89,8 @@ pub enum AuthMethodView {
     #[doc = "A ChatGPT account, signed in with OAuth."]
     #[serde(rename = "chatgpt")]
     ChatGpt,
+    #[doc = "A Grok account, signed in with OAuth."]
+    Grok,
 }
 
 impl From<AuthMethod> for AuthMethodView {
@@ -94,6 +98,7 @@ impl From<AuthMethod> for AuthMethodView {
         match m {
             AuthMethod::ApiKey => AuthMethodView::ApiKey,
             AuthMethod::ChatGpt => AuthMethodView::ChatGpt,
+            AuthMethod::Grok => AuthMethodView::Grok,
         }
     }
 }
@@ -104,6 +109,9 @@ impl From<AuthMethod> for AuthMethodView {
 pub enum AuthErrorView {
     #[doc = "The provider ended the account's session; sign in again."]
     SignedOut,
+    #[doc = "The account's plan doesn't include API access; sign in with another\n\
+        account or use an API key."]
+    NoApiAccess,
 }
 
 impl CredentialView {
@@ -111,6 +119,7 @@ impl CredentialView {
         match self.auth_method {
             AuthMethodView::ApiKey => AuthMethod::ApiKey,
             AuthMethodView::ChatGpt => AuthMethod::ChatGpt,
+            AuthMethodView::Grok => AuthMethod::Grok,
         }
     }
 
@@ -134,7 +143,10 @@ impl CredentialView {
                 .unwrap_or(AuthMethod::ApiKey)
                 .into(),
             account: r.account_label.clone(),
-            auth_error: r.auth_error.as_ref().map(|_| AuthErrorView::SignedOut),
+            auth_error: r.auth_error.as_deref().map(|e| match e {
+                service::NO_API_ACCESS => AuthErrorView::NoApiAccess,
+                _ => AuthErrorView::SignedOut,
+            }),
             key_id: r.key_id.clone(),
             created_by: creator(&r.created_by_kind, r.created_by_id),
             created_at: r.created_at,

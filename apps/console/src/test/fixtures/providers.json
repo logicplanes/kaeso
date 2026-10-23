@@ -14,7 +14,8 @@
       "account": {
         "method": "chatgpt",
         "product": "ChatGPT",
-        "usage_url": "https://chatgpt.com/settings/usage"
+        "usage_url": "https://chatgpt.com/settings/usage",
+        "experimental": false
       }
     },
     {
@@ -54,7 +55,12 @@
       "dialects": ["openai_responses", "openai_chat"],
       "count_tokens": null,
       "embeddings": null,
-      "account": null
+      "account": {
+        "method": "grok",
+        "product": "Grok",
+        "usage_url": null,
+        "experimental": true
+      }
     },
     {
       "id": "togetherai",

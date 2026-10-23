@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ORG, providers } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
@@ -19,7 +19,45 @@ function newTab() {
   return { tab, open };
 }
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
+
+const GROK_PAGE = "https://accounts.x.ai/oauth2/device";
+const grokKey = credential({ id: "cred_grok", name: "Ada's Grok", provider: "xai", auth_method: "grok", account: "ada@example.com", last4: "" });
+
+function grokAttempt(seconds = 600, code = "FKFF-E5EP") {
+  return {
+    attempt: `019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5${code.at(-1)}`,
+    authorize_url: null,
+    device: { user_code: code, verification_uri: GROK_PAGE, verification_uri_complete: `${GROK_PAGE}?user_code=${code}`, interval: 5 },
+    expires_at: new Date(Date.now() + seconds * 1000).toISOString(),
+    expires_in: seconds,
+  };
+}
+
+function answers(...replies: unknown[]) {
+  let at = 0;
+  return () => replies[Math.min(at++, replies.length - 1)];
+}
+
+const later = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
+
+async function getCode(dialog: HTMLElement) {
+  vi.useFakeTimers({ now: Date.now(), toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+  fireEvent.click(within(dialog).getByRole("button", { name: /^Get a (sign-in|new) code$/ }));
+  await later(0);
+  await later(0);
+}
+
+const readable = (el: Element | null) => el?.textContent?.replace(/\u2060? \(opens in a new tab\)/, "");
+
+function pageHint(dialog: HTMLElement, text: string) {
+  const link = within(dialog).getByRole("link", { name: /^accounts\.x\.ai/ });
+  const hint = within(dialog).getByText((_, el) => readable(el) === text && ![...(el?.children ?? [])].some((c) => readable(c) === text));
+  return { link, hint };
+}
 
 function expectKeyHint(dialog: HTMLElement, host: string, url: string, page: string, prefix: string) {
   const link = within(dialog).getByRole("link", { name: (name) => name.startsWith(host) });
@@ -122,6 +160,8 @@ describe("ProviderKeyDialog", () => {
     const { user, dialog } = await open();
 
     await choose(user, dialog, "SpaceX");
+    expect(within(dialog).getByRole("heading", { name: "Add an API key or sign in with Grok?" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your SpaceX API key" })).toBeVisible();
     expectKeyHint(dialog, "console.x.ai", "https://console.x.ai/team/default/api-keys", "API Keys", "xai-");
@@ -555,6 +595,195 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add account" }));
     expect((await notifications().findAllByText(/Paste the address of the page that didn't load; it starts with/)).length).toBeGreaterThan(0);
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("signs in to a Grok account with a code, its page and a QR code, checking until it is approved", async () => {
+    const opened = vi.spyOn(window, "open");
+    const started = grokAttempt();
+    on("POST", `${CREDENTIALS}/oauth`, started);
+    const later5 = { interval: 5, expires_at: started.expires_at, expires_in: 595 };
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, answers(later5, { ...later5, interval: 10 }, { ...later5, interval: 10 }, grokKey));
+    const { user, dialog, onClose } = await open();
+
+    await choose(user, dialog, "SpaceX");
+    const account = within(dialog).getByRole("radio", { name: /^Grok account/ });
+    expect(within(account.closest("label") ?? account).getByText("Experimental")).toBeInTheDocument();
+    expect(within(dialog).getByRole("radio", { name: /^API key/ })).not.toHaveTextContent("Experimental");
+    await user.click(account);
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Sign in with your Grok account" })).toBeVisible();
+    expect(within(dialog).getByText("Use your own account only; sharing it breaks SpaceX's terms.")).toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Give the key a name");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Ada's Grok");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Get a sign-in code first");
+    await getCode(dialog);
+
+    expect(within(dialog).getByText("FKFF-E5EP")).toBeInTheDocument();
+    expect(opened).not.toHaveBeenCalled();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([{ provider: "xai", name: "Ada's Grok", make_default: false }]);
+    expect(within(dialog).getByRole("button", { name: "Copy code" })).toBeInTheDocument();
+    const hint = pageHint(dialog, "Open accounts.x.ai on any device, sign in to Grok and enter the code.");
+    expect(hint.hint).toContainElement(hint.link);
+    expect(hint.link).toHaveAttribute("href", `${GROK_PAGE}?user_code=FKFF-E5EP`);
+    expect(within(dialog).getByRole("img", { name: "QR code to open the Grok sign-in page" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Waiting for your approval; the code expires in 10 min.");
+    expect(within(dialog).getByText("Kaeso checks every 5 seconds.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Get a sign-in code" })).not.toBeInTheDocument();
+
+    const polls = () => requests("POST", `${CREDENTIALS}/oauth/:attempt`);
+    await later(4000);
+    expect(polls()).toHaveLength(0);
+    await later(1000);
+    expect(polls().map((r) => [r.params.attempt, r.body])).toEqual([[started.attempt, {}]]);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Waiting for your approval; the code expires in 9 min 55 s.");
+    await later(5000);
+    expect(polls()).toHaveLength(2);
+    expect(within(dialog).getByText("Kaeso checks every 10 seconds.")).toBeInTheDocument();
+    await later(5000);
+    expect(polls()).toHaveLength(2);
+    await later(5000);
+    expect(polls()).toHaveLength(3);
+    await later(10000);
+    expect(polls()).toHaveLength(4);
+    vi.useRealTimers();
+
+    expect(await notifications().findByText("Ada's Grok is the SpaceX default")).toBeInTheDocument();
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it("ends a declined Grok sign-in and gets a new code", async () => {
+    on("POST", `${CREDENTIALS}/oauth`, answers(grokAttempt(), grokAttempt(600, "WXYZ-9876")));
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, apiError(400, "invalid_request", "You declined the sign-in at Grok; start again."));
+    const { user, dialog, onClose } = await open();
+    await choose(user, dialog, "SpaceX");
+    await user.click(within(dialog).getByRole("radio", { name: /^Grok account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Grok");
+    await getCode(dialog);
+    expect(within(dialog).getByText("FKFF-E5EP")).toBeInTheDocument();
+    await later(5000);
+    vi.useRealTimers();
+    expect((await notifications().findAllByText("You declined the sign-in at Grok; start again.")).length).toBeGreaterThan(0);
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("This sign-in ended; get a new code to try again.");
+    expect(within(dialog).queryByText("Kaeso checks every 5 seconds.")).not.toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Get a new code first");
+    await user.click(within(dialog).getByRole("button", { name: "Get a new code" }));
+    expect(await within(dialog).findByText("WXYZ-9876")).toBeInTheDocument();
+    expect(within(dialog).getByRole("status")).toHaveTextContent(/^Waiting for your approval/);
+    expect(requests("POST", `${CREDENTIALS}/oauth`)).toHaveLength(2);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("stops checking a Grok code once it expires", async () => {
+    const started = { ...grokAttempt(12), device: { ...grokAttempt().device, verification_uri_complete: null } };
+    on("POST", `${CREDENTIALS}/oauth`, started);
+    on(
+      "POST",
+      `${CREDENTIALS}/oauth/:attempt`,
+      answers({ interval: 5, expires_at: started.expires_at, expires_in: 7 }, { interval: 5, expires_at: started.expires_at, expires_in: 2 }),
+    );
+    const { user, dialog } = await open();
+    await choose(user, dialog, "SpaceX");
+    await user.click(within(dialog).getByRole("radio", { name: /^Grok account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Grok");
+    await getCode(dialog);
+    expect(within(dialog).getByText("FKFF-E5EP")).toBeInTheDocument();
+    await later(5000);
+    await later(5000);
+    expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`)).toHaveLength(2);
+    expect(within(dialog).getByRole("link", { name: /^accounts\.x\.ai/ })).toHaveAttribute("href", GROK_PAGE);
+    await later(3000);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("The code expired; get a new code to try again.");
+    await later(30000);
+    expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`)).toHaveLength(2);
+    expect(within(dialog).getByRole("button", { name: "Get a new code" })).toBeInTheDocument();
+  });
+
+  async function waitingForGrok(started = grokAttempt()) {
+    on("POST", `${CREDENTIALS}/oauth`, started);
+    const view = await open();
+    await choose(view.user, view.dialog, "SpaceX");
+    await view.user.click(within(view.dialog).getByRole("radio", { name: /^Grok account/ }));
+    await view.user.click(within(view.dialog).getByRole("button", { name: "Continue" }));
+    await view.user.type(await within(view.dialog).findByRole("textbox", { name: "Name" }), "Grok");
+    await getCode(view.dialog);
+    return view;
+  }
+
+  const polled = () => requests("POST", `${CREDENTIALS}/oauth/:attempt`);
+
+  it("counts a Grok code down from the seconds the gateway gave, whatever the clocks say", async () => {
+    const { dialog } = await waitingForGrok({ ...grokAttempt(), expires_at: "2020-01-01T00:00:00Z" });
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Waiting for your approval; the code expires in 10 min.");
+  });
+
+  it("stops checking a Grok code once the method goes back to an API key", async () => {
+    const started = grokAttempt();
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, { interval: 5, expires_at: started.expires_at, expires_in: 595 });
+    const { dialog } = await waitingForGrok(started);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Back" }));
+    await later(0);
+    fireEvent.click(within(dialog).getByRole("radio", { name: /^API key/ }));
+    await later(30000);
+    expect(polled()).toHaveLength(0);
+  });
+
+  it("keeps checking a Grok code through an outage and ends it only when the gateway refuses it", async () => {
+    const started = grokAttempt();
+    on(
+      "POST",
+      `${CREDENTIALS}/oauth/:attempt`,
+      answers(
+        apiError(503, "unavailable", "Grok can't be reached right now; try again shortly."),
+        { interval: 5, expires_at: started.expires_at, expires_in: 590 },
+        apiError(400, "invalid_request", "You declined the sign-in at Grok; start again."),
+      ),
+    );
+    const { dialog } = await waitingForGrok(started);
+    await later(5000);
+    expect(polled()).toHaveLength(1);
+    expect(within(dialog).getByRole("status")).toHaveTextContent(/^Waiting for your approval/);
+    await later(5000);
+    expect(polled()).toHaveLength(2);
+    await later(5000);
+    expect(polled()).toHaveLength(3);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("This sign-in ended; get a new code to try again.");
+    await later(30000);
+    expect(polled()).toHaveLength(3);
+  });
+
+  it("drops a Grok check that was still on its way when the name changed", async () => {
+    const started = grokAttempt();
+    let answer: (reply: unknown) => void = () => undefined;
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, () => new Promise((resolve) => (answer = resolve)));
+    const { dialog } = await waitingForGrok(started);
+    await later(5000);
+    expect(polled()).toHaveLength(1);
+    fireEvent.change(within(dialog).getByRole("textbox", { name: "Name" }), { target: { value: "Renamed" } });
+    answer({ interval: 5, expires_at: started.expires_at, expires_in: 590 });
+    await later(0);
+    await later(30000);
+    expect(polled()).toHaveLength(1);
+    expect(within(dialog).queryByText("FKFF-E5EP")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Get a sign-in code" })).toBeInTheDocument();
+  });
+
+  it("signs in again to a Grok key with a new code", async () => {
+    const started = grokAttempt();
+    on("POST", `${CREDENTIALS}/:credential/oauth`, started);
+    on("POST", `${CREDENTIALS}/:credential/oauth/:attempt`, grokKey);
+    const { user, dialog, onClose } = await open({ keys: [grokKey], replace: grokKey });
+    expect(within(dialog).getByRole("heading", { name: "Sign in again to SpaceX · Ada's Grok" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Get a sign-in code" }));
+    expect(await within(dialog).findByText("FKFF-E5EP")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Sign in again" }));
+    expect(await notifications().findByText("SpaceX · Ada's Grok signed in again")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/:credential/oauth/:attempt`).map((r) => [r.params.credential, r.params.attempt, r.body])).toEqual([
+      ["cred_grok", started.attempt, {}],
+    ]);
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   it("closes on cancel", async () => {

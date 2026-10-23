@@ -48,6 +48,23 @@ A ChatGPT account serves requests under OpenAI's rules for plan usage:
 - When the plan's usage limit is reached, apps get a `429` that links to [ChatGPT's usage settings](https://chatgpt.com/settings/usage).
 - **Check availability** offers only the models the account lists for its plan.
 
+## Sign in with a Grok account
+
+For SpaceX, a provider key can also be a Grok account. Its requests then use the account's Grok plan instead of an xAI API account, if the plan includes API access.
+
+> [!WARNING]
+> Grok accounts are experimental: xAI may change how its sign-in works. Use your own account only; sharing it breaks SpaceX's terms.
+
+1. On **Providers**, choose **Add provider key**, then **SpaceX**.
+2. Choose **Grok account**, marked **Experimental**. If SpaceX already has a default key, choose whether the account becomes the default.
+3. Give the key a name and choose **Get a sign-in code**. The dialog shows a code, a link to xAI's sign-in page and a QR code of that link.
+4. Open the page on any device, sign in to Grok and enter the code.
+5. Kaeso adds the key by itself once you approve. If you decline or the code expires, choose **Get a new code**.
+
+Finish within ten minutes, as the person who began. Kaeso keeps the account's tokens encrypted like any other key and renews them by itself in the last two minutes before they expire.
+
+A Grok account serves requests like an xAI API key, at `https://api.x.ai/v1` with the account's token, whatever base URL the install sets for SpaceX. If xAI refuses the account because its plan has no API access, the key shows **No API access** and its requests fail.
+
 ## Choose which key a project uses
 
 Each provider has one default key, which every project without an assigned key uses. The first key you add for a provider becomes its default. To move the default, choose **Make default** in another key's menu.
@@ -56,17 +73,17 @@ To give some projects a different key, choose **Assign to projects** in that key
 
 ## Replace, rename or delete a key
 
-The list shows each key's name, its last four characters, the projects that use it, who added it and when it was last used. An account shows its email address and its product, such as **ChatGPT**, instead of the last four characters. A key's menu has these actions:
+The list shows each key's name, its last four characters, the projects that use it, who added it and when it was last used. An account shows its email address and its product, such as **ChatGPT** or **Grok**, instead of the last four characters; a Grok account is also marked **Experimental**. A key's menu has these actions:
 
 | Action | What it does |
 | --- | --- |
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider |
-| Sign in again | For an account: signs the same account in again, for example after it shows **Signed out**, and ends its previous session at OpenAI |
+| Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
 | Rename | Changes the name the console shows |
-| Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI |
+| Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
-An account shows **Signed out** when OpenAI has ended its session, for example after its owner disconnected Kaeso in ChatGPT. Its requests then fail until someone with **Change provider keys** chooses **Sign in again**.
+An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT, and a Grok account shows **No API access** when xAI refuses its plan. Its requests then fail until someone with **Change provider keys** chooses **Sign in again**.
 
 When you delete the default, the provider's most recently added other key becomes the default. If there is none, requests to that provider fail. The dialog tells you which applies.
 

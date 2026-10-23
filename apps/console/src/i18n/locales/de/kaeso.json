@@ -223,5 +223,18 @@
   "kaeso.providerKey.accountHint": "Anfragen nutzen das Abo des {product}-Kontos, mit dem Sie sich anmelden.",
   "kaeso.providerKey.signInAgainTitle": "Erneut bei {provider} · {name} anmelden",
   "kaeso.providerKey.signInAgain": "Erneut anmelden",
-  "kaeso.providerKey.addAccount": "Konto hinzufügen"
+  "kaeso.providerKey.addAccount": "Konto hinzufügen",
+  "kaeso.providerKey.deviceQr": "QR-Code, um die Anmeldeseite von {product} zu öffnen",
+  "kaeso.providerKey.deviceCode": "Code",
+  "kaeso.providerKey.copyCode": "Code kopieren",
+  "kaeso.providerKey.deviceOpen": "Öffnen Sie {page} auf einem beliebigen Gerät, melden Sie sich bei {product} an und geben Sie den Code ein.",
+  "kaeso.providerKey.deviceExpired": "Der Code ist abgelaufen; holen Sie einen neuen Code, um es erneut zu versuchen.",
+  "kaeso.providerKey.deviceEnded": "Diese Anmeldung ist beendet; holen Sie einen neuen Code, um es erneut zu versuchen.",
+  "kaeso.providerKey.deviceWaiting": "Warten auf Ihre Freigabe; der Code läuft in {time} ab.",
+  "kaeso.providerKey.deviceEvery": "Kaeso prüft alle {seconds} Sekunden.",
+  "kaeso.providerKey.codeFirst": "Zuerst einen Anmeldecode holen",
+  "kaeso.providerKey.newCodeFirst": "Zuerst einen neuen Code holen",
+  "kaeso.providerKey.newCode": "Neuen Code holen",
+  "kaeso.providerKey.getCode": "Anmeldecode holen",
+  "kaeso.providerKey.experimental": "Experimentell"
 }

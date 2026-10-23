@@ -481,5 +481,7 @@
   "errors.modelApi.accountUnrenewed": "Kaeso kann den Zugang des {product}-Kontos gerade nicht erneuern. Gleich erneut versuchen.",
   "errors.modelApi.accountNoEmbeddings": "Ein {product}-Konto kann keine Embeddings erstellen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
   "errors.modelApi.accountNoTokenCount": "Ein {product}-Konto kann keine Token zählen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
-  "errors.modelApi.planUsageLimit": "Das Nutzungslimit Ihres {product}-Abos ist erreicht. Prüfen Sie es unter {url}."
+  "errors.modelApi.planUsageLimit": "Das Nutzungslimit Ihres {product}-Abos ist erreicht. Prüfen Sie es unter {url}.",
+  "errors.accountNoApiAccess": "Dieses {product}-Abo hat keinen API-Zugang; fügen Sie stattdessen einen API-Schlüssel hinzu.",
+  "errors.modelApi.accountNoApiAccess": "Das {product}-Abo des {provider}-Schlüssels dieses Projekts hat keinen API-Zugang. Einen Admin der Organisation bitten, unter Anbieter einen API-Schlüssel hinzuzufügen."
 }

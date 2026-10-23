@@ -21,6 +21,10 @@ pub const FIRST_CLIENT: &str = "dynamic_agent_client";
 pub const AGENT_NAME: &str = "Kaeso";
 pub const CALLBACK_HOST: &str = "127.0.0.1";
 pub const CALLBACK_PATH: &str = "/auth/callback";
+pub const GROK_CLIENT: &str = "b1a00492-073a-47ea-816f-4c329264a828";
+pub const GROK_SCOPES: &str = "openid profile email offline_access grok-cli:access api:access";
+pub const GROK_REFERRER: &str = "kaeso";
+const DEVICE_GRANT: &str = "urn:ietf:params:oauth:grant-type:device_code";
 
 const TIMEOUT: Duration = Duration::from_secs(10);
 const MAX_ANSWER: usize = 1 << 20;
@@ -59,6 +63,7 @@ impl Hosts {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Endpoints {
     pub chatgpt: Hosts,
+    pub grok: Hosts,
 }
 
 impl Default for Endpoints {
@@ -68,6 +73,10 @@ impl Default for Endpoints {
                 auth: "https://auth.openai.com".into(),
                 api: "https://api.openai.com".into(),
             },
+            grok: Hosts {
+                auth: "https://auth.x.ai".into(),
+                api: "https://api.x.ai".into(),
+            },
         }
     }
 }
@@ -76,8 +85,30 @@ impl Endpoints {
     pub fn hosts(&self, method: AuthMethod) -> Option<&Hosts> {
         match method {
             AuthMethod::ChatGpt => Some(&self.chatgpt),
+            AuthMethod::Grok => Some(&self.grok),
             AuthMethod::ApiKey => None,
         }
+    }
+}
+
+const fn token_path(method: AuthMethod) -> &'static str {
+    match method {
+        AuthMethod::Grok => "/oauth2/token",
+        AuthMethod::ChatGpt | AuthMethod::ApiKey => "/api/accounts/oauth/token",
+    }
+}
+
+const fn revoke_path(method: AuthMethod) -> &'static str {
+    match method {
+        AuthMethod::Grok => "/oauth2/revoke",
+        AuthMethod::ChatGpt | AuthMethod::ApiKey => "/api/accounts/oauth/revoke",
+    }
+}
+
+pub const fn renew_before(method: AuthMethod) -> time::Duration {
+    match method {
+        AuthMethod::Grok => time::Duration::minutes(2),
+        AuthMethod::ChatGpt | AuthMethod::ApiKey => time::Duration::minutes(5),
     }
 }
 
@@ -89,6 +120,8 @@ pub enum AccountError {
     Refused { status: u16, code: String },
     #[error("the sign-in service's answer could not be verified: {0}")]
     Unverified(String),
+    #[error("the sign-in service refused the account's plan (HTTP 403)")]
+    NoApiAccess,
 }
 
 impl AccountError {
@@ -101,6 +134,7 @@ impl AccountError {
 pub struct Tokens {
     pub access_token: String,
     pub refresh_token: String,
+    #[serde(default)]
     pub id_token: String,
     pub client_id: String,
     pub scopes: Vec<String>,
@@ -130,7 +164,7 @@ impl Tokens {
 
 #[derive(Deserialize)]
 pub struct Granted {
-    access_token: String,
+    pub(crate) access_token: String,
     #[serde(default)]
     refresh_token: Option<String>,
     #[serde(default)]
@@ -192,13 +226,10 @@ impl Granted {
         let refresh_token = self
             .refresh_token
             .ok_or_else(|| AccountError::Unverified("no refresh token in the answer".into()))?;
-        let id_token = self
-            .id_token
-            .ok_or_else(|| AccountError::Unverified("no ID token in the answer".into()))?;
         Ok(Tokens {
             access_token: self.access_token,
             refresh_token,
-            id_token,
+            id_token: self.id_token.unwrap_or_default(),
             client_id: client_id.to_owned(),
             scopes,
             sub: sub.to_owned(),
@@ -441,13 +472,32 @@ fn refusal(status: u16, body: &[u8]) -> AccountError {
     }
 }
 
-async fn token(hosts: &Hosts, form: &[(&str, &str)]) -> Result<Granted, AccountError> {
-    let (status, body) = post_form(&hosts.at("/api/accounts/oauth/token"), form).await?;
-    if !(200..300).contains(&status) {
-        return Err(refusal(status, &body));
-    }
-    serde_json::from_slice(&body)
+fn granted(body: &[u8]) -> Result<Granted, AccountError> {
+    serde_json::from_slice(body)
         .map_err(|_| AccountError::Unverified("the token answer is not a token response".into()))
+}
+
+// Only xAI's own JSON answer says the plan lacks API access; a 403 page from a proxy or a
+// bot check in front of auth.x.ai is an outage, and must not stop a working key.
+fn token_refusal(method: AuthMethod, status: u16, body: &[u8]) -> AccountError {
+    let answered = serde_json::from_slice::<Value>(body).is_ok_and(|v| v.get("error").is_some());
+    if method == AuthMethod::Grok && status == 403 && answered {
+        AccountError::NoApiAccess
+    } else {
+        refusal(status, body)
+    }
+}
+
+async fn token(
+    hosts: &Hosts,
+    method: AuthMethod,
+    form: &[(&str, &str)],
+) -> Result<Granted, AccountError> {
+    let (status, body) = post_form(&hosts.at(token_path(method)), form).await?;
+    if !(200..300).contains(&status) {
+        return Err(token_refusal(method, status, &body));
+    }
+    granted(&body)
 }
 
 pub async fn exchange(
@@ -459,6 +509,7 @@ pub async fn exchange(
 ) -> Result<Granted, AccountError> {
     token(
         hosts,
+        AuthMethod::ChatGpt,
         &[
             ("grant_type", "authorization_code"),
             ("client_id", client_id),
@@ -471,29 +522,43 @@ pub async fn exchange(
     .await
 }
 
-pub async fn refresh(hosts: &Hosts, tokens: &Tokens) -> Result<Granted, AccountError> {
-    token(
-        hosts,
-        &[
-            ("grant_type", "refresh_token"),
-            ("client_id", &tokens.client_id),
-            ("refresh_token", &tokens.refresh_token),
-            ("resource", CHATGPT_RESOURCE),
-        ],
-    )
-    .await
+pub async fn refresh(
+    hosts: &Hosts,
+    method: AuthMethod,
+    tokens: &Tokens,
+) -> Result<Granted, AccountError> {
+    let mut form = vec![
+        ("grant_type", "refresh_token"),
+        ("client_id", tokens.client_id.as_str()),
+        ("refresh_token", tokens.refresh_token.as_str()),
+    ];
+    if method == AuthMethod::ChatGpt {
+        form.push(("resource", CHATGPT_RESOURCE));
+    }
+    token(hosts, method, &form).await
+}
+
+impl Granted {
+    pub fn kept_token(&self) -> (&str, &'static str) {
+        match &self.refresh_token {
+            Some(token) => (token, "refresh_token"),
+            None => (&self.access_token, "access_token"),
+        }
+    }
 }
 
 pub async fn revoke(
     hosts: &Hosts,
+    method: AuthMethod,
     client_id: &str,
-    refresh_token: &str,
+    token: &str,
+    hint: &str,
 ) -> Result<(), AccountError> {
     let (status, body) = post_form(
-        &hosts.at("/api/accounts/oauth/revoke"),
+        &hosts.at(revoke_path(method)),
         &[
-            ("token", refresh_token),
-            ("token_type_hint", "refresh_token"),
+            ("token", token),
+            ("token_type_hint", hint),
             ("client_id", client_id),
         ],
     )
@@ -511,15 +576,7 @@ pub struct Identity {
     pub email: Option<String>,
 }
 
-pub async fn verify(
-    hosts: &Hosts,
-    id_token: &str,
-    client_id: &str,
-    nonce: &str,
-) -> Result<Identity, AccountError> {
-    let token: CoreIdToken = id_token
-        .parse()
-        .map_err(|_| AccountError::Unverified("the ID token is not a JWT".into()))?;
+async fn jwks(hosts: &Hosts) -> Result<CoreJsonWebKeySet, AccountError> {
     let response = client()?
         .get(hosts.at("/.well-known/jwks.json"))
         .send()
@@ -531,13 +588,42 @@ pub async fn verify(
             "JWKS answered HTTP {status}"
         )));
     }
-    let keys: CoreJsonWebKeySet = serde_json::from_slice(&body)
-        .map_err(|e| AccountError::Unverified(format!("JWKS: {e}")))?;
+    serde_json::from_slice(&body).map_err(|e| AccountError::Unverified(format!("JWKS: {e}")))
+}
+
+async fn verifier(
+    hosts: &Hosts,
+    client_id: &str,
+    alg: CoreJwsSigningAlgorithm,
+) -> Result<CoreIdTokenVerifier<'static>, AccountError> {
+    let keys = jwks(hosts).await?;
     let issuer = IssuerUrl::new(hosts.issuer().to_owned())
         .map_err(|e| AccountError::Unverified(format!("issuer: {e}")))?;
-    let verifier =
+    Ok(
         CoreIdTokenVerifier::new_public_client(ClientId::new(client_id.to_owned()), issuer, keys)
-            .set_allowed_algs(vec![CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256]);
+            .set_allowed_algs(vec![alg]),
+    )
+}
+
+fn parse_id_token(id_token: &str) -> Result<CoreIdToken, AccountError> {
+    id_token
+        .parse()
+        .map_err(|_| AccountError::Unverified("the ID token is not a JWT".into()))
+}
+
+pub async fn verify(
+    hosts: &Hosts,
+    id_token: &str,
+    client_id: &str,
+    nonce: &str,
+) -> Result<Identity, AccountError> {
+    let token = parse_id_token(id_token)?;
+    let verifier = verifier(
+        hosts,
+        client_id,
+        CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256,
+    )
+    .await?;
     let claims = token
         .claims(&verifier, &Nonce::new(nonce.to_owned()))
         .map_err(|e| AccountError::Unverified(e.to_string()))?;
@@ -551,6 +637,165 @@ pub async fn verify(
         subject,
         email: claims.email().map(|e| e.as_str().to_owned()),
     })
+}
+
+#[derive(Deserialize)]
+pub struct DeviceCode {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    #[serde(default)]
+    pub verification_uri_complete: Option<String>,
+    pub expires_in: i64,
+    #[serde(default)]
+    pub interval: Option<i64>,
+}
+
+impl std::fmt::Debug for DeviceCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DeviceCode")
+            .field("verification_uri", &self.verification_uri)
+            .field("expires_in", &self.expires_in)
+            .field("interval", &self.interval)
+            .finish_non_exhaustive()
+    }
+}
+
+// RFC 8628 §3.2: without an `interval` the client waits five seconds between polls.
+pub const DEFAULT_INTERVAL: i64 = 5;
+// RFC 8628 §3.5: `slow_down` adds five seconds to the interval for this and every later poll.
+pub const SLOW_DOWN_STEP: i64 = 5;
+
+fn web_link(link: &str) -> bool {
+    Url::parse(link).is_ok_and(|u| matches!(u.scheme(), "https" | "http") && u.has_host())
+}
+
+pub async fn device_code(hosts: &Hosts) -> Result<DeviceCode, AccountError> {
+    let (status, body) = post_form(
+        &hosts.at("/oauth2/device/code"),
+        &[
+            ("client_id", GROK_CLIENT),
+            ("scope", GROK_SCOPES),
+            ("referrer", GROK_REFERRER),
+        ],
+    )
+    .await?;
+    if !(200..300).contains(&status) {
+        return Err(refusal(status, &body));
+    }
+    let mut code: DeviceCode = serde_json::from_slice(&body).map_err(|_| {
+        AccountError::Unverified("the device answer is not a device authorization".into())
+    })?;
+    if code.device_code.is_empty() || code.user_code.is_empty() || code.expires_in <= 0 {
+        return Err(AccountError::Unverified(
+            "the device answer has no usable code".into(),
+        ));
+    }
+    if !web_link(&code.verification_uri) {
+        return Err(AccountError::Unverified(
+            "the device answer's verification URI is not a web address".into(),
+        ));
+    }
+    code.verification_uri_complete = code.verification_uri_complete.filter(|link| web_link(link));
+    code.interval = Some(code.interval.unwrap_or(DEFAULT_INTERVAL).max(1));
+    Ok(code)
+}
+
+#[derive(Debug)]
+pub enum Polled {
+    Pending,
+    SlowDown,
+    Denied,
+    Expired,
+    Granted(Granted),
+}
+
+pub async fn poll(hosts: &Hosts, device_code: &str) -> Result<Polled, AccountError> {
+    let (status, body) = post_form(
+        &hosts.at(token_path(AuthMethod::Grok)),
+        &[
+            ("grant_type", DEVICE_GRANT),
+            ("device_code", device_code),
+            ("client_id", GROK_CLIENT),
+        ],
+    )
+    .await?;
+    if (200..300).contains(&status) {
+        return granted(&body).map(Polled::Granted);
+    }
+    match token_refusal(AuthMethod::Grok, status, &body) {
+        AccountError::Refused { code, .. } if code == "authorization_pending" => {
+            Ok(Polled::Pending)
+        }
+        AccountError::Refused { code, .. } if code == "slow_down" => Ok(Polled::SlowDown),
+        AccountError::Refused { code, .. } if code == "access_denied" => Ok(Polled::Denied),
+        AccountError::Refused { code, .. } if code == "expired_token" => Ok(Polled::Expired),
+        e => Err(e),
+    }
+}
+
+#[derive(Deserialize)]
+struct UserInfo {
+    sub: String,
+    #[serde(default)]
+    email: Option<String>,
+}
+
+async fn user_info(hosts: &Hosts, access_token: &str) -> Result<UserInfo, AccountError> {
+    let response = client()?
+        .get(hosts.at("/oauth2/userinfo"))
+        .bearer_auth(access_token)
+        .header(reqwest::header::ACCEPT, "application/json")
+        .send()
+        .await
+        .map_err(|e| AccountError::Unreachable(e.without_url().to_string()))?;
+    let (status, body) = read(response).await?;
+    if !(200..300).contains(&status) {
+        return Err(refusal(status, &body));
+    }
+    serde_json::from_slice(&body)
+        .map_err(|_| AccountError::Unverified("the user info is not an OpenID answer".into()))
+}
+
+// The device flow has no authorization request, so its ID token carries no nonce to
+// check; xAI signs ID tokens with ES256 only (`id_token_signing_alg_values_supported`).
+pub async fn grok_identity(hosts: &Hosts, granted: &Granted) -> Result<Identity, AccountError> {
+    let from_token = match granted.id_token() {
+        Some(id_token) => {
+            let token = parse_id_token(id_token)?;
+            let verifier =
+                verifier(hosts, GROK_CLIENT, CoreJwsSigningAlgorithm::EcdsaP256Sha256).await?;
+            let claims = token
+                .claims(&verifier, |_: Option<&Nonce>| Ok(()))
+                .map_err(|e| AccountError::Unverified(e.to_string()))?;
+            Some(Identity {
+                subject: claims.subject().as_str().to_owned(),
+                email: claims.email().map(|e| e.as_str().to_owned()),
+            })
+        }
+        None => None,
+    };
+    let identity = match from_token {
+        Some(identity) if identity.email.as_deref().is_some_and(|e| !e.is_empty()) => identity,
+        known => {
+            let info = user_info(hosts, &granted.access_token).await?;
+            if known.is_some_and(|k| k.subject != info.sub) {
+                return Err(AccountError::Unverified(
+                    "the user info names another subject than the ID token".into(),
+                ));
+            }
+            Identity {
+                subject: info.sub,
+                email: info.email,
+            }
+        }
+    };
+    if identity.subject.is_empty() {
+        return Err(AccountError::Unverified(
+            "the account has no subject".into(),
+        ));
+    }
+    Ok(identity)
 }
 
 #[cfg(test)]
@@ -705,6 +950,66 @@ mod tests {
         assert!(!refusal(401, br#"{"error":"invalid_client"}"#).signs_out());
         assert!(!refusal(500, br#"{"error":"invalid_grant"}"#).signs_out());
         assert!(!refusal(400, b"not json").signs_out());
+    }
+
+    #[test]
+    fn only_grok_reads_a_forbidden_token_answer_as_a_plan_without_api_access() {
+        let body = br#"{"error":"unauthorized_client"}"#;
+        assert!(matches!(
+            token_refusal(AuthMethod::Grok, 403, body),
+            AccountError::NoApiAccess
+        ));
+        for page in [
+            &b""[..],
+            b"<html><title>Just a moment...</title></html>",
+            b"{}",
+        ] {
+            assert!(
+                matches!(
+                    token_refusal(AuthMethod::Grok, 403, page),
+                    AccountError::Unreachable(_)
+                ),
+                "a 403 page that isn't xAI's answer is an outage"
+            );
+        }
+        assert!(matches!(
+            token_refusal(AuthMethod::ChatGpt, 403, body),
+            AccountError::Refused { status: 403, .. }
+        ));
+        assert!(token_refusal(AuthMethod::Grok, 400, br#"{"error":"invalid_grant"}"#).signs_out());
+        assert_eq!(renew_before(AuthMethod::Grok), time::Duration::minutes(2));
+        assert_eq!(
+            renew_before(AuthMethod::ChatGpt),
+            time::Duration::minutes(5)
+        );
+        assert_eq!(token_path(AuthMethod::Grok), "/oauth2/token");
+        assert_eq!(revoke_path(AuthMethod::Grok), "/oauth2/revoke");
+    }
+
+    #[test]
+    fn a_device_answer_links_only_to_web_pages() {
+        assert!(web_link("https://accounts.x.ai/oauth2/device"));
+        assert!(web_link("http://127.0.0.1:8080/oauth2/device"));
+        for link in [
+            "javascript:alert(1)",
+            "data:text/html,hi",
+            "accounts.x.ai/device",
+            "",
+            "https://",
+        ] {
+            assert!(!web_link(link), "{link}");
+        }
+    }
+
+    #[test]
+    fn device_codes_never_reach_a_debug_line() {
+        let code: DeviceCode = serde_json::from_str(
+            r#"{"device_code":"secret-device","user_code":"ABCD-EFGH","verification_uri":"https://accounts.x.ai/oauth2/device","expires_in":1800}"#,
+        )
+        .unwrap();
+        let shown = format!("{code:?}");
+        assert!(!shown.contains("secret-device"), "{shown}");
+        assert_eq!(code.interval, None);
     }
 
     #[test]

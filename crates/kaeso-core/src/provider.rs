@@ -141,6 +141,7 @@ pub struct KeyPage {
 pub enum AuthMethod {
     ApiKey,
     ChatGpt,
+    Grok,
 }
 
 impl AuthMethod {
@@ -148,11 +149,12 @@ impl AuthMethod {
         match self {
             AuthMethod::ApiKey => "api_key",
             AuthMethod::ChatGpt => "chatgpt",
+            AuthMethod::Grok => "grok",
         }
     }
 
     pub fn parse(s: &str) -> Option<AuthMethod> {
-        [AuthMethod::ApiKey, AuthMethod::ChatGpt]
+        [AuthMethod::ApiKey, AuthMethod::ChatGpt, AuthMethod::Grok]
             .into_iter()
             .find(|m| m.as_str() == s)
     }
@@ -167,6 +169,7 @@ pub struct AccountSignIn {
     pub method: AuthMethod,
     pub product: &'static str,
     pub usage_url: Option<&'static str>,
+    pub experimental: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -213,6 +216,7 @@ pub const PROVIDERS: &[Provider] = &[
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
             usage_url: Some("https://chatgpt.com/settings/usage"),
+            experimental: false,
         }),
     },
     Provider {
@@ -273,7 +277,12 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
         chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
-        account: None,
+        account: Some(AccountSignIn {
+            method: AuthMethod::Grok,
+            product: "Grok",
+            usage_url: None,
+            experimental: true,
+        }),
     },
     Provider {
         id: "togetherai",
@@ -443,17 +452,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_openai_signs_in_with_an_account_and_methods_keep_their_names() {
-        let accounts: Vec<(&str, AuthMethod)> = PROVIDERS
+    fn openai_and_xai_sign_in_with_an_account_and_methods_keep_their_names() {
+        let accounts: Vec<(&str, AuthMethod, bool)> = PROVIDERS
             .iter()
-            .filter_map(|p| p.account.map(|a| (p.id, a.method)))
+            .filter_map(|p| p.account.map(|a| (p.id, a.method, a.experimental)))
             .collect();
-        assert_eq!(accounts, [("openai", AuthMethod::ChatGpt)]);
-        for method in [AuthMethod::ApiKey, AuthMethod::ChatGpt] {
+        assert_eq!(
+            accounts,
+            [
+                ("openai", AuthMethod::ChatGpt, false),
+                ("xai", AuthMethod::Grok, true)
+            ]
+        );
+        for method in [AuthMethod::ApiKey, AuthMethod::ChatGpt, AuthMethod::Grok] {
             assert_eq!(AuthMethod::parse(method.as_str()), Some(method));
         }
-        assert_eq!(AuthMethod::parse("grok"), None);
+        assert_eq!(AuthMethod::parse("password"), None);
         assert!(AuthMethod::ChatGpt.is_account());
+        assert!(AuthMethod::Grok.is_account());
         assert!(!AuthMethod::ApiKey.is_account());
     }
 
