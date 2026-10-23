@@ -20,7 +20,8 @@ export const docs = {
       size: "The height, from `xs` (24px) to `xl` (44px).",
       target: "Where the link opens, as on an `a` element.",
       trailingIcon: "An icon after the text.",
-      variant: "`primary` for the one main action of a view, `secondary` for others, `ghost` and `quiet` for toolbars, `danger` for destructive actions.",
+      variant:
+        "`primary` for the one main action of a view, `secondary` for others, `ghost` and `quiet` for toolbars and rows, `danger` for destructive actions. A ghost or quiet button at the end of a settings row's control pulls its padding past the row's edge, so its label ends where an outlined button's ring does.",
     },
   },
 } satisfies ComponentDocs;

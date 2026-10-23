@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CodeBlock } from "./code-block.js";
 
@@ -26,6 +26,26 @@ afterEach(() => vi.useRealTimers());
 const long = Array.from({ length: 30 }, (_, i) => `const line${i} = ${i};`).join("\n");
 
 describe("CodeBlock", () => {
+  it("fades long lines out at the edge it can still scroll to, and fades none when everything fits", () => {
+    render(
+      <CodeBlock code={'{ "error_message": "The server had an error while processing your request. Sorry about that!" }'} title="Metadata" copy={false} />,
+    );
+    const region = screen.getByRole("region", { name: "Metadata code" });
+    expect(region).toHaveClass("overflow-x-auto", "scroll-fade-x", "py-16");
+    expect(region.querySelector("code > span")).toHaveClass("px-16");
+    expect(region.style.getPropertyValue("--scroll-area-overflow-x-end")).toBe("");
+    Object.defineProperty(region, "scrollWidth", { configurable: true, value: 765 });
+    Object.defineProperty(region, "clientWidth", { configurable: true, value: 271 });
+    region.scrollLeft = 0;
+    fireEvent.scroll(region);
+    expect(region.style.getPropertyValue("--scroll-area-overflow-x-start")).toBe("");
+    expect(region.style.getPropertyValue("--scroll-area-overflow-x-end")).toBe("494px");
+    region.scrollLeft = 494;
+    fireEvent.scroll(region);
+    expect(region.style.getPropertyValue("--scroll-area-overflow-x-start")).toBe("494px");
+    expect(region.style.getPropertyValue("--scroll-area-overflow-x-end")).toBe("");
+  });
+
   it("highlights code once the highlighter loads", async () => {
     const { container } = render(<CodeBlock code={'const key = "sk-kaeso";\n'} title="client.ts" lineNumbers highlightLines={[1]} />);
     expect(screen.getByText("client.ts")).toBeInTheDocument();

@@ -275,12 +275,12 @@ function DataTableInner<T>(
   });
 
   const cellPad = (i: number) => cn("flex min-w-0 items-center px-12", inset && i === 0 && "pl-20", inset && i === cols.length - 1 && "pr-20");
-  const stickyCol = (i: number) =>
+  const stickyCol = (i: number, header = false) =>
     ((stickyFirstColumn && i === 0) || (pinEnd && i === cols.length - 1)) &&
     cn(
       "sticky z-10 group-hover/tr:bg-fill-1 group-aria-selected/tr:bg-fill-2 group-data-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      inset ? "bg-raised" : cn("bg-panel", i === 0 ? "rounded-l-item" : "rounded-r-item"),
+      inset ? "bg-raised" : cn("bg-panel", !header && (i === 0 ? "rounded-l-item" : "rounded-r-item")),
     );
 
   const focusable = !!onRowClick || !!selectable;
@@ -415,7 +415,13 @@ function DataTableInner<T>(
                       key={h.id}
                       role="columnheader"
                       aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : sortable ? "none" : undefined}
-                      className={cn("group/th relative", cellPad(i), meta?.align === "end" && "justify-end", stickyCol(i), stickyCol(i) && "hairline-b-strong")}
+                      className={cn(
+                        "group/th relative",
+                        cellPad(i),
+                        meta?.align === "end" && "justify-end",
+                        stickyCol(i, true),
+                        stickyCol(i, true) && "hairline-b-strong",
+                      )}
                     >
                       {sortable ? (
                         <button

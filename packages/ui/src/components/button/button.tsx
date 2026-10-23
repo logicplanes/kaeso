@@ -26,15 +26,18 @@ export const KAESO_BUTTON_VARIANTS = {
     },
   },
   size: {
-    xs: { classes: "h-24 px-10 gap-4 text-caption font-medium", description: "24px: chips inside rows and tables only" },
-    sm: { classes: "h-32 px-12 gap-6 text-body font-medium", description: "32px: toolbars, headers, settings rows" },
-    md: { classes: "h-36 px-16 gap-6 text-body font-medium", description: "36px: the default" },
-    lg: { classes: "h-40 px-18 gap-8 text-body font-medium", description: "40px: prominent actions" },
-    xl: { classes: "h-48 px-22 gap-8 text-body-lg font-medium", description: "48px: sign-in and setup forms, empty-state actions" },
+    xs: { classes: "h-24 px-10 gap-4 text-caption font-medium ghost-end:-mr-10 ghost-start:-ml-10", description: "24px: chips inside rows and tables only" },
+    sm: { classes: "h-32 px-12 gap-6 text-body font-medium ghost-end:-mr-12 ghost-start:-ml-12", description: "32px: toolbars, headers, settings rows" },
+    md: { classes: "h-36 px-16 gap-6 text-body font-medium ghost-end:-mr-16 ghost-start:-ml-16", description: "36px: the default" },
+    lg: { classes: "h-40 px-18 gap-8 text-body font-medium ghost-end:-mr-18 ghost-start:-ml-18", description: "40px: prominent actions" },
+    xl: {
+      classes: "h-48 px-22 gap-8 text-body-lg font-medium ghost-end:-mr-22 ghost-start:-ml-22",
+      description: "48px: sign-in and setup forms, empty-state actions",
+    },
   },
   shape: {
     pill: { classes: "rounded-pill", description: "Every button is a pill" },
-    circle: { classes: "rounded-pill p-0 justify-center", description: "Icon-only: a circle of the same height" },
+    circle: { classes: "rounded-pill p-0 justify-center ghost-end:mr-0 ghost-start:ml-0", description: "Icon-only: a circle of the same height" },
   },
 } as const;
 export const KAESO_BUTTON_DEFAULT_VARIANTS = { variant: "secondary", size: "md", shape: "pill" } as const;

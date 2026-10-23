@@ -31,7 +31,7 @@ export const docs = {
   },
   ChartFrame: {
     description:
-      'The frame every chart draws in: a hidden data table for assistive technology, a "View as table" toggle, and the empty, loading and error states. Use it to build a chart of your own that behaves like the others.',
+      'The frame every chart draws in: a hidden data table for assistive technology, a "View as table" toggle, and the empty, loading and error states. The toggle sits at the right end of the last line of the legend; when the frame is narrower than 480px (the `chart-legend` container size, a phone), it moves to its own line under the legend, so it never reads as one of the series. Use it to build a chart of your own that behaves like the others.',
     props: {
       children: "The plot, usually an SVG, drawn at `height`.",
       height: "The plot's height in px. The empty, loading and error states keep it, so nothing below moves.",
