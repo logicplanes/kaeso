@@ -23,6 +23,8 @@ const OBJECT: &str = "object";
 
 const BARE_LIST: &str = "bare_list";
 
+const PLAN_LIST: &str = "plan_list";
+
 fn decode_object(extras: &mut Extras, object: Maybe<String>, usual: &str) {
     record_none(extras, OBJECT, &object, false);
     if let Maybe::Value(object) = object
@@ -57,6 +59,16 @@ pub(crate) struct ListModelsResponse {
     #[serde(default, skip_serializing_if = "Maybe::is_absent")]
     pub object: Maybe<String>,
     pub data: Vec<Ext<ModelWire>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct PlanModelWire {
+    pub slug: String,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct PlanListWire {
+    pub models: Vec<Ext<PlanModelWire>>,
 }
 
 fn source(extras: &Extras) -> Option<DialectId> {
@@ -143,6 +155,16 @@ pub(crate) fn encode_models(list: &ModelList) -> Result<Vec<u8>, KppError> {
     if source(ex).is_some_and(|d| ex.form_flag(d, BARE_LIST)) {
         return to_body(&list.models.iter().map(encode_info).collect::<Vec<_>>());
     }
+    if let Some(d) = source(ex).filter(|d| ex.form_flag(*d, PLAN_LIST)) {
+        let w = PlanListWire {
+            models: list.models.iter().map(encode_plan_info).collect(),
+        };
+        return to_body(&Ext::with(
+            w,
+            extra_for(ex, d),
+            verbatim_from_form(ex, d, ""),
+        ));
+    }
     let w = ListModelsResponse {
         object: source(ex).map_or(Maybe::Value("list".to_owned()), |d| {
             encode_object(ex, d, "list")
@@ -165,6 +187,18 @@ pub(crate) fn decode_model(dialect: DialectId, body: &[u8]) -> Result<ModelInfo,
     decode_info(dialect, w)
 }
 
+fn encode_plan_info(m: &ModelInfo) -> Ext<PlanModelWire> {
+    let w = PlanModelWire { slug: m.id.clone() };
+    match source(&m.extras) {
+        Some(d) => Ext::with(
+            w,
+            extra_for(&m.extras, d),
+            verbatim_from_form(&m.extras, d, ""),
+        ),
+        None => Ext::new(w),
+    }
+}
+
 pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppError> {
     if body.trim_ascii_start().starts_with(b"[") {
         return decode_bare_list(dialect, body);
@@ -173,8 +207,14 @@ pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList
         known: w,
         extra,
         verbatim,
-    } = Ext::<ListModelsResponse>::from_slice(body)
-        .map_err(|e| bad_listing(dialect, &without_position(&e)))?;
+    } = match Ext::<ListModelsResponse>::from_slice(body) {
+        Ok(listing) => listing,
+        Err(e) => {
+            return Ext::<PlanListWire>::from_slice(body)
+                .map(|plan| decode_plan_list(dialect, plan))
+                .map_err(|_| bad_listing(dialect, &without_position(&e)));
+        }
+    };
     let models = w
         .data
         .into_iter()
@@ -185,6 +225,33 @@ pub(crate) fn decode_models(dialect: DialectId, body: &[u8]) -> Result<ModelList
     decode_object(&mut extras, w.object, "list");
     list.extras = extras;
     Ok(list)
+}
+
+fn decode_plan_list(dialect: DialectId, plan: Ext<PlanListWire>) -> ModelList {
+    let origin = Origin::new(dialect);
+    let Ext {
+        known: w,
+        extra,
+        verbatim,
+    } = plan;
+    let models = w
+        .models
+        .into_iter()
+        .map(|m| {
+            let Ext {
+                known,
+                extra,
+                verbatim,
+            } = m;
+            let mut info = ModelInfo::new(known.slug);
+            info.extras = extras_from(&origin, extra, verbatim);
+            info
+        })
+        .collect();
+    let mut list = ModelList::new(models);
+    list.extras = extras_from(&origin, extra, verbatim);
+    list.extras.form.insert(PLAN_LIST.to_owned(), true.into());
+    list
 }
 
 fn decode_bare_list(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppError> {

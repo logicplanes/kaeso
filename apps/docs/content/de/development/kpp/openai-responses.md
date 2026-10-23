@@ -234,7 +234,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | Dekodieren: Status / `type` / `code` | `ErrorKind` |
 | --- | --- |
 | `code` `context_length_exceeded` | `ContextTooLong` |
-| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active` | `Billing` |
+| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active`, `subscription_sharing_usage_limit_exceeded` | `Billing` |
 | 503, `service_unavailable_error`, `server_is_overloaded` | `Overloaded` |
 | `content_policy_violation`, `content_filter`, `image_content_policy_violation`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` | `ContentFiltered` |
 | 400, 409, 422 | `InvalidRequest` |

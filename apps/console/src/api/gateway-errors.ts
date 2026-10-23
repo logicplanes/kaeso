@@ -596,6 +596,13 @@ const messages = (): Rule[] => [
       v,
     ),
   ),
+  rule("errors.modelApi.accountNoEmbeddings", (v) =>
+    t("errors.modelApi.accountNoEmbeddings", "A {product} account can't create embeddings. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoTokenCount", (v) =>
+    t("errors.modelApi.accountNoTokenCount", "A {product} account can't count tokens. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.planUsageLimit", (v) => t("errors.modelApi.planUsageLimit", "Your {product} plan's usage limit is reached. Review it at {url}.", v)),
   rule("errors.modelApi.translateUnavailable", () =>
     t("errors.modelApi.translateUnavailable", "Kaeso cannot translate this request right now. Try again shortly."),
   ),

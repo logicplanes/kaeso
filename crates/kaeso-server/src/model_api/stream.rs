@@ -5,7 +5,8 @@ use futures::StreamExt;
 use kaeso_codecs::{StreamDecoder, StreamEncoder};
 use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
-use kaeso_kpp::{KppError, StopReason, StreamEvent};
+use kaeso_core::provider::AccountSignIn;
+use kaeso_kpp::{DialectId, KppError, Reply, StopReason, StreamEvent};
 use tokio::sync::mpsc::Sender;
 use tokio::time::{Instant, sleep_until};
 
@@ -195,6 +196,54 @@ pub(super) struct Parts {
     pub(super) counter: InputCounter,
     pub(super) carry: Option<StreamCarry>,
     pub(super) keep_reply: bool,
+    pub(super) account: Option<AccountSignIn>,
+}
+
+pub(super) enum Gathered {
+    Transport(UpstreamError),
+    Provider(KppError),
+    Broken(KppError),
+}
+
+pub(super) async fn gather(
+    mut chunks: kaeso_upstream::ByteStream,
+    mut decoder: Box<dyn StreamDecoder>,
+    dialect: DialectId,
+    max: usize,
+) -> Result<Reply, Gathered> {
+    let mut asm = Assembler::new(dialect);
+    let mut read = 0usize;
+    loop {
+        let (events, last) = match chunks.next().await {
+            Some(Ok(bytes)) => {
+                read = read.saturating_add(bytes.len());
+                if read > max {
+                    return Err(Gathered::Transport(UpstreamError::TooLarge(max)));
+                }
+                (decoder.feed(&bytes), false)
+            }
+            Some(Err(e)) => return Err(Gathered::Transport(e)),
+            None => (decoder.finish(), true),
+        };
+        for event in &events {
+            asm.feed(event);
+        }
+        if last {
+            break;
+        }
+    }
+    let assembled = asm.finish();
+    if let Some(mut err) = assembled.error {
+        super::pipeline::redact_key_fragments(&mut err);
+        return Err(Gathered::Provider(err));
+    }
+    match assembled.response {
+        Some(response) if assembled.complete => Ok(Reply::Generate(response)),
+        _ => Err(Gathered::Broken(
+            KppError::provider("The provider's stream ended before the reply was complete.")
+                .with_status(502),
+        )),
+    }
 }
 
 const RESERVATION_REFRESH: time::Duration = time::Duration::seconds(60);
@@ -244,6 +293,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         counter,
         mut carry,
         keep_reply,
+        account,
     } = parts;
     let mut asm = if keep_reply {
         Assembler::new(counter.dialect)
@@ -326,6 +376,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     for e in &mut events {
                         if let StreamEvent::Error(err) = e {
                             super::pipeline::redact_key_fragments(err);
+                            if let Some(limited) = super::accounts::plan_limit(account, err) {
+                                *err = limited;
+                            }
                             broken.get_or_insert_with(|| Broken::event(err));
                             failed = true;
                         }

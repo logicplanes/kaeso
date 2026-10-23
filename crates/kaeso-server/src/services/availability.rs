@@ -5,7 +5,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use kaeso_codecs::{EncodedRequest, HeaderList, dispatch};
 use kaeso_core::catalogue::{Effective, Entry};
-use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelList, ModelsQuery};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery};
 use kaeso_store::StoreError;
 use kaeso_store::pg::catalogue::{self, Answer, Recorded};
 use kaeso_store::pg::credentials::KeyInUse;
@@ -140,8 +140,30 @@ struct Asked<'a> {
 }
 
 impl Asked<'_> {
+    fn account(&self) -> Option<&crate::services::provider_accounts::Hosts> {
+        self.state.accounts.hosts(self.credential.method)
+    }
+
+    fn dialect(&self) -> DialectId {
+        if self.account().is_some() {
+            DialectId::OpenAiResponses
+        } else {
+            self.eff.dialect
+        }
+    }
+
     async fn send(&self, request: EncodedRequest) -> Result<(u16, HeaderList, Bytes), KppError> {
-        let Some(base) = crate::model_api::pipeline::base_url(self.state, self.eff.provider.id)
+        let account_base = match self.account() {
+            Some(hosts) => Some(
+                hosts
+                    .api_base()
+                    .map_err(|e| KppError::provider(e.to_string()))?,
+            ),
+            None => None,
+        };
+        let Some(base) = account_base
+            .as_ref()
+            .or_else(|| crate::model_api::pipeline::base_url(self.state, self.eff.provider.id))
         else {
             return Err(KppError::provider(format!(
                 "no base URL for `{}`",
@@ -174,10 +196,14 @@ impl Asked<'_> {
     }
 
     async fn page(&self, query: &ModelsQuery) -> Result<ModelList, KppError> {
-        let request = dispatch::encode_models_request(self.eff.dialect, query)?;
+        let request = dispatch::encode_models_request(self.dialect(), query)?;
         let (status, headers, body) = self.send(request).await?;
-        dispatch::decode_models(self.eff.dialect, status, &headers, &body)
-            .map_err(|e| without_key_fragments(declared_key_refusal(self.eff.provider, e)))
+        let mut page = dispatch::decode_models(self.dialect(), status, &headers, &body)
+            .map_err(|e| without_key_fragments(declared_key_refusal(self.eff.provider, e)))?;
+        if self.account().is_some() {
+            page.models.retain(listed);
+        }
+        Ok(page)
     }
 
     async fn every_page(&self) -> Result<Option<HashSet<String>>, KppError> {
@@ -218,6 +244,16 @@ impl Asked<'_> {
     }
 }
 
+// SIWC "Models and inference": an account's catalogue lists every model it may name, and
+// only those with `visibility: "list"` are meant to be offered; it has no per-model route.
+fn listed(model: &ModelInfo) -> bool {
+    model
+        .extras
+        .fields
+        .get("visibility")
+        .is_some_and(|v| v.get() == r#""list""#)
+}
+
 pub async fn probe(
     state: &AppState,
     credential: &Resolved,
@@ -229,6 +265,20 @@ pub async fn probe(
         credential,
         eff,
     };
+    if asked.account().is_some() {
+        let listing = listings
+            .get((eff.provider.id, asked.dialect(), credential.key()), &asked)
+            .await;
+        return match listing.as_ref() {
+            Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
+            Listing::Complete(_) => Probe::Unserved,
+            Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
+            Listing::Failed(e) => Probe::Inconclusive(e.clone()),
+            Listing::Unfinished => Probe::Inconclusive(KppError::provider(
+                "the account's model listing did not end",
+            )),
+        };
+    }
     let request = match dispatch::encode_model_request(eff.dialect, &eff.model_id) {
         Ok(r) => r,
         Err(e) => return Probe::Failed(e),

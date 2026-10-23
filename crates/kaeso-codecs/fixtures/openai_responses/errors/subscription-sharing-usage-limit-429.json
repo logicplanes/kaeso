@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "You have reached the usage limit of your ChatGPT plan.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "subscription_sharing_usage_limit_exceeded"
+  }
+}

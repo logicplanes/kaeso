@@ -30,6 +30,7 @@ const BILLING: &[&str] = &[
     "organization_usage_limit_exceeded",
     "billing_hard_limit_reached",
     "billing_not_active",
+    "subscription_sharing_usage_limit_exceeded",
 ];
 
 pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {

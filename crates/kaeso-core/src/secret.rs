@@ -59,6 +59,26 @@ fn id_like(token: &str) -> bool {
     token.len() >= 8 && token.chars().any(|c| c.is_ascii_digit())
 }
 
+const JWT_HEADER: &str = "eyJ";
+
+// RFC 7519 §7.2: a compact JWT is three base64url segments, and its header is a JSON object,
+// so it starts with `eyJ`: OAuth access, refresh and ID tokens of providers that sign in.
+fn jwt(token: &str) -> bool {
+    let base64url = |s: &str| {
+        s.bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    };
+    let mut parts = token.split('.');
+    match (parts.next(), parts.next(), parts.next(), parts.next()) {
+        (Some(header), Some(claims), Some(signature), None) => {
+            header.starts_with(JWT_HEADER)
+                && claims.len() >= 4
+                && [header, claims, signature].into_iter().all(base64url)
+        }
+        _ => false,
+    }
+}
+
 pub fn redact_tokens(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
@@ -72,6 +92,10 @@ pub fn redact_tokens(text: &str) -> String {
         let tail = word.get(token.len()..).unwrap_or_default();
         if let Some(prefix) = redacts(token) {
             out.push_str(prefix);
+            out.push_str(REDACTED);
+            out.push_str(tail);
+        } else if jwt(token) {
+            out.push_str(JWT_HEADER);
             out.push_str(REDACTED);
             out.push_str(tail);
         } else if labels_account(previous) && joins_label(before) && id_like(token) {
@@ -135,6 +159,31 @@ mod tests {
         assert_eq!(
             redact_tokens("Invalid API key tgp_v1_AbCdEf123456."),
             "Invalid API key tgp_v1_[redacted]."
+        );
+    }
+
+    #[test]
+    fn signed_tokens_are_redacted_wherever_they_appear() {
+        let jwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJl-_x";
+        assert_eq!(
+            redact_tokens(&format!("Bearer {jwt} was refused.")),
+            "Bearer eyJ[redacted] was refused."
+        );
+        assert_eq!(
+            redact_tokens(&format!("token={jwt}&next=1")),
+            "token=eyJ[redacted]&next=1"
+        );
+        assert_eq!(
+            redact_tokens(&format!("The token was {jwt}.")),
+            "The token was eyJ[redacted]."
+        );
+        assert_eq!(
+            redact_tokens("version 1.2.3 of eyJ.a.b"),
+            "version 1.2.3 of eyJ.a.b"
+        );
+        assert_eq!(
+            redact_tokens("eyJhbGc.eyJz.c2ln.ZXh0cmE"),
+            "eyJhbGc.eyJz.c2ln.ZXh0cmE"
         );
     }
 

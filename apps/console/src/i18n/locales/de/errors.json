@@ -478,5 +478,8 @@
   "errors.accountOther": "Sie haben sich bei einem anderen {product}-Konto angemeldet; melden Sie sich als {account} an.",
   "errors.accountSignedOut": "Das {product}-Konto des Anbieter-Schlüssels dieses Projekts ist abgemeldet; melden Sie sich erneut an.",
   "errors.modelApi.accountSignedOut": "Das {product}-Konto des {provider}-Schlüssels dieses Projekts ist abgemeldet. Einen Admin der Organisation bitten, es unter Anbieter erneut anzumelden.",
-  "errors.modelApi.accountUnrenewed": "Kaeso kann den Zugang des {product}-Kontos gerade nicht erneuern. Gleich erneut versuchen."
+  "errors.modelApi.accountUnrenewed": "Kaeso kann den Zugang des {product}-Kontos gerade nicht erneuern. Gleich erneut versuchen.",
+  "errors.modelApi.accountNoEmbeddings": "Ein {product}-Konto kann keine Embeddings erstellen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
+  "errors.modelApi.accountNoTokenCount": "Ein {product}-Konto kann keine Token zählen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
+  "errors.modelApi.planUsageLimit": "Das Nutzungslimit Ihres {product}-Abos ist erreicht. Prüfen Sie es unter {url}."
 }

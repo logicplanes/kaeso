@@ -48,6 +48,7 @@ pub enum Reply {
     Text,
     UsageLimit,
     UsageLimitInStream,
+    ModelNotFound,
 }
 
 struct Grant {
@@ -473,7 +474,9 @@ async fn revoke(
     StatusCode::OK.into_response()
 }
 
-const MODELS: &str = r#"{"models":[{"slug":"gpt-6.1-sol","display_name":"GPT-6.1 Sol","visibility":"list"},{"slug":"gpt-6.1-sol-internal","display_name":"GPT-6.1 Sol internal","visibility":"hide"}]}"#;
+const MODELS: &str = r#"{"models":[{"slug":"gpt-5","display_name":"GPT-5","visibility":"list"},{"slug":"gpt-5-mini","display_name":"GPT-5 mini","visibility":"hide"}]}"#;
+
+const MODEL_NOT_FOUND: &str = r#"{"error":{"message":"The requested model does not exist.","type":"invalid_request_error","param":"model","code":"model_not_found"}}"#;
 
 const USAGE_LIMIT: &str = r#"{"error":{"message":"You have reached the usage limit of your ChatGPT plan.","type":"usage_limit_reached","param":null,"code":"subscription_sharing_usage_limit_exceeded"}}"#;
 
@@ -541,6 +544,12 @@ async fn api(
                 )
                     .into_response(),
                 Reply::UsageLimitInStream => stream(FAILED_STREAM.to_owned()),
+                Reply::ModelNotFound => (
+                    StatusCode::NOT_FOUND,
+                    [(header::CONTENT_TYPE, "application/json")],
+                    MODEL_NOT_FOUND,
+                )
+                    .into_response(),
             }
         }
         _ => (
