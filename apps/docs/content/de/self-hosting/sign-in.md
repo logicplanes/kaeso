@@ -70,6 +70,12 @@ Standardmäßig verwaltet der Identitätsanbieter keiner Organisation die Instan
 
 Die Wahl verlangt die kürzliche Anmeldung eines Instanz-Admins mit Passwort oder Anmeldelink, nie eine über Single Sign-on, und das Audit-Log der Instanz hält sie als `instance.admin_sso_update` fest. Wählen lässt sich nur eine Organisation mit Verbindung. Verliert sie ihre Verbindung später, bleibt die Einstellung wirkungslos, und **Allgemein** weist darauf hin.
 
+Kann sich kein Instanz-Admin so anmelden, wählt ein Operator die Organisation stattdessen auf dem Server über ihre ID, nach denselben Regeln und mit demselben Audit-Eintrag; `none` wählt keine:
+
+```bash
+docker compose exec gateway kaeso instance admin-sso org_…
+```
+
 ## Ohne Passwörter und Anmeldelinks betreiben
 
 Damit sich Personen nur über die Identitätsanbieter von Organisationen anmelden, schalten Sie vor dem ersten Start Passwörter und Anmeldelinks ab:

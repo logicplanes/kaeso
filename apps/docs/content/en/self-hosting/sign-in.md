@@ -70,6 +70,12 @@ No organization's identity provider administers the instance by default, so an o
 
 Choosing it needs an instance admin's recent sign-in with a password or a sign-in link, never one through single sign-on, and the instance's audit log records it as `instance.admin_sso_update`. Only an organization with a connection can be chosen. If it later loses its connection, the setting has no effect, and **General** says so.
 
+When no instance admin can sign in that way, an operator chooses the organization on the server instead, by its id, under the same rules and with the same audit entry; `none` chooses none:
+
+```bash
+docker compose exec gateway kaeso instance admin-sso org_…
+```
+
 ## Run without passwords or sign-in links
 
 To sign in only through organizations' identity providers, turn passwords and sign-in links off before the first start:

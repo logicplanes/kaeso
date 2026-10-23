@@ -67,6 +67,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso user sign-in-link <email>` | Gibt einen einmaligen Anmeldelink für einen aktiven Benutzer aus, 15 Minuten gültig ([Wieder hineinkommen](sign-in.md#wieder-hineinkommen)) |
 | `kaeso user reset-2fa <email>` | Entfernt die Zwei-Faktor-Authentifizierung und die Wiederherstellungscodes eines Benutzers, beendet seine Sitzungen und benachrichtigt ihn per E-Mail. Das Audit-Log der Instanz hält es fest |
 | `kaeso sso verify-domain <domain>` | Markiert eine E-Mail-Domain der SSO ohne ihren TXT-Eintrag als bestätigt, für eine Domain, für die das öffentliche DNS nicht antwortet. `--org <org>` nennt die Organisation, wenn mehrere die Domain führen. Das Audit-Log der Organisation verzeichnet es |
+| `kaeso instance admin-sso <org\|none>` | Wählt die Organisation, deren Single Sign-on die Instanz verwalten darf, über eine ID wie `org_…`, oder mit `none` keine, wenn kein Instanz-Admin es in der Konsole ändern kann ([Instanz-Admins](sign-in.md#instanz-admins)). Die Organisation braucht eine SSO-Verbindung. Das Audit-Log der Instanz hält es fest |
 | `kaeso master-key generate` | Gibt einen neuen Hauptschlüssel als `id:base64` aus |
 | `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden ([Hauptschlüssel rotieren](backups.md#hauptschlüssel-rotieren)) |
 | `kaeso migrate` | Führt die Migrationen von PostgreSQL und ClickHouse aus und beendet sich |

@@ -6,7 +6,7 @@ Rules for the Rust workspace: the gateway, the updater and KPP. The root [`AGENT
 
 | Crate             | Job                                                                                                                                                                                       |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kaeso`           | The binary: CLI (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), configuration, telemetry, startup and shutdown. The only crate that may use `anyhow`. |
+| `kaeso`           | The binary: CLI (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), configuration, telemetry, startup and shutdown. The only crate that may use `anyhow`. |
 | `kaeso-server`    | axum routers for `/v1`, `/platform/v1`, health and metrics; extractors, error mapping, OpenAPI (utoipa), CSRF, request ids, body limits, background jobs; the services behind them, among them the limit counters as Valkey Lua scripts (`src/services/limits.rs`). Handlers stay thin. |
 | `kaeso-core`      | Domain rules without I/O: ids, rights and roles, key format, model resolution, catalogue merge, capabilities, limits, costs, the stream reply assembler, retention; the model data.        |
 | `kaeso-store`     | PostgreSQL (sqlx, offline query data in `.sqlx/`), ClickHouse, the Valkey client and its invalidation channel, and the migrations of both databases. |
