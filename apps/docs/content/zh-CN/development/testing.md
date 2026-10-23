@@ -282,4 +282,4 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。
 
-有两个工作流按计划运行。**Fuzz** 每晚运行，见[模糊测试](#模糊测试)。**Audits** 每周一运行：对工作区和 KPP 运行 `cargo deny check`，并对所有依赖（包括开发依赖）运行 `pnpm audit --audit-level high`，这样即使没有任何改动，新的安全公告也会被发现。
+有三个工作流按计划运行。**Fuzz** 每晚运行，见[模糊测试](#模糊测试)。**Audits** 每周一运行：对工作区和 KPP 运行 `cargo deny check`，并对所有依赖（包括开发依赖）运行 `pnpm audit --audit-level high`，这样即使没有任何改动，新的安全公告也会被发现。**Scorecard** 每周二以及每次推送到 `dev` 后运行：[OpenSSF Scorecard](https://scorecard.dev) 检查仓库的安全实践，例如固定版本的 Action、令牌权限和分支保护，发布评分，并在 **Security › Code scanning** 下显示其发现。
