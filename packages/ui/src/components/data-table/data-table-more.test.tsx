@@ -93,7 +93,7 @@ describe("DataTable selection and rows", () => {
   it("shows the rows in view of a long table that sits below other content", () => {
     const page = (document.scrollingElement ?? document.documentElement) as HTMLElement;
     const above = 3000;
-    const size = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+    const size = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
       return this === page ? 800 : 0;
     });
     const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
