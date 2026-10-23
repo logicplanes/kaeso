@@ -323,6 +323,48 @@ async fn embeddings_and_token_counts_need_an_api_key() {
 }
 
 #[tokio::test]
+async fn a_plan_request_holds_the_models_whole_output_limit_whatever_cap_it_asked_for() {
+    let p = plan_with(&[("KAESO_UPSTREAM_REQUEST_TIMEOUT", "2s")]).await;
+    p.app
+        .post(
+            &format!("/orgs/{}/projects/{}/limits", p.owner.org_id, p.project),
+            json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 1000 }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    p.oauth.reply_with(Reply::Trickle);
+    let capped = json!({ "model": "openai/gpt-5", "input": "Hi", "max_output_tokens": 16 });
+    let first = p.call("/v1/responses", false, capped.clone());
+    let second = async {
+        common::eventually("the first request reaches the plan", || async {
+            !p.sent().is_empty()
+        })
+        .await;
+        p.call("/v1/responses", false, capped.clone()).await
+    };
+    let (first, second) = tokio::join!(first, second);
+    assert_eq!(
+        first.status,
+        StatusCode::GATEWAY_TIMEOUT,
+        "{}",
+        first.text()
+    );
+    assert_eq!(
+        second.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        second.text()
+    );
+    assert_eq!(
+        second.json()["error"]["message"],
+        "The project's daily token budget of 1000 tokens is nearly used up by requests in progress; retry in a moment."
+    );
+    assert_eq!(p.sent().len(), 1);
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_reply_that_keeps_trickling_ends_at_the_request_timeout() {
     let p = plan_with(&[("KAESO_UPSTREAM_REQUEST_TIMEOUT", "1s")]).await;
     p.oauth.reply_with(Reply::Trickle);

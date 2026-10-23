@@ -652,42 +652,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         idle: u.stream_idle_timeout,
     }
     .with_model_override(eff.fields.timeout_seconds);
-    let admission = Admission {
-        request_id: rec.outcome().request_id,
-        caller: caller.clone(),
-        catalogue_model_id: entry.id,
-        kind,
-        at: rec.outcome().started_at,
-        timeout: timeouts.request,
-        worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
-        unpriced: kaeso_core::cost::unpriced_model(
-            &eff.fields,
-            &entry.overrides,
-            kind,
-            &eff.model_id,
-        )
-        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect)),
-    };
-    rec.reservation = state
-        .limits
-        .admit(state, &admission)
-        .await
-        .map_err(|refusal| {
-            let kind = match refusal.status {
-                503 => ErrorKind::ProviderError,
-                403 => ErrorKind::PermissionDenied,
-                _ => ErrorKind::RateLimited,
-            };
-            let mut e = error(kind, refusal.status, refusal.message);
-            if let Some(r) = refusal.retry_after {
-                e = e.with_retry_after(r);
-            }
-            if let Some(p) = refusal.param {
-                e = e.with_param(p);
-            }
-            fail(Stage::Limits)(e)
-        })?;
-
     let credential = credentials::resolve(
         state,
         OrgId::from_uuid(caller.org_id),
@@ -725,6 +689,42 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             super::accounts::prepare(&mut req, a, eff.provider).map_err(fail(Stage::Capability))?;
         rec.outcome().egress = Some(plan.dialect);
     }
+
+    let admission = Admission {
+        request_id: rec.outcome().request_id,
+        caller: caller.clone(),
+        catalogue_model_id: entry.id,
+        kind,
+        at: rec.outcome().started_at,
+        timeout: timeouts.request,
+        worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
+        unpriced: kaeso_core::cost::unpriced_model(
+            &eff.fields,
+            &entry.overrides,
+            kind,
+            &eff.model_id,
+        )
+        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect)),
+    };
+    rec.reservation = state
+        .limits
+        .admit(state, &admission)
+        .await
+        .map_err(|refusal| {
+            let kind = match refusal.status {
+                503 => ErrorKind::ProviderError,
+                403 => ErrorKind::PermissionDenied,
+                _ => ErrorKind::RateLimited,
+            };
+            let mut e = error(kind, refusal.status, refusal.message);
+            if let Some(r) = refusal.retry_after {
+                e = e.with_retry_after(r);
+            }
+            if let Some(p) = refusal.param {
+                e = e.with_param(p);
+            }
+            fail(Stage::Limits)(e)
+        })?;
 
     if entry.is_unavailable()
         && !state
