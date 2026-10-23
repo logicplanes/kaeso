@@ -234,7 +234,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | Dekodieren: Status / `type` / `code` | `ErrorKind` |
 | --- | --- |
 | `code` `context_length_exceeded` | `ContextTooLong` |
-| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active` | `Billing` |
+| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active`, `subscription_sharing_usage_limit_exceeded` | `Billing` |
 | 503, `service_unavailable_error`, `server_is_overloaded` | `Overloaded` |
 | `content_policy_violation`, `content_filter`, `image_content_policy_violation`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` | `ContentFiltered` |
 | 400, 409, 422 | `InvalidRequest` |
@@ -294,6 +294,14 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 ## Modelle
 
 `GET /v1/models` und `GET /v1/models/{model}` haben in jeder OpenAI-API dieselbe Gestalt. Dieser Codec kodiert und dekodiert sie mit der gemeinsamen Implementierung, die auf der Seite [OpenAI Chat Completions](openai-chat.md) beschrieben ist (Fixtures `fixtures/openai_chat/models/`). Dekodierte Extras tragen den Ursprung `openai_responses`.
+
+## Nutzung eines ChatGPT-Abos
+
+`openai_responses::for_chatgpt_plan` schreibt einen `GenerateRequest` für die Responses-Route um, die über Sign in with ChatGPT ein ChatGPT-Abo bedient ([Einschränkungen der Vorschau](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). Das Gateway ruft es für einen Anbieter-Schlüssel auf, der ein ChatGPT-Konto ist.
+
+- Es lässt `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` und `previous_response_id` weg: die typisierten Felder, Extras-Felder und die ausdrücklichen Standardwerte und Nullwerte in den Formen `set`, `unset` und `canon`.
+- Es setzt `stream: true` und `store: false`.
+- Es entfernt die Formen `input`, `system_items` und `instructions`, sodass `input` ein Array ist und führender Systemtext `instructions`. Jede andere Systemnachricht verliert ihre `role`-Überschreibung und wird als `developer`-Nachricht geschrieben, weil die Route `system`-Items ablehnt.
 
 ## Anbieter mit diesem Format
 

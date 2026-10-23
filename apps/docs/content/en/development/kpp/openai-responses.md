@@ -234,7 +234,7 @@ Every remaining property of the covered schemas, by name:
 | Decode: status / `type` / `code` | `ErrorKind` |
 | --- | --- |
 | `code` `context_length_exceeded` | `ContextTooLong` |
-| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active` | `Billing` |
+| `type`/`code` `insufficient_quota`, `credit_balance_exhausted`, `organization_spend_limit_exceeded`, `project_spend_limit_exceeded`, `organization_usage_limit_exceeded`, `billing_hard_limit_reached`, `billing_not_active`, `subscription_sharing_usage_limit_exceeded` | `Billing` |
 | 503, `service_unavailable_error`, `server_is_overloaded` | `Overloaded` |
 | `content_policy_violation`, `content_filter`, `image_content_policy_violation`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` | `ContentFiltered` |
 | 400, 409, 422 | `InvalidRequest` |
@@ -294,6 +294,14 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 ## Models
 
 `GET /v1/models` and `GET /v1/models/{model}` use the same shape in every OpenAI API. This codec encodes and decodes it with the shared implementation described on the [OpenAI Chat Completions](openai-chat.md) page (fixtures `fixtures/openai_chat/models/`). Decoded extras carry the origin `openai_responses`.
+
+## ChatGPT plan usage
+
+`openai_responses::for_chatgpt_plan` rewrites a `GenerateRequest` for the Responses route that serves a ChatGPT plan through Sign in with ChatGPT ([preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). The gateway calls it for a provider key that is a ChatGPT account.
+
+- It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`: the typed fields, extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
+- It sets `stream: true` and `store: false`.
+- It drops forms `input`, `system_items` and `instructions`, so `input` is an array and leading system text is `instructions`. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
 
 ## Providers that use this format
 

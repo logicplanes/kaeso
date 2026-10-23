@@ -7,9 +7,9 @@ use serde_json::value::RawValue;
 use super::node::{Node, entries_of};
 use crate::limits::MAX_DEPTH;
 
-const SET: &str = "set";
-const UNSET: &str = "unset";
-const CANON: &str = "canon";
+pub(super) const SET: &str = "set";
+pub(super) const UNSET: &str = "unset";
+pub(super) const CANON: &str = "canon";
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Overrides {

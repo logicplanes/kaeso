@@ -196,6 +196,7 @@ pub enum Stage {
     Capability,
     Limits,
     MissingCredential(&'static str),
+    SignedOut(&'static str),
     Credential,
     Upstream,
     Provider,
@@ -625,7 +626,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.prices = Some(eff.fields.clone());
     }
     let app_req = Arc::new(req.clone());
-    let plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
+    let mut plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
         let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
         if let Some(p) = u.param {
             e = e.with_param(p);
@@ -651,6 +652,44 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         idle: u.stream_idle_timeout,
     }
     .with_model_override(eff.fields.timeout_seconds);
+    let credential = credentials::resolve(
+        state,
+        OrgId::from_uuid(caller.org_id),
+        ProjectId::from_uuid(caller.project_id),
+        eff.provider.id,
+    )
+    .await
+    .map_err(|e| match e {
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.id))(error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model")),
+        CredentialError::Crypto(_) => {
+            tracing::error!(provider = eff.provider.id, "a provider credential cannot be decrypted");
+            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))
+        }
+        CredentialError::Store(err) => {
+            tracing::error!(error = %err, "cannot load a provider credential");
+            fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
+        }
+        CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
+            ErrorKind::ProviderError,
+            502,
+            format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name),
+        )),
+        CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
+            ErrorKind::ProviderError,
+            503,
+            format!("Kaeso cannot renew the {product} account's access right now. Try again shortly."),
+        )),
+    })?;
+    let account = eff
+        .provider
+        .account
+        .filter(|a| a.method == credential.method);
+    if let Some(a) = account {
+        plan.dialect =
+            super::accounts::prepare(&mut req, a, eff.provider).map_err(fail(Stage::Capability))?;
+        rec.outcome().egress = Some(plan.dialect);
+    }
+
     let admission = Admission {
         request_id: rec.outcome().request_id,
         caller: caller.clone(),
@@ -687,25 +726,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             fail(Stage::Limits)(e)
         })?;
 
-    let credential = credentials::resolve(
-        state,
-        OrgId::from_uuid(caller.org_id),
-        ProjectId::from_uuid(caller.project_id),
-        eff.provider.id,
-    )
-    .await
-    .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.id))(error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model")),
-        CredentialError::Crypto(_) => {
-            tracing::error!(provider = eff.provider.id, "a provider credential cannot be decrypted");
-            fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))
-        }
-        CredentialError::Store(err) => {
-            tracing::error!(error = %err, "cannot load a provider credential");
-            fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
-        }
-    })?;
-
     if entry.is_unavailable()
         && !state
             .availability
@@ -741,7 +761,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
-    let sent_req = (eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
+    let sent_req =
+        (account.is_none() && eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
     let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
@@ -750,32 +771,63 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if let Some(held) = &mut rec.held {
         held.keep(kept.saturating_add(sent));
     }
-    let base = base_url(state, eff.provider.id).ok_or_else(|| {
-        fail(Stage::Setup)(error(
-            ErrorKind::ProviderError,
-            500,
-            "No base URL is configured for this provider.",
-        ))
-    })?;
+    let account_base = match account {
+        Some(a) => Some(
+            state
+                .accounts
+                .hosts(a.method)
+                .map(crate::services::provider_accounts::Hosts::api_base)
+                .and_then(Result::ok)
+                .ok_or_else(|| {
+                    fail(Stage::Setup)(error(
+                        ErrorKind::ProviderError,
+                        500,
+                        "No base URL is configured for this provider.",
+                    ))
+                })?,
+        ),
+        None => None,
+    };
+    let base = match &account_base {
+        Some(base) => base,
+        None => base_url(state, eff.provider.id).ok_or_else(|| {
+            fail(Stage::Setup)(error(
+                ErrorKind::ProviderError,
+                500,
+                "No base URL is configured for this provider.",
+            ))
+        })?,
+    };
     let provider = eff.provider.id;
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
-    let resp = state
-        .upstream
-        .send(Call {
-            base_url: base,
-            auth: eff.provider.auth,
-            credential: &credential.secret,
-            request: Outgoing::from(encoded),
-            stream: stream && kind == RequestKind::Generate,
-            timeouts,
-            max_body: state.config.body_limits.provider_response.as_usize(),
-        })
-        .await
-        .map_err(|e| {
-            count_upstream_error(transport_kind(&e), provider);
-            fail(Stage::Upstream)(upstream_error(&e))
-        })?;
+    let gathers = account.is_some() && !stream && kind == RequestKind::Generate;
+    let deadline = tokio::time::Instant::now() + timeouts.request;
+    let late = |_: tokio::time::error::Elapsed| {
+        let e = UpstreamError::Timeout("request");
+        count_upstream_error(transport_kind(&e), provider);
+        fail(Stage::Upstream)(upstream_error(&e))
+    };
+    let sending = state.upstream.send(Call {
+        base_url: base,
+        auth: eff.provider.auth,
+        credential: &credential.secret,
+        request: Outgoing::from(encoded),
+        stream: (stream || account.is_some()) && kind == RequestKind::Generate,
+        timeouts,
+        max_body: state.config.body_limits.provider_response.as_usize(),
+    });
+    let sent = if gathers {
+        tokio::time::timeout_at(deadline, sending)
+            .await
+            .map_err(late)?
+    } else {
+        sending.await
+    };
+    let resp = sent.map_err(|e| {
+        count_upstream_error(transport_kind(&e), provider);
+        fail(Stage::Upstream)(upstream_error(&e))
+    })?;
     if let Some(held) = &mut rec.held {
         held.keep(kept);
     }
@@ -816,6 +868,32 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
 
     match resp.body {
+        ResponseBody::Stream(chunks) if success && account.is_some() && !stream => {
+            let decoder =
+                dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
+            let max = state.config.body_limits.provider_response.as_usize();
+            let reply = tokio::time::timeout_at(
+                deadline,
+                stream::gather(chunks, decoder, plan.dialect, max),
+            )
+            .await
+            .map_err(late)?
+            .map_err(|g| match g {
+                stream::Gathered::Transport(e) => {
+                    count_upstream_error(transport_kind(&e), provider);
+                    fail(Stage::Upstream)(upstream_error(&e))
+                }
+                stream::Gathered::Provider(err) => {
+                    count_upstream_error(err.kind.as_str(), provider);
+                    fail(Stage::Provider)(super::accounts::usage_limit(account, err))
+                }
+                stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
+            })?;
+            let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
+            reply_with(state, rec, reply, out, counter, carry, &served)
+                .await
+                .map_err(fail(Stage::Reply))
+        }
         ResponseBody::Stream(chunks) if success => {
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
@@ -841,6 +919,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 counter,
                 carry,
                 keep_reply: keep_content,
+                account,
             };
             state.in_flight.spawn(stream::pump(parts, tx, task_rec));
             let body = Body::from_stream(futures::stream::unfold(rx, |mut rx| async move {
@@ -887,6 +966,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                     &ectx,
                 );
                 count_upstream_error(err.kind.as_str(), provider);
+                let err = super::accounts::usage_limit(account, err);
                 if err.kind == ErrorKind::NotFound
                     && let Probe::Unserved =
                         state.availability.probe(state, &credential, &eff).await
@@ -913,25 +993,39 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .await
             .and_then(|r| r)
             .map_err(fail(Stage::Reply))?;
-            record_usage(rec, &reply, counter).await;
-            let out = out.map_err(fail(Stage::Reply))?;
-            if let Some(key_id) = carry
-                && let Reply::Generate(r) = &reply
-            {
-                continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
-            }
-            if let Reply::Generate(r) = reply {
-                rec.outcome().reply = Some(r);
-            }
-            let mut resp = Response::new(Body::from(out));
-            resp.headers_mut().insert(
-                header::CONTENT_TYPE,
-                HeaderValue::from_static("application/json"),
-            );
-            stamp(&mut resp, &served);
-            Ok(Done::Complete(resp, StatusCode::OK.as_u16()))
+            reply_with(state, rec, reply, out, counter, carry, &served)
+                .await
+                .map_err(fail(Stage::Reply))
         }
     }
+}
+
+async fn reply_with(
+    state: &AppState,
+    rec: &mut Recording,
+    reply: Reply,
+    out: Result<Vec<u8>, KppError>,
+    counter: InputCounter,
+    carry: Option<uuid::Uuid>,
+    served: &Served,
+) -> Result<Done, KppError> {
+    record_usage(rec, &reply, counter).await;
+    let out = out?;
+    if let Some(key_id) = carry
+        && let Reply::Generate(r) = &reply
+    {
+        continuity::keep(state, key_id, &reasoning_for_tool_calls(&r.blocks)).await;
+    }
+    if let Reply::Generate(r) = reply {
+        rec.outcome().reply = Some(r);
+    }
+    let mut resp = Response::new(Body::from(out));
+    resp.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    );
+    stamp(&mut resp, served);
+    Ok(Done::Complete(resp, StatusCode::OK.as_u16()))
 }
 
 fn provider_error(

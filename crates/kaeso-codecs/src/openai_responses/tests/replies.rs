@@ -183,6 +183,10 @@ fn error_kinds_of_the_fixtures() {
         ErrorKind::ContextTooLong
     );
     assert_eq!(kind("insufficient-quota-429", 429), ErrorKind::Billing);
+    assert_eq!(
+        kind("subscription-sharing-usage-limit-429", 429),
+        ErrorKind::Billing
+    );
     assert_eq!(kind("invalid-api-key-401", 401), ErrorKind::Authentication);
     assert_eq!(kind("model-not-found-404", 404), ErrorKind::NotFound);
     assert_eq!(kind("overloaded-503", 503), ErrorKind::Overloaded);

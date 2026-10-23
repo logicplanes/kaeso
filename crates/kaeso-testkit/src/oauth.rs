@@ -48,6 +48,8 @@ pub enum Reply {
     Text,
     UsageLimit,
     UsageLimitInStream,
+    ModelNotFound,
+    Trickle,
 }
 
 struct Grant {
@@ -473,7 +475,9 @@ async fn revoke(
     StatusCode::OK.into_response()
 }
 
-const MODELS: &str = r#"{"models":[{"slug":"gpt-6.1-sol","display_name":"GPT-6.1 Sol","visibility":"list"},{"slug":"gpt-6.1-sol-internal","display_name":"GPT-6.1 Sol internal","visibility":"hide"}]}"#;
+const MODELS: &str = r#"{"models":[{"slug":"gpt-5","display_name":"GPT-5","visibility":"list"},{"slug":"gpt-5-mini","display_name":"GPT-5 mini","visibility":"hide"}]}"#;
+
+const MODEL_NOT_FOUND: &str = r#"{"error":{"message":"The requested model does not exist.","type":"invalid_request_error","param":"model","code":"model_not_found"}}"#;
 
 const USAGE_LIMIT: &str = r#"{"error":{"message":"You have reached the usage limit of your ChatGPT plan.","type":"usage_limit_reached","param":null,"code":"subscription_sharing_usage_limit_exceeded"}}"#;
 
@@ -484,6 +488,30 @@ const FAILED_STREAM: &str = concat!(
     r#"data: {"type":"response.failed","sequence_number":1,"response":{"id":"resp_mock","object":"response","created_at":1791720589,"status":"failed","error":{"code":"subscription_sharing_usage_limit_exceeded","message":"You have reached the usage limit of your ChatGPT plan."},"model":"gpt-6.1-sol","output":[],"usage":null}}"#,
     "\n\n"
 );
+
+fn trickle() -> Response {
+    let created = FAILED_STREAM
+        .split_inclusive("\n\n")
+        .next()
+        .unwrap_or_default();
+    let chunks = futures::stream::unfold(Some(created), |first| async move {
+        let chunk = match first {
+            Some(created) => created,
+            None => {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                ": still working\n\n"
+            }
+        };
+        Some((
+            Ok::<_, std::io::Error>(Bytes::from_static(chunk.as_bytes())),
+            None,
+        ))
+    });
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .body(Body::from_stream(chunks))
+        .unwrap_or_default()
+}
 
 async fn api(
     State(inner): State<Arc<Inner>>,
@@ -541,6 +569,13 @@ async fn api(
                 )
                     .into_response(),
                 Reply::UsageLimitInStream => stream(FAILED_STREAM.to_owned()),
+                Reply::Trickle => trickle(),
+                Reply::ModelNotFound => (
+                    StatusCode::NOT_FOUND,
+                    [(header::CONTENT_TYPE, "application/json")],
+                    MODEL_NOT_FOUND,
+                )
+                    .into_response(),
             }
         }
         _ => (

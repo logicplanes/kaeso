@@ -1,3 +1,4 @@
+mod accounts;
 pub mod auth;
 pub mod errors;
 pub mod hooks;

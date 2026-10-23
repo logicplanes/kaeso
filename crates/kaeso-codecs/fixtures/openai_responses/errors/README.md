@@ -24,6 +24,8 @@
 | `server-error-500.meta.json` | HTTP status 500 | doc: https://developers.openai.com/api/docs/guides/error-codes ("The server had an error while processing your request") |
 | `slow-down-429.json` | 429 slow_down with `retry-after` | doc: https://developers.openai.com/api/reference/resources/responses/methods/create (openapi.yaml components.responses.InferenceRateLimited example slowDown, verbatim) |
 | `slow-down-429.meta.json` | HTTP status 429, headers ['retry-after'] | doc: https://developers.openai.com/api/reference/resources/responses/methods/create (openapi.yaml components.responses.InferenceRateLimited example slowDown, verbatim) |
+| `subscription-sharing-usage-limit-429.json` | 429 when a ChatGPT plan's usage limit is reached (maps to KPP Billing) | doc: https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery (code and status from "Structured Responses errors"; message and type invented, as the guide gives none) |
+| `subscription-sharing-usage-limit-429.meta.json` | HTTP status 429 | doc: https://developers.openai.com/siwc/token-sharing-open-source/errors-and-recovery (code and status from "Structured Responses errors") |
 | `unsupported-parameter-400.json` | 400 invalid_request_error with `param` and `code` | schema: ErrorResponse / Error; message text as commonly returned by the API (not in the spec) |
 | `unsupported-parameter-400.meta.json` | HTTP status 400 | schema: ErrorResponse / Error; message text as commonly returned by the API (not in the spec) |
 | `unsupported-region-403.json` | 403 permission denied | doc: https://developers.openai.com/api/docs/guides/error-codes (message from the guide; type/code as returned by the API) |

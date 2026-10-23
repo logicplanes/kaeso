@@ -17,7 +17,7 @@ use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::{Setting, app_field, check_foreign};
 use crate::wire::{StringOr, to_body, type_tag};
 
-const INPUT: &str = "input";
+pub(super) const INPUT: &str = "input";
 const NATIVE: &str = "native";
 const USER_KEY: &str = "user_key";
 const NO_OBJECT: &str = "no_object";

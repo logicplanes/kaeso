@@ -312,6 +312,7 @@ const messages = (): Rule[] => [
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
   rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id, such as `openai`.")),
   rule("errors.providerOneOf", (v) => t("errors.providerOneOf", "The provider must be one of {providers}.", v)),
+  rule("errors.accountSignedOut", (v) => t("errors.accountSignedOut", "The {product} account of this project's provider key is signed out; sign in again.", v)),
   rule("errors.replaceAccount", () => t("errors.replaceAccount", "This key signs in with an account; sign in again instead of replacing it.")),
   rule("errors.accountSignInExpired", () => t("errors.accountSignInExpired", "This sign-in expired or was already used; start again.")),
   rule("errors.pasteCallback", () => t("errors.pasteCallback", "Paste the address of the page that didn't load; it starts with `http://127.0.0.1`.")),
@@ -588,6 +589,20 @@ const messages = (): Rule[] => [
       "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.",
     ),
   ),
+  rule("errors.modelApi.accountSignedOut", (v) =>
+    t(
+      "errors.modelApi.accountSignedOut",
+      "The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.accountNoEmbeddings", (v) =>
+    t("errors.modelApi.accountNoEmbeddings", "A {product} account can't create embeddings. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoTokenCount", (v) =>
+    t("errors.modelApi.accountNoTokenCount", "A {product} account can't count tokens. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.planUsageLimit", (v) => t("errors.modelApi.planUsageLimit", "Your {product} plan's usage limit is reached. Review it at {url}.", v)),
   rule("errors.modelApi.translateUnavailable", () =>
     t("errors.modelApi.translateUnavailable", "Kaeso cannot translate this request right now. Try again shortly."),
   ),
@@ -608,6 +623,9 @@ const messages = (): Rule[] => [
   ),
   rule("errors.modelApi.credentialUnavailable", () =>
     t("errors.modelApi.credentialUnavailable", "Kaeso cannot load the provider credential right now. Try again shortly."),
+  ),
+  rule("errors.modelApi.accountUnrenewed", (v) =>
+    t("errors.modelApi.accountUnrenewed", "Kaeso cannot renew the {product} account's access right now. Try again shortly.", v),
   ),
   rule("errors.modelApi.noBaseUrl", () => t("errors.modelApi.noBaseUrl", "No base URL is configured for this provider.")),
   rule("errors.modelApi.streamEnded", () => t("errors.modelApi.streamEnded", "The provider's stream ended before the reply was complete.")),

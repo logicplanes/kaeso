@@ -75,6 +75,7 @@ fn feature(req: GenerateRequest) -> String {
 mod check;
 mod foreign;
 mod malformed;
+mod plan;
 mod replies;
 mod requests;
 mod stream_edges;

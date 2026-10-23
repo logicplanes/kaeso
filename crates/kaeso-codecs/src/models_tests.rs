@@ -126,6 +126,32 @@ fn unusual_spellings_round_trip() {
 }
 
 #[test]
+fn a_chatgpt_plan_listing_names_models_by_slug_and_keeps_their_visibility() {
+    let body = fixture("openai_chat", "chatgpt-plan-list");
+    for d in OPENAI {
+        let l = list(d, &body);
+        let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(
+            ids,
+            ["gpt-6.1-sol", "gpt-6.1-sol-mini", "gpt-6.1-sol-review"]
+        );
+        let visibility: Vec<&str> = l
+            .models
+            .iter()
+            .map(|m| m.extras.fields["visibility"].get())
+            .collect();
+        assert_eq!(visibility, [r#""list""#, r#""list""#, r#""hide""#]);
+        assert_eq!(
+            l.models[0].extras.fields["display_name"].get(),
+            r#""GPT-6.1 Sol""#
+        );
+    }
+    let nameless = br#"{"models": [{"display_name": "No slug"}]}"#;
+    let err = dispatch::decode_models(DialectId::OpenAiResponses, 200, &h(), nameless).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::ProviderError);
+}
+
+#[test]
 fn an_openrouter_listing_without_object_fields_decodes_with_its_own_fields_as_extras() {
     let body = fixture("openai_chat", "providers/openrouter/list-recorded");
     let l = list(DialectId::OpenAiChat, &body);

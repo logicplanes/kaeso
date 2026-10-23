@@ -11,6 +11,7 @@ Source: OpenAI OpenAPI spec `openapi.yaml` at commit `e95c0fe615f45a19e8878af923
 | `list.json` | three models, `shutdown_date` `null` and a date | doc: `listModels` `x-oaiMeta.examples.response` (openapi.yaml@e95c0fe615f4), verbatim |
 | `retrieve.json` | one model with a `shutdown_date` | doc: `retrieveModel` `x-oaiMeta.examples.response` (openapi.yaml@e95c0fe615f4), verbatim |
 | `unknown-fields.json` | made-up `x_future_field` on a model and `x_future_list_field` on the list; a fine-tuned model id and a model without `shutdown_date` (the spec does not require it) | invented on purpose (`unknown-*` convention); otherwise schema: `Model` |
+| `chatgpt-plan-list.json` | the listing `GET /v1/models` answers to a ChatGPT plan's access token: `models` with `slug`, `display_name` and `visibility` instead of `data` | doc: https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference (the fields of its `jq` filter; values invented) |
 | `list-recorded.json` | Live `GET /v1/models`, the first 6 of 135 models kept (shape unchanged, incl. `shutdown_date`). | recorded 2026-10-11 from api.openai.com |
 | `retrieve-recorded.json` | Live `GET /v1/models/gpt-5.4-mini`. | recorded 2026-10-11 from api.openai.com |
 
