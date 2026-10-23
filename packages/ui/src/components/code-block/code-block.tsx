@@ -1,9 +1,10 @@
-import { forwardRef, useEffect, useMemo, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { cn } from "../../utils/cn.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
 import { useUiText } from "../../i18n/context.js";
+import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 
 export const KAESO_CODE_BLOCK_VARIANTS = {
   surface: {
@@ -80,7 +81,13 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const tokenLines = highlighted && highlighted.lang === (current.lang ?? "ts") && highlighted.text === text ? highlighted.tokens : null;
   const collapsed = collapseAfter > 0 && lines.length > collapseAfter && !expanded;
   const visible = collapsed ? collapseAfter : lines.length;
-  const codeClass = cn("relative overflow-x-auto py-16 scrollbar-quiet focus-ring-inset", collapsed && "overflow-y-hidden", copy && "coarse:mr-40");
+  const scroller = useRef<HTMLDivElement | null>(null);
+  useScrollFadeX(scroller, "code", !!tabs);
+  const codeClass = cn(
+    "relative overflow-x-auto py-16 scrollbar-quiet scroll-fade-x focus-ring-inset",
+    collapsed && "overflow-y-hidden",
+    copy && "coarse:mr-40",
+  );
   const source = (
     <pre className="mono text-small text-fg">
       <code className={cn("grid", !wrap && "min-w-max")}>
@@ -127,11 +134,12 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
           </div>
         )}
         {tabs ? (
-          <BaseTabs.Panel value={tab} className={codeClass}>
+          <BaseTabs.Panel ref={scroller} value={tab} className={codeClass}>
             {source}
           </BaseTabs.Panel>
         ) : (
           <div
+            ref={scroller}
             tabIndex={0}
             role="region"
             aria-label={typeof title === "string" ? t("codeBlock.titledCode", "{title} code", { title }) : t("codeBlock.code", "Code")}

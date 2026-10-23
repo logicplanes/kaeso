@@ -941,7 +941,7 @@
   "`CompareGrid.Column` elements, one to four.": "`CompareGrid.Column` 元素，一到四个。",
   "`grouped` puts each category's bars side by side (default), `stacked` stacks them, and `horizontal` draws bars across for rankings.": "`grouped` 将每个分类的柱并排显示（默认），`stacked` 将其堆叠，`horizontal` 横向绘制柱，用于排名。",
   "`line` draws lines (default), `area` adds a light fill under each line, and `stacked` stacks the areas.": "`line` 绘制折线（默认），`area` 在每条线下方添加浅色填充，`stacked` 将面积堆叠。",
-  "`primary` for the one main action of a view, `secondary` for others, `ghost` and `quiet` for toolbars, `danger` for destructive actions.": "`primary` 用于视图中唯一的主要操作，`secondary` 用于其他操作，`ghost` 和 `quiet` 用于工具栏，`danger` 用于破坏性操作。",
+  "`primary` for the one main action of a view, `secondary` for others, `ghost` and `quiet` for toolbars and rows, `danger` for destructive actions. A ghost or quiet button at the end of a settings row's control pulls its padding past the row's edge, so its label ends where an outlined button's ring does.": "`primary` 用于视图中唯一的主要操作，`secondary` 用于其他操作，`ghost` 和 `quiet` 用于工具栏和行，`danger` 用于破坏性操作。位于设置行控件末尾的 ghost 或 quiet 按钮会把内边距延伸到行的边缘之外，使其标签结束在描边按钮的环线结束的位置。",
   "`screen` fills the viewport (default); `parent` fills its container (previews, embedded tools).": "`screen` 占满视口（默认）；`parent` 占满其容器（预览、嵌入式工具）。",
   "fluid fills its container's width, as in a StatTile; the line keeps its weight at any width.": "fluid 填满容器的宽度，例如在 StatTile 中；线条在任何宽度下都保持粗细不变。",
   "markdown draws text, reasoning and prose tool results as Markdown, safely; the renderer loads the first time it is needed.": "markdown 将文字、推理和文本型工具结果安全地渲染为 Markdown；渲染器在首次需要时加载。",

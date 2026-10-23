@@ -278,6 +278,8 @@ export const width = {
   aside: 320,
   banner: 480,
   kv: 480,
+  settingsRow: 480,
+  chartLegend: 480,
   cellSm: 208,
   cellMd: 320,
   cellLg: 512,

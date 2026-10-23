@@ -167,6 +167,8 @@ theme.push(
   `  --container-palette: ${t.width.palette}px;`,
   `  --container-banner: ${t.width.banner}px;`,
   `  --container-kv: ${t.width.kv}px;`,
+  `  --container-settings-row: ${t.width.settingsRow}px;`,
+  `  --container-chart-legend: ${t.width.chartLegend}px;`,
   `  --container-cell-sm: ${t.width.cellSm}px;`,
   `  --container-cell-md: ${t.width.cellMd}px;`,
   `  --container-cell-lg: ${t.width.cellLg}px;`,

@@ -86,7 +86,11 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
         </span>
         {description && <span className="text-small text-fg-secondary text-pretty">{description}</span>}
       </span>
-      {control && <span className="flex max-w-full shrink-0 items-center">{control}</span>}
+      {control && (
+        <span data-row-control="" className={cn("flex max-w-full shrink-0 items-center @max-settings-row:basis-full", icon && "@max-settings-row:pl-36")}>
+          {control}
+        </span>
+      )}
       {(value !== undefined || navigates) && !control && (
         <span className="flex shrink-0 items-center gap-6 text-body text-fg-secondary">
           {value}
@@ -96,7 +100,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
     </>
   );
   const classes = cn(
-    "relative flex w-full flex-wrap items-center gap-x-16 gap-y-8 px-20 text-left",
+    "@container relative flex w-full flex-wrap items-center gap-x-16 gap-y-8 px-20 text-left",
     description ? KAESO_SETTINGS_VARIANTS.row.default.classes : KAESO_SETTINGS_VARIANTS.row.single.classes,
     "not-first:before:absolute not-first:before:top-0 not-first:before:right-0 not-first:before:h-1 not-first:before:bg-line-subtle",
     icon ? "not-first:before:left-56" : "not-first:before:left-20",

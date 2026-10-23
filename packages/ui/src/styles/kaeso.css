@@ -32,6 +32,15 @@
 @custom-variant focus-within-visible (:root:not([data-k-pointer]) &:has(:focus-visible), &[data-force~="focus"]);
 @custom-variant dragging (&[data-dragging], &[data-force~="dragging"]);
 @custom-variant reduced (@media (prefers-reduced-motion: reduce));
+@custom-variant ghost-start {
+  @variant @max-settings-row {
+    [data-row-control] > &.material-ghost:first-child,
+    [data-row-control] > :first-child > &.material-ghost:first-child {
+      @slot;
+    }
+  }
+}
+@custom-variant ghost-end ([data-row-control] > &.material-ghost:last-child, [data-row-control] > :last-child > &.material-ghost:last-child);
 
 @utility focus-ring {
   outline: 2px solid transparent;

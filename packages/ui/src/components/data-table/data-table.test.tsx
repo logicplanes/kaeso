@@ -158,6 +158,15 @@ describe("DataTable", () => {
       expect(cells[0]).not.toHaveClass("sticky");
       expect(screen.getByText("staging").closest<HTMLElement>("[role=row]")!.style.minWidth).toBe("280px");
     });
+    it("rounds a pinned column with its row's hover fill, but keeps the header's line straight to the edge", () => {
+      narrow(200);
+      render(<DataTable aria-label="Costs" data={rows} columns={columns.map((c) => ({ ...c, meta: { ...c.meta, priority: 1 } }))} getRowId={(r) => r.id} />);
+      const cell = within(screen.getByText("staging").closest<HTMLElement>("[role=row]")!).getAllByRole("cell").at(-1)!;
+      const header = screen.getAllByRole("columnheader").at(-1)!;
+      expect(cell).toHaveClass("sticky", "rounded-r-item");
+      expect(header).toHaveClass("sticky", "right-0", "bg-panel", "hairline-b-strong");
+      expect(header.className).not.toMatch(/rounded/);
+    });
   });
 });
 

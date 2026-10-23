@@ -173,7 +173,7 @@ export function ChartFrame({
   const [asTable, setAsTable] = useState(false);
   const t = useUiText();
   return (
-    <figure className={cn("flex min-w-0 flex-col gap-12", className)} aria-label={label}>
+    <figure className={cn("@container flex min-w-0 flex-col gap-12", className)} aria-label={label}>
       {state.error ? (
         <div className="flex flex-col items-center justify-center gap-8 text-center" style={{ height }}>
           <p role="alert" className="text-body text-fg-secondary">
@@ -201,14 +201,14 @@ export function ChartFrame({
         </div>
       )}
       {(legend || (toggle && table)) && (
-        <div className="flex flex-wrap items-center gap-12">
-          <div className="min-w-0 flex-1">{!asTable && legend}</div>
+        <div className="flex flex-col gap-8 @chart-legend:flex-row @chart-legend:gap-12">
+          {!asTable && legend && <div className="min-w-0 @chart-legend:flex-1">{legend}</div>}
           {toggle && table && (
             <button
               type="button"
               onClick={() => setAsTable((v) => !v)}
               aria-pressed={asTable}
-              className="relative inline-flex h-28 cursor-pointer items-center rounded-pill px-10 text-small font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring tap-target"
+              className="relative ml-auto inline-flex h-28 shrink-0 cursor-pointer items-center self-end rounded-pill px-10 text-small font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring tap-target"
             >
               {asTable ? t("chartFrame.viewAsChart", "View as chart") : t("chartFrame.viewAsTable", "View as table")}
             </button>

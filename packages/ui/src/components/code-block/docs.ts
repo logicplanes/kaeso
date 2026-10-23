@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   CodeBlock: {
-    description: "Highlighted code on a well: Kaeso's monochrome theme, copy on hover, tabs, line numbers, collapse.",
+    description:
+      "Highlighted code on a well: Kaeso's monochrome theme, copy on hover, tabs, line numbers, collapse. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
     props: {
       code: "The code to show.",
       collapseAfter: "Collapse beyond this many lines (24 by default; 0 never collapses).",
