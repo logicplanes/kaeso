@@ -102,7 +102,17 @@ pub async fn resolve(
         touch(state, &resolved);
         return Ok(resolved);
     }
-    renew(state, org, &resolved, product).await?;
+    renew(
+        state,
+        Renewal {
+            org,
+            project,
+            provider: provider.to_owned(),
+            product,
+            stale: resolved.clone(),
+        },
+    )
+    .await?;
     let renewed = cached(state, org, project, provider).await?;
     match renewed.account {
         Some(a) if a.signed_out => Err(ResolveError::SignedOut { product }),
@@ -120,20 +130,50 @@ fn product_of(provider: &str) -> &'static str {
         .map_or("provider", |a| a.product)
 }
 
+struct Renewal {
+    org: OrgId,
+    project: ProjectId,
+    provider: String,
+    product: &'static str,
+    stale: std::sync::Arc<Resolved>,
+}
+
+// OpenAI rotates the refresh token as it answers, so the answer must be stored even when
+// the request that asked for it is gone: a lost rotation signs the account out at the next
+// renewal. The work runs as its own task, which shutdown waits for, and the request awaits it.
+async fn renew(state: &AppState, renewal: Renewal) -> Result<(), ResolveError> {
+    let (done, outcome) = tokio::sync::oneshot::channel();
+    let st = state.clone();
+    state.in_flight.finish(async move {
+        let _ = done.send(renewed(&st, renewal).await);
+    });
+    outcome.await.unwrap_or(Ok(()))
+}
+
+fn outdated(cached: Option<Account>, row: &SealedRow) -> bool {
+    cached.is_none_or(|a| {
+        row.expires_at != Some(a.expires_at) || row.auth_error.is_some() != a.signed_out
+    })
+}
+
+fn current(account: Option<Account>, now: OffsetDateTime) -> bool {
+    account.is_some_and(|a| a.signed_out || !due(a.expires_at, a.earliest_refresh_at, now))
+}
+
 // One renewal per credential at a time: the flight keeps this instance's requests from
 // queueing on the database, and the advisory lock with the re-read row keeps other
 // replicas from spending a rotating refresh token twice, which signs the account out.
-async fn renew(
-    state: &AppState,
-    org: OrgId,
-    resolved: &Resolved,
-    product: &'static str,
-) -> Result<(), ResolveError> {
-    let Some(hosts) = state.accounts.hosts(resolved.method) else {
+async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
+    let Some(hosts) = state.accounts.hosts(r.stale.method) else {
         return Ok(());
     };
-    let id = resolved.id.uuid();
+    let org = r.org;
+    let id = r.stale.id.uuid();
     let _flight = state.caches.refreshes.board(&id.to_string()).await;
+    let cached_now = cached(state, org, r.project, &r.provider).await?;
+    if current(cached_now.account, state.clock.now()) {
+        return Ok(());
+    }
     let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
     credentials::lock_refresh(&mut tx, id).await?;
     let Some(row) = credentials::sealed(&mut *tx, org.uuid(), id).await? else {
@@ -144,7 +184,9 @@ async fn renew(
     let tokens = tokens(&state.keyring, &row)?;
     if row.auth_error.is_some() || !due(expires_at, tokens.earliest_refresh_at, now) {
         tx.commit().await.map_err(StoreError::from)?;
-        forget_org(state, org.uuid()).await;
+        if outdated(cached_now.account, &row) {
+            forget_org(state, org.uuid()).await;
+        }
         return Ok(());
     }
     match crate::services::provider_accounts::refresh(hosts, &tokens).await {
@@ -152,7 +194,7 @@ async fn renew(
             let renewed_until = granted.expires_at(now);
             let renewed = granted.renew(&tokens);
             let json = renewed.sealed_form().map_err(|_| CryptoError::Malformed)?;
-            let sealed = seal(state, resolved.id, &json)?;
+            let sealed = seal(state, r.stale.id, &json)?;
             credentials::refreshed(
                 &mut *tx,
                 id,
@@ -170,14 +212,14 @@ async fn renew(
             Ok(())
         }
         Err(e) if e.signs_out() => {
-            tracing::warn!(error = %e, credential = %resolved.id, "the provider ended an account's session; it needs a new sign-in");
+            tracing::warn!(error = %e, credential = %r.stale.id, "the provider ended an account's session; it needs a new sign-in");
             credentials::sign_out(&mut *tx, id, "signed_out").await?;
             tx.commit().await.map_err(StoreError::from)?;
             forget_org(state, org.uuid()).await;
-            Err(ResolveError::SignedOut { product })
+            Err(ResolveError::SignedOut { product: r.product })
         }
         Err(e) => {
-            tracing::warn!(error = %e, credential = %resolved.id, "cannot renew an account's access token");
+            tracing::warn!(error = %e, credential = %r.stale.id, "cannot renew an account's access token");
             drop(tx);
             Ok(())
         }
@@ -284,6 +326,56 @@ mod tests {
     use time::macros::datetime;
 
     use super::*;
+
+    fn row(expires_at: Option<OffsetDateTime>, auth_error: Option<&str>) -> SealedRow {
+        SealedRow {
+            id: Uuid::nil(),
+            ciphertext: Vec::new(),
+            nonce: Vec::new(),
+            wrapped_key: Vec::new(),
+            key_id: "k1".into(),
+            revision: 1,
+            auth_method: "chatgpt".into(),
+            expires_at,
+            auth_error: auth_error.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn only_a_row_that_changed_since_it_was_cached_is_forgotten() {
+        let at = datetime!(2026-10-23 13:00 UTC);
+        let cached = Some(Account {
+            expires_at: at,
+            earliest_refresh_at: None,
+            signed_out: false,
+        });
+        assert!(!outdated(cached, &row(Some(at), None)));
+        assert!(outdated(
+            cached,
+            &row(Some(at + time::Duration::hours(1)), None)
+        ));
+        assert!(outdated(cached, &row(Some(at), Some("signed_out"))));
+        assert!(outdated(None, &row(Some(at), None)));
+    }
+
+    #[test]
+    fn a_renewal_another_request_finished_is_not_repeated() {
+        let at = datetime!(2026-10-23 13:00 UTC);
+        let account = |expires_at, signed_out| {
+            Some(Account {
+                expires_at,
+                earliest_refresh_at: None,
+                signed_out,
+            })
+        };
+        assert!(current(account(at + time::Duration::hours(1), false), at));
+        assert!(
+            current(account(at, true), at),
+            "a signed-out account needs a sign-in, not a renewal"
+        );
+        assert!(!current(account(at, false), at));
+        assert!(!current(None, at));
+    }
 
     #[test]
     fn an_account_renews_in_its_last_five_minutes_and_not_before_the_provider_allows() {

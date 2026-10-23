@@ -1231,7 +1231,6 @@ fn resolving(
     })
 }
 
-
 #[tokio::test]
 async fn an_account_renews_once_however_many_instances_need_it() {
     let s = TestServices::start().await;
@@ -1392,6 +1391,54 @@ async fn renewal_waits_for_openai_and_outlasts_its_outages() {
     oauth.set_fault(Fault::None);
     let back = secret_of(&app, &owner, &project).await.unwrap();
     assert_ne!(back, renewed);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_renewal_is_kept_when_the_request_that_started_it_goes_away() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let project = default_project(&app, &owner).await;
+    let (org, project_id) = ids(&owner, &project);
+    let before = common::account_tokens(&app, &owner, &id).await;
+
+    app.clock.advance(time::Duration::minutes(56));
+    let mut held = oauth.hold_next_refresh();
+    let request = resolving(&app, org, project_id);
+    held.reached().await;
+    request.abort();
+    assert!(request.await.unwrap_err().is_cancelled());
+    held.release();
+    common::eventually("the rotated tokens are stored", || async {
+        common::account_tokens(&app, &owner, &id)
+            .await
+            .refresh_token
+            != before.refresh_token
+    })
+    .await;
+
+    let after = common::account_tokens(&app, &owner, &id).await;
+    assert!(oauth.issued().contains(&after.refresh_token));
+    assert_eq!(
+        secret_of(&app, &owner, &project).await.unwrap(),
+        after.access_token
+    );
+    assert_eq!(
+        oauth.refreshes(),
+        1,
+        "the next request uses the stored renewal"
+    );
+    let view = app
+        .get(
+            &format!("/orgs/{}/credentials/{id}", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(view.body["auth_error"], json!(null));
     s.cleanup().await;
 }
 
