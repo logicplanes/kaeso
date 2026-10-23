@@ -1,6 +1,7 @@
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 import mdx from "@astrojs/mdx";
+import { unified } from "@astrojs/markdown-remark";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath } from "node:url";
 import { localizedHeadingIds } from "./scripts/localized-heading-ids.mjs";
@@ -17,7 +18,10 @@ export default defineConfig({
   trailingSlash: "never",
   build: { format: "file" },
   integrations: [react(), mdx(), folderIndexes(), sitemap(), contentSecurityPolicy()],
-  markdown: { syntaxHighlight: false, remarkPlugins: [refuseRawMarkup], rehypePlugins: [localizedHeadingIds] },
+  markdown: {
+    syntaxHighlight: false,
+    processor: unified({ remarkPlugins: [refuseRawMarkup], rehypePlugins: [localizedHeadingIds] }),
+  },
   devToolbar: { enabled: false },
   prefetch: { prefetchAll: true, defaultStrategy: "hover" },
   vite: {
