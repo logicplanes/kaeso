@@ -56,6 +56,7 @@ export function ProviderKeyDialog({
   const [makeDefault, setMakeDefault] = useState(false);
   const [method, setMethod] = useState<Method>(replace && replace.auth_method !== "api_key" ? "account" : "api_key");
   const [attempt, setAttempt] = useState<AccountAttempt | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [callback, setCallback] = useState("");
   const chosen = provider ?? "";
   const label = provider ? providers.name(provider) : "";
@@ -77,6 +78,7 @@ export function ProviderKeyDialog({
     onSuccess: (started, tab) => {
       setAttempt(started);
       setCallback("");
+      setBlocked(!tab);
       if (tab) tab.location.href = started.authorize_url;
     },
     onError: (_error, tab) => tab?.close(),
@@ -203,9 +205,11 @@ export function ProviderKeyDialog({
         </Button>
         {attempt && (
           <>
-            <Link href={attempt.authorize_url} external>
-              {t("kaeso.providerKey.openSignIn", "Open the {product} sign-in page", { product })}
-            </Link>
+            {blocked && (
+              <Link href={attempt.authorize_url} external>
+                {t("kaeso.providerKey.openSignIn", "Open the {product} sign-in page", { product })}
+              </Link>
+            )}
             <Input
               className="w-full"
               label={t("kaeso.providerKey.callback", "Address of the page")}

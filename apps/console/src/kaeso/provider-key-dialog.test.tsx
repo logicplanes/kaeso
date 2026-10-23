@@ -324,7 +324,7 @@ describe("ProviderKeyDialog", () => {
     expect(opened).toHaveBeenCalledWith("about:blank", "_blank");
     expect(tab.opener).toBeNull();
     expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([{ provider: "openai", name: "Ada's plan", make_default: false }]);
-    expect(within(dialog).getByRole("link", { name: /Open the ChatGPT sign-in page/ })).toHaveAttribute("href", AUTHORIZE);
+    expect(within(dialog).queryByRole("link", { name: /Open the ChatGPT sign-in page/ })).not.toBeInTheDocument();
     const pasted = within(dialog).getByRole("textbox", { name: "Address of the page" });
     expect(pasted).toHaveAccessibleDescription("After you approve, the page can't load. That's expected. Paste its address here.");
     await hoverReason(user, add(), "Paste the address of the page that didn't load");

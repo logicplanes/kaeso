@@ -203,7 +203,9 @@ export function OrgProvidersPage({ org }: { org: string }) {
           return (
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
-                <Text truncate>{r.key.name}</Text>
+                <Text truncate className={r.key.account ? "sm:max-w-1/2 sm:shrink-0" : undefined}>
+                  {r.key.name}
+                </Text>
                 {r.key.account ? (
                   <>
                     <Text variant="small" tone="secondary" className="hidden sm:inline" truncate>
