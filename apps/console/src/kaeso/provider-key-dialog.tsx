@@ -256,7 +256,10 @@ export function ProviderKeyDialog({
             <RadioCards
               aria-label={t("kaeso.providerKey.default", "Default")}
               value={makeDefault ? "yes" : "no"}
-              onValueChange={(v) => setMakeDefault(v === "yes")}
+              onValueChange={(v) => {
+                setMakeDefault(v === "yes");
+                setAttempt(null);
+              }}
             >
               <Radio
                 value="no"

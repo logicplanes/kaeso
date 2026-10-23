@@ -368,6 +368,38 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("starts the sign-in over when the default choice changes after it began", async () => {
+    newTab();
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, plan);
+    const { user, dialog } = await open({ keys: [credential()] });
+
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Make it the OpenAI default?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    expect(await within(dialog).findByRole("textbox", { name: "Address of the page" })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await user.click(within(dialog).getByRole("radio", { name: /Make this key the default/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Sign in with your ChatGPT account" })).toBeVisible();
+    expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Continue with ChatGPT first");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(within(dialog).getByRole("button", { name: "Add account" }));
+
+    expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([
+      { provider: "openai", name: "Plan", make_default: false },
+      { provider: "openai", name: "Plan", make_default: true },
+    ]);
+  });
+
   it("goes back to an API key when another provider is chosen", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "OpenAI");
