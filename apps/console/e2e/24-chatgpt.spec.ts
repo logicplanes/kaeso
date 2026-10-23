@@ -33,9 +33,8 @@ test("a ChatGPT account becomes an OpenAI key by pasting the address the browser
 
   const opened = page.waitForEvent("popup");
   await add.getByRole("button", { name: "Continue with ChatGPT" }).click();
-  const tab = await opened;
+  await opened;
   await expect.poll(() => callback).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/auth\/callback\?code=/);
-  await tab.close();
   const pasted = add.getByRole("textbox", { name: "Address of the page" });
   await expect(add.getByText("After you approve, the page can't load. That's expected. Paste its address here.")).toBeVisible();
   await pasted.fill(callback);
