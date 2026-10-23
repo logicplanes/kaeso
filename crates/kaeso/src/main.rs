@@ -6,6 +6,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use kaeso_server::config::{self, Config, ProcessSource, Source};
+use kaeso_server::services::admin_sso::OperatorAdminSso;
 use kaeso_server::services::sso::OperatorVerify;
 use kaeso_server::services::users::{OperatorReset, OperatorSignIn};
 use secrecy::ExposeSecret;
@@ -31,6 +32,8 @@ enum Command {
     User(UserCommand),
     #[command(subcommand, about = "Operator actions on single sign-on")]
     Sso(SsoCommand),
+    #[command(subcommand, about = "Operator actions on the instance settings")]
+    Instance(InstanceCommand),
     #[command(
         hide = true,
         about = "Exit 0 when the local gateway answers `GET /healthz` (for container health checks)"
@@ -74,6 +77,18 @@ enum SsoCommand {
         domain: String,
         #[arg(long, help = "The organization, when several list the domain")]
         org: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+enum InstanceCommand {
+    #[command(
+        name = "admin-sso",
+        about = "Choose the organization whose single sign-on may administer the instance, or none, for when no instance admin can change it in the console"
+    )]
+    AdminSso {
+        #[arg(help = "The organization's id, such as org_…, or none")]
+        org: String,
     },
 }
 
@@ -212,6 +227,26 @@ async fn run(command: Command) -> Result<()> {
                 OperatorVerify::Verified(org) => say!(
                     "{domain} is verified for {org}: its addresses sign in through the organization's identity provider."
                 ),
+            }
+        }
+        Command::Instance(InstanceCommand::AdminSso { org }) => {
+            let state = kaeso_server::serve::prepare(config).await?;
+            match kaeso_server::services::admin_sso::operator_set(&state, &org).await? {
+                OperatorAdminSso::NotAnOrg => {
+                    anyhow::bail!(
+                        "{org} is not an organization id; give one such as org_…, or none"
+                    )
+                }
+                OperatorAdminSso::UnknownOrg => anyhow::bail!("no organization has the id {org}"),
+                OperatorAdminSso::NotConnected => {
+                    anyhow::bail!("{org} has no SSO connection; connect one first")
+                }
+                OperatorAdminSso::Chosen { org, name } => say!(
+                    "Instance admins may now sign in through the single sign-on of {name} ({org})."
+                ),
+                OperatorAdminSso::Cleared => {
+                    say!("Instance admins may no longer sign in through single sign-on.")
+                }
             }
         }
         Command::MasterKey(MasterKeyCommand::Rewrap) => {

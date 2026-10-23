@@ -2676,6 +2676,81 @@ async fn instance_admins_administer_through_single_sign_on_only_from_the_chosen_
     s.cleanup().await;
 }
 
+#[tokio::test]
+async fn an_operator_chooses_the_instance_admins_sso_org_from_the_server() {
+    use kaeso_server::services::admin_sso::{OperatorAdminSso, operator_set};
+
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "example.com", None, false).await;
+    let elsewhere = another_org(&app, "Elsewhere").await;
+    let set = |org: String| {
+        let app = &app;
+        async move { operator_set(&app.state, &org).await.unwrap() }
+    };
+    let audited = || async {
+        app.get(
+            "/instance/audit-log?action=instance.admin_sso_update",
+            &owner.cookie,
+        )
+        .await
+        .body["data"]
+            .as_array()
+            .unwrap()
+            .clone()
+    };
+
+    assert_eq!(set("acme".into()).await, OperatorAdminSso::NotAnOrg);
+    assert_eq!(
+        set(OrgId::new().to_string()).await,
+        OperatorAdminSso::UnknownOrg
+    );
+    assert_eq!(
+        set(elsewhere.clone()).await,
+        OperatorAdminSso::NotConnected,
+        "the same rule as the console's form"
+    );
+    assert!(audited().await.is_empty(), "a refused change isn't audited");
+
+    assert_eq!(
+        set(owner.org_id.clone()).await,
+        OperatorAdminSso::Chosen {
+            org: owner.org_id.parse().unwrap(),
+            name: "Acme".into()
+        }
+    );
+    let settings = app.get("/instance/settings", &owner.cookie).await;
+    assert_eq!(
+        settings.body["admin_sso"],
+        json!({ "org": owner.org_id, "name": "Acme", "connected": true })
+    );
+    let events = audited().await;
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["actor"]["kind"], "system");
+    assert_eq!(events[0]["before"], json!({ "org": null, "name": null }));
+    assert_eq!(
+        events[0]["after"],
+        json!({ "org": owner.org_id, "name": "Acme", "by": "operator" })
+    );
+
+    assert_eq!(set("none".into()).await, OperatorAdminSso::Cleared);
+    let settings = app.get("/instance/settings", &owner.cookie).await;
+    assert_eq!(settings.body["admin_sso"], json!(null));
+    let events = audited().await;
+    assert_eq!(events.len(), 2);
+    assert_eq!(
+        events[0]["before"],
+        json!({ "org": owner.org_id, "name": "Acme" })
+    );
+    assert_eq!(
+        events[0]["after"],
+        json!({ "org": null, "name": null, "by": "operator" })
+    );
+    s.cleanup().await;
+}
+
 const MANAGED_ADDRESS: &str =
     "Your organization manages this address; change it at its identity provider.";
 

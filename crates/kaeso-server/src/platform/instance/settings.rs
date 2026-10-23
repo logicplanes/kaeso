@@ -3,7 +3,6 @@ use axum::extract::State;
 use kaeso_core::accounts::{AccountCreation, DomainRule, MAX_DOMAINS, OrgCreation};
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::instance::{self, AdminSso, InstanceSettings};
-use kaeso_store::pg::{oidc, orgs};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -11,7 +10,7 @@ use crate::config::MailTransport;
 use crate::platform::access::{Ctx, from_sso};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
-use crate::services::accounts;
+use crate::services::{accounts, admin_sso};
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -176,29 +175,18 @@ pub async fn set_admin_sso(
     }
     ctx.require_recent_sign_in()?;
     let mut tx = state.pg.begin().await?;
-    let settings = instance::get_for_update(&mut tx).await?;
-    let before = instance::admin_sso(&mut *tx).await?;
-    if let Some(org) = req.org {
-        if orgs::get(&mut *tx, org.uuid()).await?.is_none() {
-            return Err(ApiError::not_found("organization"));
-        }
-        if oidc::get(&mut *tx, org.uuid()).await?.is_none() {
-            return Err(ApiError::invalid(
-                "org",
-                "This organization has no SSO connection; connect one first.",
-            ));
-        }
-    }
-    instance::set_admin_sso_org(&mut *tx, req.org.map(|o| o.uuid())).await?;
-    let after = instance::admin_sso(&mut *tx).await?;
-    let named = |a: &Option<AdminSso>| serde_json::json!({ "org": a.as_ref().map(|a| OrgId::from_uuid(a.org_id).to_string()), "name": a.as_ref().map(|a| a.org_name.clone()) });
+    let changed = admin_sso::change(&mut tx, req.org).await?;
     ctx.audit(None, "instance.admin_sso_update")
-        .before(named(&before))
-        .after(named(&after))
+        .before(admin_sso::audited(changed.before.as_ref()))
+        .after(admin_sso::audited(changed.after.as_ref()))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    Ok(Json(view(&state, &settings, after.as_ref())))
+    Ok(Json(view(
+        &state,
+        &changed.settings,
+        changed.after.as_ref(),
+    )))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

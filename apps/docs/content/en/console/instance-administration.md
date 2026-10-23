@@ -47,7 +47,7 @@ Under **General**:
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.
 
-Changing account creation, organization creation or the allowed domains needs a recent sign-in. Changing single sign-on for instance admins needs one with a password or a sign-in link. The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
+Changing account creation, organization creation or the allowed domains needs a recent sign-in. Changing single sign-on for instance admins needs one with a password or a sign-in link; without one, an operator changes it on the server with `kaeso instance admin-sso` ([run Kaeso's commands](../self-hosting/installation.md#run-kaesos-commands)). The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
 
 Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
 

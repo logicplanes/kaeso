@@ -47,7 +47,7 @@ Unter **Allgemein**:
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf.
 
-Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Single Sign-on für Instanz-Admins zu ändern erfordert eine mit Passwort oder Anmeldelink. Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
+Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Single Sign-on für Instanz-Admins zu ändern erfordert eine mit Passwort oder Anmeldelink; ohne sie ändert ein Operator es auf dem Server mit `kaeso instance admin-sso` ([Kaeso-Befehle ausführen](../self-hosting/installation.md#kaeso-befehle-ausführen)). Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
 
 Passwörter, Anmeldelinks und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt, ob Passwörter und Anmeldelinks eingeschaltet sind, und **System** die E-Mail, beide nur zur Ansicht. Single Sign-on richtet jede Organisation auf ihrer Seite **Sicherheit** ein. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 
