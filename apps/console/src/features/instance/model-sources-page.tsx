@@ -8,6 +8,7 @@ import { modelCatalogues } from "~/api/queries/invalidation";
 import { modelsDevQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
+import { usePhone } from "~/shell/use-phone";
 import { InstancePage } from "./instance-page";
 import { t } from "~/i18n";
 
@@ -31,7 +32,11 @@ function Stacked({ children, detail }: { children: ReactNode; detail: ReactNode 
   );
 }
 
+const DATA_WIDTH = 176;
+const PHONE_DATA_WIDTH = 152;
+
 export function InstanceModelSourcesPage() {
+  const phone = usePhone();
   const status = useQuery(modelsDevQuery);
   const sync = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/instance/models-dev/sync")),
@@ -45,7 +50,7 @@ export function InstanceModelSourcesPage() {
 
   const columns = [
     col.custom(
-      { id: "source", header: t("instance.source", "Source"), size: 232, priority: 1, grow: true },
+      { id: "source", header: t("instance.source", "Source"), size: 208, priority: 1, grow: true },
       (r: Source) => r.name,
       (name: string, r) => (
         <Stacked detail={r.status.url}>
@@ -59,7 +64,7 @@ export function InstanceModelSourcesPage() {
       ),
     ),
     col.custom(
-      { id: "data", header: t("instance.dataInUse", "Data in use"), size: 152, priority: 1 },
+      { id: "data", header: t("instance.dataInUse", "Data in use"), size: phone ? PHONE_DATA_WIDTH : DATA_WIDTH, priority: 1 },
       (r: Source) => r.status,
       (s: ModelsDevStatus) => (
         <Stacked

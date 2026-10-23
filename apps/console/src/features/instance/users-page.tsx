@@ -35,6 +35,7 @@ import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { userStateLabel } from "~/format/labels";
 import { usePageCreateAction } from "~/shell/create-action";
+import { usePhone } from "~/shell/use-phone";
 import { toast } from "~/shell/toast";
 import { InstancePage } from "./instance-page";
 import { locale, t, type Locale } from "~/i18n";
@@ -60,6 +61,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   const rows = useMemo(() => users.data?.pages.flatMap((p) => p.data) ?? [], [users.data]);
 
   const lang = locale();
+  const phone = usePhone();
   const columns = useMemo(
     () => [
       col.custom(
@@ -69,7 +71,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
           <span className="flex min-w-0 items-center gap-8">
             <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
             <span className="truncate">{u.name}</span>
-            {u.is_instance_admin && <Badge>{t("instance.instanceAdmin", "Instance admin")}</Badge>}
+            {u.is_instance_admin && <Badge>{phone ? t("instance.admin", "Admin") : t("instance.instanceAdmin", "Instance admin")}</Badge>}
           </span>
         ),
       ),
@@ -86,7 +88,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
       ),
     ],
-    [lang],
+    [lang, phone],
   );
 
   return (

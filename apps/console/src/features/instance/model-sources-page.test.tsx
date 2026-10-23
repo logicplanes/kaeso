@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { modelsDev } from "~/test/fixtures/instance-account";
@@ -30,8 +30,29 @@ describe("instance model sources page", () => {
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("1 model")).toBeInTheDocument();
     expect(screen.getByText(/^Snapshot, /)).toBeInTheDocument();
+    expect(screen.getByText(/^Snapshot, /).closest<HTMLElement>("[role=row]")?.style.gridTemplateColumns).toMatch(/^minmax\(208px, 1fr\) 176px /);
     expect(screen.getByText("Every 5 min")).toBeInTheDocument();
     await hoverReason(user, screen.getByText("Failed"), "connection refused");
+  });
+
+  it("keeps the source's name and badge whole on a phone", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    try {
+      signedIn();
+      on("GET", "instance/models-dev", modelsDev({ source: "embedded" }));
+      await renderApp(PATH);
+      const row = (await screen.findByText(/^Snapshot, /)).closest<HTMLElement>("[role=row]");
+      expect(row?.style.gridTemplateColumns).toMatch(/^minmax\(208px, 1fr\) 152px /);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("says when no sync ran yet and automatic sync is off", async () => {

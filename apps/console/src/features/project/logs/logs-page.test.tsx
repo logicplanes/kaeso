@@ -509,7 +509,7 @@ describe("LogsPage", () => {
     expect(within(options).getByRole("combobox", { name: "Density" })).toHaveTextContent("Compact");
   });
 
-  it("shows the provider's mark alone on a tablet and says which chosen columns don't fit", async () => {
+  it("shows the provider's mark beside the model on a tablet and says which chosen columns don't fit", async () => {
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
       width: 700,
       height: 0,
@@ -527,7 +527,11 @@ describe("LogsPage", () => {
     const { user } = await renderApp(projectPath("logs"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    expect(within(row).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    const model = within(row)
+      .getAllByRole("cell")
+      .find((c) => c.textContent?.includes("gpt-5.4-mini")) as HTMLElement;
+    expect(within(model).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    expect(within(requestsTable()).queryByRole("columnheader", { name: /Provider/ })).not.toBeInTheDocument();
     expect(within(requestsTable()).queryByRole("columnheader", { name: /Endpoint/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Display options" }));
     const options = await screen.findByRole("dialog", { name: "Display options" });
