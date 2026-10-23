@@ -769,8 +769,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
-    let sent_req =
-        (chatgpt.is_none() && eff.provider.count_tokens == Some(plan.dialect)).then_some(req);
+    let sent_req = counted_at_provider(account, eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
     let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
@@ -1109,8 +1108,31 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
 
+// An account's token is valid only at its own API host; the input count goes to the
+// provider's configured base URL, so no account request may reach it.
+fn counted_at_provider(
+    account: Option<kaeso_core::provider::AccountSignIn>,
+    provider: &kaeso_core::provider::Provider,
+    dialect: DialectId,
+) -> bool {
+    account.is_none() && provider.count_tokens == Some(dialect)
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn no_account_request_is_counted_at_the_providers_base_url() {
+        let openai = kaeso_core::provider::provider("openai").unwrap();
+        let grok = kaeso_core::provider::provider("xai")
+            .and_then(|p| p.account)
+            .unwrap();
+        let counted =
+            |account| super::counted_at_provider(account, openai, DialectId::OpenAiResponses);
+        assert!(counted(None));
+        assert!(!counted(Some(grok)));
+        assert!(!counted(openai.account));
+    }
+
     use super::*;
 
     #[test]
