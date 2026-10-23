@@ -726,7 +726,7 @@ const releasedWith = async (output) => {
   return release(changelog(), "1.1.0", "2026-10-02", collected.pulls, lines);
 };
 
-test("the GitHub release shows the tagline, the highlights, breaking changes, the people and links to the full changelog", async () => {
+test("the GitHub release shows the tagline, the highlights, breaking changes, every change by section, the people and links to the full changelog", async () => {
   const output = valid();
   output.breaking.push({ text: "Streams need `stream: true` now, which older apps don't send.", prs: [11] });
   output.release.breaking.push({ text: "Send `stream: true` with every stream.", prs: [11] });
@@ -742,13 +742,25 @@ test("the GitHub release shows the tagline, the highlights, breaking changes, th
     "",
     `- Send \`stream: true\` with every stream. [#11](${repo}/pull/11)`,
     "",
+    "### Added",
+    "",
+    `- **Console:** A batch page lists every batch with its status, such as \`running\`. [#12](${repo}/pull/12)`,
+    "",
+    "### Changed",
+    "",
+    `- Dependencies are updated. [#14](${repo}/pull/14)`,
+    "",
+    "### Fixed",
+    "",
+    `- **Gateway:** Streams behind proxies stay open while the model thinks. [#11](${repo}/pull/11)`,
+    "",
     "**Contributors:** @ada, @grace (first contribution), @linus",
     "",
     `[Full changelog](${DOCS_URL}/changelog#v1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
   ]);
 });
 
-test("without a short version, the GitHub release lists the changelog's first lines, each cut to its first sentence", () => {
+test("without a short version, the GitHub release lists breaking changes cut to their first sentence and every change in full", () => {
   const entries = Array.from({ length: 7 }, (_, i) => `- Line ${i + 1} sets \`kaeso.example.com\` up. It says more. ([#${i + 20}](${repo}/pull/${i + 20}))`);
   const text = release(
     changelog([`- **Breaking:** Keys rotate. Read the guide first. ([#19](${repo}/pull/19))`, "", "### Added", "", ...entries].join("\n")),
@@ -756,15 +768,13 @@ test("without a short version, the GitHub release lists the changelog's first li
     "2026-10-02",
   );
   assert.deepEqual(body({ changelog: text, version: "1.1.0" }), [
-    "### Highlights",
-    "",
-    ...Array.from({ length: 5 }, (_, i) => `- Line ${i + 1} sets \`kaeso.example.com\` up. [#${i + 20}](${repo}/pull/${i + 20})`),
-    "",
-    "And 2 more in the full changelog.",
-    "",
     "### Breaking",
     "",
     `- Keys rotate. [#19](${repo}/pull/19)`,
+    "",
+    "### Added",
+    "",
+    ...Array.from({ length: 7 }, (_, i) => `- Line ${i + 1} sets \`kaeso.example.com\` up. It says more. [#${i + 20}](${repo}/pull/${i + 20})`),
     "",
     `[Full changelog](${DOCS_URL}/changelog#v1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
   ]);
@@ -775,7 +785,7 @@ test("a short version that isn't plain text falls back to the changelog's lines 
   const notices = [];
   const brief = { ...valid().release, tagline: "Read <b>this</b>." };
   const lines = body({ changelog: text, version: "1.1.0", brief, notify: (kind, message) => notices.push([kind, message]) });
-  assert.equal(lines[0], "### Highlights");
+  assert.equal(lines[0], "### Added");
   assert.doesNotMatch(lines.join("\n"), /<b>/);
   assert.equal(notices[0][0], "warning");
   assert.match(notices[0][1], /the tagline has markup/);

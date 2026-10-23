@@ -44,7 +44,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 A stable release after pre-releases of its version folds their sections into one, so its notes cover everything since the last stable release.
 
-The GitHub release shows a short version of the section. It has one sentence, up to five highlights, the breaking changes, the contributors, and links to the full changelog and the compare view. The model writes it with the section. Without the model, the release lists the section's first five lines, each cut to its first sentence. The preview above prints the GitHub release after the notes.
+The GitHub release opens with one sentence, up to five highlights and the breaking changes, then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**, one line each with its topic and pull requests. The contributors and links to the full changelog and the compare view close it. The model writes the opening with the section; without the model, the release has no highlights, and its breaking changes are cut to their first sentence. The preview above prints the GitHub release after the notes.
 
 ### What the notes may say
 

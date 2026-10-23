@@ -44,7 +44,7 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 Ein stabiles Release nach Vorabversionen seiner Version fasst deren Abschnitte zu einem zusammen, sodass seine Notizen alles seit dem letzten stabilen Release abdecken.
 
-Das GitHub-Release zeigt eine Kurzfassung des Abschnitts. Sie hat einen Satz, bis zu fünf Highlights, die Breaking Changes, die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich. Das Modell schreibt sie zusammen mit dem Abschnitt. Ohne Modell listet das Release die ersten fünf Zeilen des Abschnitts, jede auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
+Das GitHub-Release beginnt mit einem Satz, bis zu fünf Highlights und den Breaking Changes und listet danach jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**, jeden in einer Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich. Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das Release keine Highlights, und seine Breaking Changes sind auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
 
 ### Was die Notizen enthalten dürfen
 
