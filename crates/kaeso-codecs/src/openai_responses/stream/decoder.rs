@@ -75,6 +75,7 @@ pub(crate) struct Decoder {
     streamed: std::collections::HashSet<u32>,
     with_parts: std::collections::HashSet<i64>,
     held_error: Option<(KppError, Frame)>,
+    called: bool,
     inert: bool,
 }
 
@@ -94,6 +95,7 @@ impl Decoder {
             streamed: std::collections::HashSet::new(),
             with_parts: std::collections::HashSet::new(),
             held_error: None,
+            called: false,
             inert: false,
         }
     }
@@ -411,6 +413,7 @@ impl Decoder {
                     ),
                 };
                 let index = self.next_index();
+                self.called |= header.1 == ItemKind::Call;
                 self.items.insert(oi, (index, header.1));
                 let mut start = BlockStart::new(index, header.0);
                 start.extras = Extras::new(self.origin.clone());
@@ -607,11 +610,11 @@ impl Decoder {
                 else {
                     return self.broken(f);
                 };
-                let has_calls = w
-                    .output
-                    .iter()
-                    .flatten()
-                    .any(|i| type_tag(i).ok().flatten().as_deref() == Some("function_call"));
+                let has_calls = self.called
+                    || w.output
+                        .iter()
+                        .flatten()
+                        .any(|i| type_tag(i).ok().flatten().as_deref() == Some("function_call"));
                 let stop = stop_for(
                     w.status.as_deref(),
                     w.incomplete_details

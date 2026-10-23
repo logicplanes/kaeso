@@ -231,6 +231,61 @@ async fn every_request_goes_to_the_responses_api_as_a_stream_without_refused_fie
 }
 
 #[tokio::test]
+async fn a_tool_call_from_the_plan_stops_for_tool_use_in_every_format() {
+    let p = plan().await;
+    p.oauth.reply_with(Reply::ToolCall);
+    let r = p
+        .call(
+            "/v1/chat/completions",
+            false,
+            chat("openai/gpt-5", "Weather in Paris?"),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let choice = &r.json()["choices"][0];
+    assert_eq!(choice["finish_reason"], "tool_calls", "{choice}");
+    assert_eq!(
+        choice["message"]["tool_calls"][0]["function"],
+        json!({ "name": "get_weather", "arguments": "{\"city\":\"Paris\"}" })
+    );
+
+    let mut streamed = chat("openai/gpt-5", "Weather in Paris?");
+    streamed["stream"] = json!(true);
+    let r = p.call("/v1/chat/completions", false, streamed).await;
+    assert_eq!(r.status, StatusCode::OK);
+    let events = sse(&r.text());
+    let finished: Vec<&str> = events
+        .iter()
+        .filter_map(|e| e["choices"][0]["finish_reason"].as_str())
+        .collect();
+    assert_eq!(finished, ["tool_calls"], "{events:?}");
+
+    let r = p
+        .call(
+            "/v1/messages",
+            true,
+            messages("openai/gpt-5", "Weather in Paris?"),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["stop_reason"], "tool_use", "{}", r.text());
+    assert_eq!(r.json()["content"][0]["type"], "tool_use");
+    assert_eq!(r.json()["content"][0]["input"], json!({ "city": "Paris" }));
+
+    let mut streamed = messages("openai/gpt-5", "Weather in Paris?");
+    streamed["stream"] = json!(true);
+    let r = p.call("/v1/messages", true, streamed).await;
+    assert_eq!(r.status, StatusCode::OK);
+    let events = sse(&r.text());
+    let stopped: Vec<&str> = events
+        .iter()
+        .filter_map(|e| e["delta"]["stop_reason"].as_str())
+        .collect();
+    assert_eq!(stopped, ["tool_use"], "{events:?}");
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn explicit_defaults_and_later_system_items_never_reach_the_plan_route() {
     let p = plan().await;
     let r = p
