@@ -66,7 +66,7 @@ secrecy = { version = "0.10", features = ["serde"] }
 totp-rs = { version = "6", default-features = false, features = ["std", "otpauth"] }
 openidconnect = { version = "4", default-features = false, features = ["timing-resistant-secret-traits"] }
 rsa = { version = "0.9", features = ["pem"] }
-p256 = { version = "0.13", default-features = false, features = ["ecdsa", "std"] }
+p256 = { version = "0.14", default-features = false, features = ["ecdsa", "getrandom", "std"] }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 maud = "0.27"

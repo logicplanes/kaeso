@@ -13,6 +13,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use p256::ecdsa::signature::Signer;
 use p256::ecdsa::{Signature, SigningKey};
+use p256::elliptic_curve::Generate;
 use serde_json::{Value, json};
 
 use crate::mock_provider::{Received, kpp_fixtures};
@@ -107,7 +108,7 @@ impl MockGrok {
         let addr: SocketAddr = listener.local_addr().expect("addr");
         let inner = Arc::new(Inner {
             issuer: format!("http://{addr}"),
-            key: SigningKey::random(&mut rsa::rand_core::OsRng),
+            key: SigningKey::generate(),
             devices: Mutex::default(),
             sessions: Mutex::default(),
             asked: Mutex::default(),
@@ -281,7 +282,7 @@ fn not_a_form() -> Response {
 }
 
 async fn jwks(State(inner): State<Arc<Inner>>) -> Json<Value> {
-    let point = inner.key.verifying_key().to_encoded_point(false);
+    let point = inner.key.verifying_key().to_sec1_point(false);
     let coordinate = |c: Option<&p256::FieldBytes>| b64(&c.map(|c| c.to_vec()).unwrap_or_default());
     Json(json!({ "keys": [{
         "kty": "EC",
