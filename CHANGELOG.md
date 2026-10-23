@@ -4,6 +4,29 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-23
+
+Kaeso 0.4.0 lets organizations add ChatGPT accounts as OpenAI provider keys, and Grok accounts as an experimental SpaceX provider key, so projects can draw on those plans instead of API accounts. Nothing in this release is breaking, so existing provider keys and integrations need no change. The gateway's ctutils dependency moves to 0.4.4 to fix a timing advisory in encryption and password hashing, so upgrading is recommended for every install.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.3.9...v0.4.0](https://github.com/logicplanes/kaeso/compare/v0.3.9...v0.4.0)
+
+### Added
+
+- An organization can add a ChatGPT account as an OpenAI provider key, so a project's requests use the account's ChatGPT plan instead of an OpenAI API account. Sign-in ends with pasting the loopback address the browser lands on, and the account's requests go to OpenAI's plan endpoint, which refuses embeddings and token counts. Its tokens renew before they expire, and an account whose sign-in is revoked shows as signed out until an admin signs it in again. ([#365](https://github.com/logicplanes/kaeso/pull/365), [#366](https://github.com/logicplanes/kaeso/pull/366), [#367](https://github.com/logicplanes/kaeso/pull/367))
+- Organizations can add a Grok account as an experimental SpaceX provider key, so a project's requests use the account's Grok plan where it includes API access. The key is marked experimental in the console, the Platform API and the documentation, because it relies on xAI's device sign-in rather than a documented contract for third-party apps. A plan without API access is reported as such, and requests are not sent to xAI. ([#369](https://github.com/logicplanes/kaeso/pull/369))
+
+### Changed
+
+#### Documentation
+
+- The repository runs the OpenSSF Scorecard weekly, after pushes to `dev` and on demand, and the README shows its score. The rsa timing advisory it reports, which no release of that crate fixes and which cannot affect Kaeso, is ignored in `osv-scanner.toml` with the same reason as in `deny.toml`, and a test keeps the two files in step. ([#363](https://github.com/logicplanes/kaeso/pull/363), [#364](https://github.com/logicplanes/kaeso/pull/364))
+
+### Security
+
+- The gateway now uses ctutils 0.4.4, which fixes RUSTSEC-2026-0385: a dependency that generated masks and compared values in non-constant time, used by envelope encryption, password hashing and signed tokens. Installs need no configuration change. ([#370](https://github.com/logicplanes/kaeso/pull/370))
+
 ## [0.3.9] - 2026-10-23
 
 Kaeso 0.3.9 changes the sign-in-again dialog so that single sign-on is offered only when no password or sign-in link can confirm a recent sign-in, and providers that cannot confirm one are no longer offered. Integrations that read the sign-in-again, security or SSO fields, or handle the sso_error codes, must be updated because `sends_auth_time` is renamed and two codes are replaced. Operators gain the `kaeso instance admin-sso` command for choosing the organization whose single sign-on may administer an instance.
@@ -680,7 +703,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.9...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.0
 [0.3.9]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.9
 [0.3.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.8
 [0.3.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.7
