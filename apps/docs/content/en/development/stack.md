@@ -31,6 +31,7 @@ The console's development server passes `/platform` and `/v1` on to the gateway,
 | `provider` | A mock OpenAI and Anthropic API, so you need no provider key | Inside the stack only |
 | `idp` | A mock OpenID Connect provider for single sign-on | `http://idp.localhost:18091` |
 | `releases` | Mock Kaeso releases and a mock updater for **Settings** › **Instance** › **Updates** | `http://127.0.0.1:18092` |
+| `chatgpt` | A mock of ChatGPT sign-in at `auth.openai.com` inside the stack, with a test certificate the gateway trusts | `http://127.0.0.1:18093` |
 | `master-key` | Writes the gateway's master key into a volume before the gateway starts | |
 
 `pnpm stack:up` prints the setup link while the install has no users. It reads the link from `kaeso setup-link` in the gateway's container.
@@ -71,7 +72,7 @@ The next `pnpm stack:up` starts empty.
 
 ## Change ports and images
 
-Set these variables before `pnpm stack:up` to move a service to another port: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT`, `KAESO_IDP_PORT` and `KAESO_RELEASES_PORT`. `KAESO_PUBLIC_URL` sets the console's address. The defaults are in `apps/console/scripts/stack.mjs`.
+Set these variables before `pnpm stack:up` to move a service to another port: `KAESO_GATEWAY_PORT`, `KAESO_POSTGRES_PORT`, `KAESO_CLICKHOUSE_PORT`, `KAESO_VALKEY_PORT`, `KAESO_MAIL_PORT`, `KAESO_MAIL_SMTP_PORT`, `KAESO_IDP_PORT`, `KAESO_RELEASES_PORT` and `KAESO_CHATGPT_PORT`. `KAESO_PUBLIC_URL` sets the console's address. The defaults are in `apps/console/scripts/stack.mjs`.
 
 To use a gateway image built elsewhere, such as a release, name it. The stack then skips the build:
 
@@ -89,7 +90,7 @@ In the second clone, choose a project name and free ports, then start the consol
 
 ```bash
 export KAESO_STACK_PROJECT=kaeso-two KAESO_PUBLIC_URL=http://localhost:3001
-export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192
+export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192 KAESO_CHATGPT_PORT=18193
 export KAESO_MAIL_PORT=58125 KAESO_MAIL_SMTP_PORT=51125
 export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223 KAESO_VALKEY_PORT=56479
 pnpm dev --port 3001

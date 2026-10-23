@@ -33,5 +33,6 @@ What else to know about some providers. [Provider profiles](../development/kpp/o
 - **DeepSeek.** Gets `developer` messages as `system` messages.
 - **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.
 - **Mistral.** Gets some fields under its own names, such as `seed` as `random_seed`, and refuses others, such as `logit_bias`, and a conversation that ends with an assistant message.
+- **OpenAI.** A provider key can also be a ChatGPT account, whose requests use its ChatGPT plan under OpenAI's rules for it ([sign in with a ChatGPT account](../console/provider-keys.md#sign-in-with-a-chatgpt-account)).
 - **OpenRouter.** Model ids name the model's maker, such as `anthropic/claude-sonnet-4.5`. Call them as `openrouter/anthropic/claude-sonnet-4.5`, so they never reach the maker's own provider ([how a request names a model](../console/models-and-aliases.md#how-a-request-names-a-model)). Kaeso records costs at the catalogue's prices, not at the `usage.cost` OpenRouter reports. OpenRouter lists its models without checking the key, so **Check availability** can't spot a wrong key; the first request with it reports the refused key.
 - **SpaceX.** xAI's API, with models such as Grok.

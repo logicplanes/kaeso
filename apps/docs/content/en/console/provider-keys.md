@@ -25,6 +25,29 @@ Each action on provider keys needs its own right:
 
 Every action except deleting also needs a recent sign-in.
 
+## Sign in with a ChatGPT account
+
+For OpenAI, a provider key can also be a ChatGPT account. Its requests then use the account's ChatGPT plan instead of an OpenAI API account, within the plan's limits.
+
+> [!WARNING]
+> Use your own account only; sharing it breaks OpenAI's terms.
+
+1. On **Providers**, choose **Add provider key**, then **OpenAI**.
+2. Choose **ChatGPT account**. If OpenAI already has a default key, choose whether the account becomes the default.
+3. Give the key a name and choose **Continue with ChatGPT**. ChatGPT opens in a new tab: sign in and approve Kaeso.
+4. The tab then goes to an address that starts with `http://127.0.0.1` and can't load. That's expected. Copy that address from the address bar.
+5. Paste it into **Address of the page** and choose **Add account**.
+
+Finish within ten minutes, as the person who began. Kaeso checks the address, signs the account in with OpenAI and keeps its tokens encrypted like any other key. It renews them by itself before they expire.
+
+A ChatGPT account serves requests under OpenAI's rules for plan usage:
+
+- Every request goes to `https://api.openai.com/v1/responses` as a stream that OpenAI doesn't store, whatever base URL the install sets for OpenAI. Kaeso joins the stream into one reply for apps that ask for one.
+- Kaeso leaves out the fields a plan refuses: `temperature`, `top_p`, the output and tool call limits, `metadata`, `truncation`, user ids and the other [preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+- Embeddings and token counts need an API key; Kaeso refuses them for the account.
+- When the plan's usage limit is reached, apps get a `429` that links to [ChatGPT's usage settings](https://chatgpt.com/settings/usage).
+- **Check availability** offers only the models the account lists for its plan.
+
 ## Choose which key a project uses
 
 Each provider has one default key, which every project without an assigned key uses. The first key you add for a provider becomes its default. To move the default, choose **Make default** in another key's menu.
@@ -33,13 +56,17 @@ To give some projects a different key, choose **Assign to projects** in that key
 
 ## Replace, rename or delete a key
 
-The list shows each key's name, its last four characters, the projects that use it, who added it and when it was last used. A key's menu has these actions:
+The list shows each key's name, its last four characters, the projects that use it, who added it and when it was last used. An account shows its email address and its product, such as **ChatGPT**, instead of the last four characters. A key's menu has these actions:
 
 | Action | What it does |
 | --- | --- |
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider |
+| Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** |
+| Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
 | Rename | Changes the name the console shows |
-| Delete | Removes the key. Its projects use the default again |
+| Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI |
+
+An account shows **Signed out** when OpenAI has ended its session, for example after its owner disconnected Kaeso in ChatGPT. Its requests then fail until someone with **Change provider keys** chooses **Sign in again**.
 
 When you delete the default, the provider's most recently added other key becomes the default. If there is none, requests to that provider fail. The dialog tells you which applies.
 
