@@ -4,6 +4,37 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-10-23
+
+Kaeso 0.3.8 contains no change that operators must act on when they upgrade. It moves the console, gateway and updater images to newer Go, Node and distroless bases, pins newer ClickHouse and Mailpit versions in the Compose files, and updates Rust and JavaScript dependencies. The console's API client no longer relies on the Redocly OpenAPI core package, and toasts in the UI library no longer catch clicks meant for buttons beside them.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.3.7...v0.3.8](https://github.com/logicplanes/kaeso/compare/v0.3.7...v0.3.8)
+
+### Changed
+
+- Upgrades the Rust dependencies, including tokio from 1.53.2 to 1.53.3 and tower-http from 0.6.11 to 0.7.1, and updates clickhouse and aws-lc-rs. ([#351](https://github.com/logicplanes/kaeso/pull/351), [#352](https://github.com/logicplanes/kaeso/pull/352))
+- Upgrades 24 JavaScript packages across the console, UI library, showcase and documentation, among them React and react-dom 19.3.1, TanStack Router, Playwright and Vitest. ([#357](https://github.com/logicplanes/kaeso/pull/357))
+
+#### Console
+
+- The console generates its API client without a Redocly config of its own, so it no longer depends on the Redocly OpenAPI core package. ([#354](https://github.com/logicplanes/kaeso/pull/354))
+
+#### Documentation
+
+- Upgrades mermaid from 11.17.2 to 12.2.0 and regenerates the documentation diagrams as SVG files. ([#355](https://github.com/logicplanes/kaeso/pull/355))
+
+#### Self-hosting
+
+- Moves the console, gateway and updater images to newer Go, Node and distroless base images, and pins newer ClickHouse and Mailpit versions in the Compose files. ([#348](https://github.com/logicplanes/kaeso/pull/348), [#349](https://github.com/logicplanes/kaeso/pull/349), [#350](https://github.com/logicplanes/kaeso/pull/350))
+
+### Fixed
+
+#### UI library
+
+- Toasts no longer catch clicks meant for a button beside or below them. The hover area that keeps an expanded stack open now covers only the gaps between toasts, so a button in a member's sheet always receives its click. ([#358](https://github.com/logicplanes/kaeso/pull/358))
+
 ## [0.3.7] - 2026-10-22
 
 Operators need to act on this release: compose.yaml changed beyond its image versions and must be installed by hand, and a reverse proxy of your own is trusted only when it is named in the trusted proxies setting. Single sign-on now starts only after the email, organization sign-in links are removed, and changing or deleting an SSO connection ends the sessions it signed in. The gateway also stops deeply nested requests from crashing it, keeps one key from holding the whole translation memory budget, and refuses unpriced models under a spend budget.
@@ -625,7 +656,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.7...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.3.8...HEAD
+[0.3.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.8
 [0.3.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.7
 [0.3.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.6
 [0.3.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.5
