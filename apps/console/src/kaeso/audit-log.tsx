@@ -39,6 +39,7 @@ import { usePhone } from "~/shell/use-phone";
 const dateTag = () => (locale() === "en" ? "en-GB" : locale());
 const shortTime = (v: string) =>
   dateFormatter({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(v);
+const FILTER_FIELD = "min-w-0 flex-1 basis-120 sm:w-160 sm:flex-none sm:basis-auto";
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
 function compactTime(v: string): string {
@@ -160,7 +161,7 @@ export function AuditLog({
   return (
     <>
       <FilterRow filtersLabel={t("kaeso.audit.filters", "Filter the audit log")}>
-        <div className="w-160">
+        <div className={FILTER_FIELD}>
           <Combobox
             aria-label={t("kaeso.audit.actor", "Actor")}
             size="sm"
@@ -178,7 +179,7 @@ export function AuditLog({
             onValueChange={(v: string | null) => set({ actor: v ?? undefined, event: undefined })}
           />
         </div>
-        <div className="w-160">
+        <div className={FILTER_FIELD}>
           <Combobox
             aria-label={t("kaeso.audit.action", "Action")}
             size="sm"
@@ -188,7 +189,7 @@ export function AuditLog({
             onValueChange={(v: string | null) => set({ action: v ?? undefined, event: undefined })}
           />
         </div>
-        <div className="w-160">
+        <div className={FILTER_FIELD}>
           <SearchInput
             aria-label={t("kaeso.audit.targetId", "Target id")}
             size="sm"

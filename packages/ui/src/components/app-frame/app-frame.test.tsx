@@ -36,6 +36,12 @@ describe("AppFrame.Settings", () => {
     const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;
     expect(line).toContainElement(screen.getByRole("button", { name: "Invite member" }));
   });
+  it("moves the actions to their own row at the end when the title leaves no room, like the page header", () => {
+    render(<Page />);
+    const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;
+    expect(line).toHaveClass("flex-wrap", "justify-between");
+    expect(screen.getByRole("button", { name: "Invite member" }).parentElement).toHaveClass("ml-auto", "shrink-0");
+  });
 });
 
 function Shell({ brandHref, phoneActions }: { brandHref?: string; phoneActions?: ReactNode }) {

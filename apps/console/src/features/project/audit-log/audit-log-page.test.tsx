@@ -44,6 +44,17 @@ describe("project audit log", () => {
     expect(within(row("198.51.100.2")).queryByRole("link")).not.toBeInTheDocument();
   });
 
+  it("puts the filters where every other page's toolbar sits, with no padding above them", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    projectAudit();
+    await renderApp(PATH);
+    await within(table()).findByText("Ada Okafor (you)");
+    const body = screen.getByRole("toolbar", { name: "Filter the audit log" }).closest(".overflow-y-auto");
+    expect(body).not.toBeNull();
+    expect(body).not.toHaveClass("pt-8");
+  });
+
   it("shows each actor's picture, or their initial without one", async () => {
     signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" } }) });
     projectData({ members: [projectMember({ user: { avatar_url: "/avatars/grace.webp" } })] });

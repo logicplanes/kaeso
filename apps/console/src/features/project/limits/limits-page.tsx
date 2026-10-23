@@ -37,7 +37,7 @@ import { ProjectHeader } from "~/shell/project-header";
 import { serviceAccountName, usePartyName } from "../keys/party";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
-import { t } from "~/i18n";
+import { locale, t, type Locale } from "~/i18n";
 import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
 
@@ -207,6 +207,8 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   );
 }
 
+const RESETS_WIDTH: Record<Locale, string> = { en: "md:w-120", de: "md:w-180", "zh-CN": "md:w-120" };
+
 const KIND_ICON = { spend: icons.budget, requests: icons.requestLog, tokens: icons.stack } as const;
 
 function LimitGlyph({ org, project, limit }: { org: string; project: string; limit: LimitView }) {
@@ -239,7 +241,7 @@ function LimitUse({ org, project, limit }: { org: string; project: string; limit
   const amount = Number(limit.amount);
   return (
     <span className="flex items-center gap-12">
-      <Text variant="small" tone="secondary" tabular className="whitespace-nowrap">
+      <Text variant="small" tone="secondary" tabular className="whitespace-nowrap md:w-160 md:text-right">
         {text.value}
       </Text>
       <Meter
@@ -254,7 +256,9 @@ function LimitUse({ org, project, limit }: { org: string; project: string; limit
 
 function LimitResets({ org, project, limit }: { org: string; project: string; limit: LimitView }) {
   const text = useLimitText(org, project, limit);
-  return <>{limit.period === "minute" ? t("limits.lastMinute", "Last minute") : text.resets}</>;
+  return (
+    <span className={`flex justify-end ${RESETS_WIDTH[locale()]}`}>{limit.period === "minute" ? t("limits.lastMinute", "Last minute") : text.resets}</span>
+  );
 }
 
 function useArchivedKey(org: string, project: string) {

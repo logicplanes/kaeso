@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, Combobox, Dialog, Empty, List, Pill, Text, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Combobox, Dialog, Empty, List, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -55,7 +55,7 @@ export function MembersPage({ org, project, search }: { org: string; project: st
     meta: (
       <span className="flex items-center gap-8">
         {m.user.state !== "active" && <Badge tone={m.user.state === "deleted" ? "neutral" : "warning"}>{userStateLabel(m.user.state)}</Badge>}
-        <Pill size="sm">{grantLabel(m.grant)}</Pill>
+        <Badge>{grantLabel(m.grant)}</Badge>
       </span>
     ),
     date: formatDate(m.joined_at),

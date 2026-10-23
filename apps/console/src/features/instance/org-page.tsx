@@ -12,7 +12,6 @@ import {
   Input,
   KeyValue,
   List,
-  Pill,
   SettingsGroup,
   SettingsRow,
   SettingsSection,
@@ -102,9 +101,7 @@ function usageTiles(u: InstanceOrgUsage) {
       key="requests"
       label={t("common.requests", "Requests")}
       value={formatNumber(n)}
-      detail={
-        n ? t("instance.perDay", "{count} a day on average", { count: formatNumber(Math.round(n / 30)) }) : t("instance.noneInPeriod", "None in this period")
-      }
+      detail={n ? t("instance.perDay", "{count} per day", { count: formatNumber(Math.round(n / 30)) }) : t("instance.noneInPeriod", "None in this period")}
     />,
     <StatTile
       key="tokens"
@@ -210,7 +207,7 @@ function Members({ org, count }: { org: string; count: number }) {
             meta: (
               <>
                 {m.user.state !== "active" && <Badge tone="warning">{userStateLabel(m.user.state)}</Badge>}
-                <Pill size="sm">{grantLabel(m.grant)}</Pill>
+                <Badge>{grantLabel(m.grant)}</Badge>
               </>
             ),
             date: formatDate(m.joined_at),

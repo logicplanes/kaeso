@@ -201,7 +201,7 @@
   "instance.ownerOptional": "Inhaber (optional)",
   "instance.owners": "Inhaber",
   "instance.password": "Passwort",
-  "instance.perDay": "Durchschnittlich {count} pro Tag",
+  "instance.perDay": "{count} pro Tag",
   "instance.perRequest": "{value} pro Anfrage",
   "instance.postgresHint": "Benutzer, Organisationen, Schlüssel und Einstellungen.",
   "instance.projectCount": "{count, plural, one {# Projekt} other {# Projekte}} mit Erstellungsdatum",
