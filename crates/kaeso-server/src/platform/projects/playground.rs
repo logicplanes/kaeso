@@ -223,6 +223,9 @@ fn refusal(f: &Failure) -> ApiError {
         Stage::SignedOut(product) => ApiError::Conflict(format!(
             "The {product} account of this project's provider key is signed out; sign in again."
         )),
+        Stage::NoApiAccess(product) => ApiError::Conflict(format!(
+            "This {product} plan has no API access; add an API key instead."
+        )),
         Stage::Credential if e.status == Some(503) => ApiError::Unavailable(
             "Kaeso cannot load the project's provider key right now; try again shortly.".into(),
         ),

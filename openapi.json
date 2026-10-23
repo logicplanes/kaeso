@@ -6435,8 +6435,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Begins signing in to a provider account, such as a ChatGPT account, to\nadd it as a provider key.",
-        "description": "Open `authorize_url` in a browser. Once the account's owner approves,\nthe provider sends the browser to `http://127.0.0.1:<port>/auth/callback`,\nwhich doesn't load; send that address to\n`POST /orgs/{org}/credentials/oauth/{attempt}` within ten minutes. Only\nthe person who began the sign-in can finish it, so it needs a console\nsession.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "summary": "Begins signing in to a provider account, a ChatGPT or a Grok account, to\nadd it as a provider key.",
+        "description": "For a ChatGPT account, open `authorize_url` in a browser. Once the\naccount's owner approves, the provider sends the browser to\n`http://127.0.0.1:<port>/auth/callback`, which doesn't load; send that\naddress to `POST /orgs/{org}/credentials/oauth/{attempt}` within ten\nminutes. For a Grok account, show `device.user_code` and\n`device.verification_uri`; the owner signs in there and enters the code,\nwhile you call `POST /orgs/{org}/credentials/oauth/{attempt}` every\n`device.interval` seconds until it adds the key. Only the person who began\nthe sign-in can finish it, so it needs a console session.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgCredentialsOauth",
         "parameters": [
           {
@@ -6513,7 +6513,7 @@
           "orgs"
         ],
         "summary": "Finishes signing in to a provider account and adds it as a provider key.",
-        "description": "Send the address the provider sent the browser to. Kaeso checks that\nit answers this attempt, which is used up either way, exchanges the code\nfor tokens and checks the account's identity and its permission to use\nthe plan. The tokens are stored encrypted and never shown.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "For a ChatGPT account, send the address the provider sent the browser\nto; Kaeso checks that it answers this attempt, which is used up either way,\nexchanges the code for tokens and checks the account's identity and its\npermission to use the plan. For a Grok account, send `{}`: each call asks\nthe provider once and answers `202` while the owner hasn't confirmed the\ncode. The tokens are stored encrypted and never shown.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgCredentialsOauthAttempt",
         "parameters": [
           {
@@ -6550,6 +6550,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The owner hasn't confirmed the code yet; ask again after `interval` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPending"
                 }
               }
             }
@@ -7005,6 +7015,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "The owner hasn't confirmed the code yet; ask again after `interval` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPending"
                 }
               }
             }
@@ -15980,10 +16000,9 @@
       },
       "AccountAttempt": {
         "type": "object",
-        "description": "A sign-in waiting for the provider's answer.",
+        "description": "A sign-in waiting for the account's owner.",
         "required": [
           "attempt",
-          "authorize_url",
           "expires_at"
         ],
         "properties": {
@@ -15993,13 +16012,27 @@
             "example": "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5b"
           },
           "authorize_url": {
-            "type": "string",
-            "description": "The provider's sign-in page; open it in a browser where the account's\nowner can sign in."
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a ChatGPT account, the provider's sign-in page: open it in a browser\nwhere the account's owner can sign in; `null` for a device sign-in."
+          },
+          "device": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DeviceSignIn",
+                "description": "For a Grok account, the code its owner confirms at the provider; `null`\nfor a ChatGPT account."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "expires_at": {
             "type": "string",
             "format": "date-time",
-            "description": "When the attempt expires, ten minutes after it began."
+            "description": "When the attempt expires, at most ten minutes after it began."
           }
         }
       },
@@ -16036,27 +16069,53 @@
       },
       "AccountFinish": {
         "type": "object",
-        "description": "The provider's answer.",
-        "required": [
-          "callback_url"
-        ],
+        "description": "The provider's answer, or `{}` to check a device sign-in.",
         "properties": {
           "callback_url": {
-            "type": "string",
-            "description": "The address the provider sent the browser to after the sign-in, as the\naddress bar shows it: `http://127.0.0.1:<port>/auth/callback?…`. The page\ndoesn't load, because nothing listens there.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a ChatGPT account, the address the provider sent the browser to\nafter the sign-in, as the address bar shows it:\n`http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\nnothing listens there. Leave it out for a Grok account.",
             "example": "http://127.0.0.1:51234/auth/callback?code=…&state=…"
           }
         },
         "additionalProperties": false
+      },
+      "AccountPending": {
+        "type": "object",
+        "description": "A device sign-in the account's owner hasn't confirmed yet.",
+        "required": [
+          "interval",
+          "expires_at"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the attempt expires."
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds to wait before asking again; it grows when the provider asks\nKaeso to slow down.",
+            "example": 5
+          }
+        }
       },
       "AccountSignInView": {
         "type": "object",
         "description": "An account of a provider that signs in with OAuth.",
         "required": [
           "method",
-          "product"
+          "product",
+          "experimental"
         ],
         "properties": {
+          "experimental": {
+            "type": "boolean",
+            "description": "The sign-in works but may change or stop when the provider changes it."
+          },
           "method": {
             "$ref": "#/components/schemas/AuthMethodView",
             "description": "The provider key's `auth_method` once signed in."
@@ -16095,7 +16154,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider: `openai`, whose accounts are ChatGPT accounts."
+            "description": "The provider: `openai` for a ChatGPT account, `xai` for a Grok account."
           }
         },
         "additionalProperties": false
@@ -16470,7 +16529,8 @@
         "type": "string",
         "description": "Why an account can't make requests.",
         "enum": [
-          "signed_out"
+          "signed_out",
+          "no_api_access"
         ]
       },
       "AuthMethodView": {
@@ -16478,7 +16538,8 @@
         "description": "How a provider key authenticates.",
         "enum": [
           "api_key",
-          "chatgpt"
+          "chatgpt",
+          "grok"
         ]
       },
       "AvailabilityState": {
@@ -17154,7 +17215,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/AuthErrorView",
-                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session; `null` while it works."
+                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
               },
               {
                 "type": "null"
@@ -17163,7 +17224,7 @@
           },
           "auth_method": {
             "$ref": "#/components/schemas/AuthMethodView",
-            "description": "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\nsigned in with OAuth, whose tokens Kaeso renews by itself."
+            "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself."
           },
           "created_at": {
             "type": "string",
@@ -17269,6 +17330,41 @@
           }
         },
         "additionalProperties": false
+      },
+      "DeviceSignIn": {
+        "type": "object",
+        "description": "A code the account's owner confirms on another device.",
+        "required": [
+          "user_code",
+          "verification_uri",
+          "interval"
+        ],
+        "properties": {
+          "interval": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds to wait between calls that finish the sign-in.",
+            "example": 5
+          },
+          "user_code": {
+            "type": "string",
+            "description": "The code to show the account's owner.",
+            "example": "FKFF-E5EP"
+          },
+          "verification_uri": {
+            "type": "string",
+            "description": "The provider's page where the owner signs in and enters the code.",
+            "example": "https://accounts.x.ai/oauth2/device"
+          },
+          "verification_uri_complete": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The same page with the code filled in, when the provider offers one.",
+            "example": "https://accounts.x.ai/oauth2/device?user_code=FKFF-E5EP"
+          }
+        }
       },
       "EmailCancel": {
         "type": "object",
@@ -19235,7 +19331,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/AuthErrorView",
-                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session; `null` while it works."
+                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
                     },
                     {
                       "type": "null"
@@ -19244,7 +19340,7 @@
                 },
                 "auth_method": {
                   "$ref": "#/components/schemas/AuthMethodView",
-                  "description": "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\nsigned in with OAuth, whose tokens Kaeso renews by itself."
+                  "description": "How it authenticates: `api_key`, `chatgpt` for a ChatGPT account or\n`grok` for a Grok account, both signed in with OAuth, whose tokens Kaeso\nrenews by itself."
                 },
                 "created_at": {
                   "type": "string",

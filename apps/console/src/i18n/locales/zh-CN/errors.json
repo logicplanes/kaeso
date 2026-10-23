@@ -481,5 +481,7 @@
   "errors.modelApi.accountUnrenewed": "Kaeso 暂时无法续期 {product} 账户的访问权限。请稍后重试。",
   "errors.modelApi.accountNoEmbeddings": "{product} 账户无法创建嵌入。请改为在此项目中使用 {provider} 的 API 密钥。",
   "errors.modelApi.accountNoTokenCount": "{product} 账户无法统计 Token。请改为在此项目中使用 {provider} 的 API 密钥。",
-  "errors.modelApi.planUsageLimit": "您的 {product} 套餐已达到用量上限。请在 {url} 查看。"
+  "errors.modelApi.planUsageLimit": "您的 {product} 套餐已达到用量上限。请在 {url} 查看。",
+  "errors.accountNoApiAccess": "此 {product} 套餐不含 API 访问权限；请改为添加 API 密钥。",
+  "errors.modelApi.accountNoApiAccess": "此项目 {provider} 密钥的 {product} 套餐不含 API 访问权限。请组织管理员在“服务商”中添加 API 密钥。"
 }

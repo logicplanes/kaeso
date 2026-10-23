@@ -153,6 +153,10 @@ impl App {
         App::start_full(s, &[], None, None, Some(accounts_at(oauth.base_url()))).await
     }
 
+    pub async fn start_with_grok(s: &TestServices, grok: &kaeso_testkit::grok::MockGrok) -> App {
+        App::start_full(s, &[], None, None, Some(accounts_at(grok.base_url()))).await
+    }
+
     pub async fn start_hooked(
         s: &TestServices,
         extra: &[(&str, &str)],
@@ -475,7 +479,10 @@ pub fn accounts_at(base: &str) -> kaeso_server::services::provider_accounts::End
         auth: base.to_owned(),
         api: base.to_owned(),
     };
-    kaeso_server::services::provider_accounts::Endpoints { chatgpt: hosts }
+    kaeso_server::services::provider_accounts::Endpoints {
+        chatgpt: hosts.clone(),
+        grok: hosts,
+    }
 }
 
 pub async fn begin_sign_in(app: &App, owner: &Owner, name: &str) -> (String, String) {
@@ -528,4 +535,51 @@ pub async fn account_tokens(
             .unwrap()
             .unwrap();
     kaeso_server::services::credentials::tokens(&app.state.keyring, &row).unwrap()
+}
+
+pub struct DeviceAttempt {
+    pub attempt: String,
+    pub user_code: String,
+    pub body: Value,
+}
+
+pub async fn begin_grok(app: &App, owner: &Owner, name: &str) -> DeviceAttempt {
+    let r = app
+        .post(
+            &format!("/orgs/{}/credentials/oauth", owner.org_id),
+            json!({ "provider": "xai", "name": name }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    DeviceAttempt {
+        attempt: r.body["attempt"].as_str().unwrap().to_owned(),
+        user_code: r.body["device"]["user_code"].as_str().unwrap().to_owned(),
+        body: r.body,
+    }
+}
+
+pub async fn poll_grok(app: &App, owner: &Owner, attempt: &str) -> Resp {
+    app.post(
+        &format!("/orgs/{}/credentials/oauth/{attempt}", owner.org_id),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+}
+
+pub async fn sign_in_grok(
+    app: &App,
+    owner: &Owner,
+    grok: &kaeso_testkit::grok::MockGrok,
+    name: &str,
+    email: &str,
+) -> Value {
+    let started = begin_grok(app, owner, name).await;
+    grok.approve(&started.user_code, &format!("sub-{email}"), email);
+    app.clock.advance(time::Duration::seconds(5));
+    poll_grok(app, owner, &started.attempt)
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body
 }

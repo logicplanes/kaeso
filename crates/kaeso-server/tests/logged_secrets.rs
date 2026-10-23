@@ -10,6 +10,7 @@ use axum::http::{Method, Request, StatusCode, header};
 use common::App;
 use kaeso_core::clock::Clock;
 use kaeso_core::id::OrgId;
+use kaeso_testkit::grok::{Fault as GrokFault, MockGrok};
 use kaeso_testkit::oauth::{Fault, MockOAuth, Reply};
 use kaeso_testkit::oidc::MockIdp;
 use kaeso_testkit::services::TestServices;
@@ -307,6 +308,126 @@ async fn account_tokens_never_reach_the_log_the_audit_trail_or_clickhouse() {
     for secret in &secrets {
         assert!(!logged.contains(secret.as_str()), "{secret} is in the log");
         for body in [&created.body, &listed.body, &audit.body] {
+            assert!(
+                !body.to_string().contains(secret.as_str()),
+                "{secret} in {body}"
+            );
+        }
+    }
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn grok_device_codes_and_tokens_never_reach_the_log_the_audit_trail_or_clickhouse() {
+    let logs = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
+    let s = TestServices::start().await;
+    let grok = MockGrok::start().await;
+    let app = App::start_with_grok(&s, &grok).await;
+    app.state.clickhouse.migrate(&app.state.pg).await.unwrap();
+    let owner = app.setup().await;
+
+    let declined = common::begin_grok(&app, &owner, "Declined").await;
+    grok.deny(&declined.user_code);
+    app.clock.advance(time::Duration::seconds(5));
+    common::poll_grok(&app, &owner, &declined.attempt)
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    let mut device_codes = grok.device_codes();
+    let started = common::begin_grok(&app, &owner, "Grok").await;
+    device_codes.extend(grok.device_codes());
+    grok.approve(&started.user_code, "sub-ada", "ada@example.com");
+    app.clock.advance(time::Duration::seconds(5));
+    let created = common::poll_grok(&app, &owner, &started.attempt)
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body;
+    let id = created["id"].as_str().unwrap().to_owned();
+
+    let project = app
+        .get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
+        .await
+        .body["data"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    app.post(
+        &format!("{base}/models"),
+        json!({ "provider": "xai", "model_id": "grok-4.3" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let key = app
+        .post(
+            &format!("{base}/keys"),
+            json!({ "name": "app" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .body["secret"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let ask = || {
+        let (app, key) = (&app, key.clone());
+        async move {
+            common::v1::call_app(
+                app,
+                "/v1/chat/completions",
+                Some(&key),
+                false,
+                Some(common::v1::chat("xai/grok-4.3", "Hi")),
+            )
+            .await
+        }
+    };
+    assert_eq!(ask().await.status, StatusCode::OK);
+    app.clock.advance(time::Duration::minutes(29));
+    assert_eq!(ask().await.status, StatusCode::OK);
+    assert_eq!(grok.refreshes(), 1);
+    grok.end_sessions();
+    assert_ne!(ask().await.status, StatusCode::OK);
+    app.clock.advance(time::Duration::minutes(29));
+    grok.set_fault(GrokFault::NoApiAccess);
+    assert_eq!(ask().await.status, StatusCode::BAD_GATEWAY);
+    grok.set_fault(GrokFault::None);
+    app.call(
+        Method::DELETE,
+        &format!("/orgs/{}/credentials/{id}", owner.org_id),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert_eq!(grok.revoked().len(), 1);
+
+    app.state.in_flight.settled().await;
+    kaeso_server::services::logs::flush_all(&app.state, std::time::Duration::from_secs(10)).await;
+    let listed = app.get(&format!("{base}/logs"), &owner.cookie).await;
+    assert_eq!(
+        listed.body["data"].as_array().unwrap().len(),
+        4,
+        "{:?}",
+        listed.body
+    );
+    let audit = app
+        .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
+        .await;
+    let mut secrets = grok.issued();
+    secrets.extend(device_codes);
+    assert!(secrets.len() >= 8, "{}", secrets.len());
+    let logged = logs.text();
+    assert!(logged.contains("the provider refused an account's plan"));
+    for secret in &secrets {
+        assert!(!logged.contains(secret.as_str()), "{secret} is in the log");
+        for body in [&created, &listed.body, &audit.body] {
             assert!(
                 !body.to_string().contains(secret.as_str()),
                 "{secret} in {body}"

@@ -25,6 +25,7 @@ uuid.workspace = true
 url.workspace = true
 openidconnect.workspace = true
 rsa.workspace = true
+p256.workspace = true
 chrono.workspace = true
 serde.workspace = true
 sha2.workspace = true
