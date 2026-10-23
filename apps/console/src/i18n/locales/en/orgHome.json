@@ -101,6 +101,7 @@
   "orgHome.serviceAccountIn": "Service account in {project}",
   "orgHome.signInAgain": "Sign in again",
   "orgHome.signedOut": "Signed out",
+  "orgHome.stage": "Stage",
   "orgHome.usageBreakdown": "Usage breakdown",
   "orgHome.usesKeyNow": "Uses {name} now"
 }

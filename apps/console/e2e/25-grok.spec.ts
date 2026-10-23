@@ -50,7 +50,7 @@ test("a Grok account becomes a SpaceX key once its code is approved on another d
   const row = page.getByRole("row").filter({ hasText: "Owner's Grok" });
   await expect(row.getByText("owner@example.com")).toBeVisible();
   await expect(row.getByText("Grok", { exact: true })).toBeVisible();
-  await expect(row.getByText("Experimental", { exact: true })).toBeVisible();
+  await expect(row.getByText(/Experimental/)).toBeVisible();
   await page.getByRole("button", { name: "Actions for SpaceX · Owner's Grok" }).click();
   await expect(page.getByRole("menuitem", { name: "Sign in again" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: /Manage usage/ })).toHaveCount(0);

@@ -199,7 +199,7 @@ describe("organization providers", () => {
     expect(await screen.findByRole("dialog", { name: /Sign in again to OpenAI · Ada's plan/ })).toBeInTheDocument();
   });
 
-  it("shows a Grok account's email with its product and Experimental badges, and offers to sign in again", async () => {
+  it("shows a Grok account's product badge, and Experimental and the email on its second line, and offers to sign in again", async () => {
     signedIn();
     const grok = credential({ id: "cred_grok", name: "Ada's Grok", provider: "xai", auth_method: "grok", account: "ada@example.com", last4: "" });
     const free = credential({
@@ -218,7 +218,7 @@ describe("organization providers", () => {
     const account = await row("Ada's Grok");
     expect(account).toHaveTextContent("ada@example.com");
     expect(within(account).getByText("Grok")).toBeInTheDocument();
-    expect(within(account).getByText("Experimental")).toBeInTheDocument();
+    expect(account).toHaveTextContent("Stage: Experimental · Account: ada@example.com");
     expect(account).not.toHaveTextContent("…");
     expect(account).not.toHaveTextContent("No API access");
     const stopped = await row("Free Grok");

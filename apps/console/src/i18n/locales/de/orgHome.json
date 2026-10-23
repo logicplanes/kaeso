@@ -100,6 +100,7 @@
   "orgHome.signInAgain": "Erneut anmelden",
   "orgHome.manageUsage": "Nutzung verwalten",
   "orgHome.signedOut": "Abgemeldet",
+  "orgHome.stage": "Phase",
   "orgHome.experimental": "Experimentell",
   "orgHome.noApiAccessHint": "Dieses {product}-Abo hat keinen API-Zugang.",
   "orgHome.noApiAccess": "Kein API-Zugang"
