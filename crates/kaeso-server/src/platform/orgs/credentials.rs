@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
-use kaeso_core::provider::ProviderId;
+use kaeso_core::provider::{AuthMethod, ProviderId};
 use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
 use serde::{Deserialize, Serialize};
@@ -49,9 +49,19 @@ pub struct CredentialView {
     pub is_default: bool,
     #[doc = "The projects that use this key for its provider instead of the default."]
     pub projects: Vec<CredentialProject>,
-    #[doc = "The last four characters of the secret, for recognising it."]
+    #[doc = "The last four characters of the secret, for recognising it; empty for\n\
+        an account."]
     #[schema(example = "wxyz")]
     pub last4: String,
+    #[doc = "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\n\
+        signed in with OAuth, whose tokens Kaeso renews by itself."]
+    pub auth_method: AuthMethodView,
+    #[doc = "The signed-in account's email address; `null` for an API key."]
+    #[schema(example = "owner@example.com")]
+    pub account: Option<String>,
+    #[doc = "Why the account can't make requests until someone signs in again:\n\
+        `signed_out` when the provider ended its session; `null` while it works."]
+    pub auth_error: Option<AuthErrorView>,
     #[doc = "The id of the master key that wraps it (never the key)."]
     #[schema(example = "k1")]
     pub key_id: String,
@@ -68,7 +78,42 @@ pub struct CredentialView {
     pub last_used_at: Option<OffsetDateTime>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "How a provider key authenticates.")]
+pub enum AuthMethodView {
+    #[doc = "An API key."]
+    ApiKey,
+    #[doc = "A ChatGPT account, signed in with OAuth."]
+    #[serde(rename = "chatgpt")]
+    ChatGpt,
+}
+
+impl From<AuthMethod> for AuthMethodView {
+    fn from(m: AuthMethod) -> Self {
+        match m {
+            AuthMethod::ApiKey => AuthMethodView::ApiKey,
+            AuthMethod::ChatGpt => AuthMethodView::ChatGpt,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "Why an account can't make requests.")]
+pub enum AuthErrorView {
+    #[doc = "The provider ended the account's session; sign in again."]
+    SignedOut,
+}
+
 impl CredentialView {
+    pub(super) fn method(&self) -> AuthMethod {
+        match self.auth_method {
+            AuthMethodView::ApiKey => AuthMethod::ApiKey,
+            AuthMethodView::ChatGpt => AuthMethod::ChatGpt,
+        }
+    }
+
     fn new(r: &CredentialRow, assigned: &[AssignmentRow]) -> CredentialView {
         CredentialView {
             id: CredentialId::from_uuid(r.id),
@@ -85,6 +130,11 @@ impl CredentialView {
                 })
                 .collect(),
             last4: r.last4.clone(),
+            auth_method: AuthMethod::parse(&r.auth_method)
+                .unwrap_or(AuthMethod::ApiKey)
+                .into(),
+            account: r.account_label.clone(),
+            auth_error: r.auth_error.as_ref().map(|_| AuthErrorView::SignedOut),
             key_id: r.key_id.clone(),
             created_by: creator(&r.created_by_kind, r.created_by_id),
             created_at: r.created_at,
@@ -183,7 +233,9 @@ fn validate_secret(secret: &str) -> ApiResult<(&str, String)> {
     Ok((secret, last4))
 }
 
-fn validate_provider(provider: &str) -> ApiResult<&'static kaeso_core::provider::Provider> {
+pub(super) fn validate_provider(
+    provider: &str,
+) -> ApiResult<&'static kaeso_core::provider::Provider> {
     kaeso_core::provider::lookup(provider).map_err(|_| {
         ApiError::invalid(
             "provider",
@@ -195,7 +247,11 @@ fn validate_provider(provider: &str) -> ApiResult<&'static kaeso_core::provider:
     })
 }
 
-async fn view(db: &mut sqlx::PgConnection, org: Uuid, id: Uuid) -> ApiResult<CredentialView> {
+pub(super) async fn view(
+    db: &mut sqlx::PgConnection,
+    org: Uuid,
+    id: Uuid,
+) -> ApiResult<CredentialView> {
     let row = credentials::get(&mut *db, org, id)
         .await?
         .ok_or_else(|| ApiError::not_found("credential"))?;
@@ -211,14 +267,14 @@ async fn reset_availability(
     Ok(catalogue::clear_availability(&mut *tx, org, provider).await?)
 }
 
-async fn forget(state: &AppState, org: Uuid, projects: Vec<Uuid>) {
+pub(super) async fn forget(state: &AppState, org: Uuid, projects: Vec<Uuid>) {
     service::forget_org(state, org).await;
     for p in projects {
         crate::services::catalogue::forget(state, p).await;
     }
 }
 
-fn parse_id(id: &str) -> ApiResult<Uuid> {
+pub(super) fn parse_id(id: &str) -> ApiResult<Uuid> {
     Ok(id_param::<CredentialId>(id, "credential")?.uuid())
 }
 
@@ -242,42 +298,94 @@ pub async fn create(
     let provider = validate_provider(&req.provider)?;
     let name = validate_name(&req.name)?;
     let (secret, last4) = validate_secret(&req.secret)?;
-    let id = CredentialId::new();
+    let view = add(
+        &state,
+        &ctx,
+        org,
+        Added {
+            id: CredentialId::new(),
+            provider: provider.id,
+            name: &name,
+            make_default: req.make_default,
+            secret,
+            auth: Auth::key(&last4),
+        },
+    )
+    .await?;
+    Ok((StatusCode::CREATED, Json(view)))
+}
+
+pub(super) struct Auth<'a> {
+    pub method: AuthMethod,
+    pub last4: &'a str,
+    pub expires_at: Option<OffsetDateTime>,
+    pub account: Option<&'a str>,
+}
+
+impl<'a> Auth<'a> {
+    fn key(last4: &'a str) -> Auth<'a> {
+        Auth {
+            method: AuthMethod::ApiKey,
+            last4,
+            expires_at: None,
+            account: None,
+        }
+    }
+}
+
+pub(super) struct Added<'a> {
+    pub id: CredentialId,
+    pub provider: &'a str,
+    pub name: &'a str,
+    pub make_default: bool,
+    pub secret: &'a str,
+    pub auth: Auth<'a>,
+}
+
+pub(super) async fn add(
+    state: &AppState,
+    ctx: &Ctx,
+    org: Uuid,
+    a: Added<'_>,
+) -> ApiResult<CredentialView> {
     let sealed =
-        service::seal(&state, id, secret).map_err(|e| ApiError::internal(e.to_string()))?;
-    let (kind, by) = creator_of(&ctx);
+        service::seal(state, a.id, a.secret).map_err(|e| ApiError::internal(e.to_string()))?;
+    let (kind, by) = creator_of(ctx);
     let mut tx = state.pg.begin().await?;
-    credentials::lock_provider(&mut tx, org, provider.id).await?;
+    credentials::lock_provider(&mut tx, org, a.provider).await?;
     credentials::insert(
         &mut *tx,
         &NewCredential {
-            id: id.uuid(),
+            id: a.id.uuid(),
             org_id: org,
-            provider: provider.id,
-            name: &name,
+            provider: a.provider,
+            name: a.name,
             ciphertext: &sealed.ciphertext,
             nonce: &sealed.nonce,
             wrapped_key: &sealed.wrapped_key,
             key_id: &sealed.key_id,
-            last4: &last4,
+            last4: a.auth.last4,
             created_by_kind: kind,
             created_by_id: by,
+            auth_method: a.auth.method.as_str(),
+            expires_at: a.auth.expires_at,
+            account_label: a.auth.account,
         },
     )
     .await?;
-    if req.make_default || !credentials::has_default(&mut *tx, org, provider.id).await? {
-        credentials::set_default(&mut tx, org, provider.id, id.uuid()).await?;
+    if a.make_default || !credentials::has_default(&mut *tx, org, a.provider).await? {
+        credentials::set_default(&mut tx, org, a.provider, a.id.uuid()).await?;
     }
-    let view = view(&mut tx, org, id.uuid()).await?;
+    let view = view(&mut tx, org, a.id.uuid()).await?;
     ctx.audit(Some(ctx.org()?.id()), "credential.create")
-        .target("credential", id)
+        .target("credential", a.id)
         .after(&view)
         .write(&mut tx)
         .await?;
-    let projects = reset_availability(&mut tx, org, provider.id).await?;
+    let projects = reset_availability(&mut tx, org, a.provider).await?;
     tx.commit().await?;
-    forget(&state, org, projects).await;
-    Ok((StatusCode::CREATED, Json(view)))
+    forget(state, org, projects).await;
+    Ok(view)
 }
 
 #[utoipa::path(
@@ -327,6 +435,8 @@ pub async fn get(
     path = "/orgs/{org}/credentials/{credential}/replace",
     summary = "Replaces a key's secret (and optionally its name). Requests use the new\n\
     one within seconds.",
+    description = "An account isn't replaced with a secret: sign in again with\n\
+    `POST /orgs/{org}/credentials/{credential}/oauth`.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialReplace,
@@ -342,14 +452,35 @@ pub async fn replace(
     let id = parse_id(&id)?;
     let mut tx = state.pg.begin().await?;
     let before = view(&mut tx, org, id).await?;
+    if before.method().is_account() {
+        return Err(ApiError::bad_request(REPLACE_ACCOUNT));
+    }
     let name = match &req.name {
         Some(n) => validate_name(n)?,
         None => before.name.clone(),
     };
     let (secret, last4) = validate_secret(&req.secret)?;
+    let after = rewrite(&state, &ctx, tx, &before, &name, secret, Auth::key(&last4)).await?;
+    Ok(Json(after))
+}
+
+const REPLACE_ACCOUNT: &str =
+    "This key signs in with an account; sign in again instead of replacing it.";
+
+pub(super) async fn rewrite(
+    state: &AppState,
+    ctx: &Ctx,
+    mut tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    before: &CredentialView,
+    name: &str,
+    secret: &str,
+    auth: Auth<'_>,
+) -> ApiResult<CredentialView> {
+    let org = ctx.org()?.org.id;
+    let id = before.id.uuid();
     let sealed =
-        service::seal(&state, before.id, secret).map_err(|e| ApiError::internal(e.to_string()))?;
-    let (kind, by) = creator_of(&ctx);
+        service::seal(state, before.id, secret).map_err(|e| ApiError::internal(e.to_string()))?;
+    let (kind, by) = creator_of(ctx);
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
     let done = credentials::replace(
         &mut *tx,
@@ -357,14 +488,17 @@ pub async fn replace(
             id,
             org_id: org,
             provider: &before.provider,
-            name: &name,
+            name,
             ciphertext: &sealed.ciphertext,
             nonce: &sealed.nonce,
             wrapped_key: &sealed.wrapped_key,
             key_id: &sealed.key_id,
-            last4: &last4,
+            last4: auth.last4,
             created_by_kind: kind,
             created_by_id: by,
+            auth_method: auth.method.as_str(),
+            expires_at: auth.expires_at,
+            account_label: auth.account,
         },
     )
     .await?;
@@ -374,14 +508,14 @@ pub async fn replace(
     let after = view(&mut tx, org, id).await?;
     ctx.audit(Some(ctx.org()?.id()), "credential.replace")
         .target("credential", before.id)
-        .before(&before)
+        .before(before)
         .after(&after)
         .write(&mut tx)
         .await?;
     let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
-    forget(&state, org, projects).await;
-    Ok(Json(after))
+    forget(state, org, projects).await;
+    Ok(after)
 }
 
 #[utoipa::path(
@@ -514,6 +648,9 @@ pub async fn assign(
     the default, the most recently added remaining key of its provider\n\
     becomes the default, and without one, projects can no longer call that\n\
     provider's models.",
+    description = "For an account, Kaeso also asks the provider to end the account's\n\
+    session once the key is deleted. The key is deleted even when the\n\
+    provider can't be reached.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     responses((status = 204))
@@ -528,6 +665,8 @@ pub async fn delete(
     let mut tx = state.pg.begin().await?;
     let before = view(&mut tx, org, id).await?;
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
+    credentials::lock_refresh(&mut tx, id).await?;
+    let revocable = super::credential_accounts::revocable(&state, &mut tx, org, &before).await;
     if !credentials::delete(&mut *tx, org, id).await? {
         return Err(ApiError::not_found("credential"));
     }
@@ -554,6 +693,9 @@ pub async fn delete(
     let projects = reset_availability(&mut tx, org, &before.provider).await?;
     tx.commit().await?;
     forget(&state, org, projects).await;
+    if let Some(revocable) = revocable {
+        revocable.revoke().await;
+    }
     Ok(StatusCode::NO_CONTENT)
 }
 

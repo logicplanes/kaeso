@@ -1,12 +1,15 @@
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
+use kaeso_core::provider::AuthMethod;
 use kaeso_crypto::{CryptoError, Sealed};
 use kaeso_store::StoreError;
 use kaeso_store::pg::credentials::{self, KeyInUse, SealedRow};
 use secrecy::SecretString;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
+use crate::services::provider_accounts::Tokens;
 use crate::state::AppState;
 
 pub fn aad(id: CredentialId) -> Vec<u8> {
@@ -17,7 +20,16 @@ pub struct Resolved {
     pub id: CredentialId,
     pub revision: i64,
     pub secret: SecretString,
+    pub method: AuthMethod,
+    pub account: Option<Account>,
     last_touched: AtomicI64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Account {
+    pub expires_at: OffsetDateTime,
+    pub earliest_refresh_at: Option<OffsetDateTime>,
+    pub signed_out: bool,
 }
 
 impl Resolved {
@@ -85,7 +97,7 @@ pub async fn resolve(
     Ok(resolved)
 }
 
-fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, CryptoError> {
+fn plain(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<String, CryptoError> {
     let id = CredentialId::from_uuid(row.id);
     let sealed = Sealed {
         ciphertext: row.ciphertext.clone(),
@@ -95,11 +107,32 @@ fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, Cr
     };
     let plain = kaeso_crypto::open(keyring, &sealed, &aad(id))?;
     let text = secrecy::ExposeSecret::expose_secret(&plain);
-    let secret = String::from_utf8(text.clone()).map_err(|_| CryptoError::Malformed)?;
+    String::from_utf8(text.clone()).map_err(|_| CryptoError::Malformed)
+}
+
+pub fn tokens(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Tokens, CryptoError> {
+    Tokens::parse(&plain(keyring, row)?).ok_or(CryptoError::Malformed)
+}
+
+fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, CryptoError> {
+    let method = AuthMethod::parse(&row.auth_method).ok_or(CryptoError::Malformed)?;
+    let (secret, account) = if method.is_account() {
+        let tokens = tokens(keyring, row)?;
+        let account = Account {
+            expires_at: row.expires_at.ok_or(CryptoError::Malformed)?,
+            earliest_refresh_at: tokens.earliest_refresh_at,
+            signed_out: row.auth_error.is_some(),
+        };
+        (tokens.access_token, Some(account))
+    } else {
+        (plain(keyring, row)?, None)
+    };
     Ok(Resolved {
-        id,
+        id: CredentialId::from_uuid(row.id),
         revision: row.revision,
         secret: SecretString::from(secret),
+        method,
+        account,
         last_touched: AtomicI64::new(0),
     })
 }

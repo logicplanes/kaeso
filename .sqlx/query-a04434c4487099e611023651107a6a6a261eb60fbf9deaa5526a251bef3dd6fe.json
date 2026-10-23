@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision FROM provider_credentials",
+  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error FROM provider_credentials WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -68,10 +68,46 @@
             "name": "revision"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "auth_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_method"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "auth_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_error"
+          }
+        }
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -79,8 +115,11 @@
       false,
       false,
       false,
-      false
+      false,
+      false,
+      true,
+      true
     ]
   },
-  "hash": "742fb354100b76059060ffdfef005b9998d1b96a093cd736d8b7c176af37fada"
+  "hash": "a04434c4487099e611023651107a6a6a261eb60fbf9deaa5526a251bef3dd6fe"
 }

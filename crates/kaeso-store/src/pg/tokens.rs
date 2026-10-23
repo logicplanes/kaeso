@@ -15,6 +15,7 @@ pub enum TokenKind {
     TotpChallenge,
     Signup,
     OidcState,
+    ProviderOAuth,
 }
 
 impl TokenKind {
@@ -28,6 +29,7 @@ impl TokenKind {
             TokenKind::TotpChallenge => "totp_challenge",
             TokenKind::Signup => "signup",
             TokenKind::OidcState => "oidc_state",
+            TokenKind::ProviderOAuth => "provider_oauth",
         }
     }
 }

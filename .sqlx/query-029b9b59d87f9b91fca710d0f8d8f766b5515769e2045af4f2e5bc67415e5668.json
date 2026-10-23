@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE provider_credentials SET ciphertext = $2, nonce = $3, wrapped_key = $4, key_id = $5, expires_at = $6 WHERE id = $1 AND auth_method <> 'api_key' AND auth_error IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "029b9b59d87f9b91fca710d0f8d8f766b5515769e2045af4f2e5bc67415e5668"
+}

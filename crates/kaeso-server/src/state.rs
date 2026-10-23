@@ -37,6 +37,7 @@ pub struct Inner {
     pub translating: crate::model_api::memory::Budget,
     pub availability: crate::services::availability::Recall,
     pub dns: Arc<dyn crate::services::dns::TxtLookup>,
+    pub accounts: crate::services::provider_accounts::Endpoints,
     clickhouse_migrated: AtomicBool,
 }
 
@@ -52,6 +53,7 @@ pub struct Parts {
     pub limits: Option<Arc<dyn crate::model_api::hooks::Limits>>,
     pub sink: Option<Arc<dyn crate::model_api::hooks::Sink>>,
     pub dns: Option<Arc<dyn crate::services::dns::TxtLookup>>,
+    pub accounts: Option<crate::services::provider_accounts::Endpoints>,
 }
 
 impl AppState {
@@ -90,6 +92,7 @@ impl AppState {
             dns: p
                 .dns
                 .unwrap_or_else(|| Arc::new(crate::services::dns::SystemResolver::default())),
+            accounts: p.accounts.unwrap_or_default(),
             clickhouse_migrated: AtomicBool::new(false),
         }))
     }

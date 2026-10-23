@@ -93,6 +93,7 @@ pub struct App {
     pub mail: MemorySink,
     pub clock: ManualClock,
     pub dns: StaticRecords,
+    pub accounts: Option<kaeso_server::services::provider_accounts::Endpoints>,
 }
 
 #[derive(Debug)]
@@ -145,11 +146,28 @@ impl App {
         App::start_hooked(s, extra, None, None).await
     }
 
+    pub async fn start_signing_in(
+        s: &TestServices,
+        oauth: &kaeso_testkit::oauth::MockOAuth,
+    ) -> App {
+        App::start_full(s, &[], None, None, Some(accounts_at(oauth.base_url()))).await
+    }
+
     pub async fn start_hooked(
         s: &TestServices,
         extra: &[(&str, &str)],
         limits: Option<Arc<dyn kaeso_server::model_api::hooks::Limits>>,
         sink: Option<Arc<dyn kaeso_server::model_api::hooks::Sink>>,
+    ) -> App {
+        App::start_full(s, extra, limits, sink, None).await
+    }
+
+    pub async fn start_full(
+        s: &TestServices,
+        extra: &[(&str, &str)],
+        limits: Option<Arc<dyn kaeso_server::model_api::hooks::Limits>>,
+        sink: Option<Arc<dyn kaeso_server::model_api::hooks::Sink>>,
+        accounts: Option<kaeso_server::services::provider_accounts::Endpoints>,
     ) -> App {
         let (clock, shared) = manual_clock();
         let mail = MemorySink::new();
@@ -162,12 +180,13 @@ impl App {
                 limits,
                 sink,
                 dns: Some(Arc::new(dns.clone())),
+                accounts: accounts.clone(),
             },
         )
         .await
         .unwrap();
         let valkey_reachable = !extra.iter().any(|(k, _)| *k == "KAESO_VALKEY_URL");
-        App::from_state(state, mail, clock, dns, valkey_reachable).await
+        App::from_state(state, mail, clock, dns, accounts, valkey_reachable).await
     }
 
     pub async fn second_instance(&self, s: &TestServices) -> App {
@@ -177,6 +196,7 @@ impl App {
                 clock: Some(Arc::new(self.clock.clone())),
                 mail: Some(kaeso_mail::Transport::Memory(self.mail.clone())),
                 dns: Some(Arc::new(self.dns.clone())),
+                accounts: self.accounts.clone(),
                 ..Overrides::default()
             },
         )
@@ -187,6 +207,7 @@ impl App {
             self.mail.clone(),
             self.clock.clone(),
             self.dns.clone(),
+            self.accounts.clone(),
             true,
         )
         .await
@@ -197,6 +218,7 @@ impl App {
         mail: MemorySink,
         clock: ManualClock,
         dns: StaticRecords,
+        accounts: Option<kaeso_server::services::provider_accounts::Endpoints>,
         valkey_reachable: bool,
     ) -> App {
         kaeso_server::services::models_dev::spawn_reloader(&state);
@@ -214,6 +236,7 @@ impl App {
             mail,
             clock,
             dns,
+            accounts,
         }
     }
 
@@ -445,4 +468,64 @@ pub async fn manage_domain(app: &App, org: &str, domain: &str) {
     .execute(&app.state.pg)
     .await
     .unwrap();
+}
+
+pub fn accounts_at(base: &str) -> kaeso_server::services::provider_accounts::Endpoints {
+    let hosts = kaeso_server::services::provider_accounts::Hosts {
+        auth: base.to_owned(),
+        api: base.to_owned(),
+    };
+    kaeso_server::services::provider_accounts::Endpoints { chatgpt: hosts }
+}
+
+pub async fn begin_sign_in(app: &App, owner: &Owner, name: &str) -> (String, String) {
+    let r = app
+        .post(
+            &format!("/orgs/{}/credentials/oauth", owner.org_id),
+            json!({ "provider": "openai", "name": name }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    (
+        r.body["attempt"].as_str().unwrap().to_owned(),
+        r.body["authorize_url"].as_str().unwrap().to_owned(),
+    )
+}
+
+pub async fn finish_sign_in(app: &App, owner: &Owner, attempt: &str, callback: &str) -> Resp {
+    app.post(
+        &format!("/orgs/{}/credentials/oauth/{attempt}", owner.org_id),
+        json!({ "callback_url": callback }),
+        Some(&owner.cookie),
+    )
+    .await
+}
+
+pub async fn sign_in_chatgpt(
+    app: &App,
+    owner: &Owner,
+    oauth: &kaeso_testkit::oauth::MockOAuth,
+    name: &str,
+    email: &str,
+) -> Value {
+    let (attempt, url) = begin_sign_in(app, owner, name).await;
+    let back = oauth.approve(&url, &format!("sub-{email}"), email);
+    finish_sign_in(app, owner, &attempt, &back)
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body
+}
+
+pub async fn account_tokens(
+    app: &App,
+    owner: &Owner,
+    credential: &str,
+) -> kaeso_server::services::provider_accounts::Tokens {
+    let row =
+        kaeso_store::pg::credentials::sealed(&app.state.pg, uuid(&owner.org_id), uuid(credential))
+            .await
+            .unwrap()
+            .unwrap();
+    kaeso_server::services::credentials::tokens(&app.state.keyring, &row).unwrap()
 }

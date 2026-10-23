@@ -1,3 +1,4 @@
+pub mod credential_accounts;
 pub mod credentials;
 pub mod invites;
 pub mod members;
@@ -97,6 +98,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::make_default)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::assign)))
         .routes(s.route(Access::Org(R::ProviderCredentialsDelete), routes!(credentials::delete)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsCreate), routes!(credential_accounts::start)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsCreate), routes!(credential_accounts::finish)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credential_accounts::start_again)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credential_accounts::finish_again)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::logs::get_org_settings)))
         .routes(s.route(Access::Org(R::LogsSettingsManage), routes!(crate::platform::logs::update_org_settings)))
         .routes(s.route(Access::Org(R::LogsStorageView), routes!(crate::platform::logs::storage)))

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
+  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, c.auth_error FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -68,6 +68,39 @@
             "name": "revision"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "auth_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_method"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "auth_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_error"
+          }
+        }
       }
     ],
     "parameters": {
@@ -83,8 +116,11 @@
       false,
       false,
       false,
-      false
+      false,
+      false,
+      true,
+      true
     ]
   },
-  "hash": "28d2e18639a5e116afef8cec38803f566c69aa2aa4335225894e4515b974fc63"
+  "hash": "b52807f65e4f9567043ce8e549b9adbf4250f47716246ba1123b764913083407"
 }
