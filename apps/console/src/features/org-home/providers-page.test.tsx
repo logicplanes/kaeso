@@ -199,6 +199,45 @@ describe("organization providers", () => {
     expect(await screen.findByRole("dialog", { name: /Sign in again to OpenAI · Ada's plan/ })).toBeInTheDocument();
   });
 
+  it("shows a Grok account's email with its product and Experimental badges, and offers to sign in again", async () => {
+    signedIn();
+    const grok = credential({ id: "cred_grok", name: "Ada's Grok", provider: "xai", auth_method: "grok", account: "ada@example.com", last4: "" });
+    const free = credential({
+      id: "cred_free",
+      name: "Free Grok",
+      provider: "xai",
+      is_default: false,
+      auth_method: "grok",
+      account: "grace@example.com",
+      last4: "",
+      auth_error: "no_api_access",
+    });
+    keys([production, grok, free]);
+    const { user } = await renderApp(PATH);
+
+    const account = await row("Ada's Grok");
+    expect(account).toHaveTextContent("ada@example.com");
+    expect(within(account).getByText("Grok")).toBeInTheDocument();
+    expect(within(account).getByText("Experimental")).toBeInTheDocument();
+    expect(account).not.toHaveTextContent("…");
+    expect(account).not.toHaveTextContent("No API access");
+    const stopped = await row("Free Grok");
+    expect(stopped).toHaveTextContent("No API access");
+    expect(stopped).not.toHaveTextContent("Signed out");
+    await hoverReason(user, within(stopped).getByText("No API access"), "This Grok plan has no API access.");
+    expect(within(await row("OpenAI production")).queryByText("Experimental")).not.toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: "Actions for SpaceX · Ada's Grok" }));
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual(["Assign to projects", "Sign in again", "Rename", "Delete"]);
+    await user.click(within(menu).getByRole("menuitem", { name: "Sign in again" }));
+    expect(await screen.findByRole("dialog", { name: /Sign in again to SpaceX · Ada's Grok/ })).toBeInTheDocument();
+  });
+
   it("lets people who can only view keys reach an account's usage", async () => {
     withRights(["org.view", "provider_credentials.view"]);
     keys([production, credential({ id: "cred_plan", name: "Ada's plan", is_default: false, auth_method: "chatgpt", account: "ada@example.com", last4: "" })]);

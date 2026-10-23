@@ -22,7 +22,7 @@ pnpm seed
 pnpm dev
 ```
 
-Node.js 24, pnpm 11 and a Docker engine with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider, a mock identity provider, a mock ChatGPT sign-in and a mock release feed (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
+Node.js 24, pnpm 11 and a Docker engine with Compose. `pnpm stack:up` builds the gateway's image from `deploy/gateway.Dockerfile` (`KAESO_GATEWAY_IMAGE` names a prebuilt one instead) and starts it with PostgreSQL, ClickHouse, Valkey, Mailpit, a mock model provider, a mock identity provider, a mock ChatGPT and Grok sign-in and a mock release feed (the `console` profile of `deploy/compose.dev.yaml`, the repository's one development stack); `pnpm seed` creates an organization with projects, members, keys and weeks of usage; `pnpm dev` builds the libraries in `packages/`, starts the stack and serves the console at http://localhost:3000. Sign in as `owner@example.com` with the password `correct horse battery staple`.
 
 ## Where things are
 
@@ -40,7 +40,7 @@ How the console reads data, checks rights, loads its code and shows errors is in
 | `src/i18n/`     | The message function, the catalogs in English, German and Simplified Chinese, and the language at start                                                                     |
 | `eslint/`       | The layout-only, no-color and no-literal-text lint rules, with tests                                                                                                        |
 | `scripts/`      | Client and route generation, the stack, the seed, the README's recording, bundle budgets, the licence check and the catalog check                                           |
-| `stack/`        | The mock provider, the mock identity provider, the mock ChatGPT sign-in, the mock release feed and updater, and the master key the local stack uses                         |
+| `stack/`        | The mock provider, the mock identity provider, the mock ChatGPT and Grok sign-in, the mock release feed and updater, and the master key the local stack uses                |
 | `e2e/`          | Playwright suites against a stack of their own                                                                                                                              |
 
 ## Checks
