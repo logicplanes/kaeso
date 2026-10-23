@@ -28,10 +28,87 @@ describe("InlineCopyText", () => {
     expect(button).toHaveClass("max-w-full-bleed-4", "min-w-0");
     expect(screen.getByText(/^Mozilla/)).toHaveClass("truncate");
   });
-  it("shows its copy icon past the text's end without reserving room for it, so the value ends on the row's edge", () => {
-    render(<InlineCopyText value="usr_01m5mbctmseffb5006sxv8cn1j" label="Copy account id" />);
-    const icon = screen.getByRole("button", { name: /usr_01m5/ }).querySelector("svg");
-    expect(icon).toHaveClass("absolute", "start-full", "opacity-0", "group-hover/copy:opacity-100", "group-focus-visible/copy:opacity-100");
-    expect(icon).toHaveClass("coarse:static", "coarse:opacity-100");
+  const icon = (name: RegExp) => screen.getByRole("button", { name }).querySelector("svg");
+
+  it("at the end of a settings row, shows its copy icon past the text without reserving room, so the id ends on the row's edge", () => {
+    render(
+      <div style={{ display: "flex", paddingRight: "20px" }}>
+        <span style={{ display: "flex" }}>
+          <InlineCopyText value="usr_01m5mbctmseffb5006sxv8cn1j" label="Copy account id" />
+        </span>
+      </div>,
+    );
+    expect(icon(/usr_01m5/)).toHaveClass(
+      "absolute",
+      "start-full",
+      "opacity-0",
+      "group-hover/copy:opacity-100",
+      "group-focus-visible/copy:opacity-100",
+      "coarse:opacity-100",
+    );
+  });
+
+  it("keeps room for its icon when a button follows it, so the icon never lands on the button", () => {
+    render(
+      <div style={{ display: "flex", paddingRight: "20px" }}>
+        <InlineCopyText value="kaeso-verify=ulCEmQL4y35R" label="Copy TXT value" />
+        <button type="button">Verify</button>
+      </div>,
+    );
+    expect(icon(/kaeso-verify/)).not.toHaveClass("absolute");
+  });
+
+  it("keeps room for its icon inside a sentence, and in a cell without padding for it", () => {
+    render(
+      <>
+        <p style={{ paddingRight: "24px" }}>
+          Send <InlineCopyText value="org_01m5" /> with every request.
+        </p>
+        <table>
+          <tbody>
+            <tr>
+              <td style={{ paddingRight: "12px" }}>
+                <InlineCopyText value="req_01m5" />
+              </td>
+              <td>12:22</td>
+            </tr>
+          </tbody>
+        </table>
+      </>,
+    );
+    expect(icon(/org_01m5/)).not.toHaveClass("absolute");
+    expect(icon(/req_01m5/)).not.toHaveClass("absolute");
+  });
+
+  it("ignores what sits below it in a column, and gives the room back when something is added after it", async () => {
+    function Row({ verify }: { verify: boolean }) {
+      return (
+        <div style={{ paddingRight: "24px" }}>
+          <div style={{ display: "flex" }}>
+            <InlineCopyText value="req_01m5mbcwbfe7" />
+            {verify && <button type="button">Verify</button>}
+          </div>
+          <pre>{"{}"}</pre>
+        </div>
+      );
+    }
+    const { rerender } = render(<Row verify={false} />);
+    expect(icon(/req_01m5/)).toHaveClass("absolute");
+    rerender(<Row verify />);
+    await waitFor(() => expect(icon(/req_01m5/)).not.toHaveClass("absolute"));
+  });
+
+  it("keeps its icon in its own space on touch screens", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(pointer: coarse)", addEventListener: () => {}, removeEventListener: () => {} }));
+    try {
+      render(
+        <div style={{ display: "flex", paddingRight: "20px" }}>
+          <InlineCopyText value="proj_01m5" />
+        </div>,
+      );
+      expect(icon(/proj_01m5/)).not.toHaveClass("absolute");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

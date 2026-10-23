@@ -22,7 +22,7 @@ export const docs = {
   },
   InlineCopyText: {
     description:
-      "Inline mono text that copies itself on click. On hover and keyboard focus a copy icon appears just past its end without taking space, so the text ends on the same edge as the values around it; keep 20px free after it. Touch screens always show the icon. Never wider than its container: a long value (a user agent, an id) ends in an ellipsis, and its tooltip shows the whole of it until it is copied.",
+      "Inline mono text that copies itself on click. On hover and keyboard focus a copy icon appears after it. When nothing follows it on its line and its row's padding has room, the icon takes no space, so the text ends on the same edge as the values around it; otherwise the icon keeps its own space. Touch screens always show the icon in its own space. Never wider than its container: a long value (a user agent, an id) ends in an ellipsis, and its tooltip shows the whole of it until it is copied.",
     props: {
       children: "What is shown, when it differs from the copied text.",
       label: 'The tooltip and accessible name. Defaults to "Copy" in the provider\'s language.',
