@@ -550,7 +550,8 @@ async fn save_again(
     if before.method() != sign_in.method {
         return Err(ApiError::bad_request(NOT_ACCOUNT));
     }
-    rewrite(
+    let previous = revocable(state, &mut tx, org, &before).await;
+    let after = rewrite(
         state,
         ctx,
         tx,
@@ -564,7 +565,13 @@ async fn save_again(
             account: Some(&signed.account),
         },
     )
-    .await
+    .await?;
+    if let Some(previous) = previous
+        && previous.refresh_token != signed.tokens.refresh_token
+    {
+        previous.revoke().await;
+    }
+    Ok(after)
 }
 
 pub(super) struct Revocable {
@@ -603,7 +610,7 @@ pub(super) async fn revocable(
     let row = match store::sealed(&mut *tx, org, before.id.uuid()).await {
         Ok(row) => row?,
         Err(e) => {
-            tracing::warn!(error = %e, "cannot read a deleted account's tokens to end its session");
+            tracing::warn!(error = %e, "cannot read an account's tokens to end its session");
             return None;
         }
     };
@@ -614,7 +621,7 @@ pub(super) async fn revocable(
             refresh_token: tokens.refresh_token,
         }),
         Err(e) => {
-            tracing::warn!(error = %e, "cannot open a deleted account's tokens to end its session");
+            tracing::warn!(error = %e, "cannot open an account's tokens to end its session");
             None
         }
     }

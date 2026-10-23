@@ -704,6 +704,11 @@ async fn signing_in_again_keeps_the_registration_and_the_account() {
     let after = common::account_tokens(&app, &owner, &id).await;
     assert_ne!(after.access_token, before.access_token);
     assert_eq!(after.client_id, before.client_id);
+    assert_eq!(
+        oauth.revoked(),
+        [(before.refresh_token.clone(), before.client_id.clone())],
+        "the session the new sign-in replaced ends at OpenAI"
+    );
     let audit = app
         .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
         .await;
@@ -1168,8 +1173,11 @@ async fn signing_in_again_and_deleting_wait_for_a_renewal_in_progress() {
     assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{:?}", deleted.body);
     assert_eq!(
         oauth.revoked(),
-        [("rt_rotated_meanwhile".to_owned(), kept.client_id)],
-        "the delete ends the session the renewal left, not the token it replaced"
+        [
+            ("rt_from_a_renewal".to_owned(), kept.client_id.clone()),
+            ("rt_rotated_meanwhile".to_owned(), kept.client_id)
+        ],
+        "signing in again ends the session the renewal left, and so does the delete"
     );
     s.cleanup().await;
 }
@@ -1271,5 +1279,26 @@ async fn a_sign_in_refused_after_openai_issued_tokens_ends_that_session() {
         )
         .await;
     assert_eq!(list.body["data"].as_array().unwrap().len(), 1);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn signing_in_again_works_while_openai_cannot_end_the_old_session() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let before = common::account_tokens(&app, &owner, &id).await;
+    oauth.set_fault(Fault::RevokeDown);
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    let r = finish_again(&app, &owner, &id, &attempt, &back).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(oauth.revoked(), []);
+    let after = common::account_tokens(&app, &owner, &id).await;
+    assert_ne!(after.refresh_token, before.refresh_token);
+    assert!(oauth.issued().contains(&after.refresh_token));
     s.cleanup().await;
 }
