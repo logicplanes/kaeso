@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "7.0.3",
-    "@astrojs/react": "6.0.1",
+    "@astrojs/react": "7.1.0",
     "@hugeicons/core-free-icons": "4.3.5",
     "@hugeicons/react": "1.1.10",
     "@logicplanes/kaeso-tokens": "workspace:*",
