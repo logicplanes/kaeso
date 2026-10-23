@@ -63,6 +63,7 @@ export function ProviderKeyDialog({
   const forgetAttempt = () => {
     inputs.current += 1;
     setAttempt(null);
+    setCallback("");
   };
   const chosen = provider ?? "";
   const label = provider ? providers.name(provider) : "";
@@ -168,7 +169,10 @@ export function ProviderKeyDialog({
             label={t("common.name", "Name")}
             placeholder={t("kaeso.providerKey.namePlaceholder", "Production")}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              forgetAttempt();
+            }}
             maxLength={100}
           />
         )}
@@ -241,7 +245,10 @@ export function ProviderKeyDialog({
       <RadioCards
         aria-label={t("kaeso.providerKey.method", "Sign-in method")}
         value={method}
-        onValueChange={(v) => setMethod(v === "account" ? "account" : "api_key")}
+        onValueChange={(v) => {
+          setMethod(v === "account" ? "account" : "api_key");
+          forgetAttempt();
+        }}
       >
         <Radio
           value="api_key"

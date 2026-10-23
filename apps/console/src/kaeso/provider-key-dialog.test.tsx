@@ -435,6 +435,50 @@ describe("ProviderKeyDialog", () => {
     expect(tab.close).toHaveBeenCalledTimes(1);
   });
 
+  it("starts the sign-in over after a detour through an API key changed its name", async () => {
+    newTab();
+    on("POST", `${CREDENTIALS}/oauth`, ATTEMPT);
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, plan);
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await user.click(await within(dialog).findByRole("radio", { name: /^API key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Paste your OpenAI API key" })).toBeVisible();
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await user.type(name, "Other plan");
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
+    await user.click(await within(dialog).findByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Sign in with your ChatGPT account" })).toBeVisible();
+    expect(within(dialog).getByRole("textbox", { name: "Name" })).toHaveValue("Other plan");
+    expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Continue with ChatGPT first");
+    const second = { ...ATTEMPT, attempt: "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5c" };
+    on("POST", `${CREDENTIALS}/oauth`, second);
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    const address = await within(dialog).findByRole("textbox", { name: "Address of the page" });
+    expect(address).toHaveValue("");
+    await user.type(address, CALLBACK);
+    await user.click(within(dialog).getByRole("button", { name: "Add account" }));
+
+    expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([
+      { provider: "openai", name: "Plan", make_default: false },
+      { provider: "openai", name: "Other plan", make_default: false },
+    ]);
+    expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`).map((r) => r.params.attempt)).toEqual([second.attempt]);
+  });
+
   it("goes back to an API key when another provider is chosen", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "OpenAI");
