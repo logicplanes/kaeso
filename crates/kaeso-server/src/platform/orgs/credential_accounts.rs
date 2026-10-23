@@ -448,7 +448,7 @@ pub async fn finish(
     let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
     let signed = signed_in(&state, &ctx, sign_in, &pending, callback.answer).await?;
     let secret = sealed_form(&signed.tokens)?;
-    let view = add(
+    let added = add(
         &state,
         &ctx,
         org,
@@ -466,8 +466,24 @@ pub async fn finish(
             },
         },
     )
-    .await?;
-    Ok((StatusCode::CREATED, Json(view)))
+    .await;
+    if added.is_err() {
+        unsaved(&state, sign_in, signed.tokens).await;
+    }
+    Ok((StatusCode::CREATED, Json(added?)))
+}
+
+// A session OpenAI opened for a key that was never saved would stay usable until it
+// expires, with nobody able to see or end it from Kaeso.
+async fn unsaved(state: &AppState, sign_in: AccountSignIn, tokens: Tokens) {
+    if let Some(hosts) = state.accounts.hosts(sign_in.method) {
+        Revocable {
+            hosts: hosts.clone(),
+            tokens,
+        }
+        .revoke()
+        .await;
+    }
 }
 
 #[utoipa::path(
@@ -488,21 +504,40 @@ pub async fn finish_again(
     Path((_org, id, attempt)): Path<(String, String, String)>,
     Body(req): Body<AccountFinish>,
 ) -> ApiResult<Json<CredentialView>> {
-    let org = ctx.org()?.org.id;
     let id = parse_id(&id)?;
     let (pending, callback) = take(&state, &ctx, &attempt, &req.callback_url, Some(id)).await?;
     let provider = validate_provider(&pending.provider)?;
     let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
     let signed = signed_in(&state, &ctx, sign_in, &pending, callback.answer).await?;
+    let saved = save_again(&state, &ctx, id, provider, sign_in, &signed).await;
+    if saved.is_err() {
+        unsaved(&state, sign_in, signed.tokens).await;
+    }
+    Ok(Json(saved?))
+}
+
+async fn save_again(
+    state: &AppState,
+    ctx: &Ctx,
+    id: Uuid,
+    provider: &Provider,
+    sign_in: AccountSignIn,
+    signed: &Signed,
+) -> ApiResult<CredentialView> {
+    let org = ctx.org()?.org.id;
     let secret = sealed_form(&signed.tokens)?;
     let mut tx = state.pg.begin().await?;
+    // A renewal on another replica holds this lock between reading the old tokens and
+    // storing their successors, so waiting here keeps it from overwriting the new sign-in.
+    store::lock_provider(&mut tx, org, provider.id).await?;
+    store::lock_refresh(&mut tx, id).await?;
     let before = view(&mut tx, org, id).await?;
     if before.method() != sign_in.method {
         return Err(ApiError::bad_request(NOT_ACCOUNT));
     }
-    let after = rewrite(
-        &state,
-        &ctx,
+    rewrite(
+        state,
+        ctx,
         tx,
         &before,
         &before.name,
@@ -514,8 +549,7 @@ pub async fn finish_again(
             account: Some(&signed.account),
         },
     )
-    .await?;
-    Ok(Json(after))
+    .await
 }
 
 pub(super) struct Revocable {
@@ -526,10 +560,10 @@ pub(super) struct Revocable {
 impl Revocable {
     pub(super) async fn revoke(self) {
         match accounts::revoke(&self.hosts, &self.tokens).await {
-            Ok(()) => tracing::info!("ended a deleted account's session at the provider"),
+            Ok(()) => tracing::info!("ended an account's session at the provider"),
             Err(e) => tracing::warn!(
                 error = %e,
-                "cannot end a deleted account's session at the provider; its owner can disconnect Kaeso there"
+                "cannot end an account's session at the provider; its owner can disconnect Kaeso there"
             ),
         }
     }

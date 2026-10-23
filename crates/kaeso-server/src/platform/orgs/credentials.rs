@@ -665,6 +665,7 @@ pub async fn delete(
     let mut tx = state.pg.begin().await?;
     let before = view(&mut tx, org, id).await?;
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
+    credentials::lock_refresh(&mut tx, id).await?;
     let revocable = super::credential_accounts::revocable(&state, &mut tx, org, &before).await;
     if !credentials::delete(&mut *tx, org, id).await? {
         return Err(ApiError::not_found("credential"));

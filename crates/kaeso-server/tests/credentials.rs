@@ -1078,3 +1078,133 @@ async fn deleting_an_account_ends_its_session_even_when_the_provider_is_down() {
     );
     s.cleanup().await;
 }
+
+async fn waiting_for_a_lock(app: &App) -> bool {
+    let (waiting,): (i64,) = sqlx::query_as(
+        "SELECT count(*) FROM pg_locks l JOIN pg_database d ON d.oid = l.database \
+         WHERE l.locktype = 'advisory' AND NOT l.granted AND d.datname = current_database()",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    waiting > 0
+}
+
+async fn renewing(app: &App, id: &str) -> sqlx::Transaction<'static, sqlx::Postgres> {
+    let mut renewal = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::credentials::lock_refresh(&mut renewal, common::uuid(id))
+        .await
+        .unwrap();
+    renewal
+}
+
+async fn rotate_once_waited_for(
+    app: &App,
+    owner: &Owner,
+    id: &str,
+    mut renewal: sqlx::Transaction<'static, sqlx::Postgres>,
+    refresh_token: &str,
+) {
+    let credential = common::uuid(id);
+    common::eventually("the change waits for the renewal", || {
+        waiting_for_a_lock(app)
+    })
+    .await;
+    let mut tokens = common::account_tokens(app, owner, id).await;
+    tokens.refresh_token = refresh_token.to_owned();
+    tokens.access_token = format!("{refresh_token}-access");
+    let sealed = credentials::seal(
+        &app.state,
+        id.parse().unwrap(),
+        &tokens.sealed_form().unwrap(),
+    )
+    .unwrap();
+    kaeso_store::pg::credentials::refreshed(
+        &mut *renewal,
+        credential,
+        &kaeso_store::pg::credentials::Sealed {
+            ciphertext: &sealed.ciphertext,
+            nonce: &sealed.nonce,
+            wrapped_key: &sealed.wrapped_key,
+            key_id: &sealed.key_id,
+        },
+        app.clock.now() + time::Duration::hours(1),
+    )
+    .await
+    .unwrap();
+    renewal.commit().await.unwrap();
+}
+
+#[tokio::test]
+async fn signing_in_again_and_deleting_wait_for_a_renewal_in_progress() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    let renewal = renewing(&app, &id).await;
+    let (again, ()) = tokio::join!(
+        finish_again(&app, &owner, &id, &attempt, &back),
+        rotate_once_waited_for(&app, &owner, &id, renewal, "rt_from_a_renewal")
+    );
+    assert_eq!(again.status, StatusCode::OK, "{:?}", again.body);
+    let kept = common::account_tokens(&app, &owner, &id).await;
+    assert_ne!(
+        kept.refresh_token, "rt_from_a_renewal",
+        "the renewal's tokens of the old session never replace a new sign-in"
+    );
+    assert!(oauth.issued().contains(&kept.refresh_token));
+
+    let path = format!("/orgs/{}/credentials/{id}", owner.org_id);
+    let renewal = renewing(&app, &id).await;
+    let (deleted, ()) = tokio::join!(
+        app.call(Method::DELETE, &path, None, Some(&owner.cookie)),
+        rotate_once_waited_for(&app, &owner, &id, renewal, "rt_rotated_meanwhile")
+    );
+    assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{:?}", deleted.body);
+    assert_eq!(
+        oauth.revoked(),
+        [("rt_rotated_meanwhile".to_owned(), kept.client_id)],
+        "the delete ends the session the renewal left, not the token it replaced"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_sign_in_that_cannot_be_saved_ends_its_session_at_openai() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Plan").await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    sqlx::raw_sql(
+        "CREATE FUNCTION refuse_keys() RETURNS trigger LANGUAGE plpgsql AS \
+         $$ BEGIN RAISE EXCEPTION 'refused'; END $$; \
+         CREATE TRIGGER refuse_keys BEFORE INSERT ON provider_credentials \
+         FOR EACH ROW EXECUTE FUNCTION refuse_keys();",
+    )
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    let r = common::finish_sign_in(&app, &owner, &attempt, &back).await;
+    assert_eq!(r.status, StatusCode::INTERNAL_SERVER_ERROR, "{:?}", r.body);
+    let issued = oauth.issued();
+    let refresh = issued.iter().find(|t| t.starts_with("rt_")).unwrap();
+    assert_eq!(
+        oauth.revoked(),
+        [(refresh.clone(), "oaiapp_mock0".to_owned())]
+    );
+    let list = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(list.body["data"], json!([]));
+    s.cleanup().await;
+}
