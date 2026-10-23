@@ -540,6 +540,34 @@ describe("LogsPage", () => {
     vi.restoreAllMocks();
   });
 
+  it.each([
+    ["a tablet", 700],
+    ["a laptop", 1000],
+  ])("keeps the provider's own column with its name when Model is hidden on %s", async (_device, width) => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width,
+      height: 0,
+      top: 0,
+      left: 0,
+      right: width,
+      bottom: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    window.localStorage.setItem("kaeso:logs-columns", JSON.stringify(["time", "status", "provider", "duration"]));
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    await renderApp(projectPath("logs"));
+
+    const row = await screen.findByRole("row", { name: /200 OK/ });
+    expect(within(requestsTable()).getByRole("columnheader", { name: /^Provider/ })).toHaveTextContent("Provider");
+    expect(within(requestsTable()).queryByRole("columnheader", { name: /^Model/ })).not.toBeInTheDocument();
+    expect(within(row).getByText("OpenAI")).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
   it("says which right export needs and names keys only with the right to see them", async () => {
     signedIn({ projectRights: without("logs.export", "keys.all.view", "project.members.view", "service_accounts.view") });
     projectData({ keys: [apiKey()] });

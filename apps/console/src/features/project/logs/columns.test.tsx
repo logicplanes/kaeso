@@ -64,6 +64,9 @@ describe("logColumns", () => {
         shown.filter((c) => c !== "provider"),
       ),
     ).toBe(false);
+    const withoutModel = shown.filter((c) => c !== "model");
+    expect(providerInModel("medium", withoutModel)).toBe(false);
+    expect(providerInModel("narrow", withoutModel)).toBe(false);
   });
 
   it("stacks a day's time into a narrow column on a phone, leaving the model the room", () => {

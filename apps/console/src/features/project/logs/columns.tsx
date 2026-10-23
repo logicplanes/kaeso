@@ -101,7 +101,8 @@ export function storeColumns(next: ColumnId[]): void {
   writeStored(COLUMNS_KEY, JSON.stringify(next));
 }
 
-export const providerInModel = (layout: LogsLayout, shown: readonly ColumnId[]) => shown.includes("provider") && (layout === "medium" || layout === "narrow");
+export const providerInModel = (layout: LogsLayout, shown: readonly ColumnId[]) =>
+  shown.includes("provider") && shown.includes("model") && (layout === "medium" || layout === "narrow");
 
 export function logColumns({
   spansDays,
