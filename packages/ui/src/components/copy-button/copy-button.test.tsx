@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { InlineCopyText } from "./copy-button.js";
+import { DataTable } from "../data-table/data-table.js";
+import { col } from "../data-table/columns.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
 
 describe("InlineCopyText", () => {
@@ -80,6 +83,18 @@ describe("InlineCopyText", () => {
     expect(icon(/req_01m5/)).not.toHaveClass("absolute");
   });
 
+  it("keeps room for its icon in the last cell of a table row, where the cell would clip an icon past its end", () => {
+    render(
+      <div role="row" style={{ display: "flex", paddingRight: "24px" }}>
+        <div role="cell">12:22</div>
+        <div role="cell" style={{ overflow: "hidden", paddingRight: "12px" }}>
+          <InlineCopyText value="req_01m5mgxq" />
+        </div>
+      </div>,
+    );
+    expect(icon(/req_01m5mgxq/)).not.toHaveClass("absolute");
+  });
+
   it("ignores what sits below it in a column, and gives the room back when something is added after it", async () => {
     function Row({ verify }: { verify: boolean }) {
       return (
@@ -110,5 +125,37 @@ describe("InlineCopyText", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("takes the pointer on its icon past the text: the tooltip stays, a click copies and the row behind it doesn't open", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const open = vi.fn();
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[{ id: "req_01m5mbcwbfe7" }]}
+        getRowId={(r) => r.id}
+        onRowClick={open}
+        columns={[
+          col.custom<{ id: string }, string>(
+            { id: "request", header: "Request", size: 248 },
+            (r) => r.id,
+            (v) => <InlineCopyText value={v} label="Copy request id" />,
+          ),
+        ]}
+      />,
+    );
+    await act(() => lazyModulesSettled());
+    const copyIcon = icon(/req_01m5/)!;
+    expect(copyIcon).toHaveClass("absolute", "start-full", "group-hover/copy:pointer-events-auto");
+    await user.hover(screen.getByText("req_01m5mbcwbfe7"));
+    expect(await screen.findByText("Copy request id")).toBeInTheDocument();
+    await user.hover(copyIcon);
+    expect(screen.getByText("Copy request id")).toBeInTheDocument();
+    await user.click(copyIcon);
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("req_01m5mbcwbfe7"));
+    expect(open).not.toHaveBeenCalled();
   });
 });

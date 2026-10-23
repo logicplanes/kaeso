@@ -122,6 +122,8 @@ function hasRoomAfter(el: Element): boolean {
     const style = getComputedStyle(parent);
     for (let sibling = node.nextSibling; sibling; sibling = sibling.nextSibling) if (sharesLine(sibling, style)) return false;
     if ((parseFloat(style.direction === "rtl" ? style.paddingLeft : style.paddingRight) || 0) >= ICON_ROOM) return true;
+    const overflow = style.overflowX || style.overflow;
+    if (overflow && overflow !== "visible") return false;
   }
   return true;
 }
@@ -192,9 +194,9 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
           icon={copied ? icons.check : icons.copy}
           size="xs"
           className={cn(
-            room && "pointer-events-none absolute start-full",
+            room && "pointer-events-none absolute start-full group-hover/copy:pointer-events-auto group-focus-visible/copy:pointer-events-auto",
             "text-fg-tertiary opacity-0 transition-control group-hover/copy:opacity-100 coarse:opacity-100 group-focus-visible/copy:opacity-100",
-            copied && "opacity-100 text-fg",
+            copied && "pointer-events-auto opacity-100 text-fg",
           )}
         />
         <span className="sr-only" aria-live="polite">
