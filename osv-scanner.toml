@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "RUSTSEC-2023-0071"
+reason = "Kaeso only verifies RSA signatures with public keys: OIDC ID tokens in the gateway and Sigstore bundles in the updater. RSA private-key operations, which the Marvin attack targets, run only in the test kit's mock identity provider, and no fixed version of rsa exists"
