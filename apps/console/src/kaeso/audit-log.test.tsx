@@ -118,6 +118,29 @@ describe("AuditLog", () => {
     expect(within(sheet).getByText("No before or after values are kept for this kind of change.")).toBeInTheDocument();
   });
 
+  it("keeps every action's name whole and gives the target the rest of the row", async () => {
+    orgLog([
+      auditEvent({ id: "evt_assign", action: "credential.assign", target_kind: "credential", target_id: "cred_openai" }),
+      auditEvent({ id: "evt_key", action: "key.create", target_kind: "key", target_id: "key_web" }),
+    ]);
+    await renderApp(PATH);
+
+    const grid = await table();
+    await within(grid).findByText("Provider key assigned to projects");
+    const [time, actor, action, target] = (within(grid).getAllByRole("row")[0] as HTMLElement).style.gridTemplateColumns.split(" ");
+    expect([time, actor, action]).toEqual(["140px", "168px", "264px"]);
+    expect(target).toBe("minmax(152px,");
+  });
+
+  it("sizes the action to the names in view", async () => {
+    orgLog([auditEvent({ id: "evt_key", action: "key.create", target_kind: "key", target_id: "key_web" })]);
+    await renderApp(PATH);
+
+    const grid = await table();
+    await within(grid).findByText("Key created");
+    expect((within(grid).getAllByRole("row")[0] as HTMLElement).style.gridTemplateColumns).toMatch(/^140px 168px 152px minmax\(152px, 1fr\)/);
+  });
+
   it("on a phone, keeps who acted as a named picture and shortens the time", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",

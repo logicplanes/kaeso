@@ -34,6 +34,7 @@ import { locale, t, type Locale } from "~/i18n";
 import { showExportProgress, startExport } from "~/shell/export-job";
 import { patchSearch, type SearchPatch } from "~/search";
 import { dayKey, inZone, yearOf } from "~/format/zone";
+import { cellWidth } from "~/format/text-width";
 import { usePhone } from "~/shell/use-phone";
 
 const dateTag = () => (locale() === "en" ? "en-GB" : locale());
@@ -41,6 +42,8 @@ const shortTime = (v: string) =>
   dateFormatter({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(v);
 const FILTER_FIELD = "min-w-0 flex-1 basis-120 sm:w-160 sm:flex-none sm:basis-auto";
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
+const ACTION_MIN = 152;
+const ACTION_MAX = 264;
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
 function compactTime(v: string): string {
   const at = new Date(v);
@@ -95,6 +98,7 @@ export function AuditLog({
 
   const lang = locale();
   const phone = usePhone();
+  const actionWidth = cellWidth(new Set(rows.map((r) => auditActionLabel(r.action))), { min: ACTION_MIN, max: ACTION_MAX });
   const columns = useMemo(
     () =>
       [
@@ -134,12 +138,12 @@ export function AuditLog({
           },
         ),
         col.custom(
-          { id: "action", header: t("kaeso.audit.action", "Action"), size: 196, priority: 1, grow: true },
+          { id: "action", header: t("kaeso.audit.action", "Action"), size: phone ? ACTION_MIN : actionWidth, priority: 1, grow: phone },
           (r: AuditEventView) => r.action,
           (v: string) => <Text truncate>{auditActionLabel(v)}</Text>,
         ),
         col.custom(
-          { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, priority: 2 },
+          { id: "target", header: t("kaeso.audit.target", "Target"), size: 152, minWidth: 104, priority: phone ? 2 : 1, grow: !phone },
           (r: AuditEventView) => r.target_id ?? "",
           (_v, r) => <TargetCell kind={r.target_kind} id={r.target_id} href={targetHref} name={nameOf} bare />,
         ),
@@ -155,7 +159,7 @@ export function AuditLog({
             ) : null,
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [lang, phone, partyLabel, targetHref, nameOf],
+    [lang, phone, actionWidth, partyLabel, targetHref, nameOf],
   );
 
   return (

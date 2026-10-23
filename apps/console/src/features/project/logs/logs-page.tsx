@@ -33,7 +33,7 @@ import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
-import { COLUMNS, columnLabel, logColumns, logsLayout, storeColumns, storedColumns, type ColumnId } from "./columns";
+import { COLUMNS, columnLabel, logColumns, logsLayout, providerInModel, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
 import { scrollParentOf, useLiveLogs } from "./live";
 import { LogInspector } from "./log-inspector";
@@ -141,8 +141,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
   const phone = usePhone();
   const errors = useGatewayErrors();
-  const all = logColumns({ spansDays, layout: logsLayout(width, phone, spansDays, columns), keyName, partyName, providerName: catalog.name, errors });
-  const shownColumns = COLUMNS.filter((c) => columns.includes(c)).map((c) => all[c]);
+  const layout = logsLayout(width, phone, spansDays, columns);
+  const withProvider = providerInModel(layout, columns);
+  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors });
+  const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
 
   const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));
   const memberOptions = [

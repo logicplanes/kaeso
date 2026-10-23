@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
 import { logRow } from "~/test/fixtures/project-logs";
-import { COLUMNS, logColumns, logsLayout, type LogsLayout } from "./columns";
+import { COLUMNS, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
 const shown = COLUMNS.filter((c) => c !== "request" && c !== "agent");
 
@@ -36,11 +36,43 @@ describe("logColumns", () => {
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
   });
 
-  it("shows the provider's mark alone, named by a tooltip, when the table is narrower", () => {
-    table("medium");
-    expect(screen.getByRole("columnheader", { name: /^Provider/ })).toBeInTheDocument();
+  it("puts the provider's mark before the model id, named by a tooltip, when the table is narrower", () => {
+    const all = logColumns({
+      spansDays: true,
+      layout: "medium",
+      withProvider: true,
+      keyName: (id) => id,
+      partyName: (p) => p.id ?? "",
+      providerName: (id) => ({ openai: "OpenAI" })[id] ?? id,
+    });
+    render(<DataTable aria-label="Requests" data={[logRow()]} columns={[all.time, all.status, all.model, all.duration]} getRowId={(r) => r.id} />);
+    expect(screen.queryByRole("columnheader", { name: /^Provider/ })).toBeNull();
     expect(screen.queryByText("OpenAI")).toBeNull();
-    expect(screen.getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    const model = screen.getAllByRole("cell")[2] as HTMLElement;
+    expect(within(model).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
+    expect([...model.querySelectorAll(".\\@container > *")].map((e) => e.textContent)).toEqual(["", "gpt-5.4-mini"]);
+  });
+
+  it("folds the provider into the model only where its column would hold the mark alone", () => {
+    expect(providerInModel("wide", shown)).toBe(false);
+    expect(providerInModel("medium", shown)).toBe(true);
+    expect(providerInModel("narrow", shown)).toBe(true);
+    expect(providerInModel("phone", shown)).toBe(false);
+    expect(
+      providerInModel(
+        "medium",
+        shown.filter((c) => c !== "provider"),
+      ),
+    ).toBe(false);
+    const withoutModel = shown.filter((c) => c !== "model");
+    expect(providerInModel("medium", withoutModel)).toBe(false);
+    expect(providerInModel("narrow", withoutModel)).toBe(false);
+  });
+
+  it("stacks a day's time into a narrow column on a phone, leaving the model the room", () => {
+    const [started] = table("phone");
+    expect(screen.getAllByRole("row")[1]?.style.gridTemplateColumns).toMatch(/^88px 80px /);
+    expect(started?.querySelectorAll("time > *")).toHaveLength(2);
   });
 
   it("drops the seconds from a day's time on a tablet", () => {
@@ -80,6 +112,12 @@ describe("logColumns", () => {
     );
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
     expect(parts).toEqual(["Invalid request"]);
+  });
+
+  it("names the provider under a visible header wherever its column is shown on a phone", () => {
+    table("phone");
+    expect(screen.getByRole("columnheader", { name: /^Provider/ })).toHaveTextContent("Provider");
+    expect(screen.getByText("OpenAI")).toBeInTheDocument();
   });
 
   it("leaves the provider cell empty when a request was refused before a provider was chosen", () => {

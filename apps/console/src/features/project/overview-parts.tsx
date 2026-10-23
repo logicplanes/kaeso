@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Empty, InsetContent, LimitMeter, List, ModelLabel, Section, Segmented, StatusCode, Table, Text } from "@logicplanes/kaeso-ui";
+import { DataTable, Empty, InsetContent, LimitMeter, List, ModelLabel, Section, Segmented, StatusCode, Text, col } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { LimitView, UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
@@ -29,8 +29,10 @@ const byOptions = (g: Granularity) => [
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
-const NUMBER_COLUMN = "w-96 sm:w-120";
-const PHONE_HIDDEN = "hidden w-120 sm:table-cell";
+const LABEL_WIDTH = 200;
+const LABEL_MIN_WIDTH = 120;
+const NUMBER_WIDTH = 88;
+const COST_WIDTH = 96;
 
 const NOTABLE_ERROR_RATE = 0.05;
 
@@ -86,6 +88,68 @@ export function Breakdown({
     const name = partyName({ kind: sa ? "service_account" : "user", id });
     return <Text truncate>{sa ? serviceAccountName(name) : name}</Text>;
   };
+  const header =
+    by === "day"
+      ? timeHeader(granularity)
+      : by === "model"
+        ? common.model()
+        : by === "key"
+          ? t("project.overview.key", "Key")
+          : t("project.overview.member", "Member");
+  const columns = [
+    col.custom(
+      { id: "key", header, size: LABEL_WIDTH, minWidth: LABEL_MIN_WIDTH, priority: 1, grow: true },
+      (r: UsageRow) => r.key,
+      (_v, r) => label(r),
+    ),
+    col.custom(
+      { id: "requests", header: common.requests(), size: NUMBER_WIDTH, priority: 1 },
+      (r: UsageRow) => r.requests,
+      (v: number) => formatNumber(v),
+      {
+        align: "end",
+      },
+    ),
+    col.custom(
+      {
+        id: "errors",
+        header: t("project.overview.errors", "Errors"),
+        size: NUMBER_WIDTH,
+        priority: 2,
+        tone: (r: UsageRow) => (r.errors > 0 && r.errors / r.requests >= NOTABLE_ERROR_RATE ? "danger" : undefined),
+      },
+      (r: UsageRow) => r.errors,
+      (v: number) =>
+        v === 0 ? (
+          <Text tabular tone="secondary">
+            0
+          </Text>
+        ) : (
+          <Text tone="inherit" tabular>
+            {formatNumber(v)}
+          </Text>
+        ),
+      { align: "end" },
+    ),
+    col.custom(
+      { id: "tokens", header: common.tokens(), size: NUMBER_WIDTH, priority: 2 },
+      (r: UsageRow) => totalTokens(r),
+      (v: number) => formatTokens(v),
+      {
+        align: "end",
+      },
+    ),
+    ...(showCost
+      ? [
+          col.custom(
+            { id: "cost", header: common.cost(), size: COST_WIDTH, priority: 1 },
+            (r: UsageRow) => r.cost ?? "",
+            (v: string) => (v ? periodUSD(v) : "—"),
+            { align: "end" },
+          ),
+        ]
+      : []),
+  ].map((c) => ({ ...c, enableSorting: false, enableResizing: false }));
   return (
     <Section
       title={t("project.overview.breakdown", "Breakdown")}
@@ -104,86 +168,16 @@ export function Breakdown({
         />
       }
     >
-      <Table aria-label={t("project.overview.usageBreakdown", "Usage breakdown")} className="table-fixed" {...(waiting ? { "aria-busy": true } : {})}>
-        <Table.Head>
-          <Table.Row>
-            <Table.HeaderCell>
-              {by === "day"
-                ? timeHeader(granularity)
-                : by === "model"
-                  ? common.model()
-                  : by === "key"
-                    ? t("project.overview.key", "Key")
-                    : t("project.overview.member", "Member")}
-            </Table.HeaderCell>
-            <Table.HeaderCell align="end" className={NUMBER_COLUMN}>
-              {common.requests()}
-            </Table.HeaderCell>
-            <Table.HeaderCell align="end" className={PHONE_HIDDEN}>
-              {t("project.overview.errors", "Errors")}
-            </Table.HeaderCell>
-            <Table.HeaderCell align="end" className={PHONE_HIDDEN}>
-              {common.tokens()}
-            </Table.HeaderCell>
-            {showCost && (
-              <Table.HeaderCell align="end" className={NUMBER_COLUMN}>
-                {common.cost()}
-              </Table.HeaderCell>
-            )}
-          </Table.Row>
-        </Table.Head>
-        <Table.Body>
-          {failed ? (
-            <Table.Row>
-              <Table.Cell colSpan={showCost ? 5 : 4}>
-                <Empty
-                  size="compact"
-                  title={t("project.overview.rowsFailed", "Couldn't load these rows")}
-                  actions={
-                    <Button size="sm" onClick={onRetry}>
-                      {common.tryAgain()}
-                    </Button>
-                  }
-                />
-              </Table.Cell>
-            </Table.Row>
-          ) : (
-            sorted.length === 0 &&
-            !waiting && (
-              <Table.Row>
-                <Table.Cell colSpan={showCost ? 5 : 4}>
-                  <Text tone="secondary">{t("project.overview.noRequests", "No requests in this period.")}</Text>
-                </Table.Cell>
-              </Table.Row>
-            )
-          )}
-          {sorted.map((r) => (
-            <Table.Row key={r.key}>
-              <Table.Cell>{label(r)}</Table.Cell>
-              <Table.Cell align="end">{formatNumber(r.requests)}</Table.Cell>
-              <Table.Cell
-                align="end"
-                className={PHONE_HIDDEN}
-                {...(r.errors > 0 && r.errors / r.requests >= NOTABLE_ERROR_RATE ? { tone: "danger" as const } : {})}
-              >
-                {r.errors === 0 ? (
-                  <Text tabular tone="secondary">
-                    0
-                  </Text>
-                ) : (
-                  <Text tone="inherit" tabular>
-                    {formatNumber(r.errors)}
-                  </Text>
-                )}
-              </Table.Cell>
-              <Table.Cell align="end" className={PHONE_HIDDEN}>
-                {formatTokens(totalTokens(r))}
-              </Table.Cell>
-              {showCost && <Table.Cell align="end">{r.cost === null || r.cost === undefined ? "—" : periodUSD(r.cost)}</Table.Cell>}
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table>
+      <DataTable
+        aria-label={t("project.overview.usageBreakdown", "Usage breakdown")}
+        data={sorted}
+        columns={columns}
+        getRowId={(r) => r.key}
+        loading={waiting}
+        error={failed}
+        onRetry={onRetry}
+        empty={<Empty size="compact" title={t("project.overview.noRequests", "No requests in this period")} />}
+      />
     </Section>
   );
 }

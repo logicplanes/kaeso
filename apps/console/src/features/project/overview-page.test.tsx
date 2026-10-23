@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { signedIn, without } from "~/test/fixtures";
 import { apiKey, catalogueModel, failedLog, limit, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
@@ -19,7 +19,61 @@ function usage(by: Partial<Record<string, UsageRow[] | Response>> = {}): void {
   });
 }
 
+function onPhone() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query === "(max-width: 639px)",
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  }));
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    width: 327,
+    height: 0,
+    top: 0,
+    left: 0,
+    right: 327,
+    bottom: 0,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
 describe("OverviewPage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("keeps requests and cost beside the model on a phone", async () => {
+    onPhone();
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 120, errors: 0, cost: "2.5" })] });
+    await renderApp(projectPath(`?${PERIOD}&by=model`));
+
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Model", "Requests", "Cost"]);
+    expect(bodyRows(table)[0]).toHaveTextContent("$2.50");
+  });
+
+  it("gives the model the room the number columns leave", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
+    await renderApp(projectPath(`?${PERIOD}&by=model`));
+
+    const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 96px");
+  });
+
   it("breaks usage down by model with names from the catalogue", async () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
@@ -107,7 +161,7 @@ describe("OverviewPage", () => {
 
     expect(await screen.findByText("Couldn't load these rows")).toBeInTheDocument();
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    expect(await within(await breakdown()).findByText("No requests in this period.")).toBeInTheDocument();
+    expect(await within(await breakdown()).findByText("No requests in this period")).toBeInTheDocument();
   });
 
   it("offers a retry across the whole row when the rows fail without the right to see cost", async () => {
@@ -118,7 +172,7 @@ describe("OverviewPage", () => {
 
     const table = await breakdown();
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(within(table).getByText("Couldn't load these rows").closest("td")).toHaveAttribute("colspan", "4");
+    expect(within(table).getByText("Couldn't load these rows").closest("[role=cell]")).toHaveAttribute("aria-colspan", "4");
   });
 
   it("leaves cost out without the right to see it", async () => {
@@ -296,7 +350,7 @@ describe("OverviewPage", () => {
     await renderApp(projectPath("?from=2025-10-21&to=2026-10-14&by=day"));
     await breakdown();
     await waitFor(() =>
-      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => (r as HTMLTableRowElement).cells[0]?.textContent)).toEqual([
+      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
         "Week of 12 Oct 2026",
         "Week of 20 Oct 2025",
       ]),

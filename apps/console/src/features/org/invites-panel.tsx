@@ -140,6 +140,7 @@ export function InvitesPanel({ org }: { org: string }) {
       <List
         aria-label={t("org.invites.title", "Invitations")}
         items={items}
+        wrapSubtitle
         loading={invites.isPending}
         empty={
           invites.isError ? (

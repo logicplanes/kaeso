@@ -73,6 +73,9 @@ function withProjectNames(k: CredentialView, text: ReactElement) {
   return k.projects.length > 0 ? <Tooltip content={joined(k.projects.map((p) => p.name))}>{text}</Tooltip> : text;
 }
 
+const KEY_WIDTH = 240;
+const ACCOUNT_KEY_WIDTH = 456;
+
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
 export function OrgProvidersPage({ org }: { org: string }) {
@@ -94,6 +97,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
   const [hidden, setHidden] = useState<string[]>([]);
   const keys = useMemo(() => credentials.data ?? [], [credentials.data]);
   const searchable = keys.length > SEARCH_ABOVE;
+  const accounts = keys.some((k) => !!k.account);
   if (!searchable && query) setQuery("");
   const searched = useDeferredValue(searchable ? query : "");
   const words = useMemo(() => new Map(keys.map((k) => [k.id, searchWords(k, providers)])), [keys, providers]);
@@ -180,7 +184,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
 
     return [
       col.custom(
-        { id: "provider", header: t("common.provider", "Provider"), size: 208, minWidth: 128, priority: 1, grow: true },
+        { id: "provider", header: t("common.provider", "Provider"), size: 136, minWidth: 128, priority: 1, grow: true },
         (r: Row) => r,
         (r: Row) => (
           <span className="flex min-w-0 items-center gap-8 sm:gap-12">
@@ -192,17 +196,19 @@ export function OrgProvidersPage({ org }: { org: string }) {
         ),
       ),
       col.custom(
-        { id: "key", header: t("orgHome.key", "Key"), size: 240, priority: 1, grow: true },
+        { id: "key", header: t("orgHome.key", "Key"), size: accounts ? ACCOUNT_KEY_WIDTH : KEY_WIDTH, priority: 1, grow: true },
         (r: Row) => r,
         (r: Row) => {
+          const defaultBelow = r.key.is_default && hidden.includes("projects");
           const under = [
+            defaultBelow ? { id: "default", label: null, value: t("orgHome.default", "Default") } : null,
             r.key.account && providers.get(r.provider)?.account?.experimental
-              ? { label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
+              ? { id: "stage", label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
               : null,
-            r.key.account ? { label: t("orgHome.account", "Account"), value: r.key.account } : null,
-            hidden.includes("projects") ? { label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
-            hidden.includes("used") ? { label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
-            hidden.includes("added") ? { label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
+            r.key.account ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
+            hidden.includes("projects") ? { id: "projects", label: t("common.projects", "Projects"), value: assignment(r.key) } : null,
+            hidden.includes("used") ? { id: "used", label: t("common.lastUsed", "Last used"), value: lastUsed(r.key) } : null,
+            hidden.includes("added") ? { id: "added", label: t("orgHome.added", "Added"), value: addedBy(r.key) } : null,
           ].filter((part) => part !== null);
           return (
             <span className="flex min-w-0 flex-col">
@@ -223,16 +229,16 @@ export function OrgProvidersPage({ org }: { org: string }) {
                     <Badge tone="warning">{t("orgHome.noApiAccess", "No API access")}</Badge>
                   </Tooltip>
                 )}
-                {r.key.is_default && <Badge>{t("orgHome.default", "Default")}</Badge>}
+                {r.key.is_default && !defaultBelow && <Badge>{t("orgHome.default", "Default")}</Badge>}
               </span>
               {under.length > 0 &&
                 withProjectNames(
                   r.key,
                   <Text variant="small" tone="secondary" truncate>
                     {under.map((part, i) => (
-                      <span key={part.label}>
+                      <span key={part.id}>
                         {i > 0 && t("orgHome.partSeparator", " · ")}
-                        <VisuallyHidden>{t("orgHome.foldedLabel", "{label}:", { label: part.label })} </VisuallyHidden>
+                        {part.label && <VisuallyHidden>{t("orgHome.foldedLabel", "{label}:", { label: part.label })} </VisuallyHidden>}
                         {part.value}
                       </span>
                     ))}
@@ -243,7 +249,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
         },
       ),
       col.custom(
-        { id: "projects", header: t("common.projects", "Projects"), size: 220, priority: 2 },
+        { id: "projects", header: t("common.projects", "Projects"), size: 184, priority: 2 },
         (r: Row) => r.key,
         (k: CredentialView) =>
           withProjectNames(
@@ -278,7 +284,7 @@ export function OrgProvidersPage({ org }: { org: string }) {
         { align: "end" },
       ),
     ].map((c) => ({ ...c, enableSorting: false }));
-  }, [canChange, canDelete, hidden, partyName, providers, setDefault]);
+  }, [accounts, canChange, canDelete, hidden, partyName, providers, setDefault]);
 
   const deletingProvider = deleting ? providers.name(deleting.provider) : "";
   const successor = deleting?.is_default

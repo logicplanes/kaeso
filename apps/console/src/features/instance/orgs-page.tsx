@@ -33,6 +33,9 @@ import { DeleteNowDialog, useRestoreOrg } from "./org-deletion";
 import { t } from "~/i18n";
 import { dayWithinYear } from "~/format/short-date";
 
+const STATE_WIDTH = 128;
+const DELETION_STATE_WIDTH = 168;
+
 export type InstanceOrgsSearch = { q?: string; sort?: "deletion"; create?: boolean };
 
 export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
@@ -62,6 +65,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
     setLocalSorting(next.filter((s) => s.id !== "state"));
   };
 
+  const deletions = rows.some((o) => o.state === "scheduled_for_deletion");
   const columns = useMemo(
     () => [
       col.custom(
@@ -75,7 +79,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
         ),
       ),
       col.custom(
-        { id: "state", header: t("instance.state", "State"), size: 168, priority: 1 },
+        { id: "state", header: t("instance.state", "State"), size: deletions ? DELETION_STATE_WIDTH : STATE_WIDTH, priority: 1 },
         (o: InstanceOrgView) => (o.state === "scheduled_for_deletion" ? (o.deletion_due_at ?? "") : "~"),
         (_v, o) =>
           o.state === "scheduled_for_deletion" ? (
@@ -108,7 +112,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
         (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
       ),
     ],
-    [],
+    [deletions],
   );
 
   return (

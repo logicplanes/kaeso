@@ -51,6 +51,7 @@ describe("organization invitations", () => {
     expect(middle).toHaveTextContent("Invited by a former member · expired");
     expect(middle).not.toHaveTextContent("Member");
     expect(oldest).toHaveTextContent("Invited by an instance admin · expires in 5 days");
+    expect(within(oldest).getByText(/^Invited by an instance admin/)).toHaveClass("text-pretty");
     expect(oldest).toHaveTextContent("Member");
     expect(inviteQueries()).toEqual(["true"]);
   });

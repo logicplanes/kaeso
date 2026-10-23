@@ -12,6 +12,7 @@
   "instance.addOwnerHint": "Inhaber verwalten sie mit allen Rechten; das wird im Audit-Log festgehalten.",
   "instance.addOwnerSubmit": "Hinzufügen",
   "instance.addOwnerTitle": "Inhaber hinzufügen",
+  "instance.admin": "Admin",
   "instance.adminSso.cleared": "Keine Organisation meldet Instanz-Admins an",
   "instance.adminSso.disconnected": "{org} hat keine SSO-Verbindung; das wirkt nicht.",
   "instance.adminSso.label": "Single Sign-on für Instanz-Admins",

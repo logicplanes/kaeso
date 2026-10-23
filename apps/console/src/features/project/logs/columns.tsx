@@ -1,4 +1,5 @@
-import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, VisuallyHidden, col } from "@logicplanes/kaeso-ui";
+import type { ReactNode } from "react";
+import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
@@ -48,10 +49,9 @@ export const columnLabel = (id: ColumnId): string =>
 const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
 const SHORT_DAY_TIME_WIDTH: Record<Locale, number> = { en: 128, de: 136, "zh-CN": 144 };
 const TIME_WIDTH: Record<Locale, number> = { en: 128, de: 128, "zh-CN": 144 };
-const STACKED_WIDTH = 96;
+const STACKED_WIDTH = 88;
 const PHONE_TIME_WIDTH = 96;
 const PROVIDER_WIDTH = 144;
-const PROVIDER_MARK_WIDTH = 64;
 const MODEL_WIDTH = 280;
 const NARROW_MODEL_WIDTH = 160;
 const NARROW_BELOW = 800;
@@ -101,9 +101,13 @@ export function storeColumns(next: ColumnId[]): void {
   writeStored(COLUMNS_KEY, JSON.stringify(next));
 }
 
+export const providerInModel = (layout: LogsLayout, shown: readonly ColumnId[]) =>
+  shown.includes("provider") && shown.includes("model") && (layout === "medium" || layout === "narrow");
+
 export function logColumns({
   spansDays,
   layout = "wide",
+  withProvider = false,
   keyName,
   partyName,
   providerName,
@@ -111,6 +115,7 @@ export function logColumns({
 }: {
   spansDays: boolean;
   layout?: LogsLayout | undefined;
+  withProvider?: boolean | undefined;
   errors?: ReturnType<typeof useGatewayErrors>;
   keyName: (id: string) => string;
   partyName: (p: Party) => string;
@@ -125,7 +130,6 @@ export function logColumns({
       minute: "2-digit",
       ...(layout === "narrow" && spansDays ? {} : { second: "2-digit" }),
     });
-  const markOnly = layout !== "wide";
   return {
     time: col.custom(
       {
@@ -165,26 +169,18 @@ export function logColumns({
         grow: true,
       },
       (r: LogView) => r.model,
-      (_v, r) => <ModelCell row={r} message={logMessage(errors, r.error_message, r.provider, providerName)} />,
+      (_v, r) => (
+        <ModelCell
+          row={r}
+          message={logMessage(errors, r.error_message, r.provider, providerName)}
+          provider={withProvider && r.provider ? <ProviderMark provider={r.provider} name={providerName(r.provider)} /> : null}
+        />
+      ),
     ),
     provider: col.custom(
-      {
-        id: "provider",
-        header: markOnly ? <VisuallyHidden>{columnLabel("provider")}</VisuallyHidden> : columnLabel("provider"),
-        size: markOnly ? PROVIDER_MARK_WIDTH : PROVIDER_WIDTH,
-        priority: layout === "phone" ? 2 : 1,
-      },
+      { id: "provider", header: columnLabel("provider"), size: PROVIDER_WIDTH, priority: layout === "phone" ? 2 : 1 },
       (r: LogView) => r.provider,
-      (v) =>
-        !v ? null : markOnly ? (
-          <Tooltip content={providerName(v)}>
-            <Text tabIndex={0} className="flex">
-              <ProviderBadge provider={v} name={providerName(v)} size="sm" />
-            </Text>
-          </Tooltip>
-        ) : (
-          <ProviderBadge provider={v} name={providerName(v)} withName size="sm" />
-        ),
+      (v) => (v ? <ProviderBadge provider={v} name={providerName(v)} withName size="sm" /> : null),
     ),
     stream: col.custom(
       { id: "stream", header: columnLabel("stream"), size: 104, priority: 4 },
@@ -236,10 +232,21 @@ export function logColumns({
 
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
-function ModelCell({ row, message }: { row: LogView; message: LogMessage | null }) {
+function ProviderMark({ provider, name }: { provider: string; name: string }) {
+  return (
+    <Tooltip content={name}>
+      <Text tabIndex={0} className="flex shrink-0">
+        <ProviderBadge provider={provider} name={name} size="sm" />
+      </Text>
+    </Tooltip>
+  );
+}
+
+function ModelCell({ row, message, provider }: { row: LogView; message: LogMessage | null; provider: ReactNode }) {
   const aliased = !!row.model && row.requested_model !== row.model && !row.requested_model.endsWith(`/${row.model}`);
   return (
     <span className="@container flex w-full min-w-0 items-center gap-8">
+      {provider}
       {row.model && (
         <Text mono variant="small" truncate>
           {row.model}

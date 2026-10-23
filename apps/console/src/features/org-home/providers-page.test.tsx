@@ -504,16 +504,30 @@ describe("organization providers", () => {
     expect(within(dialog).getByText("These projects keep it for OpenAI even when another key becomes the default.")).toBeInTheDocument();
   });
 
+  it("gives the key room for a signed-in account's second line", async () => {
+    signedIn();
+    keys([production]);
+    await renderApp(PATH);
+    await row("OpenAI production");
+    const header = () => (within(screen.getByRole("table", { name: "Provider keys" })).getAllByRole("row")[0] as HTMLElement).style.gridTemplateColumns;
+    expect(header().split(" ").slice(2, 4)).toEqual(["minmax(240px,", "1fr)"]);
+
+    keys([production, credential({ id: "cred_plan", name: "Ada's plan", is_default: false, auth_method: "chatgpt", account: "ada@example.com", last4: "" })]);
+    await act(() => queryClient.invalidateQueries({ queryKey: ["orgs", ORG, "credentials"] }));
+    await row("Ada's plan");
+    expect(header().split(" ").slice(2, 4)).toEqual(["minmax(456px,", "1fr)"]);
+  });
+
   describe("on a tablet", () => {
     afterEach(() => vi.restoreAllMocks());
 
     it("shows each key's projects, last use and who added it under its name once their columns give way", async () => {
       vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-        width: 720,
+        width: 600,
         height: 0,
         top: 0,
         left: 0,
-        right: 720,
+        right: 600,
         bottom: 0,
         x: 0,
         y: 0,
@@ -532,9 +546,10 @@ describe("organization providers", () => {
       ).toBeInTheDocument();
       expect(
         within(await table()).getByText(
-          wholeText("Projects: Checkout assistant, and every unassigned project · Last used: Never · Added: Ada Okafor (you), 15 Oct 2026"),
+          wholeText("Default · Projects: Checkout assistant, and every unassigned project · Last used: Never · Added: Ada Okafor (you), 15 Oct 2026"),
         ),
       ).toBeInTheDocument();
+      expect(within(await row("OpenAI production")).getAllByText("Default", { exact: true })).toHaveLength(1);
       act(() => showTooltipsAtOnce(true));
       try {
         await user.hover(within(await table()).getByText(wholeText("Projects: Support triage · Last used: Never · Added: Ada Okafor (you), 1 Oct 2026")));

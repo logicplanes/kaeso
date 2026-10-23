@@ -54,6 +54,22 @@ describe("instance organizations list", () => {
     expect(orgQueries()[0]).toEqual({ limit: "100" });
   });
 
+  it("keeps the state narrow, leaving the names room, until an organization is scheduled for deletion", async () => {
+    signedIn();
+    orgs([NORTHWIND, ORPHAN]);
+    await renderApp(PATH);
+    const row = (await within(table()).findByText("Northwind Labs")).closest<HTMLElement>("[role=row]");
+    expect(row?.style.gridTemplateColumns.split(" ").slice(0, 3)).toEqual(["minmax(192px,", "1fr)", "128px"]);
+  });
+
+  it("widens the state for a deletion date", async () => {
+    signedIn();
+    orgs([NORTHWIND, CONTOSO]);
+    await renderApp(PATH);
+    const row = (await within(table()).findByText("Contoso")).closest<HTMLElement>("[role=row]");
+    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("168px");
+  });
+
   it("searches by name through the URL", async () => {
     signedIn();
     orgs();

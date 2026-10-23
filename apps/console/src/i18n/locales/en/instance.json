@@ -12,6 +12,7 @@
   "instance.addOwnerHint": "They manage it with every right; it's recorded in its audit log.",
   "instance.addOwnerSubmit": "Add owner",
   "instance.addOwnerTitle": "Add an owner",
+  "instance.admin": "Admin",
   "instance.adminSso.cleared": "No organization signs instance admins in",
   "instance.adminSso.disconnected": "{org} has no SSO connection, so this has no effect.",
   "instance.adminSso.label": "Single sign-on for instance admins",

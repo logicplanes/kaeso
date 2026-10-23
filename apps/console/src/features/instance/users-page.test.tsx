@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import type { InstanceUserView } from "~/api/generated/types";
 import { USER, signedIn } from "~/test/fixtures";
@@ -44,6 +44,27 @@ describe("instance users list", () => {
     expect(within(table()).getAllByText("Active")).toHaveLength(2);
     expect(within(table()).getAllByText("15 Oct 2026")).toHaveLength(3);
     expect(userQueries()[0]).toEqual({ limit: "100" });
+  });
+
+  it("marks an instance admin with a short badge on a phone, so the name keeps its room", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    try {
+      signedIn();
+      users();
+      await renderApp(PATH);
+      const ada = (await within(table()).findByText("Ada Okafor")).closest<HTMLElement>("[role=row]") as HTMLElement;
+      expect(within(ada).getByText("Admin")).toBeInTheDocument();
+      expect(within(ada).queryByText("Instance admin")).not.toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("names the organization that manages each account", async () => {

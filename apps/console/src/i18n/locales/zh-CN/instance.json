@@ -12,6 +12,7 @@
   "instance.addOwnerHint": "所有者拥有全部权限，此操作会记入审计日志。",
   "instance.addOwnerSubmit": "添加",
   "instance.addOwnerTitle": "添加所有者",
+  "instance.admin": "管理员",
   "instance.adminSso.cleared": "没有组织为实例管理员登录",
   "instance.adminSso.disconnected": "{org} 没有 SSO 连接，此设置不起作用。",
   "instance.adminSso.label": "实例管理员的单点登录",

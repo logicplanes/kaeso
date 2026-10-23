@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
 import { member, notifications, serviceAccount, usageRow } from "~/test/fixtures/org";
@@ -18,7 +18,51 @@ const wrap = (rows: UsageRow[]) => ({ data: rows });
 const breakdown = () => screen.findByRole("table", { name: "Usage breakdown" });
 const usageQueries = () => requests("GET", USAGE).map((r) => Object.fromEntries(r.query));
 
+function onPhone() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query === "(max-width: 639px)",
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  }));
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    width: 327,
+    height: 0,
+    top: 0,
+    left: 0,
+    right: 327,
+    bottom: 0,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
+}
+
 describe("organization overview", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("keeps requests and cost on a phone, and gives the project names the avatar's room", async () => {
+    onPhone();
+    signedIn();
+    usage({ project: wrap([usageRow(PROJECT, { requests: 30, errors: 3, cost: "2.00" })]) });
+    await renderApp(`/orgs/${ORG}?${PERIOD}`);
+
+    const table = await breakdown();
+    const link = await within(table).findByRole("link", { name: "Checkout assistant" });
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Project", "Requests", "Cost"]);
+    expect(link.closest("[role=cell]")?.textContent).toBe("Checkout assistant");
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
+  });
+
   it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {
     signedIn({
       projects: [
@@ -237,9 +281,10 @@ describe("organization overview", () => {
     usage({ model: apiError(400, "invalid_request", "The breakdown can't group by model yet.") });
     const { user } = await renderApp(`/orgs/${ORG}?${PERIOD}`);
     const table = await breakdown();
-    expect(await within(table).findByText("No requests in this period.")).toBeInTheDocument();
+    expect(await within(table).findByText("No requests in this period")).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: "By model" }));
-    expect(await within(table).findByText("The breakdown couldn't load; the notification says why.")).toBeInTheDocument();
+    expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: "Try again" })).toBeInTheDocument();
     expect(await notifications().findAllByText("The breakdown can't group by model yet.")).not.toHaveLength(0);
   });
 
@@ -251,12 +296,12 @@ describe("organization overview", () => {
     await breakdown();
     expect(await notifications().findAllByText("Usage is being rebuilt.")).not.toHaveLength(0);
     const main = screen.getByRole("main");
-    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(3));
+    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(4));
     usage({ day: wrap([usageRow("2026-10-03", { requests: 12, cost: "0.40" })]), project: wrap([usageRow(PROJECT, { requests: 12, cost: "0.40" })]) });
     const before = usageQueries().length;
     await user.click(within(main).getAllByRole("button", { name: "Try again" })[0] as HTMLElement);
-    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(1));
-    await user.click(within(main).getByRole("button", { name: "Try again" }));
+    await waitFor(() => expect(within(main).getAllByRole("button", { name: "Try again" })).toHaveLength(2));
+    await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(main).queryAllByRole("button", { name: "Try again" })).toHaveLength(0));
     expect(usageQueries().slice(before)).toEqual([
       { from: "2026-10-01", to: "2026-10-07", group_by: "day" },
@@ -282,8 +327,8 @@ describe("organization overview", () => {
     usage({});
     await renderApp(`/orgs/${ORG}?${PERIOD}&by=model`);
     const table = await breakdown();
-    const empty = await within(table).findByText("No requests in this period.");
-    expect(empty.closest("td")).toHaveAttribute("colspan", "4");
+    const empty = await within(table).findByText("No requests in this period");
+    expect(empty.closest("[role=cell]")).toHaveAttribute("aria-colspan", "4");
   });
 
   it("lists only the projects for people who can't see the organization's usage", async () => {
