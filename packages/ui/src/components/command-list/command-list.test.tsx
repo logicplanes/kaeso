@@ -319,4 +319,29 @@ describe("CommandList inline in a dialog step", () => {
     const { container } = render(<CommandList aria-label="Models" groups={many(40)} value={null} onSelect={() => {}} height="inline" />);
     expect(container.firstElementChild).toHaveClass("max-h-360");
   });
+
+  it("ends a group's count on the same edge as its options' meta, past the check column a single choice keeps", () => {
+    render(<Harness />);
+    const header = screen.getByText("Anthropic", { selector: "span" }).parentElement!;
+    const option = screen.getByRole("option", { name: /Claude Sonnet 4.5/ });
+    expect(header).toHaveClass("gap-10");
+    expect(option).toHaveClass("gap-10");
+    for (const [row, text] of [
+      [header, "1"],
+      [option, "200K"],
+    ] as const) {
+      expect(row.lastElementChild).toHaveClass("size-16", "shrink-0");
+      expect(row.lastElementChild!.previousElementSibling).toHaveTextContent(text);
+    }
+  });
+
+  it("ends a group's count at the row's end when there is no check column", () => {
+    render(<CommandList aria-label="Commands" groups={groups} onSelect={() => {}} />);
+    expect(screen.getByText("Anthropic", { selector: "span" }).parentElement!.lastElementChild).toHaveTextContent("1");
+  });
+
+  it("draws a picker's trigger like a text input", () => {
+    render(<PickerTrigger aria-label="Model" placeholder="Choose a model" />);
+    expect(screen.getByRole("button", { name: /Choose a model/ })).toHaveClass("material-selector");
+  });
 });

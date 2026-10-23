@@ -141,6 +141,7 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
           icon={copied ? icons.check : icons.copy}
           size="xs"
           className={cn(
+            "pointer-events-none absolute start-full coarse:static",
             "text-fg-tertiary opacity-0 transition-control group-hover/copy:opacity-100 coarse:opacity-100 group-focus-visible/copy:opacity-100",
             copied && "opacity-100 text-fg",
           )}

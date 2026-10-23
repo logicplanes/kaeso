@@ -15,6 +15,7 @@ export const neutral = {
   "line-strong": mode(brand.color.light.borderEmphasized, brand.color.dark.borderEmphasized),
   "line-field": mode("#858585", "#757575"),
   "line-field-hover": mode("#707070", "#858585"),
+  "switch-thumb": mode("#ffffff", "#c7c7c7"),
   text: mode(brand.color.light.text, brand.color.dark.text),
   "text-secondary": mode(brand.color.light.textSecondary, brand.color.dark.textSecondary),
   "text-tertiary": mode("#707070", "#858585"),

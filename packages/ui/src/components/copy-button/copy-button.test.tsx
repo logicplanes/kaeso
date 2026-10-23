@@ -28,4 +28,10 @@ describe("InlineCopyText", () => {
     expect(button).toHaveClass("max-w-full-bleed-4", "min-w-0");
     expect(screen.getByText(/^Mozilla/)).toHaveClass("truncate");
   });
+  it("shows its copy icon past the text's end without reserving room for it, so the value ends on the row's edge", () => {
+    render(<InlineCopyText value="usr_01m5mbctmseffb5006sxv8cn1j" label="Copy account id" />);
+    const icon = screen.getByRole("button", { name: /usr_01m5/ }).querySelector("svg");
+    expect(icon).toHaveClass("absolute", "start-full", "opacity-0", "group-hover/copy:opacity-100", "group-focus-visible/copy:opacity-100");
+    expect(icon).toHaveClass("coarse:static", "coarse:opacity-100");
+  });
 });

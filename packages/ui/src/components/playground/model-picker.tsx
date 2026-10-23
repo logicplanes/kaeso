@@ -16,7 +16,7 @@ const SELECT_APPEARANCE = { ghost: "header", default: "default" } as const;
 export const KAESO_MODEL_PICKER_VARIANTS = {
   appearance: {
     ghost: { classes: KAESO_SELECT_VARIANTS.appearance.header.classes, description: "Transparent until hovered: a column header (default)" },
-    default: { classes: KAESO_SELECT_VARIANTS.appearance.default.classes, description: "A raised pill with a ring: a form or toolbar" },
+    default: { classes: KAESO_SELECT_VARIANTS.appearance.default.classes, description: "A pill with a text input's ring: a form or toolbar" },
   },
 } as const;
 export const KAESO_MODEL_PICKER_DEFAULT_VARIANTS = { appearance: "ghost" } as const;

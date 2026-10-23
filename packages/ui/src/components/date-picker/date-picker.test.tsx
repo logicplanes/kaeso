@@ -197,6 +197,13 @@ describe("DateRangePicker's popover", () => {
 });
 
 describe("DatePicker", () => {
+  it("draws its button like a text input, the same as a select beside it", () => {
+    render(<DatePicker aria-label="Expires" />);
+    const trigger = screen.getByRole("button", { description: "Expires" });
+    expect(trigger).toHaveClass("material-selector");
+    expect(trigger).not.toHaveClass("material-secondary", "focus-ring");
+  });
+
   it("opens on a click", async () => {
     render(<DatePicker aria-label="Expires" />);
     const trigger = screen.getByRole("button", { description: "Expires" });

@@ -17,6 +17,7 @@ Two tint-free ramps. Components use the role names, never a step, so both themes
 | `line-subtle`    | Separators inside groups.                                          |
 | `line`           | Rings around controls and groups.                                  |
 | `line-strong`    | Hovered rings, table header rules.                                 |
+| `switch-thumb`   | An off switch's thumb: white in light, light grey in dark.         |
 | `text`           | Titles, labels, values.                                            |
 | `text-secondary` | Descriptions, metadata, icons at rest.                             |
 | `text-tertiary`  | Placeholders, counts, axis labels.                                 |

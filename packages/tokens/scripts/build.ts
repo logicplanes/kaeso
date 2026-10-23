@@ -97,6 +97,7 @@ const colorRoles: Record<string, string> = {
   "item-pressed": "item-pressed",
   "fill-2": "fill-2",
   "fill-3": "fill-3",
+  "switch-thumb": "switch-thumb",
   "line-subtle": "line-subtle",
   line: "line",
   "line-strong": "line-strong",

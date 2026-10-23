@@ -14,9 +14,12 @@ import { OptionCheckbox } from "./option-checkbox.js";
 
 export const KAESO_SELECT_VARIANTS = {
   appearance: {
-    default: { classes: "material-secondary", description: "A raised pill with a ring (default)" },
-    ghost: { classes: "material-ghost text-fg-secondary hover:text-fg open:text-fg", description: "Inline in settings rows: “GPT-5 mini (default) ⌄”" },
-    header: { classes: "material-ghost text-fg", description: "Transparent until hovered, in full text colour: a column header's model" },
+    default: { classes: "material-selector", description: "A pill with the same ring, hover and focus as a text input (default)" },
+    ghost: {
+      classes: "material-ghost focus-ring text-fg-secondary hover:text-fg open:text-fg",
+      description: "Inline in settings rows: “GPT-5 mini (default) ⌄”",
+    },
+    header: { classes: "material-ghost focus-ring text-fg", description: "Transparent until hovered, in full text colour: a column header's model" },
   },
   size: {
     sm: { classes: "h-32 pl-12 pr-10 gap-6 text-body", description: "32px: settings rows and toolbars" },
@@ -160,10 +163,10 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         {...(invalid || error ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control focus-ring disabled:cursor-not-allowed",
+          "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
-          (invalid || error) && "ring-invalid",
+          (invalid || error) && appearance !== "default" && "ring-invalid",
           fullWidth && "w-full",
           !(label || description || error) && className,
         )}

@@ -180,6 +180,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const look = SIZES[size];
   const rowHeight = coarse ? Math.max(44, look.row) : look.row;
   const commands = value === undefined && !multiple;
+  const checks = !multiple && !commands;
   const selected = useMemo(() => new Set(value == null ? [] : typeof value === "string" ? [value] : value), [value]);
 
   const shown = useMemo(() => visibleGroups(groups, query, match), [groups, query, match]);
@@ -350,12 +351,13 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const header = (group: CommandListGroup, gi: number) => {
     const count = query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
     return (
-      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-8 bg-raised px-16")}>
+      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised px-16")}>
         {group.leading}
         <span id={groupLabelId(gi)} className="min-w-0 truncate">
           {group.label}
         </span>
         {count !== undefined && <span className="ml-auto shrink-0 font-regular text-fg-tertiary tabular">{count}</span>}
+        {count !== undefined && checks && <span className="size-16 shrink-0" />}
       </div>
     );
   };
@@ -389,7 +391,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
           </span>
         )}
         {item.meta !== undefined && <span className={cn(MENU_HINT, "pl-8 font-regular")}>{item.meta}</span>}
-        {!multiple && !commands && (
+        {checks && (
           <span aria-hidden className={cn("flex size-16 shrink-0 items-center justify-center text-fg", !isSelected && "opacity-0")}>
             <Icon icon={icons.check} size="sm" />
           </span>

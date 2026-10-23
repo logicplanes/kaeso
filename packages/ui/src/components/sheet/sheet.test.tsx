@@ -209,4 +209,14 @@ describe("Sheet", () => {
     expect(watched).toEqual([]);
     vi.unstubAllGlobals();
   });
+
+  it("fills a phone's screen from edge to edge, so no page shows around it", async () => {
+    render(
+      <Sheet open modal={false} title="Request" onOpenChange={() => {}}>
+        <p>Overview</p>
+      </Sheet>,
+    );
+    const sheet = await screen.findByRole("dialog", { name: "Request" });
+    expect(sheet).toHaveClass("top-8", "right-8", "bottom-8", "max-sm:inset-0", "max-sm:w-auto", "max-sm:max-w-none", "max-sm:rounded-none");
+  });
 });
