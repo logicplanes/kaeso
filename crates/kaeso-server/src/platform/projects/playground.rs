@@ -220,6 +220,9 @@ fn refusal(f: &Failure) -> ApiError {
             "No provider key for {} is set up for this project; an org admin can add one.",
             provider::provider(p).map_or(*p, |p| p.name)
         )),
+        Stage::SignedOut(product) => ApiError::Conflict(format!(
+            "The {product} account of this project's provider key is signed out; sign in again."
+        )),
         Stage::Credential if e.status == Some(503) => ApiError::Unavailable(
             "Kaeso cannot load the project's provider key right now; try again shortly.".into(),
         ),

@@ -120,6 +120,12 @@ async fn check_one(
             )));
         }
         Err(ResolveError::Store(e)) => return Err(e.into()),
+        Err(ResolveError::SignedOut { .. }) => {
+            return Ok(Err(failure(row, name, CheckFailureReason::KeyRefused)));
+        }
+        Err(ResolveError::Unrenewed { .. }) => {
+            return Ok(Err(failure(row, name, CheckFailureReason::ProviderError)));
+        }
     };
     let found = |availability| {
         Ok(Ok(Found {

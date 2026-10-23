@@ -1217,6 +1217,184 @@ async fn a_sign_in_that_cannot_be_saved_ends_its_session_at_openai() {
     s.cleanup().await;
 }
 
+fn resolving(
+    app: &App,
+    org: OrgId,
+    project: ProjectId,
+) -> tokio::task::JoinHandle<Result<String, String>> {
+    let state = app.state.clone();
+    tokio::spawn(async move {
+        credentials::resolve(&state, org, project, "openai")
+            .await
+            .map(|r| r.secret.expose_secret().to_owned())
+            .map_err(|e| e.to_string())
+    })
+}
+
+
+#[tokio::test]
+async fn an_account_renews_once_however_many_instances_need_it() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let other = app.second_instance(&s).await;
+    let project = default_project(&app, &owner).await;
+    let (org, project_id) = ids(&owner, &project);
+    let first = secret_of(&app, &owner, &project).await.unwrap();
+    assert_eq!(secret_of(&other, &owner, &project).await.unwrap(), first);
+    let before = common::account_tokens(&app, &owner, &id).await;
+
+    app.clock.advance(time::Duration::minutes(54));
+    assert_eq!(secret_of(&other, &owner, &project).await.unwrap(), first);
+    assert_eq!(oauth.refreshes(), 0, "six minutes left need no renewal");
+
+    app.clock.advance(time::Duration::minutes(2));
+    let mut held = oauth.hold_next_refresh();
+    let leader = resolving(&app, org, project_id);
+    held.reached().await;
+    let followers: Vec<_> = (0..4)
+        .map(|i| resolving(if i % 2 == 0 { &other } else { &app }, org, project_id))
+        .collect();
+    common::eventually("another instance waits for the renewal", || {
+        waiting_for_a_lock(&app)
+    })
+    .await;
+    held.release();
+    let renewed = leader.await.unwrap().unwrap();
+    for follower in followers {
+        assert_eq!(follower.await.unwrap().unwrap(), renewed);
+    }
+    assert_eq!(oauth.refreshes(), 1, "exactly one refresh reached OpenAI");
+    assert_ne!(renewed, first);
+    assert_eq!(secret_of(&other, &owner, &project).await.unwrap(), renewed);
+
+    let after = common::account_tokens(&app, &owner, &id).await;
+    assert_eq!(after.access_token, renewed);
+    assert_ne!(
+        after.refresh_token, before.refresh_token,
+        "the refresh token rotated"
+    );
+    assert_eq!(
+        (after.client_id.as_str(), after.sub.as_str()),
+        (before.client_id.as_str(), before.sub.as_str())
+    );
+    let (revision, expires_at): (i64, time::OffsetDateTime) =
+        sqlx::query_as("SELECT revision, expires_at FROM provider_credentials")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(revision, 1);
+    assert!(expires_at > app.clock.now() + time::Duration::minutes(59));
+    let audit = app
+        .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
+        .await;
+    assert!(!audit.body.to_string().contains(&renewed));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_account_whose_session_ended_asks_for_a_new_sign_in() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let created = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = created["id"].as_str().unwrap().to_owned();
+    let project = default_project(&app, &owner).await;
+    app.clock.advance(time::Duration::minutes(56));
+    oauth.set_fault(Fault::SignedOut);
+    let err = secret_of(&app, &owner, &project).await.unwrap_err();
+    assert_eq!(err, "the ChatGPT account of the provider key is signed out");
+    assert_eq!(oauth.refreshes(), 1);
+    let view = app
+        .get(
+            &format!("/orgs/{}/credentials/{id}", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(view.body["auth_error"], "signed_out");
+    assert!(secret_of(&app, &owner, &project).await.is_err());
+    assert_eq!(oauth.refreshes(), 1, "a signed-out account no longer asks");
+
+    oauth.set_fault(Fault::None);
+    let signed_in = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let owner = Owner {
+        cookie: signed_in.cookie().unwrap(),
+        ..owner
+    };
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    let again = finish_again(&app, &owner, &id, &attempt, &back).await;
+    assert_eq!(again.status, StatusCode::OK, "{:?}", again.body);
+    assert_eq!(again.body["auth_error"], json!(null));
+    let secret = secret_of(&app, &owner, &project).await.unwrap();
+    assert_eq!(
+        secret,
+        common::account_tokens(&app, &owner, &id).await.access_token
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn renewal_waits_for_openai_and_outlasts_its_outages() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    oauth.refresh_not_before(7200);
+    common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    oauth.refresh_not_before(0);
+    let project = default_project(&app, &owner).await;
+    let first = secret_of(&app, &owner, &project).await.unwrap();
+
+    app.clock.advance(time::Duration::minutes(57));
+    assert_eq!(secret_of(&app, &owner, &project).await.unwrap(), first);
+    assert_eq!(oauth.refreshes(), 0, "OpenAI asked to wait");
+    app.clock.advance(time::Duration::minutes(3));
+    let renewed = secret_of(&app, &owner, &project).await.unwrap();
+    assert_ne!(renewed, first, "an expired token is renewed regardless");
+    assert_eq!(oauth.refreshes(), 1);
+
+    oauth.set_fault(Fault::Down);
+    app.clock.advance(time::Duration::minutes(56));
+    assert_eq!(
+        secret_of(&app, &owner, &project).await.unwrap(),
+        renewed,
+        "a token that is still valid keeps working while OpenAI is down"
+    );
+    assert_eq!(oauth.refreshes(), 2);
+    app.clock.advance(time::Duration::minutes(5));
+    assert_eq!(
+        secret_of(&app, &owner, &project).await.unwrap_err(),
+        "the ChatGPT account's access token expired and cannot be renewed right now"
+    );
+    let view = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        view.body["data"][0]["auth_error"],
+        json!(null),
+        "an outage signs nobody out"
+    );
+    oauth.set_fault(Fault::None);
+    let back = secret_of(&app, &owner, &project).await.unwrap();
+    assert_ne!(back, renewed);
+    s.cleanup().await;
+}
+
 fn newest_refresh_token(oauth: &MockOAuth) -> String {
     oauth
         .issued()

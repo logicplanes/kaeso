@@ -54,9 +54,15 @@ impl Subscription {
 }
 
 #[derive(Clone)]
-struct Flights(Cache<String, Arc<Mutex<()>>>);
+pub struct Flights(Cache<String, Arc<Mutex<()>>>);
 
-struct Flight {
+impl std::fmt::Debug for Flights {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Flights").finish_non_exhaustive()
+    }
+}
+
+pub struct Flight {
     _guard: OwnedMutexGuard<()>,
     waited: bool,
 }
@@ -77,7 +83,7 @@ impl Flights {
             .await
     }
 
-    async fn board(&self, key: &str) -> Flight {
+    pub async fn board(&self, key: &str) -> Flight {
         let lane = self.lane(key).await;
         match lane.clone().try_lock_owned() {
             Ok(guard) => Flight {
@@ -622,6 +628,7 @@ pub struct Caches {
     pub unknown_keys: Cache<String, ()>,
     pub key_blocks: Cache<String, time::OffsetDateTime>,
     pub time_zone: Cache<(), Arc<str>>,
+    pub refreshes: Flights,
     subscription: Arc<Subscription>,
 }
 
@@ -666,6 +673,7 @@ impl Caches {
                 .time_to_live(KEY_BLOCK_TTL)
                 .build(),
             time_zone: Cache::builder().max_capacity(1).time_to_live(TTL).build(),
+            refreshes: Flights::new(10_000),
             subscription,
         }
     }

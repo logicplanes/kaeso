@@ -61,6 +61,18 @@ pub enum ResolveError {
     Crypto(#[from] CryptoError),
     #[error(transparent)]
     Store(#[from] StoreError),
+    #[error("the {product} account of the provider key is signed out")]
+    SignedOut { product: &'static str },
+    #[error("the {product} account's access token expired and cannot be renewed right now")]
+    Unrenewed { product: &'static str },
+}
+
+// SIWC "Refreshing tokens": renew near expiry, so a request never starts with a token that
+// lapses before the provider reads it, and never earlier than the provider allows.
+const RENEW_BEFORE: time::Duration = time::Duration::minutes(5);
+
+fn due(expires_at: OffsetDateTime, earliest: Option<OffsetDateTime>, now: OffsetDateTime) -> bool {
+    now >= expires_at - RENEW_BEFORE && (now >= expires_at || earliest.is_none_or(|e| now >= e))
 }
 
 pub fn seal(state: &AppState, id: CredentialId, secret: &str) -> Result<Sealed, CryptoError> {
@@ -68,6 +80,111 @@ pub fn seal(state: &AppState, id: CredentialId, secret: &str) -> Result<Sealed, 
 }
 
 pub async fn resolve(
+    state: &AppState,
+    org: OrgId,
+    project: ProjectId,
+    provider: &str,
+) -> Result<std::sync::Arc<Resolved>, ResolveError> {
+    let resolved = cached(state, org, project, provider).await?;
+    let Some(account) = resolved.account else {
+        touch(state, &resolved);
+        return Ok(resolved);
+    };
+    let product = product_of(provider);
+    if account.signed_out {
+        return Err(ResolveError::SignedOut { product });
+    }
+    if !due(
+        account.expires_at,
+        account.earliest_refresh_at,
+        state.clock.now(),
+    ) {
+        touch(state, &resolved);
+        return Ok(resolved);
+    }
+    renew(state, org, &resolved, product).await?;
+    let renewed = cached(state, org, project, provider).await?;
+    match renewed.account {
+        Some(a) if a.signed_out => Err(ResolveError::SignedOut { product }),
+        Some(a) if state.clock.now() >= a.expires_at => Err(ResolveError::Unrenewed { product }),
+        _ => {
+            touch(state, &renewed);
+            Ok(renewed)
+        }
+    }
+}
+
+fn product_of(provider: &str) -> &'static str {
+    kaeso_core::provider::provider(provider)
+        .and_then(|p| p.account)
+        .map_or("provider", |a| a.product)
+}
+
+// One renewal per credential at a time: the flight keeps this instance's requests from
+// queueing on the database, and the advisory lock with the re-read row keeps other
+// replicas from spending a rotating refresh token twice, which signs the account out.
+async fn renew(
+    state: &AppState,
+    org: OrgId,
+    resolved: &Resolved,
+    product: &'static str,
+) -> Result<(), ResolveError> {
+    let Some(hosts) = state.accounts.hosts(resolved.method) else {
+        return Ok(());
+    };
+    let id = resolved.id.uuid();
+    let _flight = state.caches.refreshes.board(&id.to_string()).await;
+    let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
+    credentials::lock_refresh(&mut tx, id).await?;
+    let Some(row) = credentials::sealed(&mut *tx, org.uuid(), id).await? else {
+        return Ok(());
+    };
+    let now = state.clock.now();
+    let expires_at = row.expires_at.unwrap_or(now);
+    let tokens = tokens(&state.keyring, &row)?;
+    if row.auth_error.is_some() || !due(expires_at, tokens.earliest_refresh_at, now) {
+        tx.commit().await.map_err(StoreError::from)?;
+        forget_org(state, org.uuid()).await;
+        return Ok(());
+    }
+    match crate::services::provider_accounts::refresh(hosts, &tokens).await {
+        Ok(granted) => {
+            let renewed_until = granted.expires_at(now);
+            let renewed = granted.renew(&tokens);
+            let json = renewed.sealed_form().map_err(|_| CryptoError::Malformed)?;
+            let sealed = seal(state, resolved.id, &json)?;
+            credentials::refreshed(
+                &mut *tx,
+                id,
+                &credentials::Sealed {
+                    ciphertext: &sealed.ciphertext,
+                    nonce: &sealed.nonce,
+                    wrapped_key: &sealed.wrapped_key,
+                    key_id: &sealed.key_id,
+                },
+                renewed_until,
+            )
+            .await?;
+            tx.commit().await.map_err(StoreError::from)?;
+            forget_org(state, org.uuid()).await;
+            Ok(())
+        }
+        Err(e) if e.signs_out() => {
+            tracing::warn!(error = %e, credential = %resolved.id, "the provider ended an account's session; it needs a new sign-in");
+            credentials::sign_out(&mut *tx, id, "signed_out").await?;
+            tx.commit().await.map_err(StoreError::from)?;
+            forget_org(state, org.uuid()).await;
+            Err(ResolveError::SignedOut { product })
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, credential = %resolved.id, "cannot renew an account's access token");
+            drop(tx);
+            Ok(())
+        }
+    }
+}
+
+async fn cached(
     state: &AppState,
     org: OrgId,
     project: ProjectId,
@@ -87,14 +204,10 @@ pub async fn resolve(
             Ok(Some(open(&st.keyring, &row)?))
         })
         .await?;
-    let Some(resolved) = found else {
-        return Err(ResolveError::Missing {
-            provider: provider.to_owned(),
-            org,
-        });
-    };
-    touch(state, &resolved);
-    Ok(resolved)
+    found.ok_or_else(|| ResolveError::Missing {
+        provider: provider.to_owned(),
+        org,
+    })
 }
 
 fn plain(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<String, CryptoError> {
@@ -164,4 +277,28 @@ pub async fn forget_org(state: &AppState, org: Uuid) {
         .credentials
         .invalidate_group(&org.to_string())
         .await;
+}
+
+#[cfg(test)]
+mod tests {
+    use time::macros::datetime;
+
+    use super::*;
+
+    #[test]
+    fn an_account_renews_in_its_last_five_minutes_and_not_before_the_provider_allows() {
+        let expires = datetime!(2026-10-23 13:00 UTC);
+        let now = |at| due(expires, None, at);
+        assert!(!now(datetime!(2026-10-23 12:54:59 UTC)));
+        assert!(now(datetime!(2026-10-23 12:55 UTC)));
+        assert!(now(datetime!(2026-10-23 14:00 UTC)));
+        let later = Some(datetime!(2026-10-23 12:58 UTC));
+        assert!(!due(expires, later, datetime!(2026-10-23 12:57 UTC)));
+        assert!(due(expires, later, datetime!(2026-10-23 12:58 UTC)));
+        let after_expiry = Some(datetime!(2026-10-23 15:00 UTC));
+        assert!(
+            due(expires, after_expiry, datetime!(2026-10-23 13:00 UTC)),
+            "an expired token is renewed whatever the provider asked"
+        );
+    }
 }

@@ -196,6 +196,7 @@ pub enum Stage {
     Capability,
     Limits,
     MissingCredential(&'static str),
+    SignedOut(&'static str),
     Credential,
     Upstream,
     Provider,
@@ -704,6 +705,16 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             tracing::error!(error = %err, "cannot load a provider credential");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
         }
+        CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
+            ErrorKind::ProviderError,
+            502,
+            format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name),
+        )),
+        CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
+            ErrorKind::ProviderError,
+            503,
+            format!("Kaeso cannot renew the {product} account's access right now. Try again shortly."),
+        )),
     })?;
 
     if entry.is_unavailable()

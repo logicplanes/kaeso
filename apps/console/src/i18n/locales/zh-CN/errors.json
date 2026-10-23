@@ -475,5 +475,8 @@
   "errors.accountUnreachable": "暂时无法连接 {product}；请稍后重试。",
   "errors.accountUnverified": "无法验证来自 {product} 的响应；请重新开始。",
   "errors.accountNoPlan": "该账户未允许使用其 {product} 套餐；请重新开始并允许。",
-  "errors.accountOther": "您登录的是另一个 {product} 账户；请以 {account} 登录。"
+  "errors.accountOther": "您登录的是另一个 {product} 账户；请以 {account} 登录。",
+  "errors.accountSignedOut": "此项目服务商密钥的 {product} 账户已退出登录；请重新登录。",
+  "errors.modelApi.accountSignedOut": "此项目 {provider} 密钥的 {product} 账户已退出登录。请组织管理员在“服务商”中重新登录。",
+  "errors.modelApi.accountUnrenewed": "Kaeso 暂时无法续期 {product} 账户的访问权限。请稍后重试。"
 }

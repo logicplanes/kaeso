@@ -475,5 +475,8 @@
   "errors.accountUnreachable": "{product} ist gerade nicht erreichbar; versuchen Sie es gleich erneut.",
   "errors.accountUnverified": "Die Antwort von {product} konnte nicht überprüft werden; beginnen Sie erneut.",
   "errors.accountNoPlan": "Das Konto hat die Nutzung seines {product}-Abos nicht erlaubt; beginnen Sie erneut und erlauben Sie sie.",
-  "errors.accountOther": "Sie haben sich bei einem anderen {product}-Konto angemeldet; melden Sie sich als {account} an."
+  "errors.accountOther": "Sie haben sich bei einem anderen {product}-Konto angemeldet; melden Sie sich als {account} an.",
+  "errors.accountSignedOut": "Das {product}-Konto des Anbieter-Schlüssels dieses Projekts ist abgemeldet; melden Sie sich erneut an.",
+  "errors.modelApi.accountSignedOut": "Das {product}-Konto des {provider}-Schlüssels dieses Projekts ist abgemeldet. Einen Admin der Organisation bitten, es unter Anbieter erneut anzumelden.",
+  "errors.modelApi.accountUnrenewed": "Kaeso kann den Zugang des {product}-Kontos gerade nicht erneuern. Gleich erneut versuchen."
 }
