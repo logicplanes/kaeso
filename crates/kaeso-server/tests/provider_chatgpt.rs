@@ -56,13 +56,19 @@ impl Plan {
 }
 
 async fn plan() -> Plan {
+    plan_with(&[]).await
+}
+
+async fn plan_with(env: &[(&str, &str)]) -> Plan {
     let s = TestServices::start().await;
     let oauth = MockOAuth::start().await;
     let api = MockProvider::start().await;
     let capture = Arc::new(Capture::default());
+    let mut env = env.to_vec();
+    env.push(("KAESO_PROVIDERS_OPENAI_BASE_URL", api.base_url.as_str()));
     let app = App::start_full(
         &s,
-        &[("KAESO_PROVIDERS_OPENAI_BASE_URL", api.base_url.as_str())],
+        &env,
         None,
         Some(capture.clone() as Arc<dyn Sink>),
         Some(common::accounts_at(oauth.base_url())),
@@ -313,6 +319,27 @@ async fn embeddings_and_token_counts_need_an_api_key() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert!(p.sent().is_empty());
     assert!(p.api.received().is_empty());
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_reply_that_keeps_trickling_ends_at_the_request_timeout() {
+    let p = plan_with(&[("KAESO_UPSTREAM_REQUEST_TIMEOUT", "1s")]).await;
+    p.oauth.reply_with(Reply::Trickle);
+    let started = std::time::Instant::now();
+    let r = p
+        .call(
+            "/v1/responses",
+            false,
+            json!({ "model": "openai/gpt-5", "input": "Hi" }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::GATEWAY_TIMEOUT, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The provider did not answer in time (request). Kaeso does not retry; try again or raise the model's timeout."
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(5));
     p.services.cleanup().await;
 }
 

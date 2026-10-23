@@ -801,22 +801,33 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let provider = eff.provider.id;
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
-    let resp = state
-        .upstream
-        .send(Call {
-            base_url: base,
-            auth: eff.provider.auth,
-            credential: &credential.secret,
-            request: Outgoing::from(encoded),
-            stream: (stream || account.is_some()) && kind == RequestKind::Generate,
-            timeouts,
-            max_body: state.config.body_limits.provider_response.as_usize(),
-        })
-        .await
-        .map_err(|e| {
-            count_upstream_error(transport_kind(&e), provider);
-            fail(Stage::Upstream)(upstream_error(&e))
-        })?;
+    let gathers = account.is_some() && !stream && kind == RequestKind::Generate;
+    let deadline = tokio::time::Instant::now() + timeouts.request;
+    let late = |_: tokio::time::error::Elapsed| {
+        let e = UpstreamError::Timeout("request");
+        count_upstream_error(transport_kind(&e), provider);
+        fail(Stage::Upstream)(upstream_error(&e))
+    };
+    let sending = state.upstream.send(Call {
+        base_url: base,
+        auth: eff.provider.auth,
+        credential: &credential.secret,
+        request: Outgoing::from(encoded),
+        stream: (stream || account.is_some()) && kind == RequestKind::Generate,
+        timeouts,
+        max_body: state.config.body_limits.provider_response.as_usize(),
+    });
+    let sent = if gathers {
+        tokio::time::timeout_at(deadline, sending)
+            .await
+            .map_err(late)?
+    } else {
+        sending.await
+    };
+    let resp = sent.map_err(|e| {
+        count_upstream_error(transport_kind(&e), provider);
+        fail(Stage::Upstream)(upstream_error(&e))
+    })?;
     if let Some(held) = &mut rec.held {
         held.keep(kept);
     }
@@ -861,19 +872,23 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
             let max = state.config.body_limits.provider_response.as_usize();
-            let reply = stream::gather(chunks, decoder, plan.dialect, max)
-                .await
-                .map_err(|g| match g {
-                    stream::Gathered::Transport(e) => {
-                        count_upstream_error(transport_kind(&e), provider);
-                        fail(Stage::Upstream)(upstream_error(&e))
-                    }
-                    stream::Gathered::Provider(err) => {
-                        count_upstream_error(err.kind.as_str(), provider);
-                        fail(Stage::Provider)(super::accounts::usage_limit(account, err))
-                    }
-                    stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
-                })?;
+            let reply = tokio::time::timeout_at(
+                deadline,
+                stream::gather(chunks, decoder, plan.dialect, max),
+            )
+            .await
+            .map_err(late)?
+            .map_err(|g| match g {
+                stream::Gathered::Transport(e) => {
+                    count_upstream_error(transport_kind(&e), provider);
+                    fail(Stage::Upstream)(upstream_error(&e))
+                }
+                stream::Gathered::Provider(err) => {
+                    count_upstream_error(err.kind.as_str(), provider);
+                    fail(Stage::Provider)(super::accounts::usage_limit(account, err))
+                }
+                stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
+            })?;
             let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
             reply_with(state, rec, reply, out, counter, carry, &served)
                 .await

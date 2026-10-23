@@ -49,6 +49,7 @@ pub enum Reply {
     UsageLimit,
     UsageLimitInStream,
     ModelNotFound,
+    Trickle,
 }
 
 struct Grant {
@@ -488,6 +489,30 @@ const FAILED_STREAM: &str = concat!(
     "\n\n"
 );
 
+fn trickle() -> Response {
+    let created = FAILED_STREAM
+        .split_inclusive("\n\n")
+        .next()
+        .unwrap_or_default();
+    let chunks = futures::stream::unfold(Some(created), |first| async move {
+        let chunk = match first {
+            Some(created) => created,
+            None => {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                ": still working\n\n"
+            }
+        };
+        Some((
+            Ok::<_, std::io::Error>(Bytes::from_static(chunk.as_bytes())),
+            None,
+        ))
+    });
+    Response::builder()
+        .header(header::CONTENT_TYPE, "text/event-stream")
+        .body(Body::from_stream(chunks))
+        .unwrap_or_default()
+}
+
 async fn api(
     State(inner): State<Arc<Inner>>,
     method: Method,
@@ -544,6 +569,7 @@ async fn api(
                 )
                     .into_response(),
                 Reply::UsageLimitInStream => stream(FAILED_STREAM.to_owned()),
+                Reply::Trickle => trickle(),
                 Reply::ModelNotFound => (
                     StatusCode::NOT_FOUND,
                     [(header::CONTENT_TYPE, "application/json")],
