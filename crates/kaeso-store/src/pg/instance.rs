@@ -161,3 +161,14 @@ pub async fn time_zone(db: impl PgExecutor<'_>) -> Result<String, StoreError> {
         .await?
         .ok_or_else(|| StoreError::Corrupt("the instance settings row is missing".into()))
 }
+
+pub async fn agent_host_id(db: impl PgExecutor<'_>, fresh: &str) -> Result<String, StoreError> {
+    sqlx::query_scalar!(
+        "UPDATE instance_settings SET agent_host_id = COALESCE(agent_host_id, $1) RETURNING agent_host_id",
+        fresh
+    )
+    .fetch_optional(db)
+    .await?
+    .flatten()
+    .ok_or_else(|| StoreError::Corrupt("the instance settings row is missing".into()))
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 AND auth_method <> 'api_key'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "617d198c7fb184e5a26734f2c5dc1ddd71eaa43eac15d147cb4bd807715a2f81"
+}

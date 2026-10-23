@@ -40,7 +40,7 @@ async fn provider_columns_accept_exactly_the_provider_id_rule() {
     kaeso_store::pg::migrate(&s.pg).await.unwrap();
     let checks: Vec<(String, String)> = sqlx::query_as(
         "SELECT conrelid::regclass::text, pg_get_constraintdef(oid) FROM pg_constraint \
-         WHERE contype = 'c' AND pg_get_constraintdef(oid) LIKE '%provider%' ORDER BY 1",
+         WHERE contype = 'c' AND pg_get_constraintdef(oid) LIKE '%provider ~%' ORDER BY 1",
     )
     .fetch_all(&s.pg)
     .await
@@ -389,5 +389,140 @@ async fn an_sso_domain_signs_in_through_one_organization() {
         "saving the connection again keeps its verified domains"
     );
     drop(conn);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
+    use kaeso_store::pg::credentials::{self, NewCredential, Sealed};
+    let s = TestServices::start().await;
+    let org = uuid::Uuid::now_v7();
+    kaeso_store::pg::orgs::insert(&s.pg, org, "Acme", 30, 30)
+        .await
+        .unwrap();
+    let now = time::OffsetDateTime::now_utc()
+        .replace_nanosecond(0)
+        .unwrap();
+    let new = |id, auth_method, expires_at, account_label| NewCredential {
+        id,
+        org_id: org,
+        provider: "openai",
+        name: "Plan",
+        ciphertext: &[1],
+        nonce: &[2],
+        wrapped_key: &[3],
+        key_id: "k1",
+        last4: "",
+        created_by_kind: "system",
+        created_by_id: None,
+        auth_method,
+        expires_at,
+        account_label,
+    };
+    let account = uuid::Uuid::now_v7();
+    credentials::insert(
+        &s.pg,
+        &new(account, "chatgpt", Some(now), Some("ada@example.com")),
+    )
+    .await
+    .unwrap();
+    let no_expiry = new(
+        uuid::Uuid::now_v7(),
+        "chatgpt",
+        None,
+        Some("ada@example.com"),
+    );
+    assert!(
+        credentials::insert(&s.pg, &no_expiry).await.is_err(),
+        "an account always has an expiry"
+    );
+    let expiring_key = new(uuid::Uuid::now_v7(), "api_key", Some(now), None);
+    assert!(
+        credentials::insert(&s.pg, &expiring_key).await.is_err(),
+        "an API key never expires"
+    );
+
+    let later = now + time::Duration::hours(1);
+    let sealed = Sealed {
+        ciphertext: &[4],
+        nonce: &[5],
+        wrapped_key: &[6],
+        key_id: "k2",
+    };
+    let mut tx = s.pg.begin().await.unwrap();
+    credentials::lock_refresh(&mut tx, account).await.unwrap();
+    assert!(
+        credentials::refreshed(&mut *tx, account, &sealed, later)
+            .await
+            .unwrap()
+    );
+    tx.commit().await.unwrap();
+    let row = credentials::sealed(&s.pg, org, account)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (
+            row.ciphertext,
+            row.key_id.as_str(),
+            row.expires_at,
+            row.revision
+        ),
+        (vec![4], "k2", Some(later), 1),
+        "a refresh keeps the revision, so what Kaeso learnt about the key stays"
+    );
+
+    credentials::sign_out(&s.pg, account, "signed_out")
+        .await
+        .unwrap();
+    let row = credentials::sealed(&s.pg, org, account)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(row.auth_error.as_deref(), Some("signed_out"));
+    assert!(
+        !credentials::refreshed(&s.pg, account, &sealed, later)
+            .await
+            .unwrap(),
+        "a signed-out account takes no refreshed tokens"
+    );
+    let listed = credentials::list(&s.pg, org).await.unwrap();
+    assert_eq!(listed[0].account_label.as_deref(), Some("ada@example.com"));
+    assert_eq!(listed[0].auth_method, "chatgpt");
+
+    let again = new(account, "chatgpt", Some(later), Some("ada@example.com"));
+    assert!(credentials::replace(&s.pg, &again).await.unwrap());
+    let row = credentials::sealed(&s.pg, org, account)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (row.auth_error, row.revision),
+        (None, 2),
+        "signing in again clears the error"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_agent_host_id_is_chosen_once_per_install() {
+    let s = TestServices::start().await;
+    sqlx::query(
+        "INSERT INTO instance_settings (org_creation, metadata_retention_days, content_retention_days, \
+         max_metadata_retention_days, max_content_retention_days) VALUES ('everyone', 30, 30, 30, 30)",
+    )
+    .execute(&s.pg)
+    .await
+    .unwrap();
+    let first = "urn:uuid:5f0c6f42-8f0e-4d2b-9a57-1e7c2d9b3a10";
+    let second = "urn:uuid:0e2b4c6d-1a3f-4b5c-8d7e-9f0a1b2c3d4e";
+    let chosen = kaeso_store::pg::instance::agent_host_id(&s.pg, first)
+        .await
+        .unwrap();
+    assert_eq!(chosen, first);
+    let again = kaeso_store::pg::instance::agent_host_id(&s.pg, second)
+        .await
+        .unwrap();
+    assert_eq!(again, first);
     s.cleanup().await;
 }

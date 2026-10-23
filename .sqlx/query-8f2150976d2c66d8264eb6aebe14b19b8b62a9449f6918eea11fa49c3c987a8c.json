@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO provider_credentials (id, org_id, provider, name, ciphertext, nonce, wrapped_key, key_id, last4, created_by_kind, created_by_id, auth_method, expires_at, account_label) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Text",
+        "Text",
+        "Uuid",
+        "Text",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8f2150976d2c66d8264eb6aebe14b19b8b62a9449f6918eea11fa49c3c987a8c"
+}

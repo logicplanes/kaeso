@@ -262,6 +262,9 @@ pub async fn create(
             last4: &last4,
             created_by_kind: kind,
             created_by_id: by,
+            auth_method: "api_key",
+            expires_at: None,
+            account_label: None,
         },
     )
     .await?;
@@ -365,6 +368,9 @@ pub async fn replace(
             last4: &last4,
             created_by_kind: kind,
             created_by_id: by,
+            auth_method: "api_key",
+            expires_at: None,
+            account_label: None,
         },
     )
     .await?;

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at FROM provider_credentials WHERE org_id = $1 ORDER BY provider, is_default DESC, created_at DESC, id DESC",
+  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at, auth_method, account_label, auth_error FROM provider_credentials WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -134,10 +134,44 @@
             "name": "updated_at"
           }
         }
+      },
+      {
+        "ordinal": 12,
+        "name": "auth_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_method"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "account_label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "account_label"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "auth_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_error"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -153,8 +187,11 @@
       true,
       true,
       false,
-      false
+      false,
+      false,
+      true,
+      true
     ]
   },
-  "hash": "104680b77d6fdbb784929cf044cd5c4bb3fae9a92fd10c12984608f8e3f7f7b5"
+  "hash": "4764cf7e9b8d8f1e2b6902dd0cb5a0a9a284b6f852a07dfbd5e116887db80dc6"
 }
