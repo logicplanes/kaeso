@@ -137,6 +137,38 @@ pub struct KeyPage {
     pub label: &'static str,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum AuthMethod {
+    ApiKey,
+    ChatGpt,
+}
+
+impl AuthMethod {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            AuthMethod::ApiKey => "api_key",
+            AuthMethod::ChatGpt => "chatgpt",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<AuthMethod> {
+        [AuthMethod::ApiKey, AuthMethod::ChatGpt]
+            .into_iter()
+            .find(|m| m.as_str() == s)
+    }
+
+    pub const fn is_account(self) -> bool {
+        !matches!(self, AuthMethod::ApiKey)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AccountSignIn {
+    pub method: AuthMethod,
+    pub product: &'static str,
+    pub usage_url: Option<&'static str>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Provider {
     pub id: &'static str,
@@ -152,6 +184,7 @@ pub struct Provider {
     pub refused_key_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
     pub chat: ChatProfile,
+    pub account: Option<AccountSignIn>,
 }
 
 pub const PROVIDERS: &[Provider] = &[
@@ -176,6 +209,11 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::OPENAI,
+        account: Some(AccountSignIn {
+            method: AuthMethod::ChatGpt,
+            product: "ChatGPT",
+            usage_url: Some("https://chatgpt.com/settings/usage"),
+        }),
     },
     Provider {
         id: "anthropic",
@@ -194,6 +232,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Anthropic"),
+        account: None,
     },
     Provider {
         id: "deepseek",
@@ -215,6 +254,7 @@ pub const PROVIDERS: &[Provider] = &[
             .max_tokens()
             .system_role()
             .reasoning_fields(&["reasoning_content"]),
+        account: None,
     },
     Provider {
         id: "xai",
@@ -233,6 +273,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
         chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
+        account: None,
     },
     Provider {
         id: "togetherai",
@@ -252,6 +293,7 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
+        account: None,
     },
     Provider {
         id: "groq",
@@ -274,6 +316,7 @@ pub const PROVIDERS: &[Provider] = &[
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
+        account: None,
     },
     Provider {
         id: "openrouter",
@@ -294,6 +337,7 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("OpenRouter")
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
+        account: None,
     },
     Provider {
         id: "mistral",
@@ -331,6 +375,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ])
             .refusing_in_messages(&["name", "refusal"]),
+        account: None,
     },
 ];
 
@@ -396,6 +441,21 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_openai_signs_in_with_an_account_and_methods_keep_their_names() {
+        let accounts: Vec<(&str, AuthMethod)> = PROVIDERS
+            .iter()
+            .filter_map(|p| p.account.map(|a| (p.id, a.method)))
+            .collect();
+        assert_eq!(accounts, [("openai", AuthMethod::ChatGpt)]);
+        for method in [AuthMethod::ApiKey, AuthMethod::ChatGpt] {
+            assert_eq!(AuthMethod::parse(method.as_str()), Some(method));
+        }
+        assert_eq!(AuthMethod::parse("grok"), None);
+        assert!(AuthMethod::ChatGpt.is_account());
+        assert!(!AuthMethod::ApiKey.is_account());
+    }
 
     #[test]
     fn every_provider_id_is_listed_once() {

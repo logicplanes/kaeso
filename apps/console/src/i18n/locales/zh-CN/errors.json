@@ -462,5 +462,18 @@
   "errors.unpricedFeature.project": "项目有支出预算，无法为 `{feature}` 计价，请联系管理员。",
   "errors.ssoEnterEmail": "请输入您的邮箱以通过单点登录登录。",
   "errors.adminSsoNoConnection": "此组织没有 SSO 连接；请先连接一个。",
-  "errors.managedAddress": "此地址由您的组织管理；请在其身份提供商处更改。"
+  "errors.managedAddress": "此地址由您的组织管理；请在其身份提供商处更改。",
+  "errors.replaceAccount": "此密钥通过账户登录；请重新登录，而不是替换它。",
+  "errors.accountSignInExpired": "此次登录已过期或已被使用；请重新开始。",
+  "errors.pasteCallback": "请粘贴未能加载的页面地址；它以 `http://127.0.0.1` 开头。",
+  "errors.pastedRepeats": "粘贴的地址中有重复的参数；请按浏览器显示的原样粘贴。",
+  "errors.notAnAccount": "此密钥是 API 密钥；请替换它，而不是重新登录。",
+  "errors.noAccountSignIn": "{provider} 不支持账户登录；请为其添加 API 密钥。",
+  "errors.accountIncomplete": "来自 {product} 的响应不完整；请重新开始。",
+  "errors.accountDeclined": "您在 {product} 拒绝了登录；请重新开始。",
+  "errors.accountRefused": "{product} 拒绝了此次登录；请重新开始。",
+  "errors.accountUnreachable": "暂时无法连接 {product}；请稍后重试。",
+  "errors.accountUnverified": "无法验证来自 {product} 的响应；请重新开始。",
+  "errors.accountNoPlan": "该账户未允许使用其 {product} 套餐；请重新开始并允许。",
+  "errors.accountOther": "您登录的是另一个 {product} 账户；请以 {account} 登录。"
 }

@@ -10,7 +10,12 @@
       "key_prefix": "sk-",
       "dialects": ["openai_responses", "openai_chat", "openai_embeddings"],
       "count_tokens": "openai_responses",
-      "embeddings": "openai_embeddings"
+      "embeddings": "openai_embeddings",
+      "account": {
+        "method": "chatgpt",
+        "product": "ChatGPT",
+        "usage_url": "https://chatgpt.com/settings/usage"
+      }
     },
     {
       "id": "anthropic",
@@ -22,7 +27,8 @@
       "key_prefix": "sk-ant-",
       "dialects": ["anthropic_messages"],
       "count_tokens": "anthropic_messages",
-      "embeddings": null
+      "embeddings": null,
+      "account": null
     },
     {
       "id": "deepseek",
@@ -34,7 +40,8 @@
       "key_prefix": "sk-",
       "dialects": ["openai_chat"],
       "count_tokens": null,
-      "embeddings": null
+      "embeddings": null,
+      "account": null
     },
     {
       "id": "xai",
@@ -46,7 +53,8 @@
       "key_prefix": "xai-",
       "dialects": ["openai_responses", "openai_chat"],
       "count_tokens": null,
-      "embeddings": null
+      "embeddings": null,
+      "account": null
     },
     {
       "id": "togetherai",
@@ -58,7 +66,8 @@
       "key_prefix": "tgp_v1_",
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
-      "embeddings": "openai_embeddings"
+      "embeddings": "openai_embeddings",
+      "account": null
     },
     {
       "id": "groq",
@@ -70,7 +79,8 @@
       "key_prefix": "gsk_",
       "dialects": ["openai_chat"],
       "count_tokens": null,
-      "embeddings": null
+      "embeddings": null,
+      "account": null
     },
     {
       "id": "openrouter",
@@ -82,7 +92,8 @@
       "key_prefix": "sk-or-v1-",
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
-      "embeddings": "openai_embeddings"
+      "embeddings": "openai_embeddings",
+      "account": null
     },
     {
       "id": "mistral",
@@ -94,7 +105,8 @@
       "key_prefix": null,
       "dialects": ["openai_chat", "openai_embeddings"],
       "count_tokens": null,
-      "embeddings": "openai_embeddings"
+      "embeddings": "openai_embeddings",
+      "account": null
     }
   ],
   "has_more": false,

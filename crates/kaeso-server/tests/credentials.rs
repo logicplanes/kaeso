@@ -6,9 +6,11 @@ use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
 use common::{App, Owner};
+use kaeso_core::clock::Clock;
 use kaeso_core::id::{OrgId, ProjectId};
 use kaeso_server::services::credentials::{self, ResolveError};
 use kaeso_server::services::master_key;
+use kaeso_testkit::oauth::{Fault, MockOAuth};
 use kaeso_testkit::services::TestServices;
 use secrecy::ExposeSecret;
 use serde_json::json;
@@ -504,4 +506,575 @@ async fn master_keys_rotate_without_reentering_credentials() {
         .unwrap_err()
         .to_string();
     assert!(err.contains("k2"), "{err}");
+}
+
+const NOT_CALLBACK: &str =
+    "Paste the address of the page that didn't load; it starts with `http://127.0.0.1`.";
+const EXPIRED: &str = "This sign-in expired or was already used; start again.";
+
+fn query_of(url: &str) -> std::collections::HashMap<String, String> {
+    url::Url::parse(url)
+        .unwrap()
+        .query_pairs()
+        .into_owned()
+        .collect()
+}
+
+fn with_param(callback: &str, edit: impl FnOnce(&mut Vec<(String, String)>)) -> String {
+    let mut url = url::Url::parse(callback).unwrap();
+    let mut pairs: Vec<(String, String)> = url.query_pairs().into_owned().collect();
+    edit(&mut pairs);
+    url.query_pairs_mut().clear().extend_pairs(&pairs);
+    url.to_string()
+}
+
+#[track_caller]
+fn refused_with(r: &common::Resp, status: StatusCode, message: &str) {
+    assert_eq!(r.status, status, "{:?}", r.body);
+    assert_eq!(r.body["error"]["message"], message, "{:?}", r.body);
+}
+
+#[tokio::test]
+async fn a_chatgpt_account_becomes_a_provider_key_without_showing_its_tokens() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let providers = app
+        .get(&format!("/orgs/{}/providers", owner.org_id), &owner.cookie)
+        .await;
+    let by_id = |id: &str| {
+        providers.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|p| p["id"] == id)
+            .unwrap()
+            .clone()
+    };
+    assert_eq!(
+        by_id("openai")["account"],
+        json!({ "method": "chatgpt", "product": "ChatGPT", "usage_url": "https://chatgpt.com/settings/usage" })
+    );
+    assert_eq!(by_id("anthropic")["account"], json!(null));
+
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Ada's plan").await;
+    let q = query_of(&url);
+    assert_eq!(q["client_id"], "dynamic_agent_client");
+    assert_eq!(q["agent_name_hint"], "Kaeso");
+    assert_eq!(
+        q["scope"],
+        "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct"
+    );
+    assert!(url.starts_with(&format!("{}/api/accounts/authorize?", oauth.base_url())));
+    let (_, second) = common::begin_sign_in(&app, &owner, "Another").await;
+    let host = &q["ext_agent_host_id"];
+    assert_eq!(
+        &query_of(&second)["ext_agent_host_id"],
+        host,
+        "one host id per install"
+    );
+    assert!(host.starts_with("urn:uuid:") && host.len() == 45, "{host}");
+
+    let back = oauth.approve(&url, "sub-ada", "ada@example.com");
+    let r = common::finish_sign_in(&app, &owner, &attempt, &back).await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["auth_method"], "chatgpt");
+    assert_eq!(r.body["account"], "ada@example.com");
+    assert_eq!(r.body["auth_error"], json!(null));
+    assert_eq!(r.body["last4"], "");
+    assert_eq!(r.body["name"], "Ada's plan");
+    assert_eq!(r.body["is_default"], true);
+    let id = r.body["id"].as_str().unwrap().to_owned();
+
+    let base = format!("/orgs/{}/credentials", owner.org_id);
+    let list = app.get(&base, &owner.cookie).await;
+    let one = app.get(&format!("{base}/{id}"), &owner.cookie).await;
+    let audit = app
+        .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
+        .await;
+    assert!(audit.body.to_string().contains("credential.create"));
+    let issued = oauth.issued();
+    assert_eq!(
+        issued.len(),
+        3,
+        "an ID token, an access token and a refresh token"
+    );
+    for body in [&r.body, &list.body, &one.body, &audit.body] {
+        for token in issued.iter().chain([&back]) {
+            assert!(!body.to_string().contains(token.as_str()), "{body}");
+        }
+    }
+    let row: (String, String, time::OffsetDateTime, Vec<u8>) = sqlx::query_as(
+        "SELECT auth_method, account_label, expires_at, ciphertext FROM provider_credentials",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(
+        (row.0.as_str(), row.1.as_str()),
+        ("chatgpt", "ada@example.com")
+    );
+    let lifetime = row.2 - app.clock.now();
+    assert!(
+        (time::Duration::minutes(59)..=time::Duration::minutes(61)).contains(&lifetime),
+        "{lifetime}"
+    );
+    for token in &issued {
+        assert!(
+            !row.3
+                .windows(16)
+                .any(|w| token.as_bytes().windows(16).any(|t| t == w))
+        );
+    }
+    let tokens = common::account_tokens(&app, &owner, &id).await;
+    assert_eq!(tokens.client_id, "oaiapp_mock0");
+    assert_eq!(tokens.sub, "sub-ada");
+    assert!(
+        tokens
+            .scopes
+            .iter()
+            .any(|s| s == "chatgpt.tokens.use.direct")
+    );
+    let project = default_project(&app, &owner).await;
+    let secret = secret_of(&app, &owner, &project).await.unwrap();
+    assert_eq!(secret, tokens.access_token);
+    assert!(issued.contains(&secret));
+    s.cleanup().await;
+}
+
+async fn begin_again(app: &App, owner: &Owner, id: &str) -> (String, String) {
+    let r = app
+        .call(
+            Method::POST,
+            &format!("/orgs/{}/credentials/{id}/oauth", owner.org_id),
+            None,
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    (
+        r.body["attempt"].as_str().unwrap().to_owned(),
+        r.body["authorize_url"].as_str().unwrap().to_owned(),
+    )
+}
+
+async fn finish_again(
+    app: &App,
+    owner: &Owner,
+    id: &str,
+    attempt: &str,
+    callback: &str,
+) -> common::Resp {
+    app.post(
+        &format!("/orgs/{}/credentials/{id}/oauth/{attempt}", owner.org_id),
+        json!({ "callback_url": callback }),
+        Some(&owner.cookie),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn signing_in_again_keeps_the_registration_and_the_account() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let first = common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let id = first["id"].as_str().unwrap().to_owned();
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let q = query_of(&url);
+    assert_eq!(q["client_id"], "oaiapp_mock0", "the registration is kept");
+    assert_eq!(q["login_hint"], "ada@example.com");
+    assert!(!q.contains_key("agent_name_hint"));
+    assert_eq!(
+        q["ext_agent_host_id"],
+        oauth.authorizations()[0]["ext_agent_host_id"]
+    );
+    let before = common::account_tokens(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    assert!(
+        !back.contains("client_id="),
+        "a known registration comes back without its id"
+    );
+    let r = finish_again(&app, &owner, &id, &attempt, &back).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["id"], id.as_str());
+    assert_eq!(r.body["account"], "ada@example.com");
+    let after = common::account_tokens(&app, &owner, &id).await;
+    assert_ne!(after.access_token, before.access_token);
+    assert_eq!(after.client_id, before.client_id);
+    let audit = app
+        .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
+        .await;
+    assert!(audit.body.to_string().contains("credential.replace"));
+
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-eve", "eve@example.com");
+    refused_with(
+        &finish_again(&app, &owner, &id, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        "You signed in to another ChatGPT account; sign in as ada@example.com.",
+    );
+    assert_eq!(
+        common::account_tokens(&app, &owner, &id).await.access_token,
+        after.access_token
+    );
+
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = with_param(
+        &oauth.approve(&url, "sub-ada@example.com", "ada@example.com"),
+        |p| {
+            p.push(("client_id".into(), "oaiapp_someone_else".into()));
+        },
+    );
+    refused_with(
+        &finish_again(&app, &owner, &id, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        "The answer from ChatGPT is incomplete; start again.",
+    );
+
+    let (attempt, url) = begin_again(&app, &owner, &id).await;
+    let back = oauth.approve(&url, "sub-ada@example.com", "ada@example.com");
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        EXPIRED,
+    );
+
+    let replace = app
+        .post(
+            &format!("/orgs/{}/credentials/{id}/replace", owner.org_id),
+            json!({ "secret": ORG_SECRET }),
+            Some(&owner.cookie),
+        )
+        .await;
+    refused_with(
+        &replace,
+        StatusCode::BAD_REQUEST,
+        "This key signs in with an account; sign in again instead of replacing it.",
+    );
+    let key = app
+        .post(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            json!({ "provider": "openai", "name": "Key", "secret": ORG_SECRET }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let r = app
+        .call(
+            Method::POST,
+            &format!(
+                "/orgs/{}/credentials/{}/oauth",
+                owner.org_id,
+                key.body["id"].as_str().unwrap()
+            ),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    refused_with(
+        &r,
+        StatusCode::BAD_REQUEST,
+        "This key is an API key; replace it instead of signing in again.",
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn only_the_address_of_this_sign_in_finishes_it() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Plan").await;
+    let back = oauth.approve(&url, "sub-ada", "ada@example.com");
+    let port = url::Url::parse(&back).unwrap().port().unwrap();
+    let query = back.split_once('?').unwrap().1.to_owned();
+    for pasted in [
+        String::new(),
+        "the page didn't load".to_owned(),
+        format!("https://127.0.0.1:{port}/auth/callback?{query}"),
+        format!("http://localhost:{port}/auth/callback?{query}"),
+        format!("http://127.0.0.1:{port}/callback?{query}"),
+        format!("http://127.0.0.1:{port}/auth/callback#{query}"),
+        format!(
+            "http://127.0.0.1:{}/auth/callback?{query}",
+            port.wrapping_add(1).max(1)
+        ),
+        format!("http://127.0.0.1:{port}/auth/callback?code=x"),
+        format!(
+            "{}/?next=http://127.0.0.1:{port}/auth/callback?{query}",
+            oauth.base_url()
+        ),
+    ] {
+        let r = common::finish_sign_in(&app, &owner, &attempt, &pasted).await;
+        refused_with(&r, StatusCode::BAD_REQUEST, NOT_CALLBACK);
+        assert_eq!(r.body["error"]["param"], "callback_url");
+    }
+    for repeated in ["code", "state", "client_id", "scope"] {
+        let pasted = with_param(&back, |p| {
+            let value = p.iter().find(|(k, _)| k == repeated).unwrap().1.clone();
+            p.push((repeated.to_owned(), value));
+        });
+        refused_with(
+            &common::finish_sign_in(&app, &owner, &attempt, &pasted).await,
+            StatusCode::BAD_REQUEST,
+            "The pasted address repeats a parameter; paste it as the browser shows it.",
+        );
+    }
+    let (other_attempt, _) = common::begin_sign_in(&app, &owner, "Other").await;
+    for wrong in [
+        other_attempt.as_str(),
+        "not-an-attempt",
+        "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5b",
+    ] {
+        refused_with(
+            &common::finish_sign_in(&app, &owner, wrong, &back).await,
+            StatusCode::BAD_REQUEST,
+            EXPIRED,
+        );
+    }
+    let (eve, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "eve@example.com", "role": "admin" }),
+        "Eve",
+    )
+    .await;
+    let eve = Owner {
+        cookie: eve,
+        user_id: String::new(),
+        org_id: owner.org_id.clone(),
+    };
+    refused_with(
+        &common::finish_sign_in(&app, &eve, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        EXPIRED,
+    );
+
+    let done = common::finish_sign_in(&app, &owner, &attempt, &back).await;
+    assert_eq!(
+        done.status,
+        StatusCode::CREATED,
+        "every refusal left the attempt usable: {:?}",
+        done.body
+    );
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        EXPIRED,
+    );
+
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Late").await;
+    let back = oauth.approve(&url, "sub-ada", "ada@example.com");
+    app.clock.advance(time::Duration::minutes(10));
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        EXPIRED,
+    );
+
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Declined").await;
+    let denied = oauth.deny(&url);
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &denied).await,
+        StatusCode::BAD_REQUEST,
+        "You declined the sign-in at ChatGPT; start again.",
+    );
+    let back = with_param(&denied, |p| {
+        p.retain(|(k, _)| k == "state");
+        p.push(("code".into(), "a-code".into()));
+    });
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        EXPIRED,
+    );
+    for (edit, message) in [
+        (
+            ("error", "server_error"),
+            "ChatGPT refused the sign-in; start again.",
+        ),
+        (
+            ("code", ""),
+            "The answer from ChatGPT is incomplete; start again.",
+        ),
+        (
+            ("client_id", "dynamic_agent_client"),
+            "The answer from ChatGPT is incomplete; start again.",
+        ),
+        (
+            ("code", "a-forged-code"),
+            "ChatGPT refused the sign-in; start again.",
+        ),
+    ] {
+        let (attempt, url) = common::begin_sign_in(&app, &owner, "Edited").await;
+        let back = with_param(&oauth.approve(&url, "sub-ada", "ada@example.com"), |p| {
+            p.retain(|(k, _)| k != edit.0);
+            p.push((edit.0.to_owned(), edit.1.to_owned()));
+        });
+        refused_with(
+            &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+            StatusCode::BAD_REQUEST,
+            message,
+        );
+    }
+    let (attempt, url) = common::begin_sign_in(&app, &owner, "Unregistered").await;
+    let back = with_param(&oauth.approve(&url, "sub-ada", "ada@example.com"), |p| {
+        p.retain(|(k, _)| k != "client_id");
+    });
+    refused_with(
+        &common::finish_sign_in(&app, &owner, &attempt, &back).await,
+        StatusCode::BAD_REQUEST,
+        "The answer from ChatGPT is incomplete; start again.",
+    );
+    let list = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(list.body["data"].as_array().unwrap().len(), 1);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_sign_in_service_must_vouch_for_the_account_and_its_plan() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    for (fault, status, message) in [
+        (
+            Fault::WithoutPlan,
+            StatusCode::BAD_REQUEST,
+            "The account didn't allow using its ChatGPT plan; start again and allow it.",
+        ),
+        (
+            Fault::WrongNonce,
+            StatusCode::BAD_REQUEST,
+            "The answer from ChatGPT could not be verified; start again.",
+        ),
+        (
+            Fault::WrongAudience,
+            StatusCode::BAD_REQUEST,
+            "The answer from ChatGPT could not be verified; start again.",
+        ),
+        (
+            Fault::WrongIssuer,
+            StatusCode::BAD_REQUEST,
+            "The answer from ChatGPT could not be verified; start again.",
+        ),
+        (
+            Fault::NoEmail,
+            StatusCode::BAD_REQUEST,
+            "The answer from ChatGPT is incomplete; start again.",
+        ),
+        (
+            Fault::Down,
+            StatusCode::SERVICE_UNAVAILABLE,
+            "ChatGPT can't be reached right now; try again shortly.",
+        ),
+    ] {
+        oauth.set_fault(Fault::None);
+        let (attempt, url) = common::begin_sign_in(&app, &owner, "Plan").await;
+        let back = oauth.approve(&url, "sub-ada", "ada@example.com");
+        oauth.set_fault(fault);
+        let r = common::finish_sign_in(&app, &owner, &attempt, &back).await;
+        assert_eq!(r.status, status, "{fault:?}: {:?}", r.body);
+        assert_eq!(r.body["error"]["message"], message, "{fault:?}");
+    }
+    let list = app
+        .get(
+            &format!("/orgs/{}/credentials", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(list.body["data"], json!([]));
+
+    let created = app
+        .post(
+            &format!("/orgs/{}/platform-keys", owner.org_id),
+            json!({ "name": "automation" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let r = app
+        .with_key(
+            Method::POST,
+            &format!("/orgs/{}/credentials/oauth", owner.org_id),
+            Some(json!({ "provider": "openai", "name": "Plan" })),
+            created.body["secret"].as_str().unwrap(),
+        )
+        .await;
+    refused_with(
+        &r,
+        StatusCode::FORBIDDEN,
+        "This needs a console session; API keys cannot manage accounts or the instance.",
+    );
+    let r = app
+        .post(
+            &format!("/orgs/{}/credentials/oauth", owner.org_id),
+            json!({ "provider": "anthropic", "name": "Plan" }),
+            Some(&owner.cookie),
+        )
+        .await;
+    refused_with(
+        &r,
+        StatusCode::BAD_REQUEST,
+        "Anthropic has no account sign-in; add an API key for it.",
+    );
+    assert_eq!(r.body["error"]["param"], "provider");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn deleting_an_account_ends_its_session_even_when_the_provider_is_down() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    let ada = common::sign_in_chatgpt(&app, &owner, &oauth, "Ada", "ada@example.com").await;
+    let eve = common::sign_in_chatgpt(&app, &owner, &oauth, "Eve", "eve@example.com").await;
+    let (ada, eve) = (ada["id"].as_str().unwrap(), eve["id"].as_str().unwrap());
+    let ada_tokens = common::account_tokens(&app, &owner, ada).await;
+    let base = format!("/orgs/{}/credentials", owner.org_id);
+    app.call(
+        Method::DELETE,
+        &format!("{base}/{ada}"),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert_eq!(
+        oauth.revoked(),
+        [(
+            ada_tokens.refresh_token.clone(),
+            ada_tokens.client_id.clone()
+        )]
+    );
+    oauth.set_fault(Fault::RevokeDown);
+    app.call(
+        Method::DELETE,
+        &format!("{base}/{eve}"),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert_eq!(oauth.revoked().len(), 1);
+    let list = app.get(&base, &owner.cookie).await;
+    assert_eq!(list.body["data"], json!([]));
+    let audit = app
+        .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
+        .await;
+    assert_eq!(
+        audit.body.to_string().matches("credential.delete").count(),
+        2
+    );
+    s.cleanup().await;
 }

@@ -73,6 +73,7 @@ pub struct Overrides {
     pub limits: Option<Arc<dyn crate::model_api::hooks::Limits>>,
     pub sink: Option<Arc<dyn crate::model_api::hooks::Sink>>,
     pub dns: Option<Arc<dyn crate::services::dns::TxtLookup>>,
+    pub accounts: Option<crate::services::provider_accounts::Endpoints>,
 }
 
 pub async fn prepare(config: Config) -> Result<AppState, ServeError> {
@@ -105,6 +106,7 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
         limits: overrides.limits,
         sink: overrides.sink,
         dns: overrides.dns,
+        accounts: overrides.accounts,
     });
     crate::services::models_dev::init(&state).await?;
     Ok(state)

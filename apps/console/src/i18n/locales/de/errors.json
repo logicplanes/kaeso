@@ -462,5 +462,18 @@
   "errors.unpricedFeature.project": "Das Projekt hat ein Ausgabenbudget, das `{feature}` nicht bepreisen kann; wenden Sie sich an einen Admin.",
   "errors.ssoEnterEmail": "Geben Sie Ihre E-Mail-Adresse ein, um sich mit Single Sign-on anzumelden.",
   "errors.adminSsoNoConnection": "Diese Organisation hat keine SSO-Verbindung; richten Sie zuerst eine ein.",
-  "errors.managedAddress": "Ihre Organisation verwaltet diese Adresse; ändern Sie sie bei ihrem Identitätsanbieter."
+  "errors.managedAddress": "Ihre Organisation verwaltet diese Adresse; ändern Sie sie bei ihrem Identitätsanbieter.",
+  "errors.replaceAccount": "Dieser Schlüssel meldet sich mit einem Konto an; melden Sie sich erneut an, statt ihn zu ersetzen.",
+  "errors.accountSignInExpired": "Diese Anmeldung ist abgelaufen oder wurde bereits verwendet; beginnen Sie erneut.",
+  "errors.pasteCallback": "Fügen Sie die Adresse der Seite ein, die nicht geladen wurde; sie beginnt mit `http://127.0.0.1`.",
+  "errors.pastedRepeats": "Die eingefügte Adresse wiederholt einen Parameter; fügen Sie sie so ein, wie der Browser sie anzeigt.",
+  "errors.notAnAccount": "Dieser Schlüssel ist ein API-Schlüssel; ersetzen Sie ihn, statt sich erneut anzumelden.",
+  "errors.noAccountSignIn": "{provider} bietet keine Anmeldung mit einem Konto; fügen Sie einen API-Schlüssel hinzu.",
+  "errors.accountIncomplete": "Die Antwort von {product} ist unvollständig; beginnen Sie erneut.",
+  "errors.accountDeclined": "Sie haben die Anmeldung bei {product} abgelehnt; beginnen Sie erneut.",
+  "errors.accountRefused": "{product} hat die Anmeldung abgelehnt; beginnen Sie erneut.",
+  "errors.accountUnreachable": "{product} ist gerade nicht erreichbar; versuchen Sie es gleich erneut.",
+  "errors.accountUnverified": "Die Antwort von {product} konnte nicht überprüft werden; beginnen Sie erneut.",
+  "errors.accountNoPlan": "Das Konto hat die Nutzung seines {product}-Abos nicht erlaubt; beginnen Sie erneut und erlauben Sie sie.",
+  "errors.accountOther": "Sie haben sich bei einem anderen {product}-Konto angemeldet; melden Sie sich als {account} an."
 }

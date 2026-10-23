@@ -6430,6 +6430,169 @@
         "x-kaeso-access": "right:provider_credentials.create"
       }
     },
+    "/platform/v1/orgs/{org}/credentials/oauth": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Begins signing in to a provider account, such as a ChatGPT account, to\nadd it as a provider key.",
+        "description": "Open `authorize_url` in a browser. Once the account's owner approves,\nthe provider sends the browser to `http://127.0.0.1:<port>/auth/callback`,\nwhich doesn't load; send that address to\n`POST /orgs/{org}/credentials/oauth/{attempt}` within ten minutes. Only\nthe person who began the sign-in can finish it, so it needs a console\nsession.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsOauth",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountAttempt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.create"
+      }
+    },
+    "/platform/v1/orgs/{org}/credentials/oauth/{attempt}": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Finishes signing in to a provider account and adds it as a provider key.",
+        "description": "Send the address the provider sent the browser to. Kaeso checks that\nit answers this attempt, which is used up either way, exchanges the code\nfor tokens and checks the account's identity and its permission to use\nthe plan. The tokens are stored encrypted and never shown.\n\n**Right:** `provider_credentials.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsOauthAttempt",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "attempt",
+            "in": "path",
+            "description": "The attempt from `POST /orgs/{org}/credentials/oauth`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinish"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.create"
+      }
+    },
     "/platform/v1/orgs/{org}/credentials/{credential}": {
       "get": {
         "tags": [
@@ -6506,7 +6669,7 @@
           "orgs"
         ],
         "summary": "Deletes a provider key. Its projects use the default again; when it was\nthe default, the most recently added remaining key of its provider\nbecomes the default, and without one, projects can no longer call that\nprovider's models.",
-        "description": "**Right:** `provider_credentials.delete` on the organization in the path.",
+        "description": "For an account, Kaeso also asks the provider to end the account's\nsession once the key is deleted. The key is deleted even when the\nprovider can't be reached.\n\n**Right:** `provider_credentials.delete` on the organization in the path.",
         "operationId": "deleteOrgsOrgCredentialsCredential",
         "parameters": [
           {
@@ -6719,6 +6882,172 @@
         "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
+    "/platform/v1/orgs/{org}/credentials/{credential}/oauth": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Begins signing in again to the account of a provider key, such as after\nthe provider ended its session.",
+        "description": "Works like `POST /orgs/{org}/credentials/oauth`; finish with\n`POST /orgs/{org}/credentials/{credential}/oauth/{attempt}`. The same\naccount must sign in.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsCredentialOauth",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "credential",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CredentialId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountAttempt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.replace"
+      }
+    },
+    "/platform/v1/orgs/{org}/credentials/{credential}/oauth/{attempt}": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Finishes signing in again and gives the provider key the account's new\ntokens.",
+        "description": "Works like `POST /orgs/{org}/credentials/oauth/{attempt}`; a different\naccount is refused. Requests use the new tokens within seconds.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsCredentialOauthAttempt",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "credential",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CredentialId"
+            }
+          },
+          {
+            "name": "attempt",
+            "in": "path",
+            "description": "The attempt from `POST /orgs/{org}/credentials/{credential}/oauth`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountFinish"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.replace"
+      }
+    },
     "/platform/v1/orgs/{org}/credentials/{credential}/projects": {
       "put": {
         "tags": [
@@ -6810,7 +7139,7 @@
           "orgs"
         ],
         "summary": "Replaces a key's secret (and optionally its name). Requests use the new\none within seconds.",
-        "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "An account isn't replaced with a secret: sign in again with\n`POST /orgs/{org}/credentials/{credential}/oauth`.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgCredentialsCredentialReplace",
         "parameters": [
           {
@@ -15649,6 +15978,31 @@
           }
         }
       },
+      "AccountAttempt": {
+        "type": "object",
+        "description": "A sign-in waiting for the provider's answer.",
+        "required": [
+          "attempt",
+          "authorize_url",
+          "expires_at"
+        ],
+        "properties": {
+          "attempt": {
+            "type": "string",
+            "description": "The attempt, to finish it with.",
+            "example": "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5b"
+          },
+          "authorize_url": {
+            "type": "string",
+            "description": "The provider's sign-in page; open it in a browser where the account's\nowner can sign in."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the attempt expires, ten minutes after it began."
+          }
+        }
+      },
       "AccountCreate": {
         "allOf": [
           {
@@ -15679,6 +16033,72 @@
           "allowed_domains",
           "everyone"
         ]
+      },
+      "AccountFinish": {
+        "type": "object",
+        "description": "The provider's answer.",
+        "required": [
+          "callback_url"
+        ],
+        "properties": {
+          "callback_url": {
+            "type": "string",
+            "description": "The address the provider sent the browser to after the sign-in, as the\naddress bar shows it: `http://127.0.0.1:<port>/auth/callback?…`. The page\ndoesn't load, because nothing listens there.",
+            "example": "http://127.0.0.1:51234/auth/callback?code=…&state=…"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AccountSignInView": {
+        "type": "object",
+        "description": "An account of a provider that signs in with OAuth.",
+        "required": [
+          "method",
+          "product"
+        ],
+        "properties": {
+          "method": {
+            "$ref": "#/components/schemas/AuthMethodView",
+            "description": "The provider key's `auth_method` once signed in."
+          },
+          "product": {
+            "type": "string",
+            "description": "The product whose account it is, as its owner knows it.",
+            "example": "ChatGPT"
+          },
+          "usage_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's page where the account's owner reviews and limits what\nKaeso uses; `null` without one.",
+            "example": "https://chatgpt.com/settings/usage"
+          }
+        }
+      },
+      "AccountStart": {
+        "type": "object",
+        "description": "A provider account to sign in to as a new provider key.",
+        "required": [
+          "provider",
+          "name"
+        ],
+        "properties": {
+          "make_default": {
+            "type": "boolean",
+            "description": "Make it the default for its provider. The first key of a provider\nbecomes the default either way."
+          },
+          "name": {
+            "type": "string",
+            "description": "A name to recognise the key by.",
+            "example": "Ada's ChatGPT plan"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider: `openai`, whose accounts are ChatGPT accounts."
+          }
+        },
+        "additionalProperties": false
       },
       "AccountUpdate": {
         "type": "object",
@@ -16045,6 +16465,21 @@
             "description": "Client user agent."
           }
         }
+      },
+      "AuthErrorView": {
+        "type": "string",
+        "description": "Why an account can't make requests.",
+        "enum": [
+          "signed_out"
+        ]
+      },
+      "AuthMethodView": {
+        "type": "string",
+        "description": "How a provider key authenticates.",
+        "enum": [
+          "api_key",
+          "chatgpt"
+        ]
       },
       "AvailabilityState": {
         "type": "string",
@@ -16700,12 +17135,36 @@
           "is_default",
           "projects",
           "last4",
+          "auth_method",
           "key_id",
           "created_by",
           "created_at",
           "updated_at"
         ],
         "properties": {
+          "account": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The signed-in account's email address; `null` for an API key.",
+            "example": "owner@example.com"
+          },
+          "auth_error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AuthErrorView",
+                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session; `null` while it works."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auth_method": {
+            "$ref": "#/components/schemas/AuthMethodView",
+            "description": "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\nsigned in with OAuth, whose tokens Kaeso renews by itself."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -16730,7 +17189,7 @@
           },
           "last4": {
             "type": "string",
-            "description": "The last four characters of the secret, for recognising it.",
+            "description": "The last four characters of the secret, for recognising it; empty for\nan account.",
             "example": "wxyz"
           },
           "last_used_at": {
@@ -18757,12 +19216,36 @@
                 "is_default",
                 "projects",
                 "last4",
+                "auth_method",
                 "key_id",
                 "created_by",
                 "created_at",
                 "updated_at"
               ],
               "properties": {
+                "account": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The signed-in account's email address; `null` for an API key.",
+                  "example": "owner@example.com"
+                },
+                "auth_error": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AuthErrorView",
+                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session; `null` while it works."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "auth_method": {
+                  "$ref": "#/components/schemas/AuthMethodView",
+                  "description": "How it authenticates: `api_key`, or `chatgpt` for a ChatGPT account\nsigned in with OAuth, whose tokens Kaeso renews by itself."
+                },
                 "created_at": {
                   "type": "string",
                   "format": "date-time",
@@ -18787,7 +19270,7 @@
                 },
                 "last4": {
                   "type": "string",
-                  "description": "The last four characters of the secret, for recognising it.",
+                  "description": "The last four characters of the secret, for recognising it; empty for\nan account.",
                   "example": "wxyz"
                 },
                 "last_used_at": {
@@ -20067,6 +20550,17 @@
                 "dialects"
               ],
               "properties": {
+                "account": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AccountSignInView",
+                      "description": "An account people can sign in to instead of adding an API key, with\n`POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\nkeys only."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "count_tokens": {
                   "type": [
                     "string",
@@ -22501,6 +22995,17 @@
           "dialects"
         ],
         "properties": {
+          "account": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccountSignInView",
+                "description": "An account people can sign in to instead of adding an API key, with\n`POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\nkeys only."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "count_tokens": {
             "type": [
               "string",

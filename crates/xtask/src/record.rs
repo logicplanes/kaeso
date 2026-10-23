@@ -602,6 +602,7 @@ mod tests {
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Example Cloud"),
+        account: None,
     };
 
     fn known(id: &str) -> &'static Provider {

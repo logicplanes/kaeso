@@ -35,6 +35,24 @@ pub struct ProviderView {
         `/v1/embeddings`; `null` when it has none."]
     #[schema(example = json!(null))]
     pub embeddings: Option<&'static str>,
+    #[doc = "An account people can sign in to instead of adding an API key, with\n\
+        `POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\n\
+        keys only."]
+    pub account: Option<AccountSignInView>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "An account of a provider that signs in with OAuth.")]
+pub struct AccountSignInView {
+    #[doc = "The provider key's `auth_method` once signed in."]
+    pub method: crate::platform::orgs::credentials::AuthMethodView,
+    #[doc = "The product whose account it is, as its owner knows it."]
+    #[schema(example = "ChatGPT")]
+    pub product: &'static str,
+    #[doc = "The provider's page where the account's owner reviews and limits what\n\
+        Kaeso uses; `null` without one."]
+    #[schema(example = "https://chatgpt.com/settings/usage")]
+    pub usage_url: Option<&'static str>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -61,6 +79,11 @@ impl ProviderView {
             dialects: p.dialects.iter().map(|d| d.as_str()).collect(),
             count_tokens: p.count_tokens.map(|d| d.as_str()),
             embeddings: p.embeddings.map(|d| d.as_str()),
+            account: p.account.map(|a| AccountSignInView {
+                method: a.method.into(),
+                product: a.product,
+                usage_url: a.usage_url,
+            }),
         }
     }
 }
