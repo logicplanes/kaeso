@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { Button, Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog, icons } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { AccountAttempt, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
@@ -10,6 +10,7 @@ import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
 type Method = "api_key" | "account";
+type Begin = { tab: Window | null; inputs: number };
 
 function keyHelp(provider: ProviderView | undefined): ReactNode {
   if (!provider) return t("kaeso.providerKey.help", "Paste the provider's API key.");
@@ -58,6 +59,11 @@ export function ProviderKeyDialog({
   const [attempt, setAttempt] = useState<AccountAttempt | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [callback, setCallback] = useState("");
+  const inputs = useRef(0);
+  const forgetAttempt = () => {
+    inputs.current += 1;
+    setAttempt(null);
+  };
   const chosen = provider ?? "";
   const label = provider ? providers.name(provider) : "";
   const known = provider ? providers.get(provider) : undefined;
@@ -66,7 +72,7 @@ export function ProviderKeyDialog({
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
   const choices = useMemo(() => providerOptions(providers, keys), [providers, keys]);
   const begin = useApiMutation({
-    mutationFn: async (_tab: Window | null) => {
+    mutationFn: async (_begin: Begin) => {
       if (replace) return data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth", { params: { path: { org, credential: replace.id } } }));
       return data(
         await api.POST("/platform/v1/orgs/{org}/credentials/oauth", {
@@ -75,13 +81,17 @@ export function ProviderKeyDialog({
         }),
       );
     },
-    onSuccess: (started, tab) => {
+    onSuccess: (started, { tab, inputs: asked }) => {
+      if (asked !== inputs.current) {
+        tab?.close();
+        return;
+      }
       setAttempt(started);
       setCallback("");
       setBlocked(!tab);
       if (tab) tab.location.href = started.authorize_url;
     },
-    onError: (_error, tab) => tab?.close(),
+    onError: (_error, { tab }) => tab?.close(),
   });
   const save = useApiMutation({
     mutationFn: async () => {
@@ -188,7 +198,7 @@ export function ProviderKeyDialog({
             value={name}
             onChange={(e) => {
               setName(e.target.value);
-              setAttempt(null);
+              forgetAttempt();
             }}
             maxLength={100}
             autoFocus
@@ -199,7 +209,7 @@ export function ProviderKeyDialog({
           loading={begin.isPending}
           disabled={!replace && !name.trim()}
           {...(!replace && !name.trim() ? { disabledReason: t("kaeso.providerKey.nameBlocked", "Give the key a name") } : {})}
-          onClick={() => begin.mutate(openBlankTab())}
+          onClick={() => begin.mutate({ tab: openBlankTab(), inputs: inputs.current })}
         >
           {t("kaeso.providerKey.continueWith", "Continue with {product}", { product })}
         </Button>
@@ -258,7 +268,7 @@ export function ProviderKeyDialog({
               value={makeDefault ? "yes" : "no"}
               onValueChange={(v) => {
                 setMakeDefault(v === "yes");
-                setAttempt(null);
+                forgetAttempt();
               }}
             >
               <Radio
@@ -279,7 +289,7 @@ export function ProviderKeyDialog({
   const choose = (p: string) => {
     setProvider(p);
     setMethod("api_key");
-    setAttempt(null);
+    forgetAttempt();
   };
   const providerStep: DialogStep = {
     id: "provider",

@@ -400,6 +400,41 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("drops a sign-in that was still starting when its name changed", async () => {
+    const { tab } = newTab();
+    let respond: (attempt: unknown) => void = () => {};
+    on("POST", `${CREDENTIALS}/oauth`, () => new Promise((resolve) => (respond = resolve)));
+    on("POST", `${CREDENTIALS}/oauth/:attempt`, plan);
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "OpenAI");
+    await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    const name = await within(dialog).findByRole("textbox", { name: "Name" });
+    await user.type(name, "Plan");
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await waitFor(() => expect(requests("POST", `${CREDENTIALS}/oauth`)).toHaveLength(1));
+    await user.type(name, " B");
+    respond(ATTEMPT);
+
+    await waitFor(() => expect(tab.close).toHaveBeenCalledTimes(1));
+    expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Continue with ChatGPT first");
+    const second = { ...ATTEMPT, attempt: "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5c" };
+    on("POST", `${CREDENTIALS}/oauth`, second);
+    await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
+    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(within(dialog).getByRole("button", { name: "Add account" }));
+
+    expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([
+      { provider: "openai", name: "Plan", make_default: false },
+      { provider: "openai", name: "Plan B", make_default: false },
+    ]);
+    expect(requests("POST", `${CREDENTIALS}/oauth/:attempt`).map((r) => r.params.attempt)).toEqual([second.attempt]);
+    expect(tab.close).toHaveBeenCalledTimes(1);
+  });
+
   it("goes back to an API key when another provider is chosen", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "OpenAI");
