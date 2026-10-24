@@ -4,7 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use axum::Router;
 use axum::body::{Body, Bytes};
@@ -45,6 +45,7 @@ struct Shared {
     streams_finished: AtomicUsize,
     streams_dropped: AtomicUsize,
     drops: tokio::sync::Notify,
+    closed: Mutex<HashMap<String, Instant>>,
     abandoned: AtomicUsize,
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
@@ -226,6 +227,15 @@ impl MockProvider {
             }
             dropped.await;
         }
+    }
+
+    pub fn closed_at(&self, tag: &str) -> Option<Instant> {
+        self.shared
+            .closed
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(tag)
+            .copied()
     }
 
     pub fn stream_counts(&self) -> (usize, usize, usize) {
@@ -417,16 +427,21 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         return json_file(&models.join(file));
     }
     let counting = path.ends_with("/count_tokens") || path.ends_with("/input_tokens");
+    let tag = marker(&text, "tag").map(str::to_owned);
     if !counting
         && dialect != "openai_embeddings"
         && let Some(shape) = synth::Shape::of(&text, body.len())
         && let Ok(id) = dialect.parse::<kaeso_kpp::DialectId>()
     {
         let seed = ctx.shared.made_up.fetch_add(1, Ordering::Relaxed);
-        if stream {
+        if stream && marker(&text, "endless").is_some() {
+            if let Some((head, rest)) = synth::endless(id, &body, &headers, shape, seed) {
+                return endless(ctx.shared.clone(), head, rest, tag);
+            }
+        } else if stream {
             if let Some(chunks) = synth::stream(id, &body, &headers, shape, seed) {
                 let cut = marker(&text, "cut").is_some();
-                return paced(ctx.shared.clone(), chunks, cut);
+                return paced(ctx.shared.clone(), chunks, cut, tag);
             }
         } else if let Some(bytes) = synth::complete(id, &body, &headers, shape, seed) {
             return Response::builder()
@@ -458,7 +473,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             StreamMode::Normal
         };
         let steps = marker(&text, "steps").map(|name| ctx.shared.gate(name));
-        return sse(ctx.shared.clone(), bytes, mode, steps);
+        return sse(ctx.shared.clone(), bytes, mode, steps, tag);
     }
     let file = match (dialect, path.as_str()) {
         ("anthropic_messages", "/v1/messages/count_tokens") => counting_fixture(
@@ -578,11 +593,19 @@ enum StreamMode {
 struct Guard {
     shared: Arc<Shared>,
     finished: bool,
+    tag: Option<String>,
 }
 
 impl Drop for Guard {
     fn drop(&mut self) {
         if !self.finished {
+            if let Some(tag) = self.tag.take() {
+                self.shared
+                    .closed
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .insert(tag, Instant::now());
+            }
             self.shared.streams_dropped.fetch_add(1, Ordering::SeqCst);
             self.shared.drops.notify_waiters();
         }
@@ -594,6 +617,7 @@ fn sse(
     bytes: Vec<u8>,
     mode: StreamMode,
     steps: Option<Arc<GateState>>,
+    tag: Option<String>,
 ) -> Response {
     shared.streams_started.fetch_add(1, Ordering::SeqCst);
     let text = String::from_utf8_lossy(&bytes).replace("\r\n", "\n");
@@ -608,6 +632,7 @@ fn sse(
     let guard = Guard {
         shared,
         finished: false,
+        tag,
     };
     let state = (events.into_iter(), guard, 0usize);
     let stream = futures::stream::unfold(state, move |(mut it, mut guard, n)| {
@@ -651,7 +676,12 @@ fn sse(
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 
-fn paced(shared: Arc<Shared>, mut chunks: Vec<(Duration, Bytes)>, cut: bool) -> Response {
+fn paced(
+    shared: Arc<Shared>,
+    mut chunks: Vec<(Duration, Bytes)>,
+    cut: bool,
+    tag: Option<String>,
+) -> Response {
     shared.streams_started.fetch_add(1, Ordering::SeqCst);
     if cut {
         chunks.truncate((chunks.len() / 2).max(1));
@@ -659,6 +689,7 @@ fn paced(shared: Arc<Shared>, mut chunks: Vec<(Duration, Bytes)>, cut: bool) -> 
     let guard = Guard {
         shared,
         finished: false,
+        tag,
     };
     let stream = futures::stream::unfold(
         (chunks.into_iter(), guard),
@@ -679,6 +710,39 @@ fn paced(shared: Arc<Shared>, mut chunks: Vec<(Duration, Bytes)>, cut: bool) -> 
                     cut.then(|| (Err(std::io::Error::other("cut")), (it, guard)))
                 }
             }
+        },
+    );
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "text/event-stream")
+        .header("x-request-id", "req_mock_stream")
+        .body(Body::from_stream(stream))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+fn endless(
+    shared: Arc<Shared>,
+    head: Vec<(Duration, Bytes)>,
+    rest: synth::Endless,
+    tag: Option<String>,
+) -> Response {
+    shared.streams_started.fetch_add(1, Ordering::SeqCst);
+    let guard = Guard {
+        shared,
+        finished: false,
+        tag,
+    };
+    let stream = futures::stream::unfold(
+        (head.into_iter(), rest, guard),
+        |(mut head, mut rest, guard)| async move {
+            let (pause, chunk) = match head.next() {
+                Some(next) => next,
+                None => rest.chunk()?,
+            };
+            if !pause.is_zero() {
+                tokio::time::sleep(pause).await;
+            }
+            Some((Ok::<_, std::io::Error>(chunk), (head, rest, guard)))
         },
     );
     Response::builder()

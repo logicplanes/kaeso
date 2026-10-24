@@ -24,6 +24,7 @@ Cargo baut den Rust-Workspace und pnpm den TypeScript-Workspace, beide vom Wurze
 - [Mitwirken](contributing.md): Melden Sie ein Problem, schlagen Sie eine Änderung vor und bringen Sie Ihren Pull Request zum Merge.
 - [Entwicklungs-Stack](stack.md): Ändern Sie Ports, betreiben Sie einen zweiten Stack oder starten Sie das Gateway aus dem Quellcode.
 - [Tests](testing.md): Führen Sie die Prüfungen aus, die eine Änderung bestehen muss, und finden Sie die Suite für Ihren Code.
+- [Gateway-Benchmark](benchmark.md): Messen Sie die Zeit und den Speicher, die Kaeso hinzufügt, von einzelnen Anfragen bis zu Tausenden Streams.
 - [Übersetzungen](translations.md): Schreiben Sie jedes Wort auf Englisch, Deutsch und vereinfachtem Chinesisch.
 - [Dokumentation schreiben](documentation.md): Schreiben und übersetzen Sie die Seiten dieser Website.
 - [Architektur](architecture/index.md): Erfahren Sie, wie Gateway, Konsole, Dokumentation und Updater gebaut sind.
