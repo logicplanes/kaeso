@@ -115,13 +115,17 @@ Once a stream's headers are sent, its status can't change. A stream that fails a
 
 After an error event from the provider, Kaeso stops reading and closes the provider request, so the provider stops generating.
 
+A stream whose last event, such as `response.completed`, `message_stop` or `data: [DONE]`, has reached the app is finished. After that, nothing fails it: a broken provider connection, a silent provider, a stream limit or a shutdown only ends the stream, without an error event.
+
 Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, and the time to the first bytes. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
 
 An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` counts as gone: Kaeso stops the provider request and logs it as a disconnect.
 
 ## Disconnects
 
-When an app closes the connection, Kaeso stops the provider request at once, so the provider stops generating. Kaeso logs the request as 499 with the error kind `client_disconnected`.
+When an app closes the connection before a stream's last event has reached it, Kaeso stops the provider request at once, so the provider stops generating. Kaeso logs the request as 499 with the error kind `client_disconnected`.
+
+Many apps, such as Codex, close the connection as soon as they have the last event. Kaeso logs such a stream as finished, with the status 200 and the usage the provider reported.
 
 Kaeso charges such a request, and a stream that broke off, what the provider reported plus an estimate of the rest:
 
@@ -138,7 +142,7 @@ These log entries say `usage.estimated: true`, and costs and limits use the same
 
 On a shutdown signal, the gateway takes no new connections. Open requests and streams get `KAESO_SHUTDOWN_GRACE`, 30 seconds by default, to finish.
 
-A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead.
+A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that started but hasn't finished ends with an error event instead.
 
 Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage. A second later, Kaeso closes the connections that are still open.
 

@@ -161,6 +161,35 @@ async fn a_chat_app_on_claude_keeps_its_thinking_through_a_tool_loop() {
 }
 
 #[tokio::test]
+async fn thinking_is_kept_when_the_app_closes_right_after_the_last_event() {
+    let env = env(&[]).await;
+    let fixture = "thinking-long-tool-loop";
+    let gate = common::v1::hold_back_the_end(&env, "anthropic_messages", fixture);
+    let mut first = first_turn(fixture, true);
+    first["messages"][0]["content"] = json!(format!(
+        "Weather in Paris? [mock:fixture={fixture}] {}",
+        gate.steps_marker()
+    ));
+    let (_, mut body) = common::v1::open_stream(&env, "/v1/chat/completions", false, &first).await;
+    let seen = common::v1::read_until(&mut body, "data: [DONE]").await;
+    drop(body);
+    let id = tool_call_id(&Answer {
+        status: StatusCode::OK,
+        headers: axum::http::HeaderMap::new(),
+        body: seen.into_bytes(),
+    });
+    common::eventually("the first turn is recorded", || async {
+        !env.capture.all().is_empty()
+    })
+    .await;
+    let second = chat(&env, &env.key, second_turn(&id)).await;
+    gate.finish();
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let turn = sent_assistant_turn(&env);
+    assert_eq!(turn["content"][0]["type"], "thinking", "{turn}");
+}
+
+#[tokio::test]
 async fn without_valkey_or_when_off_the_tool_loop_goes_on_without_thinking() {
     let env = env(&[("KAESO_CONTINUITY_REASONING_TTL", "0s")]).await;
     let first = chat(

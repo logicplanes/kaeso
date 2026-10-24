@@ -168,7 +168,7 @@ Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`
 
 - **Keepalives.** Nach 15 Sekunden ohne Ausgabe schreibt Kaeso ein Keepalive, das die SDKs ignorieren: einen SSE-Kommentar in den OpenAI-Formaten, ein `ping`-Event im Anthropic-Format. `KAESO_STREAMS_KEEPALIVE_INTERVAL` ändert das Intervall oder schaltet Keepalives ab ([Streams an Apps](../self-hosting/configuration.md#streams-an-apps)).
 - **Fehler.** Ein begonnener Stream kann seinen Status nicht mehr ändern. Scheitert der Anbieter oder beendet er den Stream vor dem Ende der Antwort, endet der Stream mit einem Fehler-Event im Format der App.
-- **Abbrüche.** Trennt die App die Verbindung, stoppt Kaeso die Anfrage beim Anbieter sofort und berechnet, was verbraucht wurde.
+- **Abbrüche.** Trennt die App die Verbindung vor dem letzten Event des Streams, stoppt Kaeso die Anfrage beim Anbieter sofort und berechnet, was verbraucht wurde. Ein Stream, dessen letztes Event die App erreicht hat, gilt als abgeschlossen, auch wenn die App die Verbindung direkt danach trennt.
 
 ## Reasoning über Tool-Aufrufe hinweg
 

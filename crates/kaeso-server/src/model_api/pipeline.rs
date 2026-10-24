@@ -908,6 +908,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let encoder =
                 dispatch::stream_encoder(ingress, &encode_ctx).map_err(fail(Stage::Reply))?;
             let (tx, rx) = tokio::sync::mpsc::channel::<Bytes>(32);
+            let taken = stream::Taken::default();
             let task_rec = Recording {
                 state: rec.state.clone(),
                 sink: rec.sink.clone(),
@@ -928,14 +929,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 carry,
                 keep_reply: keep_content,
                 account,
+                taken: taken.clone(),
             };
             state.in_flight.spawn(stream::pump(parts, tx, task_rec));
-            let body = Body::from_stream(futures::stream::unfold(rx, |mut rx| async move {
-                rx.recv()
-                    .await
-                    .map(|b| (Ok::<_, std::convert::Infallible>(b), rx))
-            }));
-            let mut resp = Response::new(body);
+            let mut resp = Response::new(stream::body(rx, taken));
             let h = resp.headers_mut();
             h.insert(
                 header::CONTENT_TYPE,

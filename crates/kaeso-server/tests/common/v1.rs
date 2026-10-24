@@ -5,7 +5,7 @@ use axum::http::{HeaderMap, Request, StatusCode};
 use http_body_util::BodyExt;
 use kaeso_core::provider::PROVIDERS;
 use kaeso_server::model_api::hooks::{Limits, Outcome, Sink};
-use kaeso_testkit::mock_provider::MockProvider;
+use kaeso_testkit::mock_provider::{Gate, MockProvider, kpp_fixtures};
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use tower::ServiceExt;
@@ -230,4 +230,55 @@ pub fn messages(model: &str, text: &str) -> Value {
 
 pub fn chat(model: &str, text: &str) -> Value {
     json!({ "model": model, "messages": [{ "role": "user", "content": text }] })
+}
+
+pub async fn open_stream(env: &Env, path: &str, anthropic: bool, body: &Value) -> (String, Body) {
+    let req = Request::builder()
+        .uri(path)
+        .method("POST")
+        .header("content-type", "application/json");
+    let req = if anthropic {
+        req.header("x-api-key", &env.key)
+            .header("anthropic-version", "2023-06-01")
+    } else {
+        req.header("authorization", format!("Bearer {}", env.key))
+    };
+    let req = req
+        .body(Body::from(serde_json::to_vec(body).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let id = resp.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    (id, resp.into_body())
+}
+
+pub fn hold_back_the_end(env: &Env, dialect: &str, fixture: &str) -> Gate {
+    let path = kpp_fixtures()
+        .join(dialect)
+        .join("streams")
+        .join(format!("{fixture}.sse"));
+    let events = std::fs::read_to_string(path)
+        .unwrap()
+        .replace("\r\n", "\n")
+        .split_inclusive("\n\n")
+        .count();
+    let gate = env.mock.gate();
+    for _ in 1..events {
+        gate.step();
+    }
+    gate
+}
+
+pub async fn read_until(body: &mut Body, last: &str) -> String {
+    let mut seen = String::new();
+    while !seen.contains(last) {
+        let frame = body.frame().await.unwrap().unwrap();
+        if let Ok(data) = frame.into_data() {
+            seen.push_str(&String::from_utf8_lossy(&data));
+        }
+    }
+    seen
 }
