@@ -82,8 +82,64 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       if (Math.abs(x - Number(move[1])) > 0.5) label.setAttribute("transform", `translate(${x}, ${move[2]})`);
     }
   };
-  const flatten = (svg: SVGSVGElement) => {
+  const corner = (svg: SVGSVGElement, ground: string) => {
+    type Box = { x: number; y: number; width: number; height: number };
+    const inRoot = (el: SVGGraphicsElement): Box => {
+      const b = el.getBBox();
+      const at = new DOMPoint(b.x, b.y).matrixTransform(el.getCTM() ?? new DOMMatrix());
+      return { x: at.x, y: at.y, width: b.width, height: b.height };
+    };
+    const meets = (a: Box, b: Box, gap: number) =>
+      a.x - gap < b.x + b.width && b.x - gap < a.x + a.width && a.y - gap < b.y + b.height && b.y - gap < a.y + a.height;
+    const along = (p: SVGGeometryElement) => {
+      const length = p.getTotalLength();
+      const m = p.getCTM() ?? new DOMMatrix();
+      return Array.from({ length: Math.ceil(length / 4) + 1 }, (_, i) => p.getPointAtLength(Math.min(length, i * 4)).matrixTransform(m));
+    };
+    const edges = [...svg.querySelectorAll("g.edgePaths path, path.flowchart-link")].flatMap((p) => along(p as SVGGeometryElement));
+    const blocks = [...svg.querySelectorAll("g.node, g.edgeLabel")].map((el) => inRoot(el as SVGGraphicsElement)).filter((b) => b.width > 0);
+    const clusters = [...svg.querySelectorAll("g.cluster")].flatMap((cluster) => {
+      const frame = cluster.querySelector(":scope > rect") as SVGRectElement | null;
+      const label = cluster.querySelector(":scope > g.cluster-label") as SVGGElement | null;
+      return frame && label ? [{ frame, label, border: along(frame) }] : [];
+    });
+    const placed: Box[] = [];
+    for (const { frame, label } of clusters) {
+      const box = frame.getBBox();
+      const inner = label.getBBox();
+      const outer = inRoot(frame);
+      const width = inner.width + 8;
+      const height = inner.height + 2;
+      const left = outer.x + 8;
+      const right = outer.x + outer.width - 8 - width;
+      const top = outer.y + 7;
+      const bottom = outer.y + outer.height - 7 - height;
+      const others = clusters.filter((c) => c.frame !== frame).flatMap((c) => c.border);
+      const free = (b: Box) =>
+        ![...edges, ...others].some((p) => meets(b, { x: p.x, y: p.y, width: 0, height: 0 }, 6)) &&
+        !blocks.some((n) => meets(b, n, 4)) &&
+        !placed.some((n) => meets(b, n, 4));
+      const steps = Math.max(0, Math.floor((right - left) / 4));
+      const spots = [top, bottom].flatMap((y) => Array.from({ length: steps + 1 }, (_, i) => ({ x: left + i * 4, y, width, height })));
+      const spot = spots.find(free) ?? { x: left, y: top, width, height };
+      placed.push(spot);
+      const mask = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      for (const [name, value] of Object.entries({ x: inner.x - 4, y: inner.y - 1, width, height, rx: 4 })) mask.setAttribute(name, String(value));
+      mask.setAttribute("style", `fill:${ground};stroke:none`);
+      label.prepend(mask);
+      label.setAttribute("transform", `translate(${box.x + 12 - inner.x + spot.x - left}, ${box.y + 8 - inner.y + spot.y - top})`);
+      const topGroup = svg.querySelector(":scope > g") as SVGGElement | null;
+      const from = topGroup?.getCTM();
+      const to = label.getCTM();
+      if (!topGroup || !from || !to) continue;
+      const m = from.inverse().multiply(to);
+      label.setAttribute("transform", `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`);
+      topGroup.append(label);
+    }
+  };
+  const flatten = (svg: SVGSVGElement, ground: string) => {
     centre(svg);
+    corner(svg, ground);
     const plan: [Element, Record<string, string> | null][] = [];
     for (const el of [svg, ...svg.querySelectorAll("*")]) {
       const tag = el.tagName;
@@ -101,7 +157,11 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       const attrs: Record<string, string> = {};
       for (const name of names) {
         const value = cs.getPropertyValue(name);
-        if (name === "stroke-dasharray" && value.split(",").filter((v) => Number.parseFloat(v) > 0).length < 2) continue;
+        if (name === "stroke-dasharray") {
+          const lengths = value.split(/[\s,]+/).map(Number.parseFloat);
+          const gaps = lengths.length === 1 ? lengths : lengths.filter((_, i) => i % 2 === 1);
+          if (!gaps.some((gap) => gap > 0)) continue;
+        }
         if (!value || (parent ? parent.getPropertyValue(name) === value : DEFAULTS[name] === value)) continue;
         attrs[name] = value;
       }
@@ -165,7 +225,7 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
         host.innerHTML = markup;
         const root = host.querySelector("svg");
         if (!root) throw new Error("mermaid drew nothing");
-        flatten(root);
+        flatten(root, String((configs[theme].themeVariables as Record<string, unknown> | undefined)?.background ?? "none"));
         svg[theme] = new XMLSerializer().serializeToString(root);
         host.remove();
       } catch (error) {

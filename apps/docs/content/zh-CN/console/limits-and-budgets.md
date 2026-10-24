@@ -39,13 +39,13 @@ order: 6
 
 Kaeso 按 token 为请求计价。有些功能还会按次计费或按更高费率计费，Kaeso 无法统计这部分费用。因此，只要请求适用任何支出预算（无论硬性还是软性），当请求使用以下功能时，Kaeso 都会在请求到达服务商之前以状态码 403 拒绝它：
 
-- 由服务商运行的工具，例如 Anthropic 的 `web_search` 或 `code_execution`，或 OpenAI 的 `web_search`、`file_search`、`image_generation`、`code_interpreter` 或 `mcp`；
+- 由服务商运行的工具，例如 Anthropic 的 `web_search` 或 `code_execution`，或 OpenAI 的 `web_search`、`file_search`、`image_generation`、`code_interpreter` 或 `mcp`，Kaeso 把 OpenAI 的 `web_search` 发给 Claude 时也算在内；
 - `mcp_servers`、`web_search_options`、OpenRouter 的 `plugins` 或 xAI 的 `search_parameters`；
 - `auto`、`default`、`flex`、`on_demand` 或 `standard_only` 以外的 `service_tier`，例如 `priority`；
 - `anthropic-beta` 中的 `context-1m-…`，它会按更高费率对长提示词计费；
 - 没有输入或输出价格、或价格为零的模型，除非管理员在该模型上手动设置了这个价格。Embeddings 只需要输入价格。
 
-由应用自己运行的工具可以使用：函数和自定义工具，Anthropic 的 `bash`、`text_editor`、`computer` 和 `memory`，以及 OpenAI 的 `local_shell`、`apply_patch` 和 `computer_use_preview`。token 预算和速率限制不会拒绝这些功能；没有支出预算时，所有功能都可以使用。
+由应用自己运行的工具可以使用：函数和自定义工具，Anthropic 的 `bash`、`text_editor`、`computer` 和 `memory`，以及 OpenAI 的 `local_shell`、`apply_patch`、`computer_use_preview` 和对函数进行归组的 `namespace` 工具。token 预算和速率限制不会拒绝这些功能；没有支出预算时，所有功能都可以使用。
 
 要使用此类功能，请使用不受任何支出预算约束的密钥调用：密钥本身、其所有者和项目都没有支出预算。错误消息会指出该功能和预算所在的层级，例如“This key has a spend budget that can't price `web_search_20250305`; ask an admin.”
 

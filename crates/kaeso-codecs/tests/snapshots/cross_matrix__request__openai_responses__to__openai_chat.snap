@@ -3,6 +3,16 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "codex-namespace-tools": {
+    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. This model has no hosted web search. Remove the tool, or send the request to a model that has one. From Codex, set `web_search = \"disabled\"`.",
+    "param": "tools[4]",
+    "unsupported": "web_search tool"
+  },
+  "codex-web-search-resume": {
+    "message": "`web_search_call content block` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "web_search_call content block"
+  },
   "error-mid-stream": {
     "body": {
       "messages": [
@@ -552,7 +562,7 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "tool-choice-allowed-tools": {
-    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. This model has no hosted web search. Remove the tool, or send the request to a model that has one. From Codex, set `web_search = \"disabled\"`.",
     "param": "tools[2]",
     "unsupported": "web_search tool"
   },

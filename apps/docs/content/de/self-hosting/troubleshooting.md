@@ -72,7 +72,7 @@ Der Einrichtungslink funktioniert einmal, 24 Stunden lang, und nur, solange die 
 docker compose exec gateway kaeso setup-link
 ```
 
-Ist Kaeso schon eingerichtet, sagt der Befehl das, und die Einrichtungsseite meldet, dass Kaeso eingerichtet ist, mit einem Link zur Anmeldung; melden Sie sich dann unter Ihrer Domain an.
+Ist Kaeso schon eingerichtet, sagt der Befehl das. Die Einrichtungsseite meldet dasselbe, mit einem Link zur Anmeldung. Melden Sie sich stattdessen unter Ihrer Domain an.
 
 ## E-Mails kommen nicht an
 
@@ -115,7 +115,7 @@ Einträge erscheinen wenige Sekunden nach der Anfrage. Erscheinen keine, nimmt C
 1. Führen Sie `docker compose logs clickhouse` aus und beheben Sie, was dort gemeldet wird.
 2. Suchen Sie im Protokoll des Gateways nach `ClickHouse migrations failed`.
 
-Zeilen warten im Speicher des Gateways bis zu `KAESO_LOGS_BUFFER_SIZE`, danach fallen die ältesten weg.
+Zeilen warten im Speicher des Gateways bis zu `KAESO_LOGS_BUFFER_SIZE`, danach verwirft Kaeso die ältesten.
 
 ## Kaeso erreicht seine Datenbank nicht
 
@@ -134,7 +134,7 @@ Ein Instanz-Admin setzt ihn unter **Einstellungen** › **Instanz** › **Benutz
 docker compose exec gateway kaeso user reset-2fa person@example.com
 ```
 
-In beiden Fällen werden Authenticator und Wiederherstellungscodes entfernt, die Sitzungen der Person enden, und sie erhält eine E-Mail. Wo Zwei-Faktor-Authentifizierung verlangt ist, richtet sie sie bei der nächsten Anmeldung neu ein.
+In beiden Fällen entfernt Kaeso Authenticator und Wiederherstellungscodes, beendet die Sitzungen der Person und sendet ihr eine E-Mail. Wo Zwei-Faktor-Authentifizierung verlangt ist, richtet sie sie bei der nächsten Anmeldung neu ein.
 
 ## Zwei Konten teilen sich eine Adresse
 
@@ -148,7 +148,7 @@ Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter 
 
 ## Jemand meldet eine Anfrage-ID
 
-Die Konsole zeigte „Im Gateway ist etwas schiefgelaufen; Anfrage req_… an die Administration melden.“ Das Gateway ist auf eine Weise gescheitert, die der Aufrufer nicht beheben kann, und sein Log enthält die Ursache.
+Das Gateway ist auf eine Weise gescheitert, die der Aufrufer nicht beheben kann, und sein Log enthält die Ursache. Die Konsole zeigte „Im Gateway ist etwas schiefgelaufen; Anfrage req_… an die Administration melden.“
 
 1. Suchen Sie die ID im Protokoll: `docker compose logs gateway | grep req_…`.
 2. Lesen Sie die Zeile `internal error` mit ihrer Ursache.

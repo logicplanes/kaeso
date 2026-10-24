@@ -52,9 +52,11 @@ services:
 | `updater` | `UPDATER_MEMORY`，`256m` | `UPDATER_PIDS`，`128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`，`128m` | `DOCKER_PROXY_PIDS`，`64` |
 
-内存使用 Docker 的单位，例如 `768m` 或 `3g`。达到内存上限的服务会被停止并重新启动。ClickHouse 会按上限自行调整内存用量。
+内存使用 Docker 的单位，例如 `768m` 或 `3g`。Docker 会停止并重新启动达到内存上限的服务。ClickHouse 会按上限自行调整内存用量。
 
-Valkey 把数据保持在 `VALKEY_MAXMEMORY` 之内，默认 `512mb`，低于 `VALKEY_MEMORY`，因此 Valkey 不会因内存不足被停止。它从不为腾出空间而驱逐键，因此速率或预算计数器不会在无提示的情况下丢失。Valkey 满时会拒绝新键：网关改为从 PostgreSQL 而不是缓存读取，放行受速率限制和软预算约束的请求，并对受硬预算约束的请求返回 `503`，直到重新有空间。Valkey 的大部分内存用于[推理连续性](#推理连续性)，其上限由 `continuity.reasoning_ttl` 决定。
+Valkey 把数据保持在 `VALKEY_MAXMEMORY` 之内，默认 `512mb`，低于 `VALKEY_MEMORY`，因此 Valkey 不会因内存不足被停止。它从不为腾出空间而驱逐键，因此速率或预算计数器不会在无提示的情况下丢失。
+
+Valkey 满时会拒绝新键。在重新有空间之前，网关改为从 PostgreSQL 而不是缓存读取。它会放行受速率限制和软预算约束的请求，并对受硬预算约束的请求返回 `503`。Valkey 的大部分内存用于[推理连续性](#推理连续性)，其上限由 `continuity.reasoning_ttl` 决定。
 
 Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件。
 
@@ -257,7 +259,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 - 有效密钥从不计数。本实例在过去 30 秒内用过的密钥，即使来自被封锁的地址也能使用；其他有效密钥需要等窗口结束。
 - IPv6 地址按 /64 计数。
 - 在代理后面时，只有当代理位于 `KAESO_TRUSTED_PROXIES` 中，客户端地址才取自 `X-Forwarded-For`。否则所有客户端共用代理的额度。
-- Docker Desktop、Colima 和 rootless Docker 通过它们自己的代理转发发布的端口，因此 Caddy 看到的所有客户端都是同一个地址，所有客户端共用一份额度。如果需要按客户端限制，请在使用 root 网络模式的 Docker Engine 上运行 Kaeso。
+- Docker Desktop、Colima 和 rootless Docker 通过它们自己的代理转发发布的端口。因此 Caddy 看到的所有客户端都是同一个地址，所有客户端共用一份额度。如果需要按客户端限制，请在使用 root 网络模式的 Docker Engine 上运行 Kaeso。
 - Valkey 无法访问期间，失败不计数。
 
 每次封锁都会让 `kaeso_key_failure_blocks_total` 增加，并记录带有该地址的日志 `too many failed API key lookups from one address`（[健康状态和指标](monitoring.md)）。

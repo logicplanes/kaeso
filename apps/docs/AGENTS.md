@@ -48,7 +48,7 @@ pnpm --filter kaeso-docs e2e
 4. **A broken page fails the build** with its file: a link, an anchor, an image, a frontmatter field, a page missing in a language. Problems are never only warnings in a build.
 5. **Every page in three languages.** `content/en`, `content/de` and `content/zh-CN` hold the same files with the same `order`; a change to an English page changes both translations in the same commit, following [the translation rules](content/en/development/documentation.md#translating). The site's own words live in `src/i18n/messages`, typed so that a missing translation fails the typecheck.
 6. **Pages describe Kaeso as it is.** Every statement is checked against the code in this repository (the gateway, kpp and the console); never document a feature that doesn't exist. Examples use Kaeso's own placeholders (`kaeso.example.com`, `sk-kso-…`, `owner@example.com`), and the current version is always `{{version}}`, which the build replaces with the root `package.json`'s version.
-7. **No real content in tests.** The unit tests and the e2e suite use `e2e/fixtures/content` and `e2e/fixtures/CHANGELOG.md`, which read as Kaeso's own data. `content/` holds only real pages.
+7. **No real content in tests.** The unit tests and the e2e suite use `e2e/fixtures/content`, which reads as Kaeso's own data. `content/` holds only real pages.
 8. **The console's look and house rules**, everywhere:
    - the wordmark alone at the top left, 28px in and 28px down, the sidebar's labels on the same 28px line; the mark only for favicons;
    - no decorative icons, icon circles or badge dots; no serif type; no breadcrumbs; no setup checklists;
@@ -77,17 +77,17 @@ pnpm --filter kaeso-docs e2e
 
 ## Where things are
 
-| Path                  | Holds                                                                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `content/<language>/` | The pages. Folders are sidebar groups; a folder's `index.md` names and places it                                                               |
-| `scripts/content/`    | Frontmatter, slugs, compiling a page, one site per language, the changelog page, the translation checks, the Vite plugin, `pnpm check:content` |
-| `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams`    |
-| `redirects.json`      | Old addresses of moved or merged pages and the page each now lives on; the build sends readers on from every old address                       |
-| `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                      |
-| `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                            |
-| `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                    |
-| `src/shell/`          | `AppFrame` and the sidebar, the search, the language select, links through the router, toasts, the document title                              |
-| `src/i18n/`           | The three languages, the preference and the site's own words                                                                                   |
-| `src/router.tsx`      | One route tree per language; every address loads its page's chunk                                                                              |
-| `eslint/`             | The layout-only and no-colour lint rules, with tests                                                                                           |
-| `e2e/`                | Playwright suite and its fixture pages in `e2e/fixtures/content`                                                                               |
+| Path                  | Holds                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `content/<language>/` | The pages. Folders are sidebar groups; a folder's `index.md` names and places it                                                            |
+| `scripts/content/`    | Frontmatter, slugs, compiling a page, one site per language, the translation checks, the Vite plugin, `pnpm check:content`                  |
+| `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams` |
+| `redirects.json`      | Old addresses of moved or merged pages and the page each now lives on; the build sends readers on from every old address                    |
+| `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                   |
+| `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                         |
+| `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                 |
+| `src/shell/`          | `AppFrame` and the sidebar, the search, the language select, links through the router, toasts, the document title                           |
+| `src/i18n/`           | The three languages, the preference and the site's own words                                                                                |
+| `src/router.tsx`      | One route tree per language; every address loads its page's chunk                                                                           |
+| `eslint/`             | The layout-only and no-colour lint rules, with tests                                                                                        |
+| `e2e/`                | Playwright suite and its fixture pages in `e2e/fixtures/content`                                                                            |

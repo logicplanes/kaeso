@@ -28,7 +28,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 ## Notes
 
-What else to know about some providers. [Provider profiles](../development/kpp/openai-chat.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
+What else to know about some providers. [Provider profiles](../development/kpp/openai-chat-providers.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
 
 - **DeepSeek.** Gets `developer` messages as `system` messages.
 - **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.

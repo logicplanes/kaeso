@@ -13,12 +13,14 @@ use kaeso_kpp::{
 use serde_json::Value;
 
 use super::DIALECT;
+use super::namespaces::Namespaces;
 use super::node::Node;
-use super::parts::{function_call_item, generated_id, reasoning_item};
+use super::parts::{generated_id, reasoning_item, web_search_call_item};
 use super::response::{
     NATIVE, message_item, message_status, response_object, status_for, usage_node,
 };
 use crate::cross::{ReplyPolicy, reasoning_reply_policy, reply_opaque_visible};
+use crate::web_search;
 
 pub(super) const NEW_ITEM: &str = "new_item";
 pub(crate) const NEW_PART: &str = "new_part";
@@ -78,6 +80,16 @@ enum Blk {
         header: Node,
         last: Option<Node>,
     },
+    Search(Search),
+}
+
+#[derive(Clone, Debug)]
+struct Search {
+    output_index: u32,
+    id: String,
+    tool_use_id: String,
+    query: Option<String>,
+    input: String,
 }
 
 #[derive(Clone, Debug)]
@@ -98,6 +110,8 @@ pub(super) struct Engine {
     echo: Vec<(String, Node)>,
     created_at: u64,
     terminated: bool,
+    namespaces: Namespaces,
+    searches: Vec<Search>,
 }
 
 fn int(n: u32) -> Node {
@@ -119,7 +133,11 @@ fn ev(ty: &str) -> Node {
 }
 
 impl Engine {
-    pub(super) fn new(echo: Vec<(String, Node)>, created_at: u64) -> Engine {
+    pub(super) fn new(
+        echo: Vec<(String, Node)>,
+        created_at: u64,
+        namespaces: Namespaces,
+    ) -> Engine {
         Engine {
             native: false,
             started: false,
@@ -137,6 +155,8 @@ impl Engine {
             echo,
             created_at,
             terminated: false,
+            namespaces,
+            searches: Vec::new(),
         }
     }
 
@@ -237,8 +257,12 @@ impl Engine {
                         self.close_idle_message(em, "@close")?;
                         let oi = self.take_output();
                         let id = generated_id("fc", &self.response_id, oi);
-                        let item =
-                            function_call_item(&h.id, &h.name, "", Some((&id, "in_progress")));
+                        let item = self.namespaces.call_item(
+                            &h.id,
+                            &h.name,
+                            "",
+                            Some((&id, "in_progress")),
+                        );
                         let out = self.emit(
                             em,
                             "",
@@ -330,6 +354,19 @@ impl Engine {
                             },
                         );
                     }
+                    BlockHeader::Unknown(item) if !item.origin.is(DIALECT) => {
+                        if let Some(search) = web_search::anthropic_search(item) {
+                            self.start_search(b.index, search, em)?;
+                        } else {
+                            if let Some((tool_use_id, found)) =
+                                web_search::anthropic_search_result(item)
+                            {
+                                let status = if found { "completed" } else { "failed" };
+                                self.finish_search(&tool_use_id, status, "", em)?;
+                            }
+                            self.hidden.push(b.index);
+                        }
+                    }
                     BlockHeader::Unknown(item) if item.origin.is(DIALECT) => {
                         self.close_idle_message(em, "@close")?;
                         let oi = self.take_output();
@@ -370,6 +407,14 @@ impl Engine {
                 let open: Vec<u32> = self.blocks.keys().copied().collect();
                 for index in open {
                     self.stop_block(index, &format!("@a{index}"), em)?;
+                }
+                let pending: Vec<String> = self
+                    .searches
+                    .iter()
+                    .map(|s| s.tool_use_id.clone())
+                    .collect();
+                for tool_use_id in pending {
+                    self.finish_search(&tool_use_id, "in_progress", "@search", em)?;
                 }
                 let stop = self.stop.clone().unwrap_or_default();
                 if self.msg.is_some() {
@@ -629,7 +674,9 @@ impl Engine {
                         .with("output_index", int(output_index))
                         .with("arguments", Node::str(&args)),
                 )?;
-                let item = function_call_item(&call_id, &name, &args, Some((&id, "completed")));
+                let item =
+                    self.namespaces
+                        .call_item(&call_id, &name, &args, Some((&id, "completed")));
                 self.item_done(em, prefix, output_index, item)?;
             }
             Blk::Reasoning {
@@ -662,8 +709,86 @@ impl Engine {
             } => {
                 self.item_done(em, prefix, output_index, last.unwrap_or(header))?;
             }
+            Blk::Search(mut search) => {
+                if search.query.is_none() {
+                    search.query = serde_json::from_str::<Value>(&search.input)
+                        .ok()
+                        .as_ref()
+                        .and_then(web_search::query_of);
+                }
+                self.searches.push(search);
+            }
         }
         Ok(())
+    }
+
+    fn start_search(
+        &mut self,
+        index: u32,
+        search: web_search::AnthropicSearch,
+        em: &mut Emit<'_>,
+    ) -> Result<(), KppError> {
+        self.close_idle_message(em, "@close")?;
+        let oi = self.take_output();
+        let id = generated_id("ws", &self.response_id, oi);
+        self.emit(
+            em,
+            "",
+            ev("response.output_item.added")
+                .with("output_index", int(oi))
+                .with("item", web_search_call_item(&id, "in_progress", None)),
+        )?;
+        for ty in [
+            "response.web_search_call.in_progress",
+            "response.web_search_call.searching",
+        ] {
+            self.emit(
+                em,
+                "",
+                ev(ty)
+                    .with("item_id", Node::str(&id))
+                    .with("output_index", int(oi)),
+            )?;
+        }
+        self.blocks.insert(
+            index,
+            Blk::Search(Search {
+                output_index: oi,
+                id,
+                tool_use_id: search.tool_use_id,
+                query: search.query,
+                input: String::new(),
+            }),
+        );
+        Ok(())
+    }
+
+    fn finish_search(
+        &mut self,
+        tool_use_id: &str,
+        status: &str,
+        prefix: &str,
+        em: &mut Emit<'_>,
+    ) -> Result<(), KppError> {
+        let Some(at) = self
+            .searches
+            .iter()
+            .position(|s| s.tool_use_id == tool_use_id)
+        else {
+            return Ok(());
+        };
+        let search = self.searches.remove(at);
+        if status == "completed" {
+            self.emit(
+                em,
+                &sc(prefix, "@searched"),
+                ev("response.web_search_call.completed")
+                    .with("item_id", Node::str(&search.id))
+                    .with("output_index", int(search.output_index)),
+            )?;
+        }
+        let item = web_search_call_item(&search.id, status, search.query.as_deref());
+        self.item_done(em, prefix, search.output_index, item)
     }
 
     fn item_done(

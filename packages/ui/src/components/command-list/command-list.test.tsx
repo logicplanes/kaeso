@@ -84,6 +84,16 @@ describe("CommandList", () => {
     expect(screen.getByRole("combobox", { name: "Search" })).toHaveFocus();
   });
 
+  it("leaves the group counts out when asked, with or without a query", async () => {
+    const user = userEvent.setup();
+    render(<CommandList groups={groups} aria-label="Models" counts={false} autoFocus />);
+    const list = screen.getByRole("listbox", { name: "Models" });
+    expect(list).not.toHaveTextContent("OpenAI3");
+    await user.type(screen.getByRole("combobox"), "gpt");
+    expect(list).toHaveTextContent("OpenAI");
+    expect(list).not.toHaveTextContent(/OpenAI\d/);
+  });
+
   it("moves with the arrow, Home and End keys, skips disabled rows and chooses with Enter", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();

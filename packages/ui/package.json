@@ -130,7 +130,7 @@
     "@vitejs/plugin-react": "6.1.2",
     "@vitest/coverage-v8": "5.0.5",
     "axe-core": "4.14.0",
-    "happy-dom": "21.0.3",
+    "happy-dom": "21.0.4",
     "oxlint": "1.88.0",
     "react": "19.3.1",
     "react-docgen-typescript": "2.4.0",

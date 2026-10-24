@@ -39,13 +39,13 @@ A budget alerts at up to 10 percentages of its amount, by default at 50, 80 and 
 
 Kaeso prices a request by its tokens. Some features also bill per call or at a higher rate, and Kaeso can't count that. So while any spend budget applies to a request, hard or soft, Kaeso refuses it with status 403 before it reaches the provider when it uses:
 
-- a tool the provider runs, such as Anthropic's `web_search` or `code_execution`, or OpenAI's `web_search`, `file_search`, `image_generation`, `code_interpreter` or `mcp`;
+- a tool the provider runs, such as Anthropic's `web_search` or `code_execution`, or OpenAI's `web_search`, `file_search`, `image_generation`, `code_interpreter` or `mcp`, also when Kaeso sends OpenAI's `web_search` to Claude;
 - `mcp_servers`, `web_search_options`, OpenRouter's `plugins` or xAI's `search_parameters`;
 - a `service_tier` other than `auto`, `default`, `flex`, `on_demand` or `standard_only`, such as `priority`;
 - the `anthropic-beta` `context-1m-…`, which bills long prompts at a higher rate;
 - a model without an input or output price, or with a price of zero, unless an admin set that price on the model by hand. Embeddings need only an input price.
 
-Tools the app runs itself pass: functions and custom tools, Anthropic's `bash`, `text_editor`, `computer` and `memory`, and OpenAI's `local_shell`, `apply_patch` and `computer_use_preview`. Token budgets and rates don't refuse these features, and without a spend budget every feature passes.
+Tools the app runs itself pass: functions and custom tools, Anthropic's `bash`, `text_editor`, `computer` and `memory`, and OpenAI's `local_shell`, `apply_patch`, `computer_use_preview` and the `namespace` tools that group functions. Token budgets and rates don't refuse these features, and without a spend budget every feature passes.
 
 To use such a feature, call it with a key that no spend budget covers: not the key's, its owner's or the project's. The error message names the feature and the budget's level, such as "This key has a spend budget that can't price `web_search_20250305`; ask an admin."
 

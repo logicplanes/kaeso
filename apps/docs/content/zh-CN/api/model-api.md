@@ -135,7 +135,7 @@ x-api-key: sk-kso-…
 | 服务商加模型 | `anthropic/claude-haiku-4-5` |
 | 模型自身的 ID | `claude-haiku-4-5` |
 
-目录之外的模型，以及密钥或其成员无权使用的模型，Kaeso 都返回 404，且消息相同，这样密钥无法得知项目还有哪些其他模型。如果项目中有多个服务商提供同一模型 ID，单独的 ID 会得到 400，消息会列出这些服务商；此时请改用 `provider/model`。目录的说明见[模型和别名](../console/models-and-aliases.md)。
+目录之外的模型，以及密钥或其成员无权使用的模型，Kaeso 都返回 404。两者的消息相同，这样密钥无法得知项目还有哪些其他模型。如果项目中有多个服务商提供同一模型 ID，单独的 ID 会得到 400，消息会列出这些服务商；此时请改用 `provider/model`。目录的说明见[模型和别名](../console/models-and-aliases.md)。
 
 ## 流式传输
 
@@ -147,7 +147,7 @@ x-api-key: sk-kso-…
 
 ## 跨工具调用的推理
 
-Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存每次工具调用之前的推理内容，并在应用的下一轮请求中将其加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
+Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
 
 ## 响应头
 

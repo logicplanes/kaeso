@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: Wie jedes Feld des Formats OpenAI Embeddings auf KPP abgebildet wird und zurück.
-order: 7
+order: 8
 ---
 
 Schlagen Sie hier jedes Feld des Formats OpenAI Embeddings nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
@@ -84,4 +84,4 @@ Quelle: die [Embeddings-Referenz](https://openrouter.ai/docs/api_reference/embed
 
 ### Mistral
 
-Quellen: Mistrals [API-Referenz](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), gelesen am 2026-10-19, und die Live-Aufnahmen in `fixtures/openai_embeddings/providers/mistral/` mit `mistral-embed`. Mistral nimmt `encoding_format: base64` an, antwortet aber mit Gleitkommazahlen; für eine App, die base64 verlangt hat, kodiert der Codec sie als base64. Mistral lehnt OpenAIs `dimensions` und Token-IDs als Eingabe mit 422 ab und `output_dimension` bei `mistral-embed` mit 400; diese Fehler-Bodys haben kein `error`-Objekt, daher erhalten Apps einen OpenAI-Fehler, der sie zitiert.
+Quellen: Mistrals [API-Referenz](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), gelesen am 2026-10-19, und die Live-Aufnahmen in `fixtures/openai_embeddings/providers/mistral/` mit `mistral-embed`. Mistral nimmt `encoding_format: base64` an, antwortet aber mit Gleitkommazahlen; für eine App, die base64 verlangt hat, kodiert der Codec sie als base64. Mistral lehnt OpenAIs `dimensions` und Token-IDs als Eingabe mit 422 ab und `output_dimension` bei `mistral-embed` mit 400. Diese Fehler-Bodys haben kein `error`-Objekt, daher erhalten Apps einen OpenAI-Fehler, der sie zitiert.

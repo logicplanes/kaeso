@@ -502,6 +502,22 @@ pub(super) fn decode_reasoning(raw: &RawValue, origin: &Origin) -> Option<Reason
     Some(block)
 }
 
+pub(super) fn web_search_call_item(id: &str, status: &str, query: Option<&str>) -> Node {
+    let node = Node::obj()
+        .with("id", Node::str(id))
+        .with("type", Node::str("web_search_call"))
+        .with("status", Node::str(status));
+    match query {
+        Some(q) => node.with(
+            "action",
+            Node::obj()
+                .with("type", Node::str("search"))
+                .with("query", Node::str(q)),
+        ),
+        None => node,
+    }
+}
+
 pub(super) fn generated_id(prefix: &str, response_id: &str, output_index: u32) -> String {
     let clean: String = response_id
         .chars()

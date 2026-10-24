@@ -36,6 +36,60 @@ describe("renderMermaid", () => {
     expect(svgSize(result.svg.light)).toEqual(svgSize(result.svg.dark));
   }, 60_000);
 
+  it("draws Kaeso's part in ink, outside parties dashed, and a subgraph's title on top of the lines in its corner", async () => {
+    const [result] = await render(
+      "flowchart TD\n  accTitle: Install\n  app[App]:::outside --> gateway\n  subgraph server [Your server]\n    gateway[Gateway]:::accent --> db[(PostgreSQL)]\n  end\n  gateway -. fails .-> app",
+    );
+    if (!result?.ok) throw new Error(JSON.stringify(result));
+    for (const theme of ["light", "dark"] as const) {
+      const svg = result.svg[theme];
+      expect(svg).toContain(`stroke="${rgb(neutral.ink[theme])}"`);
+      expect(svg).toContain(`fill="${rgb(neutral["on-ink"][theme])}"`);
+      expect(svg).toMatch(/stroke-dasharray="4(px)?,? 3(px)?"/);
+      expect(svg).toMatch(/<path [^>]*stroke-dasharray="[1-9]/);
+      expect(svg).not.toContain('stroke-dasharray="1px, 0px"');
+      const title = svg.search(/>\s?server<\/tspan>/);
+      expect(svgLabels(svg)).toContain("Your server");
+      expect(svg.slice(title - 600, title)).toContain(`fill="${rgb(neutral["fill-1"][theme])}"`);
+      expect(title).toBeGreaterThan(svg.lastIndexOf("<path"));
+    }
+  }, 60_000);
+
+  it("moves a subgraph's title along its top until no line runs under it", async () => {
+    const [result] = await render(
+      "flowchart TD\n  accTitle: Stores\n  gateway[Gateway] --> postgres[(PostgreSQL)]\n  gateway --> clickhouse[(ClickHouse)]\n  gateway --> valkey[(Valkey)]\n  subgraph internal [Internal network]\n    postgres\n    clickhouse\n    valkey\n  end",
+    );
+    if (!result?.ok) throw new Error(JSON.stringify(result));
+    const page = await browser.newPage();
+    try {
+      await page.setContent(result.svg.light);
+      const placed = await page.evaluate(() => {
+        const svg = document.querySelector("svg") as SVGSVGElement;
+        const text = [...svg.querySelectorAll("text")].find((t) => t.textContent?.includes("Internal network"));
+        let label = text?.parentElement ?? null;
+        while (label && !label.querySelector(":scope > rect")) label = label.parentElement;
+        const mask = label?.querySelector(":scope > rect")?.getBoundingClientRect();
+        if (!mask) return null;
+        const frame = [...svg.querySelectorAll("rect[stroke-dasharray]")]
+          .map((r) => r.getBoundingClientRect())
+          .find((r) => r.left <= mask.left && r.right >= mask.right && r.top <= mask.top && r.bottom >= mask.bottom);
+        const under = [...svg.querySelectorAll("path[marker-end]")].flatMap((p) => {
+          const path = p as SVGPathElement;
+          const m = path.getScreenCTM() ?? new DOMMatrix();
+          return Array.from({ length: 50 }, (_, i) => path.getPointAtLength((path.getTotalLength() * i) / 49).matrixTransform(m)).filter(
+            (q) => q.x > mask.left && q.x < mask.right && q.y > mask.top && q.y < mask.bottom,
+          );
+        });
+        return { under: under.length, fromTop: frame ? mask.top - frame.top : null, fromLeft: frame ? mask.left - frame.left : null };
+      });
+      expect(placed?.under).toBe(0);
+      expect(placed?.fromTop).toBeLessThan(12);
+      expect(placed?.fromLeft).toBeGreaterThan(8);
+    } finally {
+      await page.close();
+    }
+  }, 60_000);
+
   it("removes every comment of mermaid's markup from the drawing, nested ones too", async () => {
     const page = await browser.newPage();
     try {

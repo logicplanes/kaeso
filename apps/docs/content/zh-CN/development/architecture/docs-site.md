@@ -10,11 +10,12 @@ order: 3
 flowchart TD
   accTitle: 从 Markdown 到站点
   accDescr: 构建时，scripts/content 读取 content 中的页面和 diagrams 中已绘制的图示，进行检查，并为每种语言的站点、每个页面和搜索写出虚拟模块。src 中的 React 应用用 UI 库绘制它们，Vite 写出 dist。
-  pages[content/语言/**/*.md] --> content[scripts/content，在 Vite 中<br>frontmatter、链接、锚点、图片、<br>搜索词、每种语言]
-  diagrams[diagrams/*.svg<br>已绘制的 Mermaid 块] --> content
-  content --> modules[虚拟模块<br>每种语言的站点、页面和搜索]
-  modules --> app[src/，React 和 kaeso-ui]
-  app --> dist[dist/]
+  subgraph build [构建时，在 Vite 中]
+    pages[content/<br>页面] --> compiler
+    diagrams[diagrams/<br>已绘制的图示] --> compiler
+    compiler[scripts/content<br>检查 frontmatter、链接、<br>锚点和图片]:::accent --> modules[虚拟模块<br>每种语言的站点、<br>页面和搜索]
+  end
+  modules --> app[src/<br>React 和 kaeso-ui] --> dist[dist/<br>静态站点]
 ```
 
 ## 构建
@@ -28,7 +29,6 @@ flowchart TD
 | `compile.ts` | 单个页面：先用关闭了原始 HTML 的 marked 词法分析器，再转为 `src/markdown/ast.ts` 中的页面格式，同时检查链接、把带 `tab` 的连续代码块合成代码组、把页面链接列表做成链接卡片，并收集搜索词 |
 | `site.ts` | 单种语言：地址、侧边栏、上一页和下一页、按 GitHub 方式解析的相对链接、图片及其尺寸 |
 | `docs.ts` | 所有语言，并检查各语言包含相同的页面、顺序也相同 |
-| `changelog.ts` | 更新日志页面，通过 `scripts/changelog.mjs` 中的 `history` 由 `CHANGELOG.md` 生成：`/changelog` 包含未发布内容和最新系列，每个较早的系列位于 `/changelog/<major.minor>`，使任何页面都不超出其预算 |
 | `diagram.ts`、`mermaid.ts`、`diagrams.ts` | 图示：基于 Kaeso 令牌的 Mermaid 配置、在无头 Chromium 中的绘制，以及 `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | 根据 `redirects.json` 在旧地址生成的页面 |
 | `plugin.ts` | Vite 插件：虚拟模块、开发时的重新加载、每个页面每种语言一个 HTML 文件、`404.html` 文件和站点地图 |
