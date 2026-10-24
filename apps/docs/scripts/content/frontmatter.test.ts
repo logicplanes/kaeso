@@ -32,4 +32,17 @@ describe("parseFrontmatter", () => {
     expect(parseFrontmatter(page(`title: A\ndescription: ${"word ".repeat(40)}`)).problems).toEqual([expect.stringMatching(/characters/)]);
     expect(parseFrontmatter(page("title: A\ndescription: Works with version 1.2.0 and later.")).problems).toEqual([]);
   });
+
+  it("skips blank lines and comments, unquotes single and double quotes, and names a line that isn't a field or a field set twice", () => {
+    const p = parseFrontmatter(page("# A comment\n\ntitle: 'It''s keys'\ndescription: \"Say \\\"hi\\\" to keys.\"\nnot a field\ntitle: Keys"));
+    expect(p.data.description).toBe('Say "hi" to keys.');
+    expect(p.problems).toEqual(["frontmatter line 6 is not `key: value`: not a field", "frontmatter sets `title` twice"]);
+    expect(parseFrontmatter(page("title: 'It''s keys'\ndescription: Keys.")).data.title).toBe("It's keys");
+    expect(parseFrontmatter("---\ntitle: Keys\ndescription: Keys.\n---").body).toBe("");
+  });
+
+  it("counts a Chinese description's sentences by their full stops", () => {
+    expect(parseFrontmatter(page("title: A\ndescription: 创建密钥。然后使用它。")).problems).toEqual([expect.stringMatching(/more than one sentence/)]);
+    expect(parseFrontmatter(page("title: A\ndescription: 创建密钥并使用它。")).problems).toEqual([]);
+  });
 });

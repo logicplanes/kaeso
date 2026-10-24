@@ -185,10 +185,10 @@ pnpm --filter kaeso-showcase build
 
 ### 内容安全策略
 
-每次构建都会把网站的策略作为 `<meta>` 标签写入每个页面，也写入 `csp.txt` 和 `_headers`。还要把它作为 `Content-Security-Policy` 响应头发送，因为只有响应头才能加上 `frame-ancestors 'none'`。文档的响应头始终不变；它允许来自 `update.kaeso.app` 的图片，更新日志中各版本的配图就来自那里：
+每次构建都会把网站的策略作为 `<meta>` 标签写入每个页面，也写入 `csp.txt` 和 `_headers`。还要把它作为 `Content-Security-Policy` 响应头发送，因为只有响应头才能加上 `frame-ancestors 'none'`。文档的响应头始终不变：
 
 ```text
-default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://update.kaeso.app; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
 展示站点的策略为它的每个内联脚本和样式列出一个哈希值，这些哈希会随它们变化。从要部署的那次构建的 `csp.txt` 中获取它的响应头。

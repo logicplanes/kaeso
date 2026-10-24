@@ -88,23 +88,12 @@ describe("links", () => {
     expect(out.problems).toEqual(["links to #nope, which is not a heading on this page"]);
   });
 
-  it("keeps reference links as text in pages, and follows them only where references are asked for", () => {
+  it("keeps reference links as text", () => {
     const body = "See [the logs][logs].\n\n[logs]: https://docs.kaeso.app/console/request-logs";
     const resolver: Resolver = { anchors: new Set(), resolve: () => ({ kind: "problem", message: "no" }) };
     const page = compile(lex(body), resolver);
     expect(page.blocks[0]).toEqual({ t: "paragraph", c: [{ t: "text", v: "See [the logs][logs]." }] });
     expect(json(page.blocks[1])).toContain('"v":"[logs]: "');
-    const changelog = compile(lex(body, { references: true }), resolver);
-    expect(changelog.blocks).toEqual([
-      {
-        t: "paragraph",
-        c: [
-          { t: "text", v: "See " },
-          { t: "link", kind: "external", href: "https://docs.kaeso.app/console/request-logs", c: [{ t: "text", v: "the logs" }] },
-          { t: "text", v: "." },
-        ],
-      },
-    ]);
   });
 });
 
@@ -218,7 +207,7 @@ describe("diagrams", () => {
     expect(missing.blocks).toEqual([]);
   });
 
-  it("refuses a diagram where it can't be drawn, such as the changelog", () => {
+  it("refuses a diagram where it can't be drawn, outside the pages in content/", () => {
     const out = compile(lex(FLOW), { anchors: new Set(), resolve: () => ({ kind: "page", href: "/" }) });
     expect(out.blocks).toEqual([]);
     expect(out.problems).toEqual([":1: diagrams are drawn only on the pages in content/; show this as text or a list"]);
@@ -349,5 +338,38 @@ describe("link cards", () => {
       "- Read [calling models](calling-models.md).",
     ])
       expect(md(body, targets).blocks[0]?.t).toBe("list");
+  });
+});
+
+describe("headings and inline text", () => {
+  it("names a heading by its plain text, through escapes, code, images and emphasis", () => {
+    const { headings } = lex(
+      "## Keys \\*and\\* `limits`\n\n## The ![console](images/console.png) view\n\n## **Strong** and ~~old~~ text\n\n> ## Quoted\n\n- ## Listed\n",
+    );
+    expect(headings.map((h) => [h.text, h.id, h.nested ?? false])).toEqual([
+      ["Keys *and* limits", "keys-and-limits", false],
+      ["The console view", "the-console-view", false],
+      ["Strong and old text", "strong-and-old-text", false],
+      ["Quoted", "quoted", true],
+      ["Listed", "listed", true],
+    ]);
+  });
+
+  it("keeps escapes as text and draws strikethrough, line breaks and a link's title", () => {
+    const out = md('A \\*star\\*, ~~gone~~ and a break  \nthen [the logs](https://example.com/logs "Request logs").');
+    expect(out.blocks).toEqual([
+      {
+        t: "paragraph",
+        c: [
+          { t: "text", v: "A *star*, " },
+          { t: "del", c: [{ t: "text", v: "gone" }] },
+          { t: "text", v: " and a break" },
+          { t: "br" },
+          { t: "text", v: "then " },
+          { t: "link", kind: "external", href: "https://example.com/logs", title: "Request logs", c: [{ t: "text", v: "the logs" }] },
+          { t: "text", v: "." },
+        ],
+      },
+    ]);
   });
 });
