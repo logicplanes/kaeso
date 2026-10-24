@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Block } from "./ast";
 import { TextProvider } from "~/i18n/text";
@@ -151,17 +151,48 @@ describe("Markdown", () => {
         ],
       },
     ]);
-    expect(screen.getByRole("region", { name: "Table: Page, Setting, What to do" })).toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Page", "Setting", "What to do"]);
-    expect(screen.getByRole("link", { name: "Quick start" })).toHaveAttribute("href", "/get-started/quick-start");
-    expect(screen.getByRole("cell", { name: summary })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Point Claude Code/ })).toHaveAttribute("href", "https://kaeso.app/");
-    expect(screen.getByText("metrics_listen").querySelector("wbr")).toBeNull();
-    const long = screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
+    const table = within(screen.getByRole("region", { name: "Table: Page, Setting, What to do" }));
+    expect(table.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Page", "Setting", "What to do"]);
+    expect(table.getByRole("link", { name: "Quick start" })).toHaveAttribute("href", "/get-started/quick-start");
+    expect(table.getByRole("cell", { name: summary })).toBeInTheDocument();
+    expect(table.getByRole("link", { name: /Point Claude Code/ })).toHaveAttribute("href", "https://kaeso.app/");
+    expect(table.getByText("metrics_listen").querySelector("wbr")).toBeNull();
+    const long = table.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
     expect(long.querySelectorAll("wbr")).toHaveLength(2);
     expect(long).toHaveClass("inline");
     expect(long).not.toHaveClass("inline-block", "box-decoration-clone");
-    expect(screen.getByText("metrics_listen")).toHaveClass("inline", "whitespace-nowrap");
+    expect(table.getByText("metrics_listen")).toHaveClass("inline", "whitespace-nowrap");
+  });
+
+  it("draws a table of three or more columns again for phones, each row its first cell over labelled values, short ones beside their label", () => {
+    const summary = "Start the gateway, the console and the databases with Docker Compose, then send the first request";
+    draw([
+      {
+        t: "table",
+        align: ["start", "start", "start"],
+        head: [[{ t: "text", v: "Page" }], [{ t: "text", v: "Setting" }], [{ t: "text", v: "What to do" }]],
+        rows: [
+          [[{ t: "text", v: "Quick start" }], [{ t: "code", v: "metrics_listen" }], [{ t: "text", v: summary }]],
+          [[{ t: "text", v: "Coding tools" }], [], [{ t: "text", v: "Point a coding tool at the install" }]],
+        ],
+      },
+      {
+        t: "table",
+        align: ["start", "start"],
+        head: [[{ t: "text", v: "Level" }], [{ t: "text", v: "Requests" }]],
+        rows: [[[{ t: "text", v: "Key" }], [{ t: "text", v: "60" }]]],
+      },
+    ]);
+    const list = screen.getByRole("list", { name: "Table: Page, Setting, What to do" });
+    expect(list).toHaveClass("sm:hidden");
+    expect(screen.getByRole("region", { name: "Table: Page, Setting, What to do" }).closest(".max-sm\\:hidden")).not.toBeNull();
+    const rows = within(list).getAllByRole("listitem");
+    const pairs = (row: HTMLElement | undefined, which: string) => [...(row?.querySelectorAll(which) ?? [])].map((el) => el.textContent);
+    expect(rows[0]).toHaveTextContent(/^Quick start/);
+    expect(pairs(rows[0], "dt, dd")).toEqual(["Setting", "metrics_listen", "What to do", summary]);
+    expect(rows[0]?.querySelectorAll("dl")).toHaveLength(2);
+    expect(pairs(rows[1], "dt")).toEqual(["What to do"]);
+    expect(screen.queryByRole("list", { name: "Table: Level, Requests" })).toBeNull();
   });
 
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {

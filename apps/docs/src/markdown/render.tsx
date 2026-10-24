@@ -1,6 +1,6 @@
 import { Fragment, useId, useRef, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Banner, CheckboxBox, Code, CodeBlock, Figure, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
+import { Banner, CheckboxBox, Code, CodeBlock, Figure, KeyValue, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
@@ -194,6 +194,35 @@ function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) 
   );
 }
 
+const STACK_COLUMNS = 3;
+const BESIDE_LABEL = 48;
+
+function StackedTable({ b, label, ctx }: { b: Extract<Block, { t: "table" }>; label: string; ctx: Ctx }) {
+  const short = Array.from({ length: b.head.length }, (_, j) => b.rows.every((row) => width(plainText(row[j] ?? [])) <= BESIDE_LABEL));
+  const pairs = (row: Inline[][], fits: boolean) =>
+    row.flatMap((c, j) => (j > 0 && short[j] === fits && c.length > 0 ? [{ label: inline(b.head[j] ?? [], ctx), value: inline(c, ctx), wrap: true }] : []));
+  return (
+    <ul aria-label={label} className="flex flex-col gap-12 sm:hidden">
+      {b.rows.map((row, r) => {
+        const beside = pairs(row, true);
+        const below = pairs(row, false);
+        return (
+          <li key={r} className="flex flex-col gap-12">
+            {r > 0 && <Separator />}
+            <div className="flex flex-col gap-4">
+              <Text as="div" variant="body" weight="medium" className="wrap-break-word">
+                {inline(row[0] ?? [], ctx)}
+              </Text>
+              {beside.length > 0 && <KeyValue items={beside} />}
+              {below.length > 0 && <KeyValue layout="stacked" items={below} />}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: number; ctx: Ctx }) {
   const first = item.c[0];
   const name = first && "c" in first && first.t === "paragraph" ? plainText(first.c) : ctx.t("page.task");
@@ -285,31 +314,36 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       const cell: Ctx = { ...ctx, size: "body", tone: "default", cell: true };
       const short = shortColumns(b.rows, b.head.length);
       const columns = b.head.map(plainText).join(LIST_SEPARATOR[ctx.locale]);
+      const stacked = b.head.length >= STACK_COLUMNS;
+      const label = ctx.t("page.table").replace("{columns}", columns);
       return (
-        <ScrollArea key={i} orientation="horizontal" aria-label={ctx.t("page.table").replace("{columns}", columns)}>
-          <Table>
-            <Table.Head>
-              <Table.Row>
-                {b.head.map((c, j) => (
-                  <Table.HeaderCell key={j} align={b.align[j] ?? "start"}>
-                    {inline(c, cell)}
-                  </Table.HeaderCell>
-                ))}
-              </Table.Row>
-            </Table.Head>
-            <Table.Body>
-              {b.rows.map((row, r) => (
-                <Table.Row key={r}>
-                  {row.map((c, j) => (
-                    <Table.Cell key={j} align={b.align[j] ?? "start"} className={`align-top ${short[j] ? "whitespace-nowrap" : "min-w-140"}`}>
+        <Fragment key={i}>
+          <ScrollArea orientation="horizontal" aria-label={label} {...(stacked ? { className: "max-sm:hidden" } : {})}>
+            <Table>
+              <Table.Head>
+                <Table.Row>
+                  {b.head.map((c, j) => (
+                    <Table.HeaderCell key={j} align={b.align[j] ?? "start"}>
                       {inline(c, cell)}
-                    </Table.Cell>
+                    </Table.HeaderCell>
                   ))}
                 </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
-        </ScrollArea>
+              </Table.Head>
+              <Table.Body>
+                {b.rows.map((row, r) => (
+                  <Table.Row key={r}>
+                    {row.map((c, j) => (
+                      <Table.Cell key={j} align={b.align[j] ?? "start"} className={`align-top ${short[j] ? "whitespace-nowrap" : "min-w-140"}`}>
+                        {inline(c, cell)}
+                      </Table.Cell>
+                    ))}
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </ScrollArea>
+          {stacked && <StackedTable b={b} label={label} ctx={cell} />}
+        </Fragment>
       );
     }
     case "diagram":
