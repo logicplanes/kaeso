@@ -1,6 +1,20 @@
 import { Fragment, useId, useRef, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Banner, CheckboxBox, Code, CodeBlock, Figure, KeyValue, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
+import {
+  Banner,
+  CheckboxBox,
+  Code,
+  CodeBlock,
+  Figure,
+  KeyValue,
+  Link,
+  ScrollArea,
+  Separator,
+  Table,
+  Text,
+  ThemeImage,
+  VisuallyHidden,
+} from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
