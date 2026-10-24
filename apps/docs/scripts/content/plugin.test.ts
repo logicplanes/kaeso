@@ -419,7 +419,7 @@ describe("the Vite plugin", () => {
 
   it("writes a page at a moved address that sends the reader on, and the same moves for hosts that read _redirects", () => {
     repo();
-    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "guides/keys.md#rate-limits" }));
+    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "guides/keys.md#rate-limits", changelog: "https://kaeso.app/changelog" }));
     const outDir = join(root, "dist");
     mkdirSync(outDir, { recursive: true });
     writeFileSync(join(outDir, "index.html"), TEMPLATE);
@@ -444,11 +444,20 @@ describe("the Vite plugin", () => {
     expect(moved).toContain('<meta http-equiv="refresh" content="0; url=/de/guides/keys#rate-limits" />');
     expect(moved).toContain('<link rel="canonical" href="https://docs.kaeso.app/de/guides/keys" />');
     expect(moved).toContain('<a href="/de/guides/keys#rate-limits">Keys · Kaeso-Dokumentation</a>');
+    const away = readFileSync(join(outDir, "de/changelog.html"), "utf8");
+    expect(away).toContain('<meta http-equiv="refresh" content="0; url=https://kaeso.app/de/changelog" />');
+    expect(away).toContain('<link rel="canonical" href="https://kaeso.app/de/changelog" />');
     expect(readFileSync(join(outDir, "_redirects"), "utf8")).toBe(
       [
         "/guides/limits /guides/keys#rate-limits 301",
+        "/changelog https://kaeso.app/changelog 301",
+        "/changelog/* https://kaeso.app/changelog 301",
         "/de/guides/limits /de/guides/keys#rate-limits 301",
+        "/de/changelog https://kaeso.app/de/changelog 301",
+        "/de/changelog/* https://kaeso.app/de/changelog 301",
         "/zh-CN/guides/limits /zh-CN/guides/keys#rate-limits 301",
+        "/zh-CN/changelog https://kaeso.app/zh-CN/changelog 301",
+        "/zh-CN/changelog/* https://kaeso.app/zh-CN/changelog 301",
         "",
       ].join("\n"),
     );

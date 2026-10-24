@@ -95,7 +95,7 @@ export function redirectHtml(lang: Locale, title: string, siteUrl: string, to: s
     '    <meta name="robots" content="noindex" />',
     '    <meta name="color-scheme" content="light dark" />',
     `    <meta http-equiv="refresh" content="0; url=${href}" />`,
-    `    <link rel="canonical" href="${escapeHtml(absoluteUrl(siteUrl, to.split("#")[0] ?? to))}" />`,
+    `    <link rel="canonical" href="${escapeHtml(to.startsWith("https://") ? to : absoluteUrl(siteUrl, to.split("#")[0] ?? to))}" />`,
     `    <title>${escapeHtml(title)}</title>`,
     "  </head>",
     "  <body>",
@@ -107,7 +107,7 @@ export function redirectHtml(lang: Locale, title: string, siteUrl: string, to: s
 }
 
 export function redirectRules(redirects: Docs["redirects"]): string {
-  return LOCALES.flatMap((l) => redirects[l].map((r) => `${r.from} ${r.to} 301`))
+  return LOCALES.flatMap((l) => redirects[l].flatMap((r) => [`${r.from} ${r.to} 301`, ...(r.below ? [`${r.from}/* ${r.to} 301`] : [])]))
     .map((line) => `${line}\n`)
     .join("");
 }

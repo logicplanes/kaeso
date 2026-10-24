@@ -92,6 +92,24 @@ describe("buildDocs", () => {
     expect(docs.redirects["zh-CN"][0]).toEqual({ from: "/zh-CN/guides/limits", to: "/zh-CN/keys#速率限制", title: "密钥" });
   });
 
+  it("sends an old address and everything below it to the same language of a site outside the docs", () => {
+    repo(everyLanguage({ "index.md": page("Start") }));
+    writeFileSync(join(root, "redirects.json"), JSON.stringify({ changelog: "https://kaeso.app/changelog", news: "https://kaeso app" }));
+    const docs = buildDocs(join(root, "content"), root, "1.4.0");
+    expect(docs.problems).toEqual(["redirects.json: news points to https://kaeso app, which is not an address"]);
+    expect(docs.redirects.en).toEqual([{ from: "/changelog", to: "https://kaeso.app/changelog", title: "kaeso.app/changelog", below: true }]);
+    expect(docs.redirects.de).toEqual([{ from: "/de/changelog", to: "https://kaeso.app/de/changelog", title: "kaeso.app/de/changelog", below: true }]);
+    expect(docs.redirects["zh-CN"][0]?.to).toBe("https://kaeso.app/zh-CN/changelog");
+  });
+
+  it("refuses a redirect outside the docs from a page that still exists", () => {
+    repo(everyLanguage({ "index.md": page("Start"), "changelog.md": page("Changelog") }));
+    writeFileSync(join(root, "redirects.json"), JSON.stringify({ changelog: "https://kaeso.app/changelog" }));
+    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toContain(
+      "redirects.json: changelog is the address of content/en/changelog.md; remove the page or the redirect",
+    );
+  });
+
   it("refuses a redirect from a page that still exists, to a missing page or heading, or in another form", () => {
     repo(everyLanguage({ "index.md": page("Start"), "keys.md": page("Keys") }));
     writeFileSync(
