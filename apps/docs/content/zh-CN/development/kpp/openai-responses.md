@@ -44,7 +44,9 @@ order: 6
 | `input`（item 列表） | `system` + `messages` 类型化 | 参见[输入项](#输入项inputitem)。没有 `input`（配合 `prompt` 时允许）：没有消息；形式标记 `unset input`。 |
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` 部分。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式标记。 |
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
-| `tools[]` 其他类型（`web_search`、`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
+| `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
+| `tools[]` `web_search` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
 | `tool_choice` `allowed_tools`、托管工具、`mcp`、`custom`、其他字符串 | `ToolChoice::Unknown` | 仅限同一方言。 |
@@ -131,7 +133,8 @@ order: 6
 - 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`，这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
 - 其他方言的推理变为一个推理 item（参见[推理数据块](reasoning.md#推理数据块)）：ID 为 `rs_kaeso_…`，其推理文本作为一个 `summary_text`，后接其摘要，原始块的推理数据块作为 `encrypted_content`。无论应用是否在 `include` 中请求，推理数据块都会发送，因为 Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
 - 本方言无法呈现的回复数据会被省略（参见[回复](cross-format.md#回复)）：外来的 `Unknown` 块、外来的引用和 extras、图像、文档和工具结果。
-- 消息 item 和函数调用 item 的 ID 为 `msg_kaeso_…` 和 `fc_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
+- Anthropic 的网页搜索变为 `web_search_call` 项（参见[托管网页搜索](cross-format.md#托管网页搜索)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
+- 消息 item、函数调用 item 和网页搜索 item 的 ID 为 `msg_kaeso_…`、`fc_kaeso_…` 和 `ws_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
 
 ## 输入 Token 计数：`TokenCountsResource`
 
@@ -191,7 +194,7 @@ order: 6
 - 摘要前后的 `reasoning_summary_*` 部分事件，以及推理文本前后的 `content_part.*` 和 `reasoning_text.*`；
 - 最后是 `response.completed`（`MaxTokens` 和 `ContentFilter` 时为 `response.incomplete`），带有所有输出 item 和用量。
 
-`sequence_number` 从 0 开始计数。item ID 是生成的（`msg_kaeso_…`、`fc_kaeso_…`、`rs_kaeso_…`，由回复 ID 和输出索引得出）。不会生成 `obfuscation`。在 `ResponseStop` 时仍未关闭的块会先被关闭。没有 `ResponseStart` 的流会得到一个，其 ID 为 `resp_kaeso_<created_at>`，取自 `EncodeCtx::created_at`。其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）：推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出（各摘要保留其索引），`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。在 `ResponseStop` 或 `Error` 之后，编码器拒绝后续的生命周期事件。外来错误变为一个 `error` 事件，`code` 取自错误类型（参见[错误](#错误errorresponse)）。
+`sequence_number` 从 0 开始计数。item ID 是生成的（`msg_kaeso_…`、`fc_kaeso_…`、`rs_kaeso_…`、`ws_kaeso_…`，由回复 ID 和输出索引得出）。不会生成 `obfuscation`。在 `ResponseStop` 时仍未关闭的块会先被关闭。没有 `ResponseStart` 的流会得到一个，其 ID 为 `resp_kaeso_<created_at>`，取自 `EncodeCtx::created_at`。其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）：推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出（各摘要保留其索引），`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。在 `ResponseStop` 或 `Error` 之后，编码器拒绝后续的生命周期事件。外来错误变为一个 `error` 事件，`code` 取自错误类型（参见[错误](#错误errorresponse)）。
 
 其他方言发送、而本方言无法呈现的内容（额外事件，例如 Anthropic 的 `ping`，以及外来的未知块）会换来按节奏发送的 SSE 注释 `: keepalive`（参见[保活消息](cross-format.md#保活消息)）：每个额外事件一条，每 1,024 字节隐藏文本一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
 
@@ -315,6 +318,7 @@ order: 6
 |---|---|---|
 | 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
+| `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；`Provider::tool_namespaces` 为假（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
 | `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat.md#spacex) 相同。 |

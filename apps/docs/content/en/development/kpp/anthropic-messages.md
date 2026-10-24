@@ -128,6 +128,8 @@ What `encode_request` writes for a KPP request that did not come from Anthropic 
 | `Request::CountTokens` from another dialect | `/v1/messages/count_tokens` without `max_tokens`, sampling, `metadata` and `stream` | They don't change the input count, and the endpoint rejects them. An Anthropic app's own token-counting request is sent as received. |
 | `Request::CountTokens` output and reasoning settings that `check()` would refuse for generation (JSON mode, a schema description, `strict: false`, effort `minimal`, …) | left out, not refused | Only what changes the counted input is refused. |
 | `Request::Embed` | `Unsupported` | |
+| OpenAI Responses `web_search` tool | `{type: web_search_20250305, name: web_search}` | With `allowed_domains` and `user_location` where set; Responses `web_search_call` items in the conversation are dropped ([hosted web search](cross-format.md#hosted-web-search)). |
+| OpenAI Responses `namespace` tools | one function tool per tool in the namespace, named `<namespace>__<name>` | [Tool namespaces](cross-format.md#tool-namespaces). |
 | foreign extras, unknown blocks, tools and tool choices, citations, foreign file ids | `Unsupported` | `cross::check_foreign` ([requests](cross-format.md#requests)). |
 
 ## Replies

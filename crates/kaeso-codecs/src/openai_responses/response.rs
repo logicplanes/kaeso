@@ -6,17 +6,19 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use super::DIALECT;
+use super::namespaces::Namespaces;
 use super::node::{Node, entries_of};
 use super::overrides::{Overrides, apply};
 use super::parts::{
     TextKind, arguments_text, carried_summaries, decode_function_call, decode_part,
-    decode_reasoning, encode_part, function_call_item, generated_id, reasoning_item,
-    reasoning_node,
+    decode_reasoning, encode_part, generated_id, reasoning_item, reasoning_node,
+    web_search_call_item,
 };
 use super::request::echo_body;
 use super::wire;
 use crate::codec::{EgressCtx, EncodeCtx, HeaderList};
 use crate::cross::{ReplyPolicy, reasoning_reply_policy};
+use crate::web_search;
 use crate::wire::{to_body, type_tag};
 
 pub(super) const NATIVE: &str = "native";
@@ -361,7 +363,7 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
     resp.stop = stop;
     resp.usage = usage;
     resp.extras = extras;
-    let canon = canonical(&resp, None);
+    let canon = canonical(&resp, None, &Namespaces::default());
     Overrides::diff(&canon, raw, &["output"]).record(&mut resp.extras, "");
     Ok(resp)
 }
@@ -402,7 +404,7 @@ fn is_message_part(b: &Block) -> bool {
     matches!(b, Block::Text(_) | Block::Refusal(_))
 }
 
-pub(super) fn output_items(resp: &Response) -> Vec<Node> {
+pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node> {
     let target = Origin::new(DIALECT);
     let unchanged = resp
         .extras
@@ -489,7 +491,7 @@ pub(super) fn output_items(resp: &Response) -> Vec<Node> {
         match block {
             Block::ToolCall(c) => {
                 let id = generated_id("fc", &resp.id, index32);
-                let mut node = function_call_item(
+                let mut node = namespaces.call_item(
                     &c.id,
                     &c.name,
                     &arguments_text(c),
@@ -497,6 +499,20 @@ pub(super) fn output_items(resp: &Response) -> Vec<Node> {
                 );
                 apply(&c.extras, DIALECT, "", &[], &mut node);
                 items.push(node);
+            }
+            Block::Unknown(item) if let Some(search) = web_search::anthropic_search(item) => {
+                let status = resp.blocks.iter().skip(i).find_map(|b| match b {
+                    Block::Unknown(r) => web_search::anthropic_search_result(r)
+                        .filter(|(id, _)| *id == search.tool_use_id)
+                        .map(|(_, found)| if found { "completed" } else { "failed" }),
+                    _ => None,
+                });
+                let id = generated_id("ws", &resp.id, index32);
+                items.push(web_search_call_item(
+                    &id,
+                    status.unwrap_or("in_progress"),
+                    search.query.as_deref(),
+                ));
             }
             Block::Reasoning(r) => {
                 let id = generated_id("rs", &resp.id, index32);
@@ -522,14 +538,18 @@ pub(super) fn output_items(resp: &Response) -> Vec<Node> {
     items
 }
 
-fn canonical(resp: &Response, echo: Option<(&[(String, Node)], u64)>) -> Node {
+fn canonical(
+    resp: &Response,
+    echo: Option<(&[(String, Node)], u64)>,
+    namespaces: &Namespaces,
+) -> Node {
     let (status, incomplete) = status_for(&resp.stop);
     response_object(
         &resp.id,
         &resp.model,
         status,
         incomplete,
-        Node::Arr(output_items(resp)),
+        Node::Arr(output_items(resp, namespaces)),
         usage_node(&resp.usage),
         echo,
     )
@@ -541,7 +561,8 @@ pub(super) fn encode(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError
             let native = resp.extras.form_flag(DIALECT, NATIVE);
             let echo = (!native).then(|| echo_fields(ctx));
             let created = ctx.created_at.unwrap_or(0);
-            let mut node = canonical(resp, echo.as_deref().map(|e| (e, created)));
+            let namespaces = Namespaces::of(ctx.request.as_deref());
+            let mut node = canonical(resp, echo.as_deref().map(|e| (e, created)), &namespaces);
             apply(&resp.extras, DIALECT, "", &[], &mut node);
             to_body(&node)
         }

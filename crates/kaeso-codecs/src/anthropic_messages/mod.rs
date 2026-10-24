@@ -66,12 +66,14 @@ impl Codec for AnthropicMessages {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
-        check::check(req, &ctx.origin(Self::DIALECT))
+        let req = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
+        check::check(&req, &ctx.origin(Self::DIALECT))
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        check::check(req, &ctx.origin(Self::DIALECT))?;
-        request::encode_request(req, ctx)
+        let req = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
+        check::check(&req, &ctx.origin(Self::DIALECT))?;
+        request::encode_request(&req, ctx)
     }
 
     fn decode_response(
