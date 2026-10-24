@@ -392,7 +392,6 @@
   "Log request content": "记录请求内容",
   "Log retention": "日志保留期",
   "Long code lines wrap instead of scrolling sideways (narrow columns).": "长代码行自动换行而不是横向滚动（窄栏）。",
-  "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response).": "长行自动换行而不是横向滚动：用于窄栏中的代码（模型的回复）。",
   "Long text and links wrap like prose; the row grows and keeps its padding, and one-line rows stay 44px.": "长文本和链接像正文一样换行；行会变高并保留内边距，单行的行仍为 44px。",
   "Long values that wrap": "会换行的长值",
   "Makes it a link to this address.": "使其成为指向此地址的链接。",
@@ -1075,5 +1074,7 @@
   "The reasoning is still arriving: “Thinking” pulses quietly and its latest line shows beside it.": "推理仍在输出：“正在思考”轻微闪烁，旁边显示最新一行。",
   "The reasoning, as Markdown.": "推理内容，Markdown 格式。",
   "The title in place of “Thinking” or “Thought for …”, such as “Reasoning” in a request log.": "代替“正在思考”或“思考了 …”的标题，例如请求日志中的“推理”。",
-  "An image of the release's stored artwork, e.g. `https://update.kaeso.app/art/0.1.0.svg`, shown in the frame instead of the drawn picture, which takes its place if the image doesn't load.": "版本已存储配图的图片，例如 `https://update.kaeso.app/art/0.1.0.svg`，显示在框内以代替绘制的图案；图片无法加载时改为显示绘制的图案。"
+  "An image of the release's stored artwork, e.g. `https://update.kaeso.app/art/0.1.0.svg`, shown in the frame instead of the drawn picture, which takes its place if the image doesn't load.": "版本已存储配图的图片，例如 `https://update.kaeso.app/art/0.1.0.svg`，显示在框内以代替绘制的图案；图片无法加载时改为显示绘制的图案。",
+  "Wraps on phones": "在手机上换行",
+  "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.": "长行换行显示，而不是横向滚动：用于窄栏中的代码（模型的回复）。`phone` 只在 640px 以下换行，续行缩进，更宽时仍横向滚动。"
 }

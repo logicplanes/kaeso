@@ -154,7 +154,7 @@ function CodeGroup({ tabs }: { tabs: CodeTab[] }) {
     const moved = el.getBoundingClientRect().top - before;
     if (moved !== 0) scrollParent(el)?.scrollBy(0, moved);
   };
-  return <CodeBlock ref={ref} tabs={tabs} tab={chosen} onTabChange={choose} collapseAfter={0} />;
+  return <CodeBlock ref={ref} tabs={tabs} tab={chosen} onTabChange={choose} collapseAfter={0} wrap="phone" />;
 }
 
 function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
@@ -270,7 +270,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
     case "codegroup":
       return <CodeGroup key={i} tabs={b.tabs} />;
     case "code":
-      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} {...(b.title ? { title: b.title } : {})} />;
+      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} wrap="phone" {...(b.title ? { title: b.title } : {})} />;
     case "quote":
       return (
         <blockquote key={i} className="flex gap-16">

@@ -122,6 +122,21 @@ describe("CodeBlock", () => {
     expect(screen.queryByText("const line29 = 29;")).toBeNull();
   });
 
+  it("wraps long lines only on phones when asked, indenting the part that wraps", () => {
+    const line = 'curl https://kaeso.example.com/v1/responses -H "Authorization: Bearer $KAESO_API_KEY"';
+    const { container, rerender } = render(<CodeBlock code={line} lang="text" wrap="phone" copy={false} />);
+    const row = () => container.querySelector("code > span") as HTMLElement;
+    expect(container.querySelector("code")).toHaveClass("sm:min-w-max");
+    expect(container.querySelector("code")).not.toHaveClass("min-w-max");
+    expect(row()).toHaveClass("max-sm:whitespace-pre-wrap", "max-sm:wrap-anywhere");
+    expect(row().lastElementChild).toHaveClass("max-sm:pl-16", "max-sm:-indent-16");
+    rerender(<CodeBlock code={line} lang="text" wrap copy={false} />);
+    expect(row()).toHaveClass("whitespace-pre-wrap");
+    expect(row()).not.toHaveClass("max-sm:whitespace-pre-wrap");
+    rerender(<CodeBlock code={line} lang="text" copy={false} />);
+    expect(container.querySelector("code")).toHaveClass("min-w-max");
+  });
+
   it("keeps the code clear of the copy button on touch screens, where the button always shows", () => {
     const { rerender } = render(<CodeBlock code="echo KAESO_MAIL_TRANSPORT=log >> .env" lang="bash" />);
     expect(screen.getByRole("button", { name: "Copy code" })).toBeInTheDocument();
