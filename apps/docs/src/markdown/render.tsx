@@ -45,6 +45,7 @@ function plainText(xs: Inline[]): string {
 
 const LIST_SEPARATOR: Record<Locale, string> = { en: ", ", de: ", ", "zh-CN": "、" };
 const SHORT_COLUMN = 20;
+const LONG_HEADER = 24;
 const WHOLE_CODE = 16;
 const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
 
@@ -337,7 +338,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
               <Table.Head>
                 <Table.Row>
                   {b.head.map((c, j) => (
-                    <Table.HeaderCell key={j} align={b.align[j] ?? "start"}>
+                    <Table.HeaderCell key={j} align={b.align[j] ?? "start"} wrap={width(plainText(c)) > LONG_HEADER}>
                       {inline(c, cell)}
                     </Table.HeaderCell>
                   ))}
