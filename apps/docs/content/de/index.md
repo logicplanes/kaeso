@@ -49,10 +49,20 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 ```mermaid
 flowchart TD
   accTitle: Wie die Teile zusammenspielen
-  accDescr: Apps rufen das Gateway unter /v1 auf, die Konsole unter /platform/v1; das Gateway ruft die Modellanbieter auf.
-  apps[Apps] -- /v1 --> gateway[Gateway]
-  console[Konsole] -- /platform/v1 --> gateway
-  gateway --> providers[Modellanbieter]
+  accDescr: Ihre Apps rufen die Modell-API des Gateways unter /v1 auf, und Menschen nutzen die Konsole, die die Platform API des Gateways unter /platform/v1 aufruft. Das Gateway speichert seine Daten in PostgreSQL, ClickHouse und Valkey Ihrer Installation und ruft die Modellanbieter mit Ihren Anbieter-Schlüsseln auf.
+  apps[Ihre Apps]:::outside
+  people[Menschen im Browser]:::outside
+  subgraph install [Ihre Kaeso-Installation]
+    console[Konsole]
+    gateway[Gateway]:::accent
+    stores[(PostgreSQL, ClickHouse<br>und Valkey)]
+  end
+  providers[Modellanbieter]:::outside
+  people --> console
+  apps -- Modell-API, /v1 --> gateway
+  console -- Platform API, /platform/v1 --> gateway
+  gateway --> stores
+  gateway -- Ihre Anbieter-Schlüssel --> providers
 ```
 
 | Teil | Was es ist |

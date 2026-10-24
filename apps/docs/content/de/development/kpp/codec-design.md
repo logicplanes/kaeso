@@ -25,18 +25,18 @@ Die Typen sind davon geprägt, was die Codecs brauchen, um verlustfrei zu bleibe
 Ein KPP-Stream ist `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, wobei `Error` an jeder Stelle möglich ist und `Extra` Dialekt-Events trägt, die KPP nicht modelliert.
 
 ```mermaid
-stateDiagram-v2
+flowchart TD
   accTitle: Die Reihenfolge der Events eines KPP-Streams
   accDescr: Ein Stream beginnt mit ResponseStart. Dann folgen beliebig viele Blöcke, jeder aus BlockStart, beliebig vielen BlockDelta und BlockStop, dann beliebig viele ResponseDelta, und ResponseStop beendet ihn. Error ist an jeder Stelle möglich.
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: beliebig viele
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: nächster Block
-  BlockStop --> ResponseDelta: beliebig viele
-  ResponseStart --> ResponseDelta: keine Blöcke
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
+  start[ResponseStart]:::accent
+  subgraph blocks [Beliebig viele Blöcke]
+    bstart[BlockStart] --> bdelta[BlockDelta<br>beliebig viele] --> bstop[BlockStop]
+  end
+  start --> bstart
+  bstop -- nächster Block --> bstart
+  bstop --> rdelta[ResponseDelta<br>beliebig viele]
+  start -- keine Blöcke --> rdelta
+  rdelta --> stop[ResponseStop]:::accent
 ```
 
 - **Blockindizes** gehören KPP selbst: 0, 1, 2, … in der Reihenfolge, in der Blöcke beginnen. Blöcke dürfen sich überlappen (OpenAI streamt parallele Tool-Aufrufe so), daher nennt jedes Event seinen Block.

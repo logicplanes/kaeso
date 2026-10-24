@@ -9,9 +9,18 @@ Ihre App kann jedes Chat-Modell in ihrem eigenen Format aufrufen: Das OpenAI SDK
 ```mermaid
 flowchart TD
   accTitle: Formatübersetzung
-  accDescr: KPP decodiert die Anfrage der App in sein kanonisches Format und codiert sie im Format des Anbieters. Die Antwort nimmt denselben Weg zurück.
-  app[Anfrage im Format der App] -- decodieren --> kpp[KPP, das kanonische Format]
-  kpp -- codieren --> provider[Anfrage im Format des Anbieters]
+  accDescr: Eine App mit dem OpenAI-SDK sendet Chat Completions. Im Gateway decodiert der Chat-Completions-Codec von KPP die Anfrage in die kanonische Anfrage von KPP, und der Messages-Codec codiert sie für Anthropic. Die Antwort nimmt denselben Weg zurück.
+  app[Ihre App mit dem OpenAI-SDK]:::outside
+  subgraph kpp [KPP, im Gateway]
+    decode[Chat-Completions-Codec]
+    canonical[Kanonische Anfrage]:::accent
+    encode[Messages-Codec]
+  end
+  provider[Anthropic]:::outside
+  app -- Chat Completions --> decode
+  decode -- decodieren --> canonical
+  canonical -- codieren --> encode
+  encode -- Messages --> provider
 ```
 
 KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI Chat Completions, Responses und Embeddings sowie Anthropic Messages. Die Antwort nimmt denselben Weg zurück, bei einem Stream Event für Event. Embeddings gehen nur an Embeddings-Modelle, die nur manche [Anbieter](supported-providers.md) haben. Die [Modell-API](../api/model-api.md) listet die Endpunkte jedes Formats.

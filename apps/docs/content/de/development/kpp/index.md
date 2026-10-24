@@ -36,21 +36,16 @@ let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &En
 ```mermaid
 sequenceDiagram
   accTitle: Der Weg einer Anfrage durch KPP
-  accDescr: Der Codec für Anthropic Messages dekodiert die Anfrage der App nach KPP, wo sie validiert wird. Der Codec für OpenAI Chat Completions prüft und kodiert sie, und das Gateway sendet sie an den Anbieter. Derselbe Codec dekodiert die Antwort des Anbieters nach KPP, und der Codec der App kodiert sie im Format der App.
-  participant App
-  participant In as Codec Anthropic Messages
-  participant KPP
-  participant Out as Codec OpenAI Chat
-  participant Provider as Anbieter
-  App->>In: Body und Header
-  In->>KPP: 1 dekodieren
-  Note over KPP: 2 validieren
-  KPP->>Out: 3 prüfen und kodieren
-  Out->>Provider: Anfrage des Anbieters
-  Provider-->>Out: Antwort
-  Out-->>KPP: 4 Antwort dekodieren
-  KPP-->>In: 5 Antwort kodieren
-  In-->>App: Antwort im Format der App
+  accDescr: Eine App mit dem Anthropic-SDK sendet eine Messages-Anfrage. Im Gateway dekodiert KPP sie mit dem Messages-Codec, validiert sie und kodiert sie mit dem OpenAI-Chat-Codec, und das Gateway sendet sie an den Anbieter. KPP dekodiert die Antwort des Anbieters mit dem OpenAI-Chat-Codec und kodiert sie mit dem Messages-Codec für die App.
+  participant App as App, Anthropic-SDK
+  participant Gateway as Gateway, mit KPP
+  participant Provider as Anbieter, OpenAI Chat
+  App->>Gateway: Messages-Anfrage
+  Note over Gateway: decode_request, Messages<br>validate<br>encode_request, OpenAI Chat
+  Gateway->>Provider: Chat-Completions-Anfrage
+  Provider-->>Gateway: Chat-Completions-Antwort
+  Note over Gateway: decode_response, OpenAI Chat<br>encode_response, Messages
+  Gateway-->>App: Messages-Antwort
 ```
 
 1. **Dekodieren.** Der Codec der App liest Body und Header in einen KPP-`Request`. `decode_request` nimmt eine `RequestKind` entgegen, weil sich die Bodies von Anthropics `/v1/messages` und `/v1/messages/count_tokens` ohne den Endpunkt nicht unterscheiden lassen. Was KPP nicht modelliert, wird in `Extras` aufbewahrt, gebunden an den Dialekt, aus dem es kam.

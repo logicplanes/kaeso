@@ -7,19 +7,26 @@ order: 2
 每个模型请求都按相同的顺序经过相同的检查。了解这些检查，就知道请求会得到哪种错误，以及何时计费。
 
 ```mermaid
-flowchart TD
+sequenceDiagram
   accTitle: 请求流程
-  accDescr: 网关检查密钥、读取请求、解析模型、检查限额并选择服务商密钥，然后把请求发送给服务商，把回复转换为应用的格式，并记录用量和请求日志。
-  key[检查密钥] --> request[读取请求]
-  request --> model[解析模型]
-  model --> limits[检查限额]
-  limits --> pkey[选择服务商密钥]
-  pkey --> send[发送给服务商]
-  send --> reply[转换回复]
-  reply --> log[记录用量和日志]
+  accDescr: 应用把请求发送给网关。网关检查密钥、读取请求、解析模型、检查限额并选择服务商密钥，每项检查都可能以图中的状态码拒绝请求。随后它把转换后的请求发送给服务商，把转换后的回复返回给应用，再计费并记录请求日志。
+  participant App as 您的应用
+  participant Gateway as 网关
+  participant Provider as 服务商
+  App->>Gateway: 请求
+  Note over Gateway: 检查密钥<br>401 或 403
+  Note over Gateway: 读取请求<br>400、413 或 503
+  Note over Gateway: 解析模型<br>400 或 404
+  Note over Gateway: 检查限额<br>429 或 503
+  Note over Gateway: 选择服务商密钥<br>400
+  Gateway->>Provider: 转换后的请求
+  Note over Gateway,Provider: 超时 504<br>无法连接 502
+  Provider-->>Gateway: 回复
+  Gateway-->>App: 转换后的回复
+  Note over Gateway: 计费并记录日志
 ```
 
-Kaeso 会转换每个请求，而不是原样透传，并且每个请求只发送一次，不会重试。某一步拒绝请求时，应用会收到其自身格式的错误。
+Kaeso 会转换每个请求，而不是原样透传，并且每个请求只发送一次，不会重试。某一步拒绝请求时，应用会收到其自身格式的错误，状态码就是图中该步骤下方列出的那些。
 
 ## 密钥
 

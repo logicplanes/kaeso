@@ -139,6 +139,28 @@ secrets:
 
 ### 结果
 
+每次更新都会以五种结果之一结束，取决于它停在哪一步：
+
+```mermaid
+flowchart TD
+  accTitle: 更新如何结束
+  accDescr: 更新器检查签名并下载镜像。这一阶段失败时，结果为未安装，什么都不会改变。随后它切换容器，新网关迁移数据库。恢复在线后，结果为已更新。如果失败，更新器重新启动之前的版本，结果为已回退；之前的版本也无法启动时，结果为回退失败。如果新网关可能已经迁移了数据库，结果改为需要处理。
+  subgraph before [尚未做任何改动]
+    check[检查签名] --> download[下载]
+  end
+  subgraph after [容器已切换]
+    switch[切换] --> migrate[迁移] --> online[恢复在线]
+  end
+  download --> switch
+  online --> updated[已更新]:::accent
+  before -. 失败 .-> notinstalled([未安装])
+  after -. 失败 .-> migrated[新网关是否可能<br>已迁移数据库？]
+  migrated -. 是 .-> attention([需要处理])
+  migrated -. 否 .-> restore[重新启动<br>之前的版本]
+  restore --> rolled([已回退])
+  restore -. 失败 .-> rfailed([回退失败])
+```
+
 页面的历史记录显示每次更新的结果：
 
 | 结果 | 含义 |

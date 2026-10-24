@@ -9,17 +9,25 @@ Das Gateway findet Releases und bittet den Updater, eines anzuwenden; der Update
 ```mermaid
 flowchart TD
   accTitle: Wie eine Installation von Releases erfährt und sich aktualisiert
-  accDescr: Das Gateway fragt update.kaeso.app nach Releases ab, hält seinen Zustand in PostgreSQL und ruft den Updater über das interne Netz updates mit einem Bearer-Token auf. Der Updater holt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io, erreicht Docker nur über docker-proxy im internen Netz docker und schreibt das Wartungs-Flag, das Caddy liest, um die Update-Seite und die JSON-503 auszuliefern.
-  gateway[Gateway] -- sucht nach Releases --> releases[update.kaeso.app]
-  gateway --> postgres[(PostgreSQL)]
-  gateway -- Bearer-Token, Netz updates --> updater[Updater]
-  updater -- release.json, compose.yaml --> github[github.com]
-  updater -- Attestierungen --> api[api.github.com]
-  updater -- Images --> ghcr[ghcr.io]
-  updater -- Netz docker --> proxy[docker-proxy]
-  proxy --> socket[Docker-Socket]
-  updater -- Wartungs-Flag --> maintenance[(Volume maintenance)]
-  caddy[Caddy] -- Update-Seite, JSON-503 --> maintenance
+  accDescr: Das Gateway holt die Liste der Releases von update.kaeso.app, hält seinen Update-Zustand in PostgreSQL und startet ein Update beim Updater mit einem Bearer-Token über das interne Netz updates. Der Updater holt release.json und compose.yaml von github.com, Attestierungen von api.github.com und Images von ghcr.io. Er erreicht den Docker-Socket nur über docker-proxy im internen Netz docker und schreibt das Wartungs-Flag, das Caddy liest, um die Update-Seite und die JSON-503 auszuliefern.
+  feed[update.kaeso.app]:::outside
+  github[GitHub]:::outside
+  subgraph server [Ihr Server]
+    gateway[Gateway]:::accent
+    postgres[(PostgreSQL)]
+    updater[Updater]
+    proxy[docker-proxy]
+    socket[Docker-Socket]
+    flag[(Wartungs-Flag)]
+    caddy[Caddy]
+  end
+  feed -- Releases --> gateway
+  gateway --> postgres
+  gateway -- startet ein Update --> updater
+  github -- Release-Dateien,<br>Attestierungen, Images --> updater
+  updater -- Netz docker --> proxy --> socket
+  updater --> flag
+  flag -- Update-Seite --> caddy
 ```
 
 ## Der Release-Feed

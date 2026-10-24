@@ -10,14 +10,24 @@ Eine Kaeso-Installation ist ein Docker-Compose-Projekt, das unter einer Domain a
 ```mermaid
 flowchart TD
   accTitle: Die Dienste einer Kaeso-Installation
-  accDescr: Caddy nimmt HTTPS-Anfragen an und leitet die APIs an das Gateway und alles andere an die Konsole weiter. Nur das Gateway erreicht PostgreSQL, ClickHouse und Valkey, und es ruft die Anbieter auf.
-  clients[Apps und Browser] -->|HTTPS| caddy[Caddy]
-  caddy -->|/v1 und /platform| gateway[Gateway]
-  caddy -->|Alle anderen Pfade| console[Konsole]
-  gateway --> postgres[(PostgreSQL)]
-  gateway --> clickhouse[(ClickHouse)]
-  gateway --> valkey[(Valkey)]
-  gateway -->|HTTPS| providers[Modellanbieter]
+  accDescr: Apps und Browser erreichen die Installation nur über Caddy, auf den Ports 80 und 443. Caddy leitet /v1 und /platform an das Gateway und alle anderen Pfade an die Konsole weiter. PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk, das nur das Gateway erreicht, und das Gateway ruft die Modellanbieter über HTTPS auf.
+  clients[Apps und Browser]:::outside
+  subgraph server [Ihr Server]
+    caddy[Caddy<br>Ports 80 und 443]
+    gateway[Gateway]:::accent
+    console[Konsole]
+    subgraph data [Internes Netzwerk]
+      postgres[(PostgreSQL)]
+      clickhouse[(ClickHouse)]
+      valkey[(Valkey)]
+    end
+  end
+  providers[Modellanbieter]:::outside
+  clients -- HTTPS --> caddy
+  caddy -- /v1 und /platform --> gateway
+  caddy -- alle anderen Pfade --> console
+  gateway --> postgres & clickhouse & valkey
+  gateway -- HTTPS --> providers
 ```
 
 ## Dienste

@@ -139,6 +139,28 @@ A window the gateway doesn't run through passes, and the next one counts. The hi
 
 ### Results
 
+Each update ends with one of five results, depending on where it stops:
+
+```mermaid
+flowchart TD
+  accTitle: How an update ends
+  accDescr: The updater checks the signatures and downloads the images. A failure there ends Not installed and changes nothing. It then switches the containers, and the new gateway migrates the databases. If it comes back online, the update ends Updated. If it fails, the updater starts the previous version again and ends Rolled back, or Rollback failed when that doesn't start. When the new gateway may already have migrated the databases, the update ends Needs attention instead.
+  subgraph before [Nothing changed yet]
+    check[Check the signatures] --> download[Download]
+  end
+  subgraph after [Containers switched]
+    switch[Switch] --> migrate[Migrate] --> online[Back online]
+  end
+  download --> switch
+  online --> updated[Updated]:::accent
+  before -. fails .-> notinstalled([Not installed])
+  after -. fails .-> migrated[May the new gateway have<br>migrated the databases?]
+  migrated -. yes .-> attention([Needs attention])
+  migrated -. no .-> restore[Start the previous<br>version again]
+  restore --> rolled([Rolled back])
+  restore -. fails .-> rfailed([Rollback failed])
+```
+
 The page's history shows how each update ended:
 
 | Result | Meaning |

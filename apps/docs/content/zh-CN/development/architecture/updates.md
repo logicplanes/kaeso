@@ -9,17 +9,25 @@ order: 5
 ```mermaid
 flowchart TD
   accTitle: 实例如何得知新版本并完成更新
-  accDescr: 网关向 update.kaeso.app 查询新版本，把状态保存在 PostgreSQL 中，并通过内部网络 updates 用 bearer 令牌请求更新器。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像，只通过内部网络 docker 上的 docker-proxy 访问 Docker，并写入维护标志，Caddy 读取该标志来提供更新页面和 JSON 503。
-  gateway[网关] -- 检查新版本 --> releases[update.kaeso.app]
-  gateway --> postgres[(PostgreSQL)]
-  gateway -- bearer 令牌，网络 updates --> updater[更新器]
-  updater -- release.json、compose.yaml --> github[github.com]
-  updater -- 证明 --> api[api.github.com]
-  updater -- 镜像 --> ghcr[ghcr.io]
-  updater -- 网络 docker --> proxy[docker-proxy]
-  proxy --> socket[Docker 套接字]
-  updater -- 维护标志 --> maintenance[(卷 maintenance)]
-  caddy[Caddy] -- 更新页面、JSON 503 --> maintenance
+  accDescr: 网关从 update.kaeso.app 获取版本列表，把更新状态保存在 PostgreSQL 中，并通过内部网络 updates 用 bearer 令牌让更新器开始更新。更新器从 github.com 获取 release.json 和 compose.yaml，从 api.github.com 获取证明，从 ghcr.io 获取镜像。它只通过内部网络 docker 上的 docker-proxy 访问 Docker 套接字，并写入维护标志，Caddy 读取该标志来提供更新页面和 JSON 503。
+  feed[update.kaeso.app]:::outside
+  github[GitHub]:::outside
+  subgraph server [您的服务器]
+    gateway[网关]:::accent
+    postgres[(PostgreSQL)]
+    updater[更新器]
+    proxy[docker-proxy]
+    socket[Docker 套接字]
+    flag[(维护标志)]
+    caddy[Caddy]
+  end
+  feed -- 版本 --> gateway
+  gateway --> postgres
+  gateway -- 开始更新 --> updater
+  github -- 版本文件、<br>证明和镜像 --> updater
+  updater -- 网络 docker --> proxy --> socket
+  updater --> flag
+  flag -- 更新页面 --> caddy
 ```
 
 ## 版本源

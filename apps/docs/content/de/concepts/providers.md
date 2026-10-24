@@ -53,11 +53,11 @@ Kaeso sendet die erste Anfrage als Messages an Anthropic und die zweite als Chat
 ```mermaid
 flowchart TD
   accTitle: Eine App, viele Anbieter
-  accDescr: Eine App sendet jede Anfrage in ihrem eigenen Format. Kaeso übersetzt jede in das Format des Anbieters des Modells, etwa Messages für Anthropic, Responses für OpenAI und Chat Completions für Groq.
-  app[Ihre App, in ihrem eigenen Format] --> kaeso[Kaeso]
-  kaeso -- Messages --> anthropic[Anthropic]
-  kaeso -- Responses --> openai[OpenAI]
-  kaeso -- Chat Completions --> groq[Groq]
+  accDescr: Ihre App sendet jede Anfrage als Chat Completions. Kaeso übersetzt jede in das Format des Anbieters des Modells, etwa Messages für Anthropic, Responses für OpenAI und Chat Completions für Groq.
+  app[Ihre App]:::outside -- Chat Completions --> kaeso[Kaeso]:::accent
+  kaeso -- Messages --> anthropic[Anthropic]:::outside
+  kaeso -- Responses --> openai[OpenAI]:::outside
+  kaeso -- Chat Completions --> groq[Groq]:::outside
 ```
 
 ## Einen Anbieter nutzen

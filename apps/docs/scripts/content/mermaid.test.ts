@@ -36,6 +36,25 @@ describe("renderMermaid", () => {
     expect(svgSize(result.svg.light)).toEqual(svgSize(result.svg.dark));
   }, 60_000);
 
+  it("draws Kaeso's part in ink, outside parties dashed, and a subgraph's title on top of the lines in its corner", async () => {
+    const [result] = await render(
+      "flowchart TD\n  accTitle: Install\n  app[App]:::outside --> gateway\n  subgraph server [Your server]\n    gateway[Gateway]:::accent --> db[(PostgreSQL)]\n  end\n  gateway -. fails .-> app",
+    );
+    if (!result?.ok) throw new Error(JSON.stringify(result));
+    for (const theme of ["light", "dark"] as const) {
+      const svg = result.svg[theme];
+      expect(svg).toContain(`stroke="${rgb(neutral.ink[theme])}"`);
+      expect(svg).toContain(`fill="${rgb(neutral["on-ink"][theme])}"`);
+      expect(svg).toMatch(/stroke-dasharray="4(px)?,? 3(px)?"/);
+      expect(svg).toMatch(/<path [^>]*stroke-dasharray="[1-9]/);
+      expect(svg).not.toContain('stroke-dasharray="1px, 0px"');
+      const title = svg.search(/>\s?server<\/tspan>/);
+      expect(svgLabels(svg)).toContain("Your server");
+      expect(svg.slice(title - 600, title)).toContain(`fill="${rgb(neutral["fill-1"][theme])}"`);
+      expect(title).toBeGreaterThan(svg.lastIndexOf("<path"));
+    }
+  }, 60_000);
+
   it("removes every comment of mermaid's markup from the drawing, nested ones too", async () => {
     const page = await browser.newPage();
     try {

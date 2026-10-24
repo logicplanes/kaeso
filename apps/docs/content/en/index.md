@@ -49,10 +49,20 @@ This documentation describes Kaeso {{version}}.
 ```mermaid
 flowchart TD
   accTitle: How the parts fit
-  accDescr: Apps call the gateway on /v1 and the console calls it on /platform/v1; the gateway calls the model providers.
-  apps[Apps] -- /v1 --> gateway[Gateway]
-  console[Console] -- /platform/v1 --> gateway
-  gateway --> providers[Model providers]
+  accDescr: Your apps call the gateway's model API on /v1, and people use the console, which calls the gateway's Platform API on /platform/v1. The gateway keeps its data in PostgreSQL, ClickHouse and Valkey on your install, and calls the model providers with your provider keys.
+  apps[Your apps]:::outside
+  people[People in a browser]:::outside
+  subgraph install [Your Kaeso install]
+    console[Console]
+    gateway[Gateway]:::accent
+    stores[(PostgreSQL, ClickHouse<br>and Valkey)]
+  end
+  providers[Model providers]:::outside
+  people --> console
+  apps -- Model API, /v1 --> gateway
+  console -- Platform API, /platform/v1 --> gateway
+  gateway --> stores
+  gateway -- your provider keys --> providers
 ```
 
 | Part | What it is |

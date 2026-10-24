@@ -7,19 +7,26 @@ order: 2
 Every model request passes the same checks in the same order. Knowing them tells you which error a request gets, and when it is charged.
 
 ```mermaid
-flowchart TD
+sequenceDiagram
   accTitle: Request flow
-  accDescr: The gateway checks the key, reads the request, resolves the model, checks the limits and picks the provider key. It then sends the request to the provider, translates the reply into the app's format, and records usage and the request log.
-  key[Check the key] --> request[Read the request]
-  request --> model[Resolve the model]
-  model --> limits[Check the limits]
-  limits --> pkey[Pick the provider key]
-  pkey --> send[Send to the provider]
-  send --> reply[Translate the reply]
-  reply --> log[Record usage and the log]
+  accDescr: The app sends a request to the gateway. The gateway checks the key, reads the request, resolves the model, checks the limits and picks the provider key, and each check can refuse the request with the statuses shown. It sends the translated request to the provider, returns the translated reply to the app, and then charges usage and logs the request.
+  participant App as Your app
+  participant Gateway
+  participant Provider
+  App->>Gateway: Request
+  Note over Gateway: Check the key<br>401 or 403
+  Note over Gateway: Read the request<br>400, 413 or 503
+  Note over Gateway: Resolve the model<br>400 or 404
+  Note over Gateway: Check the limits<br>429 or 503
+  Note over Gateway: Pick the provider key<br>400
+  Gateway->>Provider: Translated request
+  Note over Gateway,Provider: Timeout 504<br>Unreachable 502
+  Provider-->>Gateway: Reply
+  Gateway-->>App: Translated reply
+  Note over Gateway: Charge usage and log
 ```
 
-Kaeso translates every request rather than passing it through, and sends it once, without retries. When a step refuses a request, the app gets the error in its own format.
+Kaeso translates every request rather than passing it through, and sends it once, without retries. When a step refuses a request, the app gets the error in its own format, with a status the diagram shows under that step.
 
 ## The key
 

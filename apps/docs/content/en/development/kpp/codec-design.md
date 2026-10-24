@@ -25,18 +25,18 @@ The types are shaped by what the codecs need to stay lossless:
 A KPP stream is `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, with `Error` possible at any point and `Extra` carrying dialect events KPP does not model.
 
 ```mermaid
-stateDiagram-v2
+flowchart TD
   accTitle: The order of a KPP stream's events
   accDescr: A stream starts with ResponseStart. Then come any number of blocks, each BlockStart, any number of BlockDelta and BlockStop, then any number of ResponseDelta, and ResponseStop ends it. Error may come at any point.
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: any number
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: next block
-  BlockStop --> ResponseDelta: any number
-  ResponseStart --> ResponseDelta: no blocks
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
+  start[ResponseStart]:::accent
+  subgraph blocks [Any number of blocks]
+    bstart[BlockStart] --> bdelta[BlockDelta<br>any number] --> bstop[BlockStop]
+  end
+  start --> bstart
+  bstop -- next block --> bstart
+  bstop --> rdelta[ResponseDelta<br>any number]
+  start -- no blocks --> rdelta
+  rdelta --> stop[ResponseStop]:::accent
 ```
 
 - **Block indexes** are KPP's own: 0, 1, 2, … in the order blocks start. Blocks may interleave (OpenAI streams parallel tool calls this way), so every event names its block.
