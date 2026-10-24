@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Figure } from "./figure.js";
 
@@ -24,5 +24,18 @@ describe("Figure", () => {
     );
     expect(container.querySelector("figcaption")).toBeNull();
     expect(container.firstElementChild).toHaveClass("mt-16");
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("starts a figure wider than its column scrolled to the middle, so a top-down diagram shows its main path", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(300);
+    render(
+      <Figure label="Diagram: a wide one">
+        <span>Drawing</span>
+      </Figure>,
+    );
+    expect(screen.getByRole("region", { name: "Diagram: a wide one" }).scrollLeft).toBe(250);
   });
 });
