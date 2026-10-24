@@ -121,15 +121,13 @@ const DIAGRAM_MIN_WIDTHS = [
   [440, "min-w-440"],
   [480, "min-w-480"],
   [560, "min-w-560"],
-  [640, "min-w-640"],
-  [720, "min-w-720"],
-  [800, "min-w-800"],
 ] as const;
 const DIAGRAM_SHRINK = 0.75;
 
 export function diagramMinWidth(width: number): string | undefined {
   const least = width * DIAGRAM_SHRINK;
-  return DIAGRAM_MIN_WIDTHS.findLast(([min]) => min <= least)?.[1];
+  if (least < DIAGRAM_MIN_WIDTHS[0][0]) return undefined;
+  return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least)?.[1] ?? "min-w-560";
 }
 
 const hasLink = (xs: Inline[]): boolean => xs.some((x) => x.t === "link" || ("c" in x && hasLink(x.c)));

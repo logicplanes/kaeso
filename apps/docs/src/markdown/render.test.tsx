@@ -239,15 +239,15 @@ describe("Markdown", () => {
     expect(screen.getAllByRole("img", { name: "Ablauf" })[0]).not.toHaveAttribute("aria-describedby");
   });
 
-  it("lets a diagram shrink by about a quarter, down to a step of the scale, and scroll in its region beyond that", () => {
+  it("lets a diagram shrink by a quarter at most, never needing more than the framed column, and scroll in its region beyond that", () => {
     expect(diagramMinWidth(300)).toBeUndefined();
     expect(diagramMinWidth(420)).toBeUndefined();
-    expect(diagramMinWidth(430)).toBe("min-w-320");
-    expect(diagramMinWidth(630)).toBe("min-w-440");
+    expect(diagramMinWidth(430)).toBe("min-w-360");
+    expect(diagramMinWidth(479)).toBe("min-w-360");
+    expect(diagramMinWidth(630)).toBe("min-w-480");
     expect(diagramMinWidth(640)).toBe("min-w-480");
     expect(diagramMinWidth(775)).toBe("min-w-560");
-    expect(diagramMinWidth(874)).toBe("min-w-640");
-    expect(diagramMinWidth(2000)).toBe("min-w-800");
+    expect(diagramMinWidth(2000)).toBe("min-w-560");
   });
 });
 
