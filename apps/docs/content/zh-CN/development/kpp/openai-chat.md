@@ -10,6 +10,7 @@ nav: OpenAI Chat
 - **编解码器：**`kaeso_codecs::openai_chat::OpenAiChat`（`crates/kaeso-codecs/src/openai_chat/`）
 - **端点：**`POST /v1/chat/completions`（JSON 和 SSE），以及所有 OpenAI 编解码器共用的[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/openai_chat/`
+- **其他服务商：** [Chat Completions 服务商](openai-chat-providers.md)介绍编解码器如何适配使用此格式的每个服务商
 
 **来源。** OpenAI OpenAPI 规范的提交 `e95c0fe615f45a19e8878af923a729948445a6bd`（下文的 schema 名称出自这里）、[创建接口参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)、[流式事件参考](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events)和[错误码指南](https://developers.openai.com/api/docs/guides/error-codes)。
 
@@ -29,10 +30,10 @@ nav: OpenAI Chat
 | `model` | `GenerateRequest.model`（类型化） | |
 | `messages` | `system` + `messages`（类型化） | 见[消息](#消息chatcompletionrequestmessage)。 |
 | `temperature`、`top_p` | `sampling.temperature`、`sampling.top_p`（类型化） | 写成整数（`1`）时：形式标记 `integers`，即以整数写出的键的列表。只要值仍是整数，编码器就把这样的键写成整数，因此 `temperature: 1` 写回时仍是 `1`，而不是 `1.0`；值改变后写出新值。来自其他方言时：`f64` 写法（`1.0`）。 |
-| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式，除非服务商的配置要求 `max_tokens`（[服务商配置](#服务商配置)）。`CreateChatCompletionRequest` 没有为它或 `max_tokens` 规定最小值，因此任何非负整数都会保留，包括 `0`；负数为 `InvalidRequest`。 |
+| `max_completion_tokens` | `sampling.max_output_tokens`（类型化） | 来自任何源方言的请求都写成这种形式，除非服务商的配置要求 `max_tokens`（[服务商配置](openai-chat-providers.md#服务商配置)）。`CreateChatCompletionRequest` 没有为它或 `max_tokens` 规定最小值，因此任何非负整数都会保留，包括 `0`；负数为 `InvalidRequest`。 |
 | `max_tokens`（已弃用） | `sampling.max_output_tokens`（类型化） | 形式标记 `max_tokens: "max_tokens"`。两者都存在且值相同：形式标记 `"both"`。值不同时以 `max_completion_tokens` 为准，`max_tokens` 成为 extra `max_tokens (differs from max_completion_tokens)`，发回时写作 `max_tokens`；当其他方言拒绝它时，这个键名说明了冲突所在。 |
 | `stop` | `sampling.stop`（类型化） | 字符串写法：形式标记 `stop: "string"`；`[]`：形式标记 `"array"`。超过四个序列：`Unsupported`（`stop`）。 |
-| `seed` | `sampling.seed`（类型化） | 服务商的配置如此规定时，以 `random_seed` 发送（[服务商配置](#服务商配置)）。 |
+| `seed` | `sampling.seed`（类型化） | 服务商的配置如此规定时，以 `random_seed` 发送（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `frequency_penalty`、`presence_penalty` | `sampling.*`（类型化） | 整数写法与 `temperature` 相同（形式标记 `integers`）。 |
 | `n` | 为 `1` 时记为形式标记 `n` | `n > 1`：`Unsupported`（`n`，见[采样参数](cross-format.md#采样参数)）；`0`：`InvalidRequest`。 |
 | `reasoning_effort` | `reasoning.effort`（类型化） | 来自其他方言时（[推理强度与预算](reasoning.md#推理强度与预算)）：显式的推理强度保持不变；Anthropic `thinking.disabled` 变为 `none`；预算变为 `low`（低于 4,096）、`medium`（4,096 到 16,383）或 `high`（16,384 及以上）。取值为 `none` 到 `max`；未知值保留为 `ReasoningEffort::Other`，对 Chat 应用原样透传，而对来自其他方言的请求，`check()` 会拒绝规范枚举之外的值（`reasoning.effort`）。 |
@@ -47,7 +48,7 @@ nav: OpenAI Chat
 | `tool_choice` `allowed_tools`、`custom`、其他字符串 | `ToolChoice::Unknown` | 仅限同一方言。 |
 | `parallel_tool_calls` | `parallel_tool_calls`（类型化） | |
 | `safety_identifier` | `user`（类型化） | KPP `user` 是用于滥用监测的最终用户 ID，这正是 `safety_identifier` 的含义。 |
-| `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。配置中没有最终用户字段的服务商两者都收不到（[服务商配置](#服务商配置)）。 |
+| `user`（已弃用） | 没有 `safety_identifier` 时为类型化的 `user`（形式标记 `user`）；否则为 extra `user (sent alongside safety_identifier)`，发回时写作 `user` | 来自其他方言的 KPP `user` 以 `safety_identifier` 发送。配置中没有最终用户字段的服务商两者都收不到（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `stream` | `stream`（类型化） | `false`：形式标记 `stream_false`。 |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }`（类型化） | 没有 `stream_options`：形式标记 `stream_options: "absent"`；没有 `include_usage`：形式标记 `"no_include_usage"`；其他键（`include_obfuscation`）为 extras `stream_options.<key>`；`stream` 关闭时：整个对象记为形式标记 `stream_options_off`。来自其他方言的请求总是要求 `include_usage: true`。网关需要用量，因此会在每个流式请求上设置 `include_usage: true`，并在 `EncodeCtx` 中保留应用自己的请求；随后应用一侧的流编码器会对没有请求用量的应用隐藏用量 chunk。 |
 | `audio`、`functions` 和 `function_call`（已弃用，顶层）、`logit_bias`、`logprobs`、`metadata`、`modalities`、`moderation`、`prediction`、`prompt_cache_key`、`prompt_cache_options`、`prompt_cache_retention`、`service_tier`、`store`、`top_logprobs`、`verbosity`、`web_search_options` | extras | KPP 中没有对应项；跨方言时被拒绝（[Extras](cross-format.md#extras)、[采样参数](cross-format.md#采样参数)），但 `prompt_cache_key` 在 [Extras 允许列表](cross-format.md#extras)中，会被丢弃。`null` 值记为形式标记。例如发往 Anthropic 时，`functions` 以 `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` 失败。 |
@@ -69,7 +70,13 @@ nav: OpenAI Chat
 | `content` 为字符串或数组 | 形式标记 `content: "array"`（消息或工具结果） | 单个纯文本块默认写成字符串。空数组无效（`minItems: 1`）。 |
 | 没有 `role` 或角色为其他值的消息 | `InvalidRequest`（`param` 为 `messages[i]`） | |
 
-旧版函数调用没有工具调用 ID，因此它的轮次不会成为 KPP 的工具调用和工具结果；在本方言内它们改为原样往返，顶层参数 `functions` 和 `function_call` 作为 extras。对应的 fixture 是 `fixtures/openai_chat/requests/legacy-functions.json`。其他方言以 `Unsupported` 拒绝这一切：顶层参数为 `functions` 和 `function_call`，助手的 `function_call` 为 `messages[i].function_call`，`function` 消息为 `` `function` message ``，提示为 `Remove the message, or send the request to a model served through its original format.`
+旧版函数调用没有工具调用 ID，因此它的轮次不会成为 KPP 的工具调用和工具结果。在本方言内它们改为原样往返，顶层参数 `functions` 和 `function_call` 作为 extras。对应的 fixture 是 `fixtures/openai_chat/requests/legacy-functions.json`。
+
+其他方言以 `Unsupported` 拒绝这一切，各部分的名称如下：
+
+- 顶层参数为 `functions` 和 `function_call`；
+- 助手的 `function_call` 为 `messages[i].function_call`；
+- `function` 消息为 `` `function` message ``，提示为 `Remove the message, or send the request to a model served through its original format.`
 
 ### 内容部分
 
@@ -87,7 +94,21 @@ nav: OpenAI Chat
 | `refusal`（助手） | `Block::Refusal` + 形式标记 `part` | |
 | 其他类型，以及用户消息之外的 `image_url` 和 `file` 部分、助手消息之外的 `refusal` 部分 | `Block::Unknown` | 仅限同一方言。 |
 
-对于来自其他方言的 KPP，`check()` 会拒绝：文本文档、文档 URL、文档的 `title`、`context` 和 `citations`、图像文件 ID、用户消息之外的图像和文档、助手消息之外的拒绝、助手消息之外的引用（以及通过 `check_foreign` 拒绝其他方言的引用）、`top_k`（[采样参数](cross-format.md#采样参数)）、未知的推理模式以及规范枚举之外的推理强度。预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：推理块（[推理](reasoning.md)）、其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）、`ToolResult::is_error`（其信息由错误内容承载，见[工具错误](cross-format.md#工具错误)），以及其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
+对于来自其他方言的 KPP，`check()` 会拒绝：
+
+- 文本文档、文档 URL，以及文档的 `title`、`context` 和 `citations`；
+- 图像文件 ID，以及用户消息之外的图像和文档；
+- 助手消息之外的拒绝和引用；
+- 其他方言的引用（通过 `check_foreign`）；
+- `top_k`（[采样参数](cross-format.md#采样参数)）；
+- 未知的推理模式，以及规范枚举之外的推理强度。
+
+预算和 `disabled` 会被转换（[推理强度与预算](reasoning.md#推理强度与预算)）。以下提示字段则会被丢弃：
+
+- 推理块（[推理](reasoning.md)）；
+- 其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）；
+- `ToolResult::is_error`，其信息由错误内容承载（[工具错误](cross-format.md#工具错误)）；
+- 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
 
 编解码器无法读取的请求体为 `InvalidRequest`，错误会指明字段及其应有的形式并设置 `param`，而不会给出解析器位置：`` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
@@ -101,7 +122,9 @@ nav: OpenAI Chat
 - `text`、`refusal`、`image_url` 和 `file` 部分及其 `image_url`、`file` 和 `prompt_cache_breakpoint` 对象；
 - 函数工具调用及其 `function`。
 
-此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``。超过 64 字节的名称会被截断并以 `…` 结尾。整体保留的对象，例如未知部分、工具和工具选择、自定义（custom）工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
+此时请求为 `InvalidRequest`，例如请求体中的 `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. ``，或消息中的 `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. ``。超过 64 字节的名称会被截断并以 `…` 结尾。
+
+整体保留的对象，例如未知部分、工具和工具选择、自定义（custom）工具调用、`function` 消息和其他类型的 `response_format`，不会被深入检查。在回复和流 chunk 中，同一规则会产生 `ProviderError`（在流中为一个 `Error` 事件）。
 
 ### 工具调用（`ChatCompletionMessageToolCall`）
 
@@ -112,41 +135,6 @@ nav: OpenAI Chat
 | 未知键 | extras（嵌套的为 `function.<key>`） | |
 | `type: custom` | `Block::Unknown` | 在 `tool_calls` 中发回。 |
 | 缺少 `type`，但有 `function` 对象 | `Block::ToolCall`，形式标记 `no_type` | `ChatCompletionMessageToolCall` 要求 `type`，但某些 OpenAI 兼容服务商会省略它；只有函数调用才有 `function` 对象，因此该调用能到达每个应用。写回时不带 `type`。 |
-
-## 服务商配置
-
-其他服务商使用这种格式时各有差异。`PROVIDERS`（`crates/kaeso-core/src/provider.rs`）中的每个服务商都在 `chat` 字段中指定一个 `kaeso_codecs::openai_chat::ChatProfile`：服务商的名称，以及 Kaeso 向它发送请求时的设置（`ChatProfile::request`，即一个 `RequestProfile`），通过下面的构建方法设置。网关通过 `EgressCtx::with_chat_profile` 把它交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变；`ChatProfile::compatible(name)` 在添加设置之前也一样。
-
-| 设置 | 编码器的行为 | 为什么允许 |
-|---|---|---|
-| `max_tokens()` | 把输出上限以 `max_tokens` 发送，把 `max_completion_tokens: null` 以 `max_tokens: null` 发送。同时带这两个字段且值不同的 Chat 请求为 `Unsupported`（`max_tokens`）。 | 只改变写法，值不变。 |
-| `system_role()` | 把 `developer` 消息以 `system` 消息发送。 | 角色的写法是形式标记；两者都承载指令。 |
-| `random_seed()` | 把 `seed` 以 `random_seed` 发送，`seed: null` 也一样。负数 seed，或同时带 `seed` 和 `random_seed`（任一可为 `null`）的请求，为 `Unsupported`（`seed`）。此规则依据 Mistral 的 `random_seed`，其 OpenAPI 文档规定 `minimum: 0`。 | `seed` 仍是语义字段：只会被改名或拒绝，绝不会被丢弃。 |
-| `without_end_user()` | 省略 KPP `user`，而不是以 `user` 或 `safety_identifier` 发送；Chat 应用与 `safety_identifier` 一起发送的第二个 `user` 以及它们的 `null` 写法也一并省略。 | `user` 是提示字段（[字段类别](index.md#字段类别)）。 |
-| `without_prefill()` | 拒绝以 assistant 消息结尾的对话，除非该消息调用工具，或是带有 `prefix: true` 的 Chat 应用消息：`Unsupported`（`assistant prefill`，param `messages[i]`）。 | 只能借助 `prefix: true` 续写此类消息的服务商会在回复中重复预填内容，应用因此得不到续写。 |
-| `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
-| `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
-
-Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`）：
-
-| 设置 | 解码器的行为 | 为何允许 |
-|---|---|---|
-| `thinking_parts()` | 把 `content` 数组中的 `thinking` 部分（`{type: "thinking", thinking: [文本部分], closed}`，不含其他内容）读作 `Block::Reasoning`，其 `text` 包含每个文本部分；流式发送的则读作 `BlockStart(Reasoning)` 和 `BlockDelta(ReasoningText)`。回答、拒绝或工具调用开始时，推理块结束；流中第一个真正的文本片段之前的空文本片段不会打开文本块（形式标记 `et`）。带有其他键或其他内部部分的 `thinking` 部分保持与没有此设置时相同。 | 不丢弃任何内容：Chat 应用收回同样的部分，其他格式以各自的推理形式得到思考内容，原始块保存在[推理数据块](reasoning.md#推理数据块)中。 |
-| `reasoning_fields(fields)` | 把这些消息键中第一个含非空字符串的键（例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`）读作 `Block::Reasoning`，放在回复的其他块之前，并用形式 `reasoning_field` 记下键名。在流中，每个增量的该键变为同一个推理块的 `BlockDelta(ReasoningText)`，数据块上带形式 `rf`。回答、拒绝或工具调用开始时，推理块结束；第一个真正的文本片段之前的空文本片段不会打开文本块（形式 `et`）。空字符串、`null` 或其他类型仍是 extra。 | 不丢弃任何内容：Chat 应用按原样收回该键，增量中的其他键（Groq 的 `channel`）仍是数据块的 extras，其他格式以各自的推理形式得到推理，原始块保存在[推理数据块](reasoning.md#推理数据块)中。没有此设置时，每个流式推理片段都会是一个没有 KPP 事件的数据块，并各自记录为一个未知块。 |
-| `error_detail(path)` | 把错误体中该路径上的字符串（例如 OpenRouter 的 `error.metadata.raw`）追加到错误消息之后：`<message>: <detail>`。该值缺失、为空、不是字符串，或已包含在消息中时，不做任何改变。流错误同样处理。 | 错误体保持原样：Chat 应用原样收到服务商的错误，其他格式则在消息中得到原因，而笼统的消息（`Provider returned error`）对它们毫无帮助。网关会从每条服务商错误消息中去掉类似密钥的字符串。 |
-
-`refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段：Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。拒绝发生在编码请求时，针对编码器构建好的请求、在写出请求体之前进行，因此不会发送任何内容，并以应用自己的格式返回给应用。
-
-下面列出配置与 OpenAI 不同的每个内置服务商，以及每项设置的来源：服务商的文档、它的 OpenAPI 文档，或 `fixtures/openai_chat/providers/<id>/` 中的实时录制。
-
-| 服务商 | 设置 | 来源 |
-|---|---|---|
-| DeepSeek（`deepseek`） | `max_tokens()`、`system_role()`、`reasoning_fields(["reasoning_content"])` | DeepSeek 的 API 参考和思考模式指南（`reasoning_content`），`responses/recorded-thinking-reasoning-content` 和 `streams/recorded-thinking-stream`；`fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
-| Groq（`groq`） | `system_role()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色）；Groq 的推理指南（`reasoning`），`responses/recorded-reasoning-format-parsed` 和 `streams/recorded-stream-doc` |
-| Mistral（`mistral`） | `max_tokens()`、`system_role()`、`random_seed()`、`without_end_user()`、`without_prefill()`、`thinking_parts()`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`moderation`、`prompt_cache_options`、`prompt_cache_retention`、`store`、`verbosity` 和 `web_search_options`，以及消息中的 `name` 和 `refusal` | Mistral 的 OpenAPI 文档（https://docs.mistral.ai/openapi.yaml，2026-10-19 查阅），其中 `ChatCompletionRequest` 禁止未声明的字段，并规定 `random_seed` 的 `minimum: 0`；`fixtures/openai_chat/providers/mistral/errors/` 中的 `422 extra_forbidden` 录制文件，每个被拒绝或改名的字段一个；`responses/recorded-audio-field`，其中 Mistral 接受 `audio` 却只以文本回答；另有 `recorded-assistant-prefill`（400 `invalid_request_message_order`）和 `responses/recorded-assistant-prefix`，其回复重复了预填内容；`thinking_parts()` 依据 `responses/recorded-reasoning-effort-high` 和 `streams/recorded-reasoning-effort-high-stream` |
-| OpenRouter（`openrouter`） | `reasoning_fields(["reasoning"])`、`error_detail(["error", "metadata", "raw"])` | OpenRouter 的推理 token 指南（`reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-free-reasoning` 和 `streams/recorded-free-reasoning-stream`；OpenRouter 的错误与调试页面（`metadata.raw`，即上游服务商的错误），`errors/recorded-upstream-rate-limited` 和 `errors/recorded-routing-fields` |
-| SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])` | xAI 的 Chat Completions 参考（`reasoning_content`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
-| Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
 
 ## 回复：`CreateChatCompletionResponse`
 
@@ -160,7 +148,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`，`length` ⇄ `MaxTokens`，`tool_calls` ⇄ `ToolUse`，`content_filter` ⇄ `ContentFilter`，其他值（例如 `function_call`）⇄ `Other`。来自其他方言时：`StopSequence` 和 `PauseTurn` 变为 `stop`；`Refusal` 变为 `content_filter`，因为回答被拦下了。其他方言自有的值会变为最接近的 Chat 值：`max_tokens`、`max_output_tokens` 和 `model_context_window_exceeded` 变为 `length`，`tool_use` 变为 `tool_calls`，`refusal` 变为 `content_filter`，规范枚举之外的其他值变为 `stop`。非流式回复缺少规范要求的 `finish_reason`：`ProviderError`。 |
 | `message.content` | `Block::Text` | 来自其他方言时，所有文本块不加分隔符地拼接起来，因为 Chat 的回复中没有内容部分。不加分隔符，是因为 Anthropic 会围绕引用把一个回答拆成多个文本块，而同样不带分隔符的流式增量必须拼出相同的 `content`。 |
 | 以部分数组形式出现的 `message.content`（Mistral，不在 OpenAI 规范中） | 恰好是 `{type: "text", text}` 的部分为 `Block::Text`，配置使用 `thinking_parts()` 时 `thinking` 部分为 `Block::Reasoning`，其他部分为 `Block::Unknown`；形式标记 `content_parts`，形式标记 `thinking` 保留 `thinking` 部分的其余键 | 对 Chat 应用写回为同样的数组。其他方言得到文本和推理内容；未知部分只到达 Chat 应用（[回复](cross-format.md#回复)）。来源：Mistral 的 `AssistantMessage.content`（`ContentChunk[]`，https://docs.mistral.ai/openapi.yaml）以及录制文件 `fixtures/openai_chat/providers/mistral/responses/recorded-reasoning-effort-high.json`。 |
-| `message.reasoning_content`、`message.reasoning`，以及配置在 `reasoning_fields` 中列出的其他键 | 首先是 `Block::Reasoning`，形式 `reasoning_field` | 仅在列出该键的配置下（[服务商配置](#服务商配置)）；否则为 extras `choice.message.<key>`。对 Chat 应用写回同一个键。 |
+| `message.reasoning_content`、`message.reasoning`，以及配置在 `reasoning_fields` 中列出的其他键 | 首先是 `Block::Reasoning`，形式 `reasoning_field` | 仅在列出该键的配置下（[服务商配置](openai-chat-providers.md#服务商配置)）；否则为 extras `choice.message.<key>`。对 Chat 应用写回同一个键。 |
 | `message.annotations` | `TextBlock.citations`（原始，绑定到 Chat） | 没有内容时：extras `choice.message.annotations`。其他方言的引用会被省略（[回复](cross-format.md#回复)）。 |
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` 或 `Block::Unknown` | 与请求中相同。 |
@@ -217,13 +205,23 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 | SSE 注释、没有数据或数据为空的帧、其他具名事件、`[DONE]` 之后的帧 | `Extra`（`{"comment"}` 或 `{"event", "data", "text", "id", "retry", "other"}`，原帧没有数据时不含 `data`，数据不是 JSON 时带有 `text: true`） | 仅限同一方言；按收到时的样子写回。 |
 | 多个选项、`index` 不为 0 的选项 | 带 `Unsupported`（`n`）的 `Error` | |
 
-chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`（`n` 是来自该 chunk 的事件数，另加上面的结构标记），其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]`、错误），打开的 chunk 就会被写出，因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后；`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。
+chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`，其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。该标记包含 `n`（来自该 chunk 的事件数），另加上面的结构标记。
 
-SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。chunk 的 SSE `id`、`retry` 和未知字段（OpenAI 不会发送）以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中；该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件：它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只回放给 Chat 应用。
+一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]` 或错误），打开的 chunk 就会被写出。因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后。`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。
 
-OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `function.name`，但 schema 允许它们出现在后面的 chunk 中，一些兼容 OpenAI 的服务商也确实在那里发送 `id` 和 `name`，而且之前的第一个 chunk 是 `choices: []`，`id` 和 `model` 为空。Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂缓输出开始事件和该调用，直到知道这些值；事件的顺序从不改变。保持在本格式内的流会原样回放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
+SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。OpenAI 不会发送 SSE `id`、`retry` 和未知字段。chunk 带有这些字段时，它们以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中。该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。
 
-来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配，推理、引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。在这些内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们：其他方言的每个额外事件（例如 Anthropic `ping`）对应一条，每 1,024 字节隐藏文本对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）：此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
+没有 `data:` 行的帧（例如单独的 `retry: 3000` 或 `event: ping`）按规范不是事件。它成为一个原始 JSON 中没有 `data` 键的 `Extra`，写回时也没有数据行。具名事件和 `[DONE]` 之后的帧完整保留，只回放给 Chat 应用。
+
+OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `function.name`，但 schema 允许它们出现在后面的 chunk 中。一些兼容 OpenAI 的服务商也确实在那里发送 `id` 和 `name`，而且之前的第一个 chunk 是 `choices: []`，`id` 和 `model` 为空。
+
+Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按上文暂缓输出开始事件和该调用，直到知道这些值。事件的顺序从不改变。保持在本格式内的流会原样回放每个 chunk。对应的 fixture 是 `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`。
+
+来自其他方言的事件各自成为一个 chunk，排在开头的角色 chunk 之后，带有 `logprobs: null` 和 `finish_reason`。工具索引按工具调用开始的顺序分配。推理、引用、不透明数据、未知块和其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。
+
+在这些被省略的内容到达期间，编码器会按节奏写入 SSE 注释（`: keepalive`），SSE 规范和 SDK 的解析器都会忽略它们。其他方言的每个额外事件（例如 Anthropic `ping`）对应一条，每 1,024 字节隐藏文本对应一条（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 为网关提供同样的帧，用于上游静默的情况。
+
+只有应用请求了用量时才会写入用量（`EncodeCtx::stream` 带 `include_usage`）。此时每个 chunk 都有 `usage: null`，最后一个 `choices: []` 的 chunk 携带用量。来自其他方言时，这是最新的用量；后面的报告没有输入计数时，输入计数取自 `ResponseStart`。
 
 ## 错误（`ErrorResponse`）
 
@@ -247,13 +245,21 @@ OpenAI 在工具调用的第一个 chunk 中发送其 `id`、`type` 和 `functio
 | 其他 | `ProviderError` | 其 5xx 状态码（503 除外）或 500，`server_error` |
 | `error.misalignment`（`Error` schema 中的 `MisalignmentErrorDetailsResource`）、`error` 中的未知键 | 保留在 `KppError.raw` 中（整个错误体） | 只有错误来自 Chat 时才会再次发送。 |
 
-表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码（`rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`）只在没有 HTTP 状态码的错误中起决定作用：流错误，或 200 回复体中的错误。对这类错误，400 到 599 之间的数字 `code`（OpenRouter 在这个 `code` 中发送 HTTP 状态码）像状态码一样决定类别，但错误本身仍然没有状态码。
+表中列出的错误码（位于 `code` 或 `type` 中）优先于状态码。按状态码确定的类别所对应的错误码是 `rate_limit_exceeded`、`rate_limit_error`、`slow_down`、`invalid_request_error`、`invalid_prompt`、图像相关的错误码以及 `server_error`。它们只在没有 HTTP 状态码的错误中起决定作用：流错误，或 200 回复体中的错误。
+
+对这类错误，400 到 599 之间的数字 `code` 像状态码一样决定类别。OpenRouter 就是这样在 `code` 中发送 HTTP 状态码的，但错误本身仍然没有状态码。
 
 兼容 OpenAI 的服务商（例如 DeepSeek）用 HTTP 402 表示余额不足（[DeepSeek 错误码](https://api-docs.deepseek.com/quick_start/error_codes)），因此无论其 `code` 为何，它都是 `Billing`。
 
 Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_responses::error`），因此一个 OpenAI 格式的错误在每个 OpenAI API 中都有相同的类别、`type` 和 `code`。OpenAI SDK 按状态码选择异常类，所以 `type` 只是附加信息。
 
-`retry-after-ms` 或 `retry-after` 变为 `retry_after`，写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。Kaeso 无法作为 `ErrorResponse` 读取的错误体，例如代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}` 或带有 Kaeso 无法承载的键的错误体，只按 HTTP 状态码确定类别（见上表；没有状态码时，例如在流中，为 `ProviderError`），并保留原始错误体。字符串形式的 `error` 成为错误消息。编解码器不从文本推断含义：若服务商对错误密钥的回复没有认证状态码，就在 `crates/kaeso-core/src/provider.rs` 的 `refused_key_messages` 中列出该消息，网关会把这类错误报告为 `Authentication`（例如 SpaceX 以 HTTP 400 返回的 `Incorrect API key provided`）。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``，错误体在 500 字节后截断，在流中没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+`retry-after-ms` 或 `retry-after` 变为 `retry_after`。写出时为以整秒计、向上取整的 `retry-after`，延迟带有不足一秒的部分时，再加上向上取整的 `retry-after-ms`。`param` 为字符串时变为 `KppError.param`。从 Chat 解码的错误会以其原始状态码重新编码，错误体带有 `error` 对象时也沿用原始错误体。
+
+Kaeso 无法作为 `ErrorResponse` 读取的错误体只按 HTTP 状态码确定类别（见上表），并保留原始错误体。没有状态码时（例如在流中），类别为 `ProviderError`。这类错误体包括代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}`，以及带有 Kaeso 无法承载的键的错误体。
+
+字符串形式的 `error` 成为错误消息。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``。错误体在 500 字节后截断，在流中消息没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+
+编解码器不从文本推断含义。若服务商对错误密钥的回复没有认证状态码，就在 `crates/kaeso-core/src/provider.rs` 的 `refused_key_messages` 中列出该消息。网关随后会把这类错误报告为 `Authentication`（例如 SpaceX 以 HTTP 400 返回的 `Incorrect API key provided`）。
 
 ## 模型
 
@@ -261,7 +267,9 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 
 ### 查询参数
 
-`listModels` 没有记录任何查询参数。每个参数经百分号解码后，作为解码方言的 extra `query.<name>` 保留：值为字符串，重复出现时为数组。格式错误的转义为 `InvalidRequest`。OpenAI 不分页，因此网关调用 `ModelList::page` 时不设默认上限，OpenAI 应用总是拿到完整列表。路径段 `{model}` 以百分号编码的形式到达（微调模型的 ID 含有 `:`），由网关的路由器解码。
+`listModels` 没有记录任何查询参数。每个参数经百分号解码后，作为解码方言的 extra `query.<name>` 保留：值为字符串，重复出现时为数组。格式错误的转义为 `InvalidRequest`。
+
+OpenAI 不分页，因此网关调用 `ModelList::page` 时不设默认上限，OpenAI 应用总是拿到完整列表。路径段 `{model}` 以百分号编码的形式到达（微调模型的 ID 含有 `:`），由网关的路由器解码。
 
 ### `Model` ⇄ `kaeso_kpp::ModelInfo`
 
@@ -288,81 +296,6 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 | 不是对象而是模型的裸数组（Together AI 以此形式发送） | `models`，形式标记 `bare_list` |
 | 以 `models` 代替 `data`，每个模型以 `slug` 标识（`GET /v1/models` 对 ChatGPT 套餐访问令牌的响应，见 [Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)） | `models`，每个 `slug` 作为 `id`，其他字段作为 extras 字段；形式标记 `plan_list` |
 
-对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。
+对 OpenAI 应用而言会有信息损失：`display_name`、`lifecycle`、`deprecated_at`、`context_window`、`max_output_tokens`、`has_more` 和其他方言的 extras（Anthropic 的 `capabilities`、`line`）没有对应字段，会被省略（[回复](cross-format.md#回复)）。不在 UTC 午夜的 `retires_at` 会截为其 UTC 日期，9999 年之后的则写为 `shutdown_date: null`。`created` 是整数，按存储的值写出，因此毫秒值仍是毫秒值。
 
-## 使用此格式的服务商
-
-提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
-
-### DeepSeek
-
-来源：DeepSeek 的 [API 参考](https://api-docs.deepseek.com/api/create-chat-completion)、[思考模式指南](https://api-docs.deepseek.com/guides/thinking_mode/)和[错误码](https://api-docs.deepseek.com/quick_start/error_codes)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/deepseek/` 中的实时录制。
-
-| DeepSeek 字段 | KPP | 说明 |
-|---|---|---|
-| `thinking`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Chat 应用带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项；它们发回时，该推理不会出现在发往 DeepSeek 的请求中（[推理](reasoning.md)），DeepSeek 在没有它的情况下照常回答。 |
-| `usage.prompt_cache_hit_tokens`、`prompt_cache_miss_tokens` | 用量的 `raw` | 命中数等于 `prompt_tokens_details.cached_tokens`，后者按缓存读取类型化。 |
-| 服务器繁忙时发送的 `: keep-alive` 行和空行 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
-| HTTP 402 | `Billing` | 余额不足，无论 `code` 为何。 |
-| `developer` 消息导致的 HTTP 422 | `InvalidRequest` | DeepSeek 不认识该角色；应用会收到 DeepSeek 的错误。 |
-| 额外的模型字段（`name`、`context_window`、`max_output_tokens`、`input_modalities`、`output_modalities`、`effort`、`api_capabilities`） | 模型 extras | DeepSeek 的模型列表没有 `created`。 |
-
-### SpaceX
-
-来源：xAI 的 [Chat Completions 参考](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions)和[模型参考](https://docs.x.ai/developers/rest-api-reference/inference/models)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/xai/` 中的实时录制。SpaceX 自身的格式是 [OpenAI Responses](openai-responses.md#使用此格式的服务商)；模型通过其 `egress_dialect` 使用 Chat Completions。
-
-| SpaceX 字段 | KPP | 说明 |
-|---|---|---|
-| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
-| `citations`、`system_fingerprint`、`service_tier` | extras | 发往其他方言时省略。 |
-| `max_completion_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Chat Completions 参考；`responses/recorded-max-completion-tokens-reasoning`：要求 20，可见 18 个、推理 271 个 token）。用量两者都计入，因此输出可能超过上限；在硬性预算和 Token 速率下，网关为 SpaceX 的推理模型（`PROVIDERS` 中的 `reasoning_beyond_output_limit`）预留模型自身的输出上限（[限额与预算](../../console/limits-and-budgets.md)）。 |
-| `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。SpaceX 的 `completion_tokens` 不含推理，推理计入 `total_tokens`，因此输出为 `completion_tokens` 加 `reasoning_tokens`。 |
-| `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头；SpaceX 的 `refused_key_messages` 列出了该消息，因此网关会报告密钥被拒绝。 |
-| 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。 |
-| `search_parameters`（请求） | extras | 实时搜索已弃用，SpaceX 返回 410；应用会收到这个 410。 |
-| 额外的模型字段（`aliases`、以美分计的每 1 亿 Token 价格、`capabilities.reasoning_effort`、图像的 `pricing`） | 模型 extras | |
-
-### Together AI
-
-来源：Together AI 的 [Chat Completions 参考](https://docs.together.ai/reference/chat-completions-1)和 [OpenAI 兼容性说明](https://docs.together.ai/docs/inference/openai-compatibility)（2026-10-19 阅读）、`togethercomputer/together-py` 中的 SDK 类型，以及 `fixtures/openai_chat/providers/togetherai/` 中的实时录制。
-
-| Together AI 字段 | KPP | 说明 |
-|---|---|---|
-| `top_k`、`min_p`、`repetition_penalty`、`safety_model`、`context_length_exceeded_behavior`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning_content` 或 `message.reasoning`（视模型而定），以及增量中的同名字段 | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。流式推理片段带有 `content: ""`，它不会打开文本块。 |
-| choice 上的 `matched_stop` 和 `seed`、流式 choice 上的 `text`、增量中的 `token_id`，以及顶层的 `prompt`、`metadata` 和 `warnings` | extras | 发往其他方言时省略。 |
-| 与 `completion_tokens_details.reasoning_tokens` 并列的 `usage.reasoning_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。 |
-| 采用 OpenAI 错误结构、带 Together AI 自有 `type` 和 `code`（`start_generation_failed`、`model_not_available`）的错误，有时带顶层 `id` | `KppError` | 类别取决于状态码；密钥错误时返回 401 `invalid_api_key`，即 `Authentication`。 |
-| `GET /v1/models`：模型的裸数组，带 `type`、`display_name`、`organization`、`context_length`、`config` 和 `pricing` | `ModelList`、模型 extras | 对含 `/` 的 ID，`GET /v1/models/{model}` 返回 404，因此模型检查依赖模型列表。 |
-
-### Groq
-
-来源：Groq 的 [API 参考](https://console.groq.com/docs/api-reference)和[推理指南](https://console.groq.com/docs/reasoning)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/groq/` 中的实时录制。
-
-| Groq 字段 | KPP | 说明 |
-|---|---|---|
-| `reasoning_format`、`include_reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
-| `delta.channel`（GPT-OSS 推理中为 `analysis`） | 数据块的 extras | Chat 应用随推理一起收回；对其他方言省略。 |
-| `x_groq`、`usage_breakdown`、`service_tier`（`on_demand`） | extras | 发往其他方言时省略。 |
-| `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | Token 数（包括 `reasoning_tokens`）按上文的类型化字段处理。 |
-| 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
-| 额外的模型字段（`active`、`context_window`、`max_completion_tokens`、`pricing`、`supported_features` 等） | 模型 extras | |
-
-### OpenRouter
-
-来源：OpenRouter 的 [API 参考](https://openrouter.ai/docs/api_reference/overview)、[流式传输](https://openrouter.ai/docs/api_reference/streaming)、[错误与调试](https://openrouter.ai/docs/api_reference/errors-and-debugging)和[推理 Token](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/openrouter/` 中的实时录制（均使用 `:free` 模型）。
-
-| OpenRouter 字段 | KPP | 说明 |
-|---|---|---|
-| `provider`、`models`、`transforms`、`usage`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
-| `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；Chat 应用原样收回，其他方言从 `reasoning` 得到文本。 |
-| 回复中的 `provider`、`native_finish_reason` | extras | 发往其他方言时省略。 |
-| `usage.cost`、`is_byok`、`cost_details` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用，而不是按 `usage.cost`。 |
-| 最后一个流式数据块，它在 `usage` 旁重复带 `finish_reason` 的 choice | `Usage` | 按 `choices: []` 的用量数据块读取。 |
-| `: OPENROUTER PROCESSING` 注释 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
-| `error.metadata.raw`，即上游服务商自己的错误，与笼统的 `message` `Provider returned error` 并列 | `KppError.message` | 通过配置的 `error_detail`，Anthropic Messages 和 Responses 应用以及请求日志会得到 `Provider returned error: <原因>`，例如 `google/gemma-4-31b-it:free is temporarily rate-limited upstream…`。Chat 应用收到 OpenRouter 发来的原样错误体。 |
-| 200 之后出现的 `error` 对象，位于回复体中或与 `choices` 并列的数据块中 | `KppError` | 见[上方各行](#流createchatcompletionstreamresponse)；数字 `code` 像状态码一样决定类别。 |
-| `GET /api/v1/models`：没有 `object`，模型也没有 `object` 和 `owned_by`，带 `total_count` 和 `links` | `ModelList`、extras | `GET /api/v1/models/{model}` 对每个模型都返回 404，因此模型检查依赖模型列表，而 OpenRouter 提供该列表时不检查密钥。 |
+`encode_model_request` 构建不带请求头和请求体的 `GET /v1/models/{model}`（规范中的 `retrieveModel`）；密钥由网关添加。`encode_models_request` 构建 `GET /v1/models`（规范中的 `listModels`，它不接受查询参数，因此带有 `limit`、`after_id`、`before_id`、`lifecycle` 或其他参数的查询为 `Unsupported`）。在 `decode_models` 和 `decode_model` 中，非 2xx 状态码交给 `decode_error` 处理。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。

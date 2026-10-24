@@ -10,7 +10,13 @@ Look up any field of the Anthropic Messages format here: where it goes in KPP an
 - **Endpoints:** `POST /v1/messages` (JSON and SSE), `POST /v1/messages/count_tokens`, and the [models](#models) endpoints
 - **Fixtures:** `crates/kaeso-codecs/fixtures/anthropic_messages/`
 
-**Sources.** The Anthropic OpenAPI spec `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml` (the last `openapi_spec_url` in `anthropic-sdk-python/.stats.yml`, SDK commit `41aa7674`), the SDK types at `anthropic-sdk-python@b4b7916d` (1.13.0), and the [Claude documentation](https://platform.claude.com/docs/en/) (`api/messages/create`, `api/messages/count_tokens`, `api/errors`, `api/versioning`, `build-with-claude/streaming`, `…/thinking`, `…/extended-thinking`, `…/effort`, `…/prompt-caching`, `…/structured-outputs`, `…/citations`, `…/pdf-support`, `…/vision`, `agents-and-tools/tool-use/*`, `…/handling-stop-reasons`). Where the SDK types are newer than the spec, they win, and a field found only in the SDK types is cited as such. Schema names below refer to the spec.
+**Sources.** The mappings follow these sources:
+
+- The Anthropic OpenAPI spec `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml` (the last `openapi_spec_url` in `anthropic-sdk-python/.stats.yml`, SDK commit `41aa7674`)
+- The SDK types at `anthropic-sdk-python@b4b7916d` (1.13.0)
+- The [Claude documentation](https://platform.claude.com/docs/en/) (`api/messages/create`, `api/messages/count_tokens`, `api/errors`, `api/versioning`, `build-with-claude/streaming`, `…/thinking`, `…/extended-thinking`, `…/effort`, `…/prompt-caching`, `…/structured-outputs`, `…/citations`, `…/pdf-support`, `…/vision`, `agents-and-tools/tool-use/*`, `…/handling-stop-reasons`)
+
+Where the SDK types are newer than the spec, they win, and a field found only in the SDK types is cited as such. Schema names below refer to the spec.
 
 ## How to read the tables
 
@@ -22,9 +28,11 @@ Look up any field of the Anthropic Messages format here: where it goes in KPP an
 
 **Numbers.** Typed numeric fields are read as `u32` or `u64`, and `temperature` and `top_p` as JSON numbers that KPP holds as `f64`. A value outside their range is never changed: it fails to decode, as `InvalidRequest` in a request (`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``) and `ProviderError` in a provider reply.
 
-**Keys Kaeso can't carry.** Every object Kaeso reads field by field keeps its unknown keys as fields, except a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path, so the object is refused ([wire structs](codec-design.md#wire-structs)). In a request that is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``); in a reply, a stream or a model listing it is `ProviderError`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
+**Keys Kaeso can't carry.** Every object Kaeso reads field by field keeps its unknown keys as fields. The exception is a key that starts with `header:` or contains `.`: it would be mistaken for a forwarded header or a nested key path. The object is then refused ([wire structs](codec-design.md#wire-structs)).
 
-- **Read field by field:** the body, messages, `metadata`, `output_config`, `thinking`, `tool_choice`, function tools, the known block types of the [content blocks](#content-blocks) table with their `source`, `cache_control` and `citations` objects, replies, token counts, stream events and their deltas, model info and model lists.
+In a request the refusal is `InvalidRequest` (`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``); in a reply, a stream or a model listing it is `ProviderError`. An error body with such a key at its top level counts as a body that is not an `ErrorResponse` ([errors](#errors)).
+
+- **Read field by field:** the body, messages, `metadata`, `output_config`, `thinking`, `tool_choice`, function tools, replies, token counts, stream events and their deltas, model info and model lists. The same holds for the known block types of the [content blocks](#content-blocks) table, with their `source`, `cache_control` and `citations` objects.
 - **Kept whole, not checked:** unknown blocks and tools, `input_schema`, tool input, citations, `usage` and `output_config.format`.
 
 ## Requests
@@ -128,6 +136,8 @@ What `encode_request` writes for a KPP request that did not come from Anthropic 
 | `Request::CountTokens` from another dialect | `/v1/messages/count_tokens` without `max_tokens`, sampling, `metadata` and `stream` | They don't change the input count, and the endpoint rejects them. An Anthropic app's own token-counting request is sent as received. |
 | `Request::CountTokens` output and reasoning settings that `check()` would refuse for generation (JSON mode, a schema description, `strict: false`, effort `minimal`, …) | left out, not refused | Only what changes the counted input is refused. |
 | `Request::Embed` | `Unsupported` | |
+| OpenAI Responses `web_search` tool | `{type: web_search_20250305, name: web_search}` | With `allowed_domains` and `user_location` where set; Responses `web_search_call` items in the conversation are dropped ([hosted web search](cross-format.md#hosted-web-search)). |
+| OpenAI Responses `namespace` tools | one function tool per tool in the namespace, named `<namespace>__<name>` | [Tool namespaces](cross-format.md#tool-namespaces). |
 | foreign extras, unknown blocks, tools and tool choices, citations, foreign file ids | `Unsupported` | `cross::check_foreign` ([requests](cross-format.md#requests)). |
 
 ## Replies
@@ -156,9 +166,9 @@ Replies from other dialects (`encode_response`) get `type: "message"`, `role: "a
 
 - **Stop reasons.** `ContentFilter` becomes `refusal`, because Anthropic has no content-filter stop reason. `Other(s)` becomes `s` when it is a documented Anthropic value; otherwise `length`, `max_output_tokens` and `max_completion_tokens` become `max_tokens`, `function_call` and `tool_calls` become `tool_use`, `content_filter` becomes `refusal`, and anything else becomes `end_turn`. Own `Other` values are written as received.
 - **Refusals.** `Refusal` blocks become `text` blocks.
-- **Tool arguments that are not an object.** KPP keeps tool call arguments that are not valid JSON, for example cut off by an output limit, as a JSON string, and keeps other JSON values as they are. `tool_use.input` must be an object, and an empty `input` would call the tool with arguments the model never wrote, so such a reply from another dialect is refused with `ProviderError` (`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``); the gateway still logs the reply and its usage. Requests with such arguments are refused by `check()`.
-- **Reasoning** from other dialects becomes a `thinking` block ([reasoning blobs](reasoning.md#reasoning-blobs)): its summaries, then its reasoning text, as `thinking` (paragraphs separated by a blank line), and a reasoning blob of the original block as `signature`. Anthropic never sees that block: the request decoder restores the original, which only goes back to its own provider.
-- **Left out** ([replies](cross-format.md#replies)): Anthropic reasoning without a signature that was not read from Anthropic Messages (own unsigned thinking is written as received); image, document and tool result blocks, which are not part of the `Message` content union; and foreign opaque data, citations, extras and unknown blocks.
+- **Tool arguments that are not an object.** KPP keeps tool call arguments that are not valid JSON, for example cut off by an output limit, as a JSON string. Other JSON values stay as they are. `tool_use.input` must be an object, and an empty `input` would call the tool with arguments the model never wrote. So such a reply from another dialect is refused with `ProviderError` (`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``). The gateway still logs the reply and its usage. Requests with such arguments are refused by `check()`.
+- **Reasoning** from other dialects becomes a `thinking` block ([reasoning blobs](reasoning.md#reasoning-blobs)). Its `thinking` holds the summaries, then the reasoning text, with a blank line between paragraphs. Its `signature` is a reasoning blob of the original block. Anthropic never sees that block: the request decoder restores the original, which only goes back to its own provider.
+- **Left out** ([replies](cross-format.md#replies)): image, document and tool result blocks, which are not part of the `Message` content union, and foreign opaque data, citations, extras and unknown blocks. Anthropic reasoning without a signature is left out too, unless it was read from Anthropic Messages: own unsigned thinking is written as received.
 
 ## Token counts
 
@@ -207,8 +217,8 @@ Encoding events from other dialects:
 - **One block at a time.** Interleaved blocks are buffered in start order, and a `ResponseDelta` with a stop reason, or `ResponseStop`, closes open blocks. A foreign `ResponseDelta` without a stop reason, such as the running usage some OpenAI-compatible providers send on every chunk, only updates the usage of the final `message_delta`. An OpenAI stream that keeps its text block open until the end therefore delivers its tool calls only at the end. Several foreign `ResponseDelta`s merge into one `message_delta`.
 - **A missing `ResponseStart`** becomes a `message_start` with an empty id and the request's model.
 - **Refusals** become text blocks.
-- **Tool call arguments** from other dialects are collected and written as one `input_json_delta` when the block stops, whenever they are not blank. Arguments that don't form a JSON object, such as ones cut off by an output limit, are sent as they came, as Anthropic itself streams a call cut off by `max_tokens`, so the app sees what the model wrote. Anthropic's own streams are replayed as received.
-- **Reasoning blocks** from other dialects become `thinking` blocks ([reasoning blobs](reasoning.md#reasoning-blobs)): summaries and reasoning text as `thinking_delta`s with a blank line between parts, opaque deltas collected, and when the block stops one `signature_delta` with the reasoning blob of the whole block.
+- **Tool call arguments** from other dialects are collected and written as one `input_json_delta` when the block stops, whenever they are not blank. Arguments that don't form a JSON object, such as ones cut off by an output limit, are sent as they came. Anthropic itself streams a call cut off by `max_tokens` the same way, so the app sees what the model wrote. Anthropic's own streams are replayed as received.
+- **Reasoning blocks** from other dialects become `thinking` blocks ([reasoning blobs](reasoning.md#reasoning-blobs)). Summaries and reasoning text become `thinking_delta`s, with a blank line between parts. Opaque deltas are collected, and when the block stops, one `signature_delta` carries the reasoning blob of the whole block.
 - **Left out** ([replies](cross-format.md#replies)): foreign citation and unknown deltas, unknown blocks and `Extra` events, as in complete replies. While they arrive, the encoder writes paced `event: ping` frames (`{"type": "ping"}`, as Anthropic sends them): one per foreign extra event and one per 1,024 bytes of hidden text ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame.
 - **Stop reasons:** `StopReason::Other` is mapped as for replies.
 - **Errors:** a KPP `Error` becomes `event: error` with its body as for [errors](#errors), without a `request_id`: errors decoded from Anthropic as received, others as `{"type":"error","error":{type,message}}`.
@@ -233,14 +243,21 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 
 - `error.message` → `message`; the whole body (with `request_id` and `error.details`) → `raw`; the HTTP status → `status`; `retry-after-ms` or `retry-after` → `retry_after`, which is written back as `retry-after`, rounded up to whole seconds.
 - A too-long prompt is a 400 `invalid_request_error` like any other, so only its message tells it apart. If Anthropic changes the wording, the error decodes as `InvalidRequest`.
-- An unknown `error.type`, or a body that is not an `ErrorResponse` (such as Cloudflare's HTML 413, JSON whose `type` is not `error`, or one with a top-level key Kaeso cannot carry), gets its kind from the status: 400, 409 and 422 `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied`, 404 `NotFound`, 408 and 504 `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, 503 and 529 `Overloaded`, and `ProviderError` for any other status and for stream errors, which have none. A documented `error.type` always wins over the status. The status and the raw body (as a string when it is not JSON) are kept, and such bodies are encoded again in Anthropic's error shape.
+- An unknown `error.type`, or a body that is not an `ErrorResponse`, gets its kind from the status. Examples of such bodies are Cloudflare's HTML 413, JSON whose `type` is not `error`, and JSON with a top-level key Kaeso cannot carry. The status and the raw body (as a string when it is not JSON) are kept, and such bodies are encoded again in Anthropic's error shape.
+- Statuses 400, 409 and 422 give `InvalidRequest`, 401 `Authentication`, 402 `Billing`, 403 `PermissionDenied` and 404 `NotFound`. Statuses 408 and 504 give `Timeout`, 413 `RequestTooLarge`, 429 `RateLimited`, and 503 and 529 `Overloaded`. Any other status gives `ProviderError`, and so do stream errors, which have none. A documented `error.type` always wins over the status.
 - Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"},"request_id":null}`.
-- `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, also into a body encoded again from `raw`, where it replaces Anthropic's id; the gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
+- `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, including into a body encoded again from `raw`, where it replaces Anthropic's id. The gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
 - Other response headers (such as `anthropic-ratelimit-*` and `request-id`) are not part of `KppError`.
 
 ## Models
 
-`GET /v1/models` and `GET /v1/models/{model_id}`. Code: `anthropic_messages/models.rs`; fixtures: `crates/kaeso-codecs/fixtures/anthropic_messages/models/`. Sources: the [list models](https://platform.claude.com/docs/en/api/models/list.md) and [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) pages, the SDK's `types/model_info.py`, `model_list_params.py`, `model_capabilities.py` and `model_line.py`, and the spec's `ModelInfo` and `ListResponse_ModelInfo_`. The spec's shapes have no `lifecycle`, `deprecated_at`, `retires_at` or `line`, and no `lifecycle` query parameter; the documentation and the SDK win, and every field the encoder would otherwise fill with a default is decoded as optional with its absence kept (form `none`), so both shapes round-trip. An app's request is Anthropic when it carries `anthropic-version` (`dispatch::models_dialect`, see [model listings](codec-design.md#model-listings)).
+`GET /v1/models` and `GET /v1/models/{model_id}`. An app's request is Anthropic when it carries `anthropic-version` (`dispatch::models_dialect`, see [model listings](codec-design.md#model-listings)).
+
+- **Code:** `anthropic_messages/models.rs`
+- **Fixtures:** `crates/kaeso-codecs/fixtures/anthropic_messages/models/`
+- **Sources:** the [list models](https://platform.claude.com/docs/en/api/models/list.md) and [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) pages, the SDK's `types/model_info.py`, `model_list_params.py`, `model_capabilities.py` and `model_line.py`, and the spec's `ModelInfo` and `ListResponse_ModelInfo_`
+
+The spec's shapes have no `lifecycle`, `deprecated_at`, `retires_at` or `line`, and no `lifecycle` query parameter. The documentation and the SDK win. Every field the encoder would otherwise fill with a default is decoded as optional, with its absence kept (form `none`), so both shapes round-trip.
 
 ### Query parameters
 
@@ -272,11 +289,11 @@ Names and values are percent-decoded (`+` is a space); a malformed escape or a r
 | `line` (`ModelLine` or `null`) | extras field `line` | `null` |
 | unknown keys | extras fields | |
 
-`capabilities` and `line` are extras because `ModelCapabilities` is a large, fast-growing tree of Anthropic feature names (batches, citations, effort levels, thinking types, server tools, context-management strategies) with no counterpart in any other dialect, and `line` is an Anthropic product family (`opus`, `sonnet`, …), which the documentation says not to infer from the `id`. KPP would only carry them through for Anthropic apps, and extras already do that byte for byte.
+`capabilities` and `line` are extras, not typed KPP fields. `ModelCapabilities` is a large, fast-growing tree of Anthropic feature names (batches, citations, effort levels, thinking types, server tools, context-management strategies) with no counterpart in any other dialect. `line` is an Anthropic product family (`opus`, `sonnet`, …), which the documentation says not to infer from the `id`. KPP would only carry them through for Anthropic apps, and extras already do that byte for byte.
 
 **Dates.** An RFC 3339 `date-time` becomes Unix seconds (offsets applied, sub-second digits cut, `T` and `Z` in either case) and is written back as `YYYY-MM-DDTHH:MM:SSZ`. A received spelling this would not reproduce (`.117Z`, `-07:00`, `t`) is kept in form `spelling` and written again as long as it still means the same second. Dates that can't be parsed and dates before 1970 → `ProviderError`. The second `:60` is accepted in any minute; it counts as the first second of the next minute and its spelling is kept. A KPP time after `9999-12-31T23:59:59Z` can't be written in RFC 3339, which has four-digit years; this happens with an OpenAI-compatible `created` in milliseconds. `created_at` then gets the epoch, the documented unknown value, and `deprecated_at` and `retires_at` get `null`.
 
-**Absent or `null`.** A field received absent, or `null` where the default above is a value, is recorded in form `none` and written the same way, so the older spec shape without `lifecycle` round-trips. `capabilities` and `line` absent on an Anthropic model stay absent.
+**Absent or `null`.** A field received absent, or `null` where the default above is a value, is recorded in form `none` and written the same way. This lets the older spec shape without `lifecycle` round-trip. `capabilities` and `line` absent on an Anthropic model stay absent.
 
 ### Model lists
 
@@ -291,8 +308,14 @@ Names and values are percent-decoded (`+` is a space); a malformed escape or a r
 
 Lossy towards Anthropic apps: `owned_by` (OpenAI) has no field here, and extras from other dialects are left out ([replies](cross-format.md#replies)). A model from another dialect gets the defaults above (`display_name` is the id, `lifecycle: "active"`, `capabilities: null`, `line`, `max_*` and dates `null`).
 
-On the egress side, `encode_model_request` builds `GET /v1/models/{model_id}` with `anthropic-version: 2023-06-01` and no body, which also resolves an alias such as `claude-sonnet-4-5` (the [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) page), `encode_models_request` builds `GET /v1/models` with the same header and the query's `limit`, `after_id`, `before_id` and `lifecycle[]`, each value percent-encoded (`Unsupported` for any other parameter), and `decode_models` and `decode_model` take a provider's reply; a status other than 2xx goes to `decode_error`. Decoded extras carry the origin `anthropic_messages` without a provider, because these functions take no `EgressCtx`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
+On the egress side, these functions build requests and read replies:
+
+- `encode_model_request` builds `GET /v1/models/{model_id}` with `anthropic-version: 2023-06-01` and no body. This request also resolves an alias such as `claude-sonnet-4-5` (the [get a model](https://platform.claude.com/docs/en/api/models/retrieve.md) page).
+- `encode_models_request` builds `GET /v1/models` with the same header and the query's `limit`, `after_id`, `before_id` and `lifecycle[]`, each value percent-encoded. Any other parameter is `Unsupported`.
+- `decode_models` and `decode_model` take a provider's reply. A status other than 2xx goes to `decode_error`.
+
+Decoded extras carry the origin `anthropic_messages` without a provider, because these functions take no `EgressCtx`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
 
 ## Round trips
 
-There are no exceptions: every request, token-counting request, reply, token-count reply, model listing, stream and error fixture round-trips (`tests/`, `models_tests.rs`), and every stream fixture also accumulates to its paired reply after decode and encode.
+Every fixture round-trips, with no exceptions: requests, token-counting requests, replies, token-count replies, model listings, streams and errors (`tests/`, `models_tests.rs`). Every stream fixture also accumulates to its paired reply after decode and encode.

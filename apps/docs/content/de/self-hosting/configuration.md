@@ -52,9 +52,11 @@ Jeder Dienst in `compose.yaml` hat eine Speicher- und eine Prozessgrenze. Die St
 | `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
 
-Speicher nimmt die Einheiten von Docker, etwa `768m` oder `3g`. Ein Dienst, der seine Speichergrenze erreicht, wird beendet und neu gestartet. ClickHouse richtet seinen Speicherverbrauch selbst an der Grenze aus.
+Speicher nimmt die Einheiten von Docker, etwa `768m` oder `3g`. Docker beendet einen Dienst, der seine Speichergrenze erreicht, und startet ihn neu. ClickHouse richtet seinen Speicherverbrauch selbst an der Grenze aus.
 
-Valkey hält seine Daten innerhalb von `VALKEY_MAXMEMORY`, standardmäßig `512mb`, was unter `VALKEY_MEMORY` bleibt, damit Valkey nie wegen Speicher beendet wird. Es verdrängt nie einen Schlüssel, um Platz zu schaffen, sodass kein Raten- oder Budgetzähler unbemerkt verschwindet. Ist Valkey voll, lehnt es neue Schlüssel ab: Das Gateway liest dann aus PostgreSQL statt aus seinem Cache, lässt Anfragen unter Ratenlimits und weichen Budgets durch und antwortet unter harten Budgets mit `503`, bis wieder Platz ist. Den meisten Speicher von Valkey belegt die [Kontinuität des Reasonings](#kontinuität-des-reasonings), die `continuity.reasoning_ttl` begrenzt.
+Valkey hält seine Daten innerhalb von `VALKEY_MAXMEMORY`, standardmäßig `512mb`, was unter `VALKEY_MEMORY` bleibt, damit Valkey nie wegen Speicher beendet wird. Es verdrängt nie einen Schlüssel, um Platz zu schaffen, sodass kein Raten- oder Budgetzähler unbemerkt verschwindet.
+
+Ist Valkey voll, lehnt es neue Schlüssel ab. Bis wieder Platz ist, liest das Gateway aus PostgreSQL statt aus seinem Cache. Es lässt Anfragen unter Ratenlimits und weichen Budgets durch und antwortet unter harten Budgets mit `503`. Den meisten Speicher von Valkey belegt die [Kontinuität des Reasonings](#kontinuität-des-reasonings), die `continuity.reasoning_ttl` begrenzt.
 
 Docker rotiert das Log jedes Dienstes bei 10 MB und behält fünf Dateien.
 
@@ -175,7 +177,6 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | Text | `https://api.together.ai` | Basis-URL der Together-AI-API. |
 | `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | Text | `https://api.groq.com/openai` | Basis-URL der API von Groq. |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | Text | `https://openrouter.ai/api` | Basis-URL der API von OpenRouter. |
-| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | Text | `https://api.deepseek.com` | Basis-URL der API von DeepSeek. |
 | `KAESO_PROVIDERS_MISTRAL_BASE_URL` | `providers.mistral.base_url` | Text | `https://api.mistral.ai` | Basis-URL der Mistral-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
@@ -258,7 +259,7 @@ Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln je Client-Adress
 - Gültige Schlüssel zählen nie. Ein Schlüssel, den die Instanz in den letzten 30 Sekunden verwendet hat, funktioniert auch von einer gesperrten Adresse; andere gültige Schlüssel warten das Zeitfenster ab.
 - IPv6-Adressen zählen je /64.
 - Hinter einem Proxy kommt die Client-Adresse nur dann aus `X-Forwarded-For`, wenn der Proxy in `KAESO_TRUSTED_PROXIES` steht. Sonst teilen sich alle Clients das Kontingent des Proxys.
-- Docker Desktop, Colima und rootless Docker leiten veröffentlichte Ports über einen eigenen Proxy weiter. Caddy sieht dann jeden Client unter einer Adresse, und alle Clients teilen sich ein Kontingent. Betreiben Sie Kaeso auf Docker Engine mit Root-Netzwerk, wo das Limit je Client gelten soll.
+- Docker Desktop, Colima und rootless Docker leiten veröffentlichte Ports über einen eigenen Proxy weiter. Caddy sieht dann jeden Client unter einer Adresse, und alle Clients teilen sich ein Kontingent. Damit das Limit je Client gilt, betreiben Sie Kaeso auf Docker Engine mit Root-Netzwerk.
 - Solange Valkey nicht erreichbar ist, werden Fehlschläge nicht gezählt.
 
 Jede Sperre erhöht `kaeso_key_failure_blocks_total` und protokolliert `too many failed API key lookups from one address` mit der Adresse ([Zustand und Metriken](monitoring.md)).

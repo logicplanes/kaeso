@@ -9,9 +9,18 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: 格式转换
-  accDescr: KPP 把应用的请求解码为其规范格式，再编码为服务商的格式。回复沿同一条路返回。
-  app[应用格式的请求] -- 解码 --> kpp[KPP 规范格式]
-  kpp -- 编码 --> provider[服务商格式的请求]
+  accDescr: 使用 OpenAI SDK 的应用发送 Chat Completions 请求。在网关中，KPP 的 Chat Completions 编解码器把请求解码为 KPP 的规范请求，Messages 编解码器再把它编码给 Anthropic。回复沿同一条路返回。
+  app[您的应用，使用 OpenAI SDK]:::outside
+  subgraph kpp [KPP，位于网关中]
+    decode[Chat Completions 编解码器]
+    canonical[规范请求]:::accent
+    encode[Messages 编解码器]
+  end
+  provider[Anthropic]:::outside
+  app -- Chat Completions --> decode
+  decode -- 解码 --> canonical
+  canonical -- 编码 --> encode
+  encode -- Messages --> provider
 ```
 
 KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，以及 Anthropic Messages。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。

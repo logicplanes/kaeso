@@ -10,7 +10,7 @@ The codecs stay lossless because of how KPP's types, streams and wire structs ar
 
 The types are shaped by what the codecs need to stay lossless:
 
-- **`Extras`** has three fields: `origin`, `fields` (raw JSON, byte for byte) and `form` (presentation markers). Same-dialect round trips must reproduce spellings KPP normalises away, such as `content` as a string or an array, `null` or absent, `1` or `1.0`, chunk boundaries, and the `id` and `retry` fields of an SSE frame. Those markers carry no meaning, so unlike unknown `fields` they never make another dialect refuse a request. Two empty `Extras` are equal whatever their origin.
+- **`Extras`** has three fields: `origin`, `fields` (raw JSON, byte for byte) and `form` (presentation markers). Same-dialect round trips must reproduce spellings KPP normalises away. Examples are `content` as a string or an array, `null` or absent, `1` or `1.0`, chunk boundaries, and the `id` and `retry` fields of an SSE frame. Those markers carry no meaning, so unlike unknown `fields` they never make another dialect refuse a request. Two empty `Extras` are equal whatever their origin.
 - **Forwarded headers** (`anthropic-beta`, `anthropic-version`, `openai-beta`) are stored in `Extras::fields` under keys starting with `header:`; repeated headers are joined with `", "`. They are bound to their dialect like any other extra. A body key starting with `header:` would look like a forwarded header. The codecs that read bodies through `wire::Ext`, Anthropic Messages, OpenAI Chat Completions and OpenAI Embeddings, therefore refuse it ([wire structs](#wire-structs)). OpenAI Responses keeps such keys in the body and forwards only real headers.
 - **Raw items.** `Box<RawValue>` is wrapped in `RawJson`, which compares byte for byte. Unknown blocks, tools, tool choices, stream events and deltas are `RawItem { origin, raw }`; citations are `Citation { origin, raw }`, since citation formats share almost nothing across dialects.
 - **Replies.** `Reply` is `Generate`, `CountTokens` or `Embed`, and `RequestKind` names the same three kinds.
@@ -25,24 +25,24 @@ The types are shaped by what the codecs need to stay lossless:
 A KPP stream is `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`, with `Error` possible at any point and `Extra` carrying dialect events KPP does not model.
 
 ```mermaid
-stateDiagram-v2
+flowchart TD
   accTitle: The order of a KPP stream's events
   accDescr: A stream starts with ResponseStart. Then come any number of blocks, each BlockStart, any number of BlockDelta and BlockStop, then any number of ResponseDelta, and ResponseStop ends it. Error may come at any point.
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: any number
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: next block
-  BlockStop --> ResponseDelta: any number
-  ResponseStart --> ResponseDelta: no blocks
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
+  start[ResponseStart]:::accent
+  subgraph blocks [Any number of blocks]
+    bstart[BlockStart] --> bdelta[BlockDelta<br>any number] --> bstop[BlockStop]
+  end
+  start --> bstart
+  bstop -- next block --> bstart
+  bstop --> rdelta[ResponseDelta<br>any number]
+  start -- no blocks --> rdelta
+  rdelta --> stop[ResponseStop]:::accent
 ```
 
 - **Block indexes** are KPP's own: 0, 1, 2, … in the order blocks start. Blocks may interleave (OpenAI streams parallel tool calls this way), so every event names its block.
 - **Every lifecycle event carries `Extras`**, so a same-dialect replay reproduces the original events exactly, including per-event fields such as OpenAI's `obfuscation`.
 - **Failures are reported in band:** the events decoded so far, then a final `StreamEvent::Error`, so nothing decoded earlier in the same chunk is lost.
-- **Order never changes, but events may be held back.** OpenAI-compatible providers can send the response `id` and `model`, or a tool call's `id` and `name`, in a later chunk than the first. The OpenAI Chat Completions decoder then holds back the `ResponseStart` and the chunks without content until a chunk carries those values or content. It holds a tool call's `BlockStart`, and every event after it, until both its `id` and `name` have arrived, the block ends, or the stream ends or breaks ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)). Usage that a provider sends while blocks are still open is held until they stop, so `ResponseDelta`s always come after the last `BlockStop`.
+- **Order never changes, but events may be held back.** OpenAI-compatible providers can send the response `id` and `model`, or a tool call's `id` and `name`, in a later chunk than the first. The OpenAI Chat Completions decoder then holds back the `ResponseStart` and the chunks without content until a chunk carries those values or content. It also holds back a tool call's `BlockStart` and every event after it. They wait until both the call's `id` and `name` have arrived, the block ends, or the stream ends or breaks ([OpenAI Chat Completions](openai-chat.md#streams-createchatcompletionstreamresponse)). Usage that a provider sends while blocks are still open is held until they stop, so `ResponseDelta`s always come after the last `BlockStop`.
 
 ### Stream encoders
 
@@ -65,7 +65,7 @@ Anthropic indexes are assigned in the order blocks are written. A stream that do
 - usage is sent only when the app asked for it (`stream_options.include_usage`), as a last chunk with `choices: []`;
 - `ResponseStop` writes `data: [DONE]`; an `Error` writes `data: {"error": …}` and ends the stream without `[DONE]`.
 
-**OpenAI Responses.** The stream engine produces, for each KPP event, the SSE events in the order OpenAI sends them, including every redundant one (`.done` events, part events, item events, the final response object with all output items), and assigns `sequence_number`s. The decoder runs the same engine as a shadow:
+**OpenAI Responses.** For each KPP event, the stream engine produces the SSE events in the order OpenAI sends them, and assigns `sequence_number`s. These include every redundant one: `.done` events, part events, item events, and the final response object with all output items. The decoder runs the same engine as a shadow:
 
 - every SSE event the engine would produce at that point is attached to the KPP event, with differences recorded as scoped overrides;
 - attached events the original did not have are recorded in the form marker `skip`;
@@ -77,10 +77,10 @@ A same-dialect stream is reproduced exactly, and a stream from another dialect b
 
 Wire structs must keep every field, including ones the struct does not declare, and must keep raw payloads (`RawValue`) byte for byte. `#[serde(flatten)]` can't do both: flattening buffers the input, and `RawValue` can't be read from a buffer, so tool arguments and schemas would lose their bytes. `wire::Ext<T>` does the same job without buffering:
 
-- Every key of the JSON object that `T` does not declare is kept raw in `Ext::extra` and becomes KPP `Extras::fields`. A key whose name starts with `header:` or contains `.` would be mistaken for a forwarded header or a nested key path, so the object is refused (`` the field `…` has a name Kaeso cannot carry; remove it ``): `InvalidRequest` in a request, `ProviderError` in a provider's reply.
+- Every key of the JSON object that `T` does not declare is kept raw in `Ext::extra` and becomes KPP `Extras::fields`. A key whose name starts with `header:` or contains `.` would be mistaken for a forwarded header or a nested key path. Such an object is refused (`` the field `…` has a name Kaeso cannot carry; remove it ``): `InvalidRequest` in a request, `ProviderError` in a provider's reply.
 - Every declared key whose received spelling `T` can't reproduce is kept raw in `Ext::verbatim` and becomes KPP `Extras::form`. Examples are `"x": null` for an `Option` skipped when `None`, `"flag": false` for a `bool` skipped when false, and `"list": []` for a `Vec` skipped when empty.
 
-Serializing an `Ext<T>` writes `T`, then the verbatim keys `T` did not write, then the extra keys. A decode and encode round trip is therefore exact, and a codec that changes a typed field, for example when translating from another dialect, always wins over a stale verbatim spelling. `wire::Maybe<T>` tells absent from `null` where the codec must see the difference.
+Serializing an `Ext<T>` writes `T`, then the verbatim keys `T` did not write, then the extra keys. A decode and encode round trip is therefore exact. A codec that changes a typed field, for example when translating from another dialect, always wins over a stale verbatim spelling. `wire::Maybe<T>` tells absent from `null` where the codec must see the difference.
 
 Wire structs used inside `Ext` follow these rules:
 
@@ -105,7 +105,17 @@ Decoding a request costs far more memory than its body: every message, content b
 
 serde skips ignored and raw values without its recursion limit, so the codecs could otherwise walk a raw value of any depth one stack frame per level. `request_shape` counts the depth in one pass over the bytes, outside strings, and refuses a deeper body without `param`. The Responses codec's diff against its canonical encoding also stops at `MAX_DEPTH` and keeps the rest of a provider's reply raw, so a deep reply can't overflow the stack either.
 
-A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts, the token ids of embedding inputs and the body's bytes, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it. The bytes leave out the whitespace between the tokens of the request object, its messages, items and inputs, their content blocks and the list of tools, which decoding drops, so padding there adds nothing. Whitespace inside any other value counts, because a value kept raw, such as a tool's `parameters`, keeps it byte for byte. So does all whitespace inside a message or block that its decoder keeps whole as raw JSON: a Chat Completions `function` message, a content part that isn't an object or is of a type its message's role doesn't take, or a Messages block that isn't an object or is of a type or `source` the codec doesn't know. In an OpenAI Responses input item all whitespace counts, because that decoder keeps any item or part raw that doesn't parse as its type, which only decoding can tell.
+A body that isn't JSON, or isn't shaped like the dialect's request, is counted as far as it can be read, and decoding it reports what is wrong. An escaped key such as `"messages"` counts like the key it spells. `request_shape` also returns the counts, the token ids of embedding inputs and the body's bytes, as `RequestShape`, so the gateway can estimate a request's memory before it decodes it.
+
+The bytes leave out the whitespace that decoding drops, so padding there adds nothing. That is the whitespace between the tokens of the request object, its messages, items and inputs, their content blocks and the list of tools. Whitespace inside any other value counts, because a value kept raw, such as a tool's `parameters`, keeps it byte for byte.
+
+All whitespace also counts inside a message or block that its decoder keeps whole as raw JSON:
+
+- a Chat Completions `function` message;
+- a content part that isn't an object or is of a type its message's role doesn't take;
+- a Messages block that isn't an object or is of a type or `source` the codec doesn't know.
+
+In an OpenAI Responses input item, all whitespace counts. That decoder keeps any item or part raw that doesn't parse as its type, which only decoding can tell.
 
 ## Server-sent events
 
@@ -115,7 +125,7 @@ A body that isn't JSON, or isn't shaped like the dialect's request, is counted a
 - comments and unknown fields are reported instead of ignored, and an `id` or `retry` value the specification ignores is kept as an unknown field (`SseEvent::other`);
 - a last frame that no blank line closes is still reported;
 - a stream that ends in the middle of a line is reported as `SseError::Truncated` instead of being discarded;
-- a frame whose first line is a field named with a leading U+FEFF is written after a blank line, because a reader would take those bytes at the start of a stream for a byte order mark and drop them.
+- a frame whose first line is a field named with a leading U+FEFF is written after a blank line. A reader would otherwise take those bytes at the start of a stream for a byte order mark and drop them.
 
 Every stream decoder passes a frame without data on as an `Extra` whose raw JSON has no `data` key. Every encoder writes such an `Extra` back without a `data:` line. In OpenAI Chat Completions, an `event: error` frame without data is such an `Extra`, not an error.
 

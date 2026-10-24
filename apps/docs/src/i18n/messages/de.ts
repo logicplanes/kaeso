@@ -12,6 +12,7 @@ export const de: Messages = {
   "search.empty": "Keine Treffer. Versuchen Sie ein anderes Wort.",
   "search.pages": "Seiten",
   "search.headings": "Auf Seiten",
+  "search.mentioned": "Auch erwähnt auf",
   "search.theme": "Design",
   "search.language": "Sprache",
   "search.loadFailed": "Die Suche konnte nicht geladen werden; versuchen Sie es erneut.",

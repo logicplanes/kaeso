@@ -42,7 +42,9 @@ Kaeso 发送的每封邮件都来自 `crates/kaeso-mail`：一套布局、一份
 
 ## 语言
 
-`kaeso-server` 中的 `services::mail_lang` 选择语言。用户在账户设置中的选择优先（`users.locale`；`null` 表示自动）。否则取触发这封邮件的请求的 `Accept-Language` 中第一种 Kaeso 支持的语言。数据库无法应答时由回退规则决定，所以这次查询永远不会阻止邮件发送。[电子邮件](../../self-hosting/email.md#语言)列出了每种收件人的规则。
+`kaeso-server` 中的 `services::mail_lang` 选择语言。用户在账户设置中的选择优先（`users.locale`；`null` 表示自动）。否则取触发这封邮件的请求的 `Accept-Language` 中第一种 Kaeso 支持的语言。
+
+数据库无法应答时由回退规则决定，所以这次查询永远不会阻止邮件发送。[电子邮件](../../self-hosting/email.md#语言)列出了每种收件人的规则。
 
 每封邮件的函数对语言做一次 `match`，写完整的句子，并按名称填入值，从不拼接片段。德语用“Sie”称呼对方。中文使用“您”和全角标点，并在中文与拉丁字母或数字之间加空格，由 `locale::zh` 在衔接处添加。日期和数字遵循各自的语言：
 
@@ -54,7 +56,9 @@ Kaeso 发送的每封邮件都来自 `crates/kaeso-mail`：一套布局、一份
 
 ## 文字标志
 
-邮件以两张内嵌 PNG 携带文字标志，浅色和深色各一张，合计约 6 KB。自托管实例的地址可能是内部地址，而且许多邮件应用会屏蔽远程图片，所以链接的图片可能无法显示。每张 PNG 都是显示尺寸的三倍，由 `assets/wordmark-light.svg` 和 `assets/wordmark-dark.svg` 渲染而成。一个测试会用 resvg 重新渲染这些 SVG，与提交的 PNG 不一致时就会失败。重新生成它们：
+邮件以两张内嵌 PNG 携带文字标志，浅色和深色各一张，合计约 6 KB。自托管实例的地址可能是内部地址，而且许多邮件应用会屏蔽远程图片，所以链接的图片可能无法显示。
+
+每张 PNG 都是显示尺寸的三倍，由 `assets/wordmark-light.svg` 和 `assets/wordmark-dark.svg` 渲染而成。一个测试会用 resvg 重新渲染这些 SVG，与提交的 PNG 不一致时就会失败。重新生成它们：
 
 ```bash
 KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
@@ -66,7 +70,7 @@ Kaeso 自己设定深色模式，而不是交给各个邮件应用自动反色�
 
 1. **遵循 `prefers-color-scheme` 的应用**，例如 Apple Mail 和 Thunderbird。文档声明支持两种配色方案，所以它们不会反色；`@media (prefers-color-scheme: dark)` 用 `!important` 把每个角色切换为深色令牌。
 2. **Outlook.com 和新版 Outlook**，它们会自行调暗邮件，并用 `data-ogsc` 和 `data-ogsb` 标记重新着色的元素。这些属性下的同一套规则用 Kaeso 的深色值替换它们的猜测。
-3. **不经询问就反色的应用**，例如 Gmail 应用。浅色设计经得起反色：接近黑色的文字、反色后变成深色主题浅色胶囊的按钮、浅色文字标志周围的白色描边，以及始终隐藏的深色文字标志。
+3. **不经询问就反色的应用**，例如 Gmail 应用。浅色设计经得起反色。它的文字接近黑色，按钮反色后变成深色主题的浅色胶囊。浅色文字标志周围有白色描边，深色文字标志则始终隐藏。
 
 样式表与内联样式来自同一个令牌宏。测试检查每条深色规则都带 `!important`，并且每个角色在每一层都有规则。
 

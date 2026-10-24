@@ -9,9 +9,9 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 
 ## 哪些推理会被回放
 
-- **在请求中**，发往另一方言的可读推理文本和摘要作为提示字段被丢弃；旁边的[推理数据块](#推理数据块)会在对话回到其服务商时恢复原始块。
-- **没有签名时**，从 Anthropic Messages 读到的 Anthropic `thinking` 块会按收到时的样子发回 Anthropic，请求和回复都是如此：缺失的 `signature` 保持缺失，`signature: ""` 保持为 `""`。不是从 Anthropic Messages 读到的无签名 Anthropic 推理（例如由代码构建的块）没有可回放的内容，会被省略。
-- **在回复中**，其他方言的推理会以应用自己的推理形态展示（如果应用有这种形态），原始块放在推理数据块中，因此它会在下一轮重新回到其来源。OpenAI Chat 应用没有这种形态，因此由网关在两轮之间保存它们的推理。
+- **在请求中**，发往另一方言的可读推理文本和摘要作为提示字段被丢弃。旁边的[推理数据块](#推理数据块)会在对话回到其服务商时恢复原始块。
+- **没有签名时**，从 Anthropic Messages 读到的 Anthropic `thinking` 块会按收到时的样子发回 Anthropic，请求和回复都是如此。缺失的 `signature` 保持缺失，`signature: ""` 保持为 `""`。不是从 Anthropic Messages 读到的无签名 Anthropic 推理（例如由代码构建的块）没有可回放的内容，会被省略。
+- **在回复中**，其他方言的推理会以应用自己的推理形态展示（如果应用有这种形态）。此时原始块放在推理数据块中，因此它会在下一轮重新回到其来源。OpenAI Chat 应用没有这种形态，因此由网关在两轮之间保存它们的推理。
 
 ## 推理强度与预算
 
@@ -36,7 +36,9 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 | 4,096 到 16,383 | `medium` |
 | 16,384 及以上 | `high` |
 
-同一请求中显式的推理强度优先于预算。如果预算换算出的推理强度不在模型支持的推理强度级别中，网关会在发送前拒绝该请求，指明 `thinking.budget_tokens`，并给出最接近的、能换算为该模型所支持级别的预算；若没有这样的预算，则要求关闭思考：`mistral-small-latest` 只支持 `none` 和 `high`，因此需要 16,384 或更多的 `budget_tokens`。
+同一请求中显式的推理强度优先于预算。如果预算换算出的推理强度不在模型支持的推理强度级别中，网关会在发送前拒绝该请求。
+
+拒绝时会指明 `thinking.budget_tokens`，并给出最接近的、能换算为该模型所支持级别的预算。若没有这样的预算，则改为要求关闭思考。例如，`mistral-small-latest` 只支持 `none` 和 `high`，因此需要 16,384 或更多的 `budget_tokens`。
 
 | OpenAI 推理强度 | Anthropic `budget_tokens` |
 | --- | --- |
@@ -48,7 +50,7 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 
 随后预算会按 Anthropic 的规则调整：至少为 1,024，且小于 `max_tokens`，因此当 `max_tokens − 1` 更小时，预算取 `max_tokens − 1`。当 `max_tokens` 不超过 1,024 时，不存在有效的预算，于是 `max_tokens` 增加 1,024，预算取 1,024：应用自己的 `max_tokens` 仍全部留给回答。`reasoning_map::budget_within` 负责调整和增加，`reasoning_map::fit_budget` 只负责调整。
 
-第一个来源是 OpenAPI 规范中 OpenAI 的 `ReasoningEffort` 枚举：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` 和 `max`，但并非每个模型都支持每个值。第二个来源是 Anthropic 的[扩展思考](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)页面。该页面说明 `budget_tokens` 至少为 1,024 且小于 `max_tokens`，并且 Claude Sonnet 4.5、Opus 4.5、Haiku 4.5 以及更早的 Claude 4 模型不支持自适应思考。
+第一个来源是 OpenAPI 规范中 OpenAI 的 `ReasoningEffort` 枚举：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` 和 `max`，但并非每个模型都支持每个值。第二个来源是 Anthropic 的[扩展思考](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)页面。该页面说明 `budget_tokens` 至少为 1,024 且小于 `max_tokens`。该页面还说明 Claude Sonnet 4.5、Opus 4.5、Haiku 4.5 以及更早的 Claude 4 模型不支持自适应思考。
 
 ## 可读推理与摘要
 
@@ -61,16 +63,16 @@ OpenAI 只有在请求设置了 `reasoning.summary` 时才返回可读推理，�
 
 网关还会告诉编码器目标模型是否推理（`EgressCtx::reasoning`，来自模型目录的 `reasoning`）。为 `Some(true)` 时：
 
-- 没有推理强度、模式或预算的摘要（OpenAI 的 `reasoning: {summary: "auto"}`）会以模型的默认深度开启 Anthropic 思考：不带推理强度的自适应思考，或者 `medium` 对应的预算，即 OpenAI 的默认推理强度；
+- 没有推理强度、模式或预算的摘要（OpenAI 的 `reasoning: {summary: "auto"}`）会以模型的默认深度开启 Anthropic 思考。也就是不带推理强度的自适应思考，或者 `medium` 对应的预算，即 OpenAI 的默认推理强度；
 - 没有推理强度的 Anthropic `adaptive` 思考对 OpenAI Responses 而言算作推理：它会请求 `include: ["reasoning.encrypted_content"]`，并像上面那样请求摘要。
 
 没有推理设置的请求、推理强度 `none`，以及不推理或未知的模型，都不会被开启推理。OpenAI Chat 应用的格式不显示推理，因此不会请求摘要。
 
-提供 Chat Completions 的服务商会在自己的字段中返回可读推理，例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`，无需请求摘要。它们的 Chat 配置会指明该字段（`reasoning_fields`，[服务商配置](openai-chat.md#服务商配置)），因此推理会成为 KPP 推理块：Anthropic Messages 应用以 `thinking` 块得到它，Responses 应用以带摘要的推理项得到它，原始块都保存在[推理数据块](#推理数据块)中。
+提供 Chat Completions 的服务商会在自己的字段中返回可读推理，例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`，无需请求摘要。它们的 Chat 配置会指明该字段（`reasoning_fields`，[服务商配置](openai-chat-providers.md#服务商配置)），因此推理会成为 KPP 推理块：Anthropic Messages 应用以 `thinking` 块得到它，Responses 应用以带摘要的推理项得到它，原始块都保存在[推理数据块](#推理数据块)中。
 
 ## 思考与采样
 
-当 Kaeso 为来自其他方言的请求开启思考时，Anthropic 禁止与思考同时使用的设置会被调整而不是被拒绝，因为采样设置和强制工具在 OpenAI 应用中很常见：
+采样设置和强制工具在 OpenAI 应用中很常见。因此，当 Kaeso 为来自其他方言的请求开启思考时，会调整 Anthropic 禁止与思考同时使用的设置，而不是拒绝请求：
 
 - 省略 `temperature`、`top_p` 和 `top_k`。开启思考时，Anthropic 拒绝 `temperature` 和 `top_k`，并把 `top_p` 限制在 0.95 到 1 之间，而 Claude Opus 4.7 及更新版本拒绝任何非默认值。
 - `enabled` 思考不会与强制工具（`tool_choice` 为 `required` 或指定名称的工具）一起发送，因为 Anthropic 会拒绝这种组合。在 Anthropic 接受强制工具的情况下，即自适应思考，回复以工具调用开头，本来就不含思考，因此不会损失什么。带自适应思考的强制工具原样发送。
@@ -79,7 +81,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 ## 没有思考的工具轮次
 
-如果请求使用 `enabled` 思考，而其最后一个助手轮次进行了工具调用，前面却没有可回放的思考块（签名思考块或 `redacted_thinking` 块），Anthropic 会拒绝该请求（“a final assistant message must start with a thinking block”）。这样的请求在该轮次中不带 `thinking` 发往 Anthropic。自适应思考保持不变，因为自适应模型不需要开头的思考块。
+如果请求使用 `enabled` 思考，而其最后一个助手轮次进行了工具调用，前面却没有可回放的思考块，Anthropic 会拒绝该请求。该块必须是签名思考块或 `redacted_thinking` 块，拒绝消息为“a final assistant message must start with a thinking block”。这样的请求在该轮次中不带 `thinking` 发往 Anthropic。自适应思考保持不变，因为自适应模型不需要开头的思考块。
 
 由于推理会随对话传递，这种情况很少见。但在以下三种情况下仍会发生：
 
@@ -89,7 +91,7 @@ Anthropic 应用自己的设置按收到时的样子发送。
 
 ## 推理的延续
 
-如果不加处理，应用在另一服务商的模型上运行时，每个工具循环轮次都会丢失该模型的推理：预算思考会在每个后续轮次被关闭，自适应思考则会丢失之前推理的内容。`kaeso_codecs::continuity` 让推理随对话传递：对 Responses 和 Anthropic 应用，借助推理数据块；对 Chat 应用，由网关保存。
+如果不加处理，应用在另一服务商的模型上运行时，每个工具循环轮次都会丢失该模型的推理。预算思考会在每个后续轮次被关闭，自适应思考则会丢失之前推理的内容。`kaeso_codecs::continuity` 让推理随对话传递：对 Responses 和 Anthropic 应用，借助推理数据块；对 Chat 应用，由网关保存。
 
 ### 推理数据块
 
@@ -100,14 +102,14 @@ Anthropic 应用自己的设置按收到时的样子发送。
 | OpenAI Responses | 一个 ID 为 `rs_kaeso_…` 的推理 item，思考内容作为一段摘要文本，流中以 `response.reasoning_summary_*` 事件发送 | `encrypted_content` |
 | Anthropic Messages | 一个 `thinking` 块，其中摘要和推理文本作为思考内容，段落之间以空行分隔 | `signature`，在块结束时以一个 `signature_delta` 流式发送 |
 
-两个请求解码器都能在任何位置识别推理数据块（`continuity::unwrap_reasoning`），并恢复原始块及其来源，因此编码器会像对待其他推理一样，把它回放给它自己的方言和服务商。
+两个请求解码器都能在任何位置识别推理数据块（`continuity::unwrap_reasoning`），并恢复原始块及其来源。随后编码器会像对待其他推理一样，把它回放给它自己的方言和服务商。
 
 - **总是发送。** 无论应用是否请求了 `include: ["reasoning.encrypted_content"]`，也无论其 `store` 设置如何，推理数据块都会发送。Kaeso 不存储任何内容，而 SDK 的 agent 循环会把输出 item 和内容块原样发回。这些循环包括 openai-agents 的 `to_input_list()`、Codex、Claude Code 和 Anthropic tool runner。
-- **以推理数据块为准。** 推理数据块中再次包含了可读文本，因为它必须精确恢复原始块（Anthropic 会根据签名校验思考文本），而应用可能会编辑或丢弃可读的副本。应用把两者都发回时，以推理数据块为准。
+- **以推理数据块为准。** 推理数据块中再次包含了可读文本，因为它必须精确恢复原始块（Anthropic 会根据签名校验思考文本）。应用可能会编辑或丢弃可读的副本。应用把两者都发回时，以推理数据块为准。
 - **绝不会与服务商数据混淆。** 前缀包含 `:`，它既不在 Anthropic 签名所用的 base64 字母表中，也不在 OpenAI 加密内容所用的 base64url 字母表中。带有该前缀但无法解码的值会作为服务商自己的不透明数据保留，随后由服务商拒绝，因此不会有任何内容被静默丢弃。
 - **Kaeso 不对它加密或签名。**其中只有应用已经看到的内容，以及只有签发它的服务商才能校验的数据。
 
-来自其他方言的请求，如果设置了 `none` 以外的推理强度或思考预算，或者为网关已知会推理的模型开启了思考（[可读推理与摘要](#可读推理与摘要)），会向 OpenAI Responses 请求 `include: ["reasoning.encrypted_content"]`。否则 Kaeso 无法判断模型是否推理，而 OpenAI 会对不推理的模型拒绝加密推理。由于这些请求带有 `store: false`（[Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发给 OpenAI，因为 OpenAI 无法解析它的 item ID。
+来自其他方言的请求如果设置了 `none` 以外的推理强度或思考预算，会向 OpenAI Responses 请求 `include: ["reasoning.encrypted_content"]`。为网关已知会推理的模型开启思考的请求也会这样做（[可读推理与摘要](#可读推理与摘要)）。否则 Kaeso 无法判断模型是否推理，而 OpenAI 会对不推理的模型拒绝加密推理。由于这些请求带有 `store: false`（[Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发给 OpenAI，因为 OpenAI 无法解析它的 item ID。
 
 ### 由网关保存的推理
 

@@ -57,6 +57,11 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
+Codex sendet bei jedem Zug Teile, die nur OpenAI kennt. Kaeso übersetzt sie für andere Modelle: Es macht aus den Tool-Gruppen und MCP-Tools von Codex einfache Tools und aus seiner Websuche die Websuche von Claude. Zwei Einstellungen hängen vom Modell ab:
+
+- Für Claude setzen Sie `web_search = "live"` oder `"disabled"`. Der Standard von Codex, `"cached"`, verlangt OpenAIs Cache von Seiten, den Claude nicht hat.
+- Für Modelle, die über Chat Completions laufen, etwa Mistral, setzen Sie `web_search = "disabled"`. Sie haben keine Websuche.
+
 > [!NOTE]
 > Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt.
 

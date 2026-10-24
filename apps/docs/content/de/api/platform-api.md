@@ -76,7 +76,7 @@ Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automati
 - **Schlüssel stehen in `Authorization`.** Die Platform API liest nie `x-api-key`.
 - **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`. Standard ist `inference`, und Plattformzugriff erfordert das Recht `keys.platform_access.grant` ([API-Schlüssel](../console/api-keys.md)).
 - **Plattform-Schlüssel entstehen nur in einer Sitzung**, durch jemanden, der jedes Recht der Rolle Admin hat. Sie rufen nie Modelle auf.
-- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet die Sitzungen der Konten, die sie verwaltet, mit 403, sofern sie nicht von ihrem Anbieter stammen; Sitzungen von Gästen kommen durch. Eine, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Sitzungen ohne zweiten Faktor mit 403, außer denen aus einem Single Sign-on, das dort zählt: ihrem eigenen oder dem der Organisation, die das Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
+- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet die Sitzungen der Konten, die sie verwaltet, mit 403, sofern sie nicht von ihrem Anbieter stammen; Sitzungen von Gästen kommen durch. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Sitzungen ohne zweiten Faktor mit 403. Ausgenommen ist eine Sitzung aus einem Single Sign-on, das dort zählt: ihrem eigenen oder dem der Organisation, die das Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 - **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene Schlüsselprüfungen](../self-hosting/configuration.md#fehlgeschlagene-schlüsselprüfungen)).
 
 ### Websiteübergreifende Anfragen
@@ -91,13 +91,19 @@ So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in
 
 ### Kürzliche Anmeldung
 
-In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden: mit Ihrem Passwort oder einem Anmeldelink, oder über Single Sign-on, wenn das Konto keinen anderen Weg hat. Schlüssel brauchen das nie.
+In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden. Sie bestätigen mit Ihrem Passwort oder einem Anmeldelink, oder über Single Sign-on, wenn das Konto keinen anderen Weg hat. Schlüssel brauchen das nie.
 
-`GET me/sign-in-again` nennt, wie das Konto bestätigen kann: `password`, `magic_link` und `set_password`, wenn es noch kein Passwort hat, aber über `POST auth/password-reset` eines festlegen kann. Nur wenn alle drei `false` sind, nennt `sso` die Organisationen, mit deren Identitätsanbieter das Konto verknüpft ist, zuerst die, die es verwaltet; verlangt diese Single Sign-on, bestätigt nur ihr Anbieter. `POST me/sign-in-again/sso` startet eine Bestätigung bei einem davon. Der Anbieter wird um eine frische Anmeldung gebeten (`prompt=login`, `max_age=0`), nur dasselbe Konto bestätigt, und die Sitzung wird durch eine aus dem Single Sign-on dieser Organisation ersetzt. Bei einem Fehler kommt der Browser mit `#sso_error=` zu `next` zurück, etwa `other_account` oder `link_required`. `cannot_confirm` bedeutet, dass die Antwort des Anbieters keine frische Anmeldung zeigte: Sie ließ `auth_time` weg oder trug eine ältere Anmeldung, die der Anbieter wiederverwendet hat; `sso` lässt diese Organisation dann aus, und ihre Verbindung zeigt `confirms_sign_in: false` in `GET orgs/{org}/security`.
+`GET me/sign-in-again` nennt, wie das Konto bestätigen kann: `password`, `magic_link` und `set_password`, wenn es noch kein Passwort hat, aber über `POST auth/password-reset` eines festlegen kann. Nur wenn alle drei `false` sind, nennt `sso` die Organisationen, mit deren Identitätsanbieter das Konto verknüpft ist. Die Organisation, die das Konto verwaltet, steht zuerst. Verlangt diese Single Sign-on, bestätigt nur ihr Anbieter.
+
+`POST me/sign-in-again/sso` startet eine Bestätigung bei einem davon. Kaeso bittet den Anbieter um eine frische Anmeldung (`prompt=login`, `max_age=0`), und nur dasselbe Konto bestätigt. Kaeso ersetzt die Sitzung dann durch eine aus dem Single Sign-on dieser Organisation. Bei einem Fehler kommt der Browser mit `#sso_error=` zu `next` zurück, etwa `other_account` oder `link_required`.
+
+`cannot_confirm` bedeutet, dass die Antwort des Anbieters keine frische Anmeldung zeigte: Sie ließ `auth_time` weg oder trug eine ältere Anmeldung, die der Anbieter wiederverwendet hat. `sso` lässt diese Organisation dann aus, und ihre Verbindung zeigt `confirms_sign_in: false` in `GET orgs/{org}/security`.
+
+Diese Aktionen verlangen eine kürzliche Anmeldung:
 
 - **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
 - **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
-- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, Single Sign-on für Instanz-Admins wählen (nur mit Passwort oder Anmeldelink), automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen.
+- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen. Die Wahl von Single Sign-on für Instanz-Admins verlangt ebenfalls eine, und nur ein Passwort oder ein Anmeldelink bestätigt sie.
 
 ## Konventionen
 
@@ -185,11 +191,18 @@ Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie ers
 
 Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zurück, mit `POST instance/users/{user}/reset-2fa`. Abrechnungsrouten gibt es nicht: Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
 
-`GET orgs/{org}/providers` braucht `org.view` und listet jeden Anbieter, den Kaeso aufruft, in jeder Organisation gleich. Jeder hat seine ID und seinen Namen, die Seite, auf der Sie seine Schlüssel erstellen (`key_page`), womit seine Schlüssel beginnen (`key_prefix`, `null` ohne festes Präfix) und die Formate, mit denen Kaeso ihn aufruft, das Standardformat zuerst. [Unterstützte Anbieter](../concepts/supported-providers.md) zeigt dieselbe Liste als Tabelle.
+`GET orgs/{org}/providers` braucht `org.view` und listet jeden Anbieter, den Kaeso aufruft, in jeder Organisation gleich. Jeder Anbieter hat:
+
+- seine ID und seinen Namen;
+- die Seite, auf der Sie seine Schlüssel erstellen (`key_page`);
+- womit seine Schlüssel beginnen (`key_prefix`, `null` ohne festes Präfix);
+- die Formate, mit denen Kaeso ihn aufruft, das Standardformat zuerst.
+
+[Unterstützte Anbieter](../concepts/supported-providers.md) zeigt dieselbe Liste als Tabelle.
 
 ## Rollen und Rechte
 
-Jedes Mitglied einer Organisation hat eine Organisationsrolle. Jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`), und pro Mitglied lassen sich Rechte hinzufügen oder entfernen. Eine Organisationsrolle hält außerdem Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede integrierte Rolle.
+Jedes Mitglied einer Organisation hat eine Organisationsrolle, und jedes Projektmitglied und jedes Dienstkonto hat eine Projektrolle. Eine Rolle ist eingebaut oder eine eigene Rolle der Organisation (`role_…`), und Sie können ihr pro Mitglied Rechte hinzufügen oder entziehen. Eine Organisationsrolle hält außerdem Rechte in jedem Projekt. [Rechte](../concepts/rights.md) listet jedes Recht und jede integrierte Rolle.
 
 | Route | Recht | Antwortet mit |
 | --- | --- | --- |
@@ -244,7 +257,7 @@ Eine Playground-Anfrage ist eine Modellanfrage wie jede andere, gestellt vom Mit
 
 - **Derselbe Weg.** Das Modell wird im Katalog des Projekts aufgelöst, Aliasse und `provider/model` eingeschlossen, und muss im Modellzugriff des Mitglieds liegen. Kaeso verwendet den Anbieter-Schlüssel des Projekts, und das Schließen des Streams bricht die Anfrage beim Anbieter ab.
 - **Limits.** Die Raten und Budgets des Mitglieds und des Projekts gelten. Schlüssel-Limits gelten nicht, da es keinen Schlüssel gibt.
-- **Nutzung und Protokolle.** Die Anfrage wird dem Projekt als die des Mitglieds berechnet, und die Nutzung nach `key` zeigt sie als `playground`. Ihr Protokolleintrag hat die Quelle `playground` und enthält ihren Inhalt, wenn das Projekt Inhalte protokolliert. `logs` und `logs/export` filtern mit `source=api` oder `source=playground`.
+- **Nutzung und Protokolle.** Kaeso berechnet die Anfrage dem Projekt als die des Mitglieds, und die Nutzung nach `key` zeigt sie als `playground`. Ihr Protokolleintrag hat die Quelle `playground` und enthält ihren Inhalt, wenn das Projekt Inhalte protokolliert. `logs` und `logs/export` filtern mit `source=api` oder `source=playground`.
 
 Fehler vor dem Beginn des Streams sind Fehler der Platform API:
 

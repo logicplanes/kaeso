@@ -49,10 +49,20 @@ console.log(response.output_text);
 ```mermaid
 flowchart TD
   accTitle: 各部分如何配合
-  accDescr: 应用通过 /v1 调用网关，控制台通过 /platform/v1 调用网关；网关调用模型服务商。
-  apps[应用] -- /v1 --> gateway[网关]
-  console[控制台] -- /platform/v1 --> gateway
-  gateway --> providers[模型服务商]
+  accDescr: 您的应用通过 /v1 调用网关的模型 API；用户使用控制台，控制台通过 /platform/v1 调用网关的 Platform API。网关把数据保存在您实例中的 PostgreSQL、ClickHouse 和 Valkey 里，并用您的服务商密钥调用模型服务商。
+  apps[您的应用]:::outside
+  people[浏览器中的用户]:::outside
+  subgraph install [您的 Kaeso 实例]
+    console[控制台]
+    gateway[网关]:::accent
+    stores[(PostgreSQL、ClickHouse<br>和 Valkey)]
+  end
+  providers[模型服务商]:::outside
+  people --> console
+  apps -- 模型 API，/v1 --> gateway
+  console -- Platform API，/platform/v1 --> gateway
+  gateway --> stores
+  gateway -- 您的服务商密钥 --> providers
 ```
 
 | 部分 | 说明 |

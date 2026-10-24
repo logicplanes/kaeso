@@ -202,12 +202,16 @@ describe("diagrams", () => {
     expect(out.seen.map((s) => s.line)).toEqual([1, 10, 17]);
   });
 
-  it("names the file's line of a diagram without a title, with a comment, or not drawn yet", () => {
+  it("names the file's line of a diagram without a title, with a comment, its own styles, or not drawn yet", () => {
     expect(page("```mermaid\nflowchart LR\n  a --> b\n```").problems).toEqual([
       ":5: the diagram has no `accTitle: …`: name it in a few words for screen readers and search",
     ]);
     expect(page("Text.\n\n```mermaid\n%%{init: {'theme': 'dark'}}%%\nflowchart LR\n  accTitle: A\n  a --> b\n```").problems).toEqual([
       ":7: the diagram has a `%%` line: diagrams take no comments and no `%%{init}`, the site sets their look",
+    ]);
+    expect(page("Text.\n\n```mermaid\nflowchart LR\n  accTitle: A\n  a:::accent --> b:::loud\n  style b fill:#f00\n```").problems).toEqual([
+      ":7: the diagram styles itself: mark nodes with `:::accent` or `:::outside` alone, the site sets their look",
+      ":7: the diagram marks a node `:::loud`: use `:::accent` or `:::outside`",
     ]);
     const missing = page(FLOW, { kind: "problem", message: "the diagram has changed since it was last drawn" });
     expect(missing.problems).toEqual([":5: the diagram has changed since it was last drawn"]);

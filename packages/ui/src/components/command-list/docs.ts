@@ -5,6 +5,7 @@ export const docs = {
     description:
       "A search field over a long list that stays fast with thousands of rows: fuzzy matches on every row's words, groups with sticky captions, the best matches first, arrows, Home, End and Page keys, Enter to choose. The base of every picker.",
     props: {
+      counts: "Shows each group's count beside its caption; false leaves them out, for a site whose house style has no result counters.",
       "aria-label": "The list's accessible name.",
       autoFocus: "Focuses the search field when it appears, as in a popover or a dialog step.",
       defaultQuery: "The search text on first render.",

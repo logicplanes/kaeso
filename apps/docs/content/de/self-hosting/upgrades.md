@@ -34,7 +34,9 @@ version={{version}}
 )
 ```
 
-Die Befehle halten beim ersten an, der scheitert, und lassen die Installation, wie sie war. Docker prüft jedes geladene Image gegen den Digest in der `compose.yaml`. Der letzte Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist. Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
+Die Befehle halten beim ersten an, der scheitert, und lassen die Installation, wie sie war. Docker prüft jedes geladene Image gegen den Digest in der `compose.yaml`. Der letzte Befehl kehrt zurück, sobald das neue Gateway und die neue Konsole gesund sind, und scheitert, wenn eines von beiden es nicht ist.
+
+Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärts und der Reihe nach, sodass Sie Versionen überspringen können.
 
 Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Befehle mit der genauen Version.
 
@@ -42,7 +44,9 @@ Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Be
 
 Das Gateway sucht alle 5 Minuten unter `update.kaeso.app` nach neuen Releases, nach einem Fehler 15 Minuten später. Bittet der Feed, länger zu warten, wartet es höchstens eine Stunde. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways, und eine unveränderte Liste kostet nur eine kurze Antwort `304`.
 
-Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat. `instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist oder der Feed das Gateway warten lässt. Den Feed fragt sie höchstens einmal pro Minute. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
+Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat.
+
+`instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist oder der Feed das Gateway warten lässt. Den Feed fragt sie höchstens einmal pro Minute. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |
@@ -129,9 +133,33 @@ Der Updater ersetzt weder sich selbst noch Caddy, während er läuft. Das nächs
 
 Wählen Sie unter **Wie Updates installiert werden** die Option **Automatisch**, und legen Sie dann das Update-Fenster fest: **Täglich** oder **Wöchentlich** an einem Tag, zu einer Stunde. Die Stunde gilt in der Zeitzone der Installation, die Sie unter **Allgemein** festlegen, Sommerzeit eingeschlossen. Das Fenster bleibt eine Stunde offen, und die Seite zeigt, wann sich das nächste öffnet.
 
-Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde nicht getan hat. Dann aktualisiert es auf das neueste Release, das der Updater installiert, genau wie **Auf … aktualisieren**. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie. Läuft das Gateway während eines Fensters nicht, verstreicht es, und das nächste zählt. Verlauf und Audit-Log halten jedes automatische Update ohne Person fest.
+Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde nicht getan hat. Dann aktualisiert es auf das neueste Release, das der Updater installiert, genau wie **Auf … aktualisieren**. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie.
+
+Läuft das Gateway während eines Fensters nicht, verstreicht es, und das nächste zählt. Verlauf und Audit-Log halten jedes automatische Update ohne Person fest.
 
 ### Ergebnisse
+
+Jedes Update endet mit einem von fünf Ergebnissen, je nachdem, wo es aufhört:
+
+```mermaid
+flowchart TD
+  accTitle: Wie ein Update endet
+  accDescr: Der Updater prüft die Signaturen und lädt die Images herunter. Scheitert das, endet das Update mit Nicht eingespielt, und nichts ändert sich. Dann stellt er die Container um, und das neue Gateway migriert die Datenbanken. Ist es wieder erreichbar, endet das Update mit Aktualisiert. Scheitert es, startet der Updater die vorherige Version wieder und endet mit Zurückgesetzt, oder mit Zurücksetzen fehlgeschlagen, wenn diese nicht startet. Kann das neue Gateway die Datenbanken schon migriert haben, endet das Update stattdessen mit Prüfung nötig.
+  subgraph before [Noch nichts geändert]
+    check[Signaturen prüfen] --> download[Herunterladen]
+  end
+  subgraph after [Container umgestellt]
+    switch[Umstellen] --> migrate[Migrieren] --> online[Wieder erreichbar]
+  end
+  download --> switch
+  online --> updated[Aktualisiert]:::accent
+  before -. scheitert .-> notinstalled([Nicht eingespielt])
+  after -. scheitert .-> migrated[Kann das neue Gateway die<br>Datenbanken migriert haben?]
+  migrated -. ja .-> attention([Prüfung nötig])
+  migrated -. nein .-> restore[Vorherige Version<br>wieder starten]
+  restore --> rolled([Zurückgesetzt])
+  restore -. scheitert .-> rfailed([Zurücksetzen<br>fehlgeschlagen])
+```
 
 Der Verlauf der Seite zeigt, wie jedes Update ausgegangen ist:
 
@@ -157,10 +185,10 @@ Der Updater kommt root auf dem Server gleich. Er kann Container anlegen, und `do
 - Er antwortet nur dem Gateway, in einem internen Netzwerk und nur mit dem gemeinsamen Token. Das Gateway übergibt ihm eine Versionsnummer und sonst nichts.
 - Er erreicht Docker nur über `docker-proxy`, der nur die Aufrufe durchlässt, die ein Update braucht. Bind-Mounts erlaubt er nur aus `KAESO_DIR`, dem Ordner der Installation; ändern Sie `KAESO_DIR` also, wenn Sie den Ordner verschieben.
 - Er ersetzt nur die Gateway- und Konsolen-Container seines eigenen Compose-Projekts, mit Images, die er geprüft hat.
-- Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk, Mounts, Ports, Namensauflösung, Gruppen oder Limits von denen des ersetzten abweichen, und lädt nur die Images von Kaeso, per Digest.
+- Er legt keinen Container an, dessen Rechte, Capabilities, Geräte, Namespaces, Netzwerk, Mounts, Ports, Namensauflösung, Gruppen oder Limits von denen des ersetzten abweichen. Er lädt nur die Images von Kaeso, per Digest.
 - Er ändert in der `compose.yaml` nur die Image-Versionen und Digests und lässt eine Datei unangetastet, die von der des Releases abweicht.
 
-Der Proxy kann nicht prüfen, was ein neuer Container verlangt, etwa Rechte oder Geräte des Hosts, und lässt den Updater die Einstellungen jedes Containers lesen, auch die Datenbankpasswörter in ihrer Umgebung. Diese Prüfungen liegen allein im Updater. Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
+Der Proxy kann nicht prüfen, was ein neuer Container verlangt, etwa Rechte oder Geräte des Hosts. Außerdem lässt er den Updater die Einstellungen jedes Containers lesen, auch die Datenbankpasswörter in ihrer Umgebung. Diese Prüfungen liegen allein im Updater. Ohne das Profil `updater` hat nichts in Kaeso Zugriff auf Docker.
 
 ## Während Kaeso aktualisiert wird
 

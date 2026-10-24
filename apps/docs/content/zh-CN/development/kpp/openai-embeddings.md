@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: OpenAI Embeddings 格式的每个字段如何映射到 KPP 以及如何映射回来。
-order: 7
+order: 8
 ---
 
 在这里查阅 OpenAI Embeddings 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
@@ -84,4 +84,4 @@ order: 7
 
 ### Mistral
 
-来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400；这些错误响应体没有 `error` 对象，因此应用会收到引用它们的 OpenAI 错误。
+来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400。这些错误响应体没有 `error` 对象，因此应用会收到引用它们的 OpenAI 错误。

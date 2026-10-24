@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: OpenAI Responses 格式的每个字段如何映射到 KPP，又如何映射回来。
-order: 6
+order: 7
 ---
 
 在这里查阅 OpenAI Responses 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
@@ -23,17 +23,23 @@ order: 6
 
 ## 原始写法如何保留
 
-每个线路对象都有一个*规范*编码，它只由类型化的 KPP 字段和[形式标记](#形式标记)中列出的结构性形式标记构成。来自其他方言的请求和回复得到的正是这种编码。解码时，编解码器为解码出的内容构建规范编码，并把它与收到的 JSON 之间的每一处差异，作为覆盖项记录在该对象所属 KPP 元素的 extras 中：
+每个线路对象都有一个*规范*编码，它只由类型化的 KPP 字段和[形式标记](#形式标记)中列出的结构性形式标记构成。来自其他方言的请求和回复得到的正是这种编码。解码时，编解码器为解码出的内容构建规范编码，并与收到的 JSON 比较。每一处差异都作为覆盖项，记录在该对象所属 KPP 元素的 extras 中：
 
 - `fields["<path>"]`：规范编码不写出、或以另一个值写出的键。包括未知键，以及 KPP 不建模的已知键（`metadata`、`text.verbosity`、`detail: "low"` 等），逐字节保留。下文表格中称为 **extras**。
-- `form["set"]["<path>"]`：针对呈现方式的同类记录。包括 `null` 值、显式写出的默认值（`store: false`、`background: false`、`stream: false`、`tools: []`、`include: []`、`metadata: {}`、`text: {}`、`detail: "auto"`、`truncation: "disabled"`、`service_tier: "auto"`、`text.format: {type: text}`、`text.verbosity: "medium"`、`stream_options: {}`、`stream_options.include_obfuscation`、空的 `annotations`/`logprobs`/`summary`/`content`），键 `type`、`id`、`item_id`、`status`、`role`、`object`、`filename`、`obfuscation`、`sequence_number`，以及与规范值只有写法不同的数字（规范编码写 `1.0` 而原文是 `1`）。下文表格中称为**形式标记**。
+- `form["set"]["<path>"]`：针对呈现方式的同类记录，下文表格中称为**形式标记**。它包括 `null` 值和显式写出的默认值（`store: false`、`background: false`、`stream: false`、`tools: []`、`include: []`、`metadata: {}`、`text: {}`、`detail: "auto"`、`truncation: "disabled"`、`service_tier: "auto"`、`text.format: {type: text}`、`text.verbosity: "medium"`、`stream_options: {}`、`stream_options.include_obfuscation`、空的 `annotations`/`logprobs`/`summary`/`content`）。它还包括键 `type`、`id`、`item_id`、`status`、`role`、`object`、`filename`、`obfuscation` 和 `sequence_number`。与规范值只有写法不同的数字也记录在这里（规范编码写 `1.0` 而原文是 `1`）。
 - `form["unset"]`：规范编码会写出、但原始内容中没有的路径。
 
-只有当 extras 来自 `openai_responses` 时，编码才会应用这些覆盖项。类型化字段始终优先。值按原样精确比较，数字也不例外（`1` 和 `1.0` 不同）。对于规范编码能还原的值，从不记录覆盖项，并有一个测试检查没有任何类型化的键被存为 extras 字段。每个覆盖项还会记住解码时规范编码在其路径上的值（`form["canon"]`）。如果某个类型化字段在解码后发生了变化（网关设置了 `max_output_tokens`、向只有 `prompt` 的请求添加了消息、设置了推理强度等），该路径上的规范值就会不同，过时的覆盖项随即被跳过。因此，写作 `1` 的数字只要值仍为 1，就会以 `1` 写回；值改变后则写出新值。
+只有当 extras 来自 `openai_responses` 时，编码才会应用这些覆盖项。类型化字段始终优先。值按原样精确比较，数字也不例外（`1` 和 `1.0` 不同）。对于规范编码能还原的值，从不记录覆盖项，并有一个测试检查没有任何类型化的键被存为 extras 字段。
+
+每个覆盖项还会记住解码时规范编码在其路径上的值（`form["canon"]`）。如果某个类型化字段在解码后发生了变化，该路径上的规范值就会不同，过时的覆盖项随即被跳过。例如，网关设置 `max_output_tokens`、向只有 `prompt` 的请求添加消息或设置推理强度时，就会出现这种情况。因此，写作 `1` 的数字只要值仍为 1，就会以 `1` 写回；值改变后则写出新值。
 
 只有在规范编码于该路径上也有 `type` 时（部分和 item 类型的写法），以及输入消息中可选的 `type: "message"`，`type` 才只关乎呈现方式。规范编码中不存在、且带有其他 `type` 的对象（例如 `text.format: {type: "grammar", …}`）会整体保存为一个 extras 字段，因此其他方言会拒绝它。
 
-键路径无法容纳为空、含有 `.` 或以 `header:`、`@`、`~` 开头的键，因为这些写法分别属于键路径、转发的请求头（`header:openai-beta`）和带作用域的覆盖项。含有这类键的对象会整体比较：如果它与规范编码不同，整个对象就作为一个 extras 字段存放在它自己的路径上（顶层的键则是整个请求体，路径为空）。这类键保留在请求体中：它们绝不会作为请求头发送，其他方言会像对待任何 extras 字段一样拒绝它们。与所有覆盖项一样，该字段只在其路径上的规范值不变时生效：如果该对象内的某个类型化字段发生变化（对于顶层的键，即请求的任何类型化字段，例如 `model`），该对象会按规范写出，这些键随之省略。
+键路径无法容纳为空、含有 `.` 或以 `header:`、`@`、`~` 开头的键。这些写法分别属于键路径、转发的请求头（`header:openai-beta`）和带作用域的覆盖项。
+
+含有这类键的对象会整体比较。如果它与规范编码不同，整个对象就作为一个 extras 字段存放在它自己的路径上。对于顶层的键，这个字段就是整个请求体，路径为空。这类键保留在请求体中：它们绝不会作为请求头发送，其他方言会像对待任何 extras 字段一样拒绝它们。
+
+与所有覆盖项一样，该字段只在其路径上的规范值不变时生效。如果该对象内的某个类型化字段发生变化，该对象会按规范写出，这些键随之省略。对于顶层的键，这指请求的任何类型化字段，例如 `model`。
 
 ## 请求：`CreateResponse` / `TokenCountsBody`
 
@@ -44,7 +50,9 @@ order: 6
 | `input`（item 列表） | `system` + `messages` 类型化 | 参见[输入项](#输入项inputitem)。没有 `input`（配合 `prompt` 时允许）：没有消息；形式标记 `unset input`。 |
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` 部分。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式标记。 |
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
-| `tools[]` 其他类型（`web_search`、`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
+| `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
+| `tools[]` `web_search` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
 | `tool_choice` `allowed_tools`、托管工具、`mcp`、`custom`、其他字符串 | `ToolChoice::Unknown` | 仅限同一方言。 |
@@ -72,9 +80,25 @@ order: 6
 | `metadata`、`truncation`、`service_tier`、`top_logprobs`、`max_tool_calls`、`prompt_cache_key`、`prompt_cache_retention`、`prompt_cache_options`、`prompt`、`context_management`、`moderation`、`access_programs`、`personality`（仅计数）、未知键 | extras | 显式写出的默认值和 `null` 是形式标记（参见[原始写法如何保留](#原始写法如何保留)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只转发给 Responses。 |
 
-请求体不是 JSON 对象、含有重复的键、缺少 `model`（针对 `/v1/responses`）或某个已知字段类型错误时，结果是 `InvalidRequest`，并指明该字段（`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``，同时设置 `param`），从不给出解析器位置。
+请求体符合以下任一情况时，结果是 `InvalidRequest`：
 
-对于来自任何方言的请求，`check()` 还会拒绝：`sampling.top_k`、`seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](cross-format.md#采样参数)）；未知的推理模式，以其线路值命名；文本文档、文档的 `title`/`context`/`citations`，以及文本形式标记的图像来源；以及 `cross::check_foreign` 拒绝的一切（外来 extras、未知的块、工具和工具选择、外来文件 ID、外来引用；参见[请求](cross-format.md#请求)）。无法回放的推理块会被丢弃（参见[推理](reasoning.md)），来自其他方言的缓存提示也会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。`ToolResult::is_error` 同样会被丢弃：它是提示字段，失败情况由内容本身描述（参见[工具错误](cross-format.md#工具错误)）。来自其他方言的推理配置以其推理强度发送：显式推理强度原样使用，预算按[推理强度表](reasoning.md#推理强度与预算)换算，`disabled` 作为 `none`；既没有推理强度也没有预算的 `adaptive` 或 `enabled` 发送时不带推理强度，模型因此使用默认推理强度。Embeddings 请求是 `Unsupported`。
+- 不是 JSON 对象；
+- 含有重复的键；
+- 缺少 `model`（针对 `/v1/responses`）；
+- 某个已知字段类型错误。
+
+错误会指明该字段，从不给出解析器位置，并设置 `param`：`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``
+
+对于来自任何方言的请求，`check()` 还会拒绝：
+
+- `sampling.top_k`、`seed`、`frequency_penalty`、`presence_penalty` 和停止序列，Responses API 没有这些参数（参见[采样参数](cross-format.md#采样参数)）；
+- 未知的推理模式，以其线路值命名；
+- 文本文档、文档的 `title`/`context`/`citations`，以及文本形式的图像来源；
+- `cross::check_foreign` 拒绝的一切（外来 extras、未知的块、工具和工具选择、外来文件 ID、外来引用；参见[请求](cross-format.md#请求)）。
+
+无法回放的推理块会被丢弃（参见[推理](reasoning.md)），来自其他方言的缓存提示也会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。`ToolResult::is_error` 同样会被丢弃：它是提示字段，失败情况由内容本身描述（参见[工具错误](cross-format.md#工具错误)）。
+
+来自其他方言的推理配置以其推理强度发送：显式推理强度原样使用，预算按[推理强度表](reasoning.md#推理强度与预算)换算，`disabled` 作为 `none`。既没有推理强度也没有预算的 `adaptive` 或 `enabled` 发送时不带推理强度，模型因此使用默认推理强度。Embeddings 请求是 `Unsupported`。
 
 ### 输入项（`InputItem`）
 
@@ -90,7 +114,9 @@ order: 6
 | `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言。 |
 | 无法按其类型解析的 item（例如 `call_id: null` 的 `function_call_output`） | `Block::Unknown`（同上） | 无损保留；由服务商判断。 |
 
-分组：连续的 `function_call` 和 `reasoning` item 并入当前助手消息，连续的 `function_call_output` item 并入当前用户消息，消息 item 则并入同一角色、尚未包含消息 item 的消息；system 和 developer item 从不并入已有消息。编码时，每条 KPP 消息会再拆开：每一段连续的内容块成为一个消息 item，其他每个块各成为一个 item。来自其他方言的消息，例如 Anthropic 的 `[thinking, text, tool_use, tool_use]`，会变成一个 `message` item 和两个 `function_call` item。其中的思考会被丢弃（参见[推理](reasoning.md)），除非它是 Anthropic 应用放在[推理数据块](reasoning.md#推理数据块)中带回来的 OpenAI 推理。
+分组：连续的 `function_call` 和 `reasoning` item 并入当前助手消息，连续的 `function_call_output` item 并入当前用户消息。消息 item 并入同一角色、尚未包含消息 item 的消息；system 和 developer item 从不并入已有消息。
+
+编码时，每条 KPP 消息会再拆开：每一段连续的内容块成为一个消息 item，其他每个块各成为一个 item。来自其他方言的消息，例如 Anthropic 的 `[thinking, text, tool_use, tool_use]`，会变成一个 `message` item 和两个 `function_call` item。其中的思考会被丢弃（参见[推理](reasoning.md)），除非它是 Anthropic 应用放在[推理数据块](reasoning.md#推理数据块)中带回来的 OpenAI 推理。
 
 消息 item 和函数调用 item 的 `id` 与 `status`（`msg_…`、`fc_…`）只关乎呈现方式，因此一段回传了输出 item 的对话仍然可以发往其他服务商。推理 item 的 ID 是语义字段（不透明的 `OpenAiReasoningItemId`），因为 OpenAI 会解析它们。
 
@@ -128,10 +154,11 @@ order: 6
 
 - `object: "response"`、`created_at`（`EncodeCtx::created_at`）、`background: false`、`completed_at`（完成时为同一时间，否则为 `null`）以及 `error: null`。
 - 回显的请求参数取自应用的请求（`EncodeCtx::request`，按本编解码器发送时的方式编码），未设置的使用 OpenAI 的默认值：`instructions`、`max_output_tokens`、`max_tool_calls`、`prompt_cache_key`、`safety_identifier` 和 `user` 为 `null`，`parallel_tool_calls: true`，`reasoning: {effort, summary}`（未设置的为 `null`），`temperature: 1.0`，`top_p: 1.0`，`top_logprobs: 0`，`text: {format: {type: text}}`，`tool_choice: "auto"`，`tools: []`，`truncation: "disabled"`，`metadata: {}`。`previous_response_id: null`、`service_tier: "default"` 和 `store: false`（Kaeso 不存储任何内容）总会写出。
-- 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`，这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
-- 其他方言的推理变为一个推理 item（参见[推理数据块](reasoning.md#推理数据块)）：ID 为 `rs_kaeso_…`，其推理文本作为一个 `summary_text`，后接其摘要，原始块的推理数据块作为 `encrypted_content`。无论应用是否在 `include` 中请求，推理数据块都会发送，因为 Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
+- 没有对应项的停止原因（`StopSequence`、`Refusal`、`PauseTurn`、`Other`）报告为 `completed`。这会丢失信息：Anthropic 的 `pause_turn` 要求应用继续，而 Responses 应用无从得知。回复为 `incomplete` 时，消息 item 也是 `incomplete`。
+- 其他方言的推理变为一个 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。其推理文本作为一个 `summary_text`，后接其摘要，`encrypted_content` 则是原始块的推理数据块。无论应用是否在 `include` 中请求，推理数据块都会发送。Kaeso 不存储任何内容，而各 SDK 的 agent 循环会把输出 item 原样发回。
 - 本方言无法呈现的回复数据会被省略（参见[回复](cross-format.md#回复)）：外来的 `Unknown` 块、外来的引用和 extras、图像、文档和工具结果。
-- 消息 item 和函数调用 item 的 ID 为 `msg_kaeso_…` 和 `fc_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
+- Anthropic 的网页搜索变为 `web_search_call` 项（参见[托管网页搜索](cross-format.md#托管网页搜索)），对展开后的命名空间工具的调用会恢复其 `namespace`（参见[工具命名空间](cross-format.md#工具命名空间)）。
+- 消息 item、函数调用 item 和网页搜索 item 的 ID 为 `msg_kaeso_…`、`fc_kaeso_…` 和 `ws_kaeso_…`。请求解码时会识别这些由 Kaeso 生成的 ID，绝不会把它们发给服务商。
 
 ## 输入 Token 计数：`TokenCountsResource`
 
@@ -143,7 +170,9 @@ order: 6
 
 ## 流：`ResponseStreamEvent`
 
-消息的每个内容部分、每个函数调用、每个推理 item 和每个其他 item 各对应一个 KPP 块。`sequence_number` 和 `obfuscation` 的偏差是形式标记。与数据中的 `type` 不同的 `event:` 名称是形式覆盖项 `~event`，已解码帧的 SSE 字段 `id`、`retry` 和未知字段是形式覆盖项 `~sse`（`{"id", "retry", "other": [[name, value], …]}`）；两者的作用域与事件相同，并会被写回。与规范事件的其他所有差异都是 extras 覆盖项，作用域由所附加的事件决定（`@open`、`@close`、`@done`、`@in_progress`、`@sdone`、`@spdone`、`@rdone`、`@rpdone`、`@text`、`@e<index>`、`@a<index>-…`）。
+消息的每个内容部分、每个函数调用、每个推理 item 和每个其他 item 各对应一个 KPP 块。`sequence_number` 和 `obfuscation` 的偏差是形式标记。
+
+与数据中的 `type` 不同的 `event:` 名称是形式覆盖项 `~event`。已解码帧的 SSE 字段 `id`、`retry` 和未知字段是形式覆盖项 `~sse`（`{"id", "retry", "other": [[name, value], …]}`）。两者的作用域与事件相同，并会被写回。与规范事件的其他所有差异都是 extras 覆盖项，作用域由所附加的事件决定（`@open`、`@close`、`@done`、`@in_progress`、`@sdone`、`@spdone`、`@rdone`、`@rpdone`、`@text`、`@e<index>`、`@a<index>-…`）。
 
 | SSE 事件 | KPP |
 | --- | --- |
@@ -191,9 +220,13 @@ order: 6
 - 摘要前后的 `reasoning_summary_*` 部分事件，以及推理文本前后的 `content_part.*` 和 `reasoning_text.*`；
 - 最后是 `response.completed`（`MaxTokens` 和 `ContentFilter` 时为 `response.incomplete`），带有所有输出 item 和用量。
 
-`sequence_number` 从 0 开始计数。item ID 是生成的（`msg_kaeso_…`、`fc_kaeso_…`、`rs_kaeso_…`，由回复 ID 和输出索引得出）。不会生成 `obfuscation`。在 `ResponseStop` 时仍未关闭的块会先被关闭。没有 `ResponseStart` 的流会得到一个，其 ID 为 `resp_kaeso_<created_at>`，取自 `EncodeCtx::created_at`。其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）：推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出（各摘要保留其索引），`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。在 `ResponseStop` 或 `Error` 之后，编码器拒绝后续的生命周期事件。外来错误变为一个 `error` 事件，`code` 取自错误类型（参见[错误](#错误errorresponse)）。
+`sequence_number` 从 0 开始计数。item ID 是生成的（`msg_kaeso_…`、`fc_kaeso_…`、`rs_kaeso_…`、`ws_kaeso_…`，由回复 ID 和输出索引得出）。不会生成 `obfuscation`。没有 `ResponseStart` 的流会得到一个，其 ID 为 `resp_kaeso_<created_at>`，取自 `EncodeCtx::created_at`。
 
-其他方言发送、而本方言无法呈现的内容（额外事件，例如 Anthropic 的 `ping`，以及外来的未知块）会换来按节奏发送的 SSE 注释 `: keepalive`（参见[保活消息](cross-format.md#保活消息)）：每个额外事件一条，每 1,024 字节隐藏文本一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
+在 `ResponseStop` 时仍未关闭的块会先被关闭。在 `ResponseStop` 或 `Error` 之后，编码器拒绝后续的生命周期事件。外来错误变为一个 `error` 事件，`code` 取自错误类型（参见[错误](#错误errorresponse)）。
+
+其他方言的推理块变为 ID 为 `rs_kaeso_…` 的推理 item（参见[推理数据块](reasoning.md#推理数据块)）。推理文本作为摘要 0 的 `reasoning_summary_text` 流式输出，各摘要保留其索引。`output_item.done` 在 `encrypted_content` 中携带整个块的推理数据块。
+
+其他方言发送、而本方言无法呈现的内容，例如 Anthropic 的 `ping` 这类额外事件或外来的未知块，会换来按节奏发送的 SSE 注释：`: keepalive`（参见[保活消息](cross-format.md#保活消息)）。编码器为每个额外事件写一条，每 1,024 字节隐藏文本写一条。`StreamEncoder::keepalive` 为网关提供同样的帧。流没有结束标记。
 
 ## 未单独列出的规范属性
 
@@ -251,7 +284,7 @@ order: 6
 
 含 `type` 和 `code` 的行优先于状态码。其他错误码在这里不起决定作用，由状态码决定：`rate_limit_exceeded`、`rate_limit_error` 和 `slow_down`（`RateLimited`），`server_error`（`ProviderError`），`invalid_prompt`、`invalid_request_error` 和图像相关错误码（以 `invalid_image` 或 `image_` 开头，或以 `_image` 结尾；`InvalidRequest`）。它们只在没有状态码的地方起决定作用：流中的 `error` 事件，以及失败回复的 `error.code`。没有消息的错误对象得到 `The provider returned HTTP <status> without a message.`
 
-对于来自 OpenAI 方言（Chat、Responses、Embeddings）的错误，只要它们未被改动，编码时就回放其响应体和状态码；所谓未改动，是指从响应体重新解码出的错误类型与该错误的类型相同，且消息一致。其他错误得到：
+对于来自 OpenAI 方言（Chat、Responses、Embeddings）的错误，只要它们未被改动，编码时就回放其响应体和状态码。所谓未改动，是指从其响应体重新解码出的错误类型与该错误的类型相同，且消息一致。其他错误得到：
 
 | `ErrorKind` | 状态码 | `type` | `code` |
 | --- | --- | --- | --- |
@@ -299,7 +332,7 @@ order: 6
 
 `openai_responses::for_chatgpt_plan` 会为通过 Sign in with ChatGPT 提供 ChatGPT 套餐的 Responses 路由改写 `GenerateRequest`（[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)）。网关会对属于 ChatGPT 账户的服务商密钥调用它。
 
-- 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`：包括类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
+- 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`、`system_items` 和 `instructions`，因此 `input` 为数组，开头的系统文本成为 `instructions`。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
 
@@ -315,7 +348,8 @@ order: 6
 |---|---|---|
 | 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
+| `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；`Provider::tool_namespaces` 为假（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
-| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat.md#spacex) 相同。 |
+| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |
 | `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |
