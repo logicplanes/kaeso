@@ -96,10 +96,10 @@ Both crates are published to crates.io. Their library code may depend only on `s
 - **Semantic or hint.** Every field is either semantic (a target must honour it or refuse with `Unsupported`) or a hint (a target may ignore it). [Field classes](#field-classes) lists them.
 - **Bound extras.** Whatever KPP does not model is kept in `Extras`, tagged with the dialect it came from, and written back only to that dialect. `fields` are semantic: another dialect refuses them unless they are on the [allowlist](cross-format.md#extras). `form` is presentation (a string or an array, `null` or absent, how chunks were grouped), and other dialects ignore it. Unknown keys of nested objects use dotted key paths, such as `function.x`, so a key that itself contains `.` can't be carried ([wire structs](codec-design.md#wire-structs)).
 - **Refuse before sending.** `check()` returns `Unsupported`, naming the feature a target can't express, before anything is sent.
-- **Nothing is dropped silently.** Every field and block of an incoming payload ends up in exactly one place: a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug.
-- **Additive public API.** Public enums and growable structs are `#[non_exhaustive]`, and enum variants wrap `#[non_exhaustive]` structs with constructors (`TextBlock::new`, `Block::text`, …), so fields can be added without breaking code that builds or matches values. The `Codec` trait is sealed.
+- **Nothing is dropped silently.** Every field and block of an incoming payload ends up in exactly one place. It becomes a typed KPP field, a dialect-bound `Extras` entry, an `Unknown` item, or a `KppError` of kind `Unsupported`. A match arm that discards data is a bug.
+- **Additive public API.** Public enums and growable structs are `#[non_exhaustive]`. Enum variants wrap `#[non_exhaustive]` structs with constructors (`TextBlock::new`, `Block::text`, …). That way, fields can be added without breaking code that builds or matches values. The `Codec` trait is sealed.
 
-KPP values and errors are returned by value. `KppError` and some enum variants are large, but a value is built once per request and errors are the cold path; boxing them would make every signature clumsier, so the workspace allows `clippy::large_enum_variant` and `clippy::result_large_err`.
+KPP values and errors are returned by value. `KppError` and some enum variants are large, but a value is built once per request and errors are the cold path. Boxing them would make every signature clumsier, so the workspace allows `clippy::large_enum_variant` and `clippy::result_large_err`.
 
 Every KPP type implements `serde` for logs and snapshots. This JSON form is stable across patch releases, but it is not a wire format. Its names are in snake case and write OpenAI as `openai`, as `DialectId` does (`openai_chat`): `OpaqueKind::OpenAiEncryptedReasoning` is `openai_encrypted_reasoning`.
 
@@ -182,7 +182,7 @@ Every KPP field is either semantic or a hint:
 
 ### Replies and stream events
 
-Replies and stream events flow from one provider to one app. They have no hints: a field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) and [OpenAI Embeddings](openai-embeddings.md).
+Replies and stream events flow from one provider to one app. They have no hints. A field the app's dialect cannot express is either derivable, such as a stop reason mapped to the closest equivalent, or carried in extras for same-dialect replay. Each dialect's mapping page lists these mappings: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) and [OpenAI Embeddings](openai-embeddings.md).
 
 Reasoning reaches an app of another dialect where its format can carry it, wrapped so it can come back ([reasoning blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unknown blocks reach only apps of their own dialect. Everything else is left out of the app's view ([replies](cross-format.md#replies), `cross::reply_policy`), with [keepalive](cross-format.md#keepalives) frames in streams. The gateway logs the full KPP reply.
 
@@ -215,7 +215,9 @@ Write error messages for the person who called Kaeso: name the field the target 
 
 `kaeso_codecs::testing` compares JSON structurally: key order never matters, and numbers compare exactly as `serde_json` reads them, so `1` and `1.0` differ while `1e0` and `1.0` are the same number.
 
-KPP stores `temperature`, `top_p` and the penalties as `f64`, so the codecs keep their spelling themselves. OpenAI Chat Completions and Anthropic Messages list the keys written as integers in the request form marker `integers`. They write those keys as integers again while the value is still a whole number. OpenAI Responses records a different spelling as a form override, which applies only while the value is unchanged. A changed value is written as the new value, and another dialect gets the target's own spelling (`1.0`).
+KPP stores `temperature`, `top_p` and the penalties as `f64`, so the codecs keep their spelling themselves. OpenAI Chat Completions and Anthropic Messages list the keys written as integers in the request form marker `integers`. They write those keys as integers again while the value is still a whole number.
+
+OpenAI Responses records a different spelling as a form override, which applies only while the value is unchanged. A changed value is written as the new value, and another dialect gets the target's own spelling (`1.0`).
 
 `testing::sse_diff` compares streams item by item. It compares the event name, then the data as JSON, or as text when it isn't JSON, then the `id`, `retry` and unknown fields in order. `ComparableItem::Event.data` is `None` for a frame without a `data:` line, and comments compare exactly.
 

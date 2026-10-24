@@ -69,7 +69,13 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 | `content` as string or array | form `content: "array"` (message or tool result) | A string is the default for one plain text block. Empty arrays are invalid (`minItems: 1`). |
 | a message without `role`, or with another role | `InvalidRequest` (`param` `messages[i]`) | |
 
-Legacy function calling has no tool call ids, so its turns do not become KPP tool calls and results; within this dialect they round-trip instead, with the top-level `functions` and `function_call` parameters as extras. The fixture is `fixtures/openai_chat/requests/legacy-functions.json`. Other dialects refuse all of it with `Unsupported`: the top-level parameters as `functions` and `function_call`, an assistant's `function_call` as `messages[i].function_call`, and a `function` message as `` `function` message ``, with the hint `Remove the message, or send the request to a model served through its original format.`
+Legacy function calling has no tool call ids, so its turns do not become KPP tool calls and results. Within this dialect they round-trip instead, with the top-level `functions` and `function_call` parameters as extras. The fixture is `fixtures/openai_chat/requests/legacy-functions.json`.
+
+Other dialects refuse all of it with `Unsupported`, naming the parts as follows:
+
+- the top-level parameters as `functions` and `function_call`;
+- an assistant's `function_call` as `messages[i].function_call`;
+- a `function` message as `` `function` message ``, with the hint `Remove the message, or send the request to a model served through its original format.`
 
 ### Content parts
 
@@ -87,7 +93,21 @@ Legacy function calling has no tool call ids, so its turns do not become KPP too
 | `refusal` (assistant) | `Block::Refusal` + form `part` | |
 | other types, and `image_url` and `file` parts outside user messages, `refusal` parts outside assistant messages | `Block::Unknown` | Same dialect only. |
 
-For KPP from other dialects, `check()` refuses text documents, document URLs, document `title`, `context` and `citations`, image file ids, images and documents outside user messages, refusals outside assistant messages, citations outside assistant messages (and, through `check_foreign`, other dialects' citations), `top_k` ([sampling](cross-format.md#sampling)), unknown reasoning modes and reasoning efforts outside the spec enum. Budgets and `disabled` are converted ([effort and budget](reasoning.md#effort-and-budget)). These hints are dropped instead: reasoning blocks ([reasoning](reasoning.md)), other dialects' cache hints ([cache hints](cross-format.md#cache-hints)), `ToolResult::is_error`, whose information the error content carries ([tool errors](cross-format.md#tool-errors)), and other dialects' `reasoning.summary` and `reasoning.include_encrypted`, because Chat has no field that asks for them ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)).
+For KPP from other dialects, `check()` refuses:
+
+- text documents, document URLs, and document `title`, `context` and `citations`;
+- image file ids, and images and documents outside user messages;
+- refusals and citations outside assistant messages;
+- other dialects' citations, through `check_foreign`;
+- `top_k` ([sampling](cross-format.md#sampling));
+- unknown reasoning modes and reasoning efforts outside the spec enum.
+
+Budgets and `disabled` are converted ([effort and budget](reasoning.md#effort-and-budget)). These hints are dropped instead:
+
+- reasoning blocks ([reasoning](reasoning.md));
+- other dialects' cache hints ([cache hints](cross-format.md#cache-hints));
+- `ToolResult::is_error`, whose information the error content carries ([tool errors](cross-format.md#tool-errors));
+- other dialects' `reasoning.summary` and `reasoning.include_encrypted`, because Chat has no field that asks for them ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)).
 
 A body the codec can't read is `InvalidRequest` naming the field and what it must be, with `param` set, never a parser position: `` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
@@ -101,7 +121,9 @@ An unknown key whose name starts with `header:` or contains `.` can't be carried
 - `text`, `refusal`, `image_url` and `file` parts with their `image_url`, `file` and `prompt_cache_breakpoint` objects;
 - function tool calls and their `function`.
 
-The request is then `InvalidRequest`, such as `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. `` or, for a message, `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. `` A name longer than 64 bytes is cut and ends in `…`. Objects kept whole, such as unknown parts, tools and tool choices, custom tool calls, `function` messages and other `response_format` types, are not looked into. In replies and stream chunks the same rule gives a `ProviderError` (in a stream, an `Error` event).
+The request is then `InvalidRequest`, such as `` The request body is not a valid OpenAI Chat Completions request: the field `header:authorization` has a name Kaeso cannot carry; remove it. `` or, for a message, `` The request contains an invalid OpenAI Chat Completions user message: the field `a.b` has a name Kaeso cannot carry; remove it. `` A name longer than 64 bytes is cut and ends in `…`.
+
+Objects kept whole, such as unknown parts, tools and tool choices, custom tool calls, `function` messages and other `response_format` types, are not looked into. In replies and stream chunks the same rule gives a `ProviderError` (in a stream, an `Error` event).
 
 ### Tool calls (`ChatCompletionMessageToolCall`)
 
@@ -115,7 +137,9 @@ The request is then `InvalidRequest`, such as `` The request body is not a valid
 
 ## Provider profiles
 
-Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field: the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below. The gateway hands it to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
+Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field. The profile holds the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below.
+
+The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
 
 | Setting | What the encoder does | Why it is allowed |
 |---|---|---|
@@ -135,7 +159,9 @@ Settings for the replies Kaeso reads (`ChatProfile::reply`, a `ReplyProfile`):
 | `reasoning_fields(fields)` | Reads the first of these message keys that holds a non-empty string, such as DeepSeek's `reasoning_content` or Groq's `reasoning`, as a `Block::Reasoning` before the reply's other blocks, with form `reasoning_field` naming the key. In a stream, that key of each delta becomes `BlockDelta(ReasoningText)` of one reasoning block, with form `rf` on the chunk. The reasoning block ends when the answer, a refusal or a tool call starts, and empty text pieces before the first real one open no text block (form `et`). An empty string, `null` or another type stays an extra. | Nothing is dropped: Chat apps get the key back as sent, the delta's other keys (Groq's `channel`) stay extras of the chunk, and other formats get the reasoning in their own reasoning shape with the original block in a [reasoning blob](reasoning.md#reasoning-blobs). Without the setting, every streamed piece of reasoning would be a chunk without a KPP event, logged as an unknown block of its own. |
 | `error_detail(path)` | Appends the string at this path of an error body, such as OpenRouter's `error.metadata.raw`, to the error's message: `<message>: <detail>`. A missing, empty or non-string value, or one the message already contains, changes nothing. Stream errors get the same. | The body stays as it was: Chat apps get the provider's error unchanged, and other formats get the reason in the message, where a generic one (`Provider returned error`) would tell them nothing. The gateway takes key-like tokens out of every provider error message. |
 
-`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it: a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`). Refusals happen while the request is encoded, on the request the encoder built and before it is written out, so nothing is sent, and they reach the app in its own format.
+`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it. It names a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`).
+
+Refusals happen while the request is encoded, on the request the encoder built and before it is written out. Nothing is sent, and the refusal reaches the app in its own format.
 
 Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`.
 
@@ -217,13 +243,23 @@ Bare `data:` frames, one JSON chunk each, ending with `data: [DONE]`.
 | SSE comments, frames without data or with empty data, other named events, frames after `[DONE]` | `Extra` (`{"comment"}` or `{"event", "data", "text", "id", "retry", "other"}`, without `data` for a frame that had none and with `text: true` when the data is not JSON) | Same dialect only; written back as they came. |
 | several choices, a choice `index` other than 0 | `Error` with `Unsupported` (`n`) | |
 
-Chunk grouping: the first event of each chunk carries the form marker `chunk` (`n` is the number of events from that chunk, plus the shape markers above) and the others carry `in_chunk`, so the encoder writes them back as one frame. An open chunk is written as soon as an event arrives that is not part of it (another dialect's event, `[DONE]`, an error), so a dropped event never puts a chunk after `[DONE]`; no chunk is written after `[DONE]` or an error. Tool arguments for a block Chat cannot show are left out.
+Chunk grouping: the first event of each chunk carries the form marker `chunk`, and the others carry `in_chunk`, so the encoder writes them back as one frame. The marker holds `n`, the number of events from that chunk, plus the shape markers above.
 
-SSE framing follows the spec ([server-sent events](codec-design.md#server-sent-events)): an `id` that contains NUL, or a `retry` that is not ASCII digits fitting a `u64`, counts as an unknown field. A chunk's SSE `id`, `retry` and unknown fields, which OpenAI does not send, are kept in form `chunk.sse` as `{"id", "retry", "other": [[name, value], …]}`; the chunk is decoded like any other, and the fields are written back to Chat apps. A frame without a `data:` line, such as `retry: 3000` or `event: ping` alone, is not an event under the spec: it becomes an `Extra` whose raw JSON has no `data` key and is written back without a data line. Named events and frames after `[DONE]` are kept whole and replayed only to Chat apps.
+An open chunk is written as soon as an event arrives that is not part of it: another dialect's event, `[DONE]` or an error. This way a dropped event never puts a chunk after `[DONE]`. No chunk is written after `[DONE]` or an error. Tool arguments for a block Chat cannot show are left out.
 
-OpenAI sends a tool call's `id`, `type` and `function.name` in its first chunk, but the schema allows them in a later chunk, and some OpenAI-compatible providers send `id` and `name` there, after a first chunk with `choices: []` and an empty `id` and `model`. Anthropic and Responses announce both when a block starts, so the decoder holds the start and the call until it knows them, as above; the order of events never changes. Streams that stay in this format replay every chunk exactly. The fixture is `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
+SSE framing follows the spec ([server-sent events](codec-design.md#server-sent-events)): an `id` that contains NUL, or a `retry` that is not ASCII digits fitting a `u64`, counts as an unknown field. OpenAI sends no SSE `id`, `retry` or unknown fields. A chunk that has them keeps them in form `chunk.sse` as `{"id", "retry", "other": [[name, value], …]}`. The chunk is decoded like any other, and the fields are written back to Chat apps.
 
-Events from other dialects become one chunk each, after the opening role chunk, with `logprobs: null` and `finish_reason`. Tool indexes are assigned in the order tool calls start, and reasoning, citations, opaque data, unknown blocks and extras of other dialects are left out ([replies](cross-format.md#replies)). While they arrive, the encoder writes paced SSE comments (`: keepalive`), which the SSE spec and the SDK parsers ignore: one for each extra event of another dialect, such as Anthropic `ping`, and one per 1,024 bytes of hidden text ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame for silence upstream. Usage is written only when the app asked for it (`EncodeCtx::stream` with `include_usage`): every chunk then has `usage: null`, and a final `choices: []` chunk carries the usage. From other dialects this is the latest usage, with the input counts from `ResponseStart` when the later report has none.
+A frame without a `data:` line, such as `retry: 3000` or `event: ping` alone, is not an event under the spec. It becomes an `Extra` whose raw JSON has no `data` key, and is written back without a data line. Named events and frames after `[DONE]` are kept whole and replayed only to Chat apps.
+
+OpenAI sends a tool call's `id`, `type` and `function.name` in its first chunk, but the schema allows them in a later chunk. Some OpenAI-compatible providers send `id` and `name` there, after a first chunk with `choices: []` and an empty `id` and `model`.
+
+Anthropic and Responses announce both when a block starts, so the decoder holds the start and the call until it knows them, as above. The order of events never changes. Streams that stay in this format replay every chunk exactly. The fixture is `fixtures/openai_chat/streams/late-envelope-and-tool-header.sse`.
+
+Events from other dialects become one chunk each, after the opening role chunk, with `logprobs: null` and `finish_reason`. Tool indexes are assigned in the order tool calls start. Reasoning, citations, opaque data, unknown blocks and extras of other dialects are left out ([replies](cross-format.md#replies)).
+
+While such left-out content arrives, the encoder writes paced SSE comments (`: keepalive`), which the SSE spec and the SDK parsers ignore. It writes one for each extra event of another dialect, such as Anthropic `ping`, and one per 1,024 bytes of hidden text ([keepalives](cross-format.md#keepalives)). `StreamEncoder::keepalive` gives the gateway the same frame for silence upstream.
+
+Usage is written only when the app asked for it (`EncodeCtx::stream` with `include_usage`). Every chunk then has `usage: null`, and a final `choices: []` chunk carries the usage. From other dialects this is the latest usage, with the input counts from `ResponseStart` when the later report has none.
 
 ## Errors (`ErrorResponse`)
 
@@ -247,13 +283,21 @@ The error body is `{error: {message, type, param, code}}`.
 | other | `ProviderError` | its 5xx status (not 503) or 500, `server_error` |
 | `error.misalignment` (`MisalignmentErrorDetailsResource` in the `Error` schema), unknown `error` keys | kept in `KppError.raw` (the whole body) | Sent again only when the error came from Chat. |
 
-A code named in the table, in `code` or `type`, wins over the status. Codes of the status-based kinds (`rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes, `server_error`) decide only for an error without an HTTP status: a stream error, or an error in the body of a 200 reply. For such an error, a numeric `code` between 400 and 599, which OpenRouter sends as the HTTP status, decides the kind as a status would; the error still has no status.
+A code named in the table, in `code` or `type`, wins over the status. The codes of the status-based kinds are `rate_limit_exceeded`, `rate_limit_error`, `slow_down`, `invalid_request_error`, `invalid_prompt`, the image codes and `server_error`. They decide only for an error without an HTTP status: a stream error, or an error in the body of a 200 reply.
+
+For such an error, a numeric `code` between 400 and 599 decides the kind as a status would. OpenRouter sends the HTTP status this way, but the error still has no status.
 
 HTTP 402 is how OpenAI-compatible providers such as DeepSeek report an exhausted balance ([DeepSeek error codes](https://api-docs.deepseek.com/quick_start/error_codes)), so it is `Billing` whatever its `code` says.
 
 The Responses and Embeddings codecs use the same code table (`openai_responses::error`), so an error in the OpenAI shape has the same kind, `type` and `code` in every OpenAI API. The OpenAI SDKs choose their exception class by status, so `type` only adds information.
 
-`retry-after-ms` or `retry-after` becomes `retry_after`, which is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object. Bodies Kaeso cannot read as an `ErrorResponse`, such as an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` or a body with a key Kaeso cannot carry, take their kind from the HTTP status alone (table above; without a status, as in a stream, `ProviderError`) and keep the raw body. A string `error` becomes the message. The codec reads no meaning from the text: a provider whose answer to a wrong key has no authentication status names that message in `refused_key_messages` in `crates/kaeso-core/src/provider.rs`, and the gateway reports such an error as `Authentication` (SpaceX's `Incorrect API key provided` with HTTP 400). Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``, with the body cut after 500 bytes and without the HTTP part in a stream. A readable body without a message gets `The provider returned an error without a message.`
+`retry-after-ms` or `retry-after` becomes `retry_after`. It is written as `retry-after` in whole seconds, rounded up, plus `retry-after-ms`, rounded up, when the delay has a fraction of a second. `param` becomes `KppError.param` when it is a string. An error decoded from Chat is encoded again with its original status, and with its original body when that body has an `error` object.
+
+A body Kaeso cannot read as an `ErrorResponse` takes its kind from the HTTP status alone (table above) and keeps the raw body. Without a status, as in a stream, its kind is `ProviderError`. Such bodies include an HTML 429 from a proxy, a plain-text 503, `{"error": "rate limited"}` and a body with a key Kaeso cannot carry.
+
+A string `error` becomes the message. Otherwise, the message is `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``. The body is cut after 500 bytes, and in a stream the message has no HTTP part. A readable body without a message gets `The provider returned an error without a message.`
+
+The codec reads no meaning from the text. A provider whose answer to a wrong key has no authentication status names that message in `refused_key_messages` in `crates/kaeso-core/src/provider.rs`. The gateway then reports such an error as `Authentication` (SpaceX's `Incorrect API key provided` with HTTP 400).
 
 ## Models
 
@@ -261,7 +305,9 @@ The Responses and Embeddings codecs use the same code table (`openai_responses::
 
 ### Query parameters
 
-`listModels` documents none. Every parameter, percent-decoded, is kept as an extra `query.<name>` of the decoding dialect: a string, or an array when it is repeated. Malformed escapes are `InvalidRequest`. OpenAI does not page, so the gateway calls `ModelList::page` without a default limit, and an OpenAI app always gets the whole list. The `{model}` path segment arrives percent-encoded, since fine-tuned ids contain `:`, and the gateway's router decodes it.
+`listModels` documents none. Every parameter, percent-decoded, is kept as an extra `query.<name>` of the decoding dialect: a string, or an array when it is repeated. Malformed escapes are `InvalidRequest`.
+
+OpenAI does not page, so the gateway calls `ModelList::page` without a default limit, and an OpenAI app always gets the whole list. The `{model}` path segment arrives percent-encoded, since fine-tuned ids contain `:`, and the gateway's router decodes it.
 
 ### `Model` ⇄ `kaeso_kpp::ModelInfo`
 
@@ -288,7 +334,9 @@ A field received absent, or `null` where the default is a value, is recorded in 
 | a bare array of models instead of the object, as Together AI sends it | `models`, form `bare_list` |
 | `models` with a `slug` per model instead of `data`, as `GET /v1/models` answers a ChatGPT plan's access token ([models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference)) | `models`, each `slug` the `id` and the other fields extras fields; form `plan_list` |
 
-Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one. `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
+Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one.
+
+`encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
 
 ## Providers that use this format
 

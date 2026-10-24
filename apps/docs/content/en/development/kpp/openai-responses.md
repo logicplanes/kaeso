@@ -23,17 +23,23 @@ Unlike the other codecs, this one doesn't use `wire::Ext`; the next section expl
 
 ## How exact spellings survive
 
-Every wire object has a *canonical* encoding built only from typed KPP fields and the structural form markers listed under [form markers](#form-markers). Requests and replies from other dialects get exactly this encoding. When decoding, the codec builds the canonical encoding of what it decoded and records every difference from the received JSON as an override in the extras of the KPP item that owns the object:
+Every wire object has a *canonical* encoding built only from typed KPP fields and the structural form markers listed under [form markers](#form-markers). Requests and replies from other dialects get exactly this encoding. When decoding, the codec builds the canonical encoding of what it decoded and compares it with the received JSON. It records every difference as an override in the extras of the KPP item that owns the object:
 
 - `fields["<path>"]`: a key the canonical encoding does not write, or writes with another value. These are unknown keys and known keys KPP does not model (`metadata`, `text.verbosity`, `detail: "low"`, …), kept byte for byte. They are **extras** in the tables below.
-- `form["set"]["<path>"]`: the same for presentation. These are `null` values, explicitly spelled defaults (`store: false`, `background: false`, `stream: false`, `tools: []`, `include: []`, `metadata: {}`, `text: {}`, `detail: "auto"`, `truncation: "disabled"`, `service_tier: "auto"`, `text.format: {type: text}`, `text.verbosity: "medium"`, `stream_options: {}`, `stream_options.include_obfuscation`, empty `annotations`/`logprobs`/`summary`/`content`), the keys `type`, `id`, `item_id`, `status`, `role`, `object`, `filename`, `obfuscation`, `sequence_number`, and numbers that differ from the canonical value only in spelling (`1` where the canonical encoding writes `1.0`). They are **form** in the tables below.
+- `form["set"]["<path>"]`: the same for presentation, shown as **form** in the tables below. It holds `null` values and explicitly spelled defaults (`store: false`, `background: false`, `stream: false`, `tools: []`, `include: []`, `metadata: {}`, `text: {}`, `detail: "auto"`, `truncation: "disabled"`, `service_tier: "auto"`, `text.format: {type: text}`, `text.verbosity: "medium"`, `stream_options: {}`, `stream_options.include_obfuscation`, empty `annotations`/`logprobs`/`summary`/`content`). It also holds the keys `type`, `id`, `item_id`, `status`, `role`, `object`, `filename`, `obfuscation` and `sequence_number`. Numbers that differ from the canonical value only in spelling go here too (`1` where the canonical encoding writes `1.0`).
 - `form["unset"]`: paths the canonical encoding writes that the original lacked.
 
-Encoding applies the overrides only when the extras came from `openai_responses`. Typed fields always win. Values are compared exactly, numbers included (`1` and `1.0` differ). An override is never recorded for a value the canonical encoding reproduces, and a test checks that no typed key is ever stored as an extras field. Each override also remembers what the canonical encoding had at its path when decoded (`form["canon"]`). If a typed field changed after decoding (the gateway set `max_output_tokens`, added messages to a prompt-only request, set a reasoning effort, …), the canonical value at that path differs and the stale override is skipped. A number spelled `1` therefore comes back as `1` while the value is still 1, and a changed value is written as the new value.
+Encoding applies the overrides only when the extras came from `openai_responses`. Typed fields always win. Values are compared exactly, numbers included (`1` and `1.0` differ). An override is never recorded for a value the canonical encoding reproduces, and a test checks that no typed key is ever stored as an extras field.
+
+Each override also remembers what the canonical encoding had at its path when decoded (`form["canon"]`). If a typed field changed after decoding, the canonical value at that path differs and the stale override is skipped. That happens, for example, when the gateway sets `max_output_tokens`, adds messages to a prompt-only request or sets a reasoning effort. A number spelled `1` therefore comes back as `1` while the value is still 1, and a changed value is written as the new value.
 
 A `type` is presentation only where the canonical encoding has a `type` at that path (part and item type spellings), and for the optional `type: "message"` of an input message. An object the canonical encoding lacks that carries any other `type` (for example `text.format: {type: "grammar", …}`) is kept whole as one extras field, so another dialect refuses it.
 
-A key path can't hold a key that is empty, contains `.` or starts with `header:`, `@` or `~`, because those spellings belong to key paths, forwarded headers (`header:openai-beta`) and scoped overrides. An object with such a key is compared as a whole: when it differs from the canonical encoding, the whole object is one extras field at its own path (for a key at the top level, the whole body, at the empty path). Such keys stay in the body: they are never sent as headers, and other dialects refuse them like any extras field. Like every override, the field applies only while the canonical value at its path is unchanged: when a typed field inside that object changes (for a top-level key, any typed field of the request, such as the `model`), the object is written canonically and those keys are left out.
+A key path can't hold a key that is empty, contains `.` or starts with `header:`, `@` or `~`. Those spellings belong to key paths, forwarded headers (`header:openai-beta`) and scoped overrides.
+
+An object with such a key is compared as a whole. When it differs from the canonical encoding, the whole object is one extras field at its own path. For a key at the top level, that is the whole body, at the empty path. Such keys stay in the body: they are never sent as headers, and other dialects refuse them like any extras field.
+
+Like every override, the field applies only while the canonical value at its path is unchanged. When a typed field inside that object changes, the object is written canonically and those keys are left out. For a top-level key, that is any typed field of the request, such as the `model`.
 
 ## Request: `CreateResponse` / `TokenCountsBody`
 
@@ -74,9 +80,25 @@ A key path can't hold a key that is empty, contains `.` or starts with `header:`
 | `metadata`, `truncation`, `service_tier`, `top_logprobs`, `max_tool_calls`, `prompt_cache_key`, `prompt_cache_retention`, `prompt_cache_options`, `prompt`, `context_management`, `moderation`, `access_programs`, `personality` (count only), unknown keys | extras | Spelled-out defaults and `null` are form ([how exact spellings survive](#how-exact-spellings-survive)). |
 | header `openai-beta` | extras `header:openai-beta` | Forwarded to Responses only. |
 
-A body that is not a JSON object, has duplicate keys, lacks `model` (for `/v1/responses`) or has a known field of the wrong type is `InvalidRequest` naming the field (`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``, with `param` set), never a parser position.
+A body is `InvalidRequest` when it:
 
-`check()` also refuses, for requests from any dialect: `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](cross-format.md#sampling)); unknown reasoning modes, named by their wire value; text documents, document `title`/`context`/`citations`, and text image sources; and everything `cross::check_foreign` refuses (foreign extras, unknown blocks, tools and choices, foreign file ids, foreign citations; see [requests](cross-format.md#requests)). Reasoning blocks that can't be replayed are dropped ([reasoning](reasoning.md)), and so are cache hints from other dialects ([cache hints](cross-format.md#cache-hints)). `ToolResult::is_error` is dropped too: it is a hint, and the content describes the failure ([tool errors](cross-format.md#tool-errors)). A reasoning config from another dialect is sent as its effort: an explicit effort as is, a budget by the [effort table](reasoning.md#effort-and-budget), `disabled` as `none`; `adaptive` or `enabled` without either is sent without an effort, so the model uses its default effort. Embeddings requests are `Unsupported`.
+- is not a JSON object;
+- has duplicate keys;
+- lacks `model` (for `/v1/responses`);
+- has a known field of the wrong type.
+
+The error names the field, never a parser position, and sets `param`: `` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``
+
+`check()` also refuses, for requests from any dialect:
+
+- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` and stop sequences, which the Responses API doesn't have ([sampling](cross-format.md#sampling));
+- unknown reasoning modes, named by their wire value;
+- text documents, document `title`/`context`/`citations`, and text image sources;
+- everything `cross::check_foreign` refuses (foreign extras, unknown blocks, tools and choices, foreign file ids, foreign citations; see [requests](cross-format.md#requests)).
+
+Reasoning blocks that can't be replayed are dropped ([reasoning](reasoning.md)), and so are cache hints from other dialects ([cache hints](cross-format.md#cache-hints)). `ToolResult::is_error` is dropped too: it is a hint, and the content describes the failure ([tool errors](cross-format.md#tool-errors)).
+
+A reasoning config from another dialect is sent as its effort: an explicit effort as is, a budget by the [effort table](reasoning.md#effort-and-budget), `disabled` as `none`. `adaptive` or `enabled` without either is sent without an effort, so the model uses its default effort. Embeddings requests are `Unsupported`.
 
 ### Input items (`InputItem`)
 
@@ -92,7 +114,9 @@ A body that is not a JSON object, has duplicate keys, lacks `model` (for `/v1/re
 | `item_reference` and every other item type (server-tool calls and outputs, `compaction`, future types) | a message with one `Block::Unknown`, form `raw_item` | Role `Assistant` for types ending in `_call`, `mcp_list_tools`, `mcp_approval_request`; otherwise `User`. The role only matters to KPP validation, because these items never go to another dialect. Same-dialect only. |
 | items that don't parse as their type (for example a `function_call_output` with `call_id: null`) | `Block::Unknown` (as above) | Lossless; the provider judges them. |
 
-Grouping: consecutive `function_call` and `reasoning` items join the current assistant message, consecutive `function_call_output` items join the current user message, and a message item joins a message of its role that holds no message item yet; system and developer items never join. Encoding splits each KPP message back: every run of content blocks is one message item, and every other block is one item. A message from another dialect such as Anthropic's `[thinking, text, tool_use, tool_use]` becomes a `message` item and two `function_call` items. The thinking is dropped ([reasoning](reasoning.md)), unless it is OpenAI reasoning an Anthropic app carried back in a [reasoning blob](reasoning.md#reasoning-blobs).
+Grouping: consecutive `function_call` and `reasoning` items join the current assistant message, and consecutive `function_call_output` items join the current user message. A message item joins a message of its role that holds no message item yet; system and developer items never join.
+
+Encoding splits each KPP message back: every run of content blocks is one message item, and every other block is one item. A message from another dialect such as Anthropic's `[thinking, text, tool_use, tool_use]` becomes a `message` item and two `function_call` items. The thinking is dropped ([reasoning](reasoning.md)), unless it is OpenAI reasoning an Anthropic app carried back in a [reasoning blob](reasoning.md#reasoning-blobs).
 
 The `id` and `status` of message and function call items (`msg_…`, `fc_…`) are presentation, so a conversation with echoed output items can still go to another provider. Reasoning item ids are semantic (opaque `OpenAiReasoningItemId`), because OpenAI resolves them.
 
@@ -130,8 +154,8 @@ A reply from another dialect is written as a complete `Response` object:
 
 - `object: "response"`, `created_at` (`EncodeCtx::created_at`), `background: false`, `completed_at` (the same time when completed, otherwise `null`) and `error: null`.
 - The echoed request parameters come from the app's request (`EncodeCtx::request`, encoded the way this codec sends it), with OpenAI's defaults where unset: `instructions`, `max_output_tokens`, `max_tool_calls`, `prompt_cache_key`, `safety_identifier` and `user` are `null`, `parallel_tool_calls: true`, `reasoning: {effort, summary}` (`null` where unset), `temperature: 1.0`, `top_p: 1.0`, `top_logprobs: 0`, `text: {format: {type: text}}`, `tool_choice: "auto"`, `tools: []`, `truncation: "disabled"`, `metadata: {}`. `previous_response_id: null`, `service_tier: "default"` and `store: false` (Kaeso stores nothing) are always written.
-- Stop reasons without an equivalent (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) are reported as `completed`, which loses information: an Anthropic `pause_turn` asks the app to continue, and a Responses app can't tell. Message items are `incomplete` when the response is.
-- Reasoning of another dialect becomes a reasoning item ([reasoning blobs](reasoning.md#reasoning-blobs)): id `rs_kaeso_…`, its reasoning text as one `summary_text` followed by its summaries, and a reasoning blob of the original block as `encrypted_content`. The blob is sent whether or not the app asked for it in `include`, because Kaeso stores nothing and the SDK agent loops send output items back as received.
+- Stop reasons without an equivalent (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) are reported as `completed`. This loses information: an Anthropic `pause_turn` asks the app to continue, and a Responses app can't tell. Message items are `incomplete` when the response is.
+- Reasoning of another dialect becomes a reasoning item with the id `rs_kaeso_…` ([reasoning blobs](reasoning.md#reasoning-blobs)). Its reasoning text is one `summary_text`, followed by its summaries, and `encrypted_content` is a reasoning blob of the original block. The blob is sent whether or not the app asked for it in `include`. Kaeso stores nothing, and the SDK agent loops send output items back as received.
 - Reply data this dialect can't show is left out ([replies](cross-format.md#replies)): foreign `Unknown` blocks, foreign citations and extras, images, documents and tool results.
 - Anthropic web searches become `web_search_call` items ([hosted web search](cross-format.md#hosted-web-search)), and calls of flattened namespace tools get their `namespace` back ([tool namespaces](cross-format.md#tool-namespaces)).
 - Message, function call and web search items get the ids `msg_kaeso_…`, `fc_kaeso_…` and `ws_kaeso_…`. Requests recognise these Kaeso-invented ids and never send them to a provider.
@@ -146,7 +170,9 @@ The request is `TokenCountsBody`, decoded like `CreateResponse` into `Request::C
 
 ## Streams: `ResponseStreamEvent`
 
-There is one KPP block per message content part, function call, reasoning item and other item. `sequence_number` and `obfuscation` deviations are form. An `event:` name other than the data's `type` is the form override `~event`, and the SSE fields `id`, `retry` and unknown fields of a decoded frame are the form override `~sse` (`{"id", "retry", "other": [[name, value], …]}`); both are scoped like the event and written back. Everything else that differs from the canonical events is an extras override scoped by the attached event (`@open`, `@close`, `@done`, `@in_progress`, `@sdone`, `@spdone`, `@rdone`, `@rpdone`, `@text`, `@e<index>`, `@a<index>-…`).
+There is one KPP block per message content part, function call, reasoning item and other item. `sequence_number` and `obfuscation` deviations are form.
+
+An `event:` name other than the data's `type` is the form override `~event`. The SSE fields `id`, `retry` and unknown fields of a decoded frame are the form override `~sse` (`{"id", "retry", "other": [[name, value], …]}`). Both are scoped like the event and written back. Everything else that differs from the canonical events is an extras override scoped by the attached event (`@open`, `@close`, `@done`, `@in_progress`, `@sdone`, `@spdone`, `@rdone`, `@rpdone`, `@text`, `@e<index>`, `@a<index>-…`).
 
 | SSE event | KPP |
 | --- | --- |
@@ -194,9 +220,13 @@ Encoding KPP events from another dialect produces the full canonical sequence:
 - `reasoning_summary_*` part events around summaries, and `content_part.*` and `reasoning_text.*` around reasoning text;
 - then `response.completed`, or `response.incomplete` for `MaxTokens` and `ContentFilter`, with every output item and the usage.
 
-`sequence_number` counts from 0. Item ids are generated (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…`, `ws_kaeso_…` from the response id and output index). `obfuscation` is never generated. Blocks still open at `ResponseStop` are closed first. A stream without `ResponseStart` gets one, with the id `resp_kaeso_<created_at>` from `EncodeCtx::created_at`. Reasoning blocks of other dialects become reasoning items with an `rs_kaeso_…` id ([reasoning blobs](reasoning.md#reasoning-blobs)): the reasoning text streams as `reasoning_summary_text` of summary 0 (summaries keep their index), and `output_item.done` carries the reasoning blob of the whole block in `encrypted_content`. After `ResponseStop` or `Error` the encoder refuses further lifecycle events. Foreign errors become an `error` event, with the `code` from the error kind (see [errors](#errors-errorresponse)).
+`sequence_number` counts from 0. Item ids are generated (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…`, `ws_kaeso_…` from the response id and output index). `obfuscation` is never generated. A stream without `ResponseStart` gets one, with the id `resp_kaeso_<created_at>` from `EncodeCtx::created_at`.
 
-What another dialect sends that this dialect can't show (extra events such as Anthropic `ping`, foreign unknown blocks) earns paced SSE comments, `: keepalive` ([keepalives](cross-format.md#keepalives)): one per extra event, and one per 1,024 bytes of hidden text. `StreamEncoder::keepalive` gives the gateway the same frame. There is no end-of-stream sentinel.
+Blocks still open at `ResponseStop` are closed first. After `ResponseStop` or `Error` the encoder refuses further lifecycle events. Foreign errors become an `error` event, with the `code` from the error kind (see [errors](#errors-errorresponse)).
+
+Reasoning blocks of other dialects become reasoning items with an `rs_kaeso_…` id ([reasoning blobs](reasoning.md#reasoning-blobs)). The reasoning text streams as `reasoning_summary_text` of summary 0, and summaries keep their index. `output_item.done` carries the reasoning blob of the whole block in `encrypted_content`.
+
+What another dialect sends that this dialect can't show, such as extra events like Anthropic `ping` or foreign unknown blocks, earns paced SSE comments: `: keepalive` ([keepalives](cross-format.md#keepalives)). The encoder writes one per extra event, and one per 1,024 bytes of hidden text. `StreamEncoder::keepalive` gives the gateway the same frame. There is no end-of-stream sentinel.
 
 ## Spec properties without a row above
 
@@ -254,7 +284,7 @@ Every remaining property of the covered schemas, by name:
 
 The `type` and `code` rows win over the status. Other codes don't decide here; the status does: `rate_limit_exceeded`, `rate_limit_error` and `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` and the image codes (starting with `invalid_image` or `image_`, or ending in `_image`; `InvalidRequest`). They decide only where there is no status: in a stream `error` event and in the `error.code` of a failed response. An error object without a message gets `The provider returned HTTP <status> without a message.`
 
-Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged, that is while the kind decoded again from the body equals the error's kind and the message is the same. Other errors get:
+Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged. An error is unchanged while the kind decoded again from its body equals the error's kind and the message is the same. Other errors get:
 
 | `ErrorKind` | Status | `type` | `code` |
 | --- | --- | --- | --- |
@@ -302,7 +332,7 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 
 `openai_responses::for_chatgpt_plan` rewrites a `GenerateRequest` for the Responses route that serves a ChatGPT plan through Sign in with ChatGPT ([preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). The gateway calls it for a provider key that is a ChatGPT account.
 
-- It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`: the typed fields, extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
+- It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`. This covers the typed fields, the extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
 - It sets `stream: true` and `store: false`.
 - It drops forms `input`, `system_items` and `instructions`, so `input` is an array and leading system text is `instructions`. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
 

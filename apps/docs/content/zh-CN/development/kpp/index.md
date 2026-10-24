@@ -96,10 +96,10 @@ sequenceDiagram
 - **语义或提示。** 每个字段要么是语义字段（目标必须遵守，否则以 `Unsupported` 拒绝），要么是提示字段（可以忽略）。[字段类别](#字段类别)列出了所有字段。
 - **绑定来源的 Extras。** KPP 没有建模的内容都保存在 `Extras` 中，标记其来源方言，并且只写回该方言。`fields` 是语义字段：其他方言会拒绝它们，除非它们在[允许列表](cross-format.md#extras)中。`form` 只关乎呈现（字符串还是数组、`null` 还是缺失、chunk 如何分组），其他方言会忽略它。嵌套对象的未知键使用带点的键路径，例如 `function.x`，因此本身含有 `.` 的键无法携带（[线路结构体](codec-design.md#线路结构体)）。
 - **发送之前拒绝。** `check()` 在发送任何内容之前返回 `Unsupported`，注明目标无法表达的功能。
-- **从不静默丢弃。** 传入载荷的每个字段和块都恰好落到一个地方：类型化的 KPP 字段、绑定方言的 `Extras` 条目、`Unknown` 项，或种类为 `Unsupported` 的 `KppError`。丢弃数据的 match 分支就是 bug。
-- **只做增量的公共 API。** 公共枚举和可扩展的结构体都是 `#[non_exhaustive]`；枚举变体包装带有构造函数（`TextBlock::new`、`Block::text` 等）的 `#[non_exhaustive]` 结构体，因此可以添加字段，而不会破坏构建或匹配这些值的代码。`Codec` trait 是密封的。
+- **从不静默丢弃。** 传入载荷的每个字段和块都恰好落到一个地方。它会成为类型化的 KPP 字段、绑定方言的 `Extras` 条目、`Unknown` 项，或种类为 `Unsupported` 的 `KppError`。丢弃数据的 match 分支就是 bug。
+- **只做增量的公共 API。** 公共枚举和可扩展的结构体都是 `#[non_exhaustive]`。枚举变体包装带有构造函数（`TextBlock::new`、`Block::text` 等）的 `#[non_exhaustive]` 结构体。这样就可以添加字段，而不会破坏构建或匹配这些值的代码。`Codec` trait 是密封的。
 
-KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，但一个值每个请求只构建一次，错误又属于冷路径；把它们装箱会让每个签名都更笨拙，因此工作区允许 `clippy::large_enum_variant` 和 `clippy::result_large_err`。
+KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，但一个值每个请求只构建一次，错误又属于冷路径。把它们装箱会让每个签名都更笨拙，因此工作区允许 `clippy::large_enum_variant` 和 `clippy::result_large_err`。
 
 每个 KPP 类型都为日志和快照实现了 `serde`。这种 JSON 形式在补丁版本之间保持稳定，但它不是线路格式。其中的名称采用 snake case，并且与 `DialectId`（`openai_chat`）一样把 OpenAI 写作 `openai`：`OpaqueKind::OpenAiEncryptedReasoning` 对应 `openai_encrypted_reasoning`。
 
@@ -182,7 +182,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 ### 回复与流事件
 
-回复和流事件从一个服务商流向一个应用，其中没有提示字段：应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md) 和 [OpenAI Embeddings](openai-embeddings.md)。
+回复和流事件从一个服务商流向一个应用。其中没有提示字段。应用的方言无法表达的字段，要么可以推导出来，例如把停止原因映射到最接近的对应值，要么放在 Extras 中，以便在同一方言内回放。每个方言的映射页面都列出了这些映射：[Anthropic Messages](anthropic-messages.md)、[OpenAI Chat Completions](openai-chat.md)、[OpenAI Responses](openai-responses.md) 和 [OpenAI Embeddings](openai-embeddings.md)。
 
 在应用的格式能够承载时，推理会到达其他方言的应用，并经过包装，以便之后能够原样返回（[推理数据块](reasoning.md#推理数据块)，`cross::reasoning_reply_policy`）。未知块只会到达其自身方言的应用。其余内容都不会出现在应用中（[回复](cross-format.md#回复)，`cross::reply_policy`），流中则以[保活消息](cross-format.md#保活消息)帧代替。网关会记录完整的 KPP 回复。
 
@@ -215,7 +215,9 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 `kaeso_codecs::testing` 按结构比较 JSON：键的顺序无关紧要，数字按 `serde_json` 读到的结果精确比较，因此 `1` 和 `1.0` 不同，而 `1e0` 和 `1.0` 是同一个数。
 
-KPP 把 `temperature`、`top_p` 和各项惩罚保存为 `f64`，因此由编解码器自己保留写法。OpenAI Chat Completions 和 Anthropic Messages 把写成整数的键列在请求的形式标记 `integers` 中，只要值仍是整数，就再写成整数。OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变时生效。修改过的值按新值写出，另一种方言则得到目标自己的写法（`1.0`）。
+KPP 把 `temperature`、`top_p` 和各项惩罚保存为 `f64`，因此由编解码器自己保留写法。OpenAI Chat Completions 和 Anthropic Messages 把写成整数的键列在请求的形式标记 `integers` 中。只要值仍是整数，它们就再写成整数。
+
+OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变时生效。修改过的值按新值写出，另一种方言则得到目标自己的写法（`1.0`）。
 
 `testing::sse_diff` 逐项比较流。它先比较事件名，再按 JSON 比较数据（不是 JSON 时按文本比较），然后按顺序比较 `id`、`retry` 和未知字段。没有 `data:` 行的帧，其 `ComparableItem::Event.data` 为 `None`；注释按原文精确比较。
 

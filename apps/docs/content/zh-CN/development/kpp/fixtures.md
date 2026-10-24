@@ -45,9 +45,16 @@ order: 8
 | `schema:` | 根据固定版本的 OpenAPI schema 构造的请求体 |
 | `RECORDED.md` | 用 `cargo xtask record` 进行的真实录制，附带模型和时间 |
 
-方言文件夹的 `README.md` 还会注明其 fixture 遵循的固定版本规范和 SDK 版本，以及这些 fixture 共有的约定，例如流与其响应之间一致的 ID 和 Token 计数。每添加一个新的 fixture，都要在其中添加一行。
+方言文件夹的 `README.md` 还会注明其 fixture 遵循的固定版本规范和 SDK 版本。它还会注明这些 fixture 共有的约定，例如流与其响应之间一致的 ID 和 Token 计数。每添加一个新的 fixture，都要在其中添加一行。
 
-服务商文件夹有自己的一个 `README.md`：服务商的名称和 ID、它的 API 参考及阅读日期、录制时使用的基础 URL 和模型，以及其子文件夹中每个文件的一行。每个子文件夹的 `RECORDED.md` 在开头几行注明该服务商。
+服务商文件夹有自己的一个 `README.md`。其中包括：
+
+- 服务商的名称和 ID；
+- 它的 API 参考及阅读日期；
+- 录制时使用的基础 URL 和模型；
+- 其子文件夹中每个文件的一行。
+
+每个子文件夹的 `RECORDED.md` 在开头几行注明该服务商。
 
 ## 录制真实响应
 
