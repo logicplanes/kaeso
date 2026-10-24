@@ -47,7 +47,7 @@ Kaeso prices a request by its tokens. Some features also bill per call or at a h
 
 Tools the app runs itself pass: functions and custom tools, Anthropic's `bash`, `text_editor`, `computer` and `memory`, and OpenAI's `local_shell`, `apply_patch` and `computer_use_preview`. Token budgets and rates don't refuse these features, and without a spend budget every feature passes.
 
-The message names the feature and the budget's level, such as "This key has a spend budget that can't price `web_search_20250305`; ask an admin." To use such a feature, call it with a key that no spend budget covers: not the key's, its owner's or the project's.
+To use such a feature, call it with a key that no spend budget covers: not the key's, its owner's or the project's. The error message names the feature and the budget's level, such as "This key has a spend budget that can't price `web_search_20250305`; ask an admin."
 
 ## Change a limit
 
@@ -62,9 +62,11 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 - Over a rate, the message says when to retry, and the `Retry-After` header gives the seconds.
 - With a budget used up, the message says when the budget resets.
 
-While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most: its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own) at the model's prices. SpaceX's limit leaves reasoning out, so a request to a SpaceX reasoning model holds the model's own output limit. A ChatGPT account can't send an output limit, so a request through one holds the model's own too. Under a budget, it holds at least what an average request cost in the period, or in the 30 days before. A stream holds it for as long as it runs.
+While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most, at the model's prices. That is its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own). A stream holds it for as long as it runs.
 
-A request that could cost more than what's left of a hard budget or a token rate is refused, even with nothing else running. The message asks for fewer output tokens. Under a token rate that has room for the request once older requests leave the minute, the message says when to retry instead. To run more requests side by side under a small budget, send a lower output limit.
+SpaceX's limit leaves reasoning out, so a request to a SpaceX reasoning model holds the model's own output limit. A ChatGPT account can't send an output limit, so a request through one holds the model's own too. Under a budget, a request holds at least what an average request cost in the period, or in the 30 days before.
+
+Kaeso refuses a request that could cost more than what's left of a hard budget or a token rate, even with nothing else running. The message asks for fewer output tokens. Under a token rate that has room for the request once older requests leave the minute, the message says when to retry instead. To run more requests side by side under a small budget, send a lower output limit.
 
 Kaeso can't bound a request that sets no output limit, to a model with neither an output limit nor a context window. Such a request passes when nothing else runs, so it can overrun a limit by itself. Under a hard budget with no finished request in its period or the 30 days before, it runs alone.
 

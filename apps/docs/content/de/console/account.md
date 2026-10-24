@@ -30,7 +30,7 @@ Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ih
 
 ## Zwei-Faktor-Authentifizierung einschalten
 
-Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code oder eine Anmeldung über ihren eigenen Identitätsanbieter oder den der Organisation, die Ihr Konto verwaltet.
+Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code. Sie akzeptiert auch eine Anmeldung über ihren eigenen Identitätsanbieter oder über den Anbieter der Organisation, die Ihr Konto verwaltet.
 
 Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmelden** nur, wenn Sie den Link selbst angefordert haben. Ist dieser Browser bei einem anderen Konto angemeldet, ersetzt die Anmeldung diese Sitzung hier.
 
@@ -41,7 +41,7 @@ Ein Anmeldelink zeigt zuerst das Konto, bei dem er anmeldet. Wählen Sie **Anmel
 
 Das Einrichten verlangt eine Anmeldung innerhalb der letzten 15 Minuten. **Neu erzeugen** ersetzt die Wiederherstellungscodes, und **Ausschalten** entfernt die Zwei-Faktor-Authentifizierung; beide verlangen zuerst einen aktuellen Code oder einen Wiederherstellungscode. Haben Sie Authenticator und Wiederherstellungscodes verloren, kann ein Instanz-Admin die Zwei-Faktor-Authentifizierung für Sie zurücksetzen.
 
-Eine Anmeldung nimmt bis zu drei Codes an; nach drei falschen beginnen Sie erneut mit Passwort oder Anmeldelink. Nach 10 falschen Codes in Folge, bei der Anmeldung oder beim Bestätigen einer Änderung an Ihrem Konto, funktionieren Codes aus der App nicht mehr, und Kaeso schickt Ihnen eine E-Mail, nach je 10 weiteren erneut. Ein Wiederherstellungscode meldet Sie weiter an und entsperrt die App-Codes, ebenso ein Zurücksetzen des Passworts per E-Mail.
+Eine Anmeldung nimmt bis zu drei Codes an; nach drei falschen beginnen Sie erneut mit Passwort oder Anmeldelink. Codes aus der App funktionieren nach 10 falschen Codes in Folge nicht mehr, ob bei der Anmeldung oder beim Bestätigen einer Änderung an Ihrem Konto. Kaeso schickt Ihnen dann eine E-Mail, nach je 10 weiteren erneut. Ein Wiederherstellungscode meldet Sie weiter an und entsperrt die App-Codes, ebenso ein Zurücksetzen des Passworts per E-Mail.
 
 ## Single Sign-on verknüpfen
 
@@ -69,13 +69,15 @@ Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist I
 
 Die Konsole fragt nach Ihrem Passwort oder sendet einen Anmeldelink oder einen Link, um ein Passwort festzulegen. Nur wenn Ihr Konto nichts davon hat, etwa weil die Organisation, die es verwaltet, Single Sign-on verlangt, bestätigt sie über Ihren Identitätsanbieter.
 
-Über Single Sign-on öffnet die Konsole Ihren Identitätsanbieter in einem kleinen Fenster und bittet Sie, sich dort erneut anzumelden. Die Seite und Ihre Eingaben bleiben, wie sie sind, und die Aktion läuft weiter, sobald Sie sich angemeldet haben. Nur Ihre eigene verknüpfte Identität bestätigt, aus einer frischen Anmeldung, und eine Ablehnung nennt den Grund. Blockiert der Browser das Fenster, geht die Konsole in diesem Tab zum Anbieter und bringt Sie zur Seite zurück. Eine Bestätigung über den Anbieter einer Organisation macht die Sitzung zu einer aus dem Single Sign-on dieser Organisation.
+Über Single Sign-on öffnet die Konsole Ihren Identitätsanbieter in einem kleinen Fenster und bittet Sie, sich dort erneut anzumelden. Die Seite und Ihre Eingaben bleiben, wie sie sind, und die Aktion läuft weiter, sobald Sie sich angemeldet haben. Nur Ihre eigene verknüpfte Identität bestätigt, aus einer frischen Anmeldung, und eine Ablehnung nennt den Grund.
+
+Blockiert der Browser das Fenster, geht die Konsole in diesem Tab zum Anbieter und bringt Sie zur Seite zurück. Eine Bestätigung über den Anbieter einer Organisation macht die Sitzung zu einer aus dem Single Sign-on dieser Organisation.
 
 Einen Anbieter, der einmal ohne frische Anmeldung geantwortet hat, bietet sie nicht mehr an ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
 
 ## Nach einer Anmeldung über Single Sign-on
 
-Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen, und Änderungen an Ihrem Konto, die weiterhin eine kürzliche Anmeldung verlangen. Die Verwaltung der Instanz braucht eine weitere Anmeldung, es sei denn, ein Instanz-Admin hat die Organisation dafür gewählt.
+Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen. Außerdem können Sie damit Ihr Konto ändern, wofür weiterhin eine kürzliche Anmeldung nötig ist. Die Verwaltung der Instanz braucht eine weitere Anmeldung, es sei denn, ein Instanz-Admin hat die Organisation dafür gewählt.
 
 Eine Anmeldung über den Anbieter einer Organisation, die Ihr Konto nicht verwaltet, öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Das geschieht, wenn Ihre Adresse zu einer anderen Domain gehört. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 
