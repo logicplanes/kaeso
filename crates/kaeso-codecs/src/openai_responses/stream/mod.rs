@@ -354,18 +354,18 @@ impl Engine {
                             },
                         );
                     }
-                    BlockHeader::Unknown(item)
-                        if let Some(search) = web_search::anthropic_search(item) =>
-                    {
-                        self.start_search(b.index, search, em)?;
-                    }
-                    BlockHeader::Unknown(item)
-                        if let Some((tool_use_id, found)) =
-                            web_search::anthropic_search_result(item) =>
-                    {
-                        let status = if found { "completed" } else { "failed" };
-                        self.finish_search(&tool_use_id, status, "", em)?;
-                        self.hidden.push(b.index);
+                    BlockHeader::Unknown(item) if !item.origin.is(DIALECT) => {
+                        if let Some(search) = web_search::anthropic_search(item) {
+                            self.start_search(b.index, search, em)?;
+                        } else {
+                            if let Some((tool_use_id, found)) =
+                                web_search::anthropic_search_result(item)
+                            {
+                                let status = if found { "completed" } else { "failed" };
+                                self.finish_search(&tool_use_id, status, "", em)?;
+                            }
+                            self.hidden.push(b.index);
+                        }
                     }
                     BlockHeader::Unknown(item) if item.origin.is(DIALECT) => {
                         self.close_idle_message(em, "@close")?;

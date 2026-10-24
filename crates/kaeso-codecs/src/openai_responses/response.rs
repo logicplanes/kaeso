@@ -500,20 +500,6 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 apply(&c.extras, DIALECT, "", &[], &mut node);
                 items.push(node);
             }
-            Block::Unknown(item) if let Some(search) = web_search::anthropic_search(item) => {
-                let status = resp.blocks.iter().skip(i).find_map(|b| match b {
-                    Block::Unknown(r) => web_search::anthropic_search_result(r)
-                        .filter(|(id, _)| *id == search.tool_use_id)
-                        .map(|(_, found)| if found { "completed" } else { "failed" }),
-                    _ => None,
-                });
-                let id = generated_id("ws", &resp.id, index32);
-                items.push(web_search_call_item(
-                    &id,
-                    status.unwrap_or("in_progress"),
-                    search.query.as_deref(),
-                ));
-            }
             Block::Reasoning(r) => {
                 let id = generated_id("rs", &resp.id, index32);
                 match reasoning_reply_policy(r.origin.as_ref(), DIALECT) {
@@ -532,6 +518,22 @@ pub(super) fn output_items(resp: &Response, namespaces: &Namespaces) -> Vec<Node
                 }
             }
             Block::Unknown(item) if item.origin.is(DIALECT) => items.push(Node::raw(&item.raw)),
+            Block::Unknown(item) => {
+                if let Some(search) = web_search::anthropic_search(item) {
+                    let status = resp.blocks.iter().skip(i).find_map(|b| match b {
+                        Block::Unknown(r) => web_search::anthropic_search_result(r)
+                            .filter(|(id, _)| *id == search.tool_use_id)
+                            .map(|(_, found)| if found { "completed" } else { "failed" }),
+                        _ => None,
+                    });
+                    let id = generated_id("ws", &resp.id, index32);
+                    items.push(web_search_call_item(
+                        &id,
+                        status.unwrap_or("in_progress"),
+                        search.query.as_deref(),
+                    ));
+                }
+            }
             _ => {}
         }
     }
