@@ -84,6 +84,18 @@ fn headers(dialect: DialectId, name: &str) -> HeaderList {
     }
 }
 
+fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
+    let namespace = call
+        .extras
+        .fields_for(DialectId::OpenAiResponses)
+        .and_then(|f| f.get("namespace"))
+        .and_then(|n| n.parse::<String>().ok());
+    match namespace {
+        Some(ns) => format!("{ns}__{}", call.name),
+        None => call.name.clone(),
+    }
+}
+
 fn request_meaning(req: &Request) -> Value {
     let Request::Generate(r) = req else {
         return Value::Null;
@@ -102,7 +114,9 @@ fn request_meaning(req: &Request) -> Value {
         for b in &m.blocks {
             let item = match b {
                 Block::Text(t) if !t.text.is_empty() => json!({"text": t.text}),
-                Block::ToolCall(c) => json!({"call": c.name, "args": c.arguments.to_value().ok()}),
+                Block::ToolCall(c) => {
+                    json!({"call": called(c), "args": c.arguments.to_value().ok()})
+                }
                 Block::ToolResult(t) => json!({"result": t.content.iter().filter_map(|b| match b {
                     Block::Text(t) => Some(t.text.clone()),
                     _ => None,

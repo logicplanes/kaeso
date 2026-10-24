@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
+mod adapt;
 mod codec;
 pub mod continuity;
 pub mod cross;
@@ -12,6 +13,7 @@ mod openai_models;
 pub mod sse;
 mod struct_fields;
 pub mod testing;
+mod web_search;
 mod wire;
 
 pub mod anthropic_messages;

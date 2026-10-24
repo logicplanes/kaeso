@@ -9,7 +9,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
 | Extras fields | `Unsupported`, unless [allowlisted](#extras) | Left out |
-| Unknown blocks, tools and tool choices | `Unsupported` | Unknown blocks left out |
+| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces) and [hosted web search](#hosted-web-search) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
 | Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
@@ -84,6 +84,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `openai_chat` | document | `file.filename` | The file name OpenAI requires next to inline `file_data`. Metadata, no instruction. | `openai_chat/requests/file-pdf-data.json` |
 | `openai_chat` | request | `prompt_cache_key` | Routes requests to a prompt cache. A cache hint ([cache hints](#cache-hints)). | `openai_chat/requests/all-params-sdk.json` |
 | `openai_responses` | request | `prompt_cache_key` | As above. | `openai_responses/requests/sampling-and-ids.json` |
+| `openai_responses` | request | `client_metadata` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `openai_responses` | image | `detail` (on `input_image`; `auto` is already a form marker) | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
 
 ### Conditional entries
@@ -94,6 +95,35 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 | --- | --- | --- | --- | --- |
 | `anthropic_messages` | request | `context_management` | Holds only `edits`, with at least one edit, and every edit is `clear_thinking_*`. Thinking-block clearing only decides which earlier Anthropic `thinking` blocks the model sees, and those never reach another dialect ([reasoning](reasoning.md)). | Claude Code 2.1.296 sends `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}` on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `anthropic_messages` | message (`role: "system"`) | `output_config` | `{}`, or only `effort` equal to the request's `output_config.effort`. Repeating the request's effort changes nothing. | Claude Code 2.1.296 repeats the request's effort on its mid-conversation system message; same fixture |
+
+## Tool namespaces
+
+An OpenAI Responses `namespace` tool groups function tools under a name. Codex groups its own tools and each MCP server's tools this way, and sends a call to one of them as a `function_call` with `namespace`. OpenAI gets namespaces as they are. Every other target gets plain function tools: Anthropic, Chat Completions, and SpaceX's Responses, which refuses namespaces with a 422.
+
+- **Tools.** Each tool of a namespace becomes a function tool named `<namespace>__<name>`, such as `mcp__docs__search`. The namespace's description leads the tool's own description, separated by a blank line.
+- **Calls in the conversation.** A `function_call` with `namespace` gets the same name, and its `namespace` is removed.
+- **Replies.** A Responses reply or stream maps a call named like a flattened tool back to `name` and `namespace`. The names come from the app's request (`EncodeCtx::request`), so a call the app didn't namespace keeps its name.
+- **Name limits.** A flattened name that breaks the target's tool-name rules is then rewritten like any other tool name and mapped back.
+- **Refused.** A namespace with keys other than `type`, `name`, `description` and `tools`, a tool in it that is not a function, a field on such a tool that only Responses knows, such as `defer_loading`, and a flattened name that another tool already has.
+
+`EgressCtx::tool_namespaces` says whether a Responses target takes namespaces. The gateway sets it from `Provider::tool_namespaces`, which is true only for OpenAI.
+
+## Hosted web search
+
+An OpenAI Responses `web_search` tool going to Anthropic becomes Anthropic's `web_search_20250305` server tool, named `web_search`:
+
+| Responses | Anthropic |
+| --- | --- |
+| `filters.allowed_domains` | `allowed_domains` |
+| `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` |
+| `external_web_access: true`, `search_context_size: "medium"` (the default) | nothing; both describe what Anthropic's search does |
+| `external_web_access: false`, another `search_context_size`, any other field | `Unsupported` |
+
+`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude always searches live, so the refusal says to set `web_search = "live"` or turn web search off. Other targets refuse `web_search` like any tool of another format; for a Chat Completions model, the refusal says how to turn web search off in Codex.
+
+Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
+
+`web_search_call` items an app sends back are dropped for Anthropic. Anthropic replays a search only with its encrypted results, which these items don't carry, and the answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for OpenAI as well, which never issued them.
 
 ## Usage
 

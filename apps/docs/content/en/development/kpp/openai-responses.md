@@ -44,7 +44,9 @@ A key path can't hold a key that is empty, contains `.` or starts with `header:`
 | `input` (items) | `system` + `messages` typed | See [input items](#input-items-inputitem). Absent `input` (allowed with `prompt`): no messages; form `unset input`. |
 | `instructions` | `system[0]` text block typed | From other dialects, a single text block becomes `instructions`; several blocks become one leading `developer` message item with `input_text` parts, which keeps the block boundaries but not the difference between `instructions` and a system message (the API treats both as developer instructions). `null`: form. |
 | `tools[]` `{type: function, name, description, parameters, strict}` (`FunctionTool`) | `ToolDef::Function` typed (`parameters` raw) | Other keys (`defer_loading`, `allowed_callers`, `output_schema`, …) are extras of the tool. Cache hints on tools from other dialects are dropped ([cache hints](cross-format.md#cache-hints)). Names from other dialects outside `^[a-zA-Z0-9_-]{1,64}$` are rewritten deterministically (other characters become `_`, then `_` and a 16-digit hexadecimal FNV-1a hash are appended, at most 64 characters in all), recorded in `EgressCtx::tool_names` and mapped back on decode. |
-| `tools[]` other types (`web_search`, `file_search`, `mcp`, `custom`, …) | `ToolDef::Unknown` | Same-dialect only. |
+| `tools[]` `namespace` | `ToolDef::Unknown` | Same-dialect only; for targets without namespaces, its tools become function tools ([tool namespaces](cross-format.md#tool-namespaces)). |
+| `tools[]` `web_search` | `ToolDef::Unknown` | Same-dialect only; for Anthropic, Anthropic's web search tool ([hosted web search](cross-format.md#hosted-web-search)). |
+| `tools[]` other types (`file_search`, `mcp`, `custom`, …) | `ToolDef::Unknown` | Same-dialect only. |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` typed | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` typed | With other keys: `ToolChoice::Unknown`. |
 | `tool_choice` `allowed_tools`, hosted-tool, `mcp`, `custom`, other strings | `ToolChoice::Unknown` | Same-dialect only. |
@@ -131,7 +133,8 @@ A reply from another dialect is written as a complete `Response` object:
 - Stop reasons without an equivalent (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) are reported as `completed`, which loses information: an Anthropic `pause_turn` asks the app to continue, and a Responses app can't tell. Message items are `incomplete` when the response is.
 - Reasoning of another dialect becomes a reasoning item ([reasoning blobs](reasoning.md#reasoning-blobs)): id `rs_kaeso_…`, its reasoning text as one `summary_text` followed by its summaries, and a reasoning blob of the original block as `encrypted_content`. The blob is sent whether or not the app asked for it in `include`, because Kaeso stores nothing and the SDK agent loops send output items back as received.
 - Reply data this dialect can't show is left out ([replies](cross-format.md#replies)): foreign `Unknown` blocks, foreign citations and extras, images, documents and tool results.
-- Message and function call items get the ids `msg_kaeso_…` and `fc_kaeso_…`. Requests recognise these Kaeso-invented ids and never send them to a provider.
+- Anthropic web searches become `web_search_call` items ([hosted web search](cross-format.md#hosted-web-search)), and calls of flattened namespace tools get their `namespace` back ([tool namespaces](cross-format.md#tool-namespaces)).
+- Message, function call and web search items get the ids `msg_kaeso_…`, `fc_kaeso_…` and `ws_kaeso_…`. Requests recognise these Kaeso-invented ids and never send them to a provider.
 
 ## Input token count: `TokenCountsResource`
 
@@ -191,7 +194,7 @@ Encoding KPP events from another dialect produces the full canonical sequence:
 - `reasoning_summary_*` part events around summaries, and `content_part.*` and `reasoning_text.*` around reasoning text;
 - then `response.completed`, or `response.incomplete` for `MaxTokens` and `ContentFilter`, with every output item and the usage.
 
-`sequence_number` counts from 0. Item ids are generated (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…` from the response id and output index). `obfuscation` is never generated. Blocks still open at `ResponseStop` are closed first. A stream without `ResponseStart` gets one, with the id `resp_kaeso_<created_at>` from `EncodeCtx::created_at`. Reasoning blocks of other dialects become reasoning items with an `rs_kaeso_…` id ([reasoning blobs](reasoning.md#reasoning-blobs)): the reasoning text streams as `reasoning_summary_text` of summary 0 (summaries keep their index), and `output_item.done` carries the reasoning blob of the whole block in `encrypted_content`. After `ResponseStop` or `Error` the encoder refuses further lifecycle events. Foreign errors become an `error` event, with the `code` from the error kind (see [errors](#errors-errorresponse)).
+`sequence_number` counts from 0. Item ids are generated (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…`, `ws_kaeso_…` from the response id and output index). `obfuscation` is never generated. Blocks still open at `ResponseStop` are closed first. A stream without `ResponseStart` gets one, with the id `resp_kaeso_<created_at>` from `EncodeCtx::created_at`. Reasoning blocks of other dialects become reasoning items with an `rs_kaeso_…` id ([reasoning blobs](reasoning.md#reasoning-blobs)): the reasoning text streams as `reasoning_summary_text` of summary 0 (summaries keep their index), and `output_item.done` carries the reasoning blob of the whole block in `encrypted_content`. After `ResponseStop` or `Error` the encoder refuses further lifecycle events. Foreign errors become an `error` event, with the `code` from the error kind (see [errors](#errors-errorresponse)).
 
 What another dialect sends that this dialect can't show (extra events such as Anthropic `ping`, foreign unknown blocks) earns paced SSE comments, `: keepalive` ([keepalives](cross-format.md#keepalives)): one per extra event, and one per 1,024 bytes of hidden text. `StreamEncoder::keepalive` gives the gateway the same frame. There is no end-of-stream sentinel.
 
@@ -315,6 +318,7 @@ Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-refer
 |---|---|---|
 | `reasoning` items with `summary`, and `encrypted_content`, which `grok-4.3` always sends | as OpenAI's | SpaceX refuses an `encrypted_content` that another provider wrote with a 400 `invalid-argument`. |
 | `web_search_call` items, `url_citation` annotations | as OpenAI's | |
+| `namespace` tools (request) | flattened to function tools | SpaceX refuses them with a 422 (`unknown variant namespace`); `Provider::tool_namespaces` is false ([tool namespaces](cross-format.md#tool-namespaces)). |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as above. |
 | `presence_penalty` (request) | extras | SpaceX ignores it and echoes `0.0`. |
 | `max_output_tokens` (request) | `sampling.max_output_tokens` | SpaceX applies it only to visible output, not to reasoning tokens (Responses reference), as for [Chat Completions](openai-chat.md#spacex). |

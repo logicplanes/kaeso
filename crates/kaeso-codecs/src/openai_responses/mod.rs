@@ -1,5 +1,6 @@
 pub(crate) mod error;
 mod input;
+pub(crate) mod namespaces;
 mod node;
 mod overrides;
 mod parts;
@@ -62,11 +63,13 @@ impl Codec for OpenAiResponses {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
-        request::check(req, &ctx.origin(DIALECT))
+        let req = crate::adapt::for_target(req, DIALECT, ctx)?;
+        request::check(&req, &ctx.origin(DIALECT))
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        request::encode(req, ctx)
+        let req = crate::adapt::for_target(req, DIALECT, ctx)?;
+        request::encode(&req, ctx)
     }
 
     fn decode_response(

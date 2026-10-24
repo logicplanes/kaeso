@@ -3,6 +3,484 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "codex-namespace-tools": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-24</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Call echo with the text hi.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_1",
+              "input": {
+                "text": "hi"
+              },
+              "name": "mcp__fake__echo",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Wall time: 0.0021 seconds\nOutput:",
+                  "type": "text"
+                },
+                {
+                  "text": "MCP tool call requires approval, but approval policy is never",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, a coding agent. You and the user share one workspace.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "justification": {
+                "description": "User-facing approval question for `require_escalated`; omit otherwise.",
+                "type": "string"
+              },
+              "login": {
+                "description": "True runs the shell with -l/-i semantics; false disables them. Defaults to true.",
+                "type": "boolean"
+              },
+              "max_output_tokens": {
+                "description": "Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy.",
+                "type": "number"
+              },
+              "prefix_rule": {
+                "description": "Reusable approval prefix for `cmd`, only with `sandbox_permissions: \"require_escalated\"`; for example [\"git\", \"pull\"].",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "sandbox_permissions": {
+                "description": "Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.",
+                "enum": [
+                  "use_default",
+                  "require_escalated"
+                ],
+                "type": "string"
+              },
+              "shell": {
+                "description": "Shell binary to launch. Defaults to the user's default shell.",
+                "type": "string"
+              },
+              "tty": {
+                "description": "True allocates a PTY for the command; false or omitted uses plain pipes.",
+                "type": "boolean"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              },
+              "yield_time_ms": {
+                "description": "Wait before yielding output. Defaults to 10000 ms; effective range is 250-30000 ms.",
+                "type": "number"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "description": "Tools for spawning and managing sub-agents.\n\nSpawn a sub-agent for a well-scoped task. Returns the spawned agent id plus the user-facing nickname when available.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fork_context": {
+                "description": "True forks the current thread history into the new agent; false or omitted starts with only the initial prompt.",
+                "type": "boolean"
+              },
+              "items": {
+                "description": "Structured input items. Use this to pass explicit mentions (for example app:// connector paths).",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "audio_url": {
+                      "description": "Audio data URL when type is audio.",
+                      "type": "string"
+                    },
+                    "image_url": {
+                      "description": "Image URL when type is image.",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Display name when type is skill or mention.",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention.",
+                      "type": "string"
+                    },
+                    "text": {
+                      "description": "Text content when type is text.",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "Input item type: text, image, local_image, audio, local_audio, skill, or mention.",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "Initial plain-text task for the new agent. Use either message or items.",
+                "type": "string"
+              },
+              "model": {
+                "description": "Model override for the new agent. Omit unless an explicit override is needed.",
+                "type": "string"
+              },
+              "reasoning_effort": {
+                "description": "Reasoning effort override for the new agent. Omit to inherit the parent effort.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "multi_agent_v1__spawn_agent",
+          "strict": false
+        },
+        {
+          "description": "Tools for spawning and managing sub-agents.\n\nWait for agents to reach a final status. Completed statuses may include the agent's final message. Returns empty status when timed out. Once the agent reaches a final status, a notification message will be received containing the same completed status.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "targets": {
+                "description": "Agent ids to wait on. Pass multiple ids to wait for whichever finishes first.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "timeout_ms": {
+                "description": "Timeout in milliseconds. Defaults to 30000, min 10000, max 3600000. Prefer longer waits (minutes) to avoid busy polling.",
+                "type": "number"
+              }
+            },
+            "required": [
+              "targets"
+            ],
+            "type": "object"
+          },
+          "name": "multi_agent_v1__wait_agent",
+          "strict": false
+        },
+        {
+          "description": "Tools in the mcp__fake namespace.\n\nEcho text back",
+          "input_schema": {
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "name": "mcp__fake__echo",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "codex-web-search-resume": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-24</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "When was Claude Shannon born?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Claude Shannon was born on April 30, 1916.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "And where?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, a coding agent. You and the user share one workspace.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "justification": {
+                "description": "User-facing approval question for `require_escalated`; omit otherwise.",
+                "type": "string"
+              },
+              "login": {
+                "description": "True runs the shell with -l/-i semantics; false disables them. Defaults to true.",
+                "type": "boolean"
+              },
+              "max_output_tokens": {
+                "description": "Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy.",
+                "type": "number"
+              },
+              "prefix_rule": {
+                "description": "Reusable approval prefix for `cmd`, only with `sandbox_permissions: \"require_escalated\"`; for example [\"git\", \"pull\"].",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "sandbox_permissions": {
+                "description": "Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.",
+                "enum": [
+                  "use_default",
+                  "require_escalated"
+                ],
+                "type": "string"
+              },
+              "shell": {
+                "description": "Shell binary to launch. Defaults to the user's default shell.",
+                "type": "string"
+              },
+              "tty": {
+                "description": "True allocates a PTY for the command; false or omitted uses plain pipes.",
+                "type": "boolean"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              },
+              "yield_time_ms": {
+                "description": "Wait before yielding output. Defaults to 10000 ms; effective range is 250-30000 ms.",
+                "type": "number"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "description": "Tools for spawning and managing sub-agents.\n\nSpawn a sub-agent for a well-scoped task. Returns the spawned agent id plus the user-facing nickname when available.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "fork_context": {
+                "description": "True forks the current thread history into the new agent; false or omitted starts with only the initial prompt.",
+                "type": "boolean"
+              },
+              "items": {
+                "description": "Structured input items. Use this to pass explicit mentions (for example app:// connector paths).",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "audio_url": {
+                      "description": "Audio data URL when type is audio.",
+                      "type": "string"
+                    },
+                    "image_url": {
+                      "description": "Image URL when type is image.",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "Display name when type is skill or mention.",
+                      "type": "string"
+                    },
+                    "path": {
+                      "description": "Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention.",
+                      "type": "string"
+                    },
+                    "text": {
+                      "description": "Text content when type is text.",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "Input item type: text, image, local_image, audio, local_audio, skill, or mention.",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "Initial plain-text task for the new agent. Use either message or items.",
+                "type": "string"
+              },
+              "model": {
+                "description": "Model override for the new agent. Omit unless an explicit override is needed.",
+                "type": "string"
+              },
+              "reasoning_effort": {
+                "description": "Reasoning effort override for the new agent. Omit to inherit the parent effort.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "multi_agent_v1__spawn_agent",
+          "strict": false
+        },
+        {
+          "description": "Tools for spawning and managing sub-agents.\n\nWait for agents to reach a final status. Completed statuses may include the agent's final message. Returns empty status when timed out. Once the agent reaches a final status, a notification message will be received containing the same completed status.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "targets": {
+                "description": "Agent ids to wait on. Pass multiple ids to wait for whichever finishes first.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "timeout_ms": {
+                "description": "Timeout in milliseconds. Defaults to 30000, min 10000, max 3600000. Prefer longer waits (minutes) to avoid busy polling.",
+                "type": "number"
+              }
+            },
+            "required": [
+              "targets"
+            ],
+            "type": "object"
+          },
+          "name": "multi_agent_v1__wait_agent",
+          "strict": false
+        },
+        {
+          "description": "Tools in the mcp__fake namespace.\n\nEcho text back",
+          "input_schema": {
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "type": "object"
+          },
+          "name": "mcp__fake__echo",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "error-mid-stream": {
     "body": {
       "max_tokens": 4096,
@@ -658,9 +1136,9 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "tool-choice-allowed-tools": {
-    "message": "`web_search tool` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
-    "param": "tools[2]",
-    "unsupported": "web_search tool"
+    "message": "tool_choice `allowed_tools` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Use `auto`, `none`, `required` or a single named tool instead.",
+    "param": "tool_choice",
+    "unsupported": "tool_choice `allowed_tools`"
   },
   "tool-choice-none": {
     "body": {

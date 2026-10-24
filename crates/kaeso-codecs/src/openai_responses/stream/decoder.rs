@@ -11,6 +11,7 @@ use serde_json::value::RawValue;
 use super::{EVENT_KEY, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY, event_extras};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::openai_responses::DIALECT;
+use crate::openai_responses::namespaces::Namespaces;
 use crate::openai_responses::node::{Node, entries_of};
 use crate::openai_responses::overrides::{Overrides, form_set_insert};
 use crate::openai_responses::response::{NATIVE, decode_usage, failed_error, stop_for};
@@ -85,7 +86,7 @@ impl Decoder {
             parser: SseParser::new(),
             origin: ctx.origin(DIALECT),
             ctx: ctx.clone(),
-            engine: Engine::new(Vec::new(), 0),
+            engine: Engine::new(Vec::new(), 0, Namespaces::default()),
             pending: Vec::new(),
             held: None,
             next_block: 0,

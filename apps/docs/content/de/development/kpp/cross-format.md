@@ -9,7 +9,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 | Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
 | --- | --- | --- |
 | Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) | Weggelassen |
-| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported` | Unbekannte Blöcke weggelassen |
+| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces) und [gehosteter Websuche](#gehostete-websuche) | Unbekannte Blöcke weggelassen, außer Websuchen |
 | Zitate | `Unsupported` | Weggelassen |
 | Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |
 | Lesbares Reasoning | Weggelassen; der [Reasoning-Blob](reasoning.md#reasoning-blobs) stellt es beim Ursprung wieder her | In der Reasoning-Form der App gezeigt, wo sie eine hat |
@@ -84,6 +84,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `openai_chat` | document | `file.filename` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt. Metadaten, keine Anweisung. | `openai_chat/requests/file-pdf-data.json` |
 | `openai_chat` | request | `prompt_cache_key` | Leitet Anfragen zu einem Prompt-Cache. Ein Cache-Hinweis ([Cache-Hinweise](#cache-hinweise)). | `openai_chat/requests/all-params-sdk.json` |
 | `openai_responses` | request | `prompt_cache_key` | Wie oben. | `openai_responses/requests/sampling-and-ids.json` |
+| `openai_responses` | request | `client_metadata` | Metadaten der Anfrage: Turn- und Thread-IDs, W3C-Trace-Kontext und `x-codex-turn-metadata`. Sie erreichen das Modell nie, und ein protokollierter Anfrage-Body behält sie. | Codex sendet sie bei jedem Zug; `openai_responses/requests/codex-namespace-tools.json` |
 | `openai_responses` | image | `detail` (an `input_image`; `auto` ist bereits eine Form-Markierung) | Hinweis zur Bildauflösung, wie `image_url.detail` bei Chat. `input_file.detail` (PDF-Darstellung) steht **nicht** auf der Allowlist. | `openai_responses/requests/image-base64-file-id.json` |
 
 ### Bedingte Einträge
@@ -94,6 +95,35 @@ Diese Felder wechseln das Format nur mit den Werten unten (`cross::is_droppable_
 | --- | --- | --- | --- | --- |
 | `anthropic_messages` | request | `context_management` | Enthält nur `edits` mit mindestens einem Edit, und jeder Edit ist `clear_thinking_*`. Das Löschen von Thinking-Blöcken entscheidet nur, welche früheren Anthropic-`thinking`-Blöcke das Modell sieht, und diese erreichen nie einen anderen Dialekt ([Reasoning](reasoning.md)). | Claude Code 2.1.296 sendet bei jeder Anfrage `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}`; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `anthropic_messages` | message (`role: "system"`) | `output_config` | `{}` oder nur `effort`, gleich dem `output_config.effort` der Anfrage. Den Aufwand der Anfrage zu wiederholen ändert nichts. | Claude Code 2.1.296 wiederholt den Aufwand der Anfrage in seiner Systemnachricht mitten in der Unterhaltung; dieselbe Fixture |
+
+## Tool-Namespaces
+
+Ein `namespace`-Tool von OpenAI Responses fasst Funktions-Tools unter einem Namen zusammen. Codex gruppiert so seine eigenen Tools und die Tools jedes MCP-Servers und sendet einen Aufruf eines solchen Tools als `function_call` mit `namespace`. OpenAI bekommt Namespaces unverändert. Jedes andere Ziel bekommt einfache Funktions-Tools: Anthropic, Chat Completions und die Responses-API von SpaceX, die Namespaces mit 422 ablehnt.
+
+- **Tools.** Jedes Tool eines Namespace wird zu einem Funktions-Tool namens `<namespace>__<name>`, etwa `mcp__docs__search`. Die Beschreibung des Namespace steht vor der eigenen Beschreibung des Tools, getrennt durch eine Leerzeile.
+- **Aufrufe im Gespräch.** Ein `function_call` mit `namespace` bekommt denselben Namen, und sein `namespace` wird entfernt.
+- **Antworten.** Eine Responses-Antwort oder ein Stream übersetzt einen Aufruf, der wie ein umbenanntes Tool heißt, zurück in `name` und `namespace`. Die Namen stammen aus der Anfrage der App (`EncodeCtx::request`), daher behält ein Aufruf ohne Namespace in der App seinen Namen.
+- **Namensgrenzen.** Verletzt ein umbenanntes Tool die Regeln des Ziels für Tool-Namen, wird es danach wie jeder andere Tool-Name umgeschrieben und zurückübersetzt.
+- **Abgelehnt.** Ein Namespace mit anderen Schlüsseln als `type`, `name`, `description` und `tools`, ein Tool darin, das keine Funktion ist, ein Feld an einem solchen Tool, das nur Responses kennt, etwa `defer_loading`, und ein umbenannter Name, den schon ein anderes Tool trägt.
+
+`EgressCtx::tool_namespaces` sagt, ob ein Responses-Ziel Namespaces annimmt. Das Gateway setzt es aus `Provider::tool_namespaces`, das nur für OpenAI wahr ist.
+
+## Gehostete Websuche
+
+Ein `web_search`-Tool von OpenAI Responses wird für Anthropic zu Anthropics Server-Tool `web_search_20250305` mit dem Namen `web_search`:
+
+| Responses | Anthropic |
+| --- | --- |
+| `filters.allowed_domains` | `allowed_domains` |
+| `user_location` (`approximate`, mit `city`, `region`, `country`, `timezone`) | `user_location` |
+| `external_web_access: true`, `search_context_size: "medium"` (der Standard) | nichts; beide beschreiben, was Anthropics Suche tut |
+| `external_web_access: false`, eine andere `search_context_size`, jedes andere Feld | `Unsupported` |
+
+`external_web_access: false` bittet OpenAI, nur seinen Cache von Seiten zu lesen. Das sendet Codex bei seinem Standard `web_search = "cached"`. Claude sucht immer live, daher nennt die Ablehnung `web_search = "live"` oder das Abschalten der Websuche. Andere Ziele lehnen `web_search` ab wie jedes Tool eines anderen Formats; für ein Chat-Completions-Modell sagt die Ablehnung, wie man die Websuche in Codex abschaltet.
+
+Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
+
+`web_search_call`-Items, die eine App zurücksendet, werden für Anthropic verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für OpenAI verworfen, das sie nie ausgegeben hat.
 
 ## Nutzung
 

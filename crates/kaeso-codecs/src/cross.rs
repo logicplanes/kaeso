@@ -28,6 +28,7 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiChat, "document", "file.filename"),
     (DialectId::OpenAiChat, "request", "prompt_cache_key"),
     (DialectId::OpenAiResponses, "request", "prompt_cache_key"),
+    (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
 ];
 
@@ -298,6 +299,11 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
                     let ty = type_tag(item.raw.as_raw()).ok().flatten();
                     let name = ty.as_deref().unwrap_or("non-function");
                     let hint = match &ty {
+                        Some(ty)
+                            if item.origin.is(DialectId::OpenAiResponses) && ty == "web_search" =>
+                        {
+                            "This model has no hosted web search. Remove the tool, or send the request to a model that has one. From Codex, set `web_search = \"disabled\"`.".to_owned()
+                        }
                         Some(ty) if item.origin.is(DialectId::AnthropicMessages) => format!(
                             "Input tag '{ty}' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format."
                         ),
@@ -531,7 +537,7 @@ pub fn reply_opaque_visible(opaque: &Opaque, target: DialectId) -> bool {
         )
 }
 
-fn foreign(
+pub(crate) fn foreign(
     feature: String,
     origin: &Origin,
     target: DialectId,

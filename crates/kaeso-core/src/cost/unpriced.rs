@@ -11,6 +11,7 @@ const PRICED_TIERS: &[&str] = &["auto", "default", "flex", "on_demand", "standar
 
 const CLIENT_TOOLS: &[&str] = &[
     "custom",
+    "namespace",
     "local_shell",
     "apply_patch",
     "computer",
@@ -61,15 +62,18 @@ fn provider_tool(tool: &ToolDef, egress: DialectId) -> Option<Unpriced> {
     let ToolDef::Unknown(item) = tool else {
         return None;
     };
-    if !item.origin.is(egress) {
-        return None;
-    }
     let raw = item.raw.to_value().ok();
     let ty = raw
         .as_ref()
         .and_then(|v| v.get("type"))
         .and_then(Value::as_str)
         .unwrap_or_default();
+    let mapped_search = ty == "web_search"
+        && item.origin.is(DialectId::OpenAiResponses)
+        && egress == DialectId::AnthropicMessages;
+    if !item.origin.is(egress) && !mapped_search {
+        return None;
+    }
     (!client_tool(ty)).then(|| Unpriced {
         param: "tools",
         feature: if ty.is_empty() {
@@ -277,6 +281,28 @@ mod tests {
             "plugins": [{ "id": "web" }],
         });
         assert_eq!(of(c, plugins), found("plugins", "plugins"));
+    }
+
+    #[test]
+    fn codex_namespaces_are_client_tools_and_its_web_search_is_unpriced_on_anthropic() {
+        let codex = decoded(
+            DialectId::OpenAiResponses,
+            &fixture("openai_responses/requests/codex-namespace-tools.json"),
+            &[],
+        );
+        let search = found("tools", "web_search");
+        assert_eq!(unpriced(&codex, DialectId::OpenAiResponses), search);
+        assert_eq!(unpriced(&codex, DialectId::AnthropicMessages), search);
+        assert_eq!(unpriced(&codex, DialectId::OpenAiChat), None);
+        let Request::Generate(mut g) = codex else {
+            unreachable!()
+        };
+        g.tools
+            .retain(|t| !matches!(t, ToolDef::Unknown(i) if i.raw.get().contains("web_search")));
+        let without_search = Request::Generate(g);
+        for egress in [DialectId::OpenAiResponses, DialectId::AnthropicMessages] {
+            assert_eq!(unpriced(&without_search, egress), None, "{egress}");
+        }
     }
 
     #[test]
