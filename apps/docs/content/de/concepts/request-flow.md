@@ -115,13 +115,17 @@ Sind die Header eines Streams gesendet, kann sich sein Status nicht mehr ändern
 
 Nach einem Fehler-Event des Anbieters hört Kaeso auf zu lesen und schließt die Anfrage beim Anbieter, sodass der Anbieter aufhört zu generieren.
 
+Ein Stream, dessen letztes Event, etwa `response.completed`, `message_stop` oder `data: [DONE]`, die App erreicht hat, ist abgeschlossen. Danach lässt ihn nichts mehr fehlschlagen: Eine abgebrochene Verbindung zum Anbieter, ein schweigender Anbieter, ein Stream-Limit oder ein Herunterfahren beendet den Stream nur, ohne Fehler-Event.
+
 Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives und die Zeit bis zu den ersten Bytes. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
 Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem Stream liest, gilt als getrennt: Kaeso stoppt die Anfrage beim Anbieter und protokolliert einen Verbindungsabbruch.
 
 ## Verbindungsabbrüche
 
-Schließt eine App die Verbindung, stoppt Kaeso die Anfrage beim Anbieter sofort, sodass der Anbieter aufhört zu generieren. Kaeso protokolliert die Anfrage als 499 mit der Fehlerart `client_disconnected`.
+Schließt eine App die Verbindung, bevor das letzte Event eines Streams sie erreicht hat, stoppt Kaeso die Anfrage beim Anbieter sofort, sodass der Anbieter aufhört zu generieren. Kaeso protokolliert die Anfrage als 499 mit der Fehlerart `client_disconnected`.
+
+Viele Apps, etwa Codex, schließen die Verbindung, sobald sie das letzte Event haben. Kaeso protokolliert einen solchen Stream als abgeschlossen, mit dem Status 200 und der Nutzung, die der Anbieter gemeldet hat.
 
 Eine solche Anfrage, und ebenso einen abgebrochenen Stream, berechnet Kaeso mit dem, was der Anbieter gemeldet hat, plus einer Schätzung des Rests:
 
@@ -138,7 +142,7 @@ Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limit
 
 Bei einem Shutdown-Signal nimmt das Gateway keine neuen Verbindungen mehr an. Offene Anfragen und Streams erhalten `KAESO_SHUTDOWN_GRACE` zum Abschluss, standardmäßig 30 Sekunden.
 
-Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein bereits gestarteter Stream endet stattdessen mit einem Fehler-Event.
+Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein gestarteter, noch nicht abgeschlossener Stream endet stattdessen mit einem Fehler-Event.
 
 Kaeso berechnet und protokolliert beide mit der Fehlerart `shutdown`, einen Stream mit geschätzter Nutzung. Eine Sekunde später schließt Kaeso die Verbindungen, die noch offen sind.
 

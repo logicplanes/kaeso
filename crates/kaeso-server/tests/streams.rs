@@ -5,7 +5,9 @@ mod common;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use common::v1::{Answer, Capture, Env, call, chat, messages};
+use common::v1::{
+    Answer, Capture, Env, call, chat, hold_back_the_end, messages, open_stream, read_until,
+};
 use kaeso_codecs::{EncodeCtx, dispatch};
 use kaeso_kpp::{DialectId, RequestKind, StreamMode};
 use serde_json::{Value, json};
@@ -481,29 +483,6 @@ async fn without_content_logging_a_stream_keeps_only_what_usage_needs() {
     }
 }
 
-async fn open_stream(env: &Env, text: &str) -> (String, axum::body::Body) {
-    use axum::body::Body;
-    use axum::http::Request;
-    use tower::ServiceExt;
-    let req = Request::builder()
-        .uri("/v1/messages")
-        .method("POST")
-        .header("x-api-key", &env.key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .body(Body::from(
-            serde_json::to_vec(&streaming(messages("claude-haiku-4-5", text))).unwrap(),
-        ))
-        .unwrap();
-    let resp = env.app.router.clone().oneshot(req).await.unwrap();
-    assert_eq!(resp.status(), 200);
-    let id = resp.headers()["kaeso-request-id"]
-        .to_str()
-        .unwrap()
-        .to_owned();
-    (id, resp.into_body())
-}
-
 #[tokio::test]
 async fn streams_end_at_the_installs_limits() {
     for (setting, value, text) in [
@@ -541,17 +520,165 @@ async fn streams_end_at_the_installs_limits() {
 async fn an_app_that_stops_reading_ends_its_stream() {
     use http_body_util::BodyExt;
     let env = env(&[("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s")]).await;
-    let (id, mut body) = open_stream(
-        &env,
+    let body = streaming(messages(
+        "claude-haiku-4-5",
         "Hi [mock:fixture=thinking-long-tool-loop] [mock:slow=10]",
-    )
-    .await;
+    ));
+    let (id, mut body) = open_stream(&env, "/v1/messages", true, &body).await;
     assert!(body.frame().await.unwrap().unwrap().is_data());
     let o = outcome(&env, |o| o.request_id.to_string() == id).await;
     assert!(o.cancelled);
     assert_eq!(o.status, 499);
     assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
     drop(body);
+}
+
+const APPS: [(&str, bool, &str); 3] = [
+    ("/v1/chat/completions", false, "data: [DONE]"),
+    ("/v1/responses", false, "event: response.completed"),
+    ("/v1/messages", true, "event: message_stop"),
+];
+
+const PROVIDERS: [(&str, &str, &str, u64, u64); 3] = [
+    (
+        "claude-haiku-4-5",
+        "anthropic_messages",
+        "text-simple",
+        10,
+        18,
+    ),
+    ("gpt-4o", "openai_responses", "text-basic-stream", 37, 11),
+    (
+        "groq/openai/gpt-oss-20b",
+        "openai_chat",
+        "stream-include-usage",
+        19,
+        10,
+    ),
+];
+
+async fn env_with_groq(extra: &[(&str, &str)]) -> Env {
+    let env = env(extra).await;
+    let org = &env.owner.org_id;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/credentials"),
+            json!({ "provider": "groq", "name": "groq", "secret": "gsk_test-groq-credential-0003" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert!(r.status.is_success(), "{:?}", r.body);
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{org}/projects/{}/models", env.project),
+            json!({ "provider": "groq", "model_id": "openai/gpt-oss-20b" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert!(r.status.is_success(), "{:?}", r.body);
+    env
+}
+
+fn asking(path: &str, model: &str, text: &str) -> Value {
+    match path {
+        "/v1/chat/completions" => streaming(chat(model, text)),
+        "/v1/responses" => json!({ "model": model, "input": text, "stream": true }),
+        _ => streaming(messages(model, text)),
+    }
+}
+
+#[tokio::test]
+async fn an_app_that_closes_right_after_the_last_event_got_a_finished_reply() {
+    let env = env_with_groq(&[]).await;
+    for (path, anthropic, last) in APPS {
+        for (model, dialect, fixture, input, output) in PROVIDERS {
+            let case = format!("{path} to {model}");
+            let gate = hold_back_the_end(&env, dialect, fixture);
+            let text = format!("Hi {}", gate.steps_marker());
+            let (id, mut body) =
+                open_stream(&env, path, anthropic, &asking(path, model, &text)).await;
+            read_until(&mut body, last).await;
+            drop(body);
+            let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+            assert_eq!(o.status, 200, "{case}: {:?}", o.error_kind);
+            assert!(!o.cancelled, "{case}");
+            assert_eq!(o.error_kind, None, "{case}");
+            assert!(!o.usage_estimated, "{case}");
+            let u = o.usage.unwrap();
+            assert_eq!(
+                (u.total_input_tokens(), u.output_tokens),
+                (input, output),
+                "{case}"
+            );
+            gate.finish();
+        }
+    }
+}
+
+#[tokio::test]
+async fn an_app_that_closes_before_the_last_event_is_a_disconnect() {
+    let env = env(&[]).await;
+    let gate = env.mock.gate();
+    gate.step();
+    let text = format!("Hi {}", gate.steps_marker());
+    let (id, mut body) = open_stream(
+        &env,
+        "/v1/responses",
+        false,
+        &asking("/v1/responses", "gpt-4o", &text),
+    )
+    .await;
+    read_until(&mut body, "event: response.created").await;
+    drop(body);
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!((o.status, o.cancelled), (499, true));
+    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
+    assert!(o.usage_estimated);
+    gate.finish();
+}
+
+#[tokio::test]
+async fn nothing_after_the_last_event_fails_a_stream() {
+    use http_body_util::BodyExt;
+    let cases: [(&str, &[(&str, &str)]); 3] = [
+        (
+            "silent provider",
+            &[("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s")],
+        ),
+        ("stream limit", &[("KAESO_STREAMS_MAX_DURATION", "1s")]),
+        ("shutdown", &[]),
+    ];
+    for (case, settings) in cases {
+        let env = env(settings).await;
+        let gate = hold_back_the_end(&env, "openai_responses", "text-basic-stream");
+        let text = format!("Hi {}", gate.steps_marker());
+        let (id, mut body) = open_stream(
+            &env,
+            "/v1/responses",
+            false,
+            &asking("/v1/responses", "gpt-4o", &text),
+        )
+        .await;
+        let mut seen = read_until(&mut body, "event: response.completed").await;
+        if case == "shutdown" {
+            env.app.state.in_flight.cutter().cancel();
+        }
+        let rest = body.collect().await.unwrap().to_bytes();
+        seen.push_str(&String::from_utf8_lossy(&rest));
+        gate.finish();
+        let completed = seen.find("event: response.completed").unwrap();
+        assert_eq!(
+            seen[completed..].matches("\n\n").count(),
+            1,
+            "{case}: {seen}"
+        );
+        let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+        assert_eq!(o.status, 200, "{case}: {:?}", o.error_message);
+        assert_eq!(o.error_kind, None, "{case}");
+        assert!(!o.usage_estimated, "{case}");
+    }
 }
 
 #[tokio::test]

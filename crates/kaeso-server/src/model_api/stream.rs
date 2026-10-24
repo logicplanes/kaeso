@@ -1,5 +1,9 @@
+use std::convert::Infallible;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 
+use axum::body::Body;
 use bytes::Bytes;
 use futures::StreamExt;
 use kaeso_codecs::{StreamDecoder, StreamEncoder};
@@ -7,7 +11,7 @@ use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, KppError, Reply, StopReason, StreamEvent};
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{Instant, sleep_until};
 
 use kaeso_upstream::UpstreamError;
@@ -114,8 +118,36 @@ impl Broken {
 
 const SHUTDOWN_WRITE: Duration = Duration::from_secs(1);
 
+// The bytes the response body handed to the connection: what is still queued in the channel
+// when the app leaves never reached it, so `StreamProgress::bytes` can't tell a finished reply.
+#[derive(Clone, Debug, Default)]
+pub(super) struct Taken(Arc<AtomicU64>);
+
+impl Taken {
+    fn add(&self, n: usize) {
+        self.0
+            .fetch_add(u64::try_from(n).unwrap_or(u64::MAX), Ordering::Release);
+    }
+
+    fn reached(&self, bytes: u64) -> bool {
+        self.0.load(Ordering::Acquire) >= bytes
+    }
+}
+
+pub(super) fn body(rx: Receiver<Bytes>, taken: Taken) -> Body {
+    Body::from_stream(futures::stream::unfold(
+        (rx, taken),
+        |(mut rx, taken)| async move {
+            let bytes = rx.recv().await?;
+            taken.add(bytes.len());
+            Some((Ok::<_, Infallible>(bytes), (rx, taken)))
+        },
+    ))
+}
+
 struct ToApp {
     tx: Sender<Bytes>,
+    taken: Taken,
     progress: StreamProgress,
     arrived: std::time::Instant,
     state: crate::state::AppState,
@@ -197,6 +229,7 @@ pub(super) struct Parts {
     pub(super) carry: Option<StreamCarry>,
     pub(super) keep_reply: bool,
     pub(super) account: Option<AccountSignIn>,
+    pub(super) taken: Taken,
 }
 
 pub(super) enum Gathered {
@@ -294,6 +327,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         mut carry,
         keep_reply,
         account,
+        taken,
     } = parts;
     let mut asm = if keep_reply {
         Assembler::new(counter.dialect)
@@ -303,6 +337,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let mut tally = Tally::new();
     let mut app = ToApp {
         tx,
+        taken,
         progress: StreamProgress::default(),
         arrived: rec.arrived(),
         state: state.clone(),
@@ -313,6 +348,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let max_bytes = limits.max_bytes.0;
     let mut gone = false;
     let mut broken: Option<Broken> = None;
+    let mut last_event_at: Option<u64> = None;
     let mut last_write = Instant::now();
     {
         let watch = app.tx.clone();
@@ -328,19 +364,17 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             let next = tokio::select! {
                 () = &mut closed => { gone = true; break 'read; }
                 () = &mut too_long, if !limits.max_duration.is_zero() => {
-                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
+                    if last_event_at.is_none()
+                        && !end_capped(&mut app, encoder.as_mut(), &mut broken).await
+                    {
                         gone = true;
                     }
                     break 'read;
                 }
                 () = &mut cut => {
-                    app.stopping = true;
-                    let err = shutting_down();
-                    broken.get_or_insert_with(|| Broken::shutdown(err.clone()));
-                    let bytes = match encode(encoder.as_mut(), &StreamEvent::Error(err), &mut broken) {
-                        Ok(bytes) | Err(bytes) => bytes,
-                    };
-                    if !app.reply(bytes).await {
+                    if last_event_at.is_none()
+                        && !end_shutdown(&mut app, encoder.as_mut(), &mut broken).await
+                    {
                         gone = true;
                     }
                     break 'read;
@@ -385,6 +419,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     }
                     (events, failed)
                 }
+                Some(Err(e)) if last_event_at.is_some() => {
+                    tracing::debug!(error = %e, "the provider's stream broke after its last event");
+                    (Vec::new(), true)
+                }
                 Some(Err(e)) => {
                     count_upstream_error(
                         transport_kind(&e),
@@ -408,6 +446,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             };
             let mut out = Vec::new();
             let mut stop = false;
+            let mut ends = false;
             for event in &events {
                 asm.feed(event);
                 tally.feed(event);
@@ -415,7 +454,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     c.observe(event);
                 }
                 let bytes = match encode(encoder.as_mut(), event, &mut broken) {
-                    Ok(bytes) => bytes,
+                    Ok(bytes) => {
+                        ends |= matches!(event, StreamEvent::ResponseStop(_));
+                        bytes
+                    }
                     Err(bytes) => {
                         stop = true;
                         bytes
@@ -436,12 +478,15 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 last_write = Instant::now();
-                if max_bytes > 0 && app.progress.bytes >= max_bytes {
-                    if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
-                        gone = true;
-                    }
-                    break 'read;
+            }
+            if ends {
+                last_event_at.get_or_insert(app.progress.bytes);
+            }
+            if last_event_at.is_none() && max_bytes > 0 && app.progress.bytes >= max_bytes {
+                if !end_capped(&mut app, encoder.as_mut(), &mut broken).await {
+                    gone = true;
                 }
+                break 'read;
             }
             if stop {
                 break 'read;
@@ -452,6 +497,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         }
     }
     drop(chunks);
+    let cancelled = gone && !last_event_at.is_some_and(|at| app.taken.reached(at));
     let mut assembled = asm.finish();
     if !assembled.complete
         && let Some(r) = assembled.response.as_mut()
@@ -512,7 +558,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         } else {
             None
         };
-        let reason = if gone {
+        let reason = if cancelled {
             EstimateReason::Cancelled
         } else if broken.is_some() {
             EstimateReason::Failed
@@ -524,7 +570,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         o.usage_estimated = true;
         count_estimate(reason, o.provider.unwrap_or_default());
     }
-    if gone {
+    if cancelled {
         rec.finish_cancelled().await;
         return;
     }
@@ -547,6 +593,20 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     {
         app.deliver(Bytes::from(tail)).await;
     }
+}
+
+async fn end_shutdown(
+    app: &mut ToApp,
+    encoder: &mut dyn StreamEncoder,
+    broken: &mut Option<Broken>,
+) -> bool {
+    app.stopping = true;
+    let err = shutting_down();
+    broken.get_or_insert_with(|| Broken::shutdown(err.clone()));
+    let bytes = match encode(encoder, &StreamEvent::Error(err), broken) {
+        Ok(bytes) | Err(bytes) => bytes,
+    };
+    app.reply(bytes).await
 }
 
 async fn end_capped(
@@ -579,6 +639,27 @@ mod tests {
         assert_eq!(
             Keepalive::new(Duration::from_secs(15)).deadline(now),
             Some(now + Duration::from_secs(15))
+        );
+    }
+
+    #[tokio::test]
+    async fn only_what_the_body_handed_on_counts_as_reaching_the_app() {
+        use http_body_util::BodyExt;
+        let (tx, rx) = tokio::sync::mpsc::channel(4);
+        let taken = Taken::default();
+        let mut body = body(rx, taken.clone());
+        tx.send(Bytes::from_static(b"data: one\n\n")).await.unwrap();
+        tx.send(Bytes::from_static(b"data: [DONE]\n\n"))
+            .await
+            .unwrap();
+        assert!(!taken.reached(1));
+        body.frame().await.unwrap().unwrap();
+        assert!(taken.reached(11));
+        assert!(!taken.reached(25));
+        drop(body);
+        assert!(
+            !taken.reached(25),
+            "a queued last event never reached the app"
         );
     }
 }

@@ -168,7 +168,7 @@ Ask for a stream as the format does, with `"stream": true`. The reply is a serve
 
 - **Keepalives.** After 15 seconds without output, Kaeso writes a keepalive that the SDKs ignore: an SSE comment in the OpenAI formats, a `ping` event in the Anthropic format. `KAESO_STREAMS_KEEPALIVE_INTERVAL` changes the interval or turns keepalives off ([streams to apps](../self-hosting/configuration.md#streams-to-apps)).
 - **Failures.** A stream can't change its status once it has started. When the provider fails, or ends the stream before the reply is complete, the stream ends with an error event in the app's format.
-- **Disconnects.** When the app disconnects, Kaeso stops the provider's request at once and charges what was used.
+- **Disconnects.** When the app disconnects before the stream's last event, Kaeso stops the provider's request at once and charges what was used. A stream whose last event reached the app counts as finished, even when the app disconnects right after it.
 
 ## Reasoning across tool calls
 
