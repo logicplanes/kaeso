@@ -4,7 +4,7 @@ import { CommandPalette, useTheme, type CommandGroup, type CommandItem } from "@
 import { LANGUAGE_NAMES, LOCALES } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { SearchEntry } from "~/markdown/ast";
-import { matchHeadings, rankPages } from "./search-rank";
+import { matchHeadings, splitPages } from "./search-rank";
 import { setSearchOpen, setSearchQuery, useSearchOpen, useSearchQuery } from "./search-store";
 import { useSwitchLocale } from "./use-switch-locale";
 
@@ -23,13 +23,14 @@ export default function Search({ index }: { index: SearchEntry[] }) {
       action();
     };
     const go = (to: string, hash?: string) => run(() => void navigate({ to, ...(hash ? { hash } : {}) }));
-    const pages: CommandItem[] = rankPages(index, query).map((e) => ({
+    const page = (e: SearchEntry): CommandItem => ({
       id: e.path,
       label: e.title,
       ...(e.section && e.section !== e.title ? { hint: e.section } : {}),
       keywords: [e.description, e.words],
       onSelect: go(e.path),
-    }));
+    });
+    const { named, mentioned } = splitPages(index, query);
     const headings: CommandItem[] = matchHeadings(index, query).map((h) => ({
       id: `${h.entry.path}#${h.id}`,
       label: h.label,
@@ -49,8 +50,9 @@ export default function Search({ index }: { index: SearchEntry[] }) {
       onSelect: run(() => switchLocale(l)),
     }));
     return [
-      { label: t("search.pages"), items: pages },
+      { label: t("search.pages"), items: named.map(page) },
       ...(headings.length ? [{ label: t("search.headings"), items: headings }] : []),
+      ...(mentioned.length ? [{ label: t("search.mentioned"), items: mentioned.map(page) }] : []),
       { label: t("search.theme"), items: themes },
       { label: t("search.language"), items: languages },
     ];
