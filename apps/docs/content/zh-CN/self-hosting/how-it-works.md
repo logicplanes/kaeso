@@ -33,7 +33,9 @@ flowchart TD
 | `clickhouse` | 保存请求日志和用量汇总 | 卷 `clickhouse` |
 | `valkey` | 保存速率和预算计数器以及共享缓存 | 卷 `valkey` |
 
-可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy 运行时使用的用户。它还会把 `compose.yaml` 中的 Caddyfile 和更新页面放进 `caddy_site`，因为 Compose 无法把文件交给使用只读文件系统的容器。同样，`updater-init` 会把更新器的卷交给更新器。它让更新器所在的组可以读写 `compose.yaml`（更新器会原地重写该文件），并取消其他所有人的写权限。
+可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。
+
+Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy 运行时使用的用户。它还会把 `compose.yaml` 中的 Caddyfile 和更新页面放进 `caddy_site`，因为 Compose 无法把文件交给使用只读文件系统的容器。同样，`updater-init` 会把更新器的卷交给更新器。它让更新器所在的组可以读写 `compose.yaml`（更新器会原地重写该文件），并取消其他所有人的写权限。
 
 ## 文件
 

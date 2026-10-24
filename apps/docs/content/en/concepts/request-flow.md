@@ -31,13 +31,25 @@ The key needs inference access, and its owner needs the right `api.request`. An 
 
 A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. Kaeso answers a larger one with 413.
 
-KPP counts what the body holds before it decodes anything. More than 100,000 messages or input items, 10,000 content blocks in one message, 10,000 tools, 2,048 embedding inputs or objects and arrays nested more than 127 levels deep get 400. Kaeso then estimates the memory the request takes while it's translated, from its body as received and from its messages, blocks and tools; once decoded, it keeps only what decoding kept. While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`.
+KPP counts what the body holds before it decodes anything. A request gets 400 when it holds any of these:
+
+- more than 100,000 messages or input items;
+- more than 10,000 content blocks in one message;
+- more than 10,000 tools;
+- more than 2,048 embedding inputs;
+- objects and arrays nested more than 127 levels deep.
+
+Kaeso then estimates the memory the request takes while it's translated. The estimate comes from its body as received and from its messages, blocks and tools. Once the request is decoded, Kaeso counts only what decoding kept.
+
+While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`.
 
 KPP then decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. Kaeso refuses a request it can't read here. It also refuses one that asks for something Kaeso never sends to a provider, such as more than one choice or stored Responses state.
 
 ## The model
 
-Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`. If the member or the key may not use the model, the request also gets 404, with the same message as an unknown name, so a key can't learn which other models the project has.
+Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`.
+
+If the member or the key may not use the model, the request also gets 404. The message is the same as for an unknown name, so a key can't learn which other models the project has.
 
 The catalogue entry says what the model can do. Kaeso answers 400 when a request needs something the model lacks:
 
@@ -76,7 +88,7 @@ Four timeouts limit the call: connecting, a whole request, the first byte of a s
 
 ## The reply
 
-KPP decodes the reply into the canonical format and encodes it in the app's format, event by event for a stream. Kaeso never refuses a reply for what it holds. What the app's format can't express is left out of what the app receives, and kept in the request log when content logging is on.
+KPP decodes the reply into the canonical format and encodes it in the app's format, event by event for a stream. Kaeso never refuses a reply for what it holds. What the app's format can't express doesn't reach the app. The request log keeps it when content logging is on.
 
 A provider's error reaches an app in the same format exactly as the provider sent it. An app in another format gets the same meaning in its own format. A provider that refuses the project's provider key is the exception: every app gets a provider error, 502, that asks for an organization admin. [Errors](../api/errors.md) lists every error.
 
@@ -102,16 +114,16 @@ An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_ID
 
 ## Disconnects
 
-When an app closes the connection, Kaeso stops the provider request at once, so the provider stops generating. The request is logged as 499 with the error kind `client_disconnected`.
+When an app closes the connection, Kaeso stops the provider request at once, so the provider stops generating. Kaeso logs the request as 499 with the error kind `client_disconnected`.
 
 Kaeso charges such a request, and a stream that broke off, what the provider reported plus an estimate of the rest:
 
 - the input from the provider's usage at the start of the stream, or else from its token-counting endpoint, or else from the size of the request;
 - the output from the content received.
 
-A request that isn't streamed is charged its input, estimated from its size, once Kaeso has sent it to the provider.
+Kaeso charges a request that isn't streamed its input, estimated from its size, once it has sent the request to the provider.
 
-A reply or stream that finished without any usage from the provider, which some OpenAI-compatible providers leave out, is estimated the same way, with the output from the whole reply.
+Some OpenAI-compatible providers leave usage out. When a reply or stream finishes without any usage from the provider, Kaeso estimates it the same way, with the output from the whole reply.
 
 These log entries say `usage.estimated: true`, and costs and limits use the same numbers. Output estimates err low for reasoning that the provider doesn't stream. The metric `kaeso_usage_estimates_total` counts them by provider and reason ([health and metrics](../self-hosting/monitoring.md)).
 
@@ -119,7 +131,9 @@ These log entries say `usage.estimated: true`, and costs and limits use the same
 
 On a shutdown signal, the gateway takes no new connections. Open requests and streams get `KAESO_SHUTDOWN_GRACE`, 30 seconds by default, to finish.
 
-A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead. Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage. A second later, Kaeso closes the connections that are still open.
+A request still open after that gets the error "Kaeso is restarting and ended this request. Send it again." in the app's format: 503, or 500 in the OpenAI formats. A stream that already started ends with an error event instead.
+
+Kaeso charges and logs both with the error kind `shutdown`, a stream with estimated usage. A second later, Kaeso closes the connections that are still open.
 
 ## Usage and logs
 

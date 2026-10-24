@@ -33,7 +33,9 @@ flowchart TD
 | `clickhouse` | Speichert Anfrageprotokolle und Nutzungsaggregate | Das Volume `clickhouse` |
 | `valkey` | Hält Raten- und Budgetzähler und gemeinsame Caches | Das Volume `valkey` |
 
-Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)). Bevor Caddy startet, läuft `caddy-init` einmal und übergibt die Volumes von Caddy dem Benutzer, als der Caddy läuft. Außerdem legt es das Caddyfile und die Update-Seite aus der `compose.yaml` in `caddy_site` ab, da Compose einem Container mit schreibgeschütztem Dateisystem keine Dateien übergeben kann. Ebenso übergibt `updater-init` dem Updater seine Volumes. Der Gruppe des Updaters gibt es Lese- und Schreibrecht auf die `compose.yaml`, die der Updater an Ort und Stelle neu schreibt, und allen anderen nimmt es das Schreibrecht.
+Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)).
+
+Bevor Caddy startet, läuft `caddy-init` einmal und übergibt die Volumes von Caddy dem Benutzer, als der Caddy läuft. Außerdem legt es das Caddyfile und die Update-Seite aus der `compose.yaml` in `caddy_site` ab, da Compose einem Container mit schreibgeschütztem Dateisystem keine Dateien übergeben kann. Ebenso übergibt `updater-init` dem Updater seine Volumes. Der Gruppe des Updaters gibt es Lese- und Schreibrecht auf die `compose.yaml`, die der Updater an Ort und Stelle neu schreibt, und allen anderen nimmt es das Schreibrecht.
 
 ## Dateien
 

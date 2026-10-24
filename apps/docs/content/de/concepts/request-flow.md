@@ -31,13 +31,25 @@ Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.
 
 Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 8 MiB. Auf einen größeren antwortet Kaeso mit 413.
 
-KPP zählt, was der Body enthält, bevor es etwas decodiert. Mehr als 100.000 Nachrichten oder Eingabeelemente, 10.000 Inhaltsblöcke in einer Nachricht, 10.000 Werkzeuge, 2.048 Embedding-Eingaben oder mehr als 127 Ebenen verschachtelter Objekte und Arrays erhalten 400. Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen braucht, aus ihrem Body, wie er ankommt, und aus ihren Nachrichten, Blöcken und Werkzeugen; nach dem Decodieren behält sie nur, was das Decodieren behalten hat. Solange die laufenden Übersetzungen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, oder der Schlüssel schon ein Viertel davon hält, wartet die Anfrage. Nach 10 Sekunden erhält sie 503 mit `Retry-After: 10`.
+KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhält 400, wenn sie eines davon enthält:
+
+- mehr als 100.000 Nachrichten oder Eingabeelemente;
+- mehr als 10.000 Inhaltsblöcke in einer Nachricht;
+- mehr als 10.000 Werkzeuge;
+- mehr als 2.048 Embedding-Eingaben;
+- Objekte und Arrays, die mehr als 127 Ebenen tief verschachtelt sind.
+
+Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen braucht. Die Schätzung beruht auf ihrem Body, wie er ankommt, und auf ihren Nachrichten, Blöcken und Werkzeugen. Nach dem Decodieren zählt Kaeso nur noch, was das Decodieren behalten hat.
+
+Solange die laufenden Übersetzungen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, oder der Schlüssel schon ein Viertel davon hält, wartet die Anfrage. Nach 10 Sekunden erhält sie 503 mit `Retry-After: 10`.
 
 Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions oder Messages, in sein kanonisches Format. Eine Anfrage, die sich nicht lesen lässt, lehnt Kaeso hier ab. Ebenso eine, die etwas verlangt, das Kaeso nie an einen Anbieter sendet, etwa mehr als eine Auswahl oder gespeicherten Responses-Zustand.
 
 ## Das Modell
 
-Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404, mit derselben Meldung wie ein unbekannter Name, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
+Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`.
+
+Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
 
 Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine Anfrage etwas braucht, das dem Modell fehlt:
 
@@ -76,7 +88,7 @@ Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage,
 
 ## Die Antwort
 
-KPP decodiert die Antwort in das kanonische Format und codiert sie im Format der App, bei einem Stream Event für Event. Kaeso lehnt eine Antwort nie wegen ihres Inhalts ab. Was das Format der App nicht ausdrücken kann, fehlt in dem, was die App erhält, und bleibt im Anfrageprotokoll, wenn die Inhaltsprotokollierung eingeschaltet ist.
+KPP decodiert die Antwort in das kanonische Format und codiert sie im Format der App, bei einem Stream Event für Event. Kaeso lehnt eine Antwort nie wegen ihres Inhalts ab. Was das Format der App nicht ausdrücken kann, erreicht die App nicht. Das Anfrageprotokoll behält es, wenn die Inhaltsprotokollierung eingeschaltet ist.
 
 Ein Fehler des Anbieters erreicht eine App im selben Format genau so, wie der Anbieter ihn gesendet hat. Eine App in einem anderen Format erhält dieselbe Bedeutung in ihrem eigenen Format. Die Ausnahme ist ein Anbieter, der den Anbieter-Schlüssel des Projekts ablehnt: Jede App erhält dann einen Anbieterfehler, 502, der auf einen Organisations-Admin verweist. [Fehler](../api/errors.md) listet jeden Fehler.
 
@@ -102,16 +114,16 @@ Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem
 
 ## Verbindungsabbrüche
 
-Schließt eine App die Verbindung, stoppt Kaeso die Anfrage beim Anbieter sofort, sodass der Anbieter aufhört zu generieren. Die Anfrage wird als 499 mit der Fehlerart `client_disconnected` protokolliert.
+Schließt eine App die Verbindung, stoppt Kaeso die Anfrage beim Anbieter sofort, sodass der Anbieter aufhört zu generieren. Kaeso protokolliert die Anfrage als 499 mit der Fehlerart `client_disconnected`.
 
 Eine solche Anfrage, und ebenso einen abgebrochenen Stream, berechnet Kaeso mit dem, was der Anbieter gemeldet hat, plus einer Schätzung des Rests:
 
 - die Eingabe aus der Nutzung, die der Anbieter zu Beginn des Streams meldet, sonst aus seinem Endpunkt zum Zählen von Token, sonst aus der Größe der Anfrage;
 - die Ausgabe aus dem empfangenen Inhalt.
 
-Eine nicht gestreamte Anfrage wird mit ihrer Eingabe berechnet, aus ihrer Größe geschätzt, sobald Kaeso sie an den Anbieter gesendet hat.
+Eine nicht gestreamte Anfrage berechnet Kaeso mit ihrer Eingabe, aus ihrer Größe geschätzt, sobald Kaeso sie an den Anbieter gesendet hat.
 
-Eine Antwort oder ein Stream, die ohne jede Nutzungsangabe des Anbieters enden, wie sie manche OpenAI-kompatiblen Anbieter weglassen, werden genauso geschätzt, die Ausgabe aus der ganzen Antwort.
+Manche OpenAI-kompatiblen Anbieter lassen die Nutzung weg. Endet eine Antwort oder ein Stream ohne jede Nutzungsangabe des Anbieters, schätzt Kaeso sie genauso, die Ausgabe aus der ganzen Antwort.
 
 Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limits verwenden dieselben Zahlen. Schätzungen der Ausgabe fallen bei Reasoning, das der Anbieter nicht streamt, zu niedrig aus. Die Metrik `kaeso_usage_estimates_total` zählt sie nach Anbieter und Grund ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
@@ -119,7 +131,9 @@ Diese Protokolleinträge enthalten `usage.estimated: true`, und Kosten und Limit
 
 Bei einem Shutdown-Signal nimmt das Gateway keine neuen Verbindungen mehr an. Offene Anfragen und Streams erhalten `KAESO_SHUTDOWN_GRACE` zum Abschluss, standardmäßig 30 Sekunden.
 
-Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein bereits gestarteter Stream endet stattdessen mit einem Fehler-Event. Kaeso berechnet und protokolliert beide mit der Fehlerart `shutdown`, einen Stream mit geschätzter Nutzung. Eine Sekunde später schließt Kaeso die Verbindungen, die noch offen sind.
+Eine danach noch offene Anfrage erhält den Fehler „Kaeso is restarting and ended this request. Send it again.“ im Format der App: 503, in den OpenAI-Formaten 500. Ein bereits gestarteter Stream endet stattdessen mit einem Fehler-Event.
+
+Kaeso berechnet und protokolliert beide mit der Fehlerart `shutdown`, einen Stream mit geschätzter Nutzung. Eine Sekunde später schließt Kaeso die Verbindungen, die noch offen sind.
 
 ## Nutzung und Protokolle
 
