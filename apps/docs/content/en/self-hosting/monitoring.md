@@ -23,7 +23,9 @@ docker compose exec console wget -qO- http://gateway:8080/readyz
 
 ## Metrics
 
-The gateway serves Prometheus metrics at `/metrics` on port 9100 (`KAESO_METRICS_LISTEN`). Never route that port publicly. A gateway you run yourself listens on `127.0.0.1:9100` unless you set it. The gateway image listens on `0.0.0.0:9100` inside its container, and Compose publishes the port nowhere. To scrape it from the server, publish it on the loopback address in `compose.override.yaml`:
+The gateway serves Prometheus metrics at `/metrics` on port 9100 (`KAESO_METRICS_LISTEN`). Never route that port publicly.
+
+A gateway you run yourself listens on `127.0.0.1:9100` unless you set it. The gateway image listens on `0.0.0.0:9100` inside its container, and Compose publishes the port nowhere. To scrape it from the server, publish it on the loopback address in `compose.override.yaml`:
 
 ```yaml title="compose.override.yaml"
 services:

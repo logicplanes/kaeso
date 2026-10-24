@@ -12,14 +12,22 @@ order: 1
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 completion = client.chat.completions.create(
     model="claude-haiku-4-5",
@@ -31,7 +39,10 @@ print(completion.choices[0].message.content)
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const completion = await client.chat.completions.create({
   model: "claude-haiku-4-5",
@@ -47,14 +58,23 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 200, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 200,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 message = client.messages.create(
     model="claude-haiku-4-5",
@@ -67,14 +87,19 @@ print(message.content[0].text)
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const message = await client.messages.create({
   model: "claude-haiku-4-5",
   max_tokens: 200,
   messages: [{ role: "user", content: "Write a haiku about gateways." }],
 });
-for (const block of message.content) if (block.type === "text") console.log(block.text);
+for (const block of message.content) {
+  if (block.type === "text") console.log(block.text);
+}
 ```
 
 | SDK | 基础 URL | 密钥的发送方式 |
@@ -135,7 +160,7 @@ x-api-key: sk-kso-…
 | 服务商加模型 | `anthropic/claude-haiku-4-5` |
 | 模型自身的 ID | `claude-haiku-4-5` |
 
-目录之外的模型，以及密钥或其成员无权使用的模型，Kaeso 都返回 404，且消息相同，这样密钥无法得知项目还有哪些其他模型。如果项目中有多个服务商提供同一模型 ID，单独的 ID 会得到 400，消息会列出这些服务商；此时请改用 `provider/model`。目录的说明见[模型和别名](../console/models-and-aliases.md)。
+目录之外的模型，以及密钥或其成员无权使用的模型，Kaeso 都返回 404。两者的消息相同，这样密钥无法得知项目还有哪些其他模型。如果项目中有多个服务商提供同一模型 ID，单独的 ID 会得到 400，消息会列出这些服务商；此时请改用 `provider/model`。目录的说明见[模型和别名](../console/models-and-aliases.md)。
 
 ## 流式传输
 
@@ -147,7 +172,7 @@ x-api-key: sk-kso-…
 
 ## 跨工具调用的推理
 
-Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存每次工具调用之前的推理内容，并在应用的下一轮请求中将其加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
+Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
 
 ## 响应头
 

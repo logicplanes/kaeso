@@ -133,6 +133,7 @@ export function kaesoMergeConfig() {
       "fvn-spacing": ["proportional-nums", "tabular-nums"],
       "line-clamp": [{ "line-clamp": [isNumber, "none", isArbitraryVariable, isArbitraryNumber] }],
       leading: [{ leading: ["none", ...spacing] }],
+      indent: [{ indent: spacing }],
       "text-alignment": [{ text: ["left", "center", "right", "justify", "start", "end"] }],
       "text-color": [{ text: color }],
       "text-decoration": ["underline", "overline", "line-through", "no-underline"],

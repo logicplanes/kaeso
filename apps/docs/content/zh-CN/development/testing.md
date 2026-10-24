@@ -72,7 +72,9 @@ pnpm --filter kaeso-console exec playwright install chromium
 
 ### 控制台
 
-单元测试在 happy-dom 中运行，Platform API 按测试打桩（`apps/console/src/test/network.ts`，fixture 在 `src/test/fixtures/`）。`renderApp(path)` 在某个地址挂载整个控制台，`renderUi` 挂载单个组件。测试断言人看到的内容和发出的请求，并且以任意顺序都能通过。要检查顺序，运行 `pnpm --filter kaeso-console exec vitest run --sequence.shuffle`。`src/routes` 下的测试文件以 `-` 开头，路由生成器会跳过它们。
+单元测试在 happy-dom 中运行，Platform API 按测试打桩（`apps/console/src/test/network.ts`，fixture 在 `src/test/fixtures/`）。`renderApp(path)` 在某个地址挂载整个控制台，`renderUi` 挂载单个组件。
+
+测试断言人看到的内容和发出的请求，并且以任意顺序都能通过。要检查顺序，运行 `pnpm --filter kaeso-console exec vitest run --sequence.shuffle`。`src/routes` 下的测试文件以 `-` 开头，路由生成器会跳过它们。
 
 端到端套件从不触碰开发栈。它启动自己的 Compose 项目 `kaeso-console-e2e`，网关在 `127.0.0.1:28080`，控制台在 http://localhost:3100 上。运行结束时会移除这个栈及其数据。要在多次运行之间保留它，自己启动并告知套件：
 
@@ -89,7 +91,9 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 
 ### UI 库与展示站点
 
-组件测试在 happy-dom 中使用 Testing Library 运行。展示站点没有单元测试。它的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它在两种主题下用 axe 检查无障碍，并检查键盘操作和焦点环。它还检查令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。
+组件测试在 happy-dom 中使用 Testing Library 运行。展示站点没有单元测试。
+
+展示站点的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它在两种主题下用 axe 检查无障碍，并检查键盘操作和焦点环。它还检查令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。
 
 ## Rust
 
@@ -184,7 +188,9 @@ sequenceDiagram
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`、`GET /v1/models/{id}` | 带 `anthropic-version` 请求头时为 `anthropic_messages`，否则为 `openai_chat` | `models.list`、`models.retrieve` |
 
-每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的 `APIStatusError`（`e2e/conformance/test_errors.py`），模型列表的分页和过滤也符合 SDK 的预期（`e2e/conformance/test_models.py`）。`GET /_scenarios` 列出服务器提供的每个场景。
+每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的 `APIStatusError`（`e2e/conformance/test_errors.py`）。
+
+模型列表的分页和过滤必须符合 SDK 的预期（`e2e/conformance/test_models.py`）。`GET /_scenarios` 列出服务器提供的每个场景。
 
 ### SDK 测试套件
 
@@ -216,7 +222,9 @@ e2e/.venv/bin/pytest -q e2e/sdk
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-该套件构建网关、模拟服务商、控制台和更新器的镜像，并以 `e2e/install` 中的覆盖配置从干净状态运行 `deploy/compose.yaml`。它完成首次启动设置，并用两个 SDK 调用该实例。它还检查 PostgreSQL 和 ClickHouse 没有授予网关不需要的权限，以及 Valkey 会拒绝不带密码的连接。和真实实例一样，控制台镜像同时运行 Caddy。`KAESO_TEST_GATEWAY_IMAGE`、`KAESO_TEST_MOCK_IMAGE`、`KAESO_TEST_CONSOLE_IMAGE` 和 `KAESO_TEST_UPDATER_IMAGE` 使用已经构建好的镜像。
+该套件构建网关、模拟服务商、控制台和更新器的镜像，并以 `e2e/install` 中的覆盖配置从干净状态运行 `deploy/compose.yaml`。它完成首次启动设置，并用两个 SDK 调用该实例。它还检查 PostgreSQL 和 ClickHouse 没有授予网关不需要的权限，以及 Valkey 会拒绝不带密码的连接。
+
+和真实实例一样，控制台镜像同时运行 Caddy。`KAESO_TEST_GATEWAY_IMAGE`、`KAESO_TEST_MOCK_IMAGE`、`KAESO_TEST_CONSOLE_IMAGE` 和 `KAESO_TEST_UPDATER_IMAGE` 使用已经构建好的镜像。
 
 ## 模糊测试
 
@@ -241,7 +249,9 @@ cargo install cargo-fuzz
 
 ```bash
 mkdir -p fuzz/corpus/decode_openai_chat
-cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
+cargo +nightly fuzz run decode_openai_chat \
+  fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat \
+  -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
 **Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
@@ -282,4 +292,8 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。
 
-有三个工作流按计划运行。**Fuzz** 每晚运行，见[模糊测试](#模糊测试)。**Audits** 每周一运行：对工作区和 KPP 运行 `cargo deny check`，并对所有依赖（包括开发依赖）运行 `pnpm audit --audit-level high`，这样即使没有任何改动，新的安全公告也会被发现。**Scorecard** 每周二以及每次推送到 `dev` 后运行：[OpenSSF Scorecard](https://scorecard.dev) 检查仓库的安全实践，例如固定版本的 Action、令牌权限和分支保护，发布评分，并在 **Security › Code scanning** 下显示其发现。
+有三个工作流按计划运行：
+
+- **Fuzz** 每晚运行，见[模糊测试](#模糊测试)。
+- **Audits** 每周一运行：对工作区和 KPP 运行 `cargo deny check`，并对所有依赖（包括开发依赖）运行 `pnpm audit --audit-level high`。这样即使没有任何改动，新的安全公告也会被发现。
+- **Scorecard** 每周二以及每次推送到 `dev` 后运行。[OpenSSF Scorecard](https://scorecard.dev) 检查仓库的安全实践，例如固定版本的 Action、令牌权限和分支保护。它会发布评分，并在 **Security › Code scanning** 下显示其发现。

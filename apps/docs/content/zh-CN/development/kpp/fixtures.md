@@ -1,7 +1,8 @@
 ---
 title: Fixture 与录制
+nav: Fixture
 description: 编解码器测试所用的真实载荷，以及如何从服务商录制新的载荷。
-order: 8
+order: 9
 ---
 
 每项编解码器变更都从一个测试样本（fixture）开始：一个真实的请求体、回复、流或错误，位于 `crates/kaeso-codecs/fixtures`。每个 fixture 都会经过自己的编解码器做往返测试，跨方言矩阵把每个生成类 fixture 送入其他每个方言。[SDK 一致性](../testing.md#sdk-一致性)测试套件把它们提供给官方 SDK，网关的模拟服务商用它们作答，模糊测试目标也以它们为起点。
@@ -45,9 +46,16 @@ order: 8
 | `schema:` | 根据固定版本的 OpenAPI schema 构造的请求体 |
 | `RECORDED.md` | 用 `cargo xtask record` 进行的真实录制，附带模型和时间 |
 
-方言文件夹的 `README.md` 还会注明其 fixture 遵循的固定版本规范和 SDK 版本，以及这些 fixture 共有的约定，例如流与其响应之间一致的 ID 和 Token 计数。每添加一个新的 fixture，都要在其中添加一行。
+方言文件夹的 `README.md` 还会注明其 fixture 遵循的固定版本规范和 SDK 版本。它还会注明这些 fixture 共有的约定，例如流与其响应之间一致的 ID 和 Token 计数。每添加一个新的 fixture，都要在其中添加一行。
 
-服务商文件夹有自己的一个 `README.md`：服务商的名称和 ID、它的 API 参考及阅读日期、录制时使用的基础 URL 和模型，以及其子文件夹中每个文件的一行。每个子文件夹的 `RECORDED.md` 在开头几行注明该服务商。
+服务商文件夹有自己的一个 `README.md`。其中包括：
+
+- 服务商的名称和 ID；
+- 它的 API 参考及阅读日期；
+- 录制时使用的基础 URL 和模型；
+- 其子文件夹中每个文件的一行。
+
+每个子文件夹的 `RECORDED.md` 在开头几行注明该服务商。
 
 ## 录制真实响应
 
@@ -69,8 +77,10 @@ cargo xtask record openai_responses --count --all
 
 ```bash
 export <ID>_API_KEY=…
-cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
-cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run \
+  tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> \
+  tools-single stream-include-usage
 ```
 
 | 选项 | 作用 |

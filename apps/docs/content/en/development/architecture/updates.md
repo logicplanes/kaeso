@@ -32,7 +32,9 @@ flowchart TD
 
 ## The release feed
 
-`update.kaeso.app` is a service run apart from this repository that reads the releases on GitHub. `v1/releases.json` lists the newest releases, always with the newest stable one, in the form of GitHub's releases API, notes cut at 64 KiB and the whole file under 3 MiB, since the gateway reads at most 4 MiB. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin. Each entry also carries `art`, the release's artwork as update.kaeso.app chose it once and keeps for good: a style, a palette and a seed that the UI library's `ReleaseArt` draws. The gateway stores the first `art` it sees for a version in `update_releases.art` and never replaces it, `me/whats-new` returns it, and the console draws one from the version when a release has none.
+`update.kaeso.app` is a service run apart from this repository that reads the releases on GitHub. `v1/releases.json` lists the newest releases in the form of GitHub's releases API, always including the newest stable one. The service cuts notes at 64 KiB and keeps the whole file under 3 MiB, since the gateway reads at most 4 MiB. Each release's `release.json` is mirrored byte for byte under `download/v<version>/`, since the gateway takes a manifest only from its feed's own origin.
+
+Each entry also carries `art`, the release's artwork, which update.kaeso.app chose once and keeps for good. It is a style, a palette and a seed that the UI library's `ReleaseArt` draws. The gateway stores the first `art` it sees for a version in `update_releases.art` and never replaces it. `me/whats-new` returns it, and the console draws one from the version when a release has none.
 
 ## The gateway
 
@@ -40,8 +42,8 @@ flowchart TD
 
 - **Listing.** A check fetches `releases_url?per_page=50` with `If-None-Match` and follows next-page links, at most ten pages, since a feed doesn't list releases in version order. A changed list replaces `update_releases` in one transaction.
 - **Manifests.** For every release newer than the running version, the check fetches and stores its `release.json`, or the reason it couldn't. It fetches at most twelve per check, four at a time, newest first. A manifest comes only from `https://github.com/logicplanes/kaeso/releases/download/`, or from the origin of `updates.releases_url` for a mirror, and the client never follows a redirect from HTTPS to HTTP.
-- **Timing.** The `update_check` job runs every minute, and the next check is 5 minutes later plus a random part of a minute, so installs don't ask in step. After a failure it is at least 15 minutes later, or later when the feed's `Retry-After` or GitHub's `x-ratelimit-reset` says so. It is never more than an hour later (`MAX_WAIT`), the longest GitHub's hourly rate limit asks for. Until then, `update_settings.blocked_until` holds the job's checks back. A check an instance admin starts through `instance/updates/check` waits for it at most a minute after the last check, so a feed can't stop it and clicking again can't hammer the feed. A wait an earlier version stored counts for an hour at most too. A job that panics counts as failed and runs again at its next turn.
-- **Automatic updates.** With `update_settings.mode` at `automatic`, the same job computes the update window with `kaeso_update::schedule`: the hour in the instance's IANA time zone, through `jiff` and its bundled time zone data, so daylight saving time moves it. Inside the window's hour, the job claims the window in `update_settings.auto_window_at`, so one window starts at most one update, looks for releases when the last success is more than an hour old, and starts the plan's target like `apply`, with `update_jobs.automatic` set and no user. Changing the mode or the window sets `auto_window_at` to now, so a change never starts an update at once.
+- **Timing.** The `update_check` job runs every minute, and the next check is 5 minutes later plus a random part of a minute, so installs don't ask in step. After a failure it is at least 15 minutes later, or later when the feed's `Retry-After` or GitHub's `x-ratelimit-reset` says so. It is never more than an hour later (`MAX_WAIT`), the longest GitHub's hourly rate limit asks for. Until then, `update_settings.blocked_until` holds the job's checks back. A check an instance admin starts through `instance/updates/check` waits for it at most a minute after the last check. That way a feed can't stop it, and clicking again can't hammer the feed. A wait an earlier version stored counts for an hour at most too. A job that panics counts as failed and runs again at its next turn.
+- **Automatic updates.** With `update_settings.mode` at `automatic`, the same job computes the update window with `kaeso_update::schedule`. The window is the hour in the instance's IANA time zone, computed through `jiff` and its bundled time zone data, so daylight saving time moves it. Inside the window's hour, the job claims the window in `update_settings.auto_window_at`, so one window starts at most one update. It looks for releases when the last success is more than an hour old. Then it starts the plan's target like `apply`, with `update_jobs.automatic` set and no user. Changing the mode or the window sets `auto_window_at` to now, so a change never starts an update at once.
 
 `kaeso_update::policy::plan` chooses what to offer: the newest release on the channel that is newer than the running version. A release the feed marks as a pre-release counts as one, whatever its version. The offer is manual for a new major version, for `manual: true` in any crossed release's manifest, or when a manifest is missing. The target's `manual_since` counts too, so a crossed release the gateway never saw still makes it manual.
 
@@ -54,7 +56,9 @@ flowchart TD
 
 ## What a release carries
 
-The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater` and attests their build provenance. It then writes `release.json` (`scripts/release-manifest.mjs`), and a job that sees nothing but that file attests it. The same step writes the release's `compose.yaml`: `deploy/compose.yaml` with each Kaeso image pinned to the version and the digest of its index, such as `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`. `release.json` names that file's hash. The release is created only when `release.json` and every image verify with `gh attestation verify` against this workflow on `refs/heads/prod` and the commit `release.json` names:
+The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater` and attests their build provenance. It then writes `release.json` (`scripts/release-manifest.mjs`), and a job that sees nothing but that file attests it. The same step writes the release's `compose.yaml`: `deploy/compose.yaml` with each Kaeso image pinned to the version and the digest of its index, such as `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`. `release.json` names that file's hash.
+
+The release is created only when `release.json` and every image verify with `gh attestation verify` against this workflow on `refs/heads/prod` and the commit `release.json` names:
 
 ```json
 {
@@ -65,12 +69,24 @@ The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater`
   "manual_since": "1.3.0",
   "updater_protocol": 1,
   "images": {
-    "gateway": { "name": "ghcr.io/logicplanes/kaeso-gateway", "digest": "sha256:…" },
-    "console": { "name": "ghcr.io/logicplanes/kaeso-console", "digest": "sha256:…" },
-    "updater": { "name": "ghcr.io/logicplanes/kaeso-updater", "digest": "sha256:…" }
+    "gateway": {
+      "name": "ghcr.io/logicplanes/kaeso-gateway",
+      "digest": "sha256:…"
+    },
+    "console": {
+      "name": "ghcr.io/logicplanes/kaeso-console",
+      "digest": "sha256:…"
+    },
+    "updater": {
+      "name": "ghcr.io/logicplanes/kaeso-updater",
+      "digest": "sha256:…"
+    }
   },
   "compose": { "name": "compose.yaml", "sha256": "…" },
-  "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" }
+  "migrations": {
+    "postgres": "20261017140001_updates",
+    "clickhouse": "0002_usage_rollups"
+  }
 }
 ```
 
@@ -93,13 +109,33 @@ The Release workflow builds `kaeso-gateway`, `kaeso-console` and `kaeso-updater`
 4. **Migrating.** It waits for each health check: 2 minutes for the console and 10 for the gateway's migrations. A crash, a restart or a stopped container fails at once.
 5. **Online.** It writes the new versions and digests into `compose.yaml` when the file is still the one it checked, tags the images, removes the previous containers and clears the flag.
 
-A failure before the switch changes nothing (`failed`). A failure after it starts the previous containers again and waits for them (`rolled_back`, or `rollback_failed`). When the new gateway may already have migrated the database, nothing is restored: the new gateway and console stay, and the update ends `needs_attention`. The same holds when the maintenance flag or a `…-previous` container can't be removed. When `compose.yaml` can't be written, or changed during the update, the update still ends `succeeded`, with `compose_unwritable` or `compose_changed` as its reason.
+A failure before the switch changes nothing (`failed`). A failure after it starts the previous containers again and waits for them (`rolled_back`, or `rollback_failed`).
+
+When the new gateway may already have migrated the database, nothing is restored: the new gateway and console stay, and the update ends `needs_attention`. The same holds when the maintenance flag or a `…-previous` container can't be removed. When `compose.yaml` can't be written, or changed during the update, the update still ends `succeeded`, with `compose_unwritable` or `compose_changed` as its reason.
 
 On start, the updater waits up to two minutes for Docker. It then finishes an update that was `online`, finishes one whose new gateway turns healthy, and rolls back any other.
 
-The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses. `GET` reaches the version, the container list, a container by its short or full id, and an image by digest. `POST` reaches `images/create`, the tag of a Kaeso image by digest, `containers/create`, and the start, stop and rename of a container by its full id. `DELETE` removes a container by its full id. The proxy also allows bind mounts only from `KAESO_DIR`, the install's folder that `.env` names, and refuses `VolumesFrom`. Without `KAESO_DIR` it refuses to start, because an empty value would allow every bind mount.
+The updater reaches Docker only at `http://docker-proxy:2375/v1.44/`, whose allow-list in `compose.yaml` names every path it uses:
 
-The proxy matches the path but not the query, so it can't limit `images/create` to Kaeso's images. It can't read the rest of a `containers/create` body either, such as privileges, capabilities, devices or host namespaces. Inspecting a container shows its environment, so the updater can read any container's passwords. That is why the updater is host-root equivalent and opt-in. `guard.rs` checks every body before it goes out. A new container must take its name from the one it replaces, along with every `HostConfig` field that can widen a container. These cover privileges and capabilities, devices, namespaces and the network, and mounts, `ReadonlyRootfs`, `Tmpfs`, `MaskedPaths` and `ReadonlyPaths`. They also cover published ports, name resolution (`ExtraHosts`, `Dns`, `Links`), `GroupAdd` and `CgroupParent`, the limits (`Memory`, `PidsLimit`, `Ulimits`), `Init` and `LogConfig`. A pull must name a Kaeso image by digest. These checks catch a mistake in the updater, not someone who controls it.
+- `GET` reaches the version, the container list, a container by its short or full id, and an image by digest.
+- `POST` reaches `images/create`, the tag of a Kaeso image by digest, `containers/create`, and the start, stop and rename of a container by its full id.
+- `DELETE` removes a container by its full id.
+
+The proxy also allows bind mounts only from `KAESO_DIR`, the install's folder that `.env` names, and refuses `VolumesFrom`. Without `KAESO_DIR` it refuses to start, because an empty value would allow every bind mount.
+
+The proxy matches the path but not the query, so it can't limit `images/create` to Kaeso's images. It can't read the rest of a `containers/create` body either, such as privileges, capabilities, devices or host namespaces. Inspecting a container shows its environment, so the updater can read any container's passwords. That is why the updater is host-root equivalent and opt-in.
+
+`guard.rs` checks every body before it goes out. A new container must take its name, and every `HostConfig` field that can widen a container, from the one it replaces. These fields cover:
+
+- Privileges and capabilities
+- Devices, namespaces and the network
+- Mounts, `ReadonlyRootfs`, `Tmpfs`, `MaskedPaths` and `ReadonlyPaths`
+- Published ports and name resolution (`ExtraHosts`, `Dns`, `Links`)
+- `GroupAdd` and `CgroupParent`
+- The limits (`Memory`, `PidsLimit`, `Ulimits`)
+- `Init` and `LogConfig`
+
+A pull must name a Kaeso image by digest. These checks catch a mistake in the updater, not someone who controls it.
 
 ### What the updater checks
 
@@ -117,7 +153,9 @@ The proxy matches the path but not the query, so it can't limit `images/create` 
 
 ## The edge
 
-Caddy reads the maintenance flag from the `maintenance` volume. While it exists, every request gets the maintenance answer at once; otherwise a `502`, `503` or `504` from the gateway or the console does. `/kaeso-maintenance.json` serves the flag, such as `{"state":"updating","step":"migrating"}`, so the page can name the step. The page is inline in `compose.yaml`, with a content security policy that allows its own style and script by hash. `crates/kaeso-server/tests/edge.rs` checks that the JSON answers match what `ApiError` and `kaeso_codecs::dispatch::encode_error` produce, and that the hashes match.
+Caddy reads the maintenance flag from the `maintenance` volume. While it exists, every request gets the maintenance answer at once; otherwise a `502`, `503` or `504` from the gateway or the console does.
+
+`/kaeso-maintenance.json` serves the flag, such as `{"state":"updating","step":"migrating"}`, so the page can name the step. The page is inline in `compose.yaml`, with a content security policy that allows its own style and script by hash. `crates/kaeso-server/tests/edge.rs` checks that the JSON answers match what `ApiError` and `kaeso_codecs::dispatch::encode_error` produce, and that the hashes match.
 
 ## Tests
 

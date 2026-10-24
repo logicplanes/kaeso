@@ -21,7 +21,8 @@ order: 1
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
 ```
 
 ## 写入设置
@@ -61,7 +62,8 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 主密钥用于加密 Kaeso 保存的服务商密钥。将一个主密钥生成到 `master-keys` 中，Compose 会把它作为 Docker secret 交给网关：
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
+  master-key generate > master-keys
 sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 ```
 
@@ -139,18 +141,30 @@ curl https://kaeso.example.com/v1/responses \
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
-response = client.responses.create(model="claude-haiku-4-5", input="Write a haiku about gateways.")
+response = client.responses.create(
+    model="claude-haiku-4-5",
+    input="Write a haiku about gateways.",
+)
 print(response.output_text)
 ```
 
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
-const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
+const response = await client.responses.create({
+  model: "claude-haiku-4-5",
+  input: "Write a haiku about gateways.",
+});
 console.log(response.output_text);
 ```
 

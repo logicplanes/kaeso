@@ -32,7 +32,15 @@ Every language has the same voice: short, plain, no filler. Translate the meanin
 
 German runs about a third longer than English. Layouts must hold it: labels aren't cut short, descriptions still fit on one line, buttons keep their width and tables don't overflow. Chinese is shorter but needs the full line height; never make it smaller. German keeps established terms such as Token, Playground and Budget rather than inventing German words for them.
 
-Never translated: product and provider names (Kaeso, OpenAI, Anthropic, models.dev), model ids, ids and key prefixes, code, settings (`KAESO_*`), paths, field names, rights (`keys.all.view`), HTTP methods and status codes, units the library formats, and the names of people and organizations.
+These are never translated:
+
+- Product and provider names (Kaeso, OpenAI, Anthropic, models.dev)
+- Model ids, ids and key prefixes
+- Code, settings (`KAESO_*`), paths and field names
+- Rights (`keys.all.view`)
+- HTTP methods and status codes
+- Units the library formats
+- The names of people and organizations
 
 ## Glossary
 
@@ -127,10 +135,16 @@ import { tRich } from "~/i18n/rich";
 <Button>{t("keys.create", "Create key")}</Button>;
 toast.success(t("keys.revoked", "{name} revoked", { name: key.name }));
 t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
-tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
+tRich("signIn.newHere", "New here? {link}", {
+  link: (
+    <Link href="/sign-up">
+      {t("signIn.createAccount", "Create an account")}
+    </Link>
+  ),
+});
 ```
 
-- **`t(key, english, values?)`** returns a string. Call it while rendering or when the text is needed (a toast, a title), never at module level: a constant computed on import stays in the language the page started in. Tables of labels become functions (`() => t(…)`) or are built inside the component.
+- **`t(key, english, values?)`** returns a string. Call it while rendering or when the text is needed (a toast, a title), never at module level. A constant computed on import stays in the language the page started in. Tables of labels become functions (`() => t(…)`) or are built inside the component.
 - **The key and the English are string literals**, side by side. The key is `<area>.<words>` in camelCase, such as `org.members.invite` or `logs.inspector.overview`. Its first part names the catalog file, `src/i18n/locales/<locale>/<area>.json`: `common`, `shell`, `auth`, `errors`, `rights`, `format`, `kaeso`, `signIn`, `public`, `account`, `org`, `orgHome`, `instance`, `project`, `keys`, `limits`, `logs`, `models` or `playground`. A key names what the text means, not where it sits. One key always has one English; a changed meaning gets a new key.
 - **Shared words** such as Cancel, Save, Delete, Continue, Name, Email and Never are in `common` (`src/i18n/common.ts`). Call its function, such as `common.cancel()`, or `t("common.cancel", "Cancel")` with exactly that English. A word that means something else in its place gets its own key.
 - **Whole sentences only.** Never join fragments (`"Joined " + date`, `` `${n} keys` ``), because word order differs between languages. Values go into placeholders (`{name}`); a number that chooses a form goes through `plural` (`one`, `other`, `=0`; German has the same forms, Chinese only `other`); variants go through `select`. Format numbers, money and dates with `@logicplanes/kaeso-ui/format` before passing them in; the formatters follow the language.
@@ -139,7 +153,9 @@ tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("si
 
 ### What the gateway writes
 
-The gateway's error messages, the names, descriptions and categories in the rights catalogue, and the built-in roles' names and descriptions arrive in English. The API client (`src/api/`) translates the ones it knows as answers arrive, with the keys `errors.*` and `rights.*`: rights and roles by their id, messages by their English and their values. Anything it doesn't know is shown as the gateway wrote it. Switching languages loads the data again. `crates/kaeso-server/tests/error_copy.rs` fails when the gateway writes a message without a rule in `src/api/gateway-errors.ts`, so a new message comes with its German and Chinese in the same pull request.
+The gateway's error messages, the names, descriptions and categories in the rights catalogue, and the built-in roles' names and descriptions arrive in English. The API client (`src/api/`) translates the ones it knows as answers arrive, with the keys `errors.*` and `rights.*`. It translates rights and roles by their id, and messages by their English and their values. Anything it doesn't know is shown as the gateway wrote it.
+
+Switching languages loads the data again. `crates/kaeso-server/tests/error_copy.rs` fails when the gateway writes a message without a rule in `src/api/gateway-errors.ts`, so a new message comes with its German and Chinese in the same pull request.
 
 ## The UI library
 
@@ -156,7 +172,14 @@ import { useUiText } from "../../i18n/context";
 export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
   const t = useUiText();
   const label = labelProp ?? t("copyButton.copy", "Copy");
-  return <Button shape="circle" icon={icons.copy} aria-label={label} onClick={() => copy(value)} />;
+  return (
+    <Button
+      shape="circle"
+      icon={icons.copy}
+      aria-label={label}
+      onClick={() => copy(value)}
+    />
+  );
 }
 ```
 
@@ -173,7 +196,12 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 ### In an app
 
 ```tsx
-import { LocaleProvider, loadUiMessages, resolveUiLocale, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
+import {
+  LocaleProvider,
+  loadUiMessages,
+  resolveUiLocale,
+  type UiMessages,
+} from "@logicplanes/kaeso-ui/i18n";
 
 const locale = resolveUiLocale(navigator.language);
 const messages: UiMessages = await loadUiMessages(locale);
@@ -200,7 +228,7 @@ root.render(
 
 ## Checking
 
-- `pnpm i18n --write` writes the console's `src/i18n/locales/en/<area>.json` from the source; that is the translators' list. `pnpm i18n` checks that every key has German and Chinese with the same placeholders and that nothing is left over, and refuses a translation that is still the English (names, codes, acronyms and a short list of terms such as "Top k" stay), "du" in German, "你" in Chinese, straight double quotes, and half-width punctuation next to Chinese characters; `pnpm test` runs the same check.
+- `pnpm i18n --write` writes the console's `src/i18n/locales/en/<area>.json` from the source; that is the translators' list. `pnpm i18n` checks that every key has German and Chinese with the same placeholders and that nothing is left over. It refuses a translation that is still the English, though names, codes, acronyms and a short list of terms such as "Top k" can stay English. It also refuses "du" in German, "你" in Chinese, straight double quotes, and half-width punctuation next to Chinese characters. `pnpm test` runs the same check.
 - The UI library's catalog test, the showcase's `gen` and the documentation site's message test refuse the same: English left in a translation and an informal address. The mail crate's tests fail when a German or Chinese email keeps an English sentence or uses "du" or "Tokens".
 - `pnpm lint` refuses text written straight into the console (the rule `kaeso/no-literal-text`): JSX text, text props (`label`, `title`, `description`, `placeholder`, `aria-label` and others), text fields of objects, and toasts written as literals.
 - `apps/console/src/copy.test.ts` checks German and Chinese descriptions against the same length limits as English, with 15% slack.

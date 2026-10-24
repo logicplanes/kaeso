@@ -43,7 +43,9 @@ flowchart TD
 | `clickhouse` | Stores request logs and usage rollups | The volume `clickhouse` |
 | `valkey` | Holds rate and budget counters and shared caches | The volume `valkey` |
 
-The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)). Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. It also puts the Caddyfile and the updating page from `compose.yaml` into `caddy_site`, since Compose can't give files to a container with a read-only file system. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
+The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)).
+
+Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. It also puts the Caddyfile and the updating page from `compose.yaml` into `caddy_site`, since Compose can't give files to a container with a read-only file system. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
 
 ## Files
 

@@ -12,6 +12,7 @@ KPP, das Kaeso Provider Protocol, ist das kanonische Format, das jede Modellanfr
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
+- [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
@@ -24,13 +25,29 @@ Eine App sendet eine Anfrage im Format Anthropic Messages, und das Modell wird �
 use kaeso_codecs::{EgressCtx, EncodeCtx, dispatch};
 use kaeso_kpp::{DialectId, RequestKind};
 
-let req = dispatch::decode_request(DialectId::AnthropicMessages, RequestKind::Generate, &body, &headers)?;
+let req = dispatch::decode_request(
+    DialectId::AnthropicMessages,
+    RequestKind::Generate,
+    &body,
+    &headers,
+)?;
 req.validate()?;
 let mut egress = EgressCtx::new(&req).with_provider("openai");
-let outgoing = dispatch::encode_request(DialectId::OpenAiChat, &req, &mut egress)?;
+let outgoing =
+    dispatch::encode_request(DialectId::OpenAiChat, &req, &mut egress)?;
 
-let reply = dispatch::decode_response(DialectId::OpenAiChat, status, &reply_headers, &reply_body, &egress)?;
-let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &EncodeCtx::for_request(req))?;
+let reply = dispatch::decode_response(
+    DialectId::OpenAiChat,
+    status,
+    &reply_headers,
+    &reply_body,
+    &egress,
+)?;
+let answer = dispatch::encode_response(
+    DialectId::AnthropicMessages,
+    &reply,
+    &EncodeCtx::for_request(req),
+)?;
 ```
 
 ```mermaid
@@ -96,10 +113,10 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 - **Semantisch oder Hinweis.** Jedes Feld ist entweder semantisch (ein Ziel muss es einhalten oder mit `Unsupported` ablehnen) oder ein Hinweis (es darf ignoriert werden). [Feldklassen](#feldklassen) listet sie auf.
 - **Gebundene Extras.** Was KPP nicht modelliert, wird in `Extras` aufbewahrt, mit dem Dialekt versehen, aus dem es kam, und nur in diesen Dialekt zurückgeschrieben. `fields` sind semantisch: Ein anderer Dialekt lehnt sie ab, außer sie stehen auf der [Allowlist](cross-format.md#extras). `form` ist Darstellung (ein String oder ein Array, `null` oder fehlend, wie Chunks gruppiert waren), und andere Dialekte ignorieren es. Unbekannte Schlüssel verschachtelter Objekte verwenden Schlüsselpfade mit Punkten, etwa `function.x`, daher lässt sich ein Schlüssel, der selbst einen `.` enthält, nicht mitführen ([Wire-Structs](codec-design.md#wire-structs)).
 - **Ablehnen vor dem Senden.** `check()` gibt `Unsupported` zurück und nennt das Feature, das ein Ziel nicht ausdrücken kann, bevor irgendetwas gesendet wird.
-- **Nichts fällt stillschweigend weg.** Jedes Feld und jeder Block einer eingehenden Payload landet an genau einer Stelle: in einem typisierten KPP-Feld, einem dialektgebundenen `Extras`-Eintrag, einem `Unknown`-Item oder einem `KppError` der Art `Unsupported`. Ein Match-Arm, der Daten verwirft, ist ein Bug.
-- **Additive öffentliche API.** Öffentliche Enums und erweiterbare Structs sind `#[non_exhaustive]`; Enum-Varianten umschließen `#[non_exhaustive]`-Structs mit Konstruktoren (`TextBlock::new`, `Block::text`, …), sodass Felder hinzukommen können, ohne Code zu brechen, der Werte baut oder matcht. Der `Codec`-Trait ist versiegelt.
+- **Nichts fällt stillschweigend weg.** Jedes Feld und jeder Block einer eingehenden Payload landet an genau einer Stelle. Das ist ein typisiertes KPP-Feld, einem dialektgebundenen `Extras`-Eintrag, einem `Unknown`-Item oder einem `KppError` der Art `Unsupported`. Ein Match-Arm, der Daten verwirft, ist ein Bug.
+- **Additive öffentliche API.** Öffentliche Enums und erweiterbare Structs sind `#[non_exhaustive]`. Enum-Varianten umschließen `#[non_exhaustive]`-Structs mit Konstruktoren (`TextBlock::new`, `Block::text`, …). So können Felder hinzukommen, ohne Code zu brechen, der Werte baut oder matcht. Der `Codec`-Trait ist versiegelt.
 
-KPP-Werte und Fehler werden als Wert zurückgegeben. `KppError` und einige Enum-Varianten sind groß, aber ein Wert wird einmal pro Anfrage gebaut, und Fehler sind der kalte Pfad; sie zu boxen würde jede Signatur umständlicher machen, daher erlaubt der Workspace `clippy::large_enum_variant` und `clippy::result_large_err`.
+KPP-Werte und Fehler werden als Wert zurückgegeben. `KppError` und einige Enum-Varianten sind groß, aber ein Wert wird einmal pro Anfrage gebaut, und Fehler sind der kalte Pfad. Sie zu boxen würde jede Signatur umständlicher machen, daher erlaubt der Workspace `clippy::large_enum_variant` und `clippy::result_large_err`.
 
 Jeder KPP-Typ implementiert `serde` für Logs und Snapshots. Diese JSON-Form ist über Patch-Releases hinweg stabil, aber kein Wire-Format. Ihre Namen stehen in Snake Case und schreiben OpenAI als `openai`, wie `DialectId` (`openai_chat`): `OpaqueKind::OpenAiEncryptedReasoning` ist `openai_encrypted_reasoning`.
 
@@ -131,7 +148,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `sampling.stop` | semantisch | OpenAI Chat Completions nimmt höchstens vier; OpenAI Responses hat keine und gibt `Unsupported` zurück ([Sampling](cross-format.md#sampling)). |
 | `sampling.seed` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
 | `sampling.frequency_penalty`, `.presence_penalty` | semantisch | Nur OpenAI Chat Completions; anderswo `Unsupported` ([Sampling](cross-format.md#sampling)). |
-| `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. Ein Anbieter, dessen Chat-Profil kein Feld für den Endbenutzer hat, erhält keine, auch nicht das `user` einer Chat-App neben `safety_identifier` ([Anbieterprofile](openai-chat.md#anbieterprofile)). |
+| `user` | Hinweis | Eine Endbenutzer-ID zur Missbrauchsüberwachung; sie ändert nie die Ausgabe. Ein Anbieter, dessen Chat-Profil kein Feld für den Endbenutzer hat, erhält keine, auch nicht das `user` einer Chat-App neben `safety_identifier` ([Anbieterprofile](openai-chat-providers.md#anbieterprofile)). |
 | `stream` | semantisch | |
 | `extras.fields` | semantisch | Wird nur in den Ursprungsdialekt zurückgeschrieben; anderswo `Unsupported`, außer das Feld steht auf der [Extras-Allowlist](cross-format.md#extras). |
 | `extras.form` | Hinweis | Form-Markierungen für die Darstellung; andere Dialekte ignorieren sie. |
@@ -182,7 +199,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
 ### Antworten und Stream-Events
 
-Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise: Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) und [OpenAI Embeddings](openai-embeddings.md).
+Antworten und Stream-Events fließen von einem Anbieter zu einer App. Sie haben keine Hinweise. Ein Feld, das der Dialekt der App nicht ausdrücken kann, ist entweder ableitbar, etwa ein Stoppgrund, der auf die nächstliegende Entsprechung abgebildet wird, oder es wird für das Zurückspielen im selben Dialekt in den Extras mitgeführt. Die Mapping-Seite jedes Dialekts listet diese Abbildungen auf: [Anthropic Messages](anthropic-messages.md), [OpenAI Chat Completions](openai-chat.md), [OpenAI Responses](openai-responses.md) und [OpenAI Embeddings](openai-embeddings.md).
 
 Reasoning erreicht eine App eines anderen Dialekts, wo deren Format es tragen kann, und zwar so verpackt, dass es zurückkommen kann ([Reasoning-Blobs](reasoning.md#reasoning-blobs), `cross::reasoning_reply_policy`). Unbekannte Blöcke erreichen nur Apps ihres eigenen Dialekts. Alles andere bleibt für die App unsichtbar ([Antworten](cross-format.md#antworten), `cross::reply_policy`), in Streams ersetzt durch [Keepalive](cross-format.md#keepalives)-Frames. Das Gateway protokolliert die vollständige KPP-Antwort.
 
@@ -215,7 +232,9 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 
 `kaeso_codecs::testing` vergleicht JSON strukturell: Die Reihenfolge der Schlüssel spielt nie eine Rolle, und Zahlen werden exakt so verglichen, wie `serde_json` sie liest, daher unterscheiden sich `1` und `1.0`, während `1e0` und `1.0` dieselbe Zahl sind.
 
-KPP speichert `temperature`, `top_p` und die Penalties als `f64`, daher bewahren die Codecs die Schreibweise selbst. OpenAI Chat Completions und Anthropic Messages führen die als Ganzzahl geschriebenen Schlüssel in der Form-Markierung `integers` der Anfrage. Sie schreiben diese Schlüssel wieder als Ganzzahl, solange der Wert noch ganzzahlig ist. OpenAI Responses hält eine abweichende Schreibweise als Form-Override fest, der nur gilt, solange der Wert unverändert ist. Ein geänderter Wert wird als neuer Wert geschrieben, und ein anderer Dialekt bekommt die eigene Schreibweise des Ziels (`1.0`).
+KPP speichert `temperature`, `top_p` und die Penalties als `f64`, daher bewahren die Codecs die Schreibweise selbst. OpenAI Chat Completions und Anthropic Messages führen die als Ganzzahl geschriebenen Schlüssel in der Form-Markierung `integers` der Anfrage. Sie schreiben diese Schlüssel wieder als Ganzzahl, solange der Wert noch ganzzahlig ist.
+
+OpenAI Responses hält eine abweichende Schreibweise als Form-Override fest, der nur gilt, solange der Wert unverändert ist. Ein geänderter Wert wird als neuer Wert geschrieben, und ein anderer Dialekt bekommt die eigene Schreibweise des Ziels (`1.0`).
 
 `testing::sse_diff` vergleicht Streams Item für Item. Es vergleicht den Event-Namen, dann die Daten als JSON oder als Text, wenn sie kein JSON sind, dann die Felder `id`, `retry` und die unbekannten Felder in ihrer Reihenfolge. `ComparableItem::Event.data` ist `None` für einen Frame ohne `data:`-Zeile, und Kommentare werden exakt verglichen.
 

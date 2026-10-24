@@ -72,7 +72,9 @@ pnpm --filter kaeso-console exec playwright install chromium
 
 ### The console
 
-Unit tests run in happy-dom against the Platform API, stubbed per test (`apps/console/src/test/network.ts`, with fixtures in `src/test/fixtures/`). `renderApp(path)` mounts the whole console at an address, and `renderUi` mounts a single component. Tests assert on what a person sees and on the requests sent, and they pass in any order. To check the order, run `pnpm --filter kaeso-console exec vitest run --sequence.shuffle`. Test files under `src/routes` start with `-`, so the route generator skips them.
+Unit tests run in happy-dom against the Platform API, stubbed per test (`apps/console/src/test/network.ts`, with fixtures in `src/test/fixtures/`). `renderApp(path)` mounts the whole console at an address, and `renderUi` mounts a single component.
+
+Tests assert on what a person sees and on the requests sent, and they pass in any order. To check the order, run `pnpm --filter kaeso-console exec vitest run --sequence.shuffle`. Test files under `src/routes` start with `-`, so the route generator skips them.
 
 The end-to-end suite never touches the development stack. It starts its own, the Compose project `kaeso-console-e2e`, with the gateway on `127.0.0.1:28080` and the console on http://localhost:3100. The stack and its data are removed when the run ends. To keep it running between runs, start it yourself and tell the suite:
 
@@ -89,7 +91,9 @@ The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/
 
 ### The UI library and the showcase
 
-Component tests run in happy-dom with Testing Library. The showcase has no unit tests. Its end-to-end suite runs Playwright against its production build, so run `pnpm build` first. It checks accessibility with axe in both themes, and the keyboard and focus rings. It also checks the tokens' type scale, motion and geometry, every component page at phone width, the German and Chinese pages, and the sitemap and page heads.
+Component tests run in happy-dom with Testing Library. The showcase has no unit tests.
+
+The showcase's end-to-end suite runs Playwright against its production build, so run `pnpm build` first. It checks accessibility with axe in both themes, and the keyboard and focus rings. It also checks the tokens' type scale, motion and geometry, every component page at phone width, the German and Chinese pages, and the sitemap and page heads.
 
 ## Rust
 
@@ -184,7 +188,9 @@ sequenceDiagram
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`, `GET /v1/models/{id}` | `anthropic_messages` with an `anthropic-version` header, otherwise `openai_chat` | `models.list`, `models.retrieve` |
 
-Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's `APIStatusError` with the right status (`e2e/conformance/test_errors.py`). Model listings must page and filter as the SDKs expect (`e2e/conformance/test_models.py`). `GET /_scenarios` lists every scenario the server offers.
+Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's `APIStatusError` with the right status (`e2e/conformance/test_errors.py`).
+
+Model listings must page and filter as the SDKs expect (`e2e/conformance/test_models.py`). `GET /_scenarios` lists every scenario the server offers.
 
 ### SDK suite
 
@@ -216,7 +222,9 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-This suite builds the gateway, mock provider, console and updater images and runs `deploy/compose.yaml` from a clean state, with the overrides in `e2e/install`. It completes the first-start setup and calls the install with both SDKs. It also checks that PostgreSQL and ClickHouse give the gateway no rights it doesn't need, and that Valkey refuses connections without its password. The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` and `KAESO_TEST_UPDATER_IMAGE` use images that are already built.
+This suite builds the gateway, mock provider, console and updater images and runs `deploy/compose.yaml` from a clean state, with the overrides in `e2e/install`. It completes the first-start setup and calls the install with both SDKs. It also checks that PostgreSQL and ClickHouse give the gateway no rights it doesn't need, and that Valkey refuses connections without its password.
+
+The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` and `KAESO_TEST_UPDATER_IMAGE` use images that are already built.
 
 ## Fuzzing
 
@@ -241,7 +249,9 @@ Run a target with a corpus folder and the dialect's fixtures as the seed corpus.
 
 ```bash
 mkdir -p fuzz/corpus/decode_openai_chat
-cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
+cargo +nightly fuzz run decode_openai_chat \
+  fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat \
+  -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
 The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
@@ -282,4 +292,8 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 
 When an end-to-end shard fails, the job **End-to-end console report** or **End-to-end showcase report** merges the shards' results into one HTML report, the artifact `playwright-console` or `playwright-showcase`.
 
-Three workflows run on a schedule. **Fuzz** runs each night, as described in [fuzzing](#fuzzing). **Audits** runs every Monday: `cargo deny check` for the workspace and KPP, and `pnpm audit --audit-level high` for every dependency, development ones included, so a new advisory shows up even when nothing changes. **Scorecard** runs every Tuesday and after every push to `dev`: the [OpenSSF Scorecard](https://scorecard.dev) checks the repository's security practices, such as pinned actions, token permissions and branch protection, publishes the score and shows its findings under **Security › Code scanning**.
+Three workflows run on a schedule:
+
+- **Fuzz** runs each night, as described in [fuzzing](#fuzzing).
+- **Audits** runs every Monday: `cargo deny check` for the workspace and KPP, and `pnpm audit --audit-level high` for every dependency, development ones included. That way a new advisory shows up even when nothing changes.
+- **Scorecard** runs every Tuesday and after every push to `dev`. The [OpenSSF Scorecard](https://scorecard.dev) checks the repository's security practices, such as pinned actions, token permissions and branch protection. It publishes the score and shows its findings under **Security › Code scanning**.

@@ -30,7 +30,7 @@ Under **Security**, **Change password** sets a new password and signs out your o
 
 ## Turn on two-factor authentication
 
-Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code, or a sign-in through its own identity provider or the one of the organization that manages your account.
+Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code. It also accepts a sign-in through its own identity provider, or through the provider of the organization that manages your account.
 
 A sign-in link first shows the account it signs in to. Choose **Sign in** only if you asked for the link yourself. If this browser is signed in to another account, signing in replaces that session here.
 
@@ -41,7 +41,7 @@ A sign-in link first shows the account it signs in to. Choose **Sign in** only i
 
 Setting it up needs a sign-in from the last 15 minutes. **Regenerate** replaces the recovery codes, and **Turn off** removes two-factor authentication; both ask for a current code or a recovery code first. If you lose both your authenticator and your recovery codes, an instance admin can reset two-factor authentication for you.
 
-A sign-in takes up to three codes; after three wrong ones, start again with your password or a sign-in link. After 10 wrong codes in a row, at sign-in or when you confirm a change in your account, codes from the app stop working, and Kaeso emails you, and again after every 10 more. A recovery code still signs you in and unlocks the app's codes, and so does resetting your password by email.
+A sign-in takes up to three codes; after three wrong ones, start again with your password or a sign-in link. Codes from the app stop working after 10 wrong codes in a row, at sign-in or when you confirm a change in your account. Kaeso then emails you, and again after every 10 more. A recovery code still signs you in and unlocks the app's codes, and so does resetting your password by email.
 
 ## Link single sign-on
 
@@ -69,13 +69,15 @@ Some actions need a sign-in from the last 15 minutes. If yours is older, the con
 
 The console asks for your password, or sends a sign-in link or a link to set a password. Only when your account has none of these, such as when the organization that manages it requires single sign-on, does it confirm through your identity provider.
 
-Through single sign-on, the console opens your identity provider in a small window and asks you to sign in there again. The page and what you entered stay as they are, and the action continues once you have. Only your own linked identity confirms, from a fresh sign-in, and a refusal says why. When the browser blocks the window, the console goes to the provider in this tab and brings you back to the page. A confirmation through an organization's provider makes the session one from that organization's single sign-on.
+Through single sign-on, the console opens your identity provider in a small window and asks you to sign in there again. The page and what you entered stay as they are, and the action continues once you have. Only your own linked identity confirms, from a fresh sign-in, and a refusal says why.
+
+When the browser blocks the window, the console goes to the provider in this tab and brings you back to the page. A confirmation through an organization's provider makes the session one from that organization's single sign-on.
 
 A provider that once answered without a fresh sign-in isn't offered again ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
 
 ## After signing in through single sign-on
 
-When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements, and changes to your account, which still need a recent sign-in. Instance administration needs another sign-in, unless an instance admin chose the organization for it.
+When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements. It also lets you make changes to your account, which still need a recent sign-in. Instance administration needs another sign-in, unless an instance admin chose the organization for it.
 
 A sign-in through the provider of an organization that doesn't manage your account opens only that organization, and lets you read your account. That happens when your address is at another domain. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 

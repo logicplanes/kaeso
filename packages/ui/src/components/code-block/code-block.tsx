@@ -32,7 +32,7 @@ export interface CodeBlockProps {
   collapseAfter?: number | undefined;
   surface?: keyof typeof KAESO_CODE_BLOCK_VARIANTS.surface | undefined;
   copy?: boolean | undefined;
-  wrap?: boolean | undefined;
+  wrap?: boolean | "phone" | undefined;
   className?: string | undefined;
 }
 
@@ -90,11 +90,19 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   );
   const source = (
     <pre className="mono text-small text-fg">
-      <code className={cn("grid", !wrap && "min-w-max")}>
+      <code className={cn("grid", !wrap && "min-w-max", wrap === "phone" && "sm:min-w-max")}>
         {lines.slice(0, visible).map((line, i) => (
-          <span key={i} className={cn("flex px-16 leading-code", wrap && "whitespace-pre-wrap wrap-anywhere", highlightLines.includes(i + 1) && "bg-fill-2")}>
+          <span
+            key={i}
+            className={cn(
+              "flex px-16 leading-code",
+              wrap === true && "whitespace-pre-wrap wrap-anywhere",
+              wrap === "phone" && "max-sm:whitespace-pre-wrap max-sm:wrap-anywhere",
+              highlightLines.includes(i + 1) && "bg-fill-2",
+            )}
+          >
             {lineNumbers && <span className="mr-16 inline-block w-24 shrink-0 text-right text-fg-tertiary select-none tabular">{i + 1}</span>}
-            <span className="min-w-0">
+            <span className={cn("min-w-0", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
               {tokenLines?.[i]?.length
                 ? tokenLines[i].map((token, j) => (
                     <span key={j} className={token.className || undefined}>

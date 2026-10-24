@@ -47,6 +47,7 @@ export interface CommandPaletteProps {
   inline?: boolean | undefined;
   defaultQuery?: string | undefined;
   query?: string | undefined;
+  counts?: boolean | undefined;
 }
 
 function matches(item: CommandListItem, q: string) {
@@ -69,6 +70,7 @@ function Palette({
   inline,
   defaultQuery = "",
   query: controlledQuery,
+  counts,
 }: CommandPaletteProps & { close: () => void }) {
   const t = useUiText();
   const placeholder = placeholderProp ?? t("commandPalette.placeholder", "Search or run a command");
@@ -142,6 +144,7 @@ function Palette({
         height="fill"
         escapeClears={false}
         match={matches}
+        counts={counts}
         inputProps={{ "data-palette-input": "" }}
         autoFocus
         query={query}

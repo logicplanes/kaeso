@@ -4,6 +4,7 @@ export const docs = {
   CommandPalette: {
     description: "⌘K: search every page and action; nested pages; async groups with a quiet progress line.",
     props: {
+      counts: "Shows each group's count beside its caption; false leaves them out, for a site whose house style has no result counters.",
       defaultQuery: "Start with this query (documentation).",
       emptyText: 'Defaults to "No results" in the provider\'s language.',
       groups: "The commands, in groups with a heading each.",

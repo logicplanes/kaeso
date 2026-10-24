@@ -1,5 +1,6 @@
 ---
 title: Mit der Platform API automatisieren
+nav: Automatisierung
 description: Ein Projekt, ein Modell und einen Schlüssel für eine App per Skript einrichten und Nutzung und Protokolle lesen.
 order: 4
 ---
@@ -40,7 +41,8 @@ Fügen Sie den Anthropic-Schlüssel der Organisation hinzu. Überspringen Sie di
 curl -s "$ORG_URL/credentials" \
   -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
   -H "content-type: application/json" \
-  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" '{provider: "anthropic", name: "Production", secret: $secret}')"
+  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" \
+    '{provider: "anthropic", name: "Production", secret: $secret}')"
 ```
 
 Der erste Schlüssel eines Anbieters wird sein Standard, den jedes Projekt verwendet, solange Sie ihm keinen anderen zuweisen. Die Antwort zeigt nur die letzten vier Zeichen des Schlüssels, und Kaeso zeigt das Secret nie wieder.
@@ -68,10 +70,12 @@ ACCOUNT=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts" \
   -H "content-type: application/json" \
   -d '{"name": "support-bot", "role": "developer"}' | jq -r .id)
 
-KAESO_API_KEY=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
-  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
-  -H "content-type: application/json" \
-  -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret)
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret
+)
 ```
 
 `KAESO_API_KEY` enthält nun den Schlüssel der App, `sk-kso-…`. Kaeso zeigt das Secret eines Schlüssels nur einmal, legen Sie es also dort ab, wo die App es liest.
@@ -85,7 +89,13 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 Die Antwort ist eine Messages-Antwort von Claude. Wie die App ihr SDK einrichtet, zeigt die [Modell-API](model-api.md).
@@ -95,8 +105,10 @@ Die Antwort ist eine Messages-Antwort von Claude. Wie die App ihr SDK einrichtet
 Lesen Sie die Nutzung des Projekts nach Modell und seine zehn neuesten Anfragen:
 
 ```bash
-curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
-curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
 ```
 
 Eine Anfrage erscheint innerhalb weniger Sekunden in den Protokollen. Die Nutzung enthält Kosten, wenn der Aufrufer das Recht `costs.view` hat, und nimmt diese Query-Parameter:
@@ -123,7 +135,10 @@ JAR=$(mktemp)
 curl -s -c "$JAR" https://kaeso.example.com/platform/v1/auth/password \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}'
+  -d '{
+    "email": "owner@example.com",
+    "password": "correct horse battery staple"
+  }'
 ```
 
 Die Anfragen oben funktionieren dann mit `-b "$JAR" -H "Origin: https://kaeso.example.com"` anstelle des Headers `Authorization`. Eine Sitzung handelt mit Ihren eigenen Rechten und erstellt mit `POST orgs/{org}/projects/{project}/keys` Schlüssel für Ihren eigenen Benutzer.

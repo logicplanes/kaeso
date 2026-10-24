@@ -19,10 +19,16 @@ curl -i https://kaeso.example.com/v1/responses \
 import os
 from openai import APIStatusError, OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
-    client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
+    client.responses.create(
+        model="gpt-9",
+        input="Write a haiku about gateways.",
+    )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
     print(error.message)
@@ -31,10 +37,16 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
-  await client.responses.create({ model: "gpt-9", input: "Write a haiku about gateways." });
+  await client.responses.create({
+    model: "gpt-9",
+    input: "Write a haiku about gateways.",
+  });
 } catch (error) {
   if (!(error instanceof OpenAI.APIError)) throw error;
   console.log(error.status, error.headers?.get("kaeso-request-id"));
@@ -81,20 +93,31 @@ curl -i https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "gpt-9", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "gpt-9",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic, APIStatusError
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
     client.messages.create(
         model="gpt-9",
         max_tokens=1024,
-        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+        messages=[
+            {"role": "user", "content": "Write a haiku about gateways."}
+        ],
     )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
@@ -104,7 +127,10 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
   await client.messages.create({
@@ -182,7 +208,7 @@ Once a stream has started, its status can't change. If the provider fails or end
 
 ## Provider errors
 
-When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`. In every error, also one streamed or rewritten for another format, anything that looks like a key or an account, user, project or organization id is replaced by `[redacted]`.
+When your app and the provider use the same format, Kaeso passes the provider's error on with its status, unless the provider refused the project's provider key. An Anthropic error also gets Kaeso's id in `request_id`. In every error, Kaeso replaces anything that looks like a key or an account, user, project or organization id with `[redacted]`. This includes streamed errors and errors rewritten for another format.
 
 Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 
@@ -194,12 +220,16 @@ Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 | Is overloaded | 529 in the Anthropic format, 503 in the OpenAI formats |
 | Fails with another server error | Its own 5xx status |
 
-A refused provider key is the install's problem, not your app's: the provider's 401, 402 or 403 would make an SDK report a wrong Kaeso key, and its message can hold a fragment of the provider key or the provider's organization id. So your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". An organization admin checks the key under **Providers**.
+A refused provider key is the install's problem, not your app's. The provider's 401, 402 or 403 would make an SDK report a wrong Kaeso key. The provider's message can also hold a fragment of the provider key or the provider's organization id.
+
+Instead, your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". An organization admin checks the key under **Providers**.
 
 The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
 
 ### Models the provider doesn't serve
 
-When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model. The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed during the request. Kaeso then answers later requests for the model with the same 404 without calling the provider, apart from one request every five minutes. The first answer and every later one carry the same message, and so does the request log.
+When the provider answers 404 for a model in the catalogue, Kaeso asks the provider whether it still serves that model to the project's provider key. If it doesn't, your app gets 404 with a message that names the provider and the model.
+
+The catalogue then shows the model as **Unavailable** ([availability](../console/models-and-aliases.md#availability)), unless the project's provider key changed during the request. Kaeso then answers later requests for the model with the same 404 without calling the provider, apart from one request every five minutes. The first answer and every later one carry the same message, and so does the request log.
 
 If the provider still lists the model, your app gets the provider's 404 as it was sent: it was about something else, such as a file id. If the provider can't say, because it has no model listing or the listing fails, your app also gets the provider's 404 as it was sent. The catalogue doesn't change in either case.

@@ -30,13 +30,17 @@ Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 变更日志
 
-`CHANGELOG.md` 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，拉取请求从不修改它。Release 工作流根据上一个版本以来合并的拉取请求写出每个版本的分节。每个拉取请求合并时的标题成为它的那一行，并附上拉取请求的链接，标签决定这一行放在哪里。合并时的标题就是该拉取请求在 `prod` 上的 squash 提交的主题行，因此合并后再编辑拉取请求不会改变任何内容。对于以其他方式合并的拉取请求，则取合并那一刻的标题。
+`CHANGELOG.md` 遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，拉取请求从不修改它。Release 工作流根据上一个版本以来合并的拉取请求写出每个版本的分节。每个拉取请求合并时的标题成为它的那一行，并附上拉取请求的链接，标签决定这一行放在哪里。
+
+合并时的标题就是该拉取请求在 `prod` 上的 squash 提交的主题行，因此合并后再编辑拉取请求不会改变任何内容。对于以其他方式合并的拉取请求，则取合并那一刻的标题。
 
 带 `internal` 标签的拉取请求会被省略。Dependabot 的更新合并为一行“Dependencies updated”。带 `breaking` 标签的拉取请求还会在分节顶部单独列出。
 
 要自己撰写版本说明，在 `dev` 上的 `CHANGELOG.md` 中把内容写在 `[Unreleased]` 下。发布时会先列出这些行，再为每个没有被其中任何一行以 `[#42](…/pull/42)` 形式链接的拉取请求添加一行。这适合说明需要比标题更详细的版本，也适合热修复，因为热修复的提交没有拉取请求。
 
-如果仓库的 `release` 环境配置了机密 `LOG_AI_KEY`，工作流会通过维护者的 Kaeso 实例让模型根据已合并的拉取请求起草这一分节。模型按合并时的样子读取每个拉取请求：squash 提交的主题行和正文，或以其他方式合并的拉取请求的各个提交，其中的 HTML 注释会先被去掉。只有当关联议题的作者对仓库有写权限时，模型才会看到该议题的标题。它会原样保留 `[Unreleased]` 下的内容。如果草稿未通过检查或请求失败，发布会改用标题。要在不修改任何文件的情况下预览下一个版本的说明：
+如果仓库的 `release` 环境配置了机密 `LOG_AI_KEY`，模型会根据已合并的拉取请求起草这一分节。工作流通过维护者的 Kaeso 实例调用模型。模型按合并时的样子读取每个拉取请求：squash 提交的主题行和正文，或以其他方式合并的拉取请求的各个提交，其中的 HTML 注释会先被去掉。只有当关联议题的作者对仓库有写权限时，模型才会看到该议题的标题。
+
+它会原样保留 `[Unreleased]` 下的内容。如果草稿未通过检查或请求失败，发布会改用标题。要在不修改任何文件的情况下预览下一个版本的说明：
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -44,7 +48,9 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 在同一版本的预发布之后发布稳定版本时，会把预发布的各分节合并为一个，因此稳定版本的说明涵盖自上一个稳定版本以来的全部内容。
 
-GitHub 发布页先给出一句话、最多五个亮点和破坏性变更，然后在各自的标题下（例如 **Added**、**Changed**、**Removed** 或 **Fixed**）列出该分节的每一条，每条一行，附带其主题和拉取请求。最后是贡献者，以及指向完整更新日志和比较视图的链接。开头部分由模型在撰写分节时一并写出；没有模型时，发布页没有亮点，破坏性变更只保留第一句。上面的预览会在说明之后输出 GitHub 发布页的内容。
+GitHub 发布页先给出一句话、最多五个亮点和破坏性变更。然后在各自的标题下（例如 **Added**、**Changed**、**Removed** 或 **Fixed**）列出该分节的每一条。每条一行，附带其主题和拉取请求。最后是贡献者，以及指向完整更新日志和比较视图的链接。
+
+开头部分由模型在撰写分节时一并写出；没有模型时，发布页没有亮点，破坏性变更只保留第一句。上面的预览会在说明之后输出 GitHub 发布页的内容。
 
 ### 说明中可以写什么
 
@@ -61,7 +67,9 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更，然�
 
 ### 打标签前的审阅
 
-每个使用机密、写入仓库或发布内容的任务都在 `release` 环境中运行，因此都要等待维护者批准。批准 **Release notes** 后，模型开始起草。随后 **Prepare** 写出变更日志，并在其摘要中显示该分节和 GitHub 发布页，内容与发布时完全一致。之后 **Tag** 等待您的批准，所以请先阅读摘要。如果其中有任何问题，请拒绝 **Tag**，在 `dev` 上修正原因，然后重新运行 Release。
+每个使用机密、写入仓库或发布内容的任务都在 `release` 环境中运行，因此都要等待维护者批准。批准 **Release notes** 后，模型开始起草。随后 **Prepare** 写出变更日志，并在其摘要中显示该分节和 GitHub 发布页，内容与发布时完全一致。
+
+之后 **Tag** 等待您的批准，所以请先阅读摘要。如果其中有任何问题，请拒绝 **Tag**，在 `dev` 上修正原因，然后重新运行 Release。
 
 ### 标签
 
@@ -94,7 +102,8 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更，然�
 4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样更新器永远不会安装它：
 
    ```bash
-   gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
+   gh workflow run release.yml --repo logicplanes/kaeso --ref prod \
+     -f version=0.2.0
    ```
 
    运行中的任务等待批准时，逐一批准。批准 **Tag** 之前，先阅读 **Prepare** 摘要中的说明（[打标签前的审阅](#打标签前的审阅)）。
@@ -177,10 +186,10 @@ pnpm --filter kaeso-showcase build
 
 ### 内容安全策略
 
-每次构建都会把网站的策略作为 `<meta>` 标签写入每个页面，也写入 `csp.txt` 和 `_headers`。还要把它作为 `Content-Security-Policy` 响应头发送，因为只有响应头才能加上 `frame-ancestors 'none'`。文档的响应头始终不变；它允许来自 `update.kaeso.app` 的图片，更新日志中各版本的配图就来自那里：
+每次构建都会把网站的策略作为 `<meta>` 标签写入每个页面，也写入 `csp.txt` 和 `_headers`。还要把它作为 `Content-Security-Policy` 响应头发送，因为只有响应头才能加上 `frame-ancestors 'none'`。文档的响应头始终不变：
 
 ```text
-default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://update.kaeso.app; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
 展示站点的策略为它的每个内联脚本和样式列出一个哈希值，这些哈希会随它们变化。从要部署的那次构建的 `csp.txt` 中获取它的响应头。

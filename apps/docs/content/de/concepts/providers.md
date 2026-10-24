@@ -12,24 +12,39 @@ Diese App ruft mit dem OpenAI SDK ein Claude-Modell und ein Groq-Modell auf. Nur
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "llama-3.3-70b-versatile",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 for model in ["claude-haiku-4-5", "llama-3.3-70b-versatile"]:
     completion = client.chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+        messages=[
+            {"role": "user", "content": "Write a haiku about gateways."}
+        ],
     )
     print(completion.choices[0].message.content)
 ```
@@ -37,7 +52,10 @@ for model in ["claude-haiku-4-5", "llama-3.3-70b-versatile"]:
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 for (const model of ["claude-haiku-4-5", "llama-3.3-70b-versatile"]) {
   const completion = await client.chat.completions.create({
@@ -73,7 +91,7 @@ Drei Schritte machen die Modelle eines Anbieters in einem Projekt aufrufbar:
 Jedes Chat-Format erreicht jedes Chat-Modell, aber nicht jeder Anbieter bietet dasselbe. Die Spalte **Formate** unter [Unterstützte Anbieter](supported-providers.md) zeigt, was jeder anbietet:
 
 - **Formate.** Kaeso ruft jeden Anbieter in einem Format auf, das er bedient, etwa Anthropic mit Messages. Unterscheidet sich das Format der App, lehnt Kaeso ein Feld, das das Format des Anbieters nicht ausdrücken kann, mit einem Fehler ab, der es nennt. Stillschweigend verworfen wird es nie ([Was Kaeso ablehnt](format-translation.md#was-kaeso-ablehnt)).
-- **Felder, die ein Anbieter ablehnt.** Nicht jeder Anbieter, der Chat Completions spricht, nimmt das ganze Format an, und Kaeso kennt die Abweichungen jedes Anbieters. Ein Feld, das nur anders geschrieben wird, benennt Kaeso um, etwa `seed` in Mistrals `random_seed`. Ein Feld, das der Anbieter nicht annimmt, lehnt Kaeso ab, bevor etwas gesendet wird, mit 400 im Format der App: „`logit_bias` is not supported by Mistral; remove it from the request.“ Die [Referenz zu Chat Completions](../development/kpp/openai-chat.md#anbieterprofile) listet die Abweichungen jedes Anbieters.
+- **Felder, die ein Anbieter ablehnt.** Nicht jeder Anbieter, der Chat Completions spricht, nimmt das ganze Format an, und Kaeso kennt die Abweichungen jedes Anbieters. Ein Feld, das nur anders geschrieben wird, benennt Kaeso um, etwa `seed` in Mistrals `random_seed`. Ein Feld, das der Anbieter nicht annimmt, lehnt Kaeso ab, bevor es etwas sendet. Die App erhält 400 in ihrem eigenen Format: „`logit_bias` is not supported by Mistral; remove it from the request.“ Die [Referenz zu Chat Completions](../development/kpp/openai-chat-providers.md#anbieterprofile) listet die Abweichungen jedes Anbieters.
 - **Token-Zählung.** `/v1/messages/count_tokens` und `/v1/responses/input_tokens` fragen den Anbieter des Modells nach der Anzahl, und nur Anbieter mit Token-Zählung in ihren Formaten können sie liefern. Für andere Modelle antwortet Kaeso mit 400: „The model `…` cannot count tokens.“ Kaeso schätzt die Anzahl nie.
 - **Embeddings.** Nur Anbieter mit Embeddings in ihren Formaten haben Embeddings-Modelle, die `/v1/embeddings` aufruft. Chat-Formate können kein Embeddings-Modell aufrufen, und ein Chat-Modell erzeugt keine Embeddings.
 - **Modell-IDs.** Jeder Anbieter benennt seine Modelle auf seine Weise. Manche IDs enthalten `/`, etwa `Qwen/Qwen3.5-9B` von Together AI oder `anthropic/claude-sonnet-4.5` von OpenRouter, das den Hersteller des Modells nennt.

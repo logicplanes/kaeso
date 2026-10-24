@@ -419,7 +419,7 @@ describe("the Vite plugin", () => {
 
   it("writes a page at a moved address that sends the reader on, and the same moves for hosts that read _redirects", () => {
     repo();
-    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "guides/keys.md#rate-limits" }));
+    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "guides/keys.md#rate-limits", changelog: "https://kaeso.app/changelog" }));
     const outDir = join(root, "dist");
     mkdirSync(outDir, { recursive: true });
     writeFileSync(join(outDir, "index.html"), TEMPLATE);
@@ -444,11 +444,20 @@ describe("the Vite plugin", () => {
     expect(moved).toContain('<meta http-equiv="refresh" content="0; url=/de/guides/keys#rate-limits" />');
     expect(moved).toContain('<link rel="canonical" href="https://docs.kaeso.app/de/guides/keys" />');
     expect(moved).toContain('<a href="/de/guides/keys#rate-limits">Keys · Kaeso-Dokumentation</a>');
+    const away = readFileSync(join(outDir, "de/changelog.html"), "utf8");
+    expect(away).toContain('<meta http-equiv="refresh" content="0; url=https://kaeso.app/de/changelog" />');
+    expect(away).toContain('<link rel="canonical" href="https://kaeso.app/de/changelog" />');
     expect(readFileSync(join(outDir, "_redirects"), "utf8")).toBe(
       [
         "/guides/limits /guides/keys#rate-limits 301",
+        "/changelog https://kaeso.app/changelog 301",
+        "/changelog/* https://kaeso.app/changelog 301",
         "/de/guides/limits /de/guides/keys#rate-limits 301",
+        "/de/changelog https://kaeso.app/de/changelog 301",
+        "/de/changelog/* https://kaeso.app/de/changelog 301",
         "/zh-CN/guides/limits /zh-CN/guides/keys#rate-limits 301",
+        "/zh-CN/changelog https://kaeso.app/zh-CN/changelog 301",
+        "/zh-CN/changelog/* https://kaeso.app/zh-CN/changelog 301",
         "",
       ].join("\n"),
     );
@@ -483,100 +492,5 @@ describe("the Vite plugin", () => {
     expect(server.moduleGraph.invalidateModule).toHaveBeenCalledWith(mod);
     expect(server.ws.send).toHaveBeenCalledWith({ type: "full-reload" });
     expect(server.config.logger.warn).toHaveBeenCalledWith(expect.stringContaining("links to nowhere.md"));
-  });
-});
-
-describe("the changelog page", () => {
-  const CHANGELOG = [
-    "# Changelog",
-    "",
-    "## [Unreleased]",
-    "",
-    "## [1.2.0] - 2026-11-15",
-    "",
-    "### Fixed",
-    "",
-    "- Streams end cleanly.",
-    "",
-    "[Unreleased]: https://github.com/logicplanes/kaeso/compare/v1.2.0...HEAD",
-    "[1.2.0]: https://github.com/logicplanes/kaeso/releases/tag/v1.2.0",
-    "",
-  ].join("\n");
-  const plugin = () =>
-    kaesoDocs({
-      root,
-      contentDir: "content",
-      editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
-      siteUrl: "https://docs.kaeso.app",
-      version: "1.4.0",
-      changelog: "CHANGELOG.md",
-    });
-
-  it("serves the changelog as a page of every language, and watches its file", async () => {
-    repo();
-    writeFileSync(join(root, "CHANGELOG.md"), CHANGELOG);
-    const p = hooks(plugin());
-    p.config({}, { command: "serve" });
-    expect(p.load("\0kaeso-docs:site/de")).toContain('"/de/changelog": () => import("virtual:kaeso-docs/page/de/changelog")');
-    const changelog = p.load("\0kaeso-docs:page/de/changelog") ?? "";
-    expect(changelog).toContain('"changelog":{"releases":[{"id":"v1.2.0"');
-    expect(changelog).toContain('"toc":[{"id":"v1.2.0","label":"1.2.0","depth":0}]');
-    const watched: string[] = [];
-    await p.buildStart.call({
-      addWatchFile: (f: string) => watched.push(f),
-      error: (m: string): never => {
-        throw new Error(m);
-      },
-    });
-    expect(watched).toContain(join(root, "CHANGELOG.md"));
-  });
-
-  it("writes the changelog's HTML with GitHub's release feed", () => {
-    repo();
-    writeFileSync(join(root, "CHANGELOG.md"), CHANGELOG);
-    const outDir = join(root, "dist");
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(join(outDir, "index.html"), TEMPLATE);
-    const chunk = (fileName: string, facadeModuleId: string | null, isEntry = false) =>
-      ({ type: "chunk", fileName, facadeModuleId, imports: [], isEntry }) as unknown as Rollup.OutputChunk;
-    const bundle = Object.fromEntries(
-      [
-        chunk("assets/index.js", "/src/main.tsx", true),
-        chunk("assets/site-en.js", "\0kaeso-docs:site/en"),
-        chunk("assets/site-de.js", "\0kaeso-docs:site/de"),
-        chunk("assets/site-zh.js", "\0kaeso-docs:site/zh-CN"),
-        chunk("assets/ui-de.js", "/repo/packages/ui/dist/chunks/de-abc.js"),
-        chunk("assets/ui-zh.js", "/repo/packages/ui/dist/chunks/zh-CN-abc.js"),
-      ].map((c) => [c.fileName, c]),
-    );
-    const p = hooks(plugin());
-    p.config({}, { command: "build" });
-    p.writeBundle({ dir: outDir }, bundle);
-    const html = readFileSync(join(outDir, "de/changelog.html"), "utf8");
-    expect(html).toContain("<title>Änderungen · Kaeso-Dokumentation</title>");
-    expect(html).toContain(
-      '<link rel="alternate" type="application/atom+xml" title="Kaeso-Releases" href="https://github.com/logicplanes/kaeso/releases.atom" />',
-    );
-    expect(readFileSync(join(outDir, "de/guides/keys.html"), "utf8")).not.toContain("application/atom+xml");
-    expect(readFileSync(join(outDir, "sitemap.xml"), "utf8")).toContain("<loc>https://docs.kaeso.app/zh-CN/changelog</loc>");
-  });
-
-  it("reloads in development when the changelog changes", () => {
-    repo();
-    writeFileSync(join(root, "CHANGELOG.md"), CHANGELOG);
-    const listeners: Record<string, (file: string) => void> = {};
-    const server = {
-      config: { logger: { warn: vi.fn() } },
-      watcher: { add: vi.fn(), on: (event: string, fn: (file: string) => void) => (listeners[event] = fn) },
-      moduleGraph: { idToModuleMap: new Map<string, object>(), getModuleById: () => undefined, invalidateModule: vi.fn() },
-      ws: { send: vi.fn() },
-    };
-    const p = plugin() as unknown as { configureServer: (s: typeof server) => void };
-    p.configureServer(server);
-    expect(server.watcher.add).toHaveBeenCalledWith(join(root, "CHANGELOG.md"));
-    writeFileSync(join(root, "CHANGELOG.md"), CHANGELOG.replace("- Streams end cleanly.", "- See [the guide](guide.md)."));
-    listeners.change?.(join(root, "CHANGELOG.md"));
-    expect(server.ws.send).toHaveBeenCalledWith({ type: "full-reload" });
-    expect(server.config.logger.warn).toHaveBeenCalledWith(expect.stringContaining("CHANGELOG.md: [1.2.0] links to guide.md"));
   });
 });

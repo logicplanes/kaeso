@@ -1,7 +1,8 @@
 ---
 title: Fixtures und Aufzeichnungen
+nav: Fixtures
 description: Die echten Payloads, gegen die die Codecs getestet werden, und wie neue bei den Anbietern aufgezeichnet werden.
-order: 8
+order: 9
 ---
 
 Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer Antwort, einem Stream oder einem Fehler in `crates/kaeso-codecs/fixtures`. Jede Fixture durchläuft einen Round Trip durch ihren eigenen Codec, und die Cross-Dialekt-Matrix schickt jede Generierungs-Fixture durch jeden anderen Dialekt. Die [SDK-Konformität](../testing.md#sdk-konformität) liefert die Fixtures an die offiziellen SDKs aus, der Mock-Anbieter des Gateways antwortet mit ihnen, und die Fuzz-Targets gehen von ihnen aus.
@@ -45,9 +46,16 @@ Jeder Dialektordner und seine Ordner `requests/`, `responses/`, `streams/`, `err
 | `schema:` | Ein Body, der aus den festgelegten OpenAPI-Schemas gebaut wurde |
 | `RECORDED.md` | Eine Live-Aufzeichnung mit `cargo xtask record`, mit Modell und Zeitpunkt |
 
-Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen, und die Konventionen, die sie teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
+Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen. Sie nennt auch die Konventionen, die diese Fixtures teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
 
-Ein Anbieterordner hat eine eigene `README.md`: Name und ID des Anbieters, seine API-Referenz mit dem Datum, an dem Sie sie gelesen haben, die Basis-URL und die Modelle der Aufzeichnung und eine Zeile für jede Datei in seinen Unterordnern. Die `RECORDED.md` jedes Unterordners nennt den Anbieter in ihren ersten Zeilen.
+Ein Anbieterordner hat eine eigene `README.md`. Sie enthält:
+
+- Name und ID des Anbieters;
+- seine API-Referenz, mit dem Datum, an dem Sie sie gelesen haben;
+- die Basis-URL und die Modelle der Aufzeichnung;
+- eine Zeile für jede Datei in seinen Unterordnern.
+
+Die `RECORDED.md` jedes Unterordners nennt den Anbieter in ihren ersten Zeilen.
 
 ## Live-Antworten aufzeichnen
 
@@ -69,8 +77,10 @@ Jeder andere Anbieter in `crates/kaeso-core/src/provider.rs` wird genauso mit `-
 
 ```bash
 export <ID>_API_KEY=…
-cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
-cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run \
+  tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> \
+  tools-single stream-include-usage
 ```
 
 | Option | Wirkung |

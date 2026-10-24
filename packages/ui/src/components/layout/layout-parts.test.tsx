@@ -206,40 +206,49 @@ describe("Logo", () => {
 });
 
 describe("TableOfContents", () => {
-  it("marks the heading in view as it scrolls, or the one given", () => {
-    let callback: (entries: { isIntersecting: boolean; target: Element }[]) => void = () => undefined;
-    const disconnect = vi.fn();
-    vi.stubGlobal(
-      "IntersectionObserver",
-      class {
-        constructor(cb: typeof callback) {
-          callback = cb;
-        }
-        observe() {}
-        disconnect = disconnect;
-      },
-    );
-    document.body.insertAdjacentHTML("beforeend", '<h2 id="setup">Setup</h2><h3 id="keys">Keys</h3>');
+  it("marks the last heading above the reading line as you scroll either way, the last one at the end, or the one given", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    document.body.insertAdjacentHTML("beforeend", '<h2 id="setup">Setup</h2><h3 id="keys">Keys</h3><h2 id="notes">Notes</h2>');
+    const line = window.innerHeight * 0.3;
+    const tops: Record<string, number> = { setup: line - 10, keys: line + 100, notes: line + 400 };
+    for (const id of Object.keys(tops))
+      vi.spyOn(document.getElementById(id)!, "getBoundingClientRect").mockImplementation(() => ({ top: tops[id] }) as DOMRect);
+    const page = document.scrollingElement as HTMLElement;
+    const at = (top: number) => {
+      vi.spyOn(page, "scrollTop", "get").mockReturnValue(top);
+      vi.spyOn(page, "clientHeight", "get").mockReturnValue(500);
+      vi.spyOn(page, "scrollHeight", "get").mockReturnValue(2000);
+    };
+    at(0);
     const items = [
       { id: "setup", label: "Setup" },
       { id: "keys", label: "Keys", depth: 1 as const },
+      { id: "notes", label: "Notes" },
       { id: "missing", label: "Missing" },
     ];
+    const scroll = (next: Partial<typeof tops>, top: number) => {
+      Object.assign(tops, next);
+      at(top);
+      act(() => {
+        document.dispatchEvent(new Event("scroll"));
+      });
+    };
     const { unmount, rerender } = render(<TableOfContents items={items} />);
-    act(() =>
-      callback([
-        { isIntersecting: false, target: document.getElementById("setup")! },
-        { isIntersecting: true, target: document.getElementById("keys")! },
-      ]),
-    );
-    expect(screen.getByRole("link", { name: "Keys" })).toHaveAttribute("aria-current", "location");
+    const current = () => screen.getByRole("link", { current: "location" }).textContent;
+    expect(current()).toBe("Setup");
+    scroll({ setup: -400, keys: line - 20, notes: line + 200 }, 400);
+    expect(current()).toBe("Keys");
+    scroll({ setup: line - 50, keys: line + 50, notes: line + 300 }, 100);
+    expect(current()).toBe("Setup");
+    scroll({ setup: -900, keys: -500, notes: line + 40 }, 1500);
+    expect(current()).toBe("Notes");
     rerender(<TableOfContents items={items} active="setup" title="Contents" />);
-    expect(screen.getByRole("link", { name: "Setup" })).toHaveAttribute("aria-current", "location");
+    expect(current()).toBe("Setup");
     unmount();
-    expect(disconnect).toHaveBeenCalled();
-    document.getElementById("setup")?.remove();
-    document.getElementById("keys")?.remove();
-    vi.unstubAllGlobals();
+    for (const id of Object.keys(tops)) document.getElementById(id)?.remove();
   });
 });
 

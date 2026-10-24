@@ -14,7 +14,9 @@ Dasselbe Menü listet Ihre Organisationen und wechselt zwischen ihnen.
 
 ## Nutzung ablesen
 
-Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum Ihrer Wahl, von heute bis zur gesamten Laufzeit. Jede Summe wird mit dem Zeitraum davor verglichen, außer für heute, das noch läuft, und die gesamte Laufzeit. Diagramme zählen nach UTC-Tagen; ein Tag, eine Woche oder ein Monat, der noch läuft, wird gestrichelt oder heller gezeichnet, und sein Tooltip sagt „bisher“. Sie schlüsselt außerdem die Kosten nach Projekt auf und die Nutzung nach Projekt, Modell oder Mitglied. Für die Nutzung brauchen Sie das Recht **Gesamtnutzung ansehen**, für die Kosten **Gesamtkosten ansehen**.
+Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler für einen Zeitraum Ihrer Wahl, von heute bis zur gesamten Laufzeit. Sie schlüsselt außerdem die Kosten nach Projekt auf und die Nutzung nach Projekt, Modell oder Mitglied.
+
+Die Seite vergleicht jede Summe mit dem Zeitraum davor, außer für heute, das noch läuft, und die gesamte Laufzeit. Diagramme zählen nach UTC-Tagen. Einen Tag, eine Woche oder einen Monat, der noch läuft, zeichnen sie gestrichelt oder heller, und sein Tooltip sagt „bisher“. Für die Nutzung brauchen Sie das Recht **Gesamtnutzung ansehen**, für die Kosten **Gesamtkosten ansehen**.
 
 Die **Übersicht** eines Projekts zeigt dieselben Zahlen für ein Projekt, aufgeschlüsselt nach Zeit, Modell, Schlüssel oder Mitglied. Sie listet außerdem die Limits des Projekts mit ihrem Verbrauch und die letzten Fehler.
 
@@ -41,9 +43,9 @@ Mit Single Sign-on melden sich Mitglieder über Ihren OpenID-Connect-Identitäts
 2. **Welche App meldet Personen an?** Geben Sie ihre Client-ID und ihr Client-Secret ein.
 3. **Welche E-Mail-Domains melden sich darüber an?** Die Anmeldeseite leitet Personen mit einer Adresse unter diesen Domains zu Ihrem Anbieter. Internationalisierte Domains funktionieren in beiden Schreibweisen, `bücher.example` oder `xn--bcher-kva.example`.
 4. **Beitritt ohne Einladung möglich?** Wählen Sie **Nur mit Einladung** oder die Rolle, mit der Personen ohne Kaeso-Konto beitreten. Diese Rolle kann nicht Inhaber sein.
-5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, steht auf dem Button „Weiter mit SSO“. Mit **Ohne Klick starten** geht die Anmeldeseite, nachdem jemand eine Adresse an Ihren bestätigten Domains eingegeben hat, zu Ihrem Anbieter weiter, ohne seinen Button zu zeigen, wenn er der einzige Weg hinein ist. **Bestätigte Adressen verlangen** weist Tokens ab, die die Adresse nicht als bestätigt kennzeichnen; schalten Sie es nur für einen Anbieter ab, der `email_verified` nie sendet.
+5. **Wie bietet die Anmeldeseite ihn an?** Tragen Sie unter **Name auf der Schaltfläche** einen Namen ein, etwa `Acme ID` für „Weiter mit Acme ID“. Bleibt das Feld leer, steht auf dem Button „Weiter mit SSO“. Mit **Ohne Klick starten** geht die Anmeldeseite zu Ihrem Anbieter weiter, ohne seinen Button zu zeigen. Das geschieht, wenn jemand eine Adresse an Ihren bestätigten Domains eingibt und der Anbieter sein einziger Weg hinein ist. **Bestätigte Adressen verlangen** weist Tokens ab, die die Adresse nicht als bestätigt kennzeichnen; schalten Sie es nur für einen Anbieter ab, der `email_verified` nie sendet.
 
-Nach dem Verbinden zeigt die Seite die **Weiterleitungs-URL**: Tragen Sie sie beim Anbieter als Callback der Anmeldung ein. Um Mitglieder aus dem Intranet oder über ein Lesezeichen zu Single Sign-on zu schicken, verlinken Sie die Anmeldeseite Ihrer Installation, etwa `https://kaeso.example.com/sign-in`; sie fragt zuerst nach der Adresse ([die Anmeldeseite](../self-hosting/sign-in.md#die-anmeldeseite)).
+Nach dem Verbinden zeigt die Seite die **Weiterleitungs-URL**: Tragen Sie sie beim Anbieter als Callback der Anmeldung ein. Um Mitglieder aus dem Intranet oder über ein Lesezeichen zu Single Sign-on zu schicken, verlinken Sie die Anmeldeseite Ihrer Installation, etwa `https://kaeso.example.com/sign-in`. Sie fragt zuerst nach der Adresse ([die Anmeldeseite](../self-hosting/sign-in.md#die-anmeldeseite)).
 
 ### E-Mail-Domains bestätigen
 
@@ -55,11 +57,13 @@ _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9f
 
 DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Bestätigen** später erneut. Domains öffentlicher Mail-Anbieter wie `gmail.com` lassen sich nicht hinzufügen, ebenso wenig eine Domain, die eine andere Organisation bestätigt hat. Eine Domain, für die das öffentliche DNS nicht antwortet, bestätigt ein Operator auf dem Server mit `kaeso sso verify-domain acme.example`.
 
-**Single Sign-on bearbeiten** ändert die Verbindung. Ein leeres Client-Secret behält das gespeicherte, solange Issuer und Client-ID gleich bleiben; ein neuer Issuer oder eine neue Client-ID beendet die Sitzungen, die der bisherige Anbieter angemeldet hat. **Trennen** entfernt sie und beendet die Sitzungen, die sie angemeldet hat, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
+**Single Sign-on bearbeiten** ändert die Verbindung. Ein leeres Client-Secret behält das gespeicherte, solange Issuer und Client-ID gleich bleiben. Ein neuer Issuer oder eine neue Client-ID beendet die Sitzungen, die der bisherige Anbieter angemeldet hat. **Trennen** entfernt sie und beendet die Sitzungen, die sie angemeldet hat, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 
-Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)), und nur, wenn das Konto der Organisation angehört. Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
+Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)). Das Konto muss außerdem der Organisation angehören: Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
 
-Mitglieder bestätigen eine kürzliche Anmeldung mit Passwort oder Anmeldelink; Single Sign-on bestätigt nur für Konten ohne anderen Weg, etwa die von der Organisation verwalteten, solange **Single Sign-on verlangen** eingeschaltet ist. Das gelingt nur, wenn Ihr Anbieter auf Anfrage frisch anmeldet und in seinen ID-Tokens `auth_time` sendet. Kommt eine Bestätigung ohne frische Anmeldung zurück, zeigt **Sicherheit** die Zeile **Kürzliche Anmeldung**, und der Anbieter wird zum Bestätigen nicht mehr angeboten. Ist **Single Sign-on verlangen** eingeschaltet, können die verwalteten Konten dann gar nicht bestätigen ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
+Mitglieder bestätigen eine kürzliche Anmeldung mit Passwort oder Anmeldelink. Single Sign-on bestätigt nur für Konten ohne anderen Weg, etwa die von der Organisation verwalteten, solange **Single Sign-on verlangen** eingeschaltet ist. Das gelingt nur, wenn Ihr Anbieter auf Anfrage frisch anmeldet und in seinen ID-Tokens `auth_time` sendet.
+
+Kommt eine Bestätigung ohne frische Anmeldung zurück, zeigt **Sicherheit** die Zeile **Kürzliche Anmeldung**, und der Anbieter wird zum Bestätigen nicht mehr angeboten. Ist **Single Sign-on verlangen** eingeschaltet, können die verwalteten Konten dann gar nicht bestätigen ([kürzliche Anmeldungen](../self-hosting/sign-in.md#kürzliche-anmeldungen)).
 
 Sobald die Verbindung steht, verwaltet die Organisation die Konten an ihren bestätigten Domains: Eine Anmeldung über ihren Anbieter öffnet alles, was diese Konten öffnen können, außer der Verwaltung der Instanz ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 
@@ -97,9 +101,13 @@ Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Akt
 
 ## Projekt erstellen
 
-Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**. Archivierte Projekte stehen unter **Archiviert**, alle Projekte unter **Alle**. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
+Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**.
 
-Das Standardprojekt ist das Projekt, in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Nur wer der Organisation danach beitritt, beginnt im neuen Standardprojekt; bisherige Mitglieder behalten ihre Plätze und treten ihm nicht bei. Kaeso lehnt die Verlegung ab, solange offene Einladungen oder die Rolle für Single Sign-on Personen dort Rechte geben würden, die Sie nicht haben. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
+**Archiviert** listet archivierte Projekte, **Alle** jedes Projekt. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
+
+Das Standardprojekt ist das Projekt, in dem neue Mitglieder beginnen. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Projekts. Dafür brauchen Sie das Recht **Organisation bearbeiten**.
+
+Nur wer der Organisation danach beitritt, beginnt im neuen Standardprojekt; bisherige Mitglieder behalten ihre Plätze und treten ihm nicht bei. Das bisherige Standardprojekt bleibt ein Projekt mit seinen Mitgliedern. Kaeso lehnt die Verlegung ab, solange offene Einladungen oder die Rolle für Single Sign-on Personen dort Rechte geben würden, die Sie nicht haben.
 
 ## Projekteinstellungen ändern
 

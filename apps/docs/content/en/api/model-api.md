@@ -12,14 +12,22 @@ With the OpenAI SDK, this Chat Completions request is served by Claude:
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 completion = client.chat.completions.create(
     model="claude-haiku-4-5",
@@ -31,7 +39,10 @@ print(completion.choices[0].message.content)
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const completion = await client.chat.completions.create({
   model: "claude-haiku-4-5",
@@ -47,14 +58,23 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 200, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 200,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 message = client.messages.create(
     model="claude-haiku-4-5",
@@ -67,14 +87,19 @@ print(message.content[0].text)
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const message = await client.messages.create({
   model: "claude-haiku-4-5",
   max_tokens: 200,
   messages: [{ role: "user", content: "Write a haiku about gateways." }],
 });
-for (const block of message.content) if (block.type === "text") console.log(block.text);
+for (const block of message.content) {
+  if (block.type === "text") console.log(block.text);
+}
 ```
 
 | SDK | Base URL | Sends the key as |
@@ -103,7 +128,7 @@ Any other path under `/v1` gets 404, and a known path called with the wrong meth
 
 ### Listing models
 
-`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). A model that the provider doesn't serve to the project's provider key is left out ([availability](../console/models-and-aliases.md#availability)).
+`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). The list leaves out a model that the provider doesn't serve to the project's provider key ([availability](../console/models-and-aliases.md#availability)).
 
 | | OpenAI format | Anthropic format |
 | --- | --- | --- |
@@ -135,7 +160,7 @@ A request names a model in one of three forms. Kaeso looks in the project's cata
 | The provider and the model | `anthropic/claude-haiku-4-5` |
 | The model's own id | `claude-haiku-4-5` |
 
-Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use, with the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
+Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use. Both get the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
 
 ## Streaming
 
@@ -147,7 +172,7 @@ Ask for a stream as the format does, with `"stream": true`. The reply is a serve
 
 ## Reasoning across tool calls
 
-Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the reasoning before each tool call and adds it back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
+Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the model's reasoning before each tool call. It adds the reasoning back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
 
 ## Response headers
 

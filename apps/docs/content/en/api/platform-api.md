@@ -27,7 +27,8 @@ with urllib.request.urlopen(request) as response:
 ```
 
 ```ts tab="TypeScript"
-const response = await fetch("https://kaeso.example.com/platform/v1/orgs/org_…/projects", {
+const url = "https://kaeso.example.com/platform/v1/orgs/org_…/projects";
+const response = await fetch(url, {
   headers: { Authorization: `Bearer ${process.env.KAESO_PLATFORM_KEY}` },
 });
 console.log(await response.json());
@@ -76,7 +77,7 @@ Use a platform key to automate a whole organization, and a project key for scrip
 - **Keys go in `Authorization`.** The Platform API never reads `x-api-key`.
 - **Platform access is chosen when a key is created**, with `"access": "platform"` or `"both"`. The default is `inference`, and platform access needs the right `keys.platform_access.grant` ([API keys](../console/api-keys.md)).
 - **Platform keys are created only in a session**, by someone who holds every right of the Admin role. They never call models.
-- **Organization policies apply to sessions.** An organization that requires single sign-on answers the sessions of the accounts it manages with 403, unless they came from its provider; guests' sessions pass. One that requires two-factor authentication answers sessions without a second factor with 403, except those from single sign-on that counts there: its own, or that of the organization that manages the account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
+- **Organization policies apply to sessions.** An organization that requires single sign-on answers the sessions of the accounts it manages with 403, unless they came from its provider; guests' sessions pass. An organization that requires two-factor authentication answers sessions without a second factor with 403. The exception is a session from single sign-on that counts there: its own, or that of the organization that manages the account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 - **Unknown keys are throttled.** Too many requests with unknown keys from one address, on both APIs together, get `429 rate_limited` with `Retry-After` ([API key failures](../self-hosting/configuration.md#api-key-failures)).
 
 ### Cross-site requests
@@ -91,13 +92,19 @@ This keeps other sites from acting with your session, or from signing your brows
 
 ### Recent sign-in
 
-In a session, some actions need a sign-in within the last 15 minutes. Otherwise Kaeso answers `403 recent_sign_in_required`, and the console asks you to sign in again: with your password or a sign-in link, or through single sign-on when the account has no other way. Keys never need one.
+In a session, some actions need a sign-in within the last 15 minutes. Otherwise Kaeso answers `403 recent_sign_in_required`, and the console asks you to sign in again. You confirm with your password or a sign-in link, or through single sign-on when the account has no other way. Keys never need one.
 
-`GET me/sign-in-again` lists how the account can confirm: `password`, `magic_link`, and `set_password` when it has no password yet but can set one through `POST auth/password-reset`. Only when all three are `false` does `sso` list the organizations whose identity provider the account is linked to, the one that manages the account first; when that organization requires single sign-on, only its provider confirms. `POST me/sign-in-again/sso` starts a confirmation at one of them. The provider is asked for a fresh sign-in (`prompt=login`, `max_age=0`), only the same account confirms, and the session is replaced by one from that organization's single sign-on. On failure the browser comes back to `next` with `#sso_error=`, such as `other_account` or `link_required`. `cannot_confirm` means the provider's answer showed no fresh sign-in: it left out `auth_time`, or carried an earlier sign-in the provider reused; `sso` then leaves that organization out, and its connection shows `confirms_sign_in: false` in `GET orgs/{org}/security`.
+`GET me/sign-in-again` lists how the account can confirm: `password`, `magic_link`, and `set_password` when it has no password yet but can set one through `POST auth/password-reset`. Only when all three are `false` does `sso` list the organizations whose identity provider the account is linked to. The one that manages the account comes first. When that organization requires single sign-on, only its provider confirms.
+
+`POST me/sign-in-again/sso` starts a confirmation at one of them. Kaeso asks the provider for a fresh sign-in (`prompt=login`, `max_age=0`), and only the same account confirms. Kaeso then replaces the session with one from that organization's single sign-on. On failure the browser comes back to `next` with `#sso_error=`, such as `other_account` or `link_required`.
+
+`cannot_confirm` means the provider's answer showed no fresh sign-in: it left out `auth_time`, or carried an earlier sign-in the provider reused. `sso` then leaves that organization out, and its connection shows `confirms_sign_in: false` in `GET orgs/{org}/security`.
+
+These actions need a recent sign-in:
 
 - **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
 - **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
-- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing single sign-on for instance admins (only with a password or a sign-in link), choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it.
+- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
 
 ## Conventions
 
@@ -185,11 +192,18 @@ Instance admins see every organization's metadata, never its content. They creat
 
 Only instance admins reset a user's two-factor authentication, with `POST instance/users/{user}/reset-2fa`. There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
 
-`GET orgs/{org}/providers` needs `org.view` and lists every provider Kaeso calls, the same in every organization. Each has its id and name, the page where you create its keys (`key_page`), how its keys start (`key_prefix`, `null` without a fixed prefix) and the formats Kaeso calls it with, the default first. [Supported providers](../concepts/supported-providers.md) shows the same list as a table.
+`GET orgs/{org}/providers` needs `org.view` and lists every provider Kaeso calls, the same in every organization. Each provider has:
+
+- its id and name;
+- the page where you create its keys (`key_page`);
+- how its keys start (`key_prefix`, `null` without a fixed prefix);
+- the formats Kaeso calls it with, the default first.
+
+[Supported providers](../concepts/supported-providers.md) shows the same list as a table.
 
 ## Roles and rights
 
-Every organization member has one organization role. Every project member and service account has one project role. A role is built in or a custom role of the organization (`role_…`), and rights can be added to or removed from it per member. An organization role also holds rights in every project. [Rights](../concepts/rights.md) lists every right and built-in role.
+Every organization member has one organization role, and every project member and service account has one project role. A role is built in or a custom role of the organization (`role_…`), and you can add rights to it or remove rights from it per member. An organization role also holds rights in every project. [Rights](../concepts/rights.md) lists every right and built-in role.
 
 | Route | Right | Answers with |
 | --- | --- | --- |
@@ -233,18 +247,23 @@ The console's [Playground](../console/playground.md) sends requests to the proje
 The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` and `stream`, which must be `true`. With a [session](automation.md#use-a-session-instead):
 
 ```bash
-curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/playground/responses \
+project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…
+curl -N "$project/playground/responses" \
   -b "$JAR" \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways.", "stream": true}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "input": "Write a haiku about gateways.",
+    "stream": true
+  }'
 ```
 
 A Playground request is a model request like any other, made by the member without a key:
 
 - **Same path.** The model resolves in the project's catalogue, aliases and `provider/model` included, and must be within the member's model access. Kaeso uses the project's provider key, and closing the stream cancels the provider's request.
 - **Limits.** The member's and the project's rates and budgets apply. Key limits don't, as there is no key.
-- **Usage and logs.** The request is charged to the project as the member's, and usage by `key` shows it as `playground`. Its log entry has the source `playground` and holds its content when the project logs content. `logs` and `logs/export` filter with `source=api` or `source=playground`.
+- **Usage and logs.** Kaeso charges the request to the project as the member's, and usage by `key` shows it as `playground`. Its log entry has the source `playground` and holds its content when the project logs content. `logs` and `logs/export` filter with `source=api` or `source=playground`.
 
 Errors before the stream starts are Platform API errors:
 

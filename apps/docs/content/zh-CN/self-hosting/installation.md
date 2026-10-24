@@ -11,7 +11,8 @@ order: 3
 快速开始下载的是最新稳定版本的 `compose.yaml`。要安装其他版本，从该版本的标签下载此文件：
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
 ```
 
 每个版本还附带两个示例文件：[`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) 包含 `.env` 的常用变量，[`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) 包含网关的每项设置。
@@ -23,13 +24,15 @@ curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v{{version}}/
 curl 和 SDK 不信任 Caddy 的本地证书颁发机构。从容器中复制出它的根证书：
 
 ```bash
-docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
+docker compose cp \
+  caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
 ```
 
 然后把证书交给调用 Kaeso 的客户端：
 
 ```bash tab="curl"
-curl --cacert caddy-root.crt https://localhost/v1/models -H "Authorization: Bearer $KAESO_API_KEY"
+curl --cacert caddy-root.crt https://localhost/v1/models \
+  -H "Authorization: Bearer $KAESO_API_KEY"
 ```
 
 ```bash tab="Python"

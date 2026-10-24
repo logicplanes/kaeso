@@ -46,6 +46,7 @@ function plainText(xs: Inline[]): string {
 const LIST_SEPARATOR: Record<Locale, string> = { en: ", ", de: ", ", "zh-CN": "、" };
 const SHORT_COLUMN = 20;
 const MANY_COLUMNS = 5;
+const NARROW_CELLS = 4;
 const LONG_HEADER = 24;
 const WHOLE_CODE = 16;
 const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
@@ -60,7 +61,7 @@ function shortColumns(rows: Inline[][][], columns: number): boolean[] {
   return Array.from({ length: columns }, (_, j) => rows.every((row) => width(plainText(row[j] ?? [])) <= SHORT_COLUMN));
 }
 
-const SOFT_BREAK = /(?<=\S[./_:,({[@=-]+)(?=[^\s./_:,(){}[\]@=-])/;
+const SOFT_BREAK = /(?<=\S[./_:,({[@=-]+)(?=[^\s./_:,(){}[\]@=-])|(?<=[a-z\d])(?=[A-Z][a-z])/;
 const CJK_LIST_PUNCTUATION = /[、，；：]$/;
 
 function codeText(v: string): ReactNode[] {
@@ -173,7 +174,7 @@ function CodeGroup({ tabs }: { tabs: CodeTab[] }) {
     const moved = el.getBoundingClientRect().top - before;
     if (moved !== 0) scrollParent(el)?.scrollBy(0, moved);
   };
-  return <CodeBlock ref={ref} tabs={tabs} tab={chosen} onTabChange={choose} collapseAfter={0} />;
+  return <CodeBlock ref={ref} tabs={tabs} tab={chosen} onTabChange={choose} collapseAfter={0} wrap="phone" />;
 }
 
 function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
@@ -323,7 +324,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
     case "codegroup":
       return <CodeGroup key={i} tabs={b.tabs} />;
     case "code":
-      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} {...(b.title ? { title: b.title } : {})} />;
+      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} wrap={b.wrap ?? "phone"} {...(b.title ? { title: b.title } : {})} />;
     case "quote":
       return (
         <blockquote key={i} className="flex gap-16">
@@ -348,7 +349,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       return (
         <Fragment key={i}>
           <ScrollArea orientation="horizontal" aria-label={label} {...(stacked ? { className: "max-sm:hidden" } : {})}>
-            <Table>
+            <Table density={b.head.length >= MANY_COLUMNS ? "compact" : "default"}>
               <Table.Head>
                 <Table.Row>
                   {b.head.map((c, j) => (
@@ -365,7 +366,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
                       <Table.Cell
                         key={j}
                         align={b.align[j] ?? "start"}
-                        className={`align-top ${short[j] ? "whitespace-nowrap" : b.head.length >= MANY_COLUMNS ? "min-w-120" : "min-w-140"}`}
+                        className={`align-top ${short[j] ? "whitespace-nowrap" : b.head.length >= NARROW_CELLS ? "min-w-120" : "min-w-140"}`}
                       >
                         {inline(c, cell)}
                       </Table.Cell>

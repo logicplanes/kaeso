@@ -7,6 +7,7 @@ export interface Redirect {
   from: string;
   to: string;
   title: string;
+  below?: true;
 }
 
 interface Redirects {
@@ -21,6 +22,26 @@ export const redirectsFileOf = (contentDir: string) => join(dirname(resolve(cont
 export const noRedirects = (): Record<Locale, Redirect[]> => ({ en: [], de: [], "zh-CN": [] });
 
 const ADDRESS = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+
+function outside(from: string, target: string, shown: string, sites: Record<Locale, Site>, byLocale: Record<Locale, Redirect[]>, problems: string[]) {
+  let url: URL;
+  try {
+    url = new URL(target);
+  } catch {
+    problems.push(`${shown}: ${from} points to ${target}, which is not an address`);
+    return;
+  }
+  for (const locale of LOCALES) {
+    const path = `${localePrefix(locale)}/${from}`;
+    const clash = sites[locale].pages.find((p) => p.path === path);
+    if (clash) {
+      problems.push(`${shown}: ${from} is the address of ${clash.rel}; remove the page or the redirect`);
+      continue;
+    }
+    const to = `${url.origin}${localePrefix(locale)}${url.pathname}`;
+    byLocale[locale].push({ from: path, to, title: to.replace(/^https:\/\//, ""), below: true });
+  }
+}
 
 function readEntries(file: string, shown: string): { entries: [string, string][]; problems: string[] } {
   if (!existsSync(file)) return { entries: [], problems: [] };
@@ -47,6 +68,10 @@ export function buildRedirects(file: string, shown: string, sites: Record<Locale
   for (const [from, target] of entries) {
     if (!ADDRESS.test(from)) {
       problems.push(`${shown}: "${from}" is not an address within a language, such as guides/old-keys`);
+      continue;
+    }
+    if (target.startsWith("https://")) {
+      outside(from, target, shown, sites, byLocale, problems);
       continue;
     }
     const [local = "", anchor] = target.split("#");

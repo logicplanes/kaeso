@@ -19,10 +19,16 @@ curl -i https://kaeso.example.com/v1/responses \
 import os
 from openai import APIStatusError, OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
-    client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
+    client.responses.create(
+        model="gpt-9",
+        input="Write a haiku about gateways.",
+    )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
     print(error.message)
@@ -31,10 +37,16 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
-  await client.responses.create({ model: "gpt-9", input: "Write a haiku about gateways." });
+  await client.responses.create({
+    model: "gpt-9",
+    input: "Write a haiku about gateways.",
+  });
 } catch (error) {
   if (!(error instanceof OpenAI.APIError)) throw error;
   console.log(error.status, error.headers?.get("kaeso-request-id"));
@@ -81,20 +93,31 @@ curl -i https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "gpt-9", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "gpt-9",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic, APIStatusError
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
     client.messages.create(
         model="gpt-9",
         max_tokens=1024,
-        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+        messages=[
+            {"role": "user", "content": "Write a haiku about gateways."}
+        ],
     )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
@@ -104,7 +127,10 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
   await client.messages.create({
@@ -182,7 +208,7 @@ try {
 
 ## 服务商错误
 
-当应用和服务商使用相同格式时，Kaeso 会连同状态码原样转发服务商的错误，除非服务商拒绝了项目的服务商密钥。Anthropic 错误还会在 `request_id` 中带上 Kaeso 的 ID。在每个错误中，包括流式错误和为其他格式改写的错误，看起来像密钥或账户、用户、项目、组织 ID 的内容都会替换为 `[redacted]`。
+当应用和服务商使用相同格式时，Kaeso 会连同状态码原样转发服务商的错误，除非服务商拒绝了项目的服务商密钥。Anthropic 错误还会在 `request_id` 中带上 Kaeso 的 ID。在每个错误中，Kaeso 都会把看起来像密钥或账户、用户、项目、组织 ID 的内容替换为 `[redacted]`。流式错误和为其他格式改写的错误也是如此。
 
 否则，Kaeso 会以应用所用的格式写出错误，并保持其原意：
 
@@ -194,12 +220,16 @@ try {
 | 过载 | Anthropic 格式为 529，OpenAI 格式为 503 |
 | 返回其他服务器错误 | 其自身的 5xx 状态码 |
 
-被拒绝的服务商密钥是安装的问题，而不是应用的问题：服务商的 401、402 或 403 会让 SDK 报告 Kaeso 密钥错误，而且其消息可能包含服务商密钥的片段或服务商的组织 ID。因此，应用会收到一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。组织管理员可在**服务商**下检查该密钥。
+被拒绝的服务商密钥是安装的问题，而不是应用的问题。服务商的 401、402 或 403 会让 SDK 报告 Kaeso 密钥错误。服务商的消息还可能包含服务商密钥的片段或服务商的组织 ID。
+
+因此，应用收到的是一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。组织管理员可在**服务商**下检查该密钥。
 
 请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
 
 ### 服务商不提供的模型
 
-当服务商对目录中的某个模型返回 404 时，Kaeso 会询问服务商是否仍向项目的服务商密钥提供该模型。如果不再提供，应用会收到 404，消息会指出服务商和模型。目录随后会将该模型显示为**不可用**（[可用性](../console/models-and-aliases.md#可用性)），除非项目的服务商密钥在请求期间发生了变更。此后，Kaeso 会直接以同样的 404 答复对该模型的后续请求，而不调用服务商，每五分钟仅放行一个请求。第一次答复和之后的每次答复都带有同一条消息，请求日志中也是如此。
+当服务商对目录中的某个模型返回 404 时，Kaeso 会询问服务商是否仍向项目的服务商密钥提供该模型。如果不再提供，应用会收到 404，消息会指出服务商和模型。
+
+目录随后会将该模型显示为**不可用**（[可用性](../console/models-and-aliases.md#可用性)），除非项目的服务商密钥在请求期间发生了变更。此后，Kaeso 会直接以同样的 404 答复对该模型的后续请求，而不调用服务商，每五分钟仅放行一个请求。第一次答复和之后的每次答复都带有同一条消息，请求日志中也是如此。
 
 如果服务商仍列出该模型，应用会收到服务商原样发送的 404：它涉及的是其他内容，例如文件 ID。如果服务商无法给出答复，例如没有模型列表或列表请求失败，应用同样会收到服务商原样发送的 404。这两种情况下，目录都保持不变。

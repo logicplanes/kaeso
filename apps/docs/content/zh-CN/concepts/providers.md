@@ -12,24 +12,39 @@ Kaeso 可以调用众多服务商的模型，应用通过已在使用的 SDK 即
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "llama-3.3-70b-versatile",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 for model in ["claude-haiku-4-5", "llama-3.3-70b-versatile"]:
     completion = client.chat.completions.create(
         model=model,
-        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+        messages=[
+            {"role": "user", "content": "Write a haiku about gateways."}
+        ],
     )
     print(completion.choices[0].message.content)
 ```
@@ -37,7 +52,10 @@ for model in ["claude-haiku-4-5", "llama-3.3-70b-versatile"]:
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 for (const model of ["claude-haiku-4-5", "llama-3.3-70b-versatile"]) {
   const completion = await client.chat.completions.create({
@@ -73,7 +91,7 @@ flowchart TD
 每种聊天格式都能调用每个聊天模型，但各服务商提供的功能并不相同。[支持的服务商](supported-providers.md)中的**格式**列说明了每个服务商提供什么：
 
 - **格式。** Kaeso 以服务商支持的格式调用它，例如 Anthropic 用 Messages。应用的格式与之不同时，如果某个字段无法用服务商的格式表达，Kaeso 会拒绝请求，并在错误中注明该字段，绝不会悄悄丢弃它（[Kaeso 拒绝的内容](format-translation.md#kaeso-拒绝的内容)）。
-- **服务商拒绝的字段。** 使用 Chat Completions 的服务商并非都支持该格式的全部字段，Kaeso 了解每个服务商的差异。只是写法不同的字段，Kaeso 会改名发送，例如把 `seed` 改为 Mistral 的 `random_seed`。服务商不接受的字段，Kaeso 会在发送任何内容之前拒绝，并以应用的格式返回 400：“`logit_bias` is not supported by Mistral; remove it from the request.”各服务商的差异见 [Chat Completions 参考](../development/kpp/openai-chat.md#服务商配置)。
+- **服务商拒绝的字段。** 使用 Chat Completions 的服务商并非都支持该格式的全部字段，Kaeso 了解每个服务商的差异。只是写法不同的字段，Kaeso 会改名发送，例如把 `seed` 改为 Mistral 的 `random_seed`。服务商不接受的字段，Kaeso 会在发送任何内容之前拒绝。应用会收到以其自身格式返回的 400：“`logit_bias` is not supported by Mistral; remove it from the request.”各服务商的差异见 [Chat Completions 参考](../development/kpp/openai-chat-providers.md#服务商配置)。
 - **Token 计数。** `/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 会请模型所属的服务商计算 Token 数，而只有格式中包含 Token 计数的服务商才能提供。对于其他模型，Kaeso 不会估算 Token 数，而是返回 400：“The model `…` cannot count tokens.”
 - **嵌入。** 只有格式中包含 Embeddings 的服务商才提供嵌入模型，由 `/v1/embeddings` 调用。聊天格式不能调用嵌入模型，聊天模型也不生成嵌入。
 - **模型 ID。** 每个服务商都按自己的方式命名模型。有些 ID 包含 `/`，例如 Together AI 的 `Qwen/Qwen3.5-9B`，以及注明模型开发者的 OpenRouter 的 `anthropic/claude-sonnet-4.5`。

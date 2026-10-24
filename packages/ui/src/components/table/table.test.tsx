@@ -46,4 +46,28 @@ describe("Table", () => {
     expect(long).not.toHaveClass("whitespace-nowrap");
     expect(long).toHaveClass("py-8", "align-bottom", "h-36");
   });
+
+  it("puts 12px between columns, or 8px in a compact table", () => {
+    const table = (density?: "compact") => (
+      <Table density={density}>
+        <Table.Head>
+          <Table.Row>
+            <Table.HeaderCell>Variable</Table.HeaderCell>
+          </Table.Row>
+        </Table.Head>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>KAESO_LISTEN</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>
+    );
+    const { rerender } = render(table());
+    expect(screen.getByRole("columnheader")).toHaveClass("px-12", "first:pl-0");
+    expect(screen.getByRole("cell")).toHaveClass("px-12", "first:pl-0");
+    rerender(table("compact"));
+    expect(screen.getByRole("columnheader")).toHaveClass("px-8", "first:pl-0");
+    expect(screen.getByRole("cell")).toHaveClass("px-8", "first:pl-0");
+    expect(screen.getByRole("cell")).not.toHaveClass("px-12");
+  });
 });

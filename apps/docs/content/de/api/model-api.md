@@ -12,14 +12,22 @@ Mit dem OpenAI SDK beantwortet Claude diese Chat-Completions-Anfrage:
 curl https://kaeso.example.com/v1/chat/completions \
   -H "Authorization: Bearer $KAESO_API_KEY" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 completion = client.chat.completions.create(
     model="claude-haiku-4-5",
@@ -31,7 +39,10 @@ print(completion.choices[0].message.content)
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const completion = await client.chat.completions.create({
   model: "claude-haiku-4-5",
@@ -47,14 +58,23 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 200, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 200,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 message = client.messages.create(
     model="claude-haiku-4-5",
@@ -67,14 +87,19 @@ print(message.content[0].text)
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 const message = await client.messages.create({
   model: "claude-haiku-4-5",
   max_tokens: 200,
   messages: [{ role: "user", content: "Write a haiku about gateways." }],
 });
-for (const block of message.content) if (block.type === "text") console.log(block.text);
+for (const block of message.content) {
+  if (block.type === "text") console.log(block.text);
+}
 ```
 
 | SDK | Basis-URL | Sendet den Schlüssel als |
@@ -135,7 +160,7 @@ Eine Anfrage benennt ein Modell in einer von drei Formen. Kaeso sucht im Katalog
 | Anbieter und Modell | `anthropic/claude-haiku-4-5` |
 | Die eigene ID des Modells | `claude-haiku-4-5` |
 
-Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf, mit derselben Meldung, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
+Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf. Beide erhalten dieselbe Meldung, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
 
 ## Streaming
 
@@ -147,7 +172,7 @@ Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`
 
 ## Reasoning über Tool-Aufrufe hinweg
 
-Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning vor jedem Tool-Aufruf und fügt es in der nächsten Runde der App wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
+Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning des Modells vor jedem Tool-Aufruf. In der nächsten Runde der App fügt Kaeso das Reasoning wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
 
 ## Antwort-Header
 

@@ -32,7 +32,15 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 
 德语通常比英语长约三分之一。布局必须容纳得下：标签不被截断，描述仍放在一行内，按钮保持宽度，表格不溢出。中文更短，但需要完整的行高；绝不能把它缩小。德语保留 Token、Playground 和 Budget 等约定俗成的术语，而不是为它们另造德语词。
 
-以下内容从不翻译：产品和服务商名称（Kaeso、OpenAI、Anthropic、models.dev）、模型 ID、各类 ID 和密钥前缀、代码、设置（`KAESO_*`）、路径、字段名、权限（`keys.all.view`）、HTTP 方法和状态码、由库格式化的单位，以及人名和组织名称。
+以下内容从不翻译：
+
+- 产品和服务商名称（Kaeso、OpenAI、Anthropic、models.dev）
+- 模型 ID、各类 ID 和密钥前缀
+- 代码、设置（`KAESO_*`）、路径和字段名
+- 权限（`keys.all.view`）
+- HTTP 方法和状态码
+- 由库格式化的单位
+- 人名和组织名称
 
 ## 术语表
 
@@ -127,10 +135,16 @@ import { tRich } from "~/i18n/rich";
 <Button>{t("keys.create", "Create key")}</Button>;
 toast.success(t("keys.revoked", "{name} revoked", { name: key.name }));
 t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
-tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
+tRich("signIn.newHere", "New here? {link}", {
+  link: (
+    <Link href="/sign-up">
+      {t("signIn.createAccount", "Create an account")}
+    </Link>
+  ),
+});
 ```
 
-- **`t(key, english, values?)`** 返回一个字符串。在渲染时或需要文本时（提示消息、标题）调用它，从不在模块顶层调用：导入时计算出的常量会停留在页面启动时的语言。标签表格要写成函数（`() => t(…)`），或者在组件内部构建。
+- **`t(key, english, values?)`** 返回一个字符串。在渲染时或需要文本时（提示消息、标题）调用它，从不在模块顶层调用。导入时计算出的常量会停留在页面启动时的语言。标签表格要写成函数（`() => t(…)`），或者在组件内部构建。
 - **键和英语原文都是字符串字面量**，并排书写。键的形式是 camelCase 的 `<area>.<words>`，例如 `org.members.invite` 或 `logs.inspector.overview`。其第一部分指明文案目录文件（`src/i18n/locales/<locale>/<area>.json`）：`common`、`shell`、`auth`、`errors`、`rights`、`format`、`kaeso`、`signIn`、`public`、`account`、`org`、`orgHome`、`instance`、`project`、`keys`、`limits`、`logs`、`models`、`playground`。键表示文本的含义，而不是它所在的位置；一个键始终只对应一种英语原文，含义改变时就用新键。
 - **共用词语**位于 `common`（`src/i18n/common.ts` 列出了它们）：Cancel、Save、Delete、Continue、Name、Email、Never 等。调用对应的函数，例如 `common.cancel()`，或使用 `t("common.cancel", "Cancel")`，英语原文必须完全一致。在其所在位置含义不同的词使用自己的键。
 - **只用完整的句子。** 从不拼接片段（`"Joined " + date`、`` `${n} keys` ``），因为各语言的语序不同。值放入占位符（`{name}`）；决定词形的数字通过 `plural`（`one`、`other`、`=0`；德语有相同的形式，中文只有 `other`）；变体通过 `select`。数字、金额和日期在传入之前先用 `@logicplanes/kaeso-ui/format` 格式化；这些格式化函数会跟随语言。
@@ -139,7 +153,9 @@ tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("si
 
 ### 网关写入的内容
 
-网关的错误消息、权限目录中的名称、描述和类别，以及内置角色的名称和描述，都以英语送达。API 客户端会在应答到达时翻译它认识的内容（`src/api/`，键为 `errors.*` 和 `rights.*`），按 ID 匹配权限和角色，按英语原文及其值匹配消息；它不认识的内容按网关的原文显示。切换语言会重新加载数据。当网关写出的消息在 `src/api/gateway-errors.ts` 中没有对应规则时，`crates/kaeso-server/tests/error_copy.rs` 会失败，因此新消息要在同一个拉取请求中附上德语和中文。
+网关的错误消息、权限目录中的名称、描述和类别，以及内置角色的名称和描述，都以英语送达。API 客户端会在应答到达时翻译它认识的内容（`src/api/`，键为 `errors.*` 和 `rights.*`）。它按 ID 翻译权限和角色，按英语原文及其值翻译消息。它不认识的内容按网关的原文显示。
+
+切换语言会重新加载数据。当网关写出的消息在 `src/api/gateway-errors.ts` 中没有对应规则时，`crates/kaeso-server/tests/error_copy.rs` 会失败，因此新消息要在同一个拉取请求中附上德语和中文。
 
 ## UI 库
 
@@ -156,7 +172,14 @@ import { useUiText } from "../../i18n/context";
 export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
   const t = useUiText();
   const label = labelProp ?? t("copyButton.copy", "Copy");
-  return <Button shape="circle" icon={icons.copy} aria-label={label} onClick={() => copy(value)} />;
+  return (
+    <Button
+      shape="circle"
+      icon={icons.copy}
+      aria-label={label}
+      onClick={() => copy(value)}
+    />
+  );
 }
 ```
 
@@ -173,7 +196,12 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 ### 在应用中
 
 ```tsx
-import { LocaleProvider, loadUiMessages, resolveUiLocale, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
+import {
+  LocaleProvider,
+  loadUiMessages,
+  resolveUiLocale,
+  type UiMessages,
+} from "@logicplanes/kaeso-ui/i18n";
 
 const locale = resolveUiLocale(navigator.language);
 const messages: UiMessages = await loadUiMessages(locale);
@@ -200,7 +228,7 @@ root.render(
 
 ## 检查
 
-- `pnpm i18n --write` 根据源码写出控制台的 `src/i18n/locales/en/<area>.json`，这就是翻译人员的清单；`pnpm i18n` 检查每个键都有德语和中文且占位符相同，并且没有多余的条目；它还会拒绝仍是英语的译文（名称、代码、缩写以及“Top k”等少数术语除外）、德语中的“du”、中文中的“你”、直双引号，以及紧挨中文字符的半角标点。`pnpm test` 也会运行这项检查。
+- `pnpm i18n --write` 根据源码写出控制台的 `src/i18n/locales/en/<area>.json`，这就是翻译人员的清单；`pnpm i18n` 检查每个键都有德语和中文且占位符相同，并且没有多余的条目。它会拒绝仍是英语的译文，但名称、代码、缩写以及“Top k”等少数术语可以保留英语。它还会拒绝德语中的“du”、中文中的“你”、直双引号，以及紧挨中文字符的半角标点。`pnpm test` 也会运行这项检查。
 - UI 库的目录测试、展示站点的 `gen` 和文档站点的文案测试也会拒绝同样的问题：译文中残留的英语和非正式称呼。德语或中文邮件保留英语句子，或使用“du”或“Tokens”时，邮件 crate 的测试会失败。
 - `pnpm lint` 拒绝直接写在控制台中的文本：JSX 文本、文本属性（`label`、`title`、`description`、`placeholder`、`aria-label` 等）、对象的文本字段，以及以字面量写出的提示消息（规则 `kaeso/no-literal-text`）。
 - `apps/console/src/copy.test.ts` 按与英语相同的长度限制检查德语和中文的描述，并留有 15% 的余量。

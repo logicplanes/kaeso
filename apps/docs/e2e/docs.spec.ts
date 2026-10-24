@@ -36,7 +36,6 @@ test("every page is built with its own title, description and alternates", async
   const sitemap = await (await request.get("/sitemap.xml")).text();
   const english = [
     "/",
-    "/changelog",
     "/guides",
     "/guides/keys-and-limits",
     "/guides/provider-keys",
@@ -44,8 +43,6 @@ test("every page is built with its own title, description and alternates", async
     "/reference/platform-api",
     "/reference/platform-api/keys",
     "/reference/models",
-    "/changelog/1.1",
-    "/changelog/1.0",
   ];
   const locs = [...sitemap.matchAll(/<loc>https:\/\/docs\.kaeso\.app([^<]*)<\/loc>/g)].map((m) => m[1] || "/");
   expect(locs.filter((l) => !/^\/(de|zh-CN)(\/|$)/.test(l))).toEqual(english);
@@ -56,7 +53,7 @@ test("every page is built with its own title, description and alternates", async
 test("the build passes the site check: every page in the sitemap, with its alternates and link previews", () => {
   const docs = fileURLToPath(new URL("..", import.meta.url));
   const out = execFileSync("node", ["../../scripts/check-site.mjs", "dist-e2e", "https://docs.kaeso.app"], { cwd: docs, encoding: "utf8" });
-  expect(out).toMatch(/^site: 33 pages, all 33 in sitemap\.xml/);
+  expect(out).toMatch(/^site: 24 pages, all 24 in sitemap\.xml/);
 });
 
 test("a page names its language, its preview image and what it is", async ({ request }) => {
@@ -111,6 +108,18 @@ test("a link to a heading opens there on first load too", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 2, name: "Checklist" })).toBeInViewport();
 });
 
+test("the sidebar's changelog leads to kaeso.app in the page's language", async ({ page }) => {
+  for (const [path, name, href] of [
+    ["/", "Changelog", "https://kaeso.app/changelog"],
+    ["/de", "Änderungen", "https://kaeso.app/de/changelog"],
+    ["/zh-CN", "更新日志", "https://kaeso.app/zh-CN/changelog"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole("link", { name, exact: true })).toHaveAttribute("href", href);
+  }
+  await expect(page.locator('a[href$="/changelog"]:not([href^="https://kaeso.app"])')).toHaveCount(0);
+});
+
 test("previous and next follow the sidebar", async ({ page }) => {
   await page.goto("/guides/keys-and-limits");
   const steps = page.getByRole("navigation", { name: "Previous and next page" });
@@ -134,6 +143,7 @@ test("search finds pages and headings, and says when nothing matches", async ({ 
   await expect(input).toBeFocused();
   await input.fill("rate");
   await expect(page.getByRole("option", { name: /Rate limits/ })).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toContainText(/(Pages|On pages|Also mentioned on)\s*\d/);
   await page.getByRole("option", { name: /Rate limits/ }).click();
   await expect(page).toHaveURL("/guides/keys-and-limits#rate-limits");
   await expect(page.getByRole("heading", { level: 3, name: "Rate limits" })).toBeInViewport();
@@ -212,6 +222,19 @@ test("the theme switches and stays switched", async ({ page }) => {
 
 test.describe("on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+
+  test("code wraps to the screen instead of scrolling sideways, its wrapped parts indented", async ({ page }) => {
+    await page.goto("/guides/keys-and-limits");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const blocks = page.locator("article pre");
+    expect(await blocks.count()).toBeGreaterThan(0);
+    for (const pre of await blocks.all()) {
+      const region = pre.locator("xpath=..");
+      expect(await region.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+    }
+    const indent = await blocks.first().locator("code > span > span").first().evaluate((el) => getComputedStyle(el).textIndent);
+    expect(indent).toBe("-16px");
+  });
 
   test("the navigation is a sheet that closes when a page opens", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
