@@ -219,7 +219,9 @@ function linkTarget(href: string, ctx: Ctx): { kind: "page" | "anchor" | "extern
   return { kind: "file", href: target.ref };
 }
 
-function inline(tokens: Token[] | undefined, ctx: Ctx): Inline[] {
+const CELL_BREAK = /<br\s*\/?>/i;
+
+function inline(tokens: Token[] | undefined, ctx: Ctx, cell = false): Inline[] {
   const out: Inline[] = [];
   const text = (v: string) => {
     const last = out[out.length - 1];
@@ -230,7 +232,12 @@ function inline(tokens: Token[] | undefined, ctx: Ctx): Inline[] {
   for (const t of tokens ?? []) {
     switch (t.type) {
       case "text":
-        if ("tokens" in t && t.tokens?.length) add(inline(t.tokens, ctx));
+        if ("tokens" in t && t.tokens?.length) add(inline(t.tokens, ctx, cell));
+        else if (cell)
+          (t as Tokens.Text).text.split(CELL_BREAK).forEach((part, i) => {
+            if (i > 0) out.push({ t: "br" });
+            text(part);
+          });
         else text((t as Tokens.Text).text);
         break;
       case "escape":
@@ -399,8 +406,8 @@ function blocks(tokens: Token[], ctx: Ctx, state: { headings: Heading[]; next: n
         out.push({
           t: "table",
           align: table.align.map((a) => (a === "right" ? "end" : "start")),
-          head: table.header.map((c) => inline(c.tokens, ctx)),
-          rows: table.rows.map((row) => row.map((c) => inline(c.tokens, ctx))),
+          head: table.header.map((c) => inline(c.tokens, ctx, true)),
+          rows: table.rows.map((row) => row.map((c) => inline(c.tokens, ctx, true))),
         });
         break;
       }

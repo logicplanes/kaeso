@@ -230,6 +230,26 @@ describe("diagrams", () => {
   });
 });
 
+describe("line breaks in table cells", () => {
+  it("turns <br> in a table cell into a line break, and leaves it as text in prose", () => {
+    const resolver: Resolver = { anchors: new Set(), resolve: () => ({ kind: "page", href: "/" }) };
+    const out = compile(
+      lex("| Name | Sets |\n| --- | --- |\n| `KAESO_LISTEN`<br>`listen` | The address<br/>for apps |\n\nA <br> in prose.\n", { offset: 0 }),
+      resolver,
+    );
+    expect(out.blocks[0]).toMatchObject({
+      t: "table",
+      rows: [
+        [
+          [{ t: "code", v: "KAESO_LISTEN" }, { t: "br" }, { t: "code", v: "listen" }],
+          [{ t: "text", v: "The address" }, { t: "br" }, { t: "text", v: "for apps" }],
+        ],
+      ],
+    });
+    expect(out.blocks[1]).toEqual({ t: "paragraph", c: [{ t: "text", v: "A <br> in prose." }] });
+  });
+});
+
 describe("fenceInfo and safeExternal", () => {
   it("maps languages to the highlighted ones, the rest to text", () => {
     expect(fenceInfo("sh")).toEqual({ lang: "bash" });

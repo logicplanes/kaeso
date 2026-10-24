@@ -269,6 +269,33 @@ describe("Markdown", () => {
     expect(three?.querySelector("td:nth-child(2)")).toHaveClass("px-12", "min-w-140");
   });
 
+  it("keeps names whole in a cell broken over lines, unless one is too long to fit beside the rest", () => {
+    const code = (v: string): Inline => ({ t: "code", v });
+    const text = (v: string): Inline => ({ t: "text", v });
+    const container = draw([
+      {
+        t: "table",
+        align: ["start", "start", "start"],
+        head: [[text("Name")], [text("Type")], [text("Sets")]],
+        rows: [
+          [[code("KAESO_SERVER_MAX_CONNECTIONS"), { t: "br" }, code("server.max_connections")], [text("text")], [text("How often")]],
+          [
+            [code("KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS"), { t: "br" }, code("instance.max_metadata_retention_days")],
+            [text("integer")],
+            [text("Longest")],
+          ],
+          [[code("streams.keepalive_interval")], [text("text")], [text("How often")]],
+        ],
+      },
+    ]);
+    const cells = [...container.querySelectorAll("table td:first-child")];
+    const codes = (i: number) => [...(cells[i]?.querySelectorAll("code") ?? [])];
+    expect(cells[0]?.querySelector("br")).not.toBeNull();
+    expect(codes(0).every((c) => c.classList.contains("whitespace-nowrap") && !c.querySelector("wbr"))).toBe(true);
+    expect(codes(1).every((c) => c.querySelector("wbr"))).toBe(true);
+    expect(codes(2)[0]?.querySelector("wbr")).not.toBeNull();
+  });
+
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {
     render(
       <TextProvider locale="zh-CN">

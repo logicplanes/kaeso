@@ -28,6 +28,7 @@ interface Ctx {
   t: Translate;
   locale: Locale;
   cell?: boolean;
+  whole?: boolean;
   linkless?: boolean;
 }
 
@@ -49,6 +50,7 @@ const MANY_COLUMNS = 5;
 const NARROW_CELLS = 4;
 const LONG_HEADER = 24;
 const WHOLE_CODE = 16;
+const WHOLE_NAME = 30;
 const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
 
 function width(s: string): number {
@@ -94,7 +96,7 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
       case "del":
         return <del key={i}>{inline(x.c, ctx)}</del>;
       case "code":
-        return x.v.length <= WHOLE_CODE ? (
+        return x.v.length <= (ctx.whole ? WHOLE_NAME : WHOLE_CODE) ? (
           <Code key={i} shape="rounded" flow={ctx.cell ? "cell" : "text"} className="whitespace-nowrap">
             {x.v}
           </Code>
@@ -368,7 +370,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
                         align={b.align[j] ?? "start"}
                         className={`align-top ${short[j] ? "whitespace-nowrap" : b.head.length >= NARROW_CELLS ? "min-w-120" : "min-w-140"}`}
                       >
-                        {inline(c, cell)}
+                        {inline(c, c.some((x) => x.t === "br") ? { ...cell, whole: true } : cell)}
                       </Table.Cell>
                     ))}
                   </Table.Row>
