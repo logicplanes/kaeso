@@ -82,19 +82,31 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       if (Math.abs(x - Number(move[1])) > 0.5) label.setAttribute("transform", `translate(${x}, ${move[2]})`);
     }
   };
-  const corner = (svg: SVGSVGElement) => {
+  const corner = (svg: SVGSVGElement, ground: string) => {
     for (const cluster of svg.querySelectorAll("g.cluster")) {
       const frame = cluster.querySelector(":scope > rect") as SVGRectElement | null;
       const label = cluster.querySelector(":scope > g.cluster-label") as SVGGElement | null;
       if (!frame || !label) continue;
       const box = frame.getBBox();
       const inner = label.getBBox();
+      const mask = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      for (const [name, value] of Object.entries({ x: inner.x - 4, y: inner.y - 1, width: inner.width + 8, height: inner.height + 2, rx: 4 }))
+        mask.setAttribute(name, String(value));
+      mask.setAttribute("style", `fill:${ground};stroke:none`);
+      label.prepend(mask);
       label.setAttribute("transform", `translate(${box.x + 12 - inner.x}, ${box.y + 8 - inner.y})`);
+      const top = svg.querySelector(":scope > g") as SVGGElement | null;
+      const from = top?.getCTM();
+      const to = label.getCTM();
+      if (!top || !from || !to) continue;
+      const m = from.inverse().multiply(to);
+      label.setAttribute("transform", `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`);
+      top.append(label);
     }
   };
-  const flatten = (svg: SVGSVGElement) => {
+  const flatten = (svg: SVGSVGElement, ground: string) => {
     centre(svg);
-    corner(svg);
+    corner(svg, ground);
     const plan: [Element, Record<string, string> | null][] = [];
     for (const el of [svg, ...svg.querySelectorAll("*")]) {
       const tag = el.tagName;
@@ -112,7 +124,11 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       const attrs: Record<string, string> = {};
       for (const name of names) {
         const value = cs.getPropertyValue(name);
-        if (name === "stroke-dasharray" && value.split(",").filter((v) => Number.parseFloat(v) > 0).length < 2) continue;
+        if (name === "stroke-dasharray") {
+          const lengths = value.split(/[\s,]+/).map(Number.parseFloat);
+          const gaps = lengths.length === 1 ? lengths : lengths.filter((_, i) => i % 2 === 1);
+          if (!gaps.some((gap) => gap > 0)) continue;
+        }
         if (!value || (parent ? parent.getPropertyValue(name) === value : DEFAULTS[name] === value)) continue;
         attrs[name] = value;
       }
@@ -176,7 +192,7 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
         host.innerHTML = markup;
         const root = host.querySelector("svg");
         if (!root) throw new Error("mermaid drew nothing");
-        flatten(root);
+        flatten(root, String((configs[theme].themeVariables as Record<string, unknown> | undefined)?.background ?? "none"));
         svg[theme] = new XMLSerializer().serializeToString(root);
         host.remove();
       } catch (error) {

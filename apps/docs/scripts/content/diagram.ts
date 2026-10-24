@@ -9,7 +9,7 @@ export type DiagramTheme = (typeof DIAGRAM_THEMES)[number];
 export const DIAGRAM_LANG = "mermaid";
 export const DIAGRAM_ROLES: readonly string[] = ["accent", "outside"];
 export const DIAGRAM_COMMAND = "pnpm --filter kaeso-docs diagrams";
-const REVISION = 4;
+const REVISION = 6;
 
 export interface DiagramText {
   title?: string;
@@ -62,13 +62,13 @@ export function mermaidConfig(theme: DiagramTheme): Record<string, unknown> {
   const small = 12;
   const shapes = (selector: string) => ["rect", "path", "polygon", "circle", "ellipse"].map((s) => `${selector} ${s}`).join(",");
   const css = [
-    `${shapes(".node.accent")}{fill:${ink};stroke:${ink};}`,
-    `.node.accent text,.node.accent tspan{fill:${onInk};font-weight:600;}`,
-    `${shapes(".node.outside")}{fill:${ground};stroke:${ring};stroke-dasharray:4 3;}`,
-    `.node.outside text,.node.outside tspan{fill:${secondary};}`,
+    `${shapes(".node.accent")}{fill:${ink} !important;stroke:${ink} !important;}`,
+    `.node.accent text,.node.accent tspan{fill:${onInk} !important;font-weight:600;}`,
+    `${shapes(".node.outside")}{fill:${ground} !important;stroke:${ring} !important;stroke-dasharray:4 3;}`,
+    `.node.outside text,.node.outside tspan{fill:${secondary} !important;}`,
     `.edgeLabel text,.edgeLabel tspan,.edgeLabels text,.edgeLabels tspan{fill:${secondary};font-size:${small}px;font-weight:500 !important;}`,
     `.edgeLabel rect,.edgeLabel .label rect,.edgeLabels rect,.labelBkg{fill:${ground} !important;opacity:1 !important;}`,
-    `.cluster rect{fill:none;stroke:${ring};stroke-dasharray:4 4;}`,
+    `.cluster>rect{fill:none;stroke:${ring};stroke-dasharray:4 4;}`,
     `.cluster-label text,.cluster-label tspan,.cluster text{fill:${secondary};font-size:${small}px;font-weight:500;}`,
     `.messageText{fill:${text};}`,
     `.sequenceNumber{fill:${onInk};font-size:11px;font-weight:600;}`,
@@ -98,6 +98,7 @@ export function mermaidConfig(theme: DiagramTheme): Record<string, unknown> {
       nodeSpacing: 40,
       rankSpacing: 48,
       diagramPadding: 4,
+      subGraphTitleMargin: { top: 4, bottom: 12 },
     },
     sequence: {
       useMaxWidth: false,

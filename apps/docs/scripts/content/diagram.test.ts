@@ -93,8 +93,8 @@ describe("the look", () => {
     for (const theme of ["light", "dark"] as const) {
       const css = mermaidConfig(theme).themeCSS as string;
       expect(css).toContain(`.node.accent rect`);
-      expect(css).toContain(`fill:${neutral.ink[theme]};stroke:${neutral.ink[theme]}`);
-      expect(css).toContain(`.node.accent text,.node.accent tspan{fill:${neutral["on-ink"][theme]}`);
+      expect(css).toContain(`fill:${neutral.ink[theme]} !important;stroke:${neutral.ink[theme]} !important`);
+      expect(css).toContain(`.node.accent text,.node.accent tspan{fill:${neutral["on-ink"][theme]} !important`);
       expect(css).toMatch(/\.node\.outside rect[^{]*\{[^}]*stroke-dasharray:4 3/);
     }
   });
