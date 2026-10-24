@@ -3,6 +3,7 @@ import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { cn } from "../../utils/cn.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
+import { INDENT, dropIndent } from "./indent.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 
@@ -34,18 +35,6 @@ export interface CodeBlockProps {
   copy?: boolean | undefined;
   wrap?: boolean | "phone" | undefined;
   className?: string | undefined;
-}
-
-const INDENT = /^[ \t]+/;
-
-function dropIndent(tokens: CodeToken[], n: number): CodeToken[] {
-  let left = n;
-  return tokens.flatMap((t) => {
-    if (left === 0) return [t];
-    const cut = Math.min(left, t.content.length);
-    left -= cut;
-    return cut === t.content.length ? [] : [{ ...t, content: t.content.slice(cut) }];
-  });
 }
 
 export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function CodeBlock(
