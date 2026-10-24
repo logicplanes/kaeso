@@ -12,6 +12,7 @@ KPP，即 Kaeso Provider Protocol，是每个模型请求都要经过的规范�
 - [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
+- [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
@@ -131,7 +132,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `sampling.stop` | 语义 | OpenAI Chat Completions 最多接受四个；OpenAI Responses 没有该参数，返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `sampling.seed` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
 | `sampling.frequency_penalty`、`.presence_penalty` | 语义 | 仅限 OpenAI Chat Completions；其他目标返回 `Unsupported`（[采样参数](cross-format.md#采样参数)）。 |
-| `user` | 提示 | 用于滥用监控的最终用户 ID，从不改变输出。Chat 配置中没有最终用户字段的服务商收不到它，Chat 应用与 `safety_identifier` 一起发送的 `user` 也不会发送（[服务商配置](openai-chat.md#服务商配置)）。 |
+| `user` | 提示 | 用于滥用监控的最终用户 ID，从不改变输出。Chat 配置中没有最终用户字段的服务商收不到它，Chat 应用与 `safety_identifier` 一起发送的 `user` 也不会发送（[服务商配置](openai-chat-providers.md#服务商配置)）。 |
 | `stream` | 语义 | |
 | `extras.fields` | 语义 | 只写回来源方言；发往其他方言时返回 `Unsupported`，除非该字段在 [Extras 允许列表](cross-format.md#extras)中。 |
 | `extras.form` | 提示 | 用于呈现的形式标记，其他方言会忽略。 |

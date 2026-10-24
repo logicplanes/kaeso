@@ -67,7 +67,7 @@ Das Gateway teilt den Encodern außerdem mit, ob das Zielmodell Reasoning beherr
 
 Anfragen ohne Reasoning-Einstellungen, der Aufwand `none` und Modelle, die kein Reasoning beherrschen oder unbekannt sind, bekommen nie Reasoning eingeschaltet. Apps von OpenAI Chat, deren Format kein Reasoning zeigt, fordern keine Zusammenfassungen an.
 
-Anbieter, die Chat Completions bereitstellen, liefern lesbares Reasoning in einem eigenen Feld, etwa DeepSeeks `reasoning_content` oder Groqs `reasoning`, ohne dass eine Zusammenfassung angefordert wird. Ihr Chat-Profil nennt das Feld (`reasoning_fields`, [Anbieterprofile](openai-chat.md#anbieterprofile)), sodass das Reasoning zu einem KPP-Reasoning-Block wird: Apps von Anthropic Messages erhalten es als `thinking`-Block und Apps von Responses als Reasoning-Item mit Zusammenfassung, jeweils mit dem ursprünglichen Block in einem [Reasoning-Blob](#reasoning-blobs).
+Anbieter, die Chat Completions bereitstellen, liefern lesbares Reasoning in einem eigenen Feld, etwa DeepSeeks `reasoning_content` oder Groqs `reasoning`, ohne dass eine Zusammenfassung angefordert wird. Ihr Chat-Profil nennt das Feld (`reasoning_fields`, [Anbieterprofile](openai-chat-providers.md#anbieterprofile)), sodass das Reasoning zu einem KPP-Reasoning-Block wird: Apps von Anthropic Messages erhalten es als `thinking`-Block und Apps von Responses als Reasoning-Item mit Zusammenfassung, jeweils mit dem ursprünglichen Block in einem [Reasoning-Blob](#reasoning-blobs).
 
 ## Thinking und Sampling
 

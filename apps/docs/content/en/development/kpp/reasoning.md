@@ -67,7 +67,7 @@ The gateway also tells the encoders whether the target model reasons (`EgressCtx
 
 Requests without reasoning settings, the effort `none`, and models that don't reason or aren't known never get reasoning switched on. OpenAI Chat apps, whose format shows no reasoning, ask for no summaries.
 
-Providers that serve Chat Completions return readable reasoning in a field of their own, such as DeepSeek's `reasoning_content` or Groq's `reasoning`, without being asked for a summary. Their chat profile names the field (`reasoning_fields`, [provider profiles](openai-chat.md#provider-profiles)), so the reasoning becomes a KPP reasoning block: Anthropic Messages apps get it as a `thinking` block and Responses apps as a reasoning item with a summary, each with the original block in a [reasoning blob](#reasoning-blobs).
+Providers that serve Chat Completions return readable reasoning in a field of their own, such as DeepSeek's `reasoning_content` or Groq's `reasoning`, without being asked for a summary. Their chat profile names the field (`reasoning_fields`, [provider profiles](openai-chat-providers.md#provider-profiles)), so the reasoning becomes a KPP reasoning block: Anthropic Messages apps get it as a `thinking` block and Responses apps as a reasoning item with a summary, each with the original block in a [reasoning blob](#reasoning-blobs).
 
 ## Thinking and sampling
 

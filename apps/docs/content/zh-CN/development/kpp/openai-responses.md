@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: OpenAI Responses 格式的每个字段如何映射到 KPP，又如何映射回来。
-order: 6
+order: 7
 ---
 
 在这里查阅 OpenAI Responses 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。
@@ -351,5 +351,5 @@ order: 6
 | `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；`Provider::tool_namespaces` 为假（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
-| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat.md#spacex) 相同。 |
+| `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |
 | `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |

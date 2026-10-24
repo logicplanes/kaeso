@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: Wie jedes Feld des Formats OpenAI Embeddings auf KPP abgebildet wird und zurück.
-order: 7
+order: 8
 ---
 
 Schlagen Sie hier jedes Feld des Formats OpenAI Embeddings nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.

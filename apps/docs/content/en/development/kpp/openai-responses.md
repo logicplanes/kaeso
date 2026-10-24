@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: How every field of the OpenAI Responses format maps to KPP and back.
-order: 6
+order: 7
 ---
 
 Look up any field of the OpenAI Responses format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
@@ -351,5 +351,5 @@ Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-refer
 | `namespace` tools (request) | flattened to function tools | SpaceX refuses them with a 422 (`unknown variant namespace`); `Provider::tool_namespaces` is false ([tool namespaces](cross-format.md#tool-namespaces)). |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as above. |
 | `presence_penalty` (request) | extras | SpaceX ignores it and echoes `0.0`. |
-| `max_output_tokens` (request) | `sampling.max_output_tokens` | SpaceX applies it only to visible output, not to reasoning tokens (Responses reference), as for [Chat Completions](openai-chat.md#spacex). |
+| `max_output_tokens` (request) | `sampling.max_output_tokens` | SpaceX applies it only to visible output, not to reasoning tokens (Responses reference), as for [Chat Completions](openai-chat-providers.md#spacex). |
 | `{"error": "<message>"}` | `KppError` | See the error table above. |

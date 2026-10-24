@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: How every field of the OpenAI Embeddings format maps to KPP and back.
-order: 7
+order: 8
 ---
 
 Look up any field of the OpenAI Embeddings format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.

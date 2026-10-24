@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: OpenAI Embeddings 格式的每个字段如何映射到 KPP 以及如何映射回来。
-order: 7
+order: 8
 ---
 
 在这里查阅 OpenAI Embeddings 格式的任意字段：它在 KPP 中的位置，以及映射的来源。修改编解码器读写该字段的方式之前，先查看这里。

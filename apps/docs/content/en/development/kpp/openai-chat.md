@@ -10,6 +10,7 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 - **Codec:** `kaeso_codecs::openai_chat::OpenAiChat` (`crates/kaeso-codecs/src/openai_chat/`)
 - **Endpoints:** `POST /v1/chat/completions` (JSON and SSE), and the [models](#models) endpoints shared by every OpenAI codec
 - **Fixtures:** `crates/kaeso-codecs/fixtures/openai_chat/`
+- **Other providers:** [Chat Completions providers](openai-chat-providers.md) covers how the codec adapts to each provider that speaks this format
 
 **Sources.** The OpenAI OpenAPI spec at commit `e95c0fe615f45a19e8878af923a729948445a6bd` (schema names below), the [create reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create), the [streaming events reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/streaming-events) and the [error codes guide](https://developers.openai.com/api/docs/guides/error-codes).
 
@@ -29,10 +30,10 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 | `model` | `GenerateRequest.model` typed | |
 | `messages` | `system` + `messages` typed | See [messages](#messages-chatcompletionrequestmessage). |
 | `temperature`, `top_p` | `sampling.temperature`, `sampling.top_p` typed | Written as integers (`1`): form `integers`, the list of keys so written. The encoder writes such a key as an integer while its value is still a whole number, so `temperature: 1` comes back as `1`, not `1.0`; a changed value is written as the new value. From other dialects: the `f64` spelling (`1.0`). |
-| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect, unless the provider's profile asks for `max_tokens` ([provider profiles](#provider-profiles)). `CreateChatCompletionRequest` sets no minimum for it or for `max_tokens`, so every non-negative integer is kept, `0` included; a negative one is `InvalidRequest`. |
+| `max_completion_tokens` | `sampling.max_output_tokens` typed | The spelling written for requests from every source dialect, unless the provider's profile asks for `max_tokens` ([provider profiles](openai-chat-providers.md#provider-profiles)). `CreateChatCompletionRequest` sets no minimum for it or for `max_tokens`, so every non-negative integer is kept, `0` included; a negative one is `InvalidRequest`. |
 | `max_tokens` (deprecated) | `sampling.max_output_tokens` typed | Form `max_tokens: "max_tokens"`. Both present with the same value: form `"both"`. With different values `max_completion_tokens` wins and `max_tokens` becomes the extra `max_tokens (differs from max_completion_tokens)`, sent back as `max_tokens`; the key names the conflict when another dialect refuses it. |
 | `stop` | `sampling.stop` typed | String spelling: form `stop: "string"`; `[]`: form `"array"`. More than four sequences: `Unsupported` (`stop`). |
-| `seed` | `sampling.seed` typed | Sent as `random_seed` when the provider's profile says so ([provider profiles](#provider-profiles)). |
+| `seed` | `sampling.seed` typed | Sent as `random_seed` when the provider's profile says so ([provider profiles](openai-chat-providers.md#provider-profiles)). |
 | `frequency_penalty`, `presence_penalty` | `sampling.*` typed | Integer spelling as for `temperature` (form `integers`). |
 | `n` | form `n` when `1` | `n > 1`: `Unsupported` (`n`, see [sampling](cross-format.md#sampling)); `0`: `InvalidRequest`. |
 | `reasoning_effort` | `reasoning.effort` typed | From other dialects ([effort and budget](reasoning.md#effort-and-budget)): an explicit effort as is; Anthropic `thinking.disabled` becomes `none`; a budget becomes `low` (below 4,096), `medium` (4,096 to 16,383) or `high` (16,384 and more). Values `none` to `max`; unknown values are kept as `ReasoningEffort::Other` and passed through for Chat apps, while for requests from other dialects `check()` refuses values outside the spec enum (`reasoning.effort`). |
@@ -47,7 +48,7 @@ Look up any field of the OpenAI Chat Completions format here: where it goes in K
 | `tool_choice` `allowed_tools`, `custom`, other strings | `ToolChoice::Unknown` | Same dialect only. |
 | `parallel_tool_calls` | `parallel_tool_calls` typed | |
 | `safety_identifier` | `user` typed | KPP `user` is the end-user id for abuse monitoring, which is what `safety_identifier` is. |
-| `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user`); otherwise the extra `user (sent alongside safety_identifier)`, sent back as `user` | KPP `user` from other dialects is sent as `safety_identifier`. A provider whose profile has no end-user field gets neither ([provider profiles](#provider-profiles)). |
+| `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user`); otherwise the extra `user (sent alongside safety_identifier)`, sent back as `user` | KPP `user` from other dialects is sent as `safety_identifier`. A provider whose profile has no end-user field gets neither ([provider profiles](openai-chat-providers.md#provider-profiles)). |
 | `stream` | `stream` typed | `false`: form `stream_false`. |
 | `stream_options.include_usage` | `StreamMode::On { include_usage }` typed | `stream_options` absent: form `stream_options: "absent"`; without `include_usage`: form `"no_include_usage"`; other keys (`include_obfuscation`) are extras `stream_options.<key>`; with `stream` off: the whole object as form `stream_options_off`. Requests from other dialects always ask for `include_usage: true`. The gateway needs usage, so it sets `include_usage: true` on every streaming request and keeps the app's own request in `EncodeCtx`; the app's stream encoder then hides the usage chunk from apps that did not ask for it. |
 | `audio`, `functions` and `function_call` (deprecated, top level), `logit_bias`, `logprobs`, `metadata`, `modalities`, `moderation`, `prediction`, `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, `service_tier`, `store`, `top_logprobs`, `verbosity`, `web_search_options` | extras | No KPP equivalent; refused across dialects ([extras](cross-format.md#extras), [sampling](cross-format.md#sampling)), except `prompt_cache_key`, which is on the [extras allowlist](cross-format.md#extras) and dropped. `null` values are form. Towards Anthropic, for example, `functions` fails with `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. `` |
@@ -135,45 +136,6 @@ Objects kept whole, such as unknown parts, tools and tool choices, custom tool c
 | `type: custom` | `Block::Unknown` | Sent back in `tool_calls`. |
 | `type` absent, with a `function` object | `Block::ToolCall`, form `no_type` | `ChatCompletionMessageToolCall` requires `type`, but some OpenAI-compatible providers leave it out; only function calls have a `function` object, so the call reaches every app. Written back without `type`. |
 
-## Provider profiles
-
-Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field. The profile holds the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below.
-
-The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
-
-| Setting | What the encoder does | Why it is allowed |
-|---|---|---|
-| `max_tokens()` | Sends the output limit as `max_tokens`, and a `max_completion_tokens: null` as `max_tokens: null`. A Chat request with both at different values is `Unsupported` (`max_tokens`). | Only the spelling changes; the value is the same. |
-| `system_role()` | Sends `developer` messages as `system` messages. | The role spelling is form; both carry the instructions. |
-| `random_seed()` | Sends `seed` as `random_seed`, a `seed: null` too. A negative seed, or a request with both `seed` and `random_seed` (either may be `null`), is `Unsupported` (`seed`). The rule follows Mistral's `random_seed`, which its OpenAPI document gives `minimum: 0`. | `seed` stays semantic: it is renamed or refused, never dropped. |
-| `without_end_user()` | Leaves KPP `user` out instead of sending it as `user` or `safety_identifier`, together with a second `user` a Chat app sent alongside `safety_identifier`, and their `null` spellings. | `user` is a hint ([field classes](index.md#field-classes)). |
-| `without_prefill()` | Refuses a conversation that ends with an assistant message, unless it calls tools or is a Chat app's message with `prefix: true`: `Unsupported` (`assistant prefill`, param `messages[i]`). | A provider that only continues such a message with `prefix: true` repeats the prefill in its reply, so the app would not get a continuation. |
-| `refusing(fields)` | Refuses a request whose body would contain one of these top-level keys, such as `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras are semantic, so they are refused, not dropped. |
-| `refusing_in_messages(fields)` | The same for keys of system, user and assistant messages. Tool messages are not checked. | As above. |
-
-Settings for the replies Kaeso reads (`ChatProfile::reply`, a `ReplyProfile`):
-
-| Setting | What the decoder does | Why it is allowed |
-|---|---|---|
-| `thinking_parts()` | Reads a `thinking` part of a `content` array (`{type: "thinking", thinking: [text parts], closed}`, nothing else) as a `Block::Reasoning` whose `text` holds each text part, and streamed ones as `BlockStart(Reasoning)` and `BlockDelta(ReasoningText)`. The reasoning block ends when the answer, a refusal or a tool call starts, and a stream's empty text pieces before the first real one open no text block (form `et`). A `thinking` part with other keys or other inner parts stays as without the setting. | Nothing is dropped: Chat apps get the same parts back, and other formats get the thinking in their own reasoning shape with the original block in a [reasoning blob](reasoning.md#reasoning-blobs). |
-| `reasoning_fields(fields)` | Reads the first of these message keys that holds a non-empty string, such as DeepSeek's `reasoning_content` or Groq's `reasoning`, as a `Block::Reasoning` before the reply's other blocks, with form `reasoning_field` naming the key. In a stream, that key of each delta becomes `BlockDelta(ReasoningText)` of one reasoning block, with form `rf` on the chunk. The reasoning block ends when the answer, a refusal or a tool call starts, and empty text pieces before the first real one open no text block (form `et`). An empty string, `null` or another type stays an extra. | Nothing is dropped: Chat apps get the key back as sent, the delta's other keys (Groq's `channel`) stay extras of the chunk, and other formats get the reasoning in their own reasoning shape with the original block in a [reasoning blob](reasoning.md#reasoning-blobs). Without the setting, every streamed piece of reasoning would be a chunk without a KPP event, logged as an unknown block of its own. |
-| `error_detail(path)` | Appends the string at this path of an error body, such as OpenRouter's `error.metadata.raw`, to the error's message: `<message>: <detail>`. A missing, empty or non-string value, or one the message already contains, changes nothing. Stream errors get the same. | The body stays as it was: Chat apps get the provider's error unchanged, and other formats get the reason in the message, where a generic one (`Provider returned error`) would tell them nothing. The gateway takes key-like tokens out of every provider error message. |
-
-`refusing` and `refusing_in_messages` each take the whole list; a second call replaces the first. A refusal names the field as the app wrote it. It names a Chat app's key by its own name and path (`logit_bias`, `messages[1].name`), and a refusal block from another format by its KPP path (`messages[1].blocks[0]`).
-
-Refusals happen while the request is encoded, on the request the encoder built and before it is written out. Nothing is sent, and the refusal reaches the app in its own format.
-
-Each built-in provider whose profile differs from OpenAI's is listed below with the source of every setting: the provider's documentation, its OpenAPI document or a live recording in `fixtures/openai_chat/providers/<id>/`.
-
-| Provider | Settings | Sources |
-|---|---|---|
-| DeepSeek (`deepseek`) | `max_tokens()`, `system_role()`, `reasoning_fields(["reasoning_content"])` | DeepSeek's API reference and thinking mode guide (`reasoning_content`), `responses/recorded-thinking-reasoning-content` and `streams/recorded-thinking-stream`; `fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`: DeepSeek ignores `max_completion_tokens` (20 asked, 133 completion tokens), while its API reference documents `max_tokens`; `fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`: DeepSeek answers the `developer` role with 422 `unknown variant` |
-| Groq (`groq`) | `system_role()`, `reasoning_fields(["reasoning"])`; refuses `logit_bias`, `logprobs` and `top_logprobs`, and `name` and `refusal` on messages | Groq's OpenAI compatibility page (https://console.groq.com/docs/openai, which lists `logprobs`, `logit_bias`, `top_logprobs` and `messages[].name` as unsupported); `fixtures/openai_chat/providers/groq/errors/`: `recorded-logit-bias`, `recorded-logprobs-top-logprobs-doc`, `recorded-tools-results-parallel-error` (`refusal` on an assistant message) and `recorded-tools-single` (Qwen's chat template refuses the `developer` role); Groq's reasoning guide (`reasoning`), `responses/recorded-reasoning-format-parsed` and `streams/recorded-stream-doc` |
-| Mistral (`mistral`) | `max_tokens()`, `system_role()`, `random_seed()`, `without_end_user()`, `without_prefill()`, `thinking_parts()`; refuses `audio`, `function_call`, `functions`, `logit_bias`, `moderation`, `prompt_cache_options`, `prompt_cache_retention`, `store`, `verbosity` and `web_search_options`, and `name` and `refusal` on messages | Mistral's OpenAPI document (https://docs.mistral.ai/openapi.yaml, read on 2026-10-19), where `ChatCompletionRequest` forbids undeclared fields and gives `random_seed` `minimum: 0`; the `422 extra_forbidden` recordings in `fixtures/openai_chat/providers/mistral/errors/`, one per refused or renamed field; `responses/recorded-audio-field`, where Mistral takes `audio` and answers with text only; and `recorded-assistant-prefill` (400 `invalid_request_message_order`) with `responses/recorded-assistant-prefix`, whose reply repeats the prefill; `responses/recorded-reasoning-effort-high` and `streams/recorded-reasoning-effort-high-stream` for `thinking_parts()` |
-| OpenRouter (`openrouter`) | `reasoning_fields(["reasoning"])`, `error_detail(["error", "metadata", "raw"])` | OpenRouter's reasoning tokens guide (`reasoning`, with `reasoning_details` beside it); `responses/recorded-free-reasoning` and `streams/recorded-free-reasoning-stream`; OpenRouter's errors and debugging page (`metadata.raw`, the upstream provider's error), `errors/recorded-upstream-rate-limited` and `errors/recorded-routing-fields` |
-| SpaceX (`xai`) | `reasoning_fields(["reasoning_content"])` | xAI's Chat Completions reference (`reasoning_content`); `responses/recorded-reasoning-content` and `streams/recorded-reasoning-content-stream` |
-| Together AI (`togetherai`) | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI's chat completions reference; the key depends on the model: `responses/recorded-sampling-extras` (`reasoning_content`), `responses/recorded-reasoning-reply` and `streams/recorded-reasoning-stream` (`reasoning`) |
-
 ## Response: `CreateChatCompletionResponse`
 
 | Wire field | KPP | Notes |
@@ -186,7 +148,7 @@ Each built-in provider whose profile differs from OpenAI's is listed below with 
 | `choices[0].finish_reason` | `Response.stop` | `stop` ⇄ `EndTurn`, `length` ⇄ `MaxTokens`, `tool_calls` ⇄ `ToolUse`, `content_filter` ⇄ `ContentFilter`, other values (such as `function_call`) ⇄ `Other`. From other dialects: `StopSequence` and `PauseTurn` become `stop`; `Refusal` becomes `content_filter`, because the answer was withheld. Other dialects' own values become the closest Chat one: `max_tokens`, `max_output_tokens` and `model_context_window_exceeded` become `length`, `tool_use` becomes `tool_calls`, `refusal` becomes `content_filter`, and anything else outside the spec enum becomes `stop`. A non-streaming response without `finish_reason`, which the spec requires: `ProviderError`. |
 | `message.content` | `Block::Text` | From other dialects all text blocks are joined without a separator, because Chat has no content parts in responses. There is no separator because Anthropic splits one answer into several text blocks around citations, and the streamed deltas, which carry no separator either, must add up to the same `content`. |
 | `message.content` as an array of parts (Mistral, not in the OpenAI spec) | `Block::Text` for each part that is exactly `{type: "text", text}`, `Block::Reasoning` for a `thinking` part under a profile with `thinking_parts()`, `Block::Unknown` for every other part; form `content_parts`, and form `thinking` keeps a thinking part's other keys | Written back as the same array for Chat apps. Other dialects get the text and the reasoning; unknown parts reach only Chat apps ([replies](cross-format.md#replies)). Source: Mistral's `AssistantMessage.content` (`ContentChunk[]`, https://docs.mistral.ai/openapi.yaml) and the recording `fixtures/openai_chat/providers/mistral/responses/recorded-reasoning-effort-high.json`. |
-| `message.reasoning_content`, `message.reasoning` and other keys a profile names in `reasoning_fields` | `Block::Reasoning` first, form `reasoning_field` | Only under a profile that names the key ([provider profiles](#provider-profiles)); otherwise extras `choice.message.<key>`. Written back to the same key for Chat apps. |
+| `message.reasoning_content`, `message.reasoning` and other keys a profile names in `reasoning_fields` | `Block::Reasoning` first, form `reasoning_field` | Only under a profile that names the key ([provider profiles](openai-chat-providers.md#provider-profiles)); otherwise extras `choice.message.<key>`. Written back to the same key for Chat apps. |
 | `message.annotations` | `TextBlock.citations` (raw, bound to Chat) | Without content: extras `choice.message.annotations`. Citations of other dialects are left out ([replies](cross-format.md#replies)). |
 | `message.refusal` | `Block::Refusal` | |
 | `message.tool_calls` | `Block::ToolCall` or `Block::Unknown` | As in requests. |
@@ -337,80 +299,3 @@ A field received absent, or `null` where the default is a value, is recorded in 
 Towards OpenAI apps some data is lost: `display_name`, `lifecycle`, `deprecated_at`, `context_window`, `max_output_tokens`, `has_more` and other dialects' extras (Anthropic `capabilities`, `line`) have no field and are left out ([replies](cross-format.md#replies)). A `retires_at` that is not midnight UTC is cut to its UTC date, and one after the year 9999 is written as `shutdown_date: null`. `created` is an integer and is written as stored, so a millisecond value stays one.
 
 `encode_model_request` builds `GET /v1/models/{model}` without headers or body (the spec's `retrieveModel`); the gateway adds the key. `encode_models_request` builds `GET /v1/models` (the spec's `listModels`, which takes no query parameters, so a query with `limit`, `after_id`, `before_id`, `lifecycle` or other parameters is `Unsupported`). In `decode_models` and `decode_model`, a status other than 2xx goes to `decode_error`. The id `.` or `..` is `InvalidRequest`, because URL parsers drop such a segment even when it is percent-encoded.
-
-## Providers that use this format
-
-Providers other than OpenAI that serve Chat Completions record into `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
-
-### DeepSeek
-
-Sources: DeepSeek's [API reference](https://api-docs.deepseek.com/api/create-chat-completion), [thinking mode guide](https://api-docs.deepseek.com/guides/thinking_mode/) and [error codes](https://api-docs.deepseek.com/quick_start/error_codes), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/deepseek/`.
-
-| DeepSeek field | KPP | Notes |
-|---|---|---|
-| `thinking` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
-| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged, and an assistant turn of a Chat app that carries one sends it back to DeepSeek. Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item; when they send it back, it is left out of the request to DeepSeek ([reasoning](reasoning.md)), which answers without it. |
-| `usage.prompt_cache_hit_tokens`, `prompt_cache_miss_tokens` | `raw` usage | The hits equal `prompt_tokens_details.cached_tokens`, which is typed as a cache read. |
-| `: keep-alive` lines and empty lines while the server is busy | `Extra` | Same dialect only, like other SSE comments. |
-| HTTP 402 | `Billing` | An empty balance, whatever the `code` says. |
-| HTTP 422 for a `developer` message | `InvalidRequest` | DeepSeek doesn't know the role; the app gets DeepSeek's error. |
-| extra model fields (`name`, `context_window`, `max_output_tokens`, `input_modalities`, `output_modalities`, `effort`, `api_capabilities`) | model extras | DeepSeek's listing has no `created`. |
-
-### SpaceX
-
-Sources: xAI's [Chat Completions reference](https://docs.x.ai/developers/rest-api-reference/inference/chat-completions) and [models reference](https://docs.x.ai/developers/rest-api-reference/inference/models), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/xai/`. SpaceX's own format is [OpenAI Responses](openai-responses.md#providers-that-use-this-format); a model reaches Chat Completions through its `egress_dialect`.
-
-| SpaceX field | KPP | Notes |
-|---|---|---|
-| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). |
-| `citations`, `system_fingerprint`, `service_tier` | extras | Left out towards other dialects. |
-| `max_completion_tokens` (request) | `sampling.max_output_tokens` | SpaceX applies it only to visible output, not to reasoning tokens (Chat Completions reference; `responses/recorded-max-completion-tokens-reasoning`: 20 asked, 18 visible and 271 reasoning tokens). Usage counts both, so the output can exceed the limit; the gateway reserves the model's own output limit for a SpaceX reasoning model (`reasoning_beyond_output_limit` in `PROVIDERS`) under hard budgets and token rates ([limits and budgets](../../console/limits-and-budgets.md)). |
-| `usage.num_sources_used`, `cost_in_usd_ticks`, `prompt_tokens_details.text_tokens` and `image_tokens` | `raw` usage | The token counts are typed as above. SpaceX leaves reasoning out of `completion_tokens` and counts it in `total_tokens`, so the output is `completion_tokens` plus `reasoning_tokens`. |
-| `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400 | `KppError` | The string is the message, and apps get it in the OpenAI error shape with SpaceX's status. A wrong key is a 400 whose message starts with `Incorrect API key provided`; SpaceX's `refused_key_messages` names it, so the gateway reports a refused key. |
-| `presence_penalty` for a reasoning model, `reasoning_effort` for a model without reasoning | | SpaceX answers 400, which reaches the app as its error. |
-| `search_parameters` (request) | extras | SpaceX answers 410 because live search is deprecated; the app gets the 410. |
-| extra model fields (`aliases`, prices in USD cents per 100 million tokens, `capabilities.reasoning_effort`, image `pricing`) | model extras | |
-
-### Together AI
-
-Sources: Together AI's [chat completions reference](https://docs.together.ai/reference/chat-completions-1) and [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility), read 2026-10-19, the SDK types in `togethercomputer/together-py`, and the live recordings in `fixtures/openai_chat/providers/togetherai/`.
-
-| Together AI field | KPP | Notes |
-|---|---|---|
-| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
-| `message.reasoning_content` or `message.reasoning`, and the same in deltas, by model | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). A streamed piece of reasoning comes with `content: ""`, which opens no text block. |
-| `matched_stop` and `seed` on a choice, `text` on a stream choice, `token_id` in a delta, top-level `prompt`, `metadata` and `warnings` | extras | Left out towards other dialects. |
-| `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens` | `raw` usage | The token counts are typed as above. |
-| errors in OpenAI's envelope with Together AI's own `type` and `code` (`start_generation_failed`, `model_not_available`), sometimes with a top-level `id` | `KppError` | The kind follows the status; a wrong key is a 401 `invalid_api_key`, so `Authentication`. |
-| `GET /v1/models`: a bare array of models with `type`, `display_name`, `organization`, `context_length`, `config` and `pricing` | `ModelList`, model extras | `GET /v1/models/{model}` answers 404 for ids with `/`, so a model check relies on the listing. |
-
-### Groq
-
-Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and [reasoning guide](https://console.groq.com/docs/reasoning), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/groq/`.
-
-| Groq field | KPP | Notes |
-|---|---|---|
-| `reasoning_format`, `include_reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
-| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). |
-| `delta.channel` (`analysis` on GPT-OSS reasoning) | extras of the chunk | Chat apps get it back with the reasoning; left out towards other dialects. |
-| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | extras | Left out towards other dialects. |
-| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as above. |
-| `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
-| extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |
-
-### OpenRouter
-
-Sources: OpenRouter's [API reference](https://openrouter.ai/docs/api_reference/overview), [streaming](https://openrouter.ai/docs/api_reference/streaming), [errors and debugging](https://openrouter.ai/docs/api_reference/errors-and-debugging) and [reasoning tokens](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/openrouter/`, all with `:free` models.
-
-| OpenRouter field | KPP | Notes |
-|---|---|---|
-| `provider`, `models`, `transforms`, `usage`, `reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
-| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). |
-| `message.reasoning_details`, `delta.reasoning_details` | extras | The same reasoning in OpenRouter's structured form; Chat apps get it back unchanged, other dialects get the text from `reasoning`. |
-| `provider`, `native_finish_reason` on a reply | extras | Left out towards other dialects. |
-| `usage.cost`, `is_byok`, `cost_details`, the extra token details | `raw` usage | Kaeso records costs at the catalogue's prices, not at `usage.cost`. |
-| the last stream chunk, which repeats the finish choice beside `usage` | `Usage` | Read like a usage chunk with `choices: []`. |
-| `: OPENROUTER PROCESSING` comments | `Extra` | Same dialect only, like other SSE comments. |
-| `error.metadata.raw`, the upstream provider's own error, beside the generic `message` `Provider returned error` | `KppError.message` | Through the profile's `error_detail`, Anthropic Messages and Responses apps and the request log get `Provider returned error: <reason>`, such as `google/gemma-4-31b-it:free is temporarily rate-limited upstream…`. Chat apps get the body as OpenRouter sent it. |
-| an `error` object after the 200, in the body or in a chunk beside `choices` | `KppError` | See the [rows above](#streams-createchatcompletionstreamresponse); a numeric `code` decides the kind as a status would. |
-| `GET /api/v1/models`: no `object`, models without `object` and `owned_by`, with `total_count` and `links` | `ModelList`, extras | `GET /api/v1/models/{model}` answers 404 for every model, so a model check relies on the listing, which OpenRouter serves without looking at the key. |
