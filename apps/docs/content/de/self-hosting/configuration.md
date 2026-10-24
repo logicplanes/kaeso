@@ -185,7 +185,18 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 
 Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)).
 
-Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY` für `http`-Basis-URLs, oder `ALL_PROXY`), wenn seine Umgebung einen setzt, außer für die Hosts in `NO_PROXY`. Der Proxy sieht die Anbieter-Schlüssel von `http`-Aufrufen, verwenden Sie über ihn also `https`-Basis-URLs.
+Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY` für `http`-Basis-URLs, oder `ALL_PROXY`), wenn seine Umgebung einen setzt, außer für die Hosts in `NO_PROXY`. Der Proxy sieht die Anbieter-Schlüssel von `http`-Aufrufen, verwenden Sie über ihn also `https`-Basis-URLs. Eigene Anbieter sind die Ausnahme: Das Gateway ruft sie direkt auf ([Eigene Anbieter](#eigene-anbieter)).
+
+### Eigene Anbieter
+
+| Variable | TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- | --- |
+| `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Organisations-Admins dürfen eigene Anbieter hinzufügen, etwa ein selbst betriebenes vLLM oder einen internen Proxy ([Eigene Anbieter](../console/custom-providers.md)). `false` lehnt Anfragen an die hinzugefügten ab und behält sie. |
+| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, die eigene Anbieter erreichen dürfen, etwa `10.0.0.0/8` oder `127.0.0.1/32`. Reines `http` erreicht nur diese. |
+
+Die Basis-URL eines eigenen Anbieters wählt ein Organisations-Admin, also überwacht das Gateway, wohin es sich verbindet. Für jede Verbindung löst es den Namen des Hosts auf und prüft jede Adresse. Private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen lehnt es ab, außer `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` nennt ihr Netz. Löst ein Name später zu einer anderen Adresse auf, wird sie bei der nächsten Verbindung erneut geprüft. Link-Local- und Cloud-Metadaten-Adressen wie `169.254.169.254` bleiben abgelehnt, auch wenn ein genanntes Netz sie umfasst.
+
+Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und ruft ihn ohne den Proxy in `HTTPS_PROXY` auf, weil ein Proxy den Namen an diesen Prüfungen vorbei auflösen würde. Erlauben Sie ein Netz nur, wo jeder Organisations-Admin die Server darin über das Gateway erreichen darf. Für ein vLLM auf demselben Host wie die Container des Gateways nennen Sie das Docker-Netz, etwa `172.16.0.0/12`.
 
 ### Streams an Apps
 

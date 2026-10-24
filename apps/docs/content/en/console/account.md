@@ -1,7 +1,7 @@
 ---
 title: Account and language
 description: Keep your account secure, sign out other browsers, and choose your theme and language.
-order: 9
+order: 10
 ---
 
 Your account is under **Account**, in the menu at the foot of the sidebar. It has these pages:

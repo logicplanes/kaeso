@@ -49,6 +49,7 @@ pub struct Config {
     pub updates: UpdatesConfig,
     pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
+    pub custom_providers: CustomProvidersConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -171,6 +172,14 @@ pub struct UpdatesConfig {
 pub struct UpdaterConfig {
     pub url: Url,
     pub token: Option<SecretString>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CustomProvidersConfig {
+    pub enabled: bool,
+    #[serde(default, deserialize_with = "networks")]
+    pub allowed_networks: Vec<ipnet::IpNet>,
 }
 
 #[derive(Debug, Deserialize)]

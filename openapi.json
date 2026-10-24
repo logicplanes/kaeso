@@ -7238,6 +7238,416 @@
         "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
+    "/platform/v1/orgs/{org}/custom-providers": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's custom providers, by id.",
+        "description": "**Right:** `providers.custom.view` on the organization in the path.",
+        "operationId": "getOrgsOrgCustomProviders",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_CustomProviderView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.view"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Adds a custom provider: a server that speaks an API format Kaeso\ntranslates, such as a self-hosted vLLM or an internal proxy.",
+        "description": "Kaeso checks the base URL's address now and on every connection:\nprivate, loopback, link-local and cloud metadata addresses are refused\nunless the instance allows the network\n(`custom_providers.allowed_networks`). Add its models to a project's\ncatalogue with `custom: true`, their prices and limits set by hand.\n\n**Right:** `providers.custom.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCustomProviders",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The provider's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/custom-providers/{provider}": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "One custom provider.",
+        "description": "**Right:** `providers.custom.view` on the organization in the path.",
+        "operationId": "getOrgsOrgCustomProvidersProvider",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The provider's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.view"
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Deletes a custom provider with its provider keys and its models in every\nproject's catalogue; requests for them fail from now on.",
+        "description": "With `If-Match`, only while the provider is still at that revision; a\nnewer one answers 412. The audit log keeps what was removed.\n\n**Right:** `providers.custom.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "deleteOrgsOrgCustomProvidersProvider",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.manage"
+      },
+      "patch": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Changes a custom provider's name, base URL, key style or formats.",
+        "description": "With `If-Match`, only while the provider is still at that revision; a\nnewer one answers 412. A new base URL, key style or format makes its\nmodels `unchecked` again.\n\n**Right:** `providers.custom.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "patchOrgsOrgCustomProvidersProvider",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The provider's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/default-project": {
       "put": {
         "tags": [
@@ -13132,6 +13542,87 @@
         "x-kaeso-access": "right:models.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/models/offered": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Asks a custom provider which models it lists, with the project's key for it.",
+        "description": "Calls the provider's model listing (`GET /v1/models`) in its generation\nformat, through the same address checks as requests. Nothing is recorded.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectModelsOffered",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "One of the organization's custom providers.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferedModels"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/models/preview": {
       "get": {
         "tags": [
@@ -14944,8 +15435,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Every model provider Kaeso calls, with its name, key page, key prefix and formats.",
-        "description": "The same list for every organization of the install. A provider key, a\ncatalogue model and a setting name a provider by its `id`.\n\n**Right:** `org.view` on the organization in the path.",
+        "summary": "Every model provider Kaeso calls for the organization, with its name, key page,\nkey prefix and formats.",
+        "description": "The built-in providers, the same for every organization, followed by the\norganization's custom providers while the install allows them. A provider\nkey and a catalogue model name a provider by its `id`. A custom provider\nwith the id of a built-in one takes its place in the organization.\n\n**Right:** `org.view` on the organization in the path.",
         "operationId": "getOrgsOrgProviders",
         "parameters": [
           {
@@ -17443,7 +17934,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`, `togetherai`, `groq`, `openrouter` or `mistral`."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, or one of the organization's\ncustom providers that takes a key."
           },
           "secret": {
             "type": "string",
@@ -17622,6 +18113,258 @@
           }
         }
       },
+      "CustomAuthView": {
+        "type": "string",
+        "description": "How Kaeso sends a custom provider's key.",
+        "enum": [
+          "bearer",
+          "x_api_key",
+          "none"
+        ]
+      },
+      "CustomProviderCreate": {
+        "type": "object",
+        "description": "A new custom provider.",
+        "required": [
+          "id",
+          "name",
+          "base_url",
+          "auth",
+          "generation"
+        ],
+        "properties": {
+          "auth": {
+            "$ref": "#/components/schemas/CustomAuthView",
+            "description": "How Kaeso sends the provider key."
+          },
+          "base_url": {
+            "type": "string",
+            "description": "`https`, or `http` for a network the instance allows; no user name,\nquery or fragment. A path is kept, such as `https://proxy.example.com/llm`.",
+            "example": "https://vllm.example.com"
+          },
+          "count_tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "Whether it counts tokens in its `generation` format\n(`openai_responses` or `anthropic_messages` only); absent or `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embeddings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingsDialect",
+                "description": "The format of its embeddings models; absent or `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "$ref": "#/components/schemas/GenerationDialect",
+            "description": "The format of its generation models."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The id: lowercase letters and digits with single hyphens between them, at\nmost 40 characters. It can't be the id of a built-in provider or of a\nprovider listed on models.dev."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see, 1 to 100 characters.",
+            "example": "Local vLLM"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomProviderUpdate": {
+        "type": "object",
+        "description": "Changes to a custom provider; absent fields stay as they are.",
+        "properties": {
+          "auth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CustomAuthView",
+                "description": "A new way to send the key; `none` only once the provider has no keys."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new base URL; the provider's keys go to it from now on."
+          },
+          "count_tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "Whether it counts tokens in its `generation` format; `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embeddings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingsDialect",
+                "description": "A new embeddings format; `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "A new generation format."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new name."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomProviderUse": {
+        "type": "object",
+        "description": "What uses a custom provider in the organization.",
+        "required": [
+          "keys",
+          "models",
+          "projects"
+        ],
+        "properties": {
+          "keys": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Its provider keys."
+          },
+          "models": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Catalogue models that call it, across all projects."
+          },
+          "projects": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Projects with at least one of those models."
+          }
+        }
+      },
+      "CustomProviderView": {
+        "type": "object",
+        "description": "A provider the organization added itself: a base URL Kaeso calls in the API\nformats it names. Kaeso knows nothing else about it; prices, limits and\ncapabilities come from its catalogue models.",
+        "required": [
+          "id",
+          "name",
+          "base_url",
+          "auth",
+          "generation",
+          "in_use",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
+        "properties": {
+          "auth": {
+            "$ref": "#/components/schemas/CustomAuthView",
+            "description": "How Kaeso sends the provider key."
+          },
+          "base_url": {
+            "type": "string",
+            "description": "Where Kaeso sends requests; the format's path, such as\n`/v1/chat/completions`, is appended to it.",
+            "example": "https://vllm.example.com"
+          },
+          "count_tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "The format in which it counts tokens, its `generation` format;\n`null` when it counts none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Added."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Party",
+            "description": "Who added it."
+          },
+          "embeddings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingsDialect",
+                "description": "The format of its embeddings models; `null` when it has none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "$ref": "#/components/schemas/GenerationDialect",
+            "description": "The format of its generation models."
+          },
+          "hides_built_in": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name of the built-in provider with the same id, which a newer Kaeso\nrelease added; inside this organization the custom provider takes its\nplace. `null` without one.",
+            "example": null
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The id, which names the provider in model names such as\n`my-vllm/llama-3.3-70b`, in provider keys and in catalogue models. It\nnever changes."
+          },
+          "in_use": {
+            "$ref": "#/components/schemas/CustomProviderUse",
+            "description": "What deleting it would remove."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people see.",
+            "example": "Local vLLM"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change\nor delete the provider only if nothing changed it since.",
+            "example": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last changed."
+          }
+        }
+      },
       "DefaultProjectChoice": {
         "type": "object",
         "description": "The project that becomes the org's default.",
@@ -17771,6 +18514,13 @@
             "example": "email_sent"
           }
         }
+      },
+      "EmbeddingsDialect": {
+        "type": "string",
+        "description": "An API format a custom provider creates embeddings with.",
+        "enum": [
+          "openai_embeddings"
+        ]
       },
       "ErrorBody": {
         "type": "object",
@@ -18174,6 +18924,15 @@
           }
         },
         "additionalProperties": false
+      },
+      "GenerationDialect": {
+        "type": "string",
+        "description": "An API format a custom provider generates with.",
+        "enum": [
+          "openai_chat",
+          "openai_responses",
+          "anthropic_messages"
+        ]
       },
       "GrantRequest": {
         "type": "object",
@@ -19799,6 +20558,125 @@
           }
         }
       },
+      "List_CustomProviderView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A provider the organization added itself: a base URL Kaeso calls in the API\nformats it names. Kaeso knows nothing else about it; prices, limits and\ncapabilities come from its catalogue models.",
+              "required": [
+                "id",
+                "name",
+                "base_url",
+                "auth",
+                "generation",
+                "in_use",
+                "created_by",
+                "created_at",
+                "updated_at",
+                "revision"
+              ],
+              "properties": {
+                "auth": {
+                  "$ref": "#/components/schemas/CustomAuthView",
+                  "description": "How Kaeso sends the provider key."
+                },
+                "base_url": {
+                  "type": "string",
+                  "description": "Where Kaeso sends requests; the format's path, such as\n`/v1/chat/completions`, is appended to it.",
+                  "example": "https://vllm.example.com"
+                },
+                "count_tokens": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GenerationDialect",
+                      "description": "The format in which it counts tokens, its `generation` format;\n`null` when it counts none."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Added."
+                },
+                "created_by": {
+                  "$ref": "#/components/schemas/Party",
+                  "description": "Who added it."
+                },
+                "embeddings": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EmbeddingsDialect",
+                      "description": "The format of its embeddings models; `null` when it has none."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "generation": {
+                  "$ref": "#/components/schemas/GenerationDialect",
+                  "description": "The format of its generation models."
+                },
+                "hides_built_in": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The name of the built-in provider with the same id, which a newer Kaeso\nrelease added; inside this organization the custom provider takes its\nplace. `null` without one.",
+                  "example": null
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ProviderId",
+                  "description": "The id, which names the provider in model names such as\n`my-vllm/llama-3.3-70b`, in provider keys and in catalogue models. It\nnever changes."
+                },
+                "in_use": {
+                  "$ref": "#/components/schemas/CustomProviderUse",
+                  "description": "What deleting it would remove."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name people see.",
+                  "example": "Local vLLM"
+                },
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change\nor delete the provider only if nothing changed it since.",
+                  "example": 1
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Last changed."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_InstanceOrgView": {
         "type": "object",
         "description": "A page of results.",
@@ -21078,7 +21956,8 @@
               "required": [
                 "id",
                 "name",
-                "key_page",
+                "custom",
+                "takes_key",
                 "dialects"
               ],
               "properties": {
@@ -21101,6 +21980,10 @@
                   "description": "The format in which the provider counts tokens for\n`/v1/messages/count_tokens` and `/v1/responses/input_tokens`; `null` when\nit counts none.",
                   "example": null
                 },
+                "custom": {
+                  "type": "boolean",
+                  "description": "One of the organization's own providers, added under\n`/orgs/{org}/custom-providers`."
+                },
                 "dialects": {
                   "type": "array",
                   "items": {
@@ -21119,13 +22002,28 @@
                   "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
                   "example": null
                 },
+                "hides_built_in": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The name of the built-in provider with the same id that this custom\nprovider hides inside the organization; `null` without one.",
+                  "example": null
+                },
                 "id": {
                   "$ref": "#/components/schemas/ProviderId",
                   "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
                 },
                 "key_page": {
-                  "$ref": "#/components/schemas/KeyPageView",
-                  "description": "The provider's page for creating API keys."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/KeyPageView",
+                      "description": "The provider's page for creating API keys; `null` for a custom provider."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "key_prefix": {
                   "type": [
@@ -21139,6 +22037,10 @@
                   "type": "string",
                   "description": "The name people see.",
                   "example": "Groq"
+                },
+                "takes_key": {
+                  "type": "boolean",
+                  "description": "Whether requests to it carry a provider key; `false` for a custom\nprovider that takes none."
                 }
               }
             },
@@ -22486,6 +23388,47 @@
           }
         }
       },
+      "OfferedModel": {
+        "type": "object",
+        "description": "A model id a custom provider lists.",
+        "required": [
+          "model_id"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The catalogue entry, if the project has it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "meta-llama/Llama-3.3-70B-Instruct"
+          }
+        }
+      },
+      "OfferedModels": {
+        "type": "object",
+        "description": "The model ids a custom provider's model listing names; their values, such as\nprices and limits, are set by hand when one is added.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferedModel"
+            },
+            "description": "The ids, sorted."
+          }
+        }
+      },
       "OrgCreate": {
         "type": "object",
         "description": "A new org.",
@@ -23554,7 +24497,8 @@
         "required": [
           "id",
           "name",
-          "key_page",
+          "custom",
+          "takes_key",
           "dialects"
         ],
         "properties": {
@@ -23577,6 +24521,10 @@
             "description": "The format in which the provider counts tokens for\n`/v1/messages/count_tokens` and `/v1/responses/input_tokens`; `null` when\nit counts none.",
             "example": null
           },
+          "custom": {
+            "type": "boolean",
+            "description": "One of the organization's own providers, added under\n`/orgs/{org}/custom-providers`."
+          },
           "dialects": {
             "type": "array",
             "items": {
@@ -23595,13 +24543,28 @@
             "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
             "example": null
           },
+          "hides_built_in": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name of the built-in provider with the same id that this custom\nprovider hides inside the organization; `null` without one.",
+            "example": null
+          },
           "id": {
             "$ref": "#/components/schemas/ProviderId",
             "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
           },
           "key_page": {
-            "$ref": "#/components/schemas/KeyPageView",
-            "description": "The provider's page for creating API keys."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyPageView",
+                "description": "The provider's page for creating API keys; `null` for a custom provider."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "key_prefix": {
             "type": [
@@ -23615,6 +24578,10 @@
             "type": "string",
             "description": "The name people see.",
             "example": "Groq"
+          },
+          "takes_key": {
+            "type": "boolean",
+            "description": "Whether requests to it carry a provider key; `false` for a custom\nprovider that takes none."
           }
         }
       },

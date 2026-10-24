@@ -249,5 +249,6 @@
   "kaeso.providerKey.newCodeFirst": "请先获取新代码",
   "kaeso.providerKey.newCode": "获取新代码",
   "kaeso.providerKey.getCode": "获取登录代码",
-  "kaeso.providerKey.experimental": "实验性"
+  "kaeso.providerKey.experimental": "实验性",
+  "kaeso.providerKey.customHelp": "粘贴 {provider} 所需的密钥。"
 }

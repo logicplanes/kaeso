@@ -16,5 +16,6 @@ pub mod limits;
 pub mod models_dev;
 pub mod net;
 pub mod provider;
+pub mod providers;
 pub mod rights;
 pub mod secret;

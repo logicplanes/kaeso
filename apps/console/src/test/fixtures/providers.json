@@ -3,6 +3,9 @@
     {
       "id": "openai",
       "name": "OpenAI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://platform.openai.com/api-keys",
         "label": "API keys"
@@ -21,6 +24,9 @@
     {
       "id": "anthropic",
       "name": "Anthropic",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://platform.claude.com/settings/keys",
         "label": "Settings → API keys"
@@ -34,6 +40,9 @@
     {
       "id": "deepseek",
       "name": "DeepSeek",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://platform.deepseek.com/api_keys",
         "label": "API keys"
@@ -47,6 +56,9 @@
     {
       "id": "xai",
       "name": "SpaceX",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://console.x.ai/team/default/api-keys",
         "label": "API Keys"
@@ -65,6 +77,9 @@
     {
       "id": "togetherai",
       "name": "Together AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://api.together.ai/settings/projects/~current/api-keys",
         "label": "API Keys"
@@ -78,6 +93,9 @@
     {
       "id": "groq",
       "name": "Groq",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://console.groq.com/keys",
         "label": "API Keys"
@@ -91,6 +109,9 @@
     {
       "id": "openrouter",
       "name": "OpenRouter",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://openrouter.ai/settings/keys",
         "label": "API Keys"
@@ -104,6 +125,9 @@
     {
       "id": "mistral",
       "name": "Mistral",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
       "key_page": {
         "url": "https://console.mistral.ai/api-keys",
         "label": "API keys"

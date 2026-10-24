@@ -1,7 +1,7 @@
 ---
 title: Limits and budgets
 description: Cap the requests, tokens and spending of a project, a member or a key.
-order: 6
+order: 7
 ---
 
 Limits cap the requests, tokens and spending of a project, of a member or service account, or of a key. A request must pass every limit that applies to it: its key's, its owner's and its project's.

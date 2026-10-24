@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState, type ReactElement } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   AlertDialog,
   AppFrame,
@@ -15,6 +16,7 @@ import {
   IconButton,
   Input,
   Menu,
+  PillTabs,
   ProviderBadge,
   SearchInput,
   Text,
@@ -27,6 +29,7 @@ import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { CredentialView } from "~/api/generated/types";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
+import { customProvidersQuery } from "~/api/queries/custom-providers";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
@@ -37,10 +40,15 @@ import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
 import { keyTitle, useProviders, type Providers } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { OrgHeader } from "~/shell/org-header";
+import { CustomProvidersTab } from "./custom-providers";
 import { toast } from "~/shell/toast";
 import { t } from "~/i18n";
 
 type Row = { id: string; provider: string; key: CredentialView; first: boolean };
+
+export interface ProvidersSearch {
+  tab?: "custom";
+}
 
 export const SEARCH_ABOVE = 8;
 
@@ -78,9 +86,15 @@ const ACCOUNT_KEY_WIDTH = 456;
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
-export function OrgProvidersPage({ org }: { org: string }) {
+export function OrgProvidersPage({ org, search = {} }: { org: string; search?: ProvidersSearch }) {
   const rights = useOrgRights(org);
   const needs = useNeedsRight(org);
+  const navigate = useNavigate();
+  const canSeeCustom = rights.has("providers.custom.view");
+  const canManageCustom = rights.has("providers.custom.manage");
+  const tab = search.tab === "custom" && canSeeCustom ? "custom" : "keys";
+  const custom = useQuery({ ...customProvidersQuery(org), enabled: canSeeCustom });
+  const [addingCustom, setAddingCustom] = useState(false);
   const canView = rights.has("provider_credentials.view");
   const canAdd = rights.has("provider_credentials.create");
   const canChange = rights.has("provider_credentials.replace");
@@ -108,7 +122,30 @@ export function OrgProvidersPage({ org }: { org: string }) {
   }, [credentials.data, keys, words, searched, providers]);
   const addReason = canAdd ? undefined : needs("provider_credentials.create");
   const addLabel = t("orgHome.addProviderKey", "Add provider key");
-  usePageCreateAction(canView ? { label: addLabel, run: () => setAdding(true), disabledReason: addReason } : null);
+  const customReason = canManageCustom ? undefined : needs("providers.custom.manage");
+  const customLabel = t("orgHome.custom.add", "Add custom provider");
+  usePageCreateAction(
+    tab === "custom"
+      ? { label: customLabel, run: () => setAddingCustom(true), disabledReason: customReason }
+      : canView
+        ? { label: addLabel, run: () => setAdding(true), disabledReason: addReason }
+        : null,
+  );
+  const tabs = canSeeCustom ? (
+    <PillTabs
+      value={tab}
+      onValueChange={(v) => void navigate({ to: "/orgs/$org/providers", params: { org }, search: v === "custom" ? { tab: "custom" } : {}, replace: true })}
+    >
+      <PillTabs.List aria-label={t("orgHome.providers", "Providers")}>
+        <PillTabs.Tab value="keys" {...(credentials.data ? { count: credentials.data.length } : {})}>
+          {t("orgHome.providerKeys", "Provider keys")}
+        </PillTabs.Tab>
+        <PillTabs.Tab value="custom" {...(custom.data ? { count: custom.data.length } : {})}>
+          {t("orgHome.customProviders", "Custom providers")}
+        </PillTabs.Tab>
+      </PillTabs.List>
+    </PillTabs>
+  ) : undefined;
 
   const makeDefault = useApiMutation({
     mutationFn: async (k: CredentialView) =>
@@ -296,82 +333,104 @@ export function OrgProvidersPage({ org }: { org: string }) {
       <OrgHeader
         org={org}
         page={t("orgHome.providers", "Providers")}
+        tabs={tabs}
         actions={
-          canView &&
-          !(credentials.isSuccess && keys.length === 0) && (
-            <Button
-              size="sm"
-              variant="primary"
-              leadingIcon={icons.add}
-              disabled={!canAdd}
-              {...(addReason ? { disabledReason: addReason } : {})}
-              onClick={() => setAdding(true)}
-            >
-              {addLabel}
-            </Button>
-          )
+          tab === "custom"
+            ? !!custom.data?.length && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  leadingIcon={icons.add}
+                  disabled={!canManageCustom}
+                  {...(customReason ? { disabledReason: customReason } : {})}
+                  onClick={() => setAddingCustom(true)}
+                >
+                  {customLabel}
+                </Button>
+              )
+            : canView &&
+              !(credentials.isSuccess && keys.length === 0) && (
+                <Button
+                  size="sm"
+                  variant="primary"
+                  leadingIcon={icons.add}
+                  disabled={!canAdd}
+                  {...(addReason ? { disabledReason: addReason } : {})}
+                  onClick={() => setAdding(true)}
+                >
+                  {addLabel}
+                </Button>
+              )
         }
       />
-      {canView && searchable && (
-        <FilterRow>
-          <div className="w-240">
-            <SearchInput
-              aria-label={t("orgHome.searchProviderKeys", "Search provider keys")}
-              placeholder={t("orgHome.providerKeyOrProject", "Provider, key or project")}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onClear={() => setQuery("")}
-            />
-          </div>
-        </FilterRow>
+      {tab === "custom" ? (
+        <AppFrame.Body padding="list">
+          <CustomProvidersTab org={org} adding={addingCustom} onAddingChange={setAddingCustom} />
+        </AppFrame.Body>
+      ) : (
+        <>
+          {canView && searchable && (
+            <FilterRow>
+              <div className="w-240">
+                <SearchInput
+                  aria-label={t("orgHome.searchProviderKeys", "Search provider keys")}
+                  placeholder={t("orgHome.providerKeyOrProject", "Provider, key or project")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onClear={() => setQuery("")}
+                />
+              </div>
+            </FilterRow>
+          )}
+          <AppFrame.Body padding="list">
+            {!canView ? (
+              <Empty title={t("orgHome.providersHidden", "You can't see the providers here")} description={needs("provider_credentials.view")} />
+            ) : (
+              <DataTable
+                aria-label={t("orgHome.providerKeys", "Provider keys")}
+                data={rows}
+                columns={columns}
+                getRowId={(r) => r.id}
+                onHiddenColumnsChange={setHidden}
+                density="comfortable"
+                loading={credentials.isPending}
+                error={credentials.isError && keys.length === 0 ? t("orgHome.providerKeysFailed", "The provider keys couldn't load") : undefined}
+                onRetry={() => void credentials.refetch()}
+                empty={
+                  keys.length > 0 ? (
+                    <Empty
+                      size="md"
+                      title={t("orgHome.noProviderKeysMatch", "No provider keys match")}
+                      description={t("orgHome.searchAnotherProvider", "Search by another provider, key or project name.")}
+                    />
+                  ) : (
+                    <Empty
+                      title={t("orgHome.noProviderKeys", "No provider keys yet")}
+                      description={t("orgHome.noProviderKeysHint", "A provider key lets this organization's projects call that provider's models.")}
+                      actions={
+                        <>
+                          <Button
+                            variant="primary"
+                            leadingIcon={icons.add}
+                            disabled={!canAdd}
+                            {...(addReason ? { disabledReason: addReason } : {})}
+                            onClick={() => setAdding(true)}
+                          >
+                            {addLabel}
+                          </Button>
+                          <Button variant="ghost" href={docsPage("/console/provider-keys")}>
+                            {t("orgHome.aboutProviderKeys", "About provider keys")}
+                          </Button>
+                        </>
+                      }
+                    />
+                  )
+                }
+              />
+            )}
+          </AppFrame.Body>
+        </>
       )}
-      <AppFrame.Body padding="list">
-        {!canView ? (
-          <Empty title={t("orgHome.providersHidden", "You can't see the providers here")} description={needs("provider_credentials.view")} />
-        ) : (
-          <DataTable
-            aria-label={t("orgHome.providerKeys", "Provider keys")}
-            data={rows}
-            columns={columns}
-            getRowId={(r) => r.id}
-            onHiddenColumnsChange={setHidden}
-            density="comfortable"
-            loading={credentials.isPending}
-            error={credentials.isError && keys.length === 0 ? t("orgHome.providerKeysFailed", "The provider keys couldn't load") : undefined}
-            onRetry={() => void credentials.refetch()}
-            empty={
-              keys.length > 0 ? (
-                <Empty
-                  size="md"
-                  title={t("orgHome.noProviderKeysMatch", "No provider keys match")}
-                  description={t("orgHome.searchAnotherProvider", "Search by another provider, key or project name.")}
-                />
-              ) : (
-                <Empty
-                  title={t("orgHome.noProviderKeys", "No provider keys yet")}
-                  description={t("orgHome.noProviderKeysHint", "A provider key lets this organization's projects call that provider's models.")}
-                  actions={
-                    <>
-                      <Button
-                        variant="primary"
-                        leadingIcon={icons.add}
-                        disabled={!canAdd}
-                        {...(addReason ? { disabledReason: addReason } : {})}
-                        onClick={() => setAdding(true)}
-                      >
-                        {addLabel}
-                      </Button>
-                      <Button variant="ghost" href={docsPage("/console/provider-keys")}>
-                        {t("orgHome.aboutProviderKeys", "About provider keys")}
-                      </Button>
-                    </>
-                  }
-                />
-              )
-            }
-          />
-        )}
-      </AppFrame.Body>
       {adding && <ProviderKeyDialog org={org} keys={keys} onClose={() => setAdding(false)} />}
       {replacing && <ProviderKeyDialog org={org} keys={keys} replace={replacing} onClose={() => setReplacing(null)} />}
       {renaming && <RenameKeyDialog org={org} credential={renaming} onClose={() => setRenaming(null)} />}

@@ -15,7 +15,7 @@ pub const TIMING_HEADER: &str = "server-timing";
 #[derive(Clone, Debug, Default)]
 pub struct Served {
     pub model: Option<String>,
-    pub provider: Option<&'static str>,
+    pub provider: Option<String>,
 }
 
 pub fn stamp(resp: &mut Response, served: &Served) {
@@ -24,7 +24,7 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     {
         resp.headers_mut().insert(MODEL_HEADER, v);
     }
-    if let Some(p) = served.provider
+    if let Some(p) = &served.provider
         && let Ok(v) = HeaderValue::from_str(p)
     {
         resp.headers_mut().insert(PROVIDER_HEADER, v);

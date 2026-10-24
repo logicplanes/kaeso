@@ -119,7 +119,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       });
     return (
       <div className="flex flex-col gap-20">
-        <ModelForm value={editing} onChange={setEditing} dialects={dialects} />
+        <ModelForm value={editing} onChange={setEditing} dialects={dialects} overrideNote={!providers.get(m.provider)?.custom} />
         <div className="flex justify-end gap-8">
           <Button
             onClick={() => {

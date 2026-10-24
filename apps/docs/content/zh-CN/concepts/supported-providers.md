@@ -4,7 +4,7 @@ description: 查阅 Kaeso 调用的每个服务商，包括其 ID、调用格式
 order: 2
 ---
 
-Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及它们之间的差异，见[服务商](providers.md)。
+Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及它们之间的差异，见[服务商](providers.md)。组织还可以添加使用其中某种格式的自有服务器（[自定义服务商](../console/custom-providers.md)）。
 
 ## 各列说明
 

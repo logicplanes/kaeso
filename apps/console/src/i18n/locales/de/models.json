@@ -162,5 +162,15 @@
   "models.unit.perMillionTokens": "pro Mio. Token",
   "models.unit.seconds": "Sekunden",
   "models.unit.tokens": "Token",
-  "models.valuesInUse": "Verwendete Werte"
+  "models.valuesInUse": "Verwendete Werte",
+  "models.typeModelId": "Modell-ID eingeben",
+  "models.addOwnHint": "{provider} ist ein eigener Anbieter dieser Organisation; ein gelistetes Modell wählen oder die ID eingeben.",
+  "models.ownListed": "Modelle, die {provider} listet",
+  "models.ownNoListing": "{provider} hat seine Modelle nicht gelistet",
+  "models.ownNoneMatch": "{provider} listet kein Modell mit diesem Namen; geben Sie die ID ein.",
+  "models.ownAllAdded": "Jedes Modell, das {provider} listet, ist schon im Katalog.",
+  "models.ownValuesHint": "Kaeso kennt Preise, Limits und Fähigkeiten der Modelle von {provider} nicht; Sie geben sie als Nächstes ein.",
+  "models.addOwn": "Ein Modell von {provider} hinzufügen",
+  "models.addOwnModelHint": "Die ID des Modells angeben, wie {provider} sie kennt, dann Eingaben, Limits, Preise und Format.",
+  "models.ownUnknown": "Kaeso kennt diese Werte für {provider} nicht; Eingaben, Ausgaben, Limits, Ein- und Ausgabepreis und das Format sind Pflicht."
 }

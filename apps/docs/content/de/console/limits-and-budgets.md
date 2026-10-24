@@ -1,7 +1,7 @@
 ---
 title: Limits und Budgets
 description: Begrenzen Sie Anfragen, Token und Ausgaben eines Projekts, eines Mitglieds oder eines Schlüssels.
-order: 6
+order: 7
 ---
 
 Limits begrenzen die Anfragen, Token und Ausgaben eines Projekts, eines Mitglieds oder Dienstkontos oder eines Schlüssels. Eine Anfrage muss jedes Limit bestehen, das für sie gilt: das ihres Schlüssels, ihres Inhabers und ihres Projekts.

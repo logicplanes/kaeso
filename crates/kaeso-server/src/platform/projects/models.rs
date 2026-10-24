@@ -6,7 +6,9 @@ use axum::http::StatusCode;
 use kaeso_core::catalogue::{self as core, Availability, Fields};
 use kaeso_core::decimal_input::FieldsInput;
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
-use kaeso_core::provider::{self, Provider, ProviderId};
+use kaeso_core::provider::ProviderId;
+use kaeso_core::providers::{OrgProviders, ProviderRef};
+use kaeso_kpp::ErrorKind;
 use kaeso_store::pg::catalogue::{self, EntryRow, NewEntry};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -20,7 +22,9 @@ use crate::platform::keys::{Party, creator, creator_of};
 use crate::platform::pagination::List;
 use crate::platform::params::{Path, Query};
 use crate::platform::precondition::{IfMatch, etag};
+use crate::services::availability::{self, Unlisted};
 use crate::services::catalogue as service;
+use crate::services::credentials::ResolveError;
 use crate::state::AppState;
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -103,6 +107,7 @@ type Tagged = [(axum::http::HeaderName, axum::http::HeaderValue); 1];
 
 pub(super) fn view(
     state: &AppState,
+    providers: &OrgProviders,
     row: &EntryRow,
     aliases: &[catalogue::AliasRow],
 ) -> ApiResult<CatalogueModelView> {
@@ -111,17 +116,29 @@ pub(super) fn view(
         .filter(|a| a.catalogue_model_id == row.id)
         .map(|a| a.name.clone())
         .collect();
-    named_view(state, row, names)
+    named_view(state, providers, row, names)
 }
 
 fn named_view(
     state: &AppState,
+    providers: &OrgProviders,
     row: &EntryRow,
     aliases: Vec<String>,
 ) -> ApiResult<CatalogueModelView> {
     let entry = row.entry()?;
-    let eff = service::effective(state, &entry)
-        .ok_or_else(|| ApiError::internal(format!("unknown provider `{}`", row.provider)))?;
+    let (effective, egress_dialect) = match service::effective(state, &entry, providers) {
+        Some(eff) => (eff.fields, eff.dialect.as_str()),
+        None if row.custom => (
+            entry.overrides.clone(),
+            entry.overrides.egress_dialect.map_or("", |d| d.as_str()),
+        ),
+        None => {
+            return Err(ApiError::internal(format!(
+                "unknown provider `{}`",
+                row.provider
+            )));
+        }
+    };
     Ok(CatalogueModelView {
         id: CatalogueModelId::from_uuid(row.id),
         provider: row.provider.clone(),
@@ -133,8 +150,8 @@ fn named_view(
         availability: entry.availability.into(),
         availability_checked_at: row.availability_checked_at,
         overrides: entry.overrides,
-        effective: eff.fields,
-        egress_dialect: eff.dialect.as_str().to_owned(),
+        effective,
+        egress_dialect: egress_dialect.to_owned(),
         aliases,
         created_by: creator(&row.created_by_kind, row.created_by_id),
         created_at: row.created_at,
@@ -143,13 +160,33 @@ fn named_view(
     })
 }
 
-fn provider_of(id: &str) -> ApiResult<&'static Provider> {
-    provider::lookup(id).map_err(|_| {
+pub(super) async fn org_providers(state: &AppState, ctx: &Ctx) -> ApiResult<OrgProviders> {
+    let org = ctx.project()?.project.org_id;
+    Ok(crate::services::custom_providers::of_org(state, &state.pg, org).await?)
+}
+
+fn provider_of(providers: &OrgProviders, id: &str) -> ApiResult<ProviderRef> {
+    providers.get(id).ok_or_else(|| {
+        let mut ids: Vec<&str> = kaeso_core::provider::PROVIDERS
+            .iter()
+            .map(|p| p.id)
+            .collect();
+        ids.extend(providers.custom().iter().map(|c| c.id().as_str()));
         ApiError::invalid(
             "provider",
-            format!("The provider must be one of {}.", provider::ids()),
+            format!("The provider must be one of {}.", ids.join(", ")),
         )
     })
+}
+
+fn models_dev_lists(state: &AppState, provider: &ProviderRef, model: &str) -> bool {
+    provider.custom().is_none()
+        && state
+            .models_dev
+            .current()
+            .snapshot
+            .model(provider.id(), model)
+            .is_some()
 }
 
 fn validate_model_id(id: &str) -> ApiResult<()> {
@@ -184,7 +221,7 @@ fn overrides_from(
     Ok(fields)
 }
 
-fn check_fields(fields: &Fields, provider: &Provider, custom: bool) -> ApiResult<()> {
+fn check_fields(fields: &Fields, provider: &ProviderRef, custom: bool) -> ApiResult<()> {
     fields
         .validate(provider)
         .map_err(|e| ApiError::invalid(&e.field, e.message))?;
@@ -295,8 +332,9 @@ pub async fn search(
             "`limit` must be between 1 and 200.",
         ));
     }
+    let providers = org_providers(&state, &ctx).await?;
     if let Some(pr) = &p.provider {
-        provider_of(pr)?;
+        provider_of(&providers, pr)?;
     }
     let q = p.q.as_deref().map(str::to_lowercase);
     let rows = catalogue::list(&state.pg, ctx.project()?.project.id).await?;
@@ -309,7 +347,9 @@ pub async fn search(
     let loaded = state.models_dev.current();
     let mut hits: Vec<SearchHit> = Vec::new();
     for (pid, prov) in &loaded.snapshot.providers {
-        if p.provider.as_deref().is_some_and(|x| x != pid) {
+        if p.provider.as_deref().is_some_and(|x| x != pid)
+            || providers.get(pid).is_some_and(|r| r.custom().is_some())
+        {
             continue;
         }
         for (mid, m) in &prov.models {
@@ -419,7 +459,8 @@ pub async fn preview(
     Path(_p): Path<(String, String)>,
     Query(p): Query<PreviewParams>,
 ) -> ApiResult<Json<Preview>> {
-    let prov = provider_of(&p.provider)?;
+    let providers = org_providers(&state, &ctx).await?;
+    let prov = provider_of(&providers, &p.provider)?;
     let loaded = state.models_dev.current();
     let fields = core::preview(
         &p.provider,
@@ -427,6 +468,7 @@ pub async fn preview(
         &loaded.snapshot,
         state.models_dev.supplement(),
     )
+    .filter(|_| prov.custom().is_none())
     .ok_or_else(|| {
         ApiError::NotFound(format!(
             "The model `{}` is not on models.dev for `{}`; add it as a custom model.",
@@ -437,7 +479,7 @@ pub async fn preview(
     Ok(Json(Preview {
         egress_dialect: fields
             .egress_dialect
-            .unwrap_or(prov.generation)
+            .unwrap_or(prov.generation())
             .as_str()
             .to_owned(),
         catalogue_model_id: rows
@@ -447,6 +489,118 @@ pub async fn preview(
         provider: p.provider,
         model_id: p.model,
         fields,
+    }))
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct OfferedParams {
+    #[doc = "One of the organization's custom providers."]
+    #[param(value_type = ProviderId)]
+    pub provider: String,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "A model id a custom provider lists.")]
+pub struct OfferedModel {
+    #[doc = "The provider's model id."]
+    #[schema(example = "meta-llama/Llama-3.3-70B-Instruct")]
+    pub model_id: String,
+    #[doc = "The catalogue entry, if the project has it."]
+    pub catalogue_model_id: Option<CatalogueModelId>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(
+    description = "The model ids a custom provider's model listing names; their values, such as\n\
+    prices and limits, are set by hand when one is added."
+)]
+pub struct OfferedModels {
+    #[doc = "The ids, sorted."]
+    pub data: Vec<OfferedModel>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/projects/{project}/models/offered",
+    summary = "Asks a custom provider which models it lists, with the project's key for it.",
+    description = "Calls the provider's model listing (`GET /v1/models`) in its generation\n\
+    format, through the same address checks as requests. Nothing is recorded.",
+    tag = "models",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), OfferedParams),
+    responses((status = 200, body = OfferedModels))
+)]
+pub async fn offered(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_p): Path<(String, String)>,
+    Query(p): Query<OfferedParams>,
+) -> ApiResult<Json<OfferedModels>> {
+    let providers = org_providers(&state, &ctx).await?;
+    let prov = provider_of(&providers, &p.provider)?;
+    let Some(custom) = prov.custom() else {
+        return Err(ApiError::invalid(
+            "provider",
+            "Only custom providers list their models here; search models.dev for the others.",
+        ));
+    };
+    let id = custom.id().as_str();
+    let project = &ctx.project()?.project;
+    let credential = crate::services::credentials::for_provider(
+        &state,
+        OrgId::from_uuid(project.org_id),
+        ProjectId::from_uuid(project.id),
+        &prov,
+    )
+    .await
+    .map_err(|e| match e {
+        ResolveError::Missing { .. } => ApiError::Conflict(format!(
+            "No provider key for {} is set up for this project; an org admin can add one.",
+            prov.name()
+        )),
+        ResolveError::Store(e) => e.into(),
+        other => ApiError::internal(other),
+    })?;
+    let unlisted = |status: StatusCode, message: String| ApiError::Provider {
+        status,
+        message,
+        retry_after: None,
+    };
+    let ids = availability::model_ids(&state, &credential, &prov)
+        .await
+        .map_err(|e| match e {
+            Unlisted::Unreached(e) => unlisted(StatusCode::BAD_GATEWAY, e.message),
+            Unlisted::Answered(e) => match e.kind {
+                ErrorKind::Authentication | ErrorKind::PermissionDenied | ErrorKind::Billing => {
+                    unlisted(
+                        StatusCode::BAD_GATEWAY,
+                        format!("The custom provider `{id}` refused this project's key; check it under Providers."),
+                    )
+                }
+                ErrorKind::NotFound => ApiError::NotFound(format!(
+                    "The custom provider `{id}` has no model listing; type the model id instead."
+                )),
+                _ => {
+                    tracing::info!(provider = id, kind = e.kind.as_str(), error = %e.message, "a custom provider did not list its models");
+                    unlisted(
+                        StatusCode::BAD_GATEWAY,
+                        format!("The custom provider `{id}` did not list its models; type the model id instead."),
+                    )
+                }
+            },
+        })?;
+    let rows = catalogue::list(&state.pg, project.id).await?;
+    Ok(Json(OfferedModels {
+        data: ids
+            .into_iter()
+            .map(|model_id| OfferedModel {
+                catalogue_model_id: rows
+                    .iter()
+                    .find(|r| r.provider == id && r.model_id == model_id)
+                    .map(|r| CatalogueModelId::from_uuid(r.id)),
+                model_id,
+            })
+            .collect(),
     }))
 }
 
@@ -486,15 +640,20 @@ pub async fn create(
     Body(req): Body<ModelCreate>,
 ) -> ApiResult<(StatusCode, Tagged, Json<CatalogueModelView>)> {
     ensure_active(&ctx, MODELS_ARCHIVED)?;
-    let prov = provider_of(&req.provider)?;
+    let providers = org_providers(&state, &ctx).await?;
+    let prov = provider_of(&providers, &req.provider)?;
     validate_model_id(&req.model_id)?;
-    let listed = state
-        .models_dev
-        .current()
-        .snapshot
-        .model(&req.provider, &req.model_id)
-        .is_some();
+    let listed = models_dev_lists(&state, &prov, &req.model_id);
     match (listed, req.custom) {
+        (false, false) if prov.custom().is_some() => {
+            return Err(ApiError::invalid(
+                "custom",
+                format!(
+                    "`{}` is a custom provider; send `custom: true` with the model's values.",
+                    req.provider
+                ),
+            ));
+        }
         (false, false) => {
             return Err(ApiError::invalid(
                 "model_id",
@@ -516,9 +675,9 @@ pub async fn create(
         _ => {}
     }
     let overrides = overrides_from(req.overrides.as_ref(), Fields::default())?;
-    check_fields(&overrides, prov, req.custom)?;
+    check_fields(&overrides, &prov, req.custom)?;
     let mut tx = state.pg.begin().await?;
-    let row = insert_entry(&ctx, &mut tx, prov, &req.model_id, &overrides, req.custom)
+    let row = insert_entry(&ctx, &mut tx, &prov, &req.model_id, &overrides, req.custom)
         .await?
         .ok_or_else(|| {
             ApiError::Conflict(format!(
@@ -532,14 +691,14 @@ pub async fn create(
     Ok((
         StatusCode::CREATED,
         etag(row.revision),
-        Json(view(&state, &row, &[])?),
+        Json(view(&state, &providers, &row, &[])?),
     ))
 }
 
 async fn insert_entry(
     ctx: &Ctx,
     tx: &mut sqlx::PgConnection,
-    prov: &Provider,
+    prov: &ProviderRef,
     model_id: &str,
     overrides: &Fields,
     custom: bool,
@@ -554,7 +713,7 @@ async fn insert_entry(
             id: id.uuid(),
             org_id: project.project.org_id,
             project_id: project.project.id,
-            provider: prov.id,
+            provider: prov.id(),
             model_id,
             overrides: &json,
             custom,
@@ -571,7 +730,7 @@ async fn insert_entry(
         .ok_or_else(|| ApiError::internal("new catalogue model vanished"))?;
     ctx.audit(Some(ctx.org()?.id()), "catalogue_model.create")
         .target("catalogue_model", id)
-        .after(serde_json::json!({ "provider": prov.id, "model_id": model_id, "custom": custom, "overrides": json }))
+        .after(serde_json::json!({ "provider": prov.id(), "model_id": model_id, "custom": custom, "overrides": json }))
         .write(tx)
         .await?;
     Ok(Some(row))
@@ -618,9 +777,16 @@ pub async fn batch(
     Body(req): Body<ModelBatch>,
 ) -> ApiResult<(StatusCode, Json<BatchResult>)> {
     ensure_active(&ctx, MODELS_ARCHIVED)?;
-    let prov = provider_of(&req.provider)?;
+    let providers = org_providers(&state, &ctx).await?;
+    let prov = provider_of(&providers, &req.provider)?;
+    if prov.custom().is_some() {
+        return Err(ApiError::invalid(
+            "provider",
+            "Add a custom provider's models one at a time, with their values.",
+        ));
+    }
     let loaded = state.models_dev.current();
-    let models = loaded.snapshot.providers.get(prov.id).map(|p| &p.models);
+    let models = loaded.snapshot.providers.get(prov.id()).map(|p| &p.models);
     let ids: Vec<String> = match (&req.model_ids, req.all_current) {
         (Some(ids), false) => {
             if ids.is_empty() || ids.len() > 200 {
@@ -634,7 +800,7 @@ pub async fn batch(
                     "model_ids",
                     format!(
                         "The model `{missing}` is not on models.dev for `{}`; add it alone as a custom model.",
-                        prov.id
+                        prov.id()
                     ),
                 ));
             }
@@ -643,7 +809,7 @@ pub async fn batch(
         (None, true) => models
             .into_iter()
             .flatten()
-            .filter(|(id, m)| is_current(&state, prov.id, id, m))
+            .filter(|(id, m)| is_current(&state, prov.id(), id, m))
             .map(|(id, _)| id.clone())
             .collect(),
         _ => {
@@ -656,7 +822,7 @@ pub async fn batch(
     let mut added_rows = Vec::new();
     let mut skipped = Vec::new();
     for id in &ids {
-        match insert_entry(&ctx, &mut tx, prov, id, &Fields::default(), false).await? {
+        match insert_entry(&ctx, &mut tx, &prov, id, &Fields::default(), false).await? {
             Some(row) => added_rows.push(row),
             None => skipped.push(id.clone()),
         }
@@ -665,7 +831,7 @@ pub async fn batch(
     service::forget(&state, ctx.project()?.project.id).await;
     let added = added_rows
         .iter()
-        .map(|r| view(&state, r, &[]))
+        .map(|r| view(&state, &providers, r, &[]))
         .collect::<ApiResult<Vec<_>>>()?;
     Ok((StatusCode::CREATED, Json(BatchResult { added, skipped })))
 }
@@ -684,6 +850,7 @@ pub async fn list(
     Path(_p): Path<(String, String)>,
 ) -> ApiResult<Json<List<CatalogueModelView>>> {
     let project = ctx.project()?.project.id;
+    let providers = org_providers(&state, &ctx).await?;
     let rows = catalogue::list(&state.pg, project).await?;
     let mut aliases: HashMap<uuid::Uuid, Vec<String>> = HashMap::new();
     for a in catalogue::list_aliases(&state.pg, project).await? {
@@ -694,7 +861,14 @@ pub async fn list(
     }
     Ok(Json(List::complete(
         rows.iter()
-            .map(|r| named_view(&state, r, aliases.remove(&r.id).unwrap_or_default()))
+            .map(|r| {
+                named_view(
+                    &state,
+                    &providers,
+                    r,
+                    aliases.remove(&r.id).unwrap_or_default(),
+                )
+            })
             .collect::<ApiResult<Vec<_>>>()?,
     )))
 }
@@ -722,8 +896,12 @@ pub async fn get(
     Path((_o, _p, id)): Path<(String, String, String)>,
 ) -> ApiResult<(Tagged, Json<CatalogueModelView>)> {
     let row = entry_row(&state, &ctx, &id).await?;
+    let providers = org_providers(&state, &ctx).await?;
     let aliases = catalogue::list_aliases(&state.pg, row.project_id).await?;
-    Ok((etag(row.revision), Json(view(&state, &row, &aliases)?)))
+    Ok((
+        etag(row.revision),
+        Json(view(&state, &providers, &row, &aliases)?),
+    ))
 }
 
 async fn locked_entry(
@@ -770,12 +948,13 @@ pub async fn update(
     Body(req): Body<ModelUpdate>,
 ) -> ApiResult<(Tagged, Json<CatalogueModelView>)> {
     ensure_active(&ctx, MODELS_ARCHIVED)?;
+    let providers = org_providers(&state, &ctx).await?;
     let mut tx = state.pg.begin().await?;
     let row = locked_entry(&ctx, &mut tx, &id, &if_match).await?;
-    let prov = provider_of(&row.provider)?;
+    let prov = provider_of(&providers, &row.provider)?;
     let before = row.entry()?.overrides;
     let after = overrides_from(Some(&req.overrides), before.clone())?;
-    check_fields(&after, prov, row.custom)?;
+    check_fields(&after, &prov, row.custom)?;
     let json = serde_json::to_value(&after).map_err(ApiError::internal)?;
     if !catalogue::set_overrides(&mut *tx, row.project_id, row.id, &json).await? {
         return Err(ApiError::not_found("catalogue model"));
@@ -792,7 +971,10 @@ pub async fn update(
     tx.commit().await?;
     service::forget(&state, row.project_id).await;
     let aliases = catalogue::list_aliases(&state.pg, row.project_id).await?;
-    Ok((etag(row.revision), Json(view(&state, &row, &aliases)?)))
+    Ok((
+        etag(row.revision),
+        Json(view(&state, &providers, &row, &aliases)?),
+    ))
 }
 
 #[utoipa::path(
@@ -813,6 +995,7 @@ pub async fn delete(
     if_match: IfMatch,
 ) -> ApiResult<StatusCode> {
     ensure_active(&ctx, MODELS_ARCHIVED)?;
+    let providers = org_providers(&state, &ctx).await?;
     let mut tx = state.pg.begin().await?;
     let row = locked_entry(&ctx, &mut tx, &id, &if_match).await?;
     let aliases = catalogue::list_aliases(&mut *tx, row.project_id).await?;
@@ -821,7 +1004,7 @@ pub async fn delete(
     }
     ctx.audit(Some(ctx.org()?.id()), "catalogue_model.delete")
         .target("catalogue_model", CatalogueModelId::from_uuid(row.id))
-        .before(view(&state, &row, &aliases)?)
+        .before(view(&state, &providers, &row, &aliases)?)
         .write(&mut tx)
         .await?;
     tx.commit().await?;

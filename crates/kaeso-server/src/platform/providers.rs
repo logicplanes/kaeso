@@ -1,12 +1,16 @@
 use axum::Json;
+use axum::extract::State;
 use kaeso_core::id::OrgId;
 use kaeso_core::provider::{PROVIDERS, Provider, ProviderId};
+use kaeso_core::providers::CustomProvider;
 use serde::Serialize;
 use utoipa::ToSchema;
 
 use super::access::Ctx;
+use super::error::ApiResult;
 use super::pagination::List;
 use super::params::Path;
+use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "A model provider Kaeso calls, with what the console shows of it.")]
@@ -16,9 +20,19 @@ pub struct ProviderView {
     pub id: ProviderId,
     #[doc = "The name people see."]
     #[schema(example = "Groq")]
-    pub name: &'static str,
-    #[doc = "The provider's page for creating API keys."]
-    pub key_page: KeyPageView,
+    pub name: String,
+    #[doc = "One of the organization's own providers, added under\n\
+        `/orgs/{org}/custom-providers`."]
+    pub custom: bool,
+    #[doc = "Whether requests to it carry a provider key; `false` for a custom\n\
+        provider that takes none."]
+    pub takes_key: bool,
+    #[doc = "The name of the built-in provider with the same id that this custom\n\
+        provider hides inside the organization; `null` without one."]
+    #[schema(example = json!(null))]
+    pub hides_built_in: Option<&'static str>,
+    #[doc = "The provider's page for creating API keys; `null` for a custom provider."]
+    pub key_page: Option<KeyPageView>,
     #[doc = "How the provider's API keys start; `null` when they have no fixed prefix."]
     #[schema(example = "gsk_")]
     pub key_prefix: Option<&'static str>,
@@ -72,11 +86,14 @@ impl ProviderView {
     fn of(p: &Provider) -> ProviderView {
         ProviderView {
             id: p.provider_id(),
-            name: p.name,
-            key_page: KeyPageView {
+            name: p.name.to_owned(),
+            custom: false,
+            takes_key: true,
+            hides_built_in: None,
+            key_page: Some(KeyPageView {
                 url: p.key_page.url,
                 label: p.key_page.label,
-            },
+            }),
             key_prefix: p.key_prefix,
             dialects: p.dialects.iter().map(|d| d.as_str()).collect(),
             count_tokens: p.count_tokens.map(|d| d.as_str()),
@@ -89,20 +106,51 @@ impl ProviderView {
             }),
         }
     }
+
+    fn custom(p: &CustomProvider) -> ProviderView {
+        ProviderView {
+            id: p.id().clone(),
+            name: p.name().to_owned(),
+            custom: true,
+            takes_key: p.auth().style().is_some(),
+            hides_built_in: kaeso_core::provider::provider(p.id().as_str()).map(|b| b.name),
+            key_page: None,
+            key_prefix: None,
+            dialects: p.dialects().iter().map(|d| d.as_str()).collect(),
+            count_tokens: p.count_tokens().map(|d| d.as_str()),
+            embeddings: p.embeddings().map(|d| d.as_str()),
+            account: None,
+        }
+    }
 }
 
 #[utoipa::path(
     get,
     path = "/orgs/{org}/providers",
-    summary = "Every model provider Kaeso calls, with its name, key page, key prefix and formats.",
-    description = "The same list for every organization of the install. A provider key, a\n\
-        catalogue model and a setting name a provider by its `id`.",
+    summary = "Every model provider Kaeso calls for the organization, with its name, key page,\n\
+    key prefix and formats.",
+    description = "The built-in providers, the same for every organization, followed by the\n\
+        organization's custom providers while the install allows them. A provider\n\
+        key and a catalogue model name a provider by its `id`. A custom provider\n\
+        with the id of a built-in one takes its place in the organization.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     responses((status = 200, body = List<ProviderView>))
 )]
-pub async fn list(Path(_org): Path<String>, _ctx: Ctx) -> Json<List<ProviderView>> {
-    Json(List::complete(
-        PROVIDERS.iter().map(ProviderView::of).collect(),
-    ))
+pub async fn list(
+    State(state): State<AppState>,
+    Path(_org): Path<String>,
+    ctx: Ctx,
+) -> ApiResult<Json<List<ProviderView>>> {
+    let org = ctx.org()?.org.id;
+    let custom = crate::services::custom_providers::of_org(&state, &state.pg, org).await?;
+    let hidden = |id: &str| custom.custom().iter().any(|c| c.id().as_str() == id);
+    Ok(Json(List::complete(
+        PROVIDERS
+            .iter()
+            .filter(|p| !hidden(p.id))
+            .map(ProviderView::of)
+            .chain(custom.custom().iter().map(|c| ProviderView::custom(c)))
+            .collect(),
+    )))
 }

@@ -67,7 +67,8 @@ impl Broken {
             | UpstreamError::Transfer(_)
             | UpstreamError::TooLarge(_)
             | UpstreamError::Client(_)
-            | UpstreamError::Method(_) => Broken {
+            | UpstreamError::Method(_)
+            | UpstreamError::Refused(_) => Broken {
                 kind: STREAM_INTERRUPTED.to_owned(),
                 status: 502,
                 err,

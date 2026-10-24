@@ -1,7 +1,7 @@
 ---
 title: Anfrageprotokolle
 description: Finden Sie jede Anfrage eines Projekts, sehen Sie Gesendetes und Erhaltenes, exportieren Sie Protokolle und wählen Sie, was bleibt.
-order: 7
+order: 8
 ---
 
 Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, Token, Kosten, Zeiten, den Schlüssel und wer sie gesendet hat. Mit eingeschalteter Inhaltsprotokollierung speichert es auch, was die App gesendet und zurückbekommen hat. Eine Anfrage erscheint wenige Sekunden nach ihrem Ende.

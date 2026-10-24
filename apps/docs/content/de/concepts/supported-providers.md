@@ -4,7 +4,7 @@ description: Jeden Anbieter von Kaeso nachschlagen, mit ID, Formaten, Host und d
 order: 2
 ---
 
-Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](providers.md) steht, wie Sie einen davon nutzen und worin sie sich unterscheiden.
+Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](providers.md) steht, wie Sie einen davon nutzen und worin sie sich unterscheiden. Eine Organisation kann außerdem einen eigenen Server hinzufügen, der eines dieser Formate spricht ([Eigene Anbieter](../console/custom-providers.md)).
 
 ## Spalten
 

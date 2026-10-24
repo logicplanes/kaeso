@@ -106,6 +106,10 @@ flowchart TD
 
 Kaeso 把每个请求只发给其模型名称对应的那一个服务商；该服务商出错时，不会改用其他服务商。[请求如何指定模型](../console/models-and-aliases.md#请求如何指定模型)说明了 Kaeso 解析名称的顺序，以及为什么 `openai/gpt-4o` 这样的名称可能发往 OpenAI 而不是 OpenRouter。
 
+## 自有的服务商
+
+组织可以将 Kaeso 未内置的服务器，例如自托管的 vLLM 或内部代理，添加为自定义服务商。Kaeso 以它使用的原样格式调用它，其模型的价格、限制和能力由您手动设置（[自定义服务商](../console/custom-providers.md)）。
+
 ## 出站连接
 
 网关通过 HTTPS 访问每个服务商的基础 URL。如果您的网络限制出站连接，请放行组织所用的每个服务商的主机，例如 Groq 的 `api.groq.com`。[支持的服务商](supported-providers.md)给出了每个服务商的主机，[系统要求](../self-hosting/requirements.md#网络)列出了实例的所有连接，[服务商设置](../self-hosting/configuration.md#服务商设置)可以修改服务商的基础 URL。

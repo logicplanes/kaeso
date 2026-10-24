@@ -8,7 +8,7 @@ Anbieter-Schlüssel sind die Schlüssel Ihrer Organisation für die [Modellanbie
 
 ## Schlüssel hinzufügen
 
-**Anbieter** listet die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an. Ab mehr als acht Schlüsseln findet eine Suche über der Liste sie nach Anbieter, Schlüssel oder Projektname.
+**Anbieter** listet unter **Anbieter-Schlüssel** die Anbieter, für die Ihre Organisation Schlüssel hat. Solange sie keinen hat, erklärt die Seite Anbieter-Schlüssel und bietet **Anbieter-Schlüssel hinzufügen** an. Ab mehr als acht Schlüsseln findet eine Suche über der Liste sie nach Anbieter, Schlüssel oder Projektname. Daneben listet **Eigene Anbieter** die Server, die Ihre Organisation selbst hinzugefügt hat ([Eigene Anbieter](custom-providers.md)).
 
 1. Wählen Sie unter **Anbieter** **Anbieter-Schlüssel hinzufügen**.
 2. **Für welchen Anbieter ist der Schlüssel?** Suchen Sie den Anbieter und wählen Sie ihn. Anbieter, die schon Schlüssel haben, stehen oben, mit der Anzahl ihrer Schlüssel.

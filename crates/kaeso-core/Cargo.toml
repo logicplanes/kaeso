@@ -24,6 +24,7 @@ toml.workspace = true
 secrecy.workspace = true
 idna.workspace = true
 unicode-normalization.workspace = true
+url.workspace = true
 utoipa = { workspace = true, optional = true }
 
 [features]

@@ -1,4 +1,4 @@
-use kaeso_core::provider::{AccountSignIn, Provider};
+use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Request};
 
 use super::errors::error;
@@ -6,10 +6,9 @@ use super::errors::error;
 pub(super) fn prepare(
     req: &mut Request,
     account: AccountSignIn,
-    provider: &Provider,
+    provider: &str,
 ) -> Result<DialectId, KppError> {
     let product = account.product;
-    let provider = provider.name;
     match req {
         Request::Embed(_) => Err(KppError::unsupported(
             "embeddings",

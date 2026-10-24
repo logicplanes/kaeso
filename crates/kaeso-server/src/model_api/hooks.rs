@@ -118,6 +118,7 @@ pub struct Outcome {
     pub kind: RequestKind,
     pub egress: Option<DialectId>,
     pub provider: Option<&'static str>,
+    pub custom_provider: Option<String>,
     pub requested_model: Option<String>,
     pub catalogue_model_id: Option<Uuid>,
     pub model_id: Option<String>,

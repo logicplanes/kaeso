@@ -197,7 +197,9 @@ The message names the cause and what to do. These are the causes behind each sta
 | 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets. |
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |
+| 500 | The model's provider is a custom provider, and the install turned custom providers off. |
 | 502 | Kaeso can't reach the provider, or the transfer failed. |
+| 502 | A custom provider is at an address the install doesn't allow, or answered in a form its format can't read. |
 | 502 | The provider refused the project's provider key, or refused it for billing or quota reasons. |
 | 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
 | 503 | The provider is overloaded, in the OpenAI formats. |
@@ -225,6 +227,20 @@ A refused provider key is the install's problem, not your app's. The provider's 
 Instead, your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". An organization admin checks the key under **Providers**.
 
 The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
+
+### Custom providers
+
+A [custom provider](../console/custom-providers.md) gets messages that name it by its id, so you can tell your own server's problems from a provider's:
+
+| What happened | Status | Message |
+| --- | --- | --- |
+| Kaeso can't connect to it | 502 | "Kaeso cannot reach the custom provider `…`; check its base URL." |
+| Its address isn't allowed | 502 | "The custom provider `…` is at an address this install does not allow; ask its operator." |
+| It refused the project's key | 502 | "The custom provider `…` refused this project's key; ask an organization admin to check it under Providers." |
+| It wants a key, but takes none in Kaeso | 502 | "The custom provider `…` asks for a key; an organization admin sets how it signs in under Providers." |
+| Its reply isn't in its format | 502 | "The custom provider `…` answered in a form `…` cannot read; check its API format." |
+
+When the provider answers with an error in its format, your app gets that error as for any provider. The request log keeps what the provider said.
 
 ### Models the provider doesn't serve
 

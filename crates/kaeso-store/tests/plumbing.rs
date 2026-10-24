@@ -51,7 +51,12 @@ async fn provider_columns_accept_exactly_the_provider_id_rule() {
             .iter()
             .map(|(table, _)| table.as_str())
             .collect::<Vec<_>>(),
-        ["catalogue_models", "provider_credentials", "usage_daily"]
+        [
+            "catalogue_models",
+            "custom_providers",
+            "provider_credentials",
+            "usage_daily"
+        ]
     );
     for (table, check) in &checks {
         assert!(

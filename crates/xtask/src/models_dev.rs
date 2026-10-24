@@ -17,6 +17,7 @@ const FETCHED_AT: &str = "pub const EMBEDDED_FETCHED_AT: OffsetDateTime = dateti
 
 pub(crate) struct Paths {
     snapshot: PathBuf,
+    provider_ids: PathBuf,
     readme: PathBuf,
     source: PathBuf,
 }
@@ -26,6 +27,7 @@ impl Paths {
         let core = root.join("crates/kaeso-core");
         Self {
             snapshot: core.join("data/models-dev.json"),
+            provider_ids: core.join("data/models-dev-providers.txt"),
             readme: core.join("data/README.md"),
             source: core.join("src/models_dev.rs"),
         }
@@ -37,12 +39,14 @@ pub(crate) async fn refresh(paths: &Paths, url: &str, out: &mut impl Write) -> R
     let now = OffsetDateTime::now_utc();
     let fetched = now - Duration::nanoseconds(i64::from(now.nanosecond()));
     let (snapshot, providers, models) = filter(&api)?;
+    let ids = provider_ids(&api)?;
     let digest = hex(&Sha256::digest(snapshot.as_bytes()));
     let stamp = fetched.format(&Rfc3339)?;
     let content = content(&providers, models);
     let readme = readme(&read_text(&paths.readme)?, &stamp, &content, &digest)?;
     let source = fetched_at(&read_text(&paths.source)?, fetched)?;
     write(&paths.snapshot, &snapshot)?;
+    write(&paths.provider_ids, ids)?;
     write(&paths.readme, readme)?;
     write(&paths.source, source)?;
     writeln!(
@@ -79,6 +83,12 @@ fn filter(api: &[u8]) -> Result<(String, Vec<String>, usize), Error> {
     let snapshot = String::from_utf8(bytes)
         .map_err(|e| Error::Invalid(format!("the snapshot is not UTF-8: {e}")))?;
     Ok((snapshot, providers, models))
+}
+
+fn provider_ids(api: &[u8]) -> Result<String, Error> {
+    let all: Map<String, Value> =
+        serde_json::from_slice(api).map_err(|e| Error::json("the models.dev catalogue", e))?;
+    Ok(all.keys().map(|id| format!("{id}\n")).collect())
 }
 
 fn content(providers: &[String], models: usize) -> String {
@@ -187,6 +197,21 @@ mod tests {
     }
 
     #[test]
+    fn every_models_dev_provider_id_is_listed_once_in_order() {
+        assert_eq!(
+            provider_ids(API.as_bytes()).unwrap(),
+            "anthropic\nopenai\nzeta\n"
+        );
+        assert!(provider_ids(b"[]").is_err());
+        let shipped = include_str!("../../kaeso-core/data/models-dev-providers.txt");
+        let ids: Vec<&str> = shipped.lines().collect();
+        assert!(ids.is_sorted() && ids.len() > 100, "{ids:?}");
+        for p in PROVIDERS {
+            assert!(ids.contains(&p.id), "{}", p.id);
+        }
+    }
+
+    #[test]
     fn readme_rows_are_rewritten_and_required() {
         let row = content(&["groq".to_owned(), "openai".to_owned()], 70);
         let text = readme(README, "2026-10-16T08:00:00Z", &row, "abc").unwrap();
@@ -232,6 +257,10 @@ mod tests {
         assert!(served.request.await.unwrap().starts_with("GET /api.json "));
         let snapshot = dir.read("crates/kaeso-core/data/models-dev.json");
         assert_eq!(snapshot, filter(API.as_bytes()).unwrap().0);
+        assert_eq!(
+            dir.read("crates/kaeso-core/data/models-dev-providers.txt"),
+            "anthropic\nopenai\nzeta\n"
+        );
         let digest = hex(&Sha256::digest(snapshot.as_bytes()));
         let readme = dir.read("crates/kaeso-core/data/README.md");
         assert!(readme.contains(&format!("| SHA-256 | `{digest}` |")));

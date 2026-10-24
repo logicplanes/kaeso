@@ -91,6 +91,12 @@ Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestri
 
 Eine Prüfung zur Compile-Zeit stellt sicher, dass jede ID in `PROVIDERS` der Regel folgt. Die CHECK-Constraints von PostgreSQL auf den Spalten `provider` nutzen dasselbe Muster, was ein Store-Test vergleicht. Ein weiterer Test prüft jeden Anbieter im mitgelieferten models.dev-Snapshot.
 
+## Eigene Anbieter
+
+Die eigenen Anbieter einer Organisation liegen in der Tabelle `custom_providers`, eine Zeile pro Organisation und ID. `OrgProviders` in `crates/kaeso-core/src/providers.rs` löst eine ID zu einer `ProviderRef` auf: zuerst der eigene Anbieter der Organisation, dann der eingebaute, sodass ein eingebauter Anbieter, den ein späteres Release unter einer vergebenen ID aufnimmt, nie die Schlüssel dieser Organisation erhält. Der Anfragepfad fragt dafür keine Datenbank ab: Die gecachten `ProjectModels` eines Projekts tragen die eigenen Anbieter seiner Organisation, und jede Änderung an einem vergisst die gecachten Modelle der Projekte der Organisation.
+
+Ein eigener Anbieter spricht den reinen Dialekt, `ChatProfile::OPENAI` für Chat Completions, ohne Meldungen für abgelehnte Schlüssel und ohne Konto-Anmeldung. Seine Aufrufe gehen durch `kaeso_upstream::guard`, dieselbe Adressprüfung, die die OIDC-Discovery nutzt. Der Resolver prüft bei jeder neuen Verbindung jede Adresse, zu der ein Name auflöst, `check_literal` prüft eine IP-Adresse in der URL vor jedem Aufruf, und überwachte Clients nutzen keinen Proxy und einen eigenen Verbindungspool. Metriken kennzeichnen jeden eigenen Anbieter als `custom`; Anfrageprotokolle und Nutzung behalten seine ID.
+
 ## Modelldaten
 
 `crates/kaeso-core/data` enthält die Modelldaten, die jedes Release mitliefert:
@@ -99,6 +105,7 @@ Eine Prüfung zur Compile-Zeit stellt sicher, dass jede ID in `PROVIDERS` der Re
 | --- | --- |
 | `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugang funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde und welchen SHA-256 er hat |
 | `supplement.toml` | Felder, die models.dev nicht hat, jedes mit seiner Quelle in der `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts`, wo models.dev keine nennt, und `egress_dialect`, das Format, das Kaeso an ein OpenAI-Modell sendet |
+| `models-dev-providers.txt` | Jede Anbieter-ID auf models.dev, die ein eigener Anbieter nicht nehmen darf |
 
 Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Das Gateway synchronisiert models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`) und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.
 

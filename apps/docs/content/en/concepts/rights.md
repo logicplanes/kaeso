@@ -47,8 +47,8 @@ An organization role also holds rights in every project, on top of the member's 
 | Owner | All, including those of future releases | All | Admin |
 | Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All | Admin |
 | Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None | Viewer |
-| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None | Developer |
-| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's, and `project.audit_log.view` | Viewer |
+| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None | Developer |
+| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's, and `project.audit_log.view` | Viewer |
 | Member | `org.view`, `members.view` | None | Viewer |
 
 | Project role | Rights |
@@ -124,6 +124,8 @@ Every change of roles and rights follows these rules:
 | `provider_credentials.create` | Add provider keys | Add provider keys to the organization. | recent sign-in; needs `provider_credentials.view` |
 | `provider_credentials.replace` | Change provider keys | Replace and rename provider keys, choose each provider's default and assign keys to projects. | recent sign-in; needs `provider_credentials.view` |
 | `provider_credentials.delete` | Delete provider keys | Remove a provider key from the organization. | sensitive; needs `provider_credentials.view` |
+| `providers.custom.view` | View custom providers | See the organization's custom providers, with their addresses and formats. |  |
+| `providers.custom.manage` | Manage custom providers | Add, change and delete the organization's custom providers, the endpoints that get its requests and keys. | sensitive; recent sign-in; needs `providers.custom.view` |
 
 ### Security
 

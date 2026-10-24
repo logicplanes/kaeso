@@ -4,6 +4,7 @@ pub mod availability;
 pub mod catalogue;
 pub mod continuity;
 pub mod credentials;
+pub mod custom_providers;
 pub mod dns;
 pub mod invites;
 pub mod keys;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use kaeso_codecs::{EgressCtx, dispatch};
-use kaeso_core::provider::AuthStyle;
+use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, KppError, Reply, Request};
 use kaeso_upstream::{Call, ResponseBody, Timeouts, UpstreamError};
 
@@ -15,8 +15,7 @@ const COUNT_TIMEOUT: Duration = Duration::from_secs(30);
 pub(super) struct InputCounter {
     pub(super) state: AppState,
     pub(super) credential: Arc<Resolved>,
-    pub(super) provider: &'static str,
-    pub(super) auth: AuthStyle,
+    pub(super) provider: ProviderRef,
     pub(super) dialect: DialectId,
     pub(super) asked: Option<(Arc<Request>, Request)>,
     pub(super) adaptive_thinking: Option<bool>,
@@ -52,12 +51,12 @@ fn with_causes(e: &UpstreamError) -> String {
 
 impl InputCounter {
     pub(super) async fn count(mut self) -> Input {
-        let (provider, sent_bytes) = (self.provider, self.sent_bytes);
+        let (provider, sent_bytes) = (self.provider.id().to_owned(), self.sent_bytes);
         if let Some((app_req, req)) = self.asked.take() {
             match self.ask_provider(app_req, req).await {
                 Ok(n) => return Input::Counted(n),
                 Err(e) => tracing::warn!(
-                    provider,
+                    provider = %provider,
                     error = %super::pipeline::without_key_fragments(e).message,
                     "cannot count the input of a stream that ended early; estimating it from its size"
                 ),
@@ -75,7 +74,7 @@ impl InputCounter {
         };
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
-        let mut ctx = EgressCtx::new(&app_req).with_provider(self.provider);
+        let mut ctx = EgressCtx::new(&app_req).with_provider(self.provider.id());
         if let Some(a) = self.adaptive_thinking {
             ctx = ctx.with_adaptive_thinking(a);
         }
@@ -83,14 +82,16 @@ impl InputCounter {
             ctx = ctx.with_reasoning(r);
         }
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
-        let base = base_url(&self.state, self.provider)
-            .ok_or_else(|| KppError::provider(format!("no base URL for `{}`", self.provider)))?;
+        let base = base_url(&self.state, &self.provider).ok_or_else(|| {
+            KppError::provider(format!("no base URL for `{}`", self.provider.id()))
+        })?;
         let resp = self
             .state
             .upstream
             .send(Call {
                 base_url: base,
-                auth: self.auth,
+                auth: self.provider.auth(),
+                guarded: self.provider.custom().is_some(),
                 credential: &self.credential.secret,
                 request: encoded.into(),
                 stream: false,

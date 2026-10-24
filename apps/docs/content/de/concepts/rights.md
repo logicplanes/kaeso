@@ -47,8 +47,8 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | Inhaber | Alle, auch die künftiger Versionen | Alle | Admin |
 | Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle | Admin |
 | Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine | Betrachter |
-| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine | Entwickler |
-| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters und `project.audit_log.view` | Betrachter |
+| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine | Entwickler |
+| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters und `project.audit_log.view` | Betrachter |
 | Mitglied | `org.view`, `members.view` | Keine | Betrachter |
 
 | Projektrolle | Rechte |
@@ -124,6 +124,8 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `provider_credentials.create` | Anbieter-Schlüssel hinzufügen | Der Organisation Anbieter-Schlüssel hinzufügen. | kürzliche Anmeldung; erfordert `provider_credentials.view` |
 | `provider_credentials.replace` | Anbieter-Schlüssel ändern | Anbieter-Schlüssel ersetzen und umbenennen, je Anbieter den Standard wählen und Schlüssel Projekten zuweisen. | kürzliche Anmeldung; erfordert `provider_credentials.view` |
 | `provider_credentials.delete` | Anbieter-Schlüssel löschen | Einen Anbieter-Schlüssel aus der Organisation entfernen. | sensibel; erfordert `provider_credentials.view` |
+| `providers.custom.view` | Eigene Anbieter ansehen | Die eigenen Anbieter der Organisation mit ihren Adressen und Formaten sehen. |  |
+| `providers.custom.manage` | Eigene Anbieter verwalten | Eigene Anbieter der Organisation hinzufügen, ändern und löschen, also die Endpunkte, die ihre Anfragen und Schlüssel erhalten. | sensibel; kürzliche Anmeldung; erfordert `providers.custom.view` |
 
 ### Sicherheit
 

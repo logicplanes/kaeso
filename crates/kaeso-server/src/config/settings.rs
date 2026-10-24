@@ -111,6 +111,8 @@ const ROWS: &[Row] = &[
     s("updater.url", "KAESO_UPDATER_URL", Text, Some("http://updater:8081"), false, "Address of the updater, the optional service that applies updates."),
     s("updater.token", "KAESO_UPDATER_TOKEN", Text, None, true, "The secret the gateway and the updater share, at least 32 characters; without it the gateway never calls the updater."),
     Row::PerProvider,
+    s("custom_providers.enabled", "KAESO_CUSTOM_PROVIDERS_ENABLED", Bool, Some("true"), false, "Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy, on an API format Kaeso speaks. Off refuses requests to the ones they added."),
+    s("custom_providers.allowed_networks", "KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS", Text, None, false, "Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`; plain `http` reaches only these. Kaeso checks every connection after DNS resolution; link-local and cloud metadata addresses stay refused."),
     s("upstream.connect_timeout", "KAESO_UPSTREAM_CONNECT_TIMEOUT", Text, Some("10s"), false, "Connect timeout to providers, TCP and TLS; at most 24h."),
     s("upstream.request_timeout", "KAESO_UPSTREAM_REQUEST_TIMEOUT", Text, Some("600s"), false, "Total timeout of a non-streaming provider request; at most 24h."),
     s("upstream.first_byte_timeout", "KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT", Text, Some("60s"), false, "Streaming: time to the first byte from the provider; at most 24h."),

@@ -106,6 +106,10 @@ Some models are served by several providers: Groq, OpenRouter and Together AI al
 
 Kaeso sends each request to the one provider its model name leads to, and doesn't fall back to another provider when that one fails. [How a request names a model](../console/models-and-aliases.md#how-a-request-names-a-model) gives the order Kaeso reads names in, and shows why a name such as `openai/gpt-4o` can reach OpenAI rather than OpenRouter.
 
+## Providers of your own
+
+An organization can add a server Kaeso doesn't ship, such as a self-hosted vLLM or an internal proxy, as a custom provider. Kaeso calls it in the plain format it speaks, and you set its models' prices, limits and capabilities by hand ([custom providers](../console/custom-providers.md)).
+
 ## Outbound connections
 
 The gateway calls each provider over HTTPS at the provider's base URL. If your network limits outgoing connections, allow the host of every provider your organizations use, such as `api.groq.com` for Groq. [Supported providers](supported-providers.md) gives each provider's host, [requirements](../self-hosting/requirements.md#network) lists every connection an install makes, and [provider settings](../self-hosting/configuration.md#provider-settings) change a provider's base URL.

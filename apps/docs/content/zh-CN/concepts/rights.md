@@ -47,8 +47,8 @@ order: 4
 | 所有者 | 全部，包括未来版本新增的权限 | 全部 | 管理员 |
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 | 管理员 |
 | 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 | 查看者 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 | 开发者 |
-| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限，以及 `project.audit_log.view` | 查看者 |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 | 开发者 |
+| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限，以及 `project.audit_log.view` | 查看者 |
 | 成员 | `org.view`、`members.view` | 无 | 查看者 |
 
 | 项目角色 | 权限 |
@@ -124,6 +124,8 @@ order: 4
 | `provider_credentials.create` | 添加服务商密钥 | 为组织添加服务商密钥。 | 需近期登录；需要 `provider_credentials.view` |
 | `provider_credentials.replace` | 更改服务商密钥 | 替换和重命名服务商密钥，选择各服务商的默认密钥，并将密钥分配给项目。 | 需近期登录；需要 `provider_credentials.view` |
 | `provider_credentials.delete` | 删除服务商密钥 | 从组织中移除服务商密钥。 | 敏感；需要 `provider_credentials.view` |
+| `providers.custom.view` | 查看自定义服务商 | 查看组织的自定义服务商及其地址和格式。 |  |
+| `providers.custom.manage` | 管理自定义服务商 | 添加、修改和删除组织的自定义服务商，即接收其请求和密钥的端点。 | 敏感；近期登录；需要 `providers.custom.view` |
 
 ### 安全
 

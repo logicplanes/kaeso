@@ -2575,6 +2575,7 @@ dependencies = [
  "time",
  "toml",
  "unicode-normalization",
+ "url",
  "utoipa",
  "uuid",
 ]
@@ -2687,6 +2688,7 @@ dependencies = [
  "futures",
  "ipnet",
  "kaeso-core",
+ "kaeso-kpp",
  "kaeso-testkit",
  "metrics",
  "percent-encoding",
@@ -2778,6 +2780,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "ipnet",
  "kaeso-codecs",
  "kaeso-core",
  "rcgen",

@@ -440,6 +440,19 @@ pub async fn start(
     let org = ctx.org()?.org.id;
     let user = ctx.user_id()?;
     let provider = validate_provider(&req.provider)?;
+    if super::credentials::provider_in_org(&state, org, provider.id)
+        .await?
+        .custom()
+        .is_some()
+    {
+        return Err(ApiError::invalid(
+            "provider",
+            format!(
+                "The id `{}` names this organization's custom provider, which has no account sign-in.",
+                provider.id
+            ),
+        ));
+    }
     let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
     let name = validate_name(&req.name)?;
     let wanted = Wanted {

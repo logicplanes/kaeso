@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
 use kaeso_core::provider::AuthMethod;
+use kaeso_core::providers::{CustomAuth, CustomProvider, ProviderRef};
 use kaeso_crypto::{CryptoError, Sealed};
 use kaeso_store::StoreError;
 use kaeso_store::pg::credentials::{self, KeyInUse, SealedRow};
@@ -25,6 +26,7 @@ pub struct Resolved {
     pub secret: SecretString,
     pub method: AuthMethod,
     pub account: Option<Account>,
+    keyless: bool,
     last_touched: AtomicI64,
 }
 
@@ -58,6 +60,22 @@ impl Stopped {
 }
 
 impl Resolved {
+    pub fn keyless(provider: &CustomProvider) -> Resolved {
+        Resolved {
+            id: CredentialId::from_uuid(provider.uuid()),
+            revision: 0,
+            secret: SecretString::from(String::new()),
+            method: AuthMethod::ApiKey,
+            account: None,
+            keyless: true,
+            last_touched: AtomicI64::new(0),
+        }
+    }
+
+    pub fn is_keyless(&self) -> bool {
+        self.keyless
+    }
+
     pub fn key(&self) -> KeyInUse {
         KeyInUse {
             id: self.id.uuid(),
@@ -108,6 +126,18 @@ fn due(
 
 pub fn seal(state: &AppState, id: CredentialId, secret: &str) -> Result<Sealed, CryptoError> {
     kaeso_crypto::seal(&state.keyring, secret.as_bytes(), &aad(id))
+}
+
+pub async fn for_provider(
+    state: &AppState,
+    org: OrgId,
+    project: ProjectId,
+    provider: &ProviderRef,
+) -> Result<std::sync::Arc<Resolved>, ResolveError> {
+    match provider.custom() {
+        Some(c) if c.auth() == CustomAuth::None => Ok(std::sync::Arc::new(Resolved::keyless(c))),
+        _ => resolve(state, org, project, provider.id()).await,
+    }
 }
 
 pub async fn resolve(
@@ -333,6 +363,7 @@ fn open(keyring: &kaeso_crypto::KeyRing, row: &SealedRow) -> Result<Resolved, Cr
         secret: SecretString::from(secret),
         method,
         account,
+        keyless: false,
         last_touched: AtomicI64::new(0),
     })
 }

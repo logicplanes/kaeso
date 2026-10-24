@@ -158,5 +158,9 @@
   "rights.usageOrgView.description": "查看所有项目的用量。",
   "rights.usageOrgView.name": "查看组织用量",
   "rights.usageView.description": "查看项目的用量。",
-  "rights.usageView.name": "查看用量"
+  "rights.usageView.name": "查看用量",
+  "rights.providersCustomView.name": "查看自定义服务商",
+  "rights.providersCustomView.description": "查看组织的自定义服务商及其地址和格式。",
+  "rights.providersCustomManage.name": "管理自定义服务商",
+  "rights.providersCustomManage.description": "添加、修改和删除组织的自定义服务商，即接收其请求和密钥的端点。"
 }

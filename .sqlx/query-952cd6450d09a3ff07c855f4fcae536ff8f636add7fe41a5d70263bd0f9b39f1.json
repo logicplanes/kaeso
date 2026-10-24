@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.provider, count(m.id) AS \"models!\", count(DISTINCT m.project_id) AS \"projects!\" FROM custom_providers c JOIN catalogue_models m ON m.org_id = c.org_id AND m.provider = c.provider WHERE c.org_id = $1 GROUP BY c.provider",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "provider",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "custom_providers",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "models!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "projects!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "952cd6450d09a3ff07c855f4fcae536ff8f636add7fe41a5d70263bd0f9b39f1"
+}

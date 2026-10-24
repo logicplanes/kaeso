@@ -1,7 +1,7 @@
 ---
 title: Modelle und Aliasse
 description: Wählen Sie die Modelle, die ein Projekt aufrufen darf, passen Sie ihre Werte an und geben Sie ihnen eigene Namen.
-order: 4
+order: 5
 ---
 
 Der Katalog eines Projekts auf seiner Seite **Modelle** listet die Modelle, die seine Schlüssel aufrufen dürfen. Eine Anfrage nach einem Modell außerhalb des Katalogs lehnt Kaeso ab. Modelle, ihre Werte und Aliasse zu ändern erfordert das Recht **Modelle verwalten**.
@@ -16,6 +16,8 @@ Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https
 
 - **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für jeden anderen Anbieter, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu. Der Dialog sagt, wie viele Modelle er hinzufügt, und warnt vor 50 oder mehr.
 - **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft. Eine ID darf nicht `.` oder `..` sein und keines davon zwischen Schrägstrichen enthalten, weil eine URL diesen Teil verwirft.
+
+Für einen [eigenen Anbieter](custom-providers.md#seine-modelle-hinzufügen) Ihrer Organisation listet der Dialog stattdessen die Modell-IDs, die die Modellliste des Anbieters nennt, und Sie geben jeden Wert selbst ein.
 
 Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
 

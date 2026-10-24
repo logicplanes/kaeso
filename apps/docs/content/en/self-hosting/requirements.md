@@ -34,6 +34,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | `api.github.com` | The updater, and `gh attestation verify`, fetching a release's attestations |
 | Outgoing | Your SMTP server | Sign-in links, invitations, alerts and security notices ([email](email.md)) |
 | Outgoing | Your organizations' identity providers | Single sign-on, when an organization connects one ([sign-in](sign-in.md)) |
+| Outgoing | The base URLs of your organizations' custom providers | Their requests, directly and never through a proxy ([custom providers](configuration.md#custom-providers)) |
 
 Without internet access, Kaeso works with the model data built into the release, and you update by hand. Turn off the outgoing checks as [installs without internet access](upgrades.md#installs-without-internet-access) shows.
 

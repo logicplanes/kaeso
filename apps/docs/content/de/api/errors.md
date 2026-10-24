@@ -197,7 +197,9 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |
+| 500 | Der Anbieter des Modells ist ein eigener Anbieter, und die Installation hat eigene Anbieter ausgeschaltet. |
 | 502 | Kaeso erreicht den Anbieter nicht, oder die Übertragung ist fehlgeschlagen. |
+| 502 | Ein eigener Anbieter liegt an einer Adresse, die die Installation nicht erlaubt, oder hat in einer Form geantwortet, die sein Format nicht lesen kann. |
 | 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, oder aus Abrechnungs- oder Kontingentgründen abgelehnt. |
 | 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten. |
@@ -225,6 +227,20 @@ Ein abgelehnter Anbieter-Schlüssel ist ein Problem der Installation, nicht Ihre
 Stattdessen erhält Ihre App einen Anbieterfehler mit der Meldung „The provider refused this project's provider key. Ask an organization admin to check it under Providers.“, oder derselben mit „for billing or quota reasons“. Ein Organisations-Admin prüft den Schlüssel unter **Anbieter**.
 
 Das Anfrageprotokoll behält die eigene Meldung des Anbieters, wobei alles, was wie ein Schlüssel, eine Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt ist. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
+
+### Eigene Anbieter
+
+Ein [eigener Anbieter](../console/custom-providers.md) erhält Meldungen, die ihn bei seiner ID nennen, damit Sie Probleme Ihres eigenen Servers von denen eines Anbieters unterscheiden:
+
+| Was geschah | Status | Meldung |
+| --- | --- | --- |
+| Kaeso kann sich nicht mit ihm verbinden | 502 | „Kaeso cannot reach the custom provider `…`; check its base URL.“ |
+| Seine Adresse ist nicht erlaubt | 502 | „The custom provider `…` is at an address this install does not allow; ask its operator.“ |
+| Er hat den Schlüssel des Projekts abgelehnt | 502 | „The custom provider `…` refused this project's key; ask an organization admin to check it under Providers.“ |
+| Er will einen Schlüssel, nimmt in Kaeso aber keinen | 502 | „The custom provider `…` asks for a key; an organization admin sets how it signs in under Providers.“ |
+| Seine Antwort ist nicht in seinem Format | 502 | „The custom provider `…` answered in a form `…` cannot read; check its API format.“ |
+
+Antwortet der Anbieter mit einem Fehler in seinem Format, erhält Ihre App diesen Fehler wie bei jedem Anbieter. Das Anfrageprotokoll behält, was der Anbieter gesagt hat.
 
 ### Modelle, die der Anbieter nicht bereitstellt
 

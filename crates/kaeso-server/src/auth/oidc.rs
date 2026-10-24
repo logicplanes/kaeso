@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use kaeso_core::net::{is_link_local_or_metadata, is_public};
+use kaeso_core::net::is_public;
+use kaeso_upstream::guard::{self, Lookup, Reach};
 use openidconnect::core::{
     CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreProviderMetadata,
 };
@@ -98,15 +99,14 @@ pub async fn fetch(allow_private: bool, request: HttpRequest) -> Result<HttpResp
         .to_owned();
     let https = uri.scheme_str() == Some("https");
     let port = uri.port_u16().unwrap_or(if https { 443 } else { 80 });
-    let bare = host.trim_start_matches('[').trim_end_matches(']');
-    let addrs: Vec<SocketAddr> = tokio::net::lookup_host((bare, port))
+    let addr: SocketAddr = guard::resolve(&host, port, &reach(allow_private), &Lookup::default())
         .await
-        .map_err(|e| FetchError(format!("cannot resolve {host}: {e}")))?
-        .collect();
-    let addr = addrs
-        .iter()
-        .copied()
-        .find(|a| reachable(a.ip(), allow_private))
+        .map_err(|e| match e {
+            guard::ResolveError::Refused(_) => FetchError(OidcError::PrivateNetwork.to_string()),
+            lookup @ guard::ResolveError::Lookup { .. } => FetchError(lookup.to_string()),
+        })?
+        .into_iter()
+        .next()
         .ok_or_else(|| FetchError(OidcError::PrivateNetwork.to_string()))?;
     if !https && is_public(addr.ip()) {
         return Err(FetchError(OidcError::PlainHttp.to_string()));
@@ -156,8 +156,12 @@ fn email_verified(claim: Option<bool>, required: bool) -> bool {
     }
 }
 
-fn reachable(ip: std::net::IpAddr, allow_private: bool) -> bool {
-    !is_link_local_or_metadata(ip) && (allow_private || is_public(ip))
+fn reach(allow_private: bool) -> Reach {
+    if allow_private {
+        Reach::every_private_network()
+    } else {
+        Reach::public_only()
+    }
 }
 
 pub struct Provider {
@@ -379,12 +383,12 @@ mod tests {
             "::ffff:169.254.169.254",
         ] {
             let ip = ip.parse().unwrap();
-            assert!(!reachable(ip, true), "{ip}");
-            assert!(!reachable(ip, false), "{ip}");
+            assert!(!reach(true).permits(ip), "{ip}");
+            assert!(!reach(false).permits(ip), "{ip}");
         }
-        assert!(reachable("10.0.0.2".parse().unwrap(), true));
-        assert!(!reachable("10.0.0.2".parse().unwrap(), false));
-        assert!(reachable("1.1.1.1".parse().unwrap(), false));
+        assert!(reach(true).permits("10.0.0.2".parse().unwrap()));
+        assert!(!reach(false).permits("10.0.0.2".parse().unwrap()));
+        assert!(reach(false).permits("1.1.1.1".parse().unwrap()));
     }
 
     #[tokio::test]

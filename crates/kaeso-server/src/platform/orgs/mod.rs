@@ -1,5 +1,6 @@
 pub mod credential_accounts;
 pub mod credentials;
+pub mod custom_providers;
 pub mod invites;
 pub mod members;
 pub mod org;
@@ -125,6 +126,11 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::RolesManage), routes!(roles::delete)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::rights::catalogue)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::providers::list)))
+        .routes(s.route(Access::Org(R::ProvidersCustomView), routes!(custom_providers::list)))
+        .routes(s.route(Access::Org(R::ProvidersCustomView), routes!(custom_providers::get)))
+        .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::create)))
+        .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::update)))
+        .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::delete)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

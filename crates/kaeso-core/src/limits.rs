@@ -326,14 +326,14 @@ impl WorstCase {
         request: &kaeso_kpp::Request,
         body_bytes: usize,
         prices: &Fields,
-        provider: &crate::provider::Provider,
+        provider: &crate::providers::ProviderRef,
     ) -> WorstCase {
         let context = prices.context_limit;
         let within = |n: u64| context.map_or(n, |c| n.min(c));
         let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
         let input = within(crate::estimate::tokens_of_bytes(bytes));
         let limit_holds =
-            !(provider.reasoning_beyond_output_limit && prices.reasoning == Some(true));
+            !(provider.reasoning_beyond_output_limit() && prices.reasoning == Some(true));
         let output = match request {
             kaeso_kpp::Request::Generate(g) => g
                 .sampling
@@ -506,8 +506,10 @@ mod tests {
         assert!(validate(&rate).is_ok());
     }
 
-    fn openai() -> &'static crate::provider::Provider {
-        crate::provider::provider("openai").unwrap()
+    fn openai() -> &'static crate::providers::ProviderRef {
+        static OPENAI: std::sync::LazyLock<crate::providers::ProviderRef> =
+            std::sync::LazyLock::new(|| crate::provider::provider("openai").unwrap().into());
+        &OPENAI
     }
 
     fn priced(input: &str, output: &str) -> Fields {
@@ -546,7 +548,7 @@ mod tests {
     #[test]
     fn a_reasoning_model_whose_provider_leaves_reasoning_out_of_the_limit_holds_its_own_output_limit()
      {
-        let xai = crate::provider::provider("xai").unwrap();
+        let xai = &crate::providers::ProviderRef::from(crate::provider::provider("xai").unwrap());
         let mut prices = priced("1", "5");
         prices.reasoning = Some(true);
         let w = WorstCase::of(&generate(Some(60)), 4000, &prices, xai);

@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+pub mod guard;
+
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::pin::Pin;
@@ -49,6 +51,8 @@ pub enum UpstreamError {
     Client(#[source] reqwest::Error),
     #[error("`{0}` is not an HTTP method")]
     Method(&'static str),
+    #[error("the provider's address is one this install does not allow")]
+    Refused(#[source] guard::Refused),
 }
 
 #[derive(Debug)]
@@ -92,7 +96,8 @@ pub enum ResponseBody {
 #[derive(Debug)]
 pub struct Call<'a> {
     pub base_url: &'a Url,
-    pub auth: AuthStyle,
+    pub auth: Option<AuthStyle>,
+    pub guarded: bool,
     pub credential: &'a SecretString,
     pub request: Outgoing,
     pub stream: bool,
@@ -123,6 +128,8 @@ pub struct Upstream {
     origins: Mutex<HashMap<String, Origin>>,
     user_agent: String,
     roots: Vec<reqwest::Certificate>,
+    reach: guard::Reach,
+    lookup: guard::Lookup,
 }
 
 #[derive(Debug)]
@@ -200,6 +207,36 @@ impl Upstream {
             origins: Mutex::new(HashMap::new()),
             user_agent: user_agent.into(),
             roots: Vec::new(),
+            reach: guard::Reach::public_only(),
+            lookup: guard::Lookup::default(),
+        }
+    }
+
+    #[must_use]
+    pub fn guarding(mut self, reach: guard::Reach) -> Upstream {
+        self.reach = reach;
+        self
+    }
+
+    #[must_use]
+    pub fn resolving_with(mut self, lookup: guard::Lookup) -> Upstream {
+        self.lookup = lookup;
+        self
+    }
+
+    pub fn reach(&self) -> &guard::Reach {
+        &self.reach
+    }
+
+    pub fn lookup(&self) -> &guard::Lookup {
+        &self.lookup
+    }
+
+    pub fn reach_for(&self, base: &Url) -> guard::Reach {
+        if base.scheme() == "https" {
+            self.reach.clone()
+        } else {
+            self.reach.without_public()
         }
     }
 
@@ -209,8 +246,21 @@ impl Upstream {
         self
     }
 
-    fn connection(&self, h2_only: bool) -> Result<Connection, UpstreamError> {
+    fn connection(
+        &self,
+        h2_only: bool,
+        reach: Option<&guard::Reach>,
+    ) -> Result<Connection, UpstreamError> {
         let mut builder = reqwest::Client::builder();
+        // A proxy would resolve the name itself, past the guard.
+        if let Some(reach) = reach {
+            builder = builder
+                .no_proxy()
+                .dns_resolver(Arc::new(guard::GuardedResolver::new(
+                    reach.clone(),
+                    self.lookup.clone(),
+                )));
+        }
         if !self.roots.is_empty() {
             builder = builder.tls_certs_only(self.roots.iter().cloned());
         }
@@ -231,12 +281,18 @@ impl Upstream {
         })
     }
 
-    fn lease(&self, base: &Url) -> Result<Lease, UpstreamError> {
+    fn lease(&self, base: &Url, guarded: bool) -> Result<Lease, UpstreamError> {
+        let reach = guarded.then(|| self.reach_for(base));
+        let key = if guarded {
+            format!("guarded {base}")
+        } else {
+            base.as_str().to_owned()
+        };
         let mut origins = self.origins.lock().unwrap_or_else(PoisonError::into_inner);
-        let origin = match origins.entry(base.as_str().to_owned()) {
+        let origin = match origins.entry(key) {
             Entry::Occupied(e) => e.into_mut(),
             Entry::Vacant(e) => e.insert(Origin {
-                negotiated: self.connection(false)?,
+                negotiated: self.connection(false, reach.as_ref())?,
                 multiplexed: Vec::new(),
                 speaks_h2: Arc::new(AtomicBool::new(false)),
             }),
@@ -253,14 +309,18 @@ impl Upstream {
         {
             return Ok(Lease::take(c, &origin.speaks_h2, true));
         }
-        let c = self.connection(true)?;
+        let c = self.connection(true, reach.as_ref())?;
         let lease = Lease::take(&c, &origin.speaks_h2, true);
         origin.multiplexed.push(c);
         Ok(lease)
     }
 
     pub async fn send(&self, call: Call<'_>) -> Result<UpstreamResponse, UpstreamError> {
-        let lease = self.lease(call.base_url)?;
+        if call.guarded {
+            guard::check_literal(call.base_url, &self.reach_for(call.base_url))
+                .map_err(UpstreamError::Refused)?;
+        }
+        let lease = self.lease(call.base_url, call.guarded)?;
         let url = join(call.base_url, &call.request.path);
         let method = reqwest::Method::from_bytes(call.request.method.as_bytes())
             .map_err(|_| UpstreamError::Method(call.request.method))?;
@@ -269,16 +329,17 @@ impl Upstream {
             builder = builder.header(name, value);
         }
         builder = match call.auth {
-            AuthStyle::Bearer => secret_header(
+            Some(AuthStyle::Bearer) => secret_header(
                 builder,
                 "authorization",
                 format!("Bearer {}", call.credential.expose_secret()),
             ),
-            AuthStyle::XApiKey => secret_header(
+            Some(AuthStyle::XApiKey) => secret_header(
                 builder,
                 "x-api-key",
                 call.credential.expose_secret().to_owned(),
             ),
+            None => builder,
         };
         let builder = builder.body(call.request.body);
         if call.stream {
@@ -342,7 +403,14 @@ fn join(base: &Url, path: &str) -> String {
 }
 
 fn classify(e: reqwest::Error) -> UpstreamError {
-    if e.is_timeout() {
+    if guard::refused_in(&e) {
+        let host = e
+            .url()
+            .and_then(Url::host_str)
+            .unwrap_or_default()
+            .to_owned();
+        UpstreamError::Refused(guard::Refused { host })
+    } else if e.is_timeout() {
         UpstreamError::Timeout("connect")
     } else if e.is_connect() {
         UpstreamError::Connect(e.without_url())
@@ -534,7 +602,8 @@ mod tests {
         upstream
             .send(Call {
                 base_url: base,
-                auth: AuthStyle::Bearer,
+                auth: Some(AuthStyle::Bearer),
+                guarded: false,
                 credential: &credential,
                 request: request.into(),
                 stream: false,
@@ -614,7 +683,8 @@ mod tests {
         let err = upstream
             .send(Call {
                 base_url: &base,
-                auth: AuthStyle::XApiKey,
+                auth: Some(AuthStyle::XApiKey),
+                guarded: false,
                 credential: &credential,
                 request: Outgoing {
                     method: "NOT A METHOD",
@@ -673,9 +743,9 @@ mod tests {
         let a = Url::parse("https://a.example.com").unwrap();
         let b = Url::parse("http://127.0.0.1:9").unwrap();
         let leases: Vec<_> = (0..STREAMS_PER_CONNECTION * 3)
-            .map(|_| upstream.lease(&a).unwrap())
+            .map(|_| upstream.lease(&a, false).unwrap())
             .collect();
-        let plain = upstream.lease(&b).unwrap();
+        let plain = upstream.lease(&b, false).unwrap();
         let (negotiated, multiplexed) = connection_of(&upstream, &a);
         assert!(multiplexed.is_empty());
         assert_eq!(
@@ -699,11 +769,11 @@ mod tests {
         let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
         let base = Url::parse("https://api.example.com").unwrap();
         upstream
-            .lease(&base)
+            .lease(&base, false)
             .unwrap()
             .answered(reqwest::Version::HTTP_2);
         let mut leases: Vec<_> = (0..STREAMS_PER_CONNECTION)
-            .map(|_| upstream.lease(&base).unwrap())
+            .map(|_| upstream.lease(&base, false).unwrap())
             .collect();
         let (negotiated, multiplexed) = connection_of(&upstream, &base);
         assert_eq!(negotiated.load(Ordering::Relaxed), 0);
@@ -712,13 +782,13 @@ mod tests {
             multiplexed[0].load(Ordering::Relaxed),
             STREAMS_PER_CONNECTION
         );
-        leases.push(upstream.lease(&base).unwrap());
-        leases.push(upstream.lease(&base).unwrap());
+        leases.push(upstream.lease(&base, false).unwrap());
+        leases.push(upstream.lease(&base, false).unwrap());
         let (_, multiplexed) = connection_of(&upstream, &base);
         assert_eq!(multiplexed.len(), 2);
         assert_eq!(multiplexed[1].load(Ordering::Relaxed), 2);
         leases.truncate(10);
-        leases.push(upstream.lease(&base).unwrap());
+        leases.push(upstream.lease(&base, false).unwrap());
         assert_eq!(
             multiplexed
                 .iter()
@@ -731,7 +801,7 @@ mod tests {
             .build()
             .unwrap_err();
         leases[0].failed(&UpstreamError::Transfer(transport));
-        let probe = upstream.lease(&base).unwrap();
+        let probe = upstream.lease(&base, false).unwrap();
         assert!(Arc::ptr_eq(&probe.in_flight, &negotiated));
         assert_eq!(connection_of(&upstream, &base).1.len(), 2);
         drop(leases);
@@ -751,7 +821,8 @@ mod tests {
         let resp = upstream
             .send(Call {
                 base_url: &base,
-                auth: AuthStyle::Bearer,
+                auth: Some(AuthStyle::Bearer),
+                guarded: false,
                 credential: &credential,
                 request: EncodedRequest::post_json("/v1/messages", HeaderList::new(), Vec::new())
                     .into(),
@@ -792,5 +863,136 @@ mod tests {
                 Duration::from_secs(300)
             )
         );
+    }
+
+    async fn serve_counting(response: &'static [u8]) -> (Url, Arc<AtomicUsize>) {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let accepted = Arc::new(AtomicUsize::new(0));
+        let count = accepted.clone();
+        tokio::spawn(async move {
+            while let Ok((mut socket, _)) = listener.accept().await {
+                count.fetch_add(1, Ordering::SeqCst);
+                let mut buf = [0u8; 4096];
+                let _ = socket.read(&mut buf).await;
+                let _ = socket.write_all(response).await;
+                let _ = socket.shutdown().await;
+            }
+        });
+        (Url::parse(&format!("http://{addr}")).unwrap(), accepted)
+    }
+
+    const OK_CLOSE: &[u8] = b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\nconnection: close\r\n\r\nok";
+
+    async fn guarded(upstream: &Upstream, base: &Url) -> Result<UpstreamResponse, UpstreamError> {
+        let credential = SecretString::from("sk-test");
+        upstream
+            .send(Call {
+                base_url: base,
+                auth: None,
+                guarded: true,
+                credential: &credential,
+                request: EncodedRequest::post_json(
+                    "/v1/chat/completions",
+                    HeaderList::new(),
+                    Vec::new(),
+                )
+                .into(),
+                stream: false,
+                timeouts: Timeouts {
+                    request: Duration::from_secs(5),
+                    first_byte: Duration::from_secs(5),
+                    idle: Duration::from_secs(5),
+                },
+                max_body: 1024,
+            })
+            .await
+    }
+
+    fn loopback() -> guard::Reach {
+        guard::Reach::networks(vec![
+            "127.0.0.0/8".parse().unwrap(),
+            "::1/128".parse().unwrap(),
+        ])
+    }
+
+    #[tokio::test]
+    async fn a_guarded_call_never_reaches_a_loopback_address_the_install_does_not_allow() {
+        let (base, accepted) = serve_counting(OK_CLOSE).await;
+        let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
+        let err = guarded(&upstream, &base).await.unwrap_err();
+        assert!(matches!(err, UpstreamError::Refused(_)), "{err:?}");
+        let named = Url::parse(&format!("http://localhost:{}", base.port().unwrap())).unwrap();
+        let err = guarded(&upstream, &named).await.unwrap_err();
+        assert!(matches!(err, UpstreamError::Refused(_)), "{err:?}");
+        assert_eq!(accepted.load(Ordering::SeqCst), 0);
+
+        let allowed = Upstream::new(Duration::from_secs(5), "kaeso-test").guarding(loopback());
+        assert_eq!(guarded(&allowed, &base).await.unwrap().status, 200);
+        assert_eq!(guarded(&allowed, &named).await.unwrap().status, 200);
+        assert_eq!(accepted.load(Ordering::SeqCst), 2);
+        assert_eq!(
+            fetch(&base, 10).await.unwrap().status,
+            200,
+            "built-in providers are not guarded"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_name_that_moves_to_a_refused_address_is_refused_on_the_next_connection() {
+        let (base, accepted) = serve_counting(OK_CLOSE).await;
+        let port = base.port().unwrap();
+        let flips = Arc::new(AtomicUsize::new(0));
+        let seen = flips.clone();
+        let lookup = guard::Lookup::new(move |_, p| {
+            let ip = if seen.fetch_add(1, Ordering::SeqCst) == 0 {
+                "127.0.0.1"
+            } else {
+                "10.0.0.7"
+            };
+            let addr = std::net::SocketAddr::new(ip.parse().unwrap(), p);
+            Box::pin(async move { Ok(vec![addr]) })
+        });
+        let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test")
+            .guarding(loopback())
+            .resolving_with(lookup);
+        let named = Url::parse(&format!("http://vllm.internal.example:{port}")).unwrap();
+        assert_eq!(guarded(&upstream, &named).await.unwrap().status, 200);
+        let err = guarded(&upstream, &named).await.unwrap_err();
+        assert!(matches!(err, UpstreamError::Refused(_)), "{err:?}");
+        assert_eq!(flips.load(Ordering::SeqCst), 2);
+        assert_eq!(accepted.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn a_redirect_is_handed_back_and_never_followed() {
+        let (target, reached) = serve_counting(OK_CLOSE).await;
+        let redirect: &'static [u8] = Box::leak(
+            format!(
+                "HTTP/1.1 307 Temporary Redirect\r\nlocation: {target}v1/chat/completions\r\ncontent-length: 0\r\nconnection: close\r\n\r\n"
+            )
+            .into_bytes()
+            .into_boxed_slice(),
+        );
+        let (base, _) = serve_counting(redirect).await;
+        let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test").guarding(loopback());
+        let resp = guarded(&upstream, &base).await.unwrap();
+        assert_eq!(resp.status, 307);
+        assert_eq!(reached.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn plain_http_to_a_public_address_is_refused_even_with_an_allowlist() {
+        let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test").guarding(loopback());
+        let err = guarded(&upstream, &Url::parse("http://1.1.1.1").unwrap())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, UpstreamError::Refused(_)), "{err:?}");
+        let metadata = Url::parse("https://169.254.169.254/latest/meta-data").unwrap();
+        assert!(matches!(
+            guarded(&upstream, &metadata).await,
+            Err(UpstreamError::Refused(_))
+        ));
     }
 }

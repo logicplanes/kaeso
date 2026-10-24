@@ -195,5 +195,10 @@
   "format.userAgent.browserOnOs": "{browser} unter {os}",
   "format.userAgent.unknown": "Unbekanntes Gerät",
   "format.userState.deactivated": "Deaktiviert",
-  "format.userState.deleted": "Gelöscht"
+  "format.userState.deleted": "Gelöscht",
+  "format.audit.kind.customProvider": "Eigene Anbieter",
+  "format.audit.action.customProviderCreate": "Eigener Anbieter hinzugefügt",
+  "format.audit.action.customProviderUpdate": "Eigener Anbieter geändert",
+  "format.audit.action.customProviderDelete": "Eigener Anbieter gelöscht",
+  "format.targetKind.customProvider": "Eigener Anbieter"
 }

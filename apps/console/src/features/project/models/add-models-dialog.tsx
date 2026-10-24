@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Autocomplete,
   Badge,
   Banner,
   Button,
@@ -21,6 +22,7 @@ import { api, data } from "~/api/client";
 import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview, SearchHit } from "~/api/generated/types";
 import { currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
+import { offeredModelsQuery } from "~/api/queries/custom-providers";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
 import { orgPath } from "~/shell/pages";
@@ -69,16 +71,23 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const provider = (chosen && catalog.get(chosen) ? chosen : catalog.list[0]?.id) ?? "";
   const providers = useProviderOptions(org);
   const dialects = catalog.dialects(provider);
+  const ownProvider = !!catalog.get(provider)?.custom;
+  const takesKey = catalog.get(provider)?.takes_key !== false;
   const orgKeys = useOrgProviderKeys(org);
-  const noKey = orgKeys.known && !orgKeys.keys.some((k) => k.provider === provider);
+  const noKey = orgKeys.known && takesKey && !orgKeys.keys.some((k) => k.provider === provider);
   const [q, setQ] = useState("");
   const [deprecated, setDeprecated] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [review, setReview] = useState<{ preview: Preview; draft: FieldDraft } | null>(null);
   const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft }>(emptyCustom());
   const search = useDebounced(q.trim(), 250);
-  const hits = useQuery({ ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }), enabled: open && !!provider });
-  const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open && !!provider });
+  const hits = useQuery({
+    ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }),
+    enabled: open && !!provider && !ownProvider,
+  });
+  const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open && !!provider && !ownProvider });
+  const offered = useQuery({ ...offeredModelsQuery(org, project, provider), enabled: open && ownProvider });
+  const offeredIds = (offered.data ?? []).filter((m) => !m.catalogue_model_id).map((m) => m.model_id);
   const addable = current.data?.not_in_catalogue ?? 0;
 
   const invalidates = [["orgs", org, "projects", project, "models"]];
@@ -121,6 +130,11 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     }
   };
 
+  const typeOwn = (modelId: string) => {
+    setCustom({ modelId, preview: null, checked: !!modelId, draft: { ...draftFrom({}), egress_dialect: dialects[0] ?? "" } });
+    setView("custom");
+  };
+
   const checkCustom = async () => {
     const modelId = custom.modelId.trim();
     if (!modelId || custom.checked) return;
@@ -156,47 +170,112 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   };
   const addAll = () => batch.mutate({ all_current: true });
 
-  const searchLayer = {
+  const picker = (
+    <ProviderPicker
+      appearance="select"
+      aria-label={common.provider()}
+      providers={providers}
+      value={provider}
+      onValueChange={(p) => {
+        if (!p) return;
+        remember(LAST_PROVIDER, p);
+        setProvider(p);
+        setSelected(new Set());
+      }}
+    />
+  );
+  const searchInput = (
+    <div className="min-w-0 flex-1 basis-200">
+      <SearchInput
+        aria-label={t("models.search", "Search models")}
+        placeholder={common.search()}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        data-autofocus
+      />
+    </div>
+  );
+  const keyBanner = noKey && (
+    <Banner
+      tone="warning"
+      actions={
+        <Button size="sm" href={`${orgPath(org)}/providers`}>
+          {t("models.openProviders", "Open Providers")}
+        </Button>
+      }
+    >
+      {t("models.noProviderKey", "Requests to these models fail until someone adds a key for {provider} on the Providers page.", { provider: name })}
+    </Banner>
+  );
+  const typeLabel = t("models.typeModelId", "Type a model id");
+  const wanted = q.trim().toLowerCase();
+  const shownOffered = offeredIds.filter((id) => id.toLowerCase().includes(wanted));
+  const ownLayer = {
+    title: t("models.addModels", "Add models"),
+    description: t("models.addOwnHint", "{provider} is this organization's own provider; pick a model it lists or type its id.", { provider: name }),
+    content: (
+      <div className="flex flex-col gap-16">
+        <div className="flex flex-wrap items-center gap-8 sm:flex-nowrap">
+          {picker}
+          {searchInput}
+        </div>
+        {keyBanner}
+        <div className="flex min-h-0 flex-col">
+          {offered.isPending ? (
+            <List aria-label={t("models.ownListed", "Models {provider} lists", { provider: name })} density="compact" items={[]} loading />
+          ) : offered.isError ? (
+            <Empty
+              title={t("models.ownNoListing", "{provider} didn't list its models", { provider: name })}
+              description={offered.error.message}
+              actions={<Button onClick={() => typeOwn("")}>{typeLabel}</Button>}
+            />
+          ) : shownOffered.length === 0 ? (
+            <Empty
+              title={t("models.noneFound", "No models found")}
+              description={
+                wanted
+                  ? t("models.ownNoneMatch", "{provider} lists no model with that name; type its id instead.", { provider: name })
+                  : t("models.ownAllAdded", "Every model {provider} lists is in the catalogue already.", { provider: name })
+              }
+            />
+          ) : (
+            <List
+              aria-label={t("models.ownListed", "Models {provider} lists", { provider: name })}
+              density="compact"
+              onOpen={(item) => typeOwn(item.id)}
+              items={shownOffered.map((id) => ({
+                id,
+                textValue: id,
+                title: <ModelLabel provider={provider} providerName={name} model={id} mark={false} />,
+              }))}
+            />
+          )}
+        </div>
+        <Text variant="small" tone="secondary">
+          {t("models.ownValuesHint", "Kaeso can't know the prices, limits or capabilities of {provider}'s models; you enter them next.", {
+            provider: name,
+          })}
+        </Text>
+      </div>
+    ),
+    footer: (
+      <Button variant="primary" onClick={() => typeOwn("")}>
+        {typeLabel}
+      </Button>
+    ),
+  };
+
+  const modelsDevLayer = {
     title: t("models.addModels", "Add models"),
     description: t("models.addHint", "Search models.dev; each model brings its prices, limits and capabilities, which you can override."),
     content: (
       <div className="flex flex-col gap-16">
         <div className="flex flex-wrap items-center gap-8 sm:flex-nowrap">
-          <ProviderPicker
-            appearance="select"
-            aria-label={common.provider()}
-            providers={providers}
-            value={provider}
-            onValueChange={(p) => {
-              if (!p) return;
-              remember(LAST_PROVIDER, p);
-              setProvider(p);
-              setSelected(new Set());
-            }}
-          />
-          <div className="min-w-0 flex-1 basis-200">
-            <SearchInput
-              aria-label={t("models.search", "Search models")}
-              placeholder={common.search()}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              data-autofocus
-            />
-          </div>
+          {picker}
+          {searchInput}
           <Switch size="sm" label={t("models.includeDeprecated", "Include deprecated")} checked={deprecated} onCheckedChange={setDeprecated} />
         </div>
-        {noKey && (
-          <Banner
-            tone="warning"
-            actions={
-              <Button size="sm" href={`${orgPath(org)}/providers`}>
-                {t("models.openProviders", "Open Providers")}
-              </Button>
-            }
-          >
-            {t("models.noProviderKey", "Requests to these models fail until someone adds a key for {provider} on the Providers page.", { provider: name })}
-          </Banner>
-        )}
+        {keyBanner}
         <div className="flex min-h-0 flex-col">
           {hits.isPending && provider ? (
             <List aria-label={t("models.onModelsDev", "Models on models.dev")} density="compact" items={[]} loading />
@@ -268,6 +347,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     ),
   };
 
+  const searchLayer = ownProvider ? ownLayer : modelsDevLayer;
+
   const reviewLayer = {
     title: review ? t("models.reviewModel", "Review {model}", { model: review.preview.model_id }) : t("models.reviewValues", "Review values"),
     description: t("models.reviewHint", "Values from models.dev, completed by Kaeso; what you change becomes an override for this project."),
@@ -290,28 +371,52 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   };
 
   const customLayer = {
-    title: t("models.addCustom", "Add a custom model"),
-    description: t("models.addCustomHint", "Give the provider's model id; if models.dev lists it, its values fill in, otherwise enter them."),
+    title: ownProvider ? t("models.addOwn", "Add a {provider} model", { provider: name }) : t("models.addCustom", "Add a custom model"),
+    description: ownProvider
+      ? t("models.addOwnModelHint", "Give the model's id as {provider} knows it, then its inputs, limits, prices and format.", { provider: name })
+      : t("models.addCustomHint", "Give the provider's model id; if models.dev lists it, its values fill in, otherwise enter them."),
     content: (
       <div className="flex flex-col gap-16">
-        <Input
-          label={t("models.modelId", "Model id")}
-          description={t("models.modelIdHint", "The id {provider} uses, sent as `model`.", { provider: name })}
-          value={custom.modelId}
-          onChange={(e) => setCustom({ ...custom, modelId: e.target.value, checked: false })}
-          onBlur={() => void checkCustom()}
-          onKeyDown={(e) => e.key === "Enter" && !e.metaKey && !e.ctrlKey && (e.preventDefault(), void checkCustom())}
-          maxLength={200}
-        />
+        {ownProvider ? (
+          <Autocomplete
+            label={t("models.modelId", "Model id")}
+            description={t("models.modelIdHint", "The id {provider} uses, sent as `model`.", { provider: name })}
+            suggestions={offeredIds}
+            value={custom.modelId}
+            onValueChange={(modelId) => setCustom({ ...custom, modelId, checked: !!modelId.trim() })}
+          />
+        ) : (
+          <Input
+            label={t("models.modelId", "Model id")}
+            description={t("models.modelIdHint", "The id {provider} uses, sent as `model`.", { provider: name })}
+            value={custom.modelId}
+            onChange={(e) => setCustom({ ...custom, modelId: e.target.value, checked: false })}
+            onBlur={() => void checkCustom()}
+            onKeyDown={(e) => e.key === "Enter" && !e.metaKey && !e.ctrlKey && (e.preventDefault(), void checkCustom())}
+            maxLength={200}
+          />
+        )}
         {custom.checked &&
-          (custom.preview ? (
+          (ownProvider ? (
+            <Banner tone="neutral">
+              {t(
+                "models.ownUnknown",
+                "Kaeso can't know these values for {provider}; inputs, outputs, limits, input and output prices and the format are required.",
+                {
+                  provider: name,
+                },
+              )}
+            </Banner>
+          ) : custom.preview ? (
             <Banner tone="info">{t("models.customListed", "models.dev lists {model}: its values are filled in.", { model: custom.preview.model_id })}</Banner>
           ) : (
             <Banner tone="neutral">
               {t("models.customUnlisted", "models.dev doesn't list it. Inputs, outputs, limits, input and output prices and the format are required.")}
             </Banner>
           ))}
-        {custom.checked && <ModelForm value={custom.draft} onChange={(draft) => setCustom({ ...custom, draft })} dialects={dialects} />}
+        {custom.checked && (
+          <ModelForm value={custom.draft} onChange={(draft) => setCustom({ ...custom, draft })} dialects={dialects} overrideNote={!ownProvider} />
+        )}
       </div>
     ),
     footer: custom.checked ? (
@@ -371,7 +476,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   };
 
   const layers = { review: reviewLayer, custom: customLayer, all: allLayer };
-  const submit = { search: addSelected, review: addReviewed, custom: addCustom, all: addAll };
+  const submit = { search: ownProvider ? () => typeOwn("") : addSelected, review: addReviewed, custom: addCustom, all: addAll };
 
   return (
     <LayerDialog

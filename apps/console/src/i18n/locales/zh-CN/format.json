@@ -195,5 +195,10 @@
   "format.userAgent.browserOnOs": "{os} 上的 {browser}",
   "format.userAgent.unknown": "未知设备",
   "format.userState.deactivated": "已停用",
-  "format.userState.deleted": "已删除"
+  "format.userState.deleted": "已删除",
+  "format.audit.kind.customProvider": "自定义服务商",
+  "format.audit.action.customProviderCreate": "已添加自定义服务商",
+  "format.audit.action.customProviderUpdate": "已修改自定义服务商",
+  "format.audit.action.customProviderDelete": "已删除自定义服务商",
+  "format.targetKind.customProvider": "自定义服务商"
 }

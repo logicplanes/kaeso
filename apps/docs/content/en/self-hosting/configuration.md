@@ -185,7 +185,18 @@ The first three settings only seed a new install. After that, instance admins ch
 
 A model in a project's catalogue can set its own timeouts ([models and aliases](../console/models-and-aliases.md)).
 
-The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` for `http` base URLs, or `ALL_PROXY`) when its environment sets one, except for the hosts in `NO_PROXY`. The proxy sees the provider keys of `http` calls, so use `https` base URLs through it.
+The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` for `http` base URLs, or `ALL_PROXY`) when its environment sets one, except for the hosts in `NO_PROXY`. The proxy sees the provider keys of `http` calls, so use `https` base URLs through it. Custom providers are the exception: the gateway calls them directly ([custom providers](#custom-providers)).
+
+### Custom providers
+
+| Variable | TOML key | Type | Default | What it does |
+| --- | --- | --- | --- | --- |
+| `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy ([custom providers](../console/custom-providers.md)). `false` refuses requests to the ones they added and keeps them. |
+| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`. Plain `http` reaches only these. |
+
+An organization admin chooses a custom provider's base URL, so the gateway guards where it connects. For every connection, it resolves the host's name and checks each address. It refuses private, loopback, link-local and cloud metadata addresses unless `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` lists their network. A name that later resolves to another address is checked again on the next connection. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused even when a listed network covers them.
+
+The gateway also follows no redirects from a custom provider, and calls it without the proxy in `HTTPS_PROXY`, because a proxy would resolve the name past these checks. Allow a network only where every organization admin may reach the servers in it through the gateway. For a vLLM on the same host as the gateway's containers, list the Docker network, such as `172.16.0.0/12`.
 
 ### Streams to apps
 

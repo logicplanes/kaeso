@@ -17,6 +17,7 @@ type Begin = { tab: Window | null; inputs: number };
 function keyHelp(provider: ProviderView | undefined): ReactNode {
   if (!provider) return t("kaeso.providerKey.help", "Paste the provider's API key.");
   const page = provider.key_page;
+  if (!page) return t("kaeso.providerKey.customHelp", "Paste the key that {provider} expects.", { provider: provider.name });
   const site = (
     <Link href={page.url} external>
       {new URL(page.url).host}
@@ -84,7 +85,15 @@ export function ProviderKeyDialog({
   const device = attempt?.device ?? null;
   const left = attempt ? deadline - now : 0;
   const current = provider ? keys.find((k) => k.provider === provider && k.is_default) : undefined;
-  const choices = useMemo(() => providerOptions(providers, keys), [providers, keys]);
+  const choices = useMemo(
+    () =>
+      providerOptions(
+        providers,
+        keys,
+        providers.list.filter((p) => p.takes_key).map((p) => p.id),
+      ),
+    [providers, keys],
+  );
   const begin = useApiMutation({
     mutationFn: async (_begin: Begin) => {
       if (replace) return data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth", { params: { path: { org, credential: replace.id } } }));

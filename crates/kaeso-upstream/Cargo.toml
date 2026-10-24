@@ -15,6 +15,7 @@ kaeso-codecs.workspace = true
 reqwest.workspace = true
 bytes.workspace = true
 futures.workspace = true
+ipnet.workspace = true
 secrecy.workspace = true
 thiserror.workspace = true
 tokio.workspace = true

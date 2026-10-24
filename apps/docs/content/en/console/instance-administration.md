@@ -1,7 +1,7 @@
 ---
 title: Instance administration
 description: Manage the users, organizations, settings and updates of the whole install.
-order: 10
+order: 11
 ---
 
 Instance admins run the install. The first user, created with the setup link, is one, and can make others instance admins. Being an instance admin gives no rights inside organizations: you see their metadata, never their keys, logs or content.

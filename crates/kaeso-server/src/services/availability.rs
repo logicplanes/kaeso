@@ -1,10 +1,12 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use bytes::Bytes;
 use kaeso_codecs::{EncodedRequest, HeaderList, dispatch};
 use kaeso_core::catalogue::{Effective, Entry};
+use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery};
 use kaeso_store::StoreError;
 use kaeso_store::pg::catalogue::{self, Answer, Recorded};
@@ -42,9 +44,9 @@ enum Listing {
     Failed(KppError),
 }
 
-type ListingKey = (&'static str, DialectId, KeyInUse);
+type ListingKey = (String, DialectId, KeyInUse);
 
-type ProbeKey = (&'static str, DialectId, KeyInUse, String);
+type ProbeKey = (String, DialectId, KeyInUse, String);
 
 #[derive(Debug)]
 pub struct Listings(Cache<ListingKey, Arc<Listing>>);
@@ -98,7 +100,7 @@ impl Default for Recall {
 impl Recall {
     pub async fn probe(&self, state: &AppState, credential: &Resolved, eff: &Effective) -> Probe {
         let key = (
-            eff.provider.id,
+            eff.provider.id().to_owned(),
             eff.dialect,
             credential.key(),
             eff.model_id.clone(),
@@ -136,7 +138,9 @@ pub fn recheck_due(last: Option<OffsetDateTime>, now: OffsetDateTime) -> bool {
 struct Asked<'a> {
     state: &'a AppState,
     credential: &'a Resolved,
-    eff: &'a Effective,
+    provider: &'a ProviderRef,
+    dialect: DialectId,
+    unreached: AtomicBool,
 }
 
 impl Asked<'_> {
@@ -152,7 +156,7 @@ impl Asked<'_> {
         if self.plan_catalogue() {
             DialectId::OpenAiResponses
         } else {
-            self.eff.dialect
+            self.dialect
         }
     }
 
@@ -167,11 +171,11 @@ impl Asked<'_> {
         };
         let Some(base) = account_base
             .as_ref()
-            .or_else(|| crate::model_api::pipeline::base_url(self.state, self.eff.provider.id))
+            .or_else(|| crate::model_api::pipeline::base_url(self.state, self.provider))
         else {
             return Err(KppError::provider(format!(
                 "no base URL for `{}`",
-                self.eff.provider.id
+                self.provider.id()
             )));
         };
         let wait = self.state.config.upstream.first_byte_timeout;
@@ -180,7 +184,8 @@ impl Asked<'_> {
             .upstream
             .send(Call {
                 base_url: base,
-                auth: self.eff.provider.auth,
+                auth: self.provider.auth(),
+                guarded: self.provider.custom().is_some(),
                 credential: &self.credential.secret,
                 request: Outgoing::from(request),
                 stream: false,
@@ -192,7 +197,10 @@ impl Asked<'_> {
                 max_body: self.state.config.body_limits.provider_response.as_usize(),
             })
             .await
-            .map_err(|e| crate::model_api::pipeline::upstream_error(&e))?;
+            .map_err(|e| {
+                self.unreached.store(true, Ordering::Relaxed);
+                crate::model_api::pipeline::upstream_error_from(&e, self.provider)
+            })?;
         let ResponseBody::Full(body) = resp.body else {
             return Err(KppError::provider("the model check arrived as a stream"));
         };
@@ -203,7 +211,7 @@ impl Asked<'_> {
         let request = dispatch::encode_models_request(self.dialect(), query)?;
         let (status, headers, body) = self.send(request).await?;
         let mut page = dispatch::decode_models(self.dialect(), status, &headers, &body)
-            .map_err(|e| without_key_fragments(declared_key_refusal(self.eff.provider, e)))?;
+            .map_err(|e| without_key_fragments(declared_key_refusal(self.provider, e)))?;
         if self.plan_catalogue() {
             page.models.retain(listed);
         }
@@ -229,7 +237,7 @@ impl Asked<'_> {
     }
 
     async fn listing(&self) -> Listing {
-        let provider = self.eff.provider.id;
+        let provider = self.provider.id();
         match self.every_page().await {
             Ok(Some(ids)) => Listing::Complete(ids),
             Ok(None) => {
@@ -267,11 +275,20 @@ pub async fn probe(
     let asked = Asked {
         state,
         credential,
-        eff,
+        provider: &eff.provider,
+        dialect: eff.dialect,
+        unreached: AtomicBool::new(false),
     };
     if asked.plan_catalogue() {
         let listing = listings
-            .get((eff.provider.id, asked.dialect(), credential.key()), &asked)
+            .get(
+                (
+                    eff.provider.id().to_owned(),
+                    asked.dialect(),
+                    credential.key(),
+                ),
+                &asked,
+            )
             .await;
         return match listing.as_ref() {
             Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
@@ -290,7 +307,7 @@ pub async fn probe(
     let not_found = match asked.send(request).await {
         Ok((status, headers, body)) => {
             match dispatch::decode_model(eff.dialect, status, &headers, &body)
-                .map_err(|e| without_key_fragments(declared_key_refusal(eff.provider, e)))
+                .map_err(|e| without_key_fragments(declared_key_refusal(&eff.provider, e)))
             {
                 Ok(_) => return Probe::Served,
                 Err(e) if e.kind == ErrorKind::NotFound => e,
@@ -300,7 +317,10 @@ pub async fn probe(
         Err(e) => return Probe::Failed(e),
     };
     let listing = listings
-        .get((eff.provider.id, eff.dialect, credential.key()), &asked)
+        .get(
+            (eff.provider.id().to_owned(), eff.dialect, credential.key()),
+            &asked,
+        )
         .await;
     match listing.as_ref() {
         Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
@@ -308,6 +328,39 @@ pub async fn probe(
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }
+}
+
+#[derive(Debug)]
+pub enum Unlisted {
+    Unreached(KppError),
+    Answered(KppError),
+}
+
+pub async fn model_ids(
+    state: &AppState,
+    credential: &Resolved,
+    provider: &ProviderRef,
+) -> Result<Vec<String>, Unlisted> {
+    let asked = Asked {
+        state,
+        credential,
+        provider,
+        dialect: provider.generation(),
+        unreached: AtomicBool::new(false),
+    };
+    let listed = asked.every_page().await.map_err(|e| {
+        if asked.unreached.load(Ordering::Relaxed) {
+            Unlisted::Unreached(e)
+        } else {
+            Unlisted::Answered(e)
+        }
+    })?;
+    let mut ids: Vec<String> = listed
+        .ok_or_else(|| Unlisted::Answered(KppError::provider("the model listing did not end")))?
+        .into_iter()
+        .collect();
+    ids.sort_unstable();
+    Ok(ids)
 }
 
 pub async fn record(state: &AppState, answer: &Answer<'_>) {
