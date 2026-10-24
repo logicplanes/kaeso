@@ -9,7 +9,7 @@ export type DiagramTheme = (typeof DIAGRAM_THEMES)[number];
 export const DIAGRAM_LANG = "mermaid";
 export const DIAGRAM_ROLES: readonly string[] = ["accent", "outside"];
 export const DIAGRAM_COMMAND = "pnpm --filter kaeso-docs diagrams";
-const REVISION = 6;
+const REVISION = 7;
 
 export interface DiagramText {
   title?: string;
