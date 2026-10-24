@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Block } from "./ast";
+import type { Block, Inline } from "./ast";
 import { TextProvider } from "~/i18n/text";
 import { Markdown, diagramMinWidth } from "./render";
 import { CODE_TAB_STORAGE_KEY, forgetCodeTab } from "./code-tab";
@@ -193,6 +193,38 @@ describe("Markdown", () => {
     expect(rows[0]?.querySelectorAll("dl")).toHaveLength(2);
     expect(pairs(rows[1], "dt")).toEqual(["What to do"]);
     expect(screen.queryByRole("list", { name: "Table: Level, Requests" })).toBeNull();
+  });
+
+  it("lets long code in a table break after its separators and brackets, a Chinese list break after each comma, and a wide table's text columns narrow further", () => {
+    const code = (v: string): Inline => ({ t: "code", v });
+    const text = (v: string): Inline => ({ t: "text", v });
+    const container = draw([
+      {
+        t: "table",
+        align: ["start", "start", "start", "start", "start"],
+        head: [[text("Route")], [text("Right")], [text("Fields")], [text("Default")], [text("Notes")]],
+        rows: [
+          [
+            [code("GET orgs/{org}/projects/{project}")],
+            [code("roles.manage")],
+            [code("tools[].name"), text("、"), code(".description"), text("、"), code(".strict")],
+            [code("Kaeso <kaeso@localhost>")],
+            [text("Answers with the rights a project role holds, one row for each right in the catalogue")],
+          ],
+        ],
+      },
+    ]);
+    const route = within(screen.getByRole("region", { name: "Table: Route, Right, Fields, Default, Notes" })).getByText(
+      (_, el) => el?.tagName === "CODE" && el.textContent === "GET orgs/{org}/projects/{project}",
+    );
+    expect(route.querySelectorAll("wbr")).toHaveLength(3);
+    const sender = within(screen.getByRole("region", { name: /^Table: Route/ })).getByText(
+      (_, el) => el?.tagName === "CODE" && el.textContent === "Kaeso <kaeso@localhost>",
+    );
+    expect(sender.querySelectorAll("wbr")).toHaveLength(1);
+    const fields = container.querySelector("table td:nth-child(3)");
+    expect(fields?.querySelectorAll(":scope > wbr")).toHaveLength(2);
+    expect(container.querySelector("table td:nth-child(5)")).toHaveClass("min-w-120");
   });
 
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {

@@ -45,6 +45,7 @@ function plainText(xs: Inline[]): string {
 
 const LIST_SEPARATOR: Record<Locale, string> = { en: ", ", de: ", ", "zh-CN": "、" };
 const SHORT_COLUMN = 20;
+const MANY_COLUMNS = 5;
 const LONG_HEADER = 24;
 const WHOLE_CODE = 16;
 const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
@@ -59,7 +60,8 @@ function shortColumns(rows: Inline[][][], columns: number): boolean[] {
   return Array.from({ length: columns }, (_, j) => rows.every((row) => width(plainText(row[j] ?? [])) <= SHORT_COLUMN));
 }
 
-const SOFT_BREAK = /(?<=\w[./_:,]+)(?=\w)/;
+const SOFT_BREAK = /(?<=\S[./_:,({[@=-]+)(?=[^\s./_:,(){}[\]@=-])/;
+const CJK_LIST_PUNCTUATION = /[、，；：]$/;
 
 function codeText(v: string): ReactNode[] {
   return v.split(SOFT_BREAK).map((part, i) => (
@@ -74,7 +76,12 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
   return xs.map((x, i) => {
     switch (x.t) {
       case "text":
-        return <Fragment key={i}>{x.v}</Fragment>;
+        return (
+          <Fragment key={i}>
+            {x.v}
+            {xs[i + 1]?.t === "code" && CJK_LIST_PUNCTUATION.test(x.v) && <wbr />}
+          </Fragment>
+        );
       case "strong":
         return (
           <Text key={i} as="strong" variant={ctx.size} weight="semibold" tone="inherit">
@@ -348,7 +355,11 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
                 {b.rows.map((row, r) => (
                   <Table.Row key={r}>
                     {row.map((c, j) => (
-                      <Table.Cell key={j} align={b.align[j] ?? "start"} className={`align-top ${short[j] ? "whitespace-nowrap" : "min-w-140"}`}>
+                      <Table.Cell
+                        key={j}
+                        align={b.align[j] ?? "start"}
+                        className={`align-top ${short[j] ? "whitespace-nowrap" : b.head.length >= MANY_COLUMNS ? "min-w-120" : "min-w-140"}`}
+                      >
                         {inline(c, cell)}
                       </Table.Cell>
                     ))}
