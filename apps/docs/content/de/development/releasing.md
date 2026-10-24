@@ -30,13 +30,17 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 
 ## Das Changelog
 
-`CHANGELOG.md` folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und Pull Requests ändern die Datei nie. Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden. Der Titel jedes Pull Requests, wie er gemergt wurde, wird zu seiner Zeile, mit einem Link auf den Pull Request, und seine Labels bestimmen, wo die Zeile steht. Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, daher ändert eine Bearbeitung nach dem Merge nichts. Für einen auf andere Weise gemergten Pull Request ist es der Titel zum Zeitpunkt des Merges.
+`CHANGELOG.md` folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und Pull Requests ändern die Datei nie. Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden. Der Titel jedes Pull Requests, wie er gemergt wurde, wird zu seiner Zeile, mit einem Link auf den Pull Request, und seine Labels bestimmen, wo die Zeile steht.
+
+Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, daher ändert eine Bearbeitung nach dem Merge nichts. Für einen auf andere Weise gemergten Pull Request ist es der Titel zum Zeitpunkt des Merges.
 
 Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Dependabot werden zu einer Zeile, „Dependencies updated“. Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt genannt.
 
 Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in die `CHANGELOG.md` auf `dev`. Das Release stellt diese Zeilen an den Anfang und ergänzt eine Zeile für jeden Pull Request, den keine von ihnen als `[#42](…/pull/42)` verlinkt. Das eignet sich für ein Release, dessen Notizen mehr als Titel brauchen, und für einen Hotfix, dessen Commits keinen Pull Request haben.
 
-Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, lässt der Workflow den Abschnitt von einem Modell über die Kaeso-Installation des Maintainers entwerfen, aus den gemergten Pull Requests. Das Modell liest jeden so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests, jeweils ohne HTML-Kommentare. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat. Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
+Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, entwirft ein Modell den Abschnitt aus den gemergten Pull Requests. Der Workflow ruft es über die Kaeso-Installation des Maintainers auf. Das Modell liest jeden Pull Request so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests, jeweils ohne HTML-Kommentare. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat.
+
+Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -44,7 +48,9 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 Ein stabiles Release nach Vorabversionen seiner Version fasst deren Abschnitte zu einem zusammen, sodass seine Notizen alles seit dem letzten stabilen Release abdecken.
 
-Das GitHub-Release beginnt mit einem Satz, bis zu fünf Highlights und den Breaking Changes und listet danach jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**, jeden in einer Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich. Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das Release keine Highlights, und seine Breaking Changes sind auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
+Das GitHub-Release beginnt mit einem Satz, bis zu fünf Highlights und den Breaking Changes. Danach listet es jeden Eintrag des Abschnitts unter seiner Überschrift, etwa **Added**, **Changed**, **Removed** oder **Fixed**. Jeder Eintrag ist eine Zeile mit seinem Thema und seinen Pull Requests. Am Ende stehen die Mitwirkenden und Links zum vollständigen Changelog und zum Vergleich.
+
+Den Anfang schreibt das Modell zusammen mit dem Abschnitt; ohne Modell hat das Release keine Highlights, und seine Breaking Changes sind auf ihren ersten Satz gekürzt. Die Vorschau oben gibt nach den Notizen auch das GitHub-Release aus.
 
 ### Was die Notizen enthalten dürfen
 
@@ -61,7 +67,9 @@ Ein Entwurf, der nach einer Korrektur noch scheitert, fällt auf die Titel zurü
 
 ### Prüfung vor dem Tag
 
-Jeder Job, der ein Secret nutzt, ins Repository schreibt oder veröffentlicht, läuft in der Umgebung `release` und wartet daher auf die Freigabe des Maintainers. Die Freigabe von **Release notes** lässt das Modell entwerfen. **Prepare** schreibt danach das Changelog und zeigt den Abschnitt und das GitHub-Release in seiner Zusammenfassung, genau so, wie das Release sie veröffentlicht. **Tag** wartet danach auf Ihre Freigabe, lesen Sie also zuerst die Zusammenfassung. Stimmt darin etwas nicht, lehnen Sie **Tag** ab, beheben Sie die Ursache auf `dev` und starten Sie Release erneut.
+Jeder Job, der ein Secret nutzt, ins Repository schreibt oder veröffentlicht, läuft in der Umgebung `release` und wartet daher auf die Freigabe des Maintainers. Die Freigabe von **Release notes** lässt das Modell entwerfen. **Prepare** schreibt danach das Changelog und zeigt den Abschnitt und das GitHub-Release in seiner Zusammenfassung, genau so, wie das Release sie veröffentlicht.
+
+**Tag** wartet danach auf Ihre Freigabe, lesen Sie also zuerst die Zusammenfassung. Stimmt darin etwas nicht, lehnen Sie **Tag** ab, beheben Sie die Ursache auf `dev` und starten Sie Release erneut.
 
 ### Labels
 
@@ -178,10 +186,10 @@ Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie entha
 
 ### Content Security Policy
 
-Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seite sowie in `csp.txt` und `_headers`. Senden Sie sie außerdem als Header `Content-Security-Policy`, denn nur der Header kann `frame-ancestors 'none'` hinzufügen. Der Header der Dokumentation ändert sich nie; er erlaubt Bilder von `update.kaeso.app`, woher die Release-Bilder im Änderungsprotokoll kommen:
+Jeder Build schreibt die Richtlinie seiner Website als `<meta>`-Tag in jede Seite sowie in `csp.txt` und `_headers`. Senden Sie sie außerdem als Header `Content-Security-Policy`, denn nur der Header kann `frame-ancestors 'none'` hinzufügen. Der Header der Dokumentation ändert sich nie:
 
 ```text
-default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://update.kaeso.app; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
 ```
 
 Die Richtlinie des Showcases nennt einen Hash für jedes seiner Inline-Skripte und -Stile; die Hashes ändern sich mit ihnen. Nehmen Sie seinen Header aus der `csp.txt` des Builds, den Sie verteilen.

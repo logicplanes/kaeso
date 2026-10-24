@@ -9,14 +9,20 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: The development stack
-  accDescr: The browser opens Vite on localhost:3000, which sends /platform and /v1 on to the gateway on 127.0.0.1:18080 and serves the console for everything else. The gateway calls the mock providers, Mailpit, the mock identity provider and the mock releases and updater.
-  browser[Browser] --> vite[Vite on localhost:3000]
-  vite -- /platform, /v1 --> gateway[Gateway on 127.0.0.1:18080]
-  vite -- everything else --> console[The console]
-  gateway --> provider[Mock OpenAI and Anthropic]
-  gateway --> mail[Mailpit]
-  gateway --> idp[Mock single sign-on]
-  gateway --> releases[Mock GitHub releases and updater]
+  accDescr: Your browser opens Vite on localhost:3000, which serves the console and sends /platform and /v1 on to the gateway on 127.0.0.1:18080. The gateway runs in the Compose project kaeso-dev with PostgreSQL, ClickHouse and Valkey, and calls the mock providers, the mock ChatGPT and Grok sign-in, the mock single sign-on, the mock releases and updater, and Mailpit.
+  browser[Your browser]:::outside -- localhost:3000 --> vite[Vite<br>serves the console]
+  vite -- /platform and /v1 --> gateway
+  subgraph stack [Compose project kaeso-dev]
+    gateway[Gateway<br>127.0.0.1:18080]:::accent
+    data[(PostgreSQL<br>ClickHouse<br>Valkey)]
+    subgraph mock [Mocks]
+      mocks[OpenAI and Anthropic<br>ChatGPT and Grok sign-in<br>Single sign-on<br>Releases and updater]
+    end
+    mail[Mailpit]
+  end
+  gateway --> data
+  gateway --> mocks
+  gateway --> mail
 ```
 
 The console's development server passes `/platform` and `/v1` on to the gateway, so the browser sees one address. The session cookie is then first-party, as it is in production behind a reverse proxy.

@@ -10,11 +10,12 @@ Die Dokumentation ist das Paket `kaeso-docs` in `apps/docs`: Markdown-Seiten, be
 flowchart TD
   accTitle: Von Markdown zur Website
   accDescr: Beim Build liest scripts/content die Seiten in content und die gezeichneten Diagramme in diagrams, prüft sie und schreibt virtuelle Module für die Website jeder Sprache, jede Seite und die Suche. Die React-App in src zeichnet sie mit der UI-Bibliothek, und Vite schreibt dist.
-  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>Frontmatter, Links, Anker, Bilder,<br>Suchbegriffe, jede Sprache]
-  diagrams[diagrams/*.svg<br>Mermaid-Blöcke, gezeichnet] --> content
-  content --> modules[Virtuelle Module<br>Website, Seite und Suche pro Sprache]
-  modules --> app[src/, React und kaeso-ui]
-  app --> dist[dist/]
+  subgraph build [Beim Build, in Vite]
+    pages[content/<br>die Seiten] --> compiler
+    diagrams[diagrams/<br>die gezeichneten Diagramme] --> compiler
+    compiler[scripts/content<br>prüft Frontmatter, Links,<br>Anker und Bilder]:::accent --> modules[Virtuelle Module<br>Website, Seiten und Suche<br>für jede Sprache]
+  end
+  modules --> app[src/<br>React und kaeso-ui] --> dist[dist/<br>die statische Website]
 ```
 
 ## Der Build
@@ -28,7 +29,6 @@ flowchart TD
 | `compile.ts` | Eine Seite: der Lexer von marked mit abgeschaltetem Roh-HTML, dann das Seitenformat aus `src/markdown/ast.ts`, mit geprüften Links, Code-Gruppen aus aufeinanderfolgenden Fences mit `tab`, Link-Karten aus Listen von Seitenlinks und gesammelten Suchbegriffen |
 | `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links so aufgelöst wie auf GitHub, Bilder und ihre Größen |
 | `docs.ts` | Alle Sprachen und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
-| `changelog.ts` | Die Änderungsseiten, gebaut aus `CHANGELOG.md` über `history` in `scripts/changelog.mjs`: `/changelog` mit Unveröffentlicht und der neuesten Reihe, `/changelog/<major.minor>` für jede ältere Reihe, damit keine Seite ihr Budget überschreitet |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | Die Diagramme: ihre Mermaid-Konfiguration aus den Tokens von Kaeso, ihr Zeichnen in Headless-Chromium und `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | Die Seiten unter alten Adressen aus `redirects.json` |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen in der Entwicklung, eine HTML-Datei pro Seite und Sprache, die `404.html`-Dateien und die Sitemap |

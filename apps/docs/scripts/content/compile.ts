@@ -1,5 +1,5 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
-import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
+import type { Block, CalloutKind, CodeLang, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
 import { DIAGRAM_LANG, DIAGRAM_ROLES, diagramText } from "./diagram.ts";
 import { Slugger } from "./slug.ts";
 
@@ -29,11 +29,11 @@ export interface Resolver {
   anchors: Set<string>;
 }
 
-function lexer(references = false) {
+function lexer() {
   const tokenizer = new Tokenizer();
   tokenizer.html = () => undefined;
   tokenizer.tag = () => undefined;
-  if (!references) tokenizer.def = () => undefined;
+  tokenizer.def = () => undefined;
   return new Lexer({ gfm: true, breaks: false, tokenizer });
 }
 
@@ -49,8 +49,8 @@ function plain(tokens: Token[] | undefined): string {
     .join("");
 }
 
-export function lex(body: string, options: { references?: boolean; offset?: number } = {}): Lexed {
-  const tokens = lexer(options.references).lex(body);
+export function lex(body: string, options: { offset?: number } = {}): Lexed {
+  const tokens = lexer().lex(body);
   const slugger = new Slugger();
   const headings: Heading[] = [];
   let h1: string | undefined;
@@ -104,12 +104,14 @@ function attribute(raw: string, name: string): string | undefined {
   return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim() || undefined;
 }
 
-export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string; tab?: string } {
+const PROSE = new Set(["markdown", "md", "text", "txt", "plaintext"]);
+
+export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string; tab?: string; wrap?: true } {
   const raw = (info ?? "").trim();
   const name = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
   const title = attribute(raw, "title");
   const tab = attribute(raw, "tab");
-  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}) };
+  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(PROSE.has(name) ? { wrap: true as const } : {}) };
 }
 
 export function safeExternal(href: string): string | null {
@@ -414,7 +416,6 @@ export interface Compiled {
   toc: TocEntry[];
   words: string[];
   problems: string[];
-  changelog?: ChangelogContent;
 }
 
 function words(bs: Block[], into: Set<string>, labels: Map<Block, string[]> = new Map()): void {

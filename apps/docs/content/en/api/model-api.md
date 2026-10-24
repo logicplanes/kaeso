@@ -128,7 +128,7 @@ Any other path under `/v1` gets 404, and a known path called with the wrong meth
 
 ### Listing models
 
-`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). A model that the provider doesn't serve to the project's provider key is left out ([availability](../console/models-and-aliases.md#availability)).
+`GET /v1/models` chooses its format the same way, by the `anthropic-version` header. The list holds the catalogue's models that the key may call, followed by the project's aliases that point at them. Each model is listed by its own id, or as `provider/model` when its own id doesn't lead to it, for example when another provider serves the same id ([model names](#model-names)). The list leaves out a model that the provider doesn't serve to the project's provider key ([availability](../console/models-and-aliases.md#availability)).
 
 | | OpenAI format | Anthropic format |
 | --- | --- | --- |
@@ -160,7 +160,7 @@ A request names a model in one of three forms. Kaeso looks in the project's cata
 | The provider and the model | `anthropic/claude-haiku-4-5` |
 | The model's own id | `claude-haiku-4-5` |
 
-Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use, with the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
+Kaeso answers 404 for a model outside the catalogue and for one the key or its member may not use. Both get the same message, so a key can't learn which other models the project has. When several providers in the project serve the same model id, the plain id gets 400 with a message that names the providers; send `provider/model` instead. [Models and aliases](../console/models-and-aliases.md) explains the catalogue.
 
 ## Streaming
 
@@ -172,7 +172,7 @@ Ask for a stream as the format does, with `"stream": true`. The reply is a serve
 
 ## Reasoning across tool calls
 
-Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the reasoning before each tool call and adds it back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
+Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the model's reasoning before each tool call. It adds the reasoning back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
 
 ## Response headers
 

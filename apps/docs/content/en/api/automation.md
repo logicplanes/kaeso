@@ -1,5 +1,6 @@
 ---
 title: Automate with the Platform API
+nav: Automation
 description: Set up a project, a model and a key for an app from a script, and read its usage and logs.
 order: 4
 ---

@@ -67,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to any provider
 
-These are refused in every format, even when the format stays the same:
+Kaeso refuses these in every format, even when the format stays the same:
 
 - more than one choice (`n`)
 - Chat Completions audio input (`input_audio`)

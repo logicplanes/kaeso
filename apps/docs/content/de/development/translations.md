@@ -32,7 +32,15 @@ Jede Sprache hat dieselbe Stimme: kurz, schlicht, keine Füllwörter. Übersetze
 
 Deutsch ist etwa ein Drittel länger als Englisch. Layouts müssen das aushalten: Beschriftungen werden nicht abgeschnitten, Beschreibungen passen weiterhin in eine Zeile, Buttons behalten ihre Breite und Tabellen laufen nicht über. Chinesisch ist kürzer, braucht aber die volle Zeilenhöhe; nie kleiner setzen. Deutsch behält etablierte Begriffe wie Token, Playground und Budget, statt deutsche Wörter dafür zu erfinden.
 
-Nie übersetzt werden: Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, models.dev), Modell-IDs, IDs und Schlüsselpräfixe, Code, Einstellungen (`KAESO_*`), Pfade, Feldnamen, Rechte (`keys.all.view`), HTTP-Methoden und Statuscodes, Einheiten, die die Bibliothek formatiert, und die Namen von Personen und Organisationen.
+Nie übersetzt werden:
+
+- Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, models.dev)
+- Modell-IDs, IDs und Schlüsselpräfixe
+- Code, Einstellungen (`KAESO_*`), Pfade und Feldnamen
+- Rechte (`keys.all.view`)
+- HTTP-Methoden und Statuscodes
+- Einheiten, die die Bibliothek formatiert
+- Die Namen von Personen und Organisationen
 
 ## Glossar
 
@@ -136,7 +144,7 @@ tRich("signIn.newHere", "New here? {link}", {
 });
 ```
 
-- **`t(key, english, values?)`** gibt einen String zurück. Rufen Sie sie beim Rendern auf oder dann, wenn der Text gebraucht wird (ein Toast, ein Titel), nie auf Modulebene: Eine beim Import berechnete Konstante bleibt in der Sprache, in der die Seite gestartet ist. Tabellen von Beschriftungen werden zu Funktionen (`() => t(…)`) oder innerhalb der Komponente gebaut.
+- **`t(key, english, values?)`** gibt einen String zurück. Rufen Sie sie beim Rendern auf oder dann, wenn der Text gebraucht wird (ein Toast, ein Titel), nie auf Modulebene. Eine beim Import berechnete Konstante bleibt in der Sprache, in der die Seite gestartet ist. Tabellen von Beschriftungen werden zu Funktionen (`() => t(…)`) oder innerhalb der Komponente gebaut.
 - **Schlüssel und englischer Text sind String-Literale**, nebeneinander. Der Schlüssel ist `<area>.<words>` in camelCase, etwa `org.members.invite` oder `logs.inspector.overview`. Sein erster Teil benennt die Katalogdatei (`src/i18n/locales/<locale>/<area>.json`): `common`, `shell`, `auth`, `errors`, `rights`, `format`, `kaeso`, `signIn`, `public`, `account`, `org`, `orgHome`, `instance`, `project`, `keys`, `limits`, `logs`, `models`, `playground`. Ein Schlüssel benennt, was der Text bedeutet, nicht wo er steht; ein Schlüssel hat immer genau einen englischen Text, und eine geänderte Bedeutung bekommt einen neuen Schlüssel.
 - **Gemeinsame Wörter** stehen in `common` (`src/i18n/common.ts` listet sie auf): Cancel, Save, Delete, Continue, Name, Email, Never und andere. Rufen Sie seine Funktion auf, etwa `common.cancel()`, oder verwenden Sie `t("common.cancel", "Cancel")` mit genau diesem englischen Text. Ein Wort, das an seiner Stelle etwas anderes bedeutet, bekommt einen eigenen Schlüssel.
 - **Nur ganze Sätze.** Nie Fragmente zusammensetzen (`"Joined " + date`, `` `${n} keys` ``), weil sich die Wortstellung zwischen Sprachen unterscheidet. Werte gehören in Platzhalter (`{name}`); Zahlen, die eine Form bestimmen, laufen über `plural` (`one`, `other`, `=0`; Deutsch hat dieselben Formen, Chinesisch nur `other`); Varianten laufen über `select`. Formatieren Sie Zahlen, Geldbeträge und Datumsangaben vor der Übergabe mit `@logicplanes/kaeso-ui/format`; die Formatierer folgen der Sprache.
@@ -145,7 +153,9 @@ tRich("signIn.newHere", "New here? {link}", {
 
 ### Was das Gateway schreibt
 
-Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client (`src/api/`) übersetzt, was er kennt, sobald Antworten eintreffen, mit den Schlüsseln `errors.*` und `rights.*`: Rechte und Rollen über ihre ID, Meldungen über ihren englischen Text und ihre Werte. Was er nicht kennt, erscheint so, wie das Gateway es geschrieben hat. Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
+Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client (`src/api/`) übersetzt, was er kennt, sobald Antworten eintreffen, mit den Schlüsseln `errors.*` und `rights.*`. Rechte und Rollen übersetzt er über ihre ID, Meldungen über ihren englischen Text und ihre Werte. Was er nicht kennt, erscheint so, wie das Gateway es geschrieben hat.
+
+Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
 
 ## Die UI-Bibliothek
 
@@ -218,7 +228,7 @@ root.render(
 
 ## Prüfen
 
-- `pnpm i18n --write` schreibt die `src/i18n/locales/en/<area>.json` der Konsole aus dem Quellcode, die Liste für Übersetzende; `pnpm i18n` prüft, dass jeder Schlüssel Deutsch und Chinesisch mit denselben Platzhaltern hat und dass nichts übrig ist. Außerdem lehnt es eine Übersetzung ab, die noch englisch ist (Namen, Code, Abkürzungen und einige Begriffe wie „Top k“ bleiben erlaubt), „du“ im Deutschen, „你“ im Chinesischen, gerade Anführungszeichen und halbbreite Satzzeichen neben chinesischen Zeichen. `pnpm test` führt die Prüfung ebenfalls aus.
+- `pnpm i18n --write` schreibt die `src/i18n/locales/en/<area>.json` der Konsole aus dem Quellcode; das ist die Liste für Übersetzende. `pnpm i18n` prüft, dass jeder Schlüssel Deutsch und Chinesisch mit denselben Platzhaltern hat und dass nichts übrig ist. Es lehnt eine Übersetzung ab, die noch englisch ist, wobei Namen, Code, Abkürzungen und einige Begriffe wie „Top k“ englisch bleiben dürfen. Außerdem lehnt es „du“ im Deutschen, „你“ im Chinesischen, gerade Anführungszeichen und halbbreite Satzzeichen neben chinesischen Zeichen ab. `pnpm test` führt dieselbe Prüfung aus.
 - Der Katalogtest der UI-Bibliothek, `gen` des Showcases und der Nachrichtentest der Dokumentationswebsite lehnen dasselbe ab: Englisch in einer Übersetzung und eine informelle Anrede. Die Tests des Mail-Crates schlagen fehl, wenn eine deutsche oder chinesische E-Mail einen englischen Satz behält oder „du“ oder „Tokens“ verwendet.
 - `pnpm lint` lehnt Text ab, der direkt in die Konsole geschrieben ist: JSX-Text, Text-Props (`label`, `title`, `description`, `placeholder`, `aria-label` und andere), Textfelder von Objekten und als Literale geschriebene Toasts (die Regel `kaeso/no-literal-text`).
 - `apps/console/src/copy.test.ts` prüft deutsche und chinesische Beschreibungen gegen dieselben Längengrenzen wie die englischen, mit 15 % Spielraum.

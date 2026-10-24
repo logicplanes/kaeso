@@ -77,7 +77,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 - **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
 - **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`。默认为 `inference`，授予平台访问权限需要 `keys.platform_access.grant` 权限（[API 密钥](../console/api-keys.md)）。
 - **平台密钥只能在会话中创建**，且创建者必须拥有管理员角色的全部权限。平台密钥从不调用模型。
-- **组织策略作用于会话。** 要求单点登录的组织会对其管理的账户的会话返回 403，除非会话来自其身份提供商；访客的会话可以通过。要求双重验证的组织会对没有第二重验证的会话返回 403，但来自在该组织有效的单点登录的会话除外：即其自己的单点登录，或管理该账户的组织的单点登录（见[受管理的账户](../self-hosting/sign-in.md#受管理的账户)）。
+- **组织策略作用于会话。** 要求单点登录的组织会对其管理的账户的会话返回 403，除非会话来自其身份提供商；访客的会话可以通过。要求双重验证的组织会对没有第二重验证的会话返回 403。例外是来自在该组织有效的单点登录的会话：即其自己的单点登录，或管理该账户的组织的单点登录（见[受管理的账户](../self-hosting/sign-in.md#受管理的账户)）。
 - **未知密钥会被限流。** 来自同一地址、使用未知密钥的请求过多时（两个 API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`（[API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)）。
 
 ### 跨站请求
@@ -92,13 +92,19 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 近期登录
 
-在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录：使用密码或登录链接；只有账户没有其他方式时，才通过单点登录。密钥不受此限制。
+在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录。您可以使用密码或登录链接确认；只有账户没有其他方式时，才通过单点登录确认。密钥不受此限制。
 
-`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。只有这三项都为 `false` 时，`sso` 才列出账户已关联其身份提供商的组织（管理该账户的组织排在最前）；如果该组织要求单点登录，则只有它的身份提供商可以确认。`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。身份提供商会被要求进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认，会话会被替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account` 或 `link_required`。`cannot_confirm` 表示身份提供商的答复没有显示新的登录：它省略了 `auth_time`，或带回了它沿用的较早登录；此后 `sso` 不再列出该组织，其连接在 `GET orgs/{org}/security` 中显示 `confirms_sign_in: false`。
+`GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。只有这三项都为 `false` 时，`sso` 才列出账户已关联其身份提供商的组织。管理该账户的组织排在最前。如果该组织要求单点登录，则只有它的身份提供商可以确认。
+
+`POST me/sign-in-again/sso` 在其中一个身份提供商开始确认。Kaeso 会要求身份提供商进行一次新的登录（`prompt=login`、`max_age=0`），只有同一账户可以确认。随后 Kaeso 会把会话替换为来自该组织单点登录的会话。失败时浏览器会带着 `#sso_error=` 回到 `next`，例如 `other_account` 或 `link_required`。
+
+`cannot_confirm` 表示身份提供商的答复没有显示新的登录：它省略了 `auth_time`，或带回了它沿用的较早登录。此后 `sso` 不再列出该组织，其连接在 `GET orgs/{org}/security` 中显示 `confirms_sign_in: false`。
+
+以下操作要求近期登录：
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择实例管理员的单点登录（只能使用密码或登录链接），选择自动更新，应用更新，以及计划删除或删除组织。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
 ## 约定
 
@@ -186,11 +192,18 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 只有实例管理员能用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
 
-`GET orgs/{org}/providers` 需要 `org.view`，列出 Kaeso 调用的每个服务商，在每个组织中都相同。每个服务商带有 ID 和名称、创建其密钥的页面（`key_page`）、其密钥的开头（`key_prefix`，没有固定前缀时为 `null`），以及 Kaeso 调用它所用的格式，默认格式在前。[支持的服务商](../concepts/supported-providers.md)以表格列出同一份列表。
+`GET orgs/{org}/providers` 需要 `org.view`，列出 Kaeso 调用的每个服务商，在每个组织中都相同。每个服务商带有：
+
+- ID 和名称；
+- 创建其密钥的页面（`key_page`）；
+- 其密钥的开头（`key_prefix`，没有固定前缀时为 `null`）；
+- Kaeso 调用它所用的格式，默认格式在前。
+
+[支持的服务商](../concepts/supported-providers.md)以表格列出同一份列表。
 
 ## 角色和权限
 
-每个组织成员有一个组织角色。每个项目成员和服务账号有一个项目角色。角色可以是内置角色，也可以是组织的自定义角色（`role_…`），并可按成员单独添加或移除权限。组织角色还包含在每个项目中的权限。[权限](../concepts/rights.md)列出了每项权限和每个内置角色。
+每个组织成员有一个组织角色，每个项目成员和服务账号有一个项目角色。角色可以是内置角色，也可以是组织的自定义角色（`role_…`），您可以按成员单独为其添加或移除权限。组织角色还包含在每个项目中的权限。[权限](../concepts/rights.md)列出了每项权限和每个内置角色。
 
 | 路由 | 权限 | 返回 |
 | --- | --- | --- |
@@ -250,7 +263,7 @@ curl -N "$project/playground/responses" \
 
 - **相同的路径。** 模型在项目目录中解析，包括别名和 `provider/model`，且必须在成员的模型访问范围内。Kaeso 使用项目的服务商密钥，关闭流会取消发往服务商的请求。
 - **限额。** 成员和项目的速率与预算适用。密钥限额不适用，因为没有密钥。
-- **用量和日志。** 请求计入项目，并算作该成员的用量；按 `key` 查看用量时显示为 `playground`。其日志条目的来源为 `playground`，项目记录内容时还包含请求内容。`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
+- **用量和日志。** Kaeso 将请求计入项目，并算作该成员的用量；按 `key` 查看用量时显示为 `playground`。其日志条目的来源为 `playground`，项目记录内容时还包含请求内容。`logs` 和 `logs/export` 可用 `source=api` 或 `source=playground` 筛选。
 
 流开始之前的错误是 Platform API 错误：
 

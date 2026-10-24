@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
 import { notes, release } from "./changelog.mjs";
 import {
-  DOCS_URL,
+  CHANGELOG_URL,
   MODEL,
   SCHEMA,
   SYSTEM,
@@ -667,9 +667,7 @@ test("the review summary shows the changelog section and the GitHub release in f
   const changelogPart = lines.slice(lines.indexOf("#### CHANGELOG.md") + 3, lines.indexOf("#### GitHub release") - 2);
   assert.deepEqual(changelogPart, ["### Fixed", "", `- Streams with \`\`\`\` in them stay open. ([#11](${repo}/pull/11))`]);
   assert.ok(
-    lines.includes(
-      "[Full changelog](https://docs.kaeso.app/changelog#v1.1.0) · [v1.0.0...v1.1.0](https://github.com/logicplanes/kaeso/compare/v1.0.0...v1.1.0)",
-    ),
+    lines.includes("[Full changelog](https://kaeso.app/changelog/1.1.0) · [v1.0.0...v1.1.0](https://github.com/logicplanes/kaeso/compare/v1.0.0...v1.1.0)"),
   );
   assert.throws(() => review({ changelog: changelog(), version: "9.9.9" }), /no section for 9\.9\.9/);
 });
@@ -756,7 +754,7 @@ test("the GitHub release shows the tagline, the highlights, breaking changes, ev
     "",
     "**Contributors:** @ada, @grace (first contribution), @linus",
     "",
-    `[Full changelog](${DOCS_URL}/changelog#v1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
+    `[Full changelog](${CHANGELOG_URL}/1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
   ]);
 });
 
@@ -776,7 +774,7 @@ test("without a short version, the GitHub release lists breaking changes cut to 
     "",
     ...Array.from({ length: 7 }, (_, i) => `- Line ${i + 1} sets \`kaeso.example.com\` up. It says more. [#${i + 20}](${repo}/pull/${i + 20})`),
     "",
-    `[Full changelog](${DOCS_URL}/changelog#v1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
+    `[Full changelog](${CHANGELOG_URL}/1.1.0) · [v1.0.0...v1.1.0](${repo}/compare/v1.0.0...v1.1.0)`,
   ]);
 });
 

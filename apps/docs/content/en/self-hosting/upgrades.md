@@ -38,7 +38,9 @@ version={{version}}
 )
 ```
 
-The commands stop at the first one that fails and leave the install as it was. Docker checks every image it pulls against the digest in `compose.yaml`. The last command returns once the new gateway and console are healthy, and fails if one isn't. The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
+The commands stop at the first one that fails and leave the install as it was. Docker checks every image it pulls against the digest in `compose.yaml`. The last command returns once the new gateway and console are healthy, and fails if one isn't.
+
+The gateway migrates the databases when it starts. Migrations only move forward and run in order, so you can skip versions.
 
 When the updater can't install a release, the console shows these commands with the exact version.
 
@@ -46,7 +48,9 @@ When the updater can't install a release, the console shows these commands with 
 
 The gateway looks for new releases at `update.kaeso.app` every 5 minutes, and 15 minutes later after a failure. When the feed asks it to wait longer, it waits an hour at most. The request carries nothing about your install but the gateway's version, and an unchanged list costs only a short `304` answer.
 
-Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked. The Platform API's `instance/updates/check` looks at once, even when checks are off or the feed asked the gateway to wait. It asks the feed at most once a minute. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
+Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked.
+
+The Platform API's `instance/updates/check` looks at once, even when checks are off or the feed asked the gateway to wait. It asks the feed at most once a minute. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -133,7 +137,9 @@ The updater doesn't replace itself or Caddy while it runs. The next `docker comp
 
 Under **How updates install**, choose **Automatically**, then set the update window: **Daily**, or **Weekly** on a day, at an hour. The hour is in the install's time zone, set under **General**, daylight saving time included. The window stays open for an hour, and the page shows when the next one opens.
 
-In the window, the gateway looks for releases if it hasn't in the last hour. It then updates to the newest release the updater installs, exactly as **Update to …** would. A new major version or a release with steps by hand waits for you. A window the gateway doesn't run through passes, and the next one counts. The history and the audit log record each automatic update without a person.
+In the window, the gateway looks for releases if it hasn't in the last hour. It then updates to the newest release the updater installs, exactly as **Update to …** would. A new major version or a release with steps by hand waits for you.
+
+A window the gateway doesn't run through passes, and the next one counts. The history and the audit log record each automatic update without a person.
 
 ### Results
 
@@ -183,10 +189,10 @@ The updater is equivalent to root on the server. It can create containers, and `
 - It answers only the gateway, on an internal network, and only with the shared token. The gateway passes it a version number and nothing else.
 - It reaches Docker only through `docker-proxy`, which lets through only the calls an update needs. It allows bind mounts only from `KAESO_DIR`, the install's folder, so change `KAESO_DIR` when you move the folder.
 - It replaces only the gateway and console containers of its own Compose project, with images it verified.
-- It refuses to create a container whose privileges, capabilities, devices, namespaces, network, mounts, ports, name resolution, groups or limits differ from the one it replaces, and pulls only Kaeso's images, by digest.
+- It refuses to create a container whose privileges, capabilities, devices, namespaces, network, mounts, ports, name resolution, groups or limits differ from the one it replaces. It pulls only Kaeso's images, by digest.
 - It changes only the image versions and digests in `compose.yaml`, and leaves a file that differs from the release's alone.
 
-The proxy can't check what a new container asks for, such as privileges or host devices, and lets the updater read any container's settings, including the database passwords in their environment. Those checks live in the updater alone. Without the `updater` profile, nothing in Kaeso has Docker access.
+The proxy can't check what a new container asks for, such as privileges or host devices. It also lets the updater read any container's settings, including the database passwords in their environment. Those checks live in the updater alone. Without the `updater` profile, nothing in Kaeso has Docker access.
 
 ## While Kaeso updates
 

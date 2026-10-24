@@ -9,11 +9,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { writeSitePolicy } from "../../scripts/csp.mjs";
 import { kaesoVersion } from "./scripts/content/docs.ts";
 import { kaesoDocs } from "./scripts/content/plugin.ts";
-import { UPDATE_SERVICE } from "./src/site/update-service.ts";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const contentDir = process.env.KAESO_DOCS_CONTENT ?? "content";
-const changelog = process.env.KAESO_DOCS_CHANGELOG ?? "../../CHANGELOG.md";
 const editBase = "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/";
 const siteUrl = "https://docs.kaeso.app";
 const port = Number(process.env.KAESO_DOCS_PORT ?? 4480);
@@ -75,7 +73,7 @@ function contentSecurityPolicy(): Plugin {
       order: "post",
       sequential: true,
       handler() {
-        this.info(writeSitePolicy(outDir, { images: [UPDATE_SERVICE] }));
+        this.info(writeSitePolicy(outDir));
       },
     },
   };
@@ -160,7 +158,7 @@ function uiEntryImports(): Plugin {
 export default defineConfig({
   cacheDir: process.env.KAESO_VITE_CACHE ?? "node_modules/.vite",
   plugins: [
-    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root), changelog }),
+    kaesoDocs({ root, contentDir, editBase, siteUrl, version: kaesoVersion(root) }),
     uiEntryImports(),
     themeInit(),
     themeColor(),

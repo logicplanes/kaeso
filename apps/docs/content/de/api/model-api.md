@@ -160,7 +160,7 @@ Eine Anfrage benennt ein Modell in einer von drei Formen. Kaeso sucht im Katalog
 | Anbieter und Modell | `anthropic/claude-haiku-4-5` |
 | Die eigene ID des Modells | `claude-haiku-4-5` |
 
-Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf, mit derselben Meldung, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
+Kaeso antwortet mit 404 für ein Modell außerhalb des Katalogs und für eines, das der Schlüssel oder sein Mitglied nicht verwenden darf. Beide erhalten dieselbe Meldung, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Bieten mehrere Anbieter im Projekt dieselbe Modell-ID an, erhält die bloße ID 400 mit einer Meldung, die die Anbieter nennt; senden Sie dann `provider/model`. [Modelle und Aliasse](../console/models-and-aliases.md) erklärt den Katalog.
 
 ## Streaming
 
@@ -172,7 +172,7 @@ Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`
 
 ## Reasoning über Tool-Aufrufe hinweg
 
-Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning vor jedem Tool-Aufruf und fügt es in der nächsten Runde der App wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
+Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning des Modells vor jedem Tool-Aufruf. In der nächsten Runde der App fügt Kaeso das Reasoning wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
 
 ## Antwort-Header
 

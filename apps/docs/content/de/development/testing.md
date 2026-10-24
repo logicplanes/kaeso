@@ -72,7 +72,9 @@ pnpm --filter kaeso-console exec playwright install chromium
 
 ### Die Konsole
 
-Unit-Tests laufen in happy-dom gegen die Platform API, die pro Test gestubbt wird (`apps/console/src/test/network.ts`, mit Fixtures in `src/test/fixtures/`). `renderApp(path)` bindet die ganze Konsole unter einer Adresse ein, `renderUi` eine einzelne Komponente. Tests prüfen, was eine Person sieht und welche Anfragen gesendet werden, und bestehen in jeder Reihenfolge. Um die Reihenfolge zu prüfen, führen Sie `pnpm --filter kaeso-console exec vitest run --sequence.shuffle` aus. Testdateien unter `src/routes` beginnen mit `-`, damit der Routengenerator sie überspringt.
+Unit-Tests laufen in happy-dom gegen die Platform API, die pro Test gestubbt wird (`apps/console/src/test/network.ts`, mit Fixtures in `src/test/fixtures/`). `renderApp(path)` bindet die ganze Konsole unter einer Adresse ein, `renderUi` eine einzelne Komponente.
+
+Tests prüfen, was eine Person sieht und welche Anfragen gesendet werden, und bestehen in jeder Reihenfolge. Um die Reihenfolge zu prüfen, führen Sie `pnpm --filter kaeso-console exec vitest run --sequence.shuffle` aus. Testdateien unter `src/routes` beginnen mit `-`, damit der Routengenerator sie überspringt.
 
 Die End-to-End-Suite berührt den Entwicklungs-Stack nie. Sie startet einen eigenen, das Compose-Projekt `kaeso-console-e2e`, mit dem Gateway auf `127.0.0.1:28080` und der Konsole unter http://localhost:3100. Stack und Daten werden am Ende des Laufs entfernt. Um den Stack zwischen Läufen weiterlaufen zu lassen, starten Sie ihn selbst und teilen es der Suite mit:
 
@@ -89,7 +91,9 @@ Unit-Tests und End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixt
 
 ### Die UI-Bibliothek und der Showcase
 
-Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine Unit-Tests. Seine End-to-End-Suite führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und `<head>` der Seiten.
+Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine Unit-Tests.
+
+Die End-to-End-Suite des Showcases führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und `<head>` der Seiten.
 
 ## Rust
 
@@ -184,7 +188,9 @@ sequenceDiagram
 | `POST /v1/embeddings` | `openai_embeddings` | `embeddings.create` |
 | `GET /v1/models`, `GET /v1/models/{id}` | `anthropic_messages` mit einem Header `anthropic-version`, sonst `openai_chat` | `models.list`, `models.retrieve` |
 
-Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`). Eine Übersetzung, die Text, Tool-Argumente oder lesbares Reasoning verliert, schlägt deshalb fehl. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den `APIStatusError` des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`). Modelllisten müssen so blättern und filtern, wie die SDKs es erwarten (`e2e/conformance/test_models.py`). `GET /_scenarios` listet jedes Szenario auf, das der Server anbietet.
+Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`), sodass eine Übersetzung fehlschlägt, die Text, Tool-Argumente oder lesbares Reasoning verliert. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den `APIStatusError` des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`).
+
+Modelllisten müssen so blättern und filtern, wie die SDKs es erwarten (`e2e/conformance/test_models.py`). `GET /_scenarios` listet jedes Szenario auf, das der Server anbietet.
 
 ### SDK-Suite
 
@@ -216,7 +222,9 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 e2e/.venv/bin/pytest -q e2e/install
 ```
 
-Diese Suite baut die Images des Gateways, des Mock-Anbieters, der Konsole und des Updaters und startet `deploy/compose.yaml` aus einem sauberen Zustand, mit den Overrides in `e2e/install`. Sie schließt die Einrichtung beim ersten Start ab und ruft die Installation mit beiden SDKs auf. Sie prüft außerdem, dass PostgreSQL und ClickHouse dem Gateway keine Rechte geben, die es nicht braucht, und dass Valkey Verbindungen ohne sein Passwort ablehnt. Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` und `KAESO_TEST_UPDATER_IMAGE` nutzen bereits gebaute Images.
+Diese Suite baut die Images des Gateways, des Mock-Anbieters, der Konsole und des Updaters und startet `deploy/compose.yaml` aus einem sauberen Zustand, mit den Overrides in `e2e/install`. Sie schließt die Einrichtung beim ersten Start ab und ruft die Installation mit beiden SDKs auf. Sie prüft außerdem, dass PostgreSQL und ClickHouse dem Gateway keine Rechte geben, die es nicht braucht, und dass Valkey Verbindungen ohne sein Passwort ablehnt.
+
+Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` und `KAESO_TEST_UPDATER_IMAGE` nutzen bereits gebaute Images.
 
 ## Fuzzing
 
@@ -284,4 +292,8 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 
 Schlägt ein End-to-End-Shard fehl, führt der Job **End-to-end console report** oder **End-to-end showcase report** die Ergebnisse der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-console` oder `playwright-showcase`.
 
-Drei Workflows laufen nach Zeitplan. **Fuzz** läuft jede Nacht, wie unter [Fuzzing](#fuzzing) beschrieben. **Audits** läuft jeden Montag: `cargo deny check` für den Workspace und KPP und `pnpm audit --audit-level high` für alle Abhängigkeiten, auch die für die Entwicklung. So fällt eine neue Sicherheitsmeldung auf, auch wenn sich nichts ändert. **Scorecard** läuft jeden Dienstag und nach jedem Push auf `dev`: Die [OpenSSF Scorecard](https://scorecard.dev) prüft die Sicherheitspraktiken des Repositorys, etwa angepinnte Actions, Token-Rechte und Branch-Schutz, veröffentlicht die Bewertung und zeigt ihre Befunde unter **Security › Code scanning**.
+Drei Workflows laufen nach Zeitplan:
+
+- **Fuzz** läuft jede Nacht, wie unter [Fuzzing](#fuzzing) beschrieben.
+- **Audits** läuft jeden Montag: `cargo deny check` für den Workspace und KPP und `pnpm audit --audit-level high` für alle Abhängigkeiten, auch die für die Entwicklung. So fällt eine neue Sicherheitsmeldung auf, auch wenn sich nichts ändert.
+- **Scorecard** läuft jeden Dienstag und nach jedem Push auf `dev`. Die [OpenSSF Scorecard](https://scorecard.dev) prüft die Sicherheitspraktiken des Repositorys, etwa angepinnte Actions, Token-Rechte und Branch-Schutz. Sie veröffentlicht die Bewertung und zeigt ihre Befunde unter **Security › Code scanning**.

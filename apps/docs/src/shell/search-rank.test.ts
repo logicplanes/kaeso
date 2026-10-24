@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SearchEntry } from "~/markdown/ast";
-import { matchHeadings, rankPages } from "./search-rank";
+import { matchHeadings, rankPages, splitPages } from "./search-rank";
 
 const entry = (path: string, title: string, description: string, headings: string[] = [], words = ""): SearchEntry => ({
   path,
@@ -19,6 +19,16 @@ describe("rankPages", () => {
   it("puts title matches first, then descriptions, then the text", () => {
     expect(rankPages(index, "keys").map((e) => e.path)).toEqual(["/guides/keys", "/guides/budgets", "/"]);
     expect(rankPages(index, "").map((e) => e.path)).toEqual(["/", "/guides/budgets", "/guides/keys"]);
+  });
+});
+
+describe("splitPages", () => {
+  it("keeps pages that only mention the words apart from pages their title or description names", () => {
+    const { named, mentioned } = splitPages(index, "keys");
+    expect(named.map((e) => e.path)).toEqual(["/guides/keys", "/guides/budgets"]);
+    expect(mentioned.map((e) => e.path)).toEqual(["/"]);
+    expect(splitPages(index, "").named).toHaveLength(3);
+    expect(splitPages(index, "").mentioned).toEqual([]);
   });
 });
 

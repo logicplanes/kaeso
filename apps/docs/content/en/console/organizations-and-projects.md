@@ -14,7 +14,9 @@ The same menu lists your organizations and switches between them.
 
 ## Read usage
 
-The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. Each total is compared with the period before it, except for today, which isn't over yet, and all time. Charts count by UTC day; a day, week or month still running is drawn dashed or lighter, and its tooltip says "so far". It also breaks the cost down by project, and the usage by project, model or member. Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
+The organization's **Overview** shows requests, tokens, cost and errors for a period you choose, from today to all time. It also breaks the cost down by project, and the usage by project, model or member.
+
+The page compares each total with the period before it, except for today, which isn't over yet, and all time. Charts count by UTC day. They draw a day, week or month that is still running dashed or lighter, and its tooltip says "so far". Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
 
 A project's **Overview** shows the same numbers for one project, broken down by time, model, key or member. It also lists the project's limits with what is used, and its recent errors.
 
@@ -41,9 +43,9 @@ Single sign-on lets members sign in through your OpenID Connect identity provide
 2. **Which app signs people in?** Enter its client id and client secret.
 3. **Which email domains sign in with it?** The sign-in page sends people with an address at these domains to your provider. Internationalized domains work in either form, `bücher.example` or `xn--bcher-kva.example`.
 4. **Can people join without an invitation?** Choose **Invite only**, or the role that people new to Kaeso join with. That role can't be Owner.
-5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". With **Start without a click**, after someone enters an address at your verified domains, the sign-in page goes on to your provider without showing its button when it is their only way in. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
+5. **How does the sign-in page offer it?** Enter the **Name on the button**, such as `Acme ID` for "Continue with Acme ID". Left empty, the button says "Continue with SSO". With **Start without a click**, the sign-in page goes on to your provider without showing its button. It does so when someone enters an address at your verified domains and the provider is their only way in. **Require verified addresses** refuses tokens that don't mark the address as verified; turn it off only for a provider that never sends `email_verified`.
 
-Once you connect, the page shows the **Redirect URL**: register it at your provider as the sign-in callback. To send members to single sign-on from your intranet or a bookmark, link to your install's sign-in page, such as `https://kaeso.example.com/sign-in`; it asks for their address first ([the sign-in page](../self-hosting/sign-in.md#the-sign-in-page)).
+Once you connect, the page shows the **Redirect URL**: register it at your provider as the sign-in callback. To send members to single sign-on from your intranet or a bookmark, link to your install's sign-in page, such as `https://kaeso.example.com/sign-in`. It asks for their address first ([the sign-in page](../self-hosting/sign-in.md#the-sign-in-page)).
 
 ### Verify your email domains
 
@@ -55,11 +57,13 @@ _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9f
 
 DNS changes can take a while to show; choose **Verify** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
 
-**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same; a new issuer or client id ends the sessions the previous provider signed in. **Disconnect** removes it and ends the sessions it signed in, and members sign in with a password or a sign-in link again.
+**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same. A new issuer or client id ends the sessions the previous provider signed in. **Disconnect** removes it and ends the sessions it signed in, and members sign in with a password or a sign-in link again.
 
-Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)), and only if the account belongs to the organization. Invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
+Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)). The account must also belong to the organization: invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
-Members confirm a recent sign-in with a password or a sign-in link; single sign-on confirms only for accounts with no other way, such as the ones the organization manages while **Require single sign-on** is on. That works only if your provider signs people in afresh when asked and sends `auth_time` in its ID tokens. When a confirmation comes back without a fresh sign-in, **Security** shows **Recent sign-in**, and the provider isn't offered for confirming again. With **Require single sign-on** on, the accounts it manages then can't confirm at all ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
+Members confirm a recent sign-in with a password or a sign-in link. Single sign-on confirms only for accounts with no other way, such as the ones the organization manages while **Require single sign-on** is on. That works only if your provider signs people in afresh when asked and sends `auth_time` in its ID tokens.
+
+When a confirmation comes back without a fresh sign-in, **Security** shows **Recent sign-in**, and the provider isn't offered for confirming again. With **Require single sign-on** on, the accounts it manages then can't confirm at all ([recent sign-ins](../self-hosting/sign-in.md#recent-sign-ins)).
 
 Once connected, the organization manages the accounts at its verified domains: a sign-in through its provider opens everything those accounts can open, except instance administration ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 
@@ -97,9 +101,13 @@ Each entry shows when it happened, who made the change, the action and its targe
 
 ## Create a project
 
-On **Projects**, choose **Create project** and give it a name. You become the project's admin. Creating a project needs the right **Create projects**. Archived projects are listed under **Archived**, and every project under **All**. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage.
+On **Projects**, choose **Create project** and give it a name. You become the project's admin. Creating a project needs the right **Create projects**.
 
-The default project is where new members start. To move the default, choose **Make default** in another project's menu. Only people who join the organization afterwards start in the new default; current members keep their places and don't join it. Kaeso refuses the move while pending invitations or the single sign-on role would give people rights there that you don't hold. The old default stays a project with its members. Moving it needs the right **Edit organization**.
+**Archived** lists archived projects, and **All** every project. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage.
+
+The default project is where new members start. To move the default, choose **Make default** in another project's menu. Moving it needs the right **Edit organization**.
+
+Only people who join the organization afterwards start in the new default; current members keep their places and don't join it. The old default stays a project with its members. Kaeso refuses the move while pending invitations or the single sign-on role would give people rights there that you don't hold.
 
 ## Change project settings
 

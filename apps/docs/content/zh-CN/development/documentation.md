@@ -38,7 +38,9 @@ pnpm --filter kaeso-docs dev
 3. **别处是否已经写过？** 一个主题只有一个页面。两个页面有重叠时，由其中一个讲解，另一个链接过去。
 4. **在另一个页面上写一段是否就够了？** 不到约 150 字的页面，或只罗列链接的页面，应并入读者来自的那个页面，成为其中一节。
 
-只要有一个问题回答不了，页面就应删除或合并，而不是精简。只有 CI 才关心的数字和清单，例如打包预算或覆盖率阈值，留在执行它们的代码或配置中；文档只写出检查它们的命令。删除页面时，在三种语言中都删除它，把它的地址连同最相关的页面写进 `apps/docs/redirects.json`（见[页面的位置](#页面的位置)），并修复构建指出的链接。
+只要有一个问题回答不了，页面就应删除或合并，而不是精简。只有 CI 才关心的数字和清单，例如打包预算或覆盖率阈值，留在执行它们的代码或配置中。文档只写出检查它们的命令。
+
+删除页面时，在三种语言中都删除它。把它的地址连同最相关的页面写进 `apps/docs/redirects.json`（见[页面的位置](#页面的位置)），然后修复构建指出的链接。
 
 ## 页面类型
 
@@ -87,7 +89,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ~~~
 
 - 一条路走到底，中途没有分支。选项和替代方案放在步骤所链接的指南中。
-- 每一步是一个以动词开头的 `##` 标题，加一句话说明这一步做什么，一条命令或一个代码组，再加一句话说明成功后读者会看到什么。
+- 每一步是一个以动词开头的 `##` 标题。标题下先用一句话说明这一步做什么，接着是一条命令或一个代码组。最后一句话说明成功后读者会看到什么。
 - 最多十步。最后一步证明一切正常，例如第一个请求及其回复。
 
 ### 指南
@@ -139,7 +141,7 @@ flowchart TD
 …
 ~~~
 
-- 先用一两句话说明读者为什么需要关心，然后是一张图示或一个简短的示例。
+- 先用一两句话说明这对读者为什么重要，然后是一张图示或一个简短的示例。
 - 标题是名词或短语，按事情发生的顺序排列。
 - 需要说明理由时用段落；概念页面很少用表格。
 
@@ -214,7 +216,7 @@ The key is wrong, expired or disabled.
 - **标题**不加结尾标点。表示任务的标题以动词开头（“创建密钥”）；表示事物的标题是名词（“模型名称”）。
 - **按代码的实际行为描述 Kaeso。** 设置以网关的配置为准，界面标签以控制台的英文目录为准，行为以网关、KPP 和控制台为准。绝不记录不存在的功能，也不记录计划：计划放到 issue 中。
 
-来自我们自己的页面：
+来自 Kaeso 自己的页面：
 
 | 不要写 | 而要写 |
 | --- | --- |
@@ -246,13 +248,14 @@ The key is wrong, expired or disabled.
 读者先复制代码，后读文字，所以代码必须原样可用。
 
 - **以可运行的示例开头。** 每个 API 页面，以及每个讲应用调用 Kaeso 的指南，都要在第一屏展示一个能运行的最小请求：紧跟在引言之后、第一个 `##` 标题之前。
-- **粘贴即可运行。** 读者只需修改占位符：地址 `kaeso.example.com`、环境变量 `KAESO_API_KEY` 中的密钥（无法避免字面值时写作 `sk-kso-…`），以及模型 `claude-haiku-4-5` 或 `gpt-5-mini`。同一页面使用同一个提示：“Write a haiku about gateways.”
+- **粘贴即可运行。** 读者只需修改占位符：地址 `kaeso.example.com`、环境变量 `KAESO_API_KEY` 中的密钥，以及模型 `claude-haiku-4-5` 或 `gpt-5-mini`。无法避免写出字面密钥时，写作 `sk-kso-…`。同一页面使用同一个提示：“Write a haiku about gateways.”
 - **保持最小。** 只包含示例需要的字段。指南中的代码块少于 25 行；更长的代码链接到 GitHub 上的文件。
 - **密钥来自环境变量。** 代码读取 `KAESO_API_KEY`：Python 中是 `os.environ["KAESO_API_KEY"]`，TypeScript 中是 `process.env.KAESO_API_KEY`，curl 中是 `$KAESO_API_KEY`。绝不把密钥写进 SDK 代码。
 - **使用官方 SDK。** Python 使用 `openai` 和 `anthropic` 的同步客户端；TypeScript 使用 `openai` 和 `@anthropic-ai/sdk`，以 ES 模块和顶层 `await` 编写。OpenAI SDK 的基础 URL 是 `https://kaeso.example.com/v1`，Anthropic SDK 的是 `https://kaeso.example.com`。读者的应用用 `pip install openai anthropic` 和 `npm install openai @anthropic-ai/sdk` 安装它们；在本仓库中工作的命令使用 pnpm。
 - **展示回复。** 读者需要了解回复的结构时，在请求之后放一个 `json` 代码块，前面用一句话引出。把较长的回复删减到关键字段。
 - **没有注释，没有提示符。** 代码块中从不包含注释；在代码块前面的句子中解释命令。Shell 代码块只写命令，不加 `$` 提示符，以便复制后直接运行。
 - **一个代码块，一个用途。** 读者要运行的命令和要阅读的输出放在不同的代码块中。
+- **每行放得下。** 桌面端一行代码大约显示 78 个字符。较长的命令用 `\` 在下一行继续，请求体的每个字段各占一行，其他代码按其格式化工具在这个宽度下的结果排版。代码在手机上会换行，`markdown` 或 `text` 代码块在任何宽度下都会换行，所以其中的正文可以写长。
 
 ### 代码组
 
@@ -401,7 +404,7 @@ Every request to the model API carries an API key.
 | `order` | 否 | 一个整数，在所在文件夹中越小越靠前。没有该字段或数值相同的页面按文件名排列 |
 | `nav` | 否 | 侧边栏中使用的较短标签 |
 
-其他任何字段都会报错。页面标题是页面中唯一的 `#` 标题，因此正文标题从 `##` 开始；为了在 GitHub 上便于阅读，页面仍可以 `# ` 加上完全相同的标题开头，本站只会显示一次。**本页内容**列出 `##` 和 `###` 标题。
+其他任何字段都会报错。页面标题是页面中唯一的 `#` 标题，因此正文标题从 `##` 开始。为了在 GitHub 上便于阅读，页面仍可以 `# ` 加上完全相同的标题开头；本站只会显示一次。**本页内容**列出 `##` 和 `###` 标题。
 
 ## 页面的位置
 
@@ -413,7 +416,11 @@ Every request to the model API carries an API key.
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | 同一页面的德语版本 |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | 同一页面的简体中文版本 |
 
-文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。其他网站的链接和书签仍使用旧地址，因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
+文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。
+
+其他网站的链接和书签仍使用旧地址。因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。地址也可以指向文档之外的页面，例如 `"changelog": "https://kaeso.app/changelog"`。每种语言会转到那里的同一语言，旧地址之下的所有地址也一样。
+
+分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
 
 ## 图片
 
@@ -423,7 +430,9 @@ Every request to the model API carries an API key.
 ![包含一个密钥的 API 密钥页面](images/api-keys.png)
 ```
 
-支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。链接 `content/` 中的任何其他文件都会发布该文件。只有当读者仅凭界面标签找不到方向时，才添加截图。图片从不用来展示图示：图示要写成 [Mermaid 代码块](#图示)。
+支持 PNG、JPEG、GIF、WebP、AVIF 和 SVG。来自其他网站的图片不会显示，没有替代文本的图片会导致构建失败。选择在浅色和深色背景下都清晰的图片；SVG 可以用 `@media (prefers-color-scheme: dark)` 自行切换颜色。
+
+链接 `content/` 中的任何其他文件都会发布该文件。只有当读者仅凭界面标签找不到方向时，才添加截图。图片从不用来展示图示：图示要写成 [Mermaid 代码块](#图示)。
 
 ## 图示
 
@@ -447,7 +456,7 @@ sequenceDiagram
 - 选择合适的类型：`flowchart` 表示各部分及其连接，`sequenceDiagram` 表示参与方之间的请求和回复，`stateDiagram-v2` 表示生命周期。`flowchart TD`（从上到下）在手机上也易于阅读。网站会像代码块一样把图示居中放在底板上；比内容栏更宽的图示会在其中滚动。
 - `accTitle:` 用几个词为图示命名，必须填写，并作为图注显示在图示下方。`accDescr:` 用一两句话说明它展示了什么；屏幕阅读器会朗读两者，搜索也能连同图示的标签找到它们。
 - 标签要简短，使用页面的语言；代码中的名称保持原样。`<br>` 可以把标签分成两行。
-- 用 `:::accent` 标出图示所讲的 Kaeso 部分，例如 `gateway[Gateway]:::accent`；用 `:::outside` 标出安装之外的参与方，例如应用和服务商。网站会把前者画成墨色，把后者画成虚线框。`subgraph` 会画出一条边界，例如运行 Kaeso 的服务器。
+- 用 `:::accent` 标出图示所讲的 Kaeso 部分，例如 `gateway[Gateway]:::accent`；用 `:::outside` 标出安装之外的参与方，例如应用和服务商。网站会把前者画成墨色，把后者画成虚线框。`subgraph` 会画出一条边界，例如运行 Kaeso 的服务器。它的标题位于左上角；如果那里有线条穿过，标题会沿上边缘右移。
 - 只在图示确实有帮助时才画；简短的列表或表格往往更清楚。
 - 不写 `%%` 注释、`%%{init}`，也不写 `classDef`、`class` 或 `style` 行：网站会根据 Kaeso 的设计令牌设置颜色、字体和圆角。
 
@@ -491,7 +500,12 @@ TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Py
 
 ## README 中的录屏
 
-README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在**服务商**页面连接一个 Anthropic 密钥，在 **API 密钥**页面创建一个密钥，从它叠加在页面上的终端面板用这个密钥发送一个请求，然后在开启**实时**的**请求日志**页面等待这个请求出现。
+README 开头是一段控制台的短录屏，分浅色和深色两个版本：`.github/assets/demo-light.gif` 和 `.github/assets/demo-dark.gif`，GitHub 会按读者的主题显示对应的一个。`apps/console/scripts/demo.mjs` 用 Playwright 在开发栈及其种子组织上录制这两个版本，画面里只有模拟服务商、它的占位密钥和种子数据里虚构的人员。脚本在控制台中执行四个步骤：
+
+- 在**服务商**页面连接一个 Anthropic 密钥。
+- 在 **API 密钥**页面创建一个密钥。
+- 从它叠加在页面上的终端面板用这个密钥发送一个请求。
+- 在开启**实时**的**请求日志**页面等待这个请求出现。
 
 重新录制时，先准备一个刚填充过种子数据的栈并运行控制台，并事先安装 `ffmpeg`，例如用 `brew install ffmpeg`：
 
@@ -508,7 +522,9 @@ pnpm dev
 pnpm demo
 ```
 
-脚本以 1280 × 800、设备缩放比例 2 录制，把画面转成每秒 20 帧、各用一个调色板的 GIF，写入 `.github/assets` 并输出它们的大小；每个都应小于 4 MB。在已经录制过的栈上也能再次运行：它会先删除 Anthropic 密钥并归档自己的密钥，但之前的请求仍留在日志里。README 链接的是 `dev` 上的 GIF，因此新的录屏在其拉取请求合并后才会显示。
+脚本以 1280 × 800、设备缩放比例 2 录制。它把画面转成每秒 20 帧、各用一个调色板的 GIF。它把两者写入 `.github/assets` 并输出它们的大小。每个都要小于 4 MB。
+
+在已经录制过的栈上也能再次运行。这时它会先删除 Anthropic 密钥并归档自己的密钥，但之前的请求仍留在日志里。README 链接的是 `dev` 上的 GIF，因此新的录屏在其拉取请求合并后才会显示。
 
 ## 合并之前
 

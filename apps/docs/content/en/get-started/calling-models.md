@@ -179,5 +179,5 @@ The entry shows the status, model, tokens, cost and timing. A failed request als
 
 - [Coding tools](coding-tools.md): Point Claude Code, Codex and other tools at your install.
 - [Model API](../api/model-api.md): Look up every endpoint, header and model name.
-- [Errors](../api/errors.md): Find out what an error means and how your app should handle it.
+- [Errors](../api/errors.md): Find out what an error means and how to handle it in your app.
 - [Format translation](../concepts/format-translation.md): See what carries across when an SDK calls another provider's model.

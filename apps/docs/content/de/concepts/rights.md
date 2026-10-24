@@ -73,7 +73,12 @@ Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seine
 
 Jede Änderung an Rollen und Rechten folgt diesen Regeln:
 
-1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Das gilt, wenn Sie Rolle oder Rechte eines Mitglieds ändern, einladen und eine Einladung erneut senden, ein Projektmitglied hinzufügen, ein Dienstkonto oder eine eigene Rolle erstellen oder ändern und die Rolle für Single Sign-on wählen. Bei einer Einladung und der Rolle für Single Sign-on gilt das auch für die Rolle, die sie im Standardprojekt mitbringen, außer die Einladung nennt das Standardprojekt selbst.
+1. **Nur vergeben, was Sie selbst haben.** Sie können nur Rechte vergeben, die Sie selbst im selben Bereich haben: Organisationsrechte in der Organisation, Projektrechte in diesem Projekt. Rechte in jedem Projekt können Sie nur vergeben, wenn Sie sie in jedem Projekt haben. Bei einer Einladung und der Rolle für Single Sign-on gilt die Regel auch für die Rolle, die sie im Standardprojekt mitbringen, außer die Einladung nennt das Standardprojekt selbst. Die Regel gilt, wenn Sie:
+   - Rolle oder Rechte eines Mitglieds ändern;
+   - jemanden einladen oder eine Einladung erneut senden;
+   - ein Projektmitglied hinzufügen;
+   - ein Dienstkonto oder eine eigene Rolle erstellen oder ändern;
+   - die Rolle für Single Sign-on wählen.
 2. **Nur auf Gleichgestellte wirken.** Sie können Rolle und Rechte eines Mitglieds nur ändern oder das Mitglied entfernen, wenn Sie jedes Recht haben, das das Mitglied in diesem Geltungsbereich hat. In einem Projekt zählen dazu auch die Rechte, die ihm seine Organisationsrolle dort gibt. Dasselbe gilt, wenn Sie ein Dienstkonto ändern oder archivieren.
 3. **Inhaber verwalten Inhaber.** Nur Inhaber machen, ändern, entfernen und laden Inhaber ein, in der Organisation und in jedem ihrer Projekte, und nur ein Inhaber überträgt die Inhaberschaft. Eine Organisation verliert nie ihren letzten Inhaber.
 4. **Erforderliche Rechte werden geprüft.** Kaeso prüft, was jedes Recht erfordert, das eine Änderung gibt. Eine Änderung kann kein Recht entfernen, das ein verbleibendes Recht erfordert, auch wenn diesem schon ein anderes seiner erforderlichen Rechte fehlt. Kaeso lehnt eine Änderung an einer eigenen Rolle ab, nach der ein Träger der Rolle ein Recht ohne ein erforderliches hätte. Die eigenen Rechte der Träger ändern sich dabei nie.

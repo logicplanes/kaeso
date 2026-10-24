@@ -10,11 +10,12 @@ The documentation is the `kaeso-docs` package in `apps/docs`: Markdown pages, co
 flowchart TD
   accTitle: From Markdown to the site
   accDescr: At build time, scripts/content reads the pages in content and the drawn diagrams in diagrams, checks them and writes virtual modules for each language's site, each page and the search. The React app in src draws them with the UI library, and Vite writes dist.
-  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>frontmatter, links, anchors, images,<br>search words, every language]
-  diagrams[diagrams/*.svg<br>Mermaid blocks, drawn] --> content
-  content --> modules[Virtual modules<br>site, page and search per language]
-  modules --> app[src/, React and kaeso-ui]
-  app --> dist[dist/]
+  subgraph build [At build time, in Vite]
+    pages[content/<br>the pages] --> compiler
+    diagrams[diagrams/<br>the drawn diagrams] --> compiler
+    compiler[scripts/content<br>checks frontmatter, links,<br>anchors and images]:::accent --> modules[Virtual modules<br>site, pages and search<br>for every language]
+  end
+  modules --> app[src/<br>React and kaeso-ui] --> dist[dist/<br>the static site]
 ```
 
 ## The build
@@ -28,7 +29,6 @@ flowchart TD
 | `compile.ts` | One page: marked's lexer with raw HTML off, then the page format of `src/markdown/ast.ts`, with links checked, code groups made from consecutive fences with a `tab`, link cards made from lists of page links, and search words collected |
 | `site.ts` | One language: addresses, the sidebar, previous and next, relative links resolved as GitHub resolves them, images and their sizes |
 | `docs.ts` | Every language, and the check that they hold the same pages in the same order |
-| `changelog.ts` | The changelog pages, made from `CHANGELOG.md` through `history` in `scripts/changelog.mjs`: `/changelog` with Unreleased and the latest series, and `/changelog/<major.minor>` for each older series, so no page outgrows its budget |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | The diagrams: their Mermaid configuration from Kaeso's tokens, their drawing in headless Chromium, and `pnpm --filter kaeso-docs diagrams` |
 | `redirects.ts` | The pages at old addresses from `redirects.json` |
 | `plugin.ts` | The Vite plugin: virtual modules, reloads in development, an HTML file per page and language, the `404.html` files and the sitemap |

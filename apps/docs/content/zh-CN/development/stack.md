@@ -9,14 +9,20 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: 开发栈
-  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关，其余请求则返回控制台。网关调用模拟服务商、Mailpit、模拟身份提供商，以及模拟的版本和更新器。
-  browser[浏览器] --> vite[localhost:3000 上的 Vite]
-  vite -- /platform、/v1 --> gateway[127.0.0.1:18080 上的网关]
-  vite -- 其他请求 --> console[控制台]
-  gateway --> provider[模拟 OpenAI 和 Anthropic]
-  gateway --> mail[Mailpit]
-  gateway --> idp[模拟单点登录]
-  gateway --> releases[模拟 GitHub 版本和更新器]
+  accDescr: 浏览器打开 localhost:3000 上的 Vite。Vite 提供控制台，并把 /platform 和 /v1 转发给 127.0.0.1:18080 上的网关。网关与 PostgreSQL、ClickHouse 和 Valkey 一起运行在 Compose 项目 kaeso-dev 中，并调用模拟服务商、模拟 ChatGPT 和 Grok 登录、模拟单点登录、模拟版本和更新器以及 Mailpit。
+  browser[您的浏览器]:::outside -- localhost:3000 --> vite[Vite<br>提供控制台]
+  vite -- /platform 和 /v1 --> gateway
+  subgraph stack [Compose 项目 kaeso-dev]
+    gateway[网关<br>127.0.0.1:18080]:::accent
+    data[(PostgreSQL<br>ClickHouse<br>Valkey)]
+    subgraph mock [模拟服务]
+      mocks[OpenAI 和 Anthropic<br>ChatGPT 和 Grok 登录<br>单点登录<br>版本和更新器]
+    end
+    mail[Mailpit]
+  end
+  gateway --> data
+  gateway --> mocks
+  gateway --> mail
 ```
 
 控制台的开发服务器把 `/platform` 和 `/v1` 转发给网关，所以浏览器只看到一个地址。会话 Cookie 因此是第一方 Cookie，与生产环境中位于反向代理之后时一样。
