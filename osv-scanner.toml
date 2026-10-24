@@ -1,3 +1,7 @@
 [[IgnoredVulns]]
 id = "RUSTSEC-2023-0071"
 reason = "Kaeso only verifies RSA signatures with public keys: OIDC ID tokens in the gateway and Sigstore bundles in the updater. RSA private-key operations, which the Marvin attack targets, run only in the test kit's mock identity provider, and no fixed version of rsa exists"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0387"
+reason = "Only crypto-bigint 0.5, through openidconnect's p256 and p384 0.13, is still affected, and openidconnect uses them only to verify ES256 and ES384 ID-token signatures against the identity provider's public keys, so no secret goes through the affected arithmetic. Kaeso's own p256 is 0.14 on crypto-bigint 0.7.6, and no fixed 0.5 release exists"
