@@ -317,7 +317,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
     case "codegroup":
       return <CodeGroup key={i} tabs={b.tabs} />;
     case "code":
-      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} wrap="phone" {...(b.title ? { title: b.title } : {})} />;
+      return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} wrap={b.wrap ?? "phone"} {...(b.title ? { title: b.title } : {})} />;
     case "quote":
       return (
         <blockquote key={i} className="flex gap-16">

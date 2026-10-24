@@ -255,6 +255,7 @@ Readers copy code before they read prose, so the code has to work as it stands.
 - **Show the reply** where the reader needs its shape: a `json` block after the request, introduced by a sentence. Shorten long replies to the fields that matter.
 - **No comments, no prompts.** Code blocks never contain comments; explain a command in the sentence before it. Shell blocks hold commands without a `$` prompt, so they copy and run.
 - **One block, one purpose.** Commands the reader runs and output they read go in separate blocks.
+- **Lines fit the page.** A desktop shows about 78 characters of a code line. Continue a longer command on the next line with `\`, put each field of a request body on its own line, and format other code as its formatter does at that width. Code wraps on phones, and a `markdown` or `text` block wraps at every width, so prose in it may run long.
 
 ### Code groups
 

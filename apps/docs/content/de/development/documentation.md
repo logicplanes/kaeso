@@ -255,6 +255,7 @@ Leser kopieren Code, bevor sie den Text lesen, deshalb muss der Code so funktion
 - **Die Antwort zeigen**, wo die Leser ihre Form brauchen: ein `json`-Block nach der Anfrage, eingeleitet von einem Satz. Kürzen Sie lange Antworten auf die Felder, auf die es ankommt.
 - **Keine Kommentare, keine Prompts.** Codeblöcke enthalten nie Kommentare; erklären Sie einen Befehl im Satz davor. Shell-Blöcke enthalten Befehle ohne `$`-Prompt, damit sie sich kopieren und ausführen lassen.
 - **Ein Block, ein Zweck.** Befehle, die die Leser ausführen, und Ausgaben, die sie lesen, stehen in getrennten Blöcken.
+- **Zeilen passen auf die Seite.** Ein Desktop zeigt etwa 78 Zeichen einer Codezeile. Setzen Sie einen längeren Befehl mit `\` in der nächsten Zeile fort, schreiben Sie jedes Feld eines Request-Bodys in eine eigene Zeile, und formatieren Sie anderen Code so, wie sein Formatierer es bei dieser Breite tut. Auf Smartphones bricht Code um, und ein `markdown`- oder `text`-Block bricht bei jeder Breite um, darin darf Fließtext also lang sein.
 
 ### Codegruppen
 

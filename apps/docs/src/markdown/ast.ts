@@ -33,7 +33,7 @@ export type Block =
   | { t: "heading"; level: 2 | 3 | 4 | 5 | 6; id: string; c: Inline[] }
   | { t: "paragraph"; c: Inline[]; tight?: boolean }
   | { t: "list"; ordered: boolean; start: number; items: ListItem[] }
-  | { t: "code"; lang: CodeLang; code: string; title?: string }
+  | { t: "code"; lang: CodeLang; code: string; title?: string; wrap?: true }
   | { t: "codegroup"; tabs: CodeTab[] }
   | { t: "links"; items: LinkCard[] }
   | { t: "diagram"; light: string; dark: string; width: number; height: number; title: string; description?: string }

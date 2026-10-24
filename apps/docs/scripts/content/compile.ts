@@ -104,12 +104,14 @@ function attribute(raw: string, name: string): string | undefined {
   return (match?.[1] ?? match?.[2] ?? match?.[3])?.trim() || undefined;
 }
 
-export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string; tab?: string } {
+const PROSE = new Set(["markdown", "md", "text", "txt", "plaintext"]);
+
+export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: string; tab?: string; wrap?: true } {
   const raw = (info ?? "").trim();
   const name = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
   const title = attribute(raw, "title");
   const tab = attribute(raw, "tab");
-  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}) };
+  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(PROSE.has(name) ? { wrap: true as const } : {}) };
 }
 
 export function safeExternal(href: string): string | null {
