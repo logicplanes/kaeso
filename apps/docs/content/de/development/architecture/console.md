@@ -26,11 +26,11 @@ Die Konsole ist eine statische React-App in `apps/console`, ausgeliefert unter d
 - **Rechte kommen von der API, nie geraten.** Organisationsrechte kommen aus `auth/session`, Projektrechte aus `GET …/projects/{project}/my-rights` und Name, Beschreibung, Kategorie und Voraussetzungen jedes Rechts aus `GET orgs/{org}/rights`. Ein `403` ist endgültig: Ein Bereich, den jemand nicht sehen darf, ist ausgeblendet, und eine einzelne Aktion ist deaktiviert, mit dem Namen des Rechts und dem Hinweis, wer es vergeben kann (`useNeedsRight`).
 - **Auch Anbieter kommen von der API.** Name, Schlüsselseite, Schlüsselpräfix und Formate jedes Anbieters kommen aus `GET orgs/{org}/providers`, das die Route der Organisation einmal lädt und eine Stunde lang behält. Die Konsole nennt keinen Anbieter in ihrem Code, also erscheint ein Anbieter, den das Gateway hinzufügt, ohne neue Konsole. Eine ID, die das Gateway nicht mehr listet, etwa in alten Protokollen, erscheint als die ID mit großem Anfangsbuchstaben.
 - **Keine Geheimnisse im Browser.** Die Konsole liest das Sitzungscookie nie, und sie zeigt Geheimnisse von Schlüsseln einmal und speichert sie nie. `localStorage` enthält nur die letzte Organisation und das letzte Projekt, zuletzt geöffnete Einträge, das Theme, die Sprache, Breite und Zustand der Seitenleiste, die Spalten der Anfrageprotokolle und die noch nicht gesendeten Prompts des Playgrounds. `sessionStorage` enthält das Token einer Einladung nur, während sich die eingeladene Person anmeldet, um sie anzunehmen. Andere Tokens aus Links und die Geheimnisse, die eine Mutation zurückgibt, bleiben im Speicher und werden verworfen, sobald sie verwendet sind oder ihr Dialog geschlossen ist.
-- **Dialoge öffnen frisch.** Was ein Dialog hält, etwa Felder, den Schritt, ein Ergebnis oder ein einmal gezeigtes Geheimnis, lebt in einer Komponente, die bei jedem Öffnen neu eingehängt wird: in einem `DialogScope` oder nur gerendert, solange der Dialog offen ist. Ein Sheet für eine Zeile zeigt nie die Daten einer anderen.
+- **Dialoge öffnen frisch.** Alles, was ein Dialog hält, lebt in einer Komponente, die bei jedem Öffnen neu eingehängt wird: in einem `DialogScope` oder nur gerendert, solange der Dialog offen ist. Dazu gehören Felder, der Schritt, ein Ergebnis oder ein einmal gezeigtes Geheimnis. Ein Sheet für eine Zeile zeigt nie die Daten einer anderen.
 - **Tokens in Links stehen im Fragment.** Die Konsole liest `location.hash` einmal, ruft die API auf und ersetzt die Adresse durch eine ohne Fragment.
 - **Jedes sichtbare Element stammt aus `@logicplanes/kaeso-ui`**, und `className` enthält nur Layout: Margin, Breite, Grid, Flex, Gap und Position. `pnpm lint` setzt das mit den Regeln in `apps/console/eslint/kaeso.js` durch.
 - **Jedes Wort in drei Sprachen**, über `t()` ([Übersetzungen](../translations.md#die-konsole)).
-- **Beschreibungen sind ein Satz, der auf eine Zeile passt.** Die Grenze hängt vom Ort ab: 60 Zeichen für eine Einstellungszeile (50 neben einem Eingabefeld), 80 für einen Abschnitt oder eine Seite (70 neben Aktionen), 100 für einen Dialog, 90 für einen leeren Zustand und 60 für einen Toast. `src/copy.test.ts` prüft Zeilen, Abschnitte und Seiten in jeder Sprache, Deutsch und Chinesisch mit 15 % Spielraum.
+- **Beschreibungen sind ein Satz, der auf eine Zeile passt.** Die Grenze hängt vom Ort ab. Eine Einstellungszeile erlaubt 60 Zeichen (50 neben einem Eingabefeld), ein Abschnitt oder eine Seite 80 (70 neben Aktionen). Ein Dialog erlaubt 100, ein leerer Zustand 90 und ein Toast 60. `src/copy.test.ts` prüft Zeilen, Abschnitte und Seiten in jeder Sprache, Deutsch und Chinesisch mit 15 % Spielraum.
 
 ## Daten
 
@@ -49,7 +49,18 @@ Die Konsole hat keine eigenen Styles. `@logicplanes/kaeso-ui` liefert jedes sich
 
 Der Router teilt die Routen auf (`autoCodeSplitting`), sodass der Code einer Seite mit der Seite lädt. Der Build schreibt Importe aus `@logicplanes/kaeso-ui` auf die Einstiegspunkte der einzelnen Komponenten um und jedes `icons.name` auf den Import genau dieses Icons (`uiEntryImports` in `vite.config.ts`). Eine Seite bringt dann nur die Komponenten und Icons mit, die sie zeichnet.
 
-Was das erste Zeichnen nicht braucht, lädt bei Gebrauch: der Toaster, die Befehlspalette, der Dialog für eine erneute Anmeldung, die Liste der Tastenkürzel, „Organisation erstellen“, die Menüs der Seitenleiste, Tooltips und der Kalender der Datumsauswahl. Die Menüs der Seitenleiste und der Kalender laden außerdem, sobald die Seite untätig ist, damit sie sich beim ersten Klick sofort öffnen. Aufschlüsselung, Kostenanteil und Zeitraumauswahl der Projekt- und Organisationsübersicht sowie die Anmeldeschritte nach der E-Mail-Adresse laden zusammen mit den Daten, auf die sie warten. Das Anfrageprotokoll, das Audit-Log eines Projekts und die Übersicht eines Projekts starten ihre Daten im Loader der Route, aus einem eigenen Modul (`src/api/queries/route-prefetch.ts`), das nur diese Routen laden.
+Was das erste Zeichnen nicht braucht, lädt bei Gebrauch:
+
+- Der Toaster
+- Die Befehlspalette
+- Der Dialog für eine erneute Anmeldung
+- Die Liste der Tastenkürzel
+- „Organisation erstellen“
+- Die Menüs der Seitenleiste
+- Tooltips
+- Der Kalender der Datumsauswahl
+
+Die Menüs der Seitenleiste und der Kalender laden außerdem, sobald die Seite untätig ist, damit sie sich beim ersten Klick sofort öffnen. Aufschlüsselung, Kostenanteil und Zeitraumauswahl der Projekt- und Organisationsübersicht sowie die Anmeldeschritte nach der E-Mail-Adresse laden zusammen mit den Daten, auf die sie warten. Das Anfrageprotokoll, das Audit-Log eines Projekts und die Übersicht eines Projekts starten ihre Daten im Loader der Route, aus einem eigenen Modul (`src/api/queries/route-prefetch.ts`), das nur diese Routen laden.
 
 `pnpm build` schlägt fehl, wenn das erste Zeichnen einer Route ihre Obergrenze in `scripts/budget.mjs` überschreitet oder Seitencode aus `src/features` in den Einstiegspunkt gerät. So kommen Sie wieder darunter:
 

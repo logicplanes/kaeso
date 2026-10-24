@@ -57,6 +57,11 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
+Codex sends OpenAI-only parts with every turn. Kaeso translates them for other models: it turns Codex's tool groups and MCP tools into plain tools, and its web search into Claude's web search. Two settings depend on the model:
+
+- For Claude, set `web_search = "live"` or `"disabled"`. Codex's default, `"cached"`, asks for OpenAI's cache of pages, which Claude doesn't have.
+- For models served through Chat Completions, such as Mistral, set `web_search = "disabled"`. They have no web search.
+
 > [!NOTE]
 > Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so.
 

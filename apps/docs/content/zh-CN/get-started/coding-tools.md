@@ -57,6 +57,11 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
+Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模型转换它们：把 Codex 的工具分组和 MCP 工具变为普通工具，把它的网页搜索变为 Claude 的网页搜索。有两项设置取决于模型：
+
+- 使用 Claude 时，设置 `web_search = "live"` 或 `"disabled"`。Codex 的默认值 `"cached"` 要求使用 OpenAI 的页面缓存，而 Claude 没有这种缓存。
+- 使用通过 Chat Completions 提供的模型（例如 Mistral）时，设置 `web_search = "disabled"`。这些模型没有网页搜索。
+
 > [!NOTE]
 > Kaeso 不会在轮次之间保存响应。如果请求要求服务商保存或延续某个响应（`store: true`、`previous_response_id`），Kaeso 会拒绝它，并在错误中说明原因。
 

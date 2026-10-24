@@ -1,7 +1,7 @@
 ---
 title: Fixtures and recordings
 description: The real payloads the codecs are tested against, and how to record new ones from the providers.
-order: 8
+order: 9
 ---
 
 Every codec change starts with a fixture: a real request body, reply, stream or error, in `crates/kaeso-codecs/fixtures`. Every fixture round-trips through its own codec, and the cross-dialect matrix runs every generation fixture through every other dialect. The [SDK conformance suite](../testing.md#sdk-conformance) serves the fixtures to the official SDKs, the gateway's mock provider answers with them, and the fuzz targets start from them.
@@ -45,9 +45,16 @@ Every dialect folder and its `requests/`, `responses/`, `streams/`, `errors/` an
 | `schema:` | A body built from the pinned OpenAPI schemas |
 | `RECORDED.md` | A live recording made with `cargo xtask record`, with the model and the time |
 
-A dialect folder's `README.md` also names the pinned specifications and SDK versions its fixtures follow, and the conventions they share, such as ids and token counts that agree between a stream and its response. Add a row there with every new fixture.
+A dialect folder's `README.md` also names the pinned specifications and SDK versions its fixtures follow. It names the conventions they share as well, such as ids and token counts that agree between a stream and its response. Add a row there with every new fixture.
 
-A provider folder has one `README.md` of its own: the provider's name and id, its API reference with the date you read it, the base URL and models you recorded with, and a row for every file in its subfolders. Each subfolder's `RECORDED.md` names the provider in its first lines.
+A provider folder has one `README.md` of its own. It holds:
+
+- the provider's name and id;
+- its API reference, with the date you read it;
+- the base URL and models you recorded with;
+- a row for every file in its subfolders.
+
+Each subfolder's `RECORDED.md` names the provider in its first lines.
 
 ## Recording live responses
 

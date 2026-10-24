@@ -4,17 +4,17 @@ description: Choose how people sign in, run an install without passwords, and ge
 order: 7
 ---
 
-People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Two [sign-in settings](configuration.md#sign-in) turn passwords and sign-in links on or off for the whole install. Single sign-on is set up per organization, not for the install: it works for an organization once its admin connects the identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)), and every organization can.
+People sign in to the console with a password, with a sign-in link sent by email, or through their organization's identity provider over OpenID Connect. Two [sign-in settings](configuration.md#sign-in) turn passwords and sign-in links on or off for the whole install. Single sign-on is per organization, not for the install: any organization's admin can connect its identity provider on the organization's **Security** page ([organizations and projects](../console/organizations-and-projects.md)).
 
 ## The sign-in page
 
-The sign-in page always asks for the email address first. It then offers what works for that address: a password, a sign-in link, and single sign-on when the address is at a verified email domain of an organization with an identity provider ([verify your email domains](../console/organizations-and-projects.md#verify-your-email-domains)). An address at any other domain, or at a domain its organization hasn't verified yet, is never offered single sign-on.
+The sign-in page always asks for the email address first. It then offers what works for that address: a password, a sign-in link, and single sign-on. Single sign-on works for an address at a verified email domain of an organization with an identity provider ([verify your email domains](../console/organizations-and-projects.md#verify-your-email-domains)). The page never offers single sign-on to an address at any other domain, or at a domain its organization hasn't verified yet.
 
-The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. When single sign-on is the address's only way in and the connection has **Start without a click** on, the page goes on to the provider right after the address, without the button. After someone signs out, or when the provider refused a sign-in, the page asks for the address again and shows the reason.
+The button says **Continue with** and the name the admin gave the provider, or **Continue with SSO** without one. If single sign-on is the address's only way in and the connection has **Start without a click** on, the page skips the button. It goes on to the provider right after the address. After someone signs out, or when the provider refused a sign-in, the page asks for the address again and shows the reason.
 
-Single sign-on is offered only after the address: no link starts it for an organization, so a link on another site can't send a browser through an identity provider into someone else's account. For a bookmark or an intranet page, link to the sign-in page, such as `https://kaeso.example.com/sign-in`; with **Start without a click** on, members go on to the provider as soon as they enter their address.
+The page offers single sign-on only after the address, and no link starts it for an organization. So a link on another site can't send a browser through an identity provider into someone else's account. For a bookmark or an intranet page, link to the sign-in page, such as `https://kaeso.example.com/sign-in`. With **Start without a click** on, members go on to the provider as soon as they enter their address.
 
-Single sign-on never replaces another account's session either. When the provider answers with another account while the browser is signed in, the browser stays signed in and the page says `signed_in_as_other`; to switch accounts, sign out first.
+Single sign-on never replaces another account's session either. When the provider answers with another account while the browser is signed in, the browser stays signed in and the page says `signed_in_as_other`. To switch accounts, sign out first.
 
 After signing in, people return to the console page they first opened, through the identity provider too.
 
@@ -22,11 +22,13 @@ After signing in, people return to the console page they first opened, through t
 
 When an action needs a recent sign-in, the console asks the provider to sign the person in again (`prompt=login`, `max_age=0`), as OpenID Connect specifies. Only an answer that says the person signed in during the confirmation counts, so a confirmation always means a fresh sign-in.
 
-A provider can also sign someone in with a session of its own from earlier, without asking. So a session from single sign-on dates from the provider's `auth_time`, not from when it came back to Kaeso, and counts as a recent sign-in only while that time is within 15 minutes. Kaeso measures it against the token's issue time `iat`, on the provider's clock, so the two servers' clocks needn't agree. Without `auth_time`, the session counts as older than 15 minutes from the start.
+A provider can also sign someone in with a session of its own from earlier, without asking. So a session from single sign-on dates from the provider's `auth_time`, not from when it came back to Kaeso. It counts as a recent sign-in only while that time is within 15 minutes.
+
+Kaeso measures it against the token's issue time `iat`, on the provider's clock, so the two servers' clocks needn't agree. Without `auth_time`, the session counts as older than 15 minutes from the start.
 
 Some providers can't confirm a recent sign-in: they leave `auth_time` out, or ignore `max_age=0` and answer with an earlier sign-in of their own. OpenID Connect requires a fresh sign-in and `auth_time` once `max_age` is sent, but Kaeso can't tell a provider that ignores this apart until a confirmation fails. So the console offers single sign-on to confirm only when the account has no other way: no password, no sign-in link and no link to set a password.
 
-A confirmation without a fresh sign-in is refused with `cannot_confirm`, and Kaeso notes on the connection that the provider can't confirm. The console then stops offering it, and the organization's **Security** page shows **Recent sign-in**. For an account whose organization requires single sign-on ([managed accounts](#managed-accounts)), nothing else confirms, so it can't take actions that need a recent sign-in. Kaeso forgets the note when the issuer or client id changes; other sign-ins note nothing, since without `max_age` a provider may reuse its sign-in.
+Kaeso refuses a confirmation without a fresh sign-in with `cannot_confirm`, and notes on the connection that the provider can't confirm. The console then stops offering it, and the organization's **Security** page shows **Recent sign-in**. For an account whose organization requires single sign-on ([managed accounts](#managed-accounts)), nothing else confirms, so it can't take actions that need a recent sign-in. Kaeso forgets the note when the issuer or client id changes; other sign-ins note nothing, since without `max_age` a provider may reuse its sign-in.
 
 ## Who signs in through single sign-on
 
@@ -34,7 +36,7 @@ A confirmation without a fresh sign-in is refused with `cannot_confirm`, and Kae
 - Only addresses the provider marks as verified with `email_verified`. For a provider that never sends the claim, a connection can turn off **Require verified addresses**; an address marked unverified is still refused.
 - Someone new to Kaeso joins the organization with an invitation to their address, or with the connection's role for people without one. Without either, they get no access. Kaeso creates their account even where the [account creation setting](../console/instance-administration.md#change-install-settings) allows no sign-ups, because the organization's provider vouches for them.
 - Kaeso links each account to its identity at the provider, the provider's issuer and subject. Later sign-ins follow that link, not the email address.
-- An existing account signs in through single sign-on only once its owner links it, from **Account** › **Security** after signing in another way ([link single sign-on](../console/account.md#link-single-sign-on)), and only where it is a member. To accept an invitation, it signs in another way first.
+- An existing account signs in through single sign-on only where it is a member, and only once its owner links it. The owner links it from **Account** › **Security** after signing in another way ([link single sign-on](../console/account.md#link-single-sign-on)). To accept an invitation, the account signs in another way first.
 - An address at another domain, such as a public mail provider's, can't sign in through the organization's provider, not even with an invitation.
 
 What a sign-in through a provider opens depends on whether its organization manages the account ([managed accounts](#managed-accounts)).
@@ -54,13 +56,17 @@ A managed account's sign-in through its organization's provider is a full sign-i
 | Account changes | Allowed, with a recent sign-in | Need a password or a sign-in link | Allowed, with a recent sign-in |
 | Instance administration | Only through the organization chosen for instance admins | Needs a password or a sign-in link | Allowed for instance admins |
 
-The provider owns a managed account's address. `POST me/email` refuses it with `Your organization manages this address; change it at its identity provider.`, and a link to confirm an earlier change no longer works. When a sign-in through the provider brings another address at one of the organization's verified domains, Kaeso changes the account's address to it, since the issuer and subject link the account, not the address. The organization's audit log records it as `user.email_change`. An address that another account holds is never taken, and the provider of an organization that doesn't manage the account never changes it.
+The provider owns a managed account's address. `POST me/email` refuses it with `Your organization manages this address; change it at its identity provider.`, and a link to confirm an earlier change no longer works.
+
+When a sign-in through the provider brings another address at one of the organization's verified domains, Kaeso changes the account's address to it. Kaeso can do this because the issuer and subject link the account, not the address. The organization's audit log records the change as `user.email_change`. Kaeso never takes an address that another account holds, and the provider of an organization that doesn't manage the account never changes it.
 
 **Account** › **Profile** shows **Managed by** and the organization's name, and an organization's **Members** page marks guests ([after signing in through single sign-on](../console/account.md#after-signing-in-through-single-sign-on)).
 
 ### Require single sign-on
 
-With **Require single sign-on** on, the accounts an organization manages sign in only through its provider, anywhere on the install. The sign-in page offers them the provider alone, and a password, a sign-in link, a sign-up or an invitation without an account is refused with `Your organization requires single sign-on; continue with its identity provider.` Turning the requirement on ends their sessions from a password or a sign-in link, except the session that turns it on, and so does verifying another domain while it is on.
+With **Require single sign-on** on, the accounts an organization manages sign in only through its provider, anywhere on the install. The sign-in page offers them the provider alone. Kaeso refuses a password, a sign-in link, a sign-up or an invitation without an account with `Your organization requires single sign-on; continue with its identity provider.`
+
+Turning the requirement on ends their sessions from a password or a sign-in link, except the session that turns it on. Verifying another domain while it is on does the same.
 
 Guests keep their own sign-in and open the organization with it, under its two-factor requirement. A sign-in link from the server still signs a managed account in ([get back in](#get-back-in)).
 
@@ -68,9 +74,9 @@ Guests keep their own sign-in and open the organization with it, under its two-f
 
 No organization's identity provider administers the instance by default, so an organization's provider admin can't make themselves the instance's admin. To let one, choose the organization under **Instance** › **General** › **Single sign-on for instance admins** ([change install settings](../console/instance-administration.md#change-install-settings)). An instance admin's sign-in through that organization's provider then administers the instance, while the organization manages their account.
 
-Choosing it needs an instance admin's recent sign-in with a password or a sign-in link, never one through single sign-on, and the instance's audit log records it as `instance.admin_sso_update`. Only an organization with a connection can be chosen. If it later loses its connection, the setting has no effect, and **General** says so.
+Choosing it needs an instance admin's recent sign-in with a password or a sign-in link, never one through single sign-on. The instance's audit log records the choice as `instance.admin_sso_update`. You can choose only an organization with a connection. If it later loses its connection, the setting has no effect, and **General** says so.
 
-When no instance admin can sign in that way, an operator chooses the organization on the server instead, by its id, under the same rules and with the same audit entry; `none` chooses none:
+When no instance admin can sign in that way, an operator chooses the organization on the server instead, by its id. The same rules and the same audit entry apply, and `none` chooses none:
 
 ```bash
 docker compose exec gateway kaeso instance admin-sso org_…
@@ -98,7 +104,7 @@ The sign-in page still asks for the email address first and offers the provider 
 A sign-in through single sign-on administers the instance only once an instance admin chooses the organization for it ([instance admins](#instance-admins)). Until then, sign in for instance administration with a [one-time sign-in link](#get-back-in) from the server.
 
 > [!IMPORTANT]
-> Leave **Require single sign-on** off until the connection works. On an install without passwords it adds nothing, and it closes the organization to every session of the accounts it manages that didn't come from its provider, including one from an operator's sign-in link.
+> Leave **Require single sign-on** off until the connection works. On an install without passwords it adds nothing. It also closes the organization to every session of the accounts it manages that didn't come from its provider, including one from an operator's sign-in link.
 
 ## Get back in
 
@@ -108,7 +114,9 @@ When no way in works, print a one-time sign-in link for an existing account on t
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 
-The link works once, within 15 minutes, even while sign-in links by email are off, so you never need to turn passwords back on. Anyone who has the link can sign in as that person. Kaeso only prints it in your terminal, never logs or sends it, and the audit log records it as `user.sign_in_link`. A deactivated account gets no link until you reactivate it. With two-factor authentication on, the link also asks for a code; when the person has lost their authenticator, `kaeso user reset-2fa` removes it first.
+The link works once, within 15 minutes, even while sign-in links by email are off, so you never need to turn passwords back on. Anyone who has the link can sign in as that person. Kaeso only prints it in your terminal and never logs or sends it. The audit log records it as `user.sign_in_link`.
+
+A deactivated account gets no link until you reactivate it. With two-factor authentication on, the link also asks for a code. When the person has lost their authenticator, remove it first with `kaeso user reset-2fa`.
 
 The link signs in a managed account even while its organization requires single sign-on. That session opens the person's account, their other organizations and, for an instance admin, instance administration; the organization that requires single sign-on stays closed to it.
 

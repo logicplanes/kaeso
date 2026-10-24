@@ -1,6 +1,6 @@
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
 import type { Block, CalloutKind, ChangelogContent, CodeLang, Inline, LinkCard, ListItem, TocEntry } from "../../src/markdown/ast.ts";
-import { DIAGRAM_LANG, diagramText } from "./diagram.ts";
+import { DIAGRAM_LANG, DIAGRAM_ROLES, diagramText } from "./diagram.ts";
 import { Slugger } from "./slug.ts";
 
 interface Heading {
@@ -152,6 +152,10 @@ function diagram(code: Tokens.Code, ctx: Ctx): Block | null {
     return null;
   }
   if (/^[ \t]*%%/m.test(code.text)) at("the diagram has a `%%` line: diagrams take no comments and no `%%{init}`, the site sets their look");
+  if (/^[ \t]*(classDef|class|style|linkStyle|cssClass)\b/m.test(code.text))
+    at("the diagram styles itself: mark nodes with `:::accent` or `:::outside` alone, the site sets their look");
+  for (const role of new Set([...code.text.matchAll(/:::([\w-]+)/g)].map((m) => m[1] ?? "")))
+    if (!DIAGRAM_ROLES.includes(role)) at(`the diagram marks a node \`:::${role}\`: use \`:::accent\` or \`:::outside\``);
   const text = diagramText(code.text);
   if (!text.title) at("the diagram has no `accTitle: …`: name it in a few words for screen readers and search");
   const target = ctx.resolver.diagram(code.text, line);

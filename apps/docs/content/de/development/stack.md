@@ -9,14 +9,20 @@ order: 3
 ```mermaid
 flowchart TD
   accTitle: Der Entwicklungs-Stack
-  accDescr: Der Browser öffnet Vite auf localhost:3000. Vite leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter und liefert für alles andere die Konsole aus. Das Gateway ruft die Mock-Anbieter, Mailpit, den Mock-Identitätsanbieter sowie die Mock-Releases und den Mock-Updater auf.
-  browser[Browser] --> vite[Vite auf localhost:3000]
-  vite -- /platform, /v1 --> gateway[Gateway auf 127.0.0.1:18080]
-  vite -- alles andere --> console[Die Konsole]
-  gateway --> provider[Mock für OpenAI und Anthropic]
-  gateway --> mail[Mailpit]
-  gateway --> idp[Mock für Single Sign-on]
-  gateway --> releases[Mock für GitHub-Releases und Updater]
+  accDescr: Ihr Browser öffnet Vite auf localhost:3000. Vite liefert die Konsole aus und leitet /platform und /v1 an das Gateway auf 127.0.0.1:18080 weiter. Das Gateway läuft im Compose-Projekt kaeso-dev mit PostgreSQL, ClickHouse und Valkey und ruft die Mock-Anbieter, den Mock für ChatGPT- und Grok-Anmeldung, den Mock für Single Sign-on, die Mock-Releases und den Mock-Updater sowie Mailpit auf.
+  browser[Ihr Browser]:::outside -- localhost:3000 --> vite[Vite<br>liefert die Konsole aus]
+  vite -- /platform und /v1 --> gateway
+  subgraph stack [Compose-Projekt kaeso-dev]
+    gateway[Gateway<br>127.0.0.1:18080]:::accent
+    data[(PostgreSQL<br>ClickHouse<br>Valkey)]
+    subgraph mock [Mocks]
+      mocks[OpenAI und Anthropic<br>Anmeldung bei ChatGPT und Grok<br>Single Sign-on<br>Releases und Updater]
+    end
+    mail[Mailpit]
+  end
+  gateway --> data
+  gateway --> mocks
+  gateway --> mail
 ```
 
 Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway weiter, sodass der Browser nur eine Adresse sieht. Das Sitzungscookie ist damit ein First-Party-Cookie, wie in Produktion hinter einem Reverse Proxy.

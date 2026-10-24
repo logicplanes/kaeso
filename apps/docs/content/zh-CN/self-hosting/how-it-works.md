@@ -10,14 +10,24 @@ order: 2
 ```mermaid
 flowchart TD
   accTitle: Kaeso 实例中的服务
-  accDescr: Caddy 接收 HTTPS 请求，把 API 请求转给网关，其余请求转给控制台。只有网关能访问 PostgreSQL、ClickHouse 和 Valkey，并由网关调用服务商。
-  clients[应用和浏览器] -->|HTTPS| caddy[Caddy]
-  caddy -->|/v1 和 /platform| gateway[网关]
-  caddy -->|其他所有路径| console[控制台]
-  gateway --> postgres[(PostgreSQL)]
-  gateway --> clickhouse[(ClickHouse)]
-  gateway --> valkey[(Valkey)]
-  gateway -->|HTTPS| providers[模型服务商]
+  accDescr: 应用和浏览器只能经由 Caddy 的 80 和 443 端口访问实例。Caddy 把 /v1 和 /platform 转给网关，把其他所有路径转给控制台。PostgreSQL、ClickHouse 和 Valkey 位于只有网关能访问的内部网络中，网关通过 HTTPS 调用模型服务商。
+  clients[应用和浏览器]:::outside
+  subgraph server [您的服务器]
+    caddy[Caddy<br>端口 80 和 443]
+    gateway[网关]:::accent
+    console[控制台]
+    subgraph data [内部网络]
+      postgres[(PostgreSQL)]
+      clickhouse[(ClickHouse)]
+      valkey[(Valkey)]
+    end
+  end
+  providers[模型服务商]:::outside
+  clients -- HTTPS --> caddy
+  caddy -- /v1 和 /platform --> gateway
+  caddy -- 其他所有路径 --> console
+  gateway --> postgres & clickhouse & valkey
+  gateway -- HTTPS --> providers
 ```
 
 ## 服务
@@ -33,7 +43,9 @@ flowchart TD
 | `clickhouse` | 保存请求日志和用量汇总 | 卷 `clickhouse` |
 | `valkey` | 保存速率和预算计数器以及共享缓存 | 卷 `valkey` |
 
-可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy 运行时使用的用户。它还会把 `compose.yaml` 中的 Caddyfile 和更新页面放进 `caddy_site`，因为 Compose 无法把文件交给使用只读文件系统的容器。同样，`updater-init` 会把更新器的卷交给更新器。它让更新器所在的组可以读写 `compose.yaml`（更新器会原地重写该文件），并取消其他所有人的写权限。
+可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。
+
+Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy 运行时使用的用户。它还会把 `compose.yaml` 中的 Caddyfile 和更新页面放进 `caddy_site`，因为 Compose 无法把文件交给使用只读文件系统的容器。同样，`updater-init` 会把更新器的卷交给更新器。它让更新器所在的组可以读写 `compose.yaml`（更新器会原地重写该文件），并取消其他所有人的写权限。
 
 ## 文件
 
