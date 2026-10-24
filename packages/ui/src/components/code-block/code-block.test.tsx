@@ -122,7 +122,19 @@ describe("CodeBlock", () => {
     expect(screen.queryByText("const line29 = 29;")).toBeNull();
   });
 
-  it("wraps long lines only on phones when asked, indenting the part that wraps", () => {
+  it("hangs a wrapped line from its own indent, and copies the code as written", () => {
+    const code = '{\n    "message": "You need the right `models.manage` in this project; ask one of its admins for it."\n}';
+    const { container } = render(<CodeBlock code={code} lang="text" wrap copy={false} />);
+    const row = container.querySelectorAll("code > span")[1] as HTMLElement;
+    const [indent, body] = [...row.children] as HTMLElement[];
+    expect(indent).toHaveClass("shrink-0", "whitespace-pre");
+    expect(indent?.textContent).toBe("    ");
+    expect(body).toHaveClass("pl-16", "-indent-16");
+    expect(body?.textContent?.startsWith('"message"')).toBe(true);
+    expect(row.textContent).toBe(code.split("\n")[1]);
+  });
+
+  it("wraps long lines on phones or at every width when asked, indenting the part that wraps", () => {
     const line = 'curl https://kaeso.example.com/v1/responses -H "Authorization: Bearer $KAESO_API_KEY"';
     const { container, rerender } = render(<CodeBlock code={line} lang="text" wrap="phone" copy={false} />);
     const row = () => container.querySelector("code > span") as HTMLElement;
@@ -133,6 +145,7 @@ describe("CodeBlock", () => {
     rerender(<CodeBlock code={line} lang="text" wrap copy={false} />);
     expect(row()).toHaveClass("whitespace-pre-wrap");
     expect(row()).not.toHaveClass("max-sm:whitespace-pre-wrap");
+    expect(row().lastElementChild).toHaveClass("pl-16", "-indent-16");
     rerender(<CodeBlock code={line} lang="text" copy={false} />);
     expect(container.querySelector("code")).toHaveClass("min-w-max");
   });

@@ -36,6 +36,18 @@ export interface CodeBlockProps {
   className?: string | undefined;
 }
 
+const INDENT = /^[ \t]+/;
+
+function dropIndent(tokens: CodeToken[], n: number): CodeToken[] {
+  let left = n;
+  return tokens.flatMap((t) => {
+    if (left === 0) return [t];
+    const cut = Math.min(left, t.content.length);
+    left -= cut;
+    return cut === t.content.length ? [] : [{ ...t, content: t.content.slice(cut) }];
+  });
+}
+
 export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function CodeBlock(
   {
     code = "",
@@ -102,14 +114,15 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
             )}
           >
             {lineNumbers && <span className="mr-16 inline-block w-24 shrink-0 text-right text-fg-tertiary select-none tabular">{i + 1}</span>}
-            <span className={cn("min-w-0", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
+            {wrap && INDENT.test(line) && <span className="shrink-0 whitespace-pre">{INDENT.exec(line)?.[0]}</span>}
+            <span className={cn("min-w-0", wrap === true && "pl-16 -indent-16", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
               {tokenLines?.[i]?.length
-                ? tokenLines[i].map((token, j) => (
+                ? dropIndent(tokenLines[i], wrap ? (INDENT.exec(line)?.[0].length ?? 0) : 0).map((token, j) => (
                     <span key={j} className={token.className || undefined}>
                       {token.content}
                     </span>
                   ))
-                : line || " "}
+                : (wrap ? line.replace(INDENT, "") : line) || " "}
             </span>
           </span>
         ))}
