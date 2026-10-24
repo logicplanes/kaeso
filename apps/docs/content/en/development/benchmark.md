@@ -74,7 +74,7 @@ Each scenario starts with a fresh gateway:
 | --- | --- |
 | Baseline | The clients send non-streamed requests as fast as the gateway answers them |
 | Concurrent streams | The clients open each stream count, read every chunk, and close. The same streams also run against the mock provider alone, without Kaeso |
-| Cancellation | A share of the streams disconnects at a point between a fifth and four fifths of the stream. The others read to the end |
+| Cancellation | A share of the streams disconnects at a point between a fifth and four fifths of the stream. Their mock streams never end on their own, so each disconnect has a provider request to close. The others read to the end |
 | Slow clients | A share of the clients reads the first chunk and then stops, on a small receive buffer, while the mock writes a hundred text deltas a millisecond without end. The others read normally |
 | Mixed | Streams, disconnects and slow clients at once, beside non-streamed requests as fast as the gateway answers them |
 

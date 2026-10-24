@@ -38,10 +38,13 @@ pub(crate) struct Spec {
 impl Spec {
     fn body(&self) -> Bytes {
         let tps = TOKENS_PER_CHUNK as f64 / self.gap.as_secs_f64();
-        let endless = if self.role == Role::Slow {
-            " [mock:endless]"
-        } else {
+        // A stream that will be cut keeps going at the mock until Kaeso closes it. A finite
+        // one could end first while a loaded client lags behind Kaeso's buffers, and then
+        // no disconnect could reach the mock.
+        let endless = if self.role == Role::Healthy {
             ""
+        } else {
+            " [mock:endless]"
         };
         let text = format!(
             "bench [mock:gen={}] [mock:tps={tps}] [mock:tag={}]{endless}",
@@ -422,6 +425,26 @@ mod tests {
             assert!((80..=320).contains(&at), "{i}: {at}");
         }
         assert_eq!(cancel_point(0, 1), 1);
+    }
+
+    #[test]
+    fn streams_that_will_be_cut_never_end_at_the_mock() {
+        let text = |role| {
+            let spec = Spec {
+                tag: "s-2".into(),
+                chunks: 10,
+                gap: Duration::from_millis(25),
+                role,
+            };
+            let body: serde_json::Value = serde_json::from_slice(&spec.body()).unwrap_or_default();
+            body["messages"][0]["content"]
+                .as_str()
+                .unwrap_or_default()
+                .to_owned()
+        };
+        assert!(text(Role::Cancel { after: 3 }).ends_with("[mock:endless]"));
+        assert!(text(Role::Slow).ends_with("[mock:endless]"));
+        assert!(!text(Role::Healthy).contains("endless"));
     }
 
     #[test]
