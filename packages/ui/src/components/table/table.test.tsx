@@ -29,4 +29,21 @@ describe("Table", () => {
     expect(screen.getByRole("cell", { name: "Aliases" })).toHaveClass("last:pr-2");
     expect(screen.getByRole("cell", { name: "1,200" })).toHaveClass("last:pr-0", "tabular");
   });
+
+  it("keeps a header on one line, or lets a long one wrap at the foot of its row", () => {
+    render(
+      <Table>
+        <Table.Head>
+          <Table.Row>
+            <Table.HeaderCell>Model</Table.HeaderCell>
+            <Table.HeaderCell wrap>Through another organization's identity provider</Table.HeaderCell>
+          </Table.Row>
+        </Table.Head>
+      </Table>,
+    );
+    expect(screen.getByRole("columnheader", { name: "Model" })).toHaveClass("whitespace-nowrap", "h-36");
+    const long = screen.getByRole("columnheader", { name: /another organization/ });
+    expect(long).not.toHaveClass("whitespace-nowrap");
+    expect(long).toHaveClass("py-8", "align-bottom", "h-36");
+  });
 });

@@ -28,23 +28,25 @@ const Row = forwardRef<HTMLTableRowElement, HTMLAttributes<HTMLTableRowElement>>
   return <tr ref={ref} className={cn("hairline-b last:shadow-none", className)} {...props} />;
 });
 Row.displayName = "Table.Row";
-const HeaderCell = forwardRef<HTMLTableCellElement, Omit<ThHTMLAttributes<HTMLTableCellElement>, "align"> & { align?: "start" | "end" | undefined }>(
-  function TableHeaderCell({ align = "start", className, ...props }, ref) {
-    return (
-      <th
-        ref={ref}
-        scope="col"
-        className={cn(
-          "h-36 px-12 text-caption font-medium whitespace-nowrap text-fg-secondary hairline-b-strong first:pl-0",
-          LAST[align],
-          KAESO_TABLE_VARIANTS.align[align].classes,
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+const HeaderCell = forwardRef<
+  HTMLTableCellElement,
+  Omit<ThHTMLAttributes<HTMLTableCellElement>, "align"> & { align?: "start" | "end" | undefined; wrap?: boolean | undefined }
+>(function TableHeaderCell({ align = "start", wrap = false, className, ...props }, ref) {
+  return (
+    <th
+      ref={ref}
+      scope="col"
+      className={cn(
+        "h-36 px-12 text-caption font-medium text-fg-secondary hairline-b-strong first:pl-0",
+        wrap ? "py-8 align-bottom text-balance" : "whitespace-nowrap",
+        LAST[align],
+        KAESO_TABLE_VARIANTS.align[align].classes,
+        className,
+      )}
+      {...props}
+    />
+  );
+});
 HeaderCell.displayName = "Table.HeaderCell";
 export interface TableCellProps extends Omit<TdHTMLAttributes<HTMLTableCellElement>, "align"> {
   align?: "start" | "end" | undefined;
