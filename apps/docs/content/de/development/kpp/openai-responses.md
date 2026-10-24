@@ -336,6 +336,8 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 - Es setzt `stream: true` und `store: false`.
 - Es entfernt die Formen `input`, `system_items` und `instructions`, sodass `input` ein Array ist und führender Systemtext `instructions`. Jede andere Systemnachricht verliert ihre `role`-Überschreibung und wird als `developer`-Nachricht geschrieben, weil die Route `system`-Items ablehnt.
 
+Weil die Route nur streamt, fasst das Gateway ihren Stream zu einer Antwort zusammen, wenn die Anfrage der App nicht streamt. Ein Item, das KPP nicht abbildet, etwa `web_search_call`, ist dann das Item, das `response.output_item.done` gesendet hat (`dispatch::finished_item`). Die `response.*`-Events, die über ihre `item_id` den Fortschritt eines Items melden, etwa `response.web_search_call.searching`, bleiben aus der Antwort heraus, weil das fertige Item enthält, was sie melden (`dispatch::reports_item_progress`).
+
 ## Anbieter mit diesem Format
 
 Andere Anbieter als OpenAI, die Responses bereitstellen, zeichnen in `fixtures/openai_responses/providers/<id>/` auf ([Fixtures](fixtures.md)). Ihre zusätzlichen Felder folgen den Regeln oben; dieser Abschnitt nennt, was jeder Anbieter hinzufügt.

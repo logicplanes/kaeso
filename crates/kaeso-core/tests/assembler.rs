@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
+use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_core::assembler::Assembler;
 use kaeso_kpp::{Block, DialectId, RequestKind, Response, StreamEvent, StreamMode};
 use serde_json::{Value, json};
@@ -125,6 +125,42 @@ fn streams_assemble_to_their_paired_responses() {
     eprintln!("{streams} streams, {compared} compared with their responses");
     assert!(streams >= 30, "only {streams} stream fixtures found");
     assert!(compared >= 10, "only {compared} paired fixtures compared");
+}
+
+#[test]
+fn a_responses_stream_assembles_to_the_items_its_reply_has() {
+    let d = DialectId::OpenAiResponses;
+    let dir = fixtures().join(d.as_str());
+    let sse = std::fs::read(dir.join("streams/recorded-web-search-stream.sse")).unwrap();
+    let response = assemble(d, &sse).response.unwrap();
+    let out = dispatch::encode_response(
+        d,
+        &kaeso_kpp::Reply::Generate(response),
+        &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+    )
+    .unwrap();
+    let got: Value = serde_json::from_slice(&out).unwrap();
+    let paired = std::fs::read(dir.join("responses/recorded-web-search.json")).unwrap();
+    let want: Value = serde_json::from_slice(&paired).unwrap();
+    let types = |v: &Value| -> Vec<Value> {
+        v["output"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["type"].clone())
+            .collect()
+    };
+    assert_eq!(types(&got), types(&want));
+    let done = String::from_utf8(sse)
+        .unwrap()
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+        .find(|e| {
+            e["type"] == "response.output_item.done" && e["item"]["type"] == "web_search_call"
+        })
+        .unwrap();
+    assert_eq!(got["output"][1], done["item"]);
 }
 
 #[test]

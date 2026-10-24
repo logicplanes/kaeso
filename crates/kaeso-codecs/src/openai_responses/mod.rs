@@ -1,3 +1,4 @@
+pub(crate) mod assembly;
 pub(crate) mod error;
 mod input;
 pub(crate) mod namespaces;

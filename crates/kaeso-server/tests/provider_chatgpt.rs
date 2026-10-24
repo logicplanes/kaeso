@@ -286,6 +286,37 @@ async fn a_tool_call_from_the_plan_stops_for_tool_use_in_every_format() {
 }
 
 #[tokio::test]
+async fn a_web_search_without_a_stream_answers_with_the_items_openai_would_send() {
+    let p = plan().await;
+    p.oauth.reply_with(Reply::WebSearch);
+    let r = p
+        .call(
+            "/v1/responses",
+            false,
+            json!({
+                "model": "openai/gpt-5",
+                "tools": [{ "type": "web_search" }],
+                "input": "Latest stable Rust version? Use web search. One line.",
+            }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let output = r.json()["output"].as_array().unwrap().clone();
+    let types: Vec<&str> = output
+        .iter()
+        .map(|i| i["type"].as_str().unwrap_or("none"))
+        .collect();
+    assert_eq!(
+        types,
+        ["reasoning", "web_search_call", "message"],
+        "{output:?}"
+    );
+    assert_eq!(output[1]["status"], "completed");
+    assert_eq!(output[1]["action"]["type"], "search");
+    p.services.cleanup().await;
+}
+
+#[tokio::test]
 async fn explicit_defaults_and_later_system_items_never_reach_the_plan_route() {
     let p = plan().await;
     let r = p
