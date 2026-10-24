@@ -53,7 +53,7 @@
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.13.0",
-    "happy-dom": "21.0.3",
+    "happy-dom": "21.0.4",
     "image-size": "2.0.4",
     "marked": "18.1.1",
     "mermaid": "12.2.0",
