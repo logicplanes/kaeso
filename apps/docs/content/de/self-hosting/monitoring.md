@@ -40,7 +40,7 @@ services:
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Veränderungen im 99. Perzentil je Route und je Anbieter |
 | `kaeso_gateway_overhead_seconds{provider}` | Die eigene Zeit von Kaeso, bevor es den Anbieter aufruft: Body lesen, Schlüssel prüfen, übersetzen und Limits prüfen. Die Buckets beginnen bei 0,1 ms. Ein Anstieg, den `kaeso_time_to_first_byte_seconds` nicht zeigt, liegt bei Kaeso, nicht beim Anbieter |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` oder `connect`: ein Ausfall beim Anbieter. `authentication` oder `billing`: ein Anbieter-Schlüssel muss geprüft werden |
-| `kaeso_stream_failures_total{kind, provider}` | Streams, die nach dem Senden ihrer Header scheiterten. `kaeso_requests_total` zählt sie als 200, das Anfrageprotokoll als Fehlschläge |
+| `kaeso_stream_failures_total{kind, provider}` | Streams, die nach dem Senden ihrer Header scheiterten. `kaeso_requests_total` zählt sie als 200, das Anfrageprotokoll als Fehlschläge. `client_stalled`: Apps, die ihren Stream nicht mehr lasen |
 | `kaeso_usage_estimates_total{reason, provider}` | Nutzung, die Kaeso schätzen musste. `unreported`: ein Anbieter hat eine Antwort ohne Nutzung beendet. `cancelled` und `failed`: Apps, die die Verbindung getrennt haben, und abgebrochene Streams |
 | `kaeso_limit_refusals_total{kind, level}` | Budgets, die zur Neige gehen |
 | `kaeso_reasoning_continuity_total{outcome}` | `unavailable`: Probleme mit Valkey. Viele `missing`: Unterhaltungen dauern länger als `KAESO_CONTINUITY_REASONING_TTL` |

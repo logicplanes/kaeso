@@ -169,6 +169,7 @@ describe("the model API's messages, as request logs show them", () => {
     );
     await speak("zh-CN");
     expect(translateMessage("The app closed the connection before the reply was complete.")).toBe("回复完成前，应用关闭了连接。");
+    expect(translateMessage("The app stopped reading the stream for too long; Kaeso ended it.")).toBe("应用过长时间未读取流，Kaeso 已将其结束。");
     expect(translateMessage("The request body is larger than 1048576 bytes.")).toBe("请求体超过 1,048,576 字节。");
     expect(knownMessage("Provider returned error")).toBeUndefined();
   });

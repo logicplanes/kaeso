@@ -119,7 +119,7 @@ A stream whose last event, such as `response.completed`, `message_stop` or `data
 
 Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, the time to the first bytes, and the time Kaeso spent translating the events. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
 
-An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` counts as gone: Kaeso stops the provider request and logs it as a disconnect.
+An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` counts as gone: Kaeso stops the provider request and logs it as 499 with the error kind `client_stalled`. The metric `kaeso_stream_failures_total` counts it under that kind.
 
 ## Disconnects
 

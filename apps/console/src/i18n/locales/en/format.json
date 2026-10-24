@@ -133,6 +133,7 @@
   "format.errorKind.authentication": "Authentication",
   "format.errorKind.billing": "Billing",
   "format.errorKind.clientDisconnected": "Client disconnected",
+  "format.errorKind.clientStalled": "Client stalled",
   "format.errorKind.contentFiltered": "Content filtered",
   "format.errorKind.contextTooLong": "Context too long",
   "format.errorKind.invalidRequest": "Invalid request",

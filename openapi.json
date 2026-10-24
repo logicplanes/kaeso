@@ -20475,7 +20475,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "The error kind, for failures: a kpp error kind (`invalid_request`,\n`authentication`, `permission_denied`, `not_found`,\n`request_too_large`, `rate_limited`, `overloaded`,\n`context_too_long`, `content_filtered`, `unsupported`, `timeout`,\n`billing`, `provider_error`), `stream_interrupted` when the\nprovider's stream broke off after the reply had started, or\n`client_disconnected` when the app went away before the end."
+                  "description": "The error kind, for failures: a kpp error kind (`invalid_request`,\n`authentication`, `permission_denied`, `not_found`,\n`request_too_large`, `rate_limited`, `overloaded`,\n`context_too_long`, `content_filtered`, `unsupported`, `timeout`,\n`billing`, `provider_error`), `stream_interrupted` when the\nprovider's stream broke off after the reply had started,\n`client_disconnected` when the app went away before the end, or\n`client_stalled` when the app stopped reading a stream for longer\nthan the stream idle timeout and Kaeso ended it."
                 },
                 "error_message": {
                   "type": [
@@ -21703,7 +21703,7 @@
               "string",
               "null"
             ],
-            "description": "The error kind, for failures: a kpp error kind (`invalid_request`,\n`authentication`, `permission_denied`, `not_found`,\n`request_too_large`, `rate_limited`, `overloaded`,\n`context_too_long`, `content_filtered`, `unsupported`, `timeout`,\n`billing`, `provider_error`), `stream_interrupted` when the\nprovider's stream broke off after the reply had started, or\n`client_disconnected` when the app went away before the end."
+            "description": "The error kind, for failures: a kpp error kind (`invalid_request`,\n`authentication`, `permission_denied`, `not_found`,\n`request_too_large`, `rate_limited`, `overloaded`,\n`context_too_long`, `content_filtered`, `unsupported`, `timeout`,\n`billing`, `provider_error`), `stream_interrupted` when the\nprovider's stream broke off after the reply had started,\n`client_disconnected` when the app went away before the end, or\n`client_stalled` when the app stopped reading a stream for longer\nthan the stream idle timeout and Kaeso ended it."
           },
           "error_message": {
             "type": [

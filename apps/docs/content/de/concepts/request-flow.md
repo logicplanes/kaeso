@@ -119,7 +119,7 @@ Ein Stream, dessen letztes Event, etwa `response.completed`, `message_stop` oder
 
 Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives, die Zeit bis zu den ersten Bytes und die Zeit, die Kaeso zum Übersetzen der Events brauchte. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
-Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem Stream liest, gilt als getrennt: Kaeso stoppt die Anfrage beim Anbieter und protokolliert einen Verbindungsabbruch.
+Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem Stream liest, gilt als getrennt: Kaeso stoppt die Anfrage beim Anbieter und protokolliert sie als 499 mit der Fehlerart `client_stalled`. Die Metrik `kaeso_stream_failures_total` zählt sie unter dieser Art.
 
 ## Verbindungsabbrüche
 

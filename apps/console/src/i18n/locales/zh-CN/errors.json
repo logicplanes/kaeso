@@ -431,6 +431,7 @@
   "errors.modelApi.accountRefused": "服务商因计费或配额原因拒绝了此项目的服务商密钥。请组织管理员在“服务商”中检查。",
   "errors.modelApi.ambiguous": "此项目中有多个服务商提供模型名称 `{model}`（{providers}）。请使用带前缀的名称，例如 `{provider}/{model}`。",
   "errors.modelApi.appClosed": "回复完成前，应用关闭了连接。",
+  "errors.modelApi.appStalled": "应用过长时间未读取流，Kaeso 已将其结束。",
   "errors.modelApi.bodyTimeout": "请求体未及时到达，请重新发送。",
   "errors.modelApi.bodyTooLarge": "请求体超过 {limit} 字节。",
   "errors.modelApi.credentialSealed": "Kaeso 无法解密服务商凭据。运维人员需要检查所配置的主密钥。",

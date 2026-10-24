@@ -177,6 +177,28 @@ describe("LogInspector", () => {
     noSection(dialog, "Timing");
   });
 
+  it("tells a stream the app stopped reading apart from a disconnect", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          status: 499,
+          stream: true,
+          error_kind: "client_stalled",
+          error_message: "The app stopped reading the stream for too long; Kaeso ended it.",
+          stream_progress: { events: 40, bytes: 9000, first_byte_ms: 300, keepalives: 0, processing_ms: 2 },
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    const outcome = section(await sheet(), "Outcome");
+    expect(outcome).toHaveTextContent("Client stalled");
+    expect(outcome).toHaveTextContent("The app stopped reading the stream for too long; Kaeso ended it.");
+  });
+
   it("says when a request is gone and goes back to the list", async () => {
     signedIn();
     projectData();

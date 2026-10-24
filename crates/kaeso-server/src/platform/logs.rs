@@ -697,8 +697,10 @@ pub struct LogView {
         `request_too_large`, `rate_limited`, `overloaded`,\n\
         `context_too_long`, `content_filtered`, `unsupported`, `timeout`,\n\
         `billing`, `provider_error`), `stream_interrupted` when the\n\
-        provider's stream broke off after the reply had started, or\n\
-        `client_disconnected` when the app went away before the end."]
+        provider's stream broke off after the reply had started,\n\
+        `client_disconnected` when the app went away before the end, or\n\
+        `client_stalled` when the app stopped reading a stream for longer\n\
+        than the stream idle timeout and Kaeso ended it."]
     pub error_kind: Option<String>,
     #[doc = "The error message, for failures."]
     pub error_message: Option<String>,
