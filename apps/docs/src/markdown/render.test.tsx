@@ -28,7 +28,7 @@ describe("Markdown", () => {
     expect(c.querySelector("code")).toHaveTextContent("sk-kso-…");
   });
 
-  it("lets long identifiers wrap only after their separators, and keeps their text", () => {
+  it("lets long identifiers wrap only after their separators and between the words of a type name, and keeps their text", () => {
     const c = draw([
       {
         t: "paragraph",
@@ -42,7 +42,7 @@ describe("Markdown", () => {
     const [field, role, path] = [...c.querySelectorAll("code")];
     expect(field).toHaveTextContent("sampling.max_output_tokens");
     expect([...(field?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("sampling.|max_|output_|tokens");
-    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|SystemMessage");
+    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|System|Message");
     expect([...(path?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("/v1/|chat/|completions");
   });
 
@@ -225,6 +225,25 @@ describe("Markdown", () => {
     const fields = container.querySelector("table td:nth-child(3)");
     expect(fields?.querySelectorAll(":scope > wbr")).toHaveLength(2);
     expect(container.querySelector("table td:nth-child(5)")).toHaveClass("min-w-120");
+  });
+
+  it("breaks a long type name between its words, and narrows a table's gutters at five columns and its text columns from four", () => {
+    const code = (v: string): Inline => ({ t: "code", v });
+    const text = (v: string): Inline => ({ t: "text", v });
+    const note = text("Dropped for other dialects when it only holds edits that every target can apply");
+    const table = (columns: number): Block => ({
+      t: "table",
+      align: Array.from({ length: columns }, () => "start" as const),
+      head: Array.from({ length: columns }, (_, i) => [text(`Column ${i + 1}`)]),
+      rows: [Array.from({ length: columns }, (_, i) => (i === 0 ? [code("BetaContextManagementConfigParam")] : [note]))],
+    });
+    const container = draw([table(5), table(4), table(3)]);
+    const [five, four, three] = [...container.querySelectorAll("table")];
+    expect(five?.querySelector("code")?.querySelectorAll("wbr")).toHaveLength(4);
+    expect(five?.querySelector("td:nth-child(2)")).toHaveClass("px-8", "min-w-120");
+    expect(five?.querySelector("th")).toHaveClass("px-8");
+    expect(four?.querySelector("td:nth-child(2)")).toHaveClass("px-12", "min-w-120");
+    expect(three?.querySelector("td:nth-child(2)")).toHaveClass("px-12", "min-w-140");
   });
 
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {
