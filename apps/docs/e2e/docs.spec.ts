@@ -134,6 +134,7 @@ test("search finds pages and headings, and says when nothing matches", async ({ 
   await expect(input).toBeFocused();
   await input.fill("rate");
   await expect(page.getByRole("option", { name: /Rate limits/ })).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toContainText(/(Pages|On pages|Also mentioned on)\s*\d/);
   await page.getByRole("option", { name: /Rate limits/ }).click();
   await expect(page).toHaveURL("/guides/keys-and-limits#rate-limits");
   await expect(page.getByRole("heading", { level: 3, name: "Rate limits" })).toBeInViewport();

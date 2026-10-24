@@ -72,7 +72,7 @@ Caddy 无法为 `KAESO_DOMAIN` 获取证书，通常是 DNS 或防火墙的原�
 docker compose exec gateway kaeso setup-link
 ```
 
-如果 Kaeso 已经设置完成，命令会提示这一点，设置页面也会显示 Kaeso 已设置完成并提供登录链接；请直接在您的域名上登录。
+如果 Kaeso 已经设置完成，命令会提示这一点。设置页面也会显示同样的内容，并提供登录链接。请直接在您的域名上登录。
 
 ## 收不到邮件
 
@@ -115,7 +115,7 @@ docker compose exec gateway kaeso setup-link
 1. 运行 `docker compose logs clickhouse`，解决其中报告的问题。
 2. 在网关日志中搜索 `ClickHouse migrations failed`。
 
-日志行会在网关内存中等待，最多到 `KAESO_LOGS_BUFFER_SIZE`，之后最旧的行会被丢弃。
+日志行会在网关内存中等待，最多到 `KAESO_LOGS_BUFFER_SIZE`，之后 Kaeso 会丢弃最旧的行。
 
 ## Kaeso 无法连接数据库
 
@@ -134,7 +134,7 @@ docker compose exec gateway kaeso setup-link
 docker compose exec gateway kaeso user reset-2fa person@example.com
 ```
 
-无论哪种方式，该用户的身份验证器应用和恢复码都会被移除，会话随之结束，并会收到一封邮件。在要求双重验证的地方，用户下次登录时需要重新设置。
+无论哪种方式，Kaeso 都会移除该用户的身份验证器应用和恢复码，结束其会话，并向其发送一封邮件。在要求双重验证的地方，用户下次登录时需要重新设置。
 
 ## 两个账户共用一个地址
 
@@ -148,7 +148,7 @@ Kaeso 将仅在写法上不同的邮箱地址视为同一个地址，包括大�
 
 ## 有人报告了请求 ID
 
-控制台显示“网关出现问题；请将请求 req_… 报告给管理员。”网关以调用方无法解决的方式失败了，原因记录在它的日志中。
+网关以调用方无法解决的方式失败了，原因记录在它的日志中。控制台显示“网关出现问题；请将请求 req_… 报告给管理员。”
 
 1. 在日志中搜索该 ID：`docker compose logs gateway | grep req_…`。
 2. 阅读带有原因的 `internal error` 那一行。

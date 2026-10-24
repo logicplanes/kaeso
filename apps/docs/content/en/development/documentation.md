@@ -38,7 +38,9 @@ A page exists because a real reader opens it to get something done. Before you a
 3. **Is it said elsewhere?** One topic has one page. Where two pages overlap, one of them explains and the other links to it.
 4. **Would a paragraph on another page do?** A page under about 150 words, or one that only lists links, becomes a section of the page its reader comes from.
 
-A page that fails any of them is removed or merged, not tightened. Numbers and lists that only CI acts on, such as bundle budgets or coverage thresholds, stay in the code or configuration that enforces them; the docs name the command that checks them. To remove a page, delete it in all three languages, add its address to `apps/docs/redirects.json` with the most relevant page ([where a page goes](#where-a-page-goes)), and fix the links the build names.
+A page that fails any of them is removed or merged, not tightened. Numbers and lists that only CI acts on, such as bundle budgets or coverage thresholds, stay in the code or configuration that enforces them. The docs name the command that checks them.
+
+To remove a page, delete it in all three languages. Add its address to `apps/docs/redirects.json` with the most relevant page ([where a page goes](#where-a-page-goes)), then fix the links the build names.
 
 ## Page types
 
@@ -87,7 +89,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ~~~
 
 - One path, start to finish, with no choices on the way. Options and alternatives go on the guide pages the steps link to.
-- Each step is a `##` heading that starts with a verb, a sentence that says what the step does, one command or code group, and a sentence that says what the reader sees when it worked.
+- Each step is a `##` heading that starts with a verb. Under it, a sentence says what the step does, followed by one command or code group. A last sentence says what the reader sees when it worked.
 - At most ten steps. The last step proves it worked, such as a first request and its reply.
 
 ### Guide
@@ -139,7 +141,7 @@ flowchart TD
 …
 ~~~
 
-- Start with why the reader should care, in one or two sentences, then a diagram or a short example.
+- Start with why it matters to the reader, in one or two sentences, then a diagram or a short example.
 - Headings are nouns or short phrases, in the order things happen.
 - Explain with prose where reasoning matters; a concept page has few tables.
 
@@ -214,7 +216,7 @@ Write the way a helpful colleague explains something at a whiteboard: directly, 
 - **Sentence case** for titles and headings. A heading that names a task starts with a verb ("Create a key"); one that names a thing is a noun ("Model names").
 - **Describe Kaeso as its code does.** Check settings against the gateway's configuration, labels against the console's English catalog, and behaviour against the gateway, KPP and the console. Never document a feature that doesn't exist, and never a plan: plans go into issues.
 
-From our own pages:
+From Kaeso's own pages:
 
 | Instead of | Write |
 | --- | --- |
@@ -246,7 +248,7 @@ Formatting marks what something is, never how important it is.
 Readers copy code before they read prose, so the code has to work as it stands.
 
 - **Lead with a runnable example.** Every API page, and every guide where an app calls Kaeso, shows a minimal request that works within its first screen: right after the introduction, before the first `##` heading.
-- **Runnable as pasted.** The only things a reader changes are the placeholders: the address `kaeso.example.com`, the key in the environment variable `KAESO_API_KEY` (shown as `sk-kso-…` where a literal is unavoidable), and the model `claude-haiku-4-5` or `gpt-5-mini`. Use the same prompt across a page: "Write a haiku about gateways."
+- **Runnable as pasted.** A reader changes only the placeholders: the address `kaeso.example.com`, the key in the environment variable `KAESO_API_KEY` and the model `claude-haiku-4-5` or `gpt-5-mini`. Where a literal key is unavoidable, show it as `sk-kso-…`. Use the same prompt across a page: "Write a haiku about gateways."
 - **Minimal.** Only the fields the example needs. A guide's block stays under 25 lines; longer code links to a file on GitHub.
 - **Keys come from the environment.** Code reads `KAESO_API_KEY`: `os.environ["KAESO_API_KEY"]` in Python, `process.env.KAESO_API_KEY` in TypeScript, `$KAESO_API_KEY` in curl. Never write a key into SDK code.
 - **The official SDKs.** Python uses `openai` and `anthropic` with their synchronous clients; TypeScript uses `openai` and `@anthropic-ai/sdk` as ES modules with top-level `await`. The OpenAI SDK's base URL is `https://kaeso.example.com/v1`, the Anthropic SDK's `https://kaeso.example.com`. A reader's app installs them with `pip install openai anthropic` and `npm install openai @anthropic-ai/sdk`; commands for working on this repository use pnpm.
@@ -387,7 +389,7 @@ Every request to the model API carries an API key.
 | `order` | no | A whole number; lower comes first within the folder. Pages without one, or with the same one, follow by file name |
 | `nav` | no | A shorter label for the sidebar |
 
-Any other field is an error. The title is the page's only `#` heading, so headings in the page start at `##`; a page may still begin with `# ` and its exact title to read well on GitHub, and the site shows it once. **On this page** lists the `##` and `###` headings.
+Any other field is an error. The title is the page's only `#` heading, so headings in the page start at `##`. A page may still begin with `# ` and its exact title, so it reads well on GitHub; the site shows the title once. **On this page** lists the `##` and `###` headings.
 
 ## Where a page goes
 
@@ -399,7 +401,11 @@ Any other field is an error. The title is the page's only `#` heading, so headin
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | The same page in German |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | The same page in Simplified Chinese |
 
-A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't. Links from elsewhere and bookmarks keep the old address, so add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation. A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
+A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't.
+
+Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation.
+
+A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
 
 ## Images
 
@@ -409,7 +415,9 @@ Put the image next to the page or in an `images/` folder beside it, and give it 
 ![The API keys page with one key](images/api-keys.png)
 ```
 
-PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, and an image without alt text fails the build. Choose images that read on light and dark backgrounds; an SVG can switch its own colours with `@media (prefers-color-scheme: dark)`. Linking any other file in `content/` publishes that file. Add a screenshot only where the reader can't find their way by the labels alone. An image never shows a diagram: draw it as a [Mermaid block](#diagrams).
+PNG, JPEG, GIF, WebP, AVIF and SVG work. Images from other sites are not shown, and an image without alt text fails the build. Choose images that read on light and dark backgrounds; an SVG can switch its own colours with `@media (prefers-color-scheme: dark)`.
+
+Linking any other file in `content/` publishes that file. Add a screenshot only where the reader can't find their way by the labels alone. An image never shows a diagram: draw it as a [Mermaid block](#diagrams).
 
 ## Diagrams
 
@@ -477,7 +485,12 @@ The site's own words, such as **Edit on GitHub** or the search, are in `apps/doc
 
 ## The README's recording
 
-The README opens with a short recording of the console in a light and a dark version, `.github/assets/demo-light.gif` and `.github/assets/demo-dark.gif`; GitHub shows the one that matches the reader's theme. `apps/console/scripts/demo.mjs` records both with Playwright against the development stack and its seeded organization, so they show only the mock provider, its placeholder keys and the seed's made-up people. It connects an Anthropic key on **Providers**, creates a key on **API keys**, sends a request with that key from a terminal panel it draws over the page, and waits on **Request logs**, with **Live** on, until the request arrives.
+The README opens with a short recording of the console in a light and a dark version, `.github/assets/demo-light.gif` and `.github/assets/demo-dark.gif`; GitHub shows the one that matches the reader's theme. `apps/console/scripts/demo.mjs` records both with Playwright against the development stack and its seeded organization, so they show only the mock provider, its placeholder keys and the seed's made-up people. The script takes four steps in the console:
+
+- It connects an Anthropic key on **Providers**.
+- It creates a key on **API keys**.
+- It sends a request with that key from a terminal panel it draws over the page.
+- It waits on **Request logs**, with **Live** on, until the request arrives.
 
 To record them again, start from a freshly seeded stack with the console running, and install `ffmpeg` first, for example with `brew install ffmpeg`:
 
@@ -494,7 +507,9 @@ Then, in a second terminal:
 pnpm demo
 ```
 
-The script records at 1280 × 800 with a device scale factor of 2, turns the frames into GIFs at 20 frames a second with one palette each, writes both into `.github/assets` and prints their sizes; keep each under 4 MB. It also runs on a stack it has recorded on before, removing the Anthropic key and archiving its own key first, but the earlier requests stay in the logs. The README links the GIFs on `dev`, so a new recording shows there once its pull request is merged.
+The script records at 1280 × 800 with a device scale factor of 2. It turns the frames into GIFs at 20 frames a second, with one palette each. It writes both into `.github/assets` and prints their sizes. Keep each under 4 MB.
+
+It also runs on a stack it has recorded on before. In that case it first removes the Anthropic key and archives its own key, but the earlier requests stay in the logs. The README links the GIFs on `dev`, so a new recording shows there once its pull request is merged.
 
 ## Before you merge
 

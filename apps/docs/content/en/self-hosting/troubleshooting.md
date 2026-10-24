@@ -72,7 +72,7 @@ The setup link works once, for 24 hours, and only while the install has no users
 docker compose exec gateway kaeso setup-link
 ```
 
-If Kaeso is already set up, the command says so, and the setup page says Kaeso is set up with a link to sign in; sign in at your domain instead.
+If Kaeso is already set up, the command says so. The setup page says the same, with a link to sign in. Sign in at your domain instead.
 
 ## Email doesn't arrive
 
@@ -115,7 +115,7 @@ Entries appear a few seconds after the request. When none appear, ClickHouse isn
 1. Run `docker compose logs clickhouse` and fix what it reports.
 2. Search the gateway's log for `ClickHouse migrations failed`.
 
-Rows wait in the gateway's memory up to `KAESO_LOGS_BUFFER_SIZE`, then the oldest are dropped.
+Rows wait in the gateway's memory up to `KAESO_LOGS_BUFFER_SIZE`, then Kaeso drops the oldest.
 
 ## Kaeso cannot reach its database
 
@@ -134,7 +134,7 @@ An instance admin resets it under **Settings** › **Instance** › **Users**, i
 docker compose exec gateway kaeso user reset-2fa person@example.com
 ```
 
-Either way, their authenticator and recovery codes are removed, their sessions end, and they get an email. Where two-factor authentication is required, they set it up again at their next sign-in.
+Either way, Kaeso removes their authenticator and recovery codes, ends their sessions and sends them an email. Where two-factor authentication is required, they set it up again at their next sign-in.
 
 ## Two accounts share one address
 
@@ -148,7 +148,7 @@ On an install without passwords, a broken identity provider leaves no way in. Do
 
 ## Someone reports a request id
 
-The console showed "Something went wrong in the gateway; report request req_… to your admin." The gateway failed in a way the caller can't fix, and its log has the cause.
+The gateway failed in a way the caller can't fix, and its log has the cause. The console showed "Something went wrong in the gateway; report request req_… to your admin."
 
 1. Search the log for the id: `docker compose logs gateway | grep req_…`.
 2. Read the `internal error` line with its cause.
