@@ -77,111 +77,111 @@ Docker rotates each service's log at 10 MB and keeps five files.
 
 ### Listening
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_LISTEN` | `listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics. Never route it publicly. The gateway image sets `0.0.0.0:9100`, so a port published from the container reaches it; [health and metrics](monitoring.md#metrics) shows how. |
-| `KAESO_PUBLIC_URL` | `public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
-| `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
-| `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
-| `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
-| `KAESO_SERVER_BODY_READ_DEADLINE` | `server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. An 8 MiB body, the model API's default limit, arrives in time at 1.2 Mbit/s; raise it for apps on slower links. |
-| `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | integer | `4096` | Connections the gateway serves at once, from apps or a proxy in front. Further ones wait in the operating system's queue until one closes. The default matches Linux's default listen queue, `net.core.somaxconn`. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_LISTEN`<br>`listen` | text | `0.0.0.0:8080` | Address of the model API, the Platform API and the health checks. |
+| `KAESO_METRICS_LISTEN`<br>`metrics_listen` | text | `127.0.0.1:9100` | Address of the Prometheus metrics. Never route it publicly. The gateway image sets `0.0.0.0:9100`, so a port published from the container reaches it; [health and metrics](monitoring.md#metrics) shows how. |
+| `KAESO_PUBLIC_URL`<br>`public_url` | text | required | The address people and apps use, such as `https://kaeso.example.com`, without a path. It must be `https`, except `http` on a loopback address for development. |
+| `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | text | `127.0.0.0/8,::1/128` | Comma-separated networks of proxies whose `X-Forwarded-For` the gateway believes. `trusted_proxies = ""` in the TOML file trusts none; an empty variable keeps the default. |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | text | `30s` | How long requests and streams in flight may run after a shutdown signal. Those still open then end with 503 and are charged and logged. |
+| `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | text | `30s` | How long a client may take to send a request's headers, or leave a connection idle between requests; 1s to 10m. It never cuts off a reply in progress. |
+| `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | text | `30s` | How long the gateway waits for the next part of a request body before it refuses the request with 400; 1s to 10m. |
+| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | text | `60s` | How long the gateway waits for a whole request body, however steadily its parts arrive, before it refuses the request with 400; 1s to 1h. An 8 MiB body, the model API's default limit, arrives in time at 1.2 Mbit/s; raise it for apps on slower links. |
+| `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | integer | `4096` | Connections the gateway serves at once, from apps or a proxy in front. Further ones wait in the operating system's queue until one closes. The default matches Linux's default listen queue, `net.core.somaxconn`. |
 
 On a loopback `http` address, such as `http://localhost:8080`, the session cookie goes without `Secure` and the `__Host-` prefix, so the console works over plain HTTP on your computer.
 
 ### Browser apps
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | text | — | Comma-separated origins of web apps that may call the model API from a browser, such as `https://app.example.com,http://localhost:5173`. Only these get CORS headers, only on `/v1`, and `*` stops the gateway at startup. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | text | — | Comma-separated origins of web apps that may call the model API from a browser, such as `https://app.example.com,http://localhost:5173`. Only these get CORS headers, only on `/v1`, and `*` stops the gateway at startup. |
 
 Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-api.md) explains how a browser app calls Kaeso.
 
 ### Databases
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_POSTGRES_URL` | `postgres.url` | text, secret | required | PostgreSQL connection URL. |
-| `KAESO_POSTGRES_POOL_SIZE` | `postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
-| `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | text, secret | required | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. |
-| `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
-| `KAESO_VALKEY_URL` | `valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
-| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, to share one Valkey between installs that trust each other. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_POSTGRES_URL`<br>`postgres.url` | text, secret | required | PostgreSQL connection URL. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
+| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | required | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. |
+| `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
+| `KAESO_VALKEY_URL`<br>`valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
+| `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, to share one Valkey between installs that trust each other. |
 
 ### Master keys
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_MASTER_KEYS` | `master_keys` | text, secret | required | Master keys as `id:base64,…`, the active key first. `kaeso master-key generate` makes one ([backups and master keys](backups.md)). |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_MASTER_KEYS`<br>`master_keys` | text, secret | required | Master keys as `id:base64,…`, the active key first. `kaeso master-key generate` makes one ([backups and master keys](backups.md)). |
 
 ### Email
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_SMTP_HOST` | `smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
-| `KAESO_SMTP_PORT` | `smtp.port` | integer | `587` | SMTP port. |
-| `KAESO_SMTP_TLS` | `smtp.tls` | text | `starttls` | `starttls`, `tls` for implicit TLS (usually port 465), or `none` for a local mail catcher only. |
-| `KAESO_SMTP_USER` | `smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password. |
-| `KAESO_SMTP_PASSWORD` | `smtp.password` | text, secret | — | SMTP password. |
-| `KAESO_SMTP_FROM` | `smtp.from` | text | `Kaeso <kaeso@localhost>` | Sender of every email. `compose.yaml` sets `Kaeso <kaeso@` and your domain. |
-| `KAESO_MAIL_TRANSPORT` | `mail.transport` | text | `smtp` | `smtp`, or `log` to only log the kind of each email, never its recipient or content. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_SMTP_HOST`<br>`smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
+| `KAESO_SMTP_PORT`<br>`smtp.port` | integer | `587` | SMTP port. |
+| `KAESO_SMTP_TLS`<br>`smtp.tls` | text | `starttls` | `starttls`, `tls` for implicit TLS (usually port 465), or `none` for a local mail catcher only. |
+| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password. |
+| `KAESO_SMTP_PASSWORD`<br>`smtp.password` | text, secret | — | SMTP password. |
+| `KAESO_SMTP_FROM`<br>`smtp.from` | text | `Kaeso <kaeso@localhost>` | Sender of every email. `compose.yaml` sets `Kaeso <kaeso@` and your domain. |
+| `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | text | `smtp` | `smtp`, or `log` to only log the kind of each email, never its recipient or content. |
 
 ### Sign-in
 
 These settings turn passwords and sign-in links on or off for the whole install. The console shows them, and a method turned off here can't be turned on there. Single sign-on has no install setting: it works for an organization once its admin connects an identity provider ([sign-in and single sign-on](sign-in.md)).
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_AUTH_PASSWORD` | `auth.password` | bool | `true` | Allow sign-in with email and password. |
-| `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | bool | `true` | Allow sign-in with a link sent by email. |
-| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC requests to private and loopback addresses, for an identity provider on your own network. Turn it on only where organization admins may reach your internal network through the gateway. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_AUTH_PASSWORD`<br>`auth.password` | bool | `true` | Allow sign-in with email and password. |
+| `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | bool | `true` | Allow sign-in with a link sent by email. |
+| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | bool | `false` | Allow OIDC requests to private and loopback addresses, for an identity provider on your own network. Turn it on only where organization admins may reach your internal network through the gateway. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused. |
 
 ### API key failures
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS` | `key_failures.per_address` | integer | `100` | Failed API key lookups allowed per client address and window, on both APIs together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
-| `KAESO_KEY_FAILURES_WINDOW` | `key_failures.window` | text | `1m` | The window of `key_failures.per_address`, 1s to 1h. A blocked address waits at most this long. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed API key lookups allowed per client address and window, on both APIs together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
+| `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | text | `1m` | The window of `key_failures.per_address`, 1s to 1h. A blocked address waits at most this long. |
 
 ### models.dev
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | bool | `true` | Fetch model data from models.dev. Without it, the gateway uses the data built into the release. |
-| `KAESO_MODELS_DEV_URL` | `models_dev.url` | text | `https://models.dev/api.json` | Where the model data comes from. It must be `https`, except `http` on a loopback address. Kaeso follows at most 3 redirects, each on the same host and over `https`. |
-| `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | text | `24h` | How often the gateway fetches it. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_MODELS_DEV_SYNC`<br>`models_dev.sync` | bool | `true` | Fetch model data from models.dev. Without it, the gateway uses the data built into the release. |
+| `KAESO_MODELS_DEV_URL`<br>`models_dev.url` | text | `https://models.dev/api.json` | Where the model data comes from. It must be `https`, except `http` on a loopback address. Kaeso follows at most 3 redirects, each on the same host and over `https`. |
+| `KAESO_MODELS_DEV_INTERVAL`<br>`models_dev.interval` | text | `24h` | How often the gateway fetches it. |
 
 ### Updates
 
 The first three settings only seed a new install. After that, instance admins change them under **Settings** › **Instance** › **Updates** ([upgrades](upgrades.md)).
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_UPDATES_CHECK` | `updates.check` | bool | `true` | Look for new Kaeso releases every 5 minutes. |
-| `KAESO_UPDATES_CHANNEL` | `updates.channel` | text | `stable` | The releases offered: `stable`, or `prerelease` for pre-releases too. |
-| `KAESO_UPDATES_MODE` | `updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual`, where an instance admin starts each one, or `automatic`, in the update window. |
-| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | text | `https://update.kaeso.app/v1/releases.json` | Where the list of releases comes from: update.kaeso.app, or a mirror that answers like GitHub's releases API. |
-| `KAESO_UPDATER_URL` | `updater.url` | text | `http://updater:8081` | Address of the updater. |
-| `KAESO_UPDATER_TOKEN` | `updater.token` | text, secret | — | The token the gateway and the updater share, at least 32 characters. Without it, the gateway never calls the updater. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_UPDATES_CHECK`<br>`updates.check` | bool | `true` | Look for new Kaeso releases every 5 minutes. |
+| `KAESO_UPDATES_CHANNEL`<br>`updates.channel` | text | `stable` | The releases offered: `stable`, or `prerelease` for pre-releases too. |
+| `KAESO_UPDATES_MODE`<br>`updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual`, where an instance admin starts each one, or `automatic`, in the update window. |
+| `KAESO_UPDATES_RELEASES_URL`<br>`updates.releases_url` | text | `https://update.kaeso.app/v1/releases.json` | Where the list of releases comes from: update.kaeso.app, or a mirror that answers like GitHub's releases API. |
+| `KAESO_UPDATER_URL`<br>`updater.url` | text | `http://updater:8081` | Address of the updater. |
+| `KAESO_UPDATER_TOKEN`<br>`updater.token` | text, secret | — | The token the gateway and the updater share, at least 32 characters. Without it, the gateway never calls the updater. |
 
 ### Provider calls
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |
-| `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | text | `https://api.anthropic.com` | Base URL of the Anthropic API. |
-| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | text | `https://api.deepseek.com` | Base URL of the DeepSeek API. |
-| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | text | `https://api.x.ai` | Base URL of the SpaceX API. |
-| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | text | `https://api.together.ai` | Base URL of the Together AI API. |
-| `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | text | `https://api.groq.com/openai` | Base URL of the Groq API. |
-| `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | text | `https://openrouter.ai/api` | Base URL of the OpenRouter API. |
-| `KAESO_PROVIDERS_MISTRAL_BASE_URL` | `providers.mistral.base_url` | text | `https://api.mistral.ai` | Base URL of the Mistral API. |
-| `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
-| `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
-| `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
-| `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` | `upstream.stream_idle_timeout` | text | `300s` | Streaming: longest silence between two chunks; at most 24h. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_PROVIDERS_OPENAI_BASE_URL`<br>`providers.openai.base_url` | text | `https://api.openai.com` | Base URL of the OpenAI API. |
+| `KAESO_PROVIDERS_ANTHROPIC_BASE_URL`<br>`providers.anthropic.base_url` | text | `https://api.anthropic.com` | Base URL of the Anthropic API. |
+| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL`<br>`providers.deepseek.base_url` | text | `https://api.deepseek.com` | Base URL of the DeepSeek API. |
+| `KAESO_PROVIDERS_XAI_BASE_URL`<br>`providers.xai.base_url` | text | `https://api.x.ai` | Base URL of the SpaceX API. |
+| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL`<br>`providers.togetherai.base_url` | text | `https://api.together.ai` | Base URL of the Together AI API. |
+| `KAESO_PROVIDERS_GROQ_BASE_URL`<br>`providers.groq.base_url` | text | `https://api.groq.com/openai` | Base URL of the Groq API. |
+| `KAESO_PROVIDERS_OPENROUTER_BASE_URL`<br>`providers.openrouter.base_url` | text | `https://openrouter.ai/api` | Base URL of the OpenRouter API. |
+| `KAESO_PROVIDERS_MISTRAL_BASE_URL`<br>`providers.mistral.base_url` | text | `https://api.mistral.ai` | Base URL of the Mistral API. |
+| `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
+| `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
+| `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
+| `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`<br>`upstream.stream_idle_timeout` | text | `300s` | Streaming: longest silence between two chunks; at most 24h. |
 
 A model in a project's catalogue can set its own timeouts ([models and aliases](../console/models-and-aliases.md)).
 
@@ -189,10 +189,10 @@ The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` 
 
 ### Custom providers
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy ([custom providers](../console/custom-providers.md)). `false` refuses requests to the ones they added and keeps them. |
-| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`. Plain `http` reaches only these. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_CUSTOM_PROVIDERS_ENABLED`<br>`custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy ([custom providers](../console/custom-providers.md)). `false` refuses requests to the ones they added and keeps them. |
+| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS`<br>`custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`. Plain `http` reaches only these. |
 
 An organization admin chooses a custom provider's base URL, so the gateway guards where it connects. For every connection, it resolves the host's name and checks each address. It refuses private, loopback, link-local and cloud metadata addresses unless `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` lists their network. A name that later resolves to another address is checked again on the next connection. Link-local and cloud metadata addresses, such as `169.254.169.254`, stay refused even when a listed network covers them.
 
@@ -200,61 +200,61 @@ The gateway also follows no redirects from a custom provider, and calls it witho
 
 ### Streams to apps
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | text | `15s` | After this long without output, write a keepalive into an open stream so proxies keep the connection ([long streams](domains-and-tls.md#long-streams)). `0s` turns keepalives off; otherwise 1s to 300s. |
-| `KAESO_STREAMS_MAX_DURATION` | `streams.max_duration` | text | `0s` | Longest time a streamed reply may run before the gateway ends it with an error event. `0s` sets no limit. |
-| `KAESO_STREAMS_MAX_BYTES` | `streams.max_bytes` | text | `0` | Most bytes, such as `64MiB`, a streamed reply may write to the app before the gateway ends it with an error event. `0` sets no limit. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | text | `15s` | After this long without output, write a keepalive into an open stream so proxies keep the connection ([long streams](domains-and-tls.md#long-streams)). `0s` turns keepalives off; otherwise 1s to 300s. |
+| `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | text | `0s` | Longest time a streamed reply may run before the gateway ends it with an error event. `0s` sets no limit. |
+| `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | text | `0` | Most bytes, such as `64MiB`, a streamed reply may write to the app before the gateway ends it with an error event. `0` sets no limit. |
 
 ### Reasoning continuity
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL` | `continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions app whose model speaks another format. `0s` turns it off; otherwise 1m to 24h. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | text | `1h` | How long the gateway keeps a model's reasoning before a tool call for an OpenAI Chat Completions app whose model speaks another format. `0s` turns it off; otherwise 1m to 24h. |
 
 [Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 
 ### Request and response bodies
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | text | `8MiB` | Largest request body of the model API. It fits an image at Anthropic's 5 MB limit as base64; raise it for large PDFs. |
-| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and from its messages, blocks and tools. A request holds its estimate while it's decoded and encoded, then until it ends only what stays allocated: its decoded request with its messages, blocks, tools and token ids, a second copy of it while the provider may still be asked to count its input tokens, the body sent to the provider until it answers, and its raw body while content is logged. One key holds at most a quarter, and a request larger than that takes the quarter. A request that finds no room within 10 seconds gets 503 with `Retry-After: 10`. |
-| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
-| `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | text | `128MiB` | Largest response body the gateway reads from a provider when it doesn't stream. A larger one fails the request with 502. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | text | `8MiB` | Largest request body of the model API. It fits an image at Anthropic's 5 MB limit as base64; raise it for large PDFs. |
+| `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | text | `512MiB` | Memory the model API and the Playground may use at once to translate requests, estimated from each body as received and from its messages, blocks and tools. A request holds its estimate while it's decoded and encoded, then until it ends only what stays allocated: its decoded request with its messages, blocks, tools and token ids, a second copy of it while the provider may still be asked to count its input tokens, the body sent to the provider until it answers, and its raw body while content is logged. One key holds at most a quarter, and a request larger than that takes the quarter. A request that finds no room within 10 seconds gets 503 with `Retry-After: 10`. |
+| `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | text | `1MiB` | Largest request body of the Platform API, Playground requests included. |
+| `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | text | `128MiB` | Largest response body the gateway reads from a provider when it doesn't stream. A larger one fails the request with 502. |
 
 ### Request logs
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_LOGS_BUFFER_SIZE` | `logs.buffer_size` | text | `256MiB` | Memory for request log rows that wait for ClickHouse. Beyond it, the oldest rows are dropped. |
-| `KAESO_LOGS_FLUSH_INTERVAL` | `logs.flush_interval` | text | `1s` | How often the gateway writes waiting rows to ClickHouse. |
-| `KAESO_LOGS_FLUSH_ROWS` | `logs.flush_rows` | integer | `5000` | Write waiting rows as soon as this many wait, at least 1. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_LOGS_BUFFER_SIZE`<br>`logs.buffer_size` | text | `256MiB` | Memory for request log rows that wait for ClickHouse. Beyond it, the oldest rows are dropped. |
+| `KAESO_LOGS_FLUSH_INTERVAL`<br>`logs.flush_interval` | text | `1s` | How often the gateway writes waiting rows to ClickHouse. |
+| `KAESO_LOGS_FLUSH_ROWS`<br>`logs.flush_rows` | integer | `5000` | Write waiting rows as soon as this many wait, at least 1. |
 
 ### Instance defaults
 
 These settings only seed a new install. After that, instance admins change them under **Settings** › **Instance** › **Settings**, or through the Platform API, and the stored values win.
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_INSTANCE_ORG_CREATION` | `instance.org_creation` | text | `instance_admins` | Who may create organizations: `instance_admins` or `everyone`. |
-| `KAESO_INSTANCE_ACCOUNT_CREATION` | `instance.account_creation` | text | `invitation_only` | Who may create an account without an invitation: `invitation_only` or `everyone`. |
-| `KAESO_INSTANCE_METADATA_RETENTION_DAYS` | `instance.metadata_retention_days` | integer | `90` | Days new organizations keep request log metadata, at least 1 and at most the maximum below. |
-| `KAESO_INSTANCE_CONTENT_RETENTION_DAYS` | `instance.content_retention_days` | integer | `30` | Days new organizations keep request log content, at least 1 and never longer than metadata. |
-| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS` | `instance.max_metadata_retention_days` | integer | `3650` | Longest metadata retention an organization may choose, at most 36500 days. |
-| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, at most 36500 days. |
-| `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | bool | `true` | Whether organizations can be deleted. |
-| `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it and automatic updates follow it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_INSTANCE_ORG_CREATION`<br>`instance.org_creation` | text | `instance_admins` | Who may create organizations: `instance_admins` or `everyone`. |
+| `KAESO_INSTANCE_ACCOUNT_CREATION`<br>`instance.account_creation` | text | `invitation_only` | Who may create an account without an invitation: `invitation_only` or `everyone`. |
+| `KAESO_INSTANCE_METADATA_RETENTION_DAYS`<br>`instance.metadata_retention_days` | integer | `90` | Days new organizations keep request log metadata, at least 1 and at most the maximum below. |
+| `KAESO_INSTANCE_CONTENT_RETENTION_DAYS`<br>`instance.content_retention_days` | integer | `30` | Days new organizations keep request log content, at least 1 and never longer than metadata. |
+| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS`<br>`instance.max_metadata_retention_days` | integer | `3650` | Longest metadata retention an organization may choose, at most 36500 days. |
+| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS`<br>`instance.max_content_retention_days` | integer | `3650` | Longest content retention an organization may choose, at most 36500 days. |
+| `KAESO_INSTANCE_ORG_DELETION`<br>`instance.org_deletion` | bool | `true` | Whether organizations can be deleted. |
+| `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS`<br>`instance.org_deletion_grace_days` | integer | `7` | Days a deleted organization stays restorable and read-only before it is removed for good, 1 to 90. |
+| `KAESO_INSTANCE_TIMEZONE`<br>`instance.timezone` | text | `UTC` | The IANA time zone of a new install, such as `Europe/Berlin`: the console shows every time in it and automatic updates follow it. The setup page sets it to the first user's time zone; instance admins change it later in the instance settings. |
 
 In the console, instance admins can also allow account and organization creation for some email domains only.
 
 ### Logging
 
-| Variable | TOML key | Type | Default | What it does |
-| --- | --- | --- | --- | --- |
-| `KAESO_LOG_LEVEL` | `log.level` | text | `info,sqlx=warn` | Log level or filter, such as `info` or `info,kaeso_server=debug`. |
-| `KAESO_LOG_FORMAT` | `log.format` | text | `json` | `json` for structured logs, `text` for development. |
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_LOG_LEVEL`<br>`log.level` | text | `info,sqlx=warn` | Log level or filter, such as `info` or `info,kaeso_server=debug`. |
+| `KAESO_LOG_FORMAT`<br>`log.format` | text | `json` | `json` for structured logs, `text` for development. |
 
 ## Provider settings
 

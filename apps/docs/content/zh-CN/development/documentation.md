@@ -472,7 +472,7 @@ export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1" });
 ```
 ~~~
 
-TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。本身含有代码块的 Markdown 示例用 `~~~markdown` 围起来，这样注释检查才能把两者区分开。
+TypeScript、TSX、JavaScript、JSON、Bash（`sh`、`shell`、`console`）、Python、YAML 和 diff 会高亮；其他语言显示为纯文本。原始 HTML 不会渲染，而是显示为文本。唯一的例外是表格单元格中的 `<br>`，它会在单元格内另起一行，例如设置的变量和 TOML 键；这样的单元格中不超过 30 个字符的代码不会断行。本身含有代码块的 Markdown 示例用 `~~~markdown` 围起来，这样注释检查才能把两者区分开。
 
 当前版本写作 `\{{version}}`。构建会在正文、代码和 frontmatter 中把它替换为该版本的版本号，因此任何页面都不会落后于下一次发布。在前面加一个反斜杠则保留这些字符本身，就像本页这样。
 

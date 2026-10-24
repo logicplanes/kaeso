@@ -77,111 +77,111 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ### 监听
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_LISTEN` | `listen` | 文本 | `0.0.0.0:8080` | 模型 API、Platform API 和健康检查的地址。 |
-| `KAESO_METRICS_LISTEN` | `metrics_listen` | 文本 | `127.0.0.1:9100` | Prometheus 指标的地址。切勿公开转发。网关镜像设置为 `0.0.0.0:9100`，使从容器发布的端口能够访问它；[健康状态和指标](monitoring.md#指标)说明了做法。 |
-| `KAESO_PUBLIC_URL` | `public_url` | 文本 | 必填 | 用户和应用使用的地址，例如 `https://kaeso.example.com`，不带路径。必须是 `https`，开发时可在回环地址上使用 `http`。 |
-| `KAESO_TRUSTED_PROXIES` | `trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
-| `KAESO_SHUTDOWN_GRACE` | `shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
-| `KAESO_SERVER_HEADER_READ_TIMEOUT` | `server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
-| `KAESO_SERVER_BODY_READ_TIMEOUT` | `server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
-| `KAESO_SERVER_BODY_READ_DEADLINE` | `server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。8 MiB 的请求体（模型 API 的默认上限）以 1.2 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
-| `KAESO_SERVER_MAX_CONNECTIONS` | `server.max_connections` | 整数 | `4096` | 网关同时服务的连接数，来自应用或前置代理。更多连接会在操作系统的队列中等待，直到有连接关闭。默认值与 Linux 默认的监听队列 `net.core.somaxconn` 相同。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_LISTEN`<br>`listen` | 文本 | `0.0.0.0:8080` | 模型 API、Platform API 和健康检查的地址。 |
+| `KAESO_METRICS_LISTEN`<br>`metrics_listen` | 文本 | `127.0.0.1:9100` | Prometheus 指标的地址。切勿公开转发。网关镜像设置为 `0.0.0.0:9100`，使从容器发布的端口能够访问它；[健康状态和指标](monitoring.md#指标)说明了做法。 |
+| `KAESO_PUBLIC_URL`<br>`public_url` | 文本 | 必填 | 用户和应用使用的地址，例如 `https://kaeso.example.com`，不带路径。必须是 `https`，开发时可在回环地址上使用 `http`。 |
+| `KAESO_TRUSTED_PROXIES`<br>`trusted_proxies` | 文本 | `127.0.0.0/8,::1/128` | 以逗号分隔的代理网段，网关信任来自这些代理的 `X-Forwarded-For`。TOML 文件中的 `trusted_proxies = ""` 不信任任何代理；空变量保留默认值。 |
+| `KAESO_SHUTDOWN_GRACE`<br>`shutdown_grace` | 文本 | `30s` | 收到关闭信号后，进行中的请求和流还能运行多久。届时仍未结束的以 503 结束，并照常计费和记录。 |
+| `KAESO_SERVER_HEADER_READ_TIMEOUT`<br>`server.header_read_timeout` | 文本 | `30s` | 客户端发送请求头、或在两次请求之间保持连接空闲的最长时间；1s 到 10m。它从不中断正在进行的回复。 |
+| `KAESO_SERVER_BODY_READ_TIMEOUT`<br>`server.body_read_timeout` | 文本 | `30s` | 网关等待请求体下一部分的最长时间，超时后以 400 拒绝请求；1s 到 10m。 |
+| `KAESO_SERVER_BODY_READ_DEADLINE`<br>`server.body_read_deadline` | 文本 | `60s` | 网关等待整个请求体的最长时间，无论各部分到达得多均匀，超时后以 400 拒绝请求；1s 到 1h。8 MiB 的请求体（模型 API 的默认上限）以 1.2 Mbit/s 传输即可按时到达；应用的网络更慢时请调高此值。 |
+| `KAESO_SERVER_MAX_CONNECTIONS`<br>`server.max_connections` | 整数 | `4096` | 网关同时服务的连接数，来自应用或前置代理。更多连接会在操作系统的队列中等待，直到有连接关闭。默认值与 Linux 默认的监听队列 `net.core.somaxconn` 相同。 |
 
 在 `http` 回环地址上（例如 `http://localhost:8080`），会话 Cookie 不带 `Secure` 和 `__Host-` 前缀，因此控制台可以在您的电脑上通过普通 HTTP 使用。
 
 ### 浏览器应用
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_CORS_ALLOWED_ORIGINS` | `cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`；设为 `*` 时网关不会启动。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`；设为 `*` 时网关不会启动。 |
 
 没有这项设置时，Kaeso 不发送任何 CORS 响应头。[模型 API](../api/model-api.md) 介绍了浏览器应用如何调用 Kaeso。
 
 ### 数据库
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_POSTGRES_URL` | `postgres.url` | 文本，机密 | 必填 | PostgreSQL 连接 URL。 |
-| `KAESO_POSTGRES_POOL_SIZE` | `postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 最大连接数，至少为 1。后台任务另用几条连接持有锁。 |
-| `KAESO_CLICKHOUSE_URL` | `clickhouse.url` | 文本，机密 | 必填 | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。 |
-| `KAESO_CLICKHOUSE_DATABASE` | `clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
-| `KAESO_VALKEY_URL` | `valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
-| `KAESO_VALKEY_KEY_PREFIX` | `valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于相互信任的多个安装共用一个 Valkey。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_POSTGRES_URL`<br>`postgres.url` | 文本，机密 | 必填 | PostgreSQL 连接 URL。 |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 最大连接数，至少为 1。后台任务另用几条连接持有锁。 |
+| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | 文本，机密 | 必填 | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。 |
+| `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
+| `KAESO_VALKEY_URL`<br>`valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
+| `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于相互信任的多个安装共用一个 Valkey。 |
 
 ### 主密钥
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_MASTER_KEYS` | `master_keys` | 文本，机密 | 必填 | 格式为 `id:base64,…` 的主密钥，当前使用的排在最前。用 `kaeso master-key generate` 生成（[备份和主密钥](backups.md)）。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_MASTER_KEYS`<br>`master_keys` | 文本，机密 | 必填 | 格式为 `id:base64,…` 的主密钥，当前使用的排在最前。用 `kaeso master-key generate` 生成（[备份和主密钥](backups.md)）。 |
 
 ### 电子邮件
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_SMTP_HOST` | `smtp.host` | 文本 | — | SMTP 服务器。除非 `mail.transport` 为 `log`，否则必填。 |
-| `KAESO_SMTP_PORT` | `smtp.port` | 整数 | `587` | SMTP 端口。 |
-| `KAESO_SMTP_TLS` | `smtp.tls` | 文本 | `starttls` | `starttls`，隐式 TLS 用 `tls`（通常是端口 465），`none` 仅用于本地邮件捕获工具。 |
-| `KAESO_SMTP_USER` | `smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填。 |
-| `KAESO_SMTP_PASSWORD` | `smtp.password` | 文本，机密 | — | SMTP 密码。 |
-| `KAESO_SMTP_FROM` | `smtp.from` | 文本 | `Kaeso <kaeso@localhost>` | 每封邮件的发件人。`compose.yaml` 设为 `Kaeso <kaeso@` 加您的域名。 |
-| `KAESO_MAIL_TRANSPORT` | `mail.transport` | 文本 | `smtp` | `smtp`，或 `log`：只记录每封邮件的类型，从不记录收件人或内容。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_SMTP_HOST`<br>`smtp.host` | 文本 | — | SMTP 服务器。除非 `mail.transport` 为 `log`，否则必填。 |
+| `KAESO_SMTP_PORT`<br>`smtp.port` | 整数 | `587` | SMTP 端口。 |
+| `KAESO_SMTP_TLS`<br>`smtp.tls` | 文本 | `starttls` | `starttls`，隐式 TLS 用 `tls`（通常是端口 465），`none` 仅用于本地邮件捕获工具。 |
+| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填。 |
+| `KAESO_SMTP_PASSWORD`<br>`smtp.password` | 文本，机密 | — | SMTP 密码。 |
+| `KAESO_SMTP_FROM`<br>`smtp.from` | 文本 | `Kaeso <kaeso@localhost>` | 每封邮件的发件人。`compose.yaml` 设为 `Kaeso <kaeso@` 加您的域名。 |
+| `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | 文本 | `smtp` | `smtp`，或 `log`：只记录每封邮件的类型，从不记录收件人或内容。 |
 
 ### 登录
 
 这些设置为整个实例开启或关闭密码和登录链接。控制台会显示它们，在这里关闭的方式无法在控制台中开启。单点登录没有实例设置：组织管理员连接身份提供商后，它就对该组织生效（[登录和单点登录](sign-in.md)）。
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_AUTH_PASSWORD` | `auth.password` | 布尔 | `true` | 允许用邮箱和密码登录。 |
-| `KAESO_AUTH_MAGIC_LINK` | `auth.magic_link` | 布尔 | `true` | 允许用邮件中的链接登录。 |
-| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS` | `auth.oidc_allow_private_networks` | 布尔 | `false` | 允许向私有地址和回环地址发出 OIDC 请求，用于部署在您自己网络中的身份提供商。仅在允许组织管理员借网关访问您内部网络的情况下开启。链路本地地址和云元数据地址（例如 `169.254.169.254`）始终被拒绝。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_AUTH_PASSWORD`<br>`auth.password` | 布尔 | `true` | 允许用邮箱和密码登录。 |
+| `KAESO_AUTH_MAGIC_LINK`<br>`auth.magic_link` | 布尔 | `true` | 允许用邮件中的链接登录。 |
+| `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | 布尔 | `false` | 允许向私有地址和回环地址发出 OIDC 请求，用于部署在您自己网络中的身份提供商。仅在允许组织管理员借网关访问您内部网络的情况下开启。链路本地地址和云元数据地址（例如 `169.254.169.254`）始终被拒绝。 |
 
 ### API 密钥查找失败
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS` | `key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥查找失败次数，两个 API 合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
-| `KAESO_KEY_FAILURES_WINDOW` | `key_failures.window` | 文本 | `1m` | `key_failures.per_address` 的时间窗口，1s 到 1h。被封锁的地址最多等待这么久。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥查找失败次数，两个 API 合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
+| `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | 文本 | `1m` | `key_failures.per_address` 的时间窗口，1s 到 1h。被封锁的地址最多等待这么久。 |
 
 ### models.dev
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_MODELS_DEV_SYNC` | `models_dev.sync` | 布尔 | `true` | 从 models.dev 获取模型数据。关闭后，网关使用版本内置的数据。 |
-| `KAESO_MODELS_DEV_URL` | `models_dev.url` | 文本 | `https://models.dev/api.json` | 模型数据的来源。必须使用 `https`，回环地址上的 `http` 除外。Kaeso 最多跟随 3 次重定向，每次都须在同一主机上并使用 `https`。 |
-| `KAESO_MODELS_DEV_INTERVAL` | `models_dev.interval` | 文本 | `24h` | 网关获取数据的间隔。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_MODELS_DEV_SYNC`<br>`models_dev.sync` | 布尔 | `true` | 从 models.dev 获取模型数据。关闭后，网关使用版本内置的数据。 |
+| `KAESO_MODELS_DEV_URL`<br>`models_dev.url` | 文本 | `https://models.dev/api.json` | 模型数据的来源。必须使用 `https`，回环地址上的 `http` 除外。Kaeso 最多跟随 3 次重定向，每次都须在同一主机上并使用 `https`。 |
+| `KAESO_MODELS_DEV_INTERVAL`<br>`models_dev.interval` | 文本 | `24h` | 网关获取数据的间隔。 |
 
 ### 更新
 
 前三项设置只用于初始化新实例。之后由实例管理员在**设置** › **实例** › **更新**中修改（[升级](upgrades.md)）。
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_UPDATES_CHECK` | `updates.check` | 布尔 | `true` | 每 5 分钟检查一次 Kaeso 新版本。 |
-| `KAESO_UPDATES_CHANNEL` | `updates.channel` | 文本 | `stable` | 提供哪些版本：`stable`，或 `prerelease` 同时提供预发布版本。 |
-| `KAESO_UPDATES_MODE` | `updates.mode` | 文本 | `manual` | 新实例通过更新器获取更新的方式：`manual`，由实例管理员逐次启动；或 `automatic`，在更新窗口内自动安装。 |
-| `KAESO_UPDATES_RELEASES_URL` | `updates.releases_url` | 文本 | `https://update.kaeso.app/v1/releases.json` | 版本列表的来源：update.kaeso.app，或以 GitHub Releases API 格式响应的镜像。 |
-| `KAESO_UPDATER_URL` | `updater.url` | 文本 | `http://updater:8081` | 更新器的地址。 |
-| `KAESO_UPDATER_TOKEN` | `updater.token` | 文本，机密 | — | 网关和更新器共享的令牌，至少 32 个字符。没有它，网关从不调用更新器。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_UPDATES_CHECK`<br>`updates.check` | 布尔 | `true` | 每 5 分钟检查一次 Kaeso 新版本。 |
+| `KAESO_UPDATES_CHANNEL`<br>`updates.channel` | 文本 | `stable` | 提供哪些版本：`stable`，或 `prerelease` 同时提供预发布版本。 |
+| `KAESO_UPDATES_MODE`<br>`updates.mode` | 文本 | `manual` | 新实例通过更新器获取更新的方式：`manual`，由实例管理员逐次启动；或 `automatic`，在更新窗口内自动安装。 |
+| `KAESO_UPDATES_RELEASES_URL`<br>`updates.releases_url` | 文本 | `https://update.kaeso.app/v1/releases.json` | 版本列表的来源：update.kaeso.app，或以 GitHub Releases API 格式响应的镜像。 |
+| `KAESO_UPDATER_URL`<br>`updater.url` | 文本 | `http://updater:8081` | 更新器的地址。 |
+| `KAESO_UPDATER_TOKEN`<br>`updater.token` | 文本，机密 | — | 网关和更新器共享的令牌，至少 32 个字符。没有它，网关从不调用更新器。 |
 
 ### 服务商调用
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_PROVIDERS_OPENAI_BASE_URL` | `providers.openai.base_url` | 文本 | `https://api.openai.com` | OpenAI API 的基础 URL。 |
-| `KAESO_PROVIDERS_ANTHROPIC_BASE_URL` | `providers.anthropic.base_url` | 文本 | `https://api.anthropic.com` | Anthropic API 的基础 URL。 |
-| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL` | `providers.deepseek.base_url` | 文本 | `https://api.deepseek.com` | DeepSeek API 的基础 URL。 |
-| `KAESO_PROVIDERS_XAI_BASE_URL` | `providers.xai.base_url` | 文本 | `https://api.x.ai` | SpaceX API 的基础 URL。 |
-| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL` | `providers.togetherai.base_url` | 文本 | `https://api.together.ai` | Together AI API 的基础 URL。 |
-| `KAESO_PROVIDERS_GROQ_BASE_URL` | `providers.groq.base_url` | 文本 | `https://api.groq.com/openai` | Groq API 的基础 URL。 |
-| `KAESO_PROVIDERS_OPENROUTER_BASE_URL` | `providers.openrouter.base_url` | 文本 | `https://openrouter.ai/api` | OpenRouter API 的基础 URL。 |
-| `KAESO_PROVIDERS_MISTRAL_BASE_URL` | `providers.mistral.base_url` | 文本 | `https://api.mistral.ai` | Mistral API 的基础 URL。 |
-| `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
-| `KAESO_UPSTREAM_REQUEST_TIMEOUT` | `upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
-| `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT` | `upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |
-| `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` | `upstream.stream_idle_timeout` | 文本 | `300s` | 流式：两个数据块之间的最长静默时间；最多 24h。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_PROVIDERS_OPENAI_BASE_URL`<br>`providers.openai.base_url` | 文本 | `https://api.openai.com` | OpenAI API 的基础 URL。 |
+| `KAESO_PROVIDERS_ANTHROPIC_BASE_URL`<br>`providers.anthropic.base_url` | 文本 | `https://api.anthropic.com` | Anthropic API 的基础 URL。 |
+| `KAESO_PROVIDERS_DEEPSEEK_BASE_URL`<br>`providers.deepseek.base_url` | 文本 | `https://api.deepseek.com` | DeepSeek API 的基础 URL。 |
+| `KAESO_PROVIDERS_XAI_BASE_URL`<br>`providers.xai.base_url` | 文本 | `https://api.x.ai` | SpaceX API 的基础 URL。 |
+| `KAESO_PROVIDERS_TOGETHERAI_BASE_URL`<br>`providers.togetherai.base_url` | 文本 | `https://api.together.ai` | Together AI API 的基础 URL。 |
+| `KAESO_PROVIDERS_GROQ_BASE_URL`<br>`providers.groq.base_url` | 文本 | `https://api.groq.com/openai` | Groq API 的基础 URL。 |
+| `KAESO_PROVIDERS_OPENROUTER_BASE_URL`<br>`providers.openrouter.base_url` | 文本 | `https://openrouter.ai/api` | OpenRouter API 的基础 URL。 |
+| `KAESO_PROVIDERS_MISTRAL_BASE_URL`<br>`providers.mistral.base_url` | 文本 | `https://api.mistral.ai` | Mistral API 的基础 URL。 |
+| `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
+| `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
+| `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |
+| `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`<br>`upstream.stream_idle_timeout` | 文本 | `300s` | 流式：两个数据块之间的最长静默时间；最多 24h。 |
 
 项目目录中的模型可以设置自己的超时（[模型和别名](../console/models-and-aliases.md)）。
 
@@ -189,10 +189,10 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ### 自定义服务商
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | 允许组织管理员添加自己的服务商，例如自托管的 vLLM 或内部代理（[自定义服务商](../console/custom-providers.md)）。设为 `false` 时，拒绝发往已添加服务商的请求，但保留这些服务商。 |
-| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | 自定义服务商可以访问的私有、环回或其他非公网网络，以逗号分隔，例如 `10.0.0.0/8` 或 `127.0.0.1/32`。明文 `http` 只能访问这些网络。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_CUSTOM_PROVIDERS_ENABLED`<br>`custom_providers.enabled` | bool | `true` | 允许组织管理员添加自己的服务商，例如自托管的 vLLM 或内部代理（[自定义服务商](../console/custom-providers.md)）。设为 `false` 时，拒绝发往已添加服务商的请求，但保留这些服务商。 |
+| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS`<br>`custom_providers.allowed_networks` | text | — | 自定义服务商可以访问的私有、环回或其他非公网网络，以逗号分隔，例如 `10.0.0.0/8` 或 `127.0.0.1/32`。明文 `http` 只能访问这些网络。 |
 
 自定义服务商的基础 URL 由组织管理员选择，因此网关会把关它连接的目标。每次连接时，网关都会解析主机名并检查每个地址。它会拒绝私有、环回、链路本地和云元数据地址，除非 `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` 列出了它们所在的网络。主机名之后解析到其他地址时，会在下一次连接时重新检查。链路本地和云元数据地址（例如 `169.254.169.254`）即使被列出的网络覆盖，也始终会被拒绝。
 
@@ -200,61 +200,61 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ### 发往应用的流
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_STREAMS_KEEPALIVE_INTERVAL` | `streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
-| `KAESO_STREAMS_MAX_DURATION` | `streams.max_duration` | 文本 | `0s` | 流式回复最长可运行的时间，超时后网关以错误事件结束它。`0s` 表示不限制。 |
-| `KAESO_STREAMS_MAX_BYTES` | `streams.max_bytes` | 文本 | `0` | 流式回复最多可写给应用的字节数，例如 `64MiB`，超出后网关以错误事件结束它。`0` 表示不限制。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_STREAMS_KEEPALIVE_INTERVAL`<br>`streams.keepalive_interval` | 文本 | `15s` | 流在这段时间内没有输出时，写入一条保活消息，让代理保持连接（[长时间的流](domains-and-tls.md#长时间的流)）。`0s` 关闭保活；否则为 1s 到 300s。 |
+| `KAESO_STREAMS_MAX_DURATION`<br>`streams.max_duration` | 文本 | `0s` | 流式回复最长可运行的时间，超时后网关以错误事件结束它。`0s` 表示不限制。 |
+| `KAESO_STREAMS_MAX_BYTES`<br>`streams.max_bytes` | 文本 | `0` | 流式回复最多可写给应用的字节数，例如 `64MiB`，超出后网关以错误事件结束它。`0` 表示不限制。 |
 
 ### 推理连续性
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_CONTINUITY_REASONING_TTL` | `continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_CONTINUITY_REASONING_TTL`<br>`continuity.reasoning_ttl` | 文本 | `1h` | 当 OpenAI Chat Completions 应用调用的模型使用另一种格式时，网关保留该模型在工具调用前的推理内容的时间。`0s` 关闭此功能；否则为 1m 到 24h。 |
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 
 ### 请求体与响应体
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_BODY_LIMITS_MODEL_API` | `body_limits.model_api` | 文本 | `8MiB` | 模型 API 请求体的上限。它能容纳一张达到 Anthropic 5 MB 上限、以 base64 编码的图片；处理大型 PDF 时请调高。 |
-| `KAESO_BODY_LIMITS_IN_FLIGHT` | `body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据收到的每个请求体及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求及其消息、内容块、工具和 Token ID，在仍可能请服务商统计其输入 Token 期间再保留一份副本，在服务商响应之前发送给它的请求体，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`。 |
-| `KAESO_BODY_LIMITS_PLATFORM_API` | `body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限，包括 Playground 请求。 |
-| `KAESO_BODY_LIMITS_PROVIDER_RESPONSE` | `body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_BODY_LIMITS_MODEL_API`<br>`body_limits.model_api` | 文本 | `8MiB` | 模型 API 请求体的上限。它能容纳一张达到 Anthropic 5 MB 上限、以 base64 编码的图片；处理大型 PDF 时请调高。 |
+| `KAESO_BODY_LIMITS_IN_FLIGHT`<br>`body_limits.in_flight` | 文本 | `512MiB` | 模型 API 和 Playground 同时翻译请求时可使用的内存，根据收到的每个请求体及其消息、内容块和工具估算。请求在解码和编码期间占用其估算值，之后直到结束只保留仍在使用的部分：解码后的请求及其消息、内容块、工具和 Token ID，在仍可能请服务商统计其输入 Token 期间再保留一份副本，在服务商响应之前发送给它的请求体，以及在记录内容时的原始请求体。一个密钥最多占用四分之一，更大的请求占用这四分之一。10 秒内仍无空间的请求会得到 503 和 `Retry-After: 10`。 |
+| `KAESO_BODY_LIMITS_PLATFORM_API`<br>`body_limits.platform_api` | 文本 | `1MiB` | Platform API 请求体的上限，包括 Playground 请求。 |
+| `KAESO_BODY_LIMITS_PROVIDER_RESPONSE`<br>`body_limits.provider_response` | 文本 | `128MiB` | 网关从服务商读取的非流式响应体的上限。超出时请求以 502 失败。 |
 
 ### 请求日志
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_LOGS_BUFFER_SIZE` | `logs.buffer_size` | 文本 | `256MiB` | 等待写入 ClickHouse 的请求日志行所占内存。超出时丢弃最旧的行。 |
-| `KAESO_LOGS_FLUSH_INTERVAL` | `logs.flush_interval` | 文本 | `1s` | 网关把等待中的行写入 ClickHouse 的间隔。 |
-| `KAESO_LOGS_FLUSH_ROWS` | `logs.flush_rows` | 整数 | `5000` | 等待的行数达到此值时立即写入，至少为 1。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_LOGS_BUFFER_SIZE`<br>`logs.buffer_size` | 文本 | `256MiB` | 等待写入 ClickHouse 的请求日志行所占内存。超出时丢弃最旧的行。 |
+| `KAESO_LOGS_FLUSH_INTERVAL`<br>`logs.flush_interval` | 文本 | `1s` | 网关把等待中的行写入 ClickHouse 的间隔。 |
+| `KAESO_LOGS_FLUSH_ROWS`<br>`logs.flush_rows` | 整数 | `5000` | 等待的行数达到此值时立即写入，至少为 1。 |
 
 ### 实例默认值
 
 这些设置只用于初始化新实例。之后由实例管理员在**设置** › **实例** › **设置**中或通过 Platform API 修改，保存的值优先。
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_INSTANCE_ORG_CREATION` | `instance.org_creation` | 文本 | `instance_admins` | 谁可以创建组织：`instance_admins` 或 `everyone`。 |
-| `KAESO_INSTANCE_ACCOUNT_CREATION` | `instance.account_creation` | 文本 | `invitation_only` | 谁可以不经邀请创建账户：`invitation_only` 或 `everyone`。 |
-| `KAESO_INSTANCE_METADATA_RETENTION_DAYS` | `instance.metadata_retention_days` | 整数 | `90` | 新组织保留请求日志元数据的天数，至少为 1，且不超过下面的上限。 |
-| `KAESO_INSTANCE_CONTENT_RETENTION_DAYS` | `instance.content_retention_days` | 整数 | `30` | 新组织保留请求日志内容的天数，至少为 1，且不长于元数据。 |
-| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS` | `instance.max_metadata_retention_days` | 整数 | `3650` | 组织可选择的最长元数据保留期，最多 36500 天。 |
-| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS` | `instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期，最多 36500 天。 |
-| `KAESO_INSTANCE_ORG_DELETION` | `instance.org_deletion` | 布尔 | `true` | 是否可以删除组织。 |
-| `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS` | `instance.org_deletion_grace_days` | 整数 | `7` | 已删除的组织在被永久移除前保持可恢复和只读的天数，1 到 90。 |
-| `KAESO_INSTANCE_TIMEZONE` | `instance.timezone` | 文本 | `UTC` | 新安装的 IANA 时区，例如 `Europe/Berlin`：控制台以该时区显示所有时间，自动更新也遵循该时区。设置页面会将其设为第一位用户的时区；实例管理员之后可在实例设置中更改。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_INSTANCE_ORG_CREATION`<br>`instance.org_creation` | 文本 | `instance_admins` | 谁可以创建组织：`instance_admins` 或 `everyone`。 |
+| `KAESO_INSTANCE_ACCOUNT_CREATION`<br>`instance.account_creation` | 文本 | `invitation_only` | 谁可以不经邀请创建账户：`invitation_only` 或 `everyone`。 |
+| `KAESO_INSTANCE_METADATA_RETENTION_DAYS`<br>`instance.metadata_retention_days` | 整数 | `90` | 新组织保留请求日志元数据的天数，至少为 1，且不超过下面的上限。 |
+| `KAESO_INSTANCE_CONTENT_RETENTION_DAYS`<br>`instance.content_retention_days` | 整数 | `30` | 新组织保留请求日志内容的天数，至少为 1，且不长于元数据。 |
+| `KAESO_INSTANCE_MAX_METADATA_RETENTION_DAYS`<br>`instance.max_metadata_retention_days` | 整数 | `3650` | 组织可选择的最长元数据保留期，最多 36500 天。 |
+| `KAESO_INSTANCE_MAX_CONTENT_RETENTION_DAYS`<br>`instance.max_content_retention_days` | 整数 | `3650` | 组织可选择的最长内容保留期，最多 36500 天。 |
+| `KAESO_INSTANCE_ORG_DELETION`<br>`instance.org_deletion` | 布尔 | `true` | 是否可以删除组织。 |
+| `KAESO_INSTANCE_ORG_DELETION_GRACE_DAYS`<br>`instance.org_deletion_grace_days` | 整数 | `7` | 已删除的组织在被永久移除前保持可恢复和只读的天数，1 到 90。 |
+| `KAESO_INSTANCE_TIMEZONE`<br>`instance.timezone` | 文本 | `UTC` | 新安装的 IANA 时区，例如 `Europe/Berlin`：控制台以该时区显示所有时间，自动更新也遵循该时区。设置页面会将其设为第一位用户的时区；实例管理员之后可在实例设置中更改。 |
 
 在控制台中，实例管理员还可以只允许特定邮箱域名的用户创建账户和组织。
 
 ### 日志
 
-| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
-| --- | --- | --- | --- | --- |
-| `KAESO_LOG_LEVEL` | `log.level` | 文本 | `info,sqlx=warn` | 日志级别或过滤器，例如 `info` 或 `info,kaeso_server=debug`。 |
-| `KAESO_LOG_FORMAT` | `log.format` | 文本 | `json` | `json` 输出结构化日志，`text` 用于开发。 |
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_LOG_LEVEL`<br>`log.level` | 文本 | `info,sqlx=warn` | 日志级别或过滤器，例如 `info` 或 `info,kaeso_server=debug`。 |
+| `KAESO_LOG_FORMAT`<br>`log.format` | 文本 | `json` | `json` 输出结构化日志，`text` 用于开发。 |
 
 ## 服务商设置
 
