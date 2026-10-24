@@ -20511,6 +20511,15 @@
                   "type": "string",
                   "description": "The provider model called."
                 },
+                "overhead_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Kaeso's own time before it called the provider, in milliseconds:\nreading the body, the key, decoding, the catalogue, the provider\ncredential, limits and encoding; `null` when the request ended\nbefore reaching the provider.",
+                  "minimum": 0
+                },
                 "principal_id": {
                   "type": "string",
                   "description": "The user or service account."
@@ -21729,6 +21738,15 @@
           "model": {
             "type": "string",
             "description": "The provider model called."
+          },
+          "overhead_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Kaeso's own time before it called the provider, in milliseconds:\nreading the body, the key, decoding, the catalogue, the provider\ncredential, limits and encoding; `null` when the request ended\nbefore reaching the provider.",
+            "minimum": 0
           },
           "principal_id": {
             "type": "string",
@@ -25206,6 +25224,15 @@
             "type": "integer",
             "format": "int32",
             "description": "Keepalives the gateway wrote because the app had seen nothing for the\nkeepalive interval.",
+            "minimum": 0
+          },
+          "processing_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Kaeso's time decoding the provider's events and encoding them for the\napp, in milliseconds, without the waits for the provider or the app;\n`null` when it wasn't recorded.",
             "minimum": 0
           }
         }

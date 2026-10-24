@@ -968,9 +968,18 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let csv =
         String::from_utf8(csv.into_body().collect().await.unwrap().to_bytes().to_vec()).unwrap();
     let mut lines = csv.lines();
-    assert!(lines.next().unwrap().ends_with(",usage_estimated,source"));
+    assert!(
+        lines
+            .next()
+            .unwrap()
+            .ends_with(",usage_estimated,source,overhead_ms,stream_processing_ms")
+    );
     let row = lines.next().unwrap();
-    assert!(row.ends_with(",\"playground\""), "{row}");
+    let (_, timing) = row.split_once(",\"playground\",").unwrap();
+    assert!(
+        timing.split(',').all(|ms| ms.parse::<u32>().is_ok()),
+        "the overhead and the stream's processing time: {row}"
+    );
     assert!(lines.next().is_none());
 
     let rows: Vec<(Option<Uuid>, Option<Uuid>, i64, i64)> = sqlx::query_as(

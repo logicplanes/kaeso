@@ -257,6 +257,10 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         metrics::histogram!(crate::metrics::TIME_TO_FIRST_BYTE, "provider" => provider)
             .record(t.as_secs_f64());
     }
+    if let Some(t) = outcome.overhead {
+        metrics::histogram!(crate::metrics::GATEWAY_OVERHEAD, "provider" => provider)
+            .record(t.as_secs_f64());
+    }
     let request_id = outcome.request_id.to_string();
     let at = outcome.started_at;
     let charge = Charge {

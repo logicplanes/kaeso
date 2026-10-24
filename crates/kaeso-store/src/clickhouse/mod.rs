@@ -25,6 +25,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "usage_rollups",
         sql: include_str!("../../migrations/clickhouse/0002_usage_rollups.sql"),
     },
+    Migration {
+        version: 3,
+        name: "gateway_overhead",
+        sql: include_str!("../../migrations/clickhouse/0003_gateway_overhead.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -177,7 +182,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 4);
+        assert_eq!(all.len(), 6);
         assert!(
             all.iter()
                 .all(|s| s.starts_with("CREATE ") || s.starts_with("ALTER TABLE "))

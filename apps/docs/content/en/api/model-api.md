@@ -181,6 +181,7 @@ Chat Completions has no field for a model's reasoning. When a Chat Completions a
 | `kaeso-request-id` | The request's id, `req_…`, on every answer. The request log shows the same id |
 | `kaeso-provider` | The provider that served the request, such as `anthropic`, once the model is known, errors included |
 | `kaeso-model` | The provider's model id, once the model is known, errors included |
+| `server-timing` | `kaeso;dur=…`, Kaeso's own time in milliseconds before it called the provider, or until it answered when the request didn't reach one. Then `upstream;dur=…`, the provider's time to its first byte, once known. A stream sends it with its headers, so the time Kaeso spends translating the stream is only in the [request log](../console/request-logs.md#read-a-request) |
 
 ## Calling from a browser
 

@@ -202,6 +202,18 @@ impl ToApp {
     }
 }
 
+#[derive(Default)]
+struct Processing(Duration);
+
+impl Processing {
+    fn time<T>(&mut self, work: impl FnOnce() -> T) -> T {
+        let started = std::time::Instant::now();
+        let done = work();
+        self.0 += started.elapsed();
+        done
+    }
+}
+
 fn encode(
     encoder: &mut dyn StreamEncoder,
     event: &StreamEvent,
@@ -349,6 +361,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     let mut gone = false;
     let mut broken: Option<Broken> = None;
     let mut last_event_at: Option<u64> = None;
+    let mut processing = Processing::default();
     let mut last_write = Instant::now();
     {
         let watch = app.tx.clone();
@@ -404,7 +417,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
             };
             let (events, last) = match next {
                 Some(Ok(bytes)) => {
-                    let mut events = decoder.feed(&bytes);
+                    let mut events = processing.time(|| decoder.feed(&bytes));
                     app.progress.count(&events);
                     let mut failed = false;
                     for e in &mut events {
@@ -433,7 +446,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     (vec![StreamEvent::Error(err)], true)
                 }
                 None => {
-                    let mut events = decoder.finish();
+                    let mut events = processing.time(|| decoder.finish());
                     app.progress.count(&events);
                     for e in &mut events {
                         if let StreamEvent::Error(err) = e {
@@ -453,7 +466,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                 if let Some(c) = carry.as_mut() {
                     c.observe(event);
                 }
-                let bytes = match encode(encoder.as_mut(), event, &mut broken) {
+                let bytes = match processing.time(|| encode(encoder.as_mut(), event, &mut broken)) {
                     Ok(bytes) => {
                         ends |= matches!(event, StreamEvent::ResponseStop(_));
                         bytes
@@ -507,11 +520,13 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
     if !gone && broken.is_none() && !assembled.complete {
         let err = KppError::provider("The provider's stream ended before the reply was complete.")
             .with_status(502);
-        let bytes = match encode(
-            encoder.as_mut(),
-            &StreamEvent::Error(err.clone()),
-            &mut broken,
-        ) {
+        let bytes = match processing.time(|| {
+            encode(
+                encoder.as_mut(),
+                &StreamEvent::Error(err.clone()),
+                &mut broken,
+            )
+        }) {
             Ok(bytes) | Err(bytes) => bytes,
         };
         broken.get_or_insert_with(|| Broken::ended(err));
@@ -540,6 +555,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         }
         o.reply = assembled.response;
         o.stream_progress = Some(app.progress);
+        o.stream_processing = Some(processing.0);
     }
     let reported = rec.outcome().usage.clone().unwrap_or_default();
     let count = estimate && reported.total_input_tokens() == 0;

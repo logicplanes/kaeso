@@ -117,7 +117,7 @@ KPP 把回复解码为规范格式，再编码为应用的格式，流式回复�
 
 流的最后一个事件（例如 `response.completed`、`message_stop` 或 `data: [DONE]`）到达应用后，该流即已完成。此后任何情况都不会再让它失败：与服务商的连接中断、服务商静默、流达到上限或网关关闭，都只会结束该流，不会发送错误事件。
 
-用量会把这样的流计为错误。请求日志在 `stream_progress` 中显示它进行到了哪一步：服务商的事件、写入应用的字节数和保活消息，以及到第一批字节的耗时。指标 `kaeso_requests_total` 仍按已发出的状态码把它计为 200（[健康状态和指标](../self-hosting/monitoring.md)）。
+用量会把这样的流计为错误。请求日志在 `stream_progress` 中显示它进行到了哪一步：服务商的事件、写入应用的字节数和保活消息、到第一批字节的耗时，以及 Kaeso 转换这些事件所花的时间。指标 `kaeso_requests_total` 仍按已发出的状态码把它计为 200（[健康状态和指标](../self-hosting/monitoring.md)）。
 
 如果应用在 `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` 这么长的时间内没有读取其流的任何内容，就视为已断开：Kaeso 会停止对服务商的请求，并将其记录为连接断开。
 

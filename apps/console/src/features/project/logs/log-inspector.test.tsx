@@ -53,8 +53,9 @@ describe("LogInspector", () => {
           error_kind: "stream_interrupted",
           error_message: "The provider closed the stream.",
           stream: true,
-          stream_progress: { events: 12, bytes: 2048, first_byte_ms: null, keepalives: 3 },
+          stream_progress: { events: 12, bytes: 2048, first_byte_ms: null, keepalives: 3, processing_ms: 0 },
           ttfb_ms: null,
+          overhead_ms: 14,
           key_id: null,
           has_content: false,
           upstream_request_id: "",
@@ -77,7 +78,10 @@ describe("LogInspector", () => {
     expect(outcome).toHaveTextContent("Message from AnthropicThe provider closed the stream.");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("None arrived");
     expect(dialog).toHaveTextContent("120 in · 30 out · 10 reasoning");
-    noSection(dialog, "Timing");
+    const timing = section(dialog, "Timing");
+    expect(within(timing).queryByRole("img")).not.toBeInTheDocument();
+    expect(timing).toHaveTextContent("Kaeso overhead14 ms");
+    expect(timing).toHaveTextContent("Stream processingUnder 1 ms");
     const route = section(dialog, "Route");
     expect(route).toHaveTextContent("OpenAI Chat Completions → Anthropic Messages");
     expect(route).toHaveTextContent("Model, requested as fast");
@@ -117,7 +121,10 @@ describe("LogInspector", () => {
 
     const dialog = await sheet();
     expect(dialog).toHaveTextContent("/v1/chat/completions · req_0001");
-    expect(section(dialog, "Timing")).toBeInTheDocument();
+    const timing = section(dialog, "Timing");
+    expect(within(timing).getByRole("img")).toHaveAccessibleName("Time to first byte 420 ms of 1.3 s total");
+    expect(timing).toHaveTextContent("Kaeso overhead3 ms");
+    expect(timing).not.toHaveTextContent("Stream processing");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("From the provider");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("None counted");
     noSection(dialog, "Outcome");
@@ -151,6 +158,8 @@ describe("LogInspector", () => {
           user_agent: "",
           stream: true,
           stream_progress: { events: 1, bytes: 300, first_byte_ms: 320, keepalives: 0 },
+          ttfb_ms: null,
+          overhead_ms: null,
         }),
       ],
     });
@@ -165,6 +174,7 @@ describe("LogInspector", () => {
     expect(within(sentBy).queryAllByRole("button")).toHaveLength(0);
     expect(within(route).queryAllByRole("button")).toHaveLength(0);
     expect(section(dialog, "Stream")).toHaveTextContent("320 ms");
+    noSection(dialog, "Timing");
   });
 
   it("says when a request is gone and goes back to the list", async () => {
