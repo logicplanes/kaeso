@@ -135,7 +135,13 @@ import { tRich } from "~/i18n/rich";
 <Button>{t("keys.create", "Create key")}</Button>;
 toast.success(t("keys.revoked", "{name} revoked", { name: key.name }));
 t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
-tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
+tRich("signIn.newHere", "New here? {link}", {
+  link: (
+    <Link href="/sign-up">
+      {t("signIn.createAccount", "Create an account")}
+    </Link>
+  ),
+});
 ```
 
 - **`t(key, english, values?)`** gibt einen String zurück. Rufen Sie sie beim Rendern auf oder dann, wenn der Text gebraucht wird (ein Toast, ein Titel), nie auf Modulebene. Eine beim Import berechnete Konstante bleibt in der Sprache, in der die Seite gestartet ist. Tabellen von Beschriftungen werden zu Funktionen (`() => t(…)`) oder innerhalb der Komponente gebaut.
@@ -166,7 +172,14 @@ import { useUiText } from "../../i18n/context";
 export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
   const t = useUiText();
   const label = labelProp ?? t("copyButton.copy", "Copy");
-  return <Button shape="circle" icon={icons.copy} aria-label={label} onClick={() => copy(value)} />;
+  return (
+    <Button
+      shape="circle"
+      icon={icons.copy}
+      aria-label={label}
+      onClick={() => copy(value)}
+    />
+  );
 }
 ```
 
@@ -183,7 +196,12 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 ### In einer App
 
 ```tsx
-import { LocaleProvider, loadUiMessages, resolveUiLocale, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
+import {
+  LocaleProvider,
+  loadUiMessages,
+  resolveUiLocale,
+  type UiMessages,
+} from "@logicplanes/kaeso-ui/i18n";
 
 const locale = resolveUiLocale(navigator.language);
 const messages: UiMessages = await loadUiMessages(locale);

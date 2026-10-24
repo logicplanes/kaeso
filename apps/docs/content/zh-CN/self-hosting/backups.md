@@ -20,7 +20,8 @@ Valkey 只保存计数器、缓存和短期数据，无需备份。网关会从 
 在 Kaeso 运行时转储数据库：
 
 ```bash
-docker compose exec -T postgres pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
+docker compose exec -T postgres \
+  pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
 ```
 
 ## 恢复 PostgreSQL
@@ -29,7 +30,8 @@ docker compose exec -T postgres pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).d
 
 ```bash
 docker compose stop gateway
-docker compose exec -T postgres pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
+docker compose exec -T postgres \
+  pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
 docker compose start gateway
 ```
 

@@ -21,7 +21,8 @@ Each release publishes a `compose.yaml` that pins its images by version and dige
 
 ```bash
 mkdir -m 700 kaeso && cd kaeso
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/latest/download/compose.yaml
 ```
 
 ## Write the settings
@@ -61,7 +62,8 @@ echo KAESO_MAIL_TRANSPORT=log >> .env
 The master key encrypts the provider keys that Kaeso stores. Generate one into `master-keys`, which Compose hands to the gateway as a Docker secret:
 
 ```bash
-docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} master-key generate > master-keys
+docker run --rm ghcr.io/logicplanes/kaeso-gateway:{{version}} \
+  master-key generate > master-keys
 sudo chown 65532:65532 master-keys && sudo chmod 0400 master-keys
 ```
 
@@ -139,18 +141,30 @@ curl https://kaeso.example.com/v1/responses \
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
-response = client.responses.create(model="claude-haiku-4-5", input="Write a haiku about gateways.")
+response = client.responses.create(
+    model="claude-haiku-4-5",
+    input="Write a haiku about gateways.",
+)
 print(response.output_text)
 ```
 
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
-const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
+const response = await client.responses.create({
+  model: "claude-haiku-4-5",
+  input: "Write a haiku about gateways.",
+});
 console.log(response.output_text);
 ```
 

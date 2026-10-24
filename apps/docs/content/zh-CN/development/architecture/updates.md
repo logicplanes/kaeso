@@ -69,12 +69,24 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
   "manual_since": "1.3.0",
   "updater_protocol": 1,
   "images": {
-    "gateway": { "name": "ghcr.io/logicplanes/kaeso-gateway", "digest": "sha256:…" },
-    "console": { "name": "ghcr.io/logicplanes/kaeso-console", "digest": "sha256:…" },
-    "updater": { "name": "ghcr.io/logicplanes/kaeso-updater", "digest": "sha256:…" }
+    "gateway": {
+      "name": "ghcr.io/logicplanes/kaeso-gateway",
+      "digest": "sha256:…"
+    },
+    "console": {
+      "name": "ghcr.io/logicplanes/kaeso-console",
+      "digest": "sha256:…"
+    },
+    "updater": {
+      "name": "ghcr.io/logicplanes/kaeso-updater",
+      "digest": "sha256:…"
+    }
   },
   "compose": { "name": "compose.yaml", "sha256": "…" },
-  "migrations": { "postgres": "20261017140001_updates", "clickhouse": "0002_usage_rollups" }
+  "migrations": {
+    "postgres": "20261017140001_updates",
+    "clickhouse": "0002_usage_rollups"
+  }
 }
 ```
 

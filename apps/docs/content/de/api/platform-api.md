@@ -27,7 +27,8 @@ with urllib.request.urlopen(request) as response:
 ```
 
 ```ts tab="TypeScript"
-const response = await fetch("https://kaeso.example.com/platform/v1/orgs/org_…/projects", {
+const url = "https://kaeso.example.com/platform/v1/orgs/org_…/projects";
+const response = await fetch(url, {
   headers: { Authorization: `Bearer ${process.env.KAESO_PLATFORM_KEY}` },
 });
 console.log(await response.json());
@@ -246,11 +247,16 @@ Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Mo
 Die Anfrage nimmt `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary` und `stream`, das `true` sein muss. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
 
 ```bash
-curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/playground/responses \
+project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…
+curl -N "$project/playground/responses" \
   -b "$JAR" \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways.", "stream": true}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "input": "Write a haiku about gateways.",
+    "stream": true
+  }'
 ```
 
 Eine Playground-Anfrage ist eine Modellanfrage wie jede andere, gestellt vom Mitglied ohne Schlüssel:
