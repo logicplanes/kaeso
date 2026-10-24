@@ -53,11 +53,11 @@ Kaeso 以 Messages 格式把第一个请求发给 Anthropic，以 Chat Completio
 ```mermaid
 flowchart TD
   accTitle: 一个应用，多个服务商
-  accDescr: 应用以自己的格式发送每个请求。Kaeso 把每个请求转换为模型所属服务商的格式，例如 Anthropic 用 Messages，OpenAI 用 Responses，Groq 用 Chat Completions。
-  app[您的应用，使用自己的格式] --> kaeso[Kaeso]
-  kaeso -- Messages --> anthropic[Anthropic]
-  kaeso -- Responses --> openai[OpenAI]
-  kaeso -- Chat Completions --> groq[Groq]
+  accDescr: 您的应用以 Chat Completions 格式发送每个请求。Kaeso 把每个请求转换为模型所属服务商的格式，例如 Anthropic 用 Messages，OpenAI 用 Responses，Groq 用 Chat Completions。
+  app[您的应用]:::outside -- Chat Completions --> kaeso[Kaeso]:::accent
+  kaeso -- Messages --> anthropic[Anthropic]:::outside
+  kaeso -- Responses --> openai[OpenAI]:::outside
+  kaeso -- Chat Completions --> groq[Groq]:::outside
 ```
 
 ## 使用服务商

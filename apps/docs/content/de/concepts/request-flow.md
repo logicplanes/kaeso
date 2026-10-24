@@ -7,19 +7,26 @@ order: 2
 Jede Modellanfrage durchläuft dieselben Prüfungen in derselben Reihenfolge. Wenn Sie sie kennen, wissen Sie, welchen Fehler eine Anfrage erhält und wann sie berechnet wird.
 
 ```mermaid
-flowchart TD
+sequenceDiagram
   accTitle: Ablauf einer Anfrage
-  accDescr: Das Gateway prüft den Schlüssel, liest die Anfrage, löst das Modell auf, prüft die Limits und wählt den Anbieter-Schlüssel. Dann sendet es die Anfrage an den Anbieter, übersetzt die Antwort in das Format der App und erfasst Nutzung und Anfrageprotokoll.
-  key[Schlüssel prüfen] --> request[Anfrage lesen]
-  request --> model[Modell auflösen]
-  model --> limits[Limits prüfen]
-  limits --> pkey[Anbieter-Schlüssel wählen]
-  pkey --> send[An den Anbieter senden]
-  send --> reply[Antwort übersetzen]
-  reply --> log[Nutzung und Protokoll erfassen]
+  accDescr: Die App sendet eine Anfrage an das Gateway. Das Gateway prüft den Schlüssel, liest die Anfrage, löst das Modell auf, prüft die Limits und wählt den Anbieter-Schlüssel; jede Prüfung kann die Anfrage mit den gezeigten Status ablehnen. Es sendet die übersetzte Anfrage an den Anbieter, gibt die übersetzte Antwort an die App zurück und berechnet dann die Nutzung und protokolliert die Anfrage.
+  participant App as Ihre App
+  participant Gateway
+  participant Provider as Anbieter
+  App->>Gateway: Anfrage
+  Note over Gateway: Schlüssel prüfen<br>401 oder 403
+  Note over Gateway: Anfrage lesen<br>400, 413 oder 503
+  Note over Gateway: Modell auflösen<br>400 oder 404
+  Note over Gateway: Limits prüfen<br>429 oder 503
+  Note over Gateway: Anbieter-Schlüssel wählen<br>400
+  Gateway->>Provider: Übersetzte Anfrage
+  Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
+  Provider-->>Gateway: Antwort
+  Gateway-->>App: Übersetzte Antwort
+  Note over Gateway: Nutzung berechnen und protokollieren
 ```
 
-Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie genau einmal, ohne Wiederholung. Lehnt ein Schritt eine Anfrage ab, erhält die App den Fehler in ihrem eigenen Format.
+Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie genau einmal, ohne Wiederholung. Lehnt ein Schritt eine Anfrage ab, erhält die App den Fehler in ihrem eigenen Format, mit einem Status, den das Diagramm unter diesem Schritt zeigt.
 
 ## Der Schlüssel
 
