@@ -47,12 +47,25 @@ export function Collapse() {
 }
 export function States() {
   return (
-    <StateSection title="Variants">
-      <div className="flex w-720 flex-col gap-24">
-        <Tabs />
-        <File />
-        <CodeBlock lang="bash" code="curl -s https://gateway.northwind.example/healthz" />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Variants">
+        <div className="flex w-720 flex-col gap-24">
+          <Tabs />
+          <File />
+          <CodeBlock lang="bash" code="curl -s https://gateway.northwind.example/healthz" />
+        </div>
+      </StateSection>
+      <StateSection title="Wraps on phones">
+        <div className="flex w-full max-w-720 flex-col gap-24">
+          <CodeBlock
+            lang="bash"
+            wrap="phone"
+            code={
+              'curl https://gateway.northwind.example/v1/responses \\\n  -H "Authorization: Bearer $KAESO_API_KEY" \\\n  -d \'{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways."}\''
+            }
+          />
+        </div>
+      </StateSection>
+    </>
   );
 }
