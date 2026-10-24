@@ -1,5 +1,6 @@
 ---
 title: Fixtures und Aufzeichnungen
+nav: Fixtures
 description: Die echten Payloads, gegen die die Codecs getestet werden, und wie neue bei den Anbietern aufgezeichnet werden.
 order: 9
 ---

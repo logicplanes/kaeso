@@ -1,5 +1,6 @@
 ---
 title: 跨格式的推理
+nav: 推理
 description: 编解码器如何在各 API 格式之间传递推理内容、推理设置及其签名。
 order: 3
 ---

@@ -1,5 +1,6 @@
 ---
 title: Reasoning across formats
+nav: Reasoning
 description: How the codecs carry reasoning, its settings and its signatures between the API formats.
 order: 3
 ---

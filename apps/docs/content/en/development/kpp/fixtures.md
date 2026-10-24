@@ -1,5 +1,6 @@
 ---
 title: Fixtures and recordings
+nav: Fixtures
 description: The real payloads the codecs are tested against, and how to record new ones from the providers.
 order: 9
 ---
