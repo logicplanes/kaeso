@@ -32,7 +32,9 @@ flowchart TD
 
 ## 版本源
 
-`update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版，说明超过 64 KiB 的部分被截断，整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图：一种风格、一套调色板和一个种子，由 UI 库的 `ReleaseArt` 绘制。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换；`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
+`update.kaeso.app` 是在本仓库之外运行的服务，读取 GitHub 上的版本。`v1/releases.json` 以 GitHub 版本 API 的格式列出最新的版本，并始终包含最新的稳定版。该服务把说明截断到 64 KiB，并让整个文件小于 3 MiB，因为网关最多读取 4 MiB。每个版本的 `release.json` 逐字节镜像到 `download/v<version>/` 下，因为网关只从其版本源自身的源获取清单。
+
+每个条目还带有 `art`，即 update.kaeso.app 为该版本一次性选定并永久保留的配图。它由一种风格、一套调色板和一个种子组成，由 UI 库的 `ReleaseArt` 绘制。网关把它为某个版本看到的第一个 `art` 存入 `update_releases.art`，之后从不替换。`me/whats-new` 返回它，版本没有配图时控制台根据版本号绘制一幅。
 
 ## 网关
 
@@ -40,8 +42,8 @@ flowchart TD
 
 - **列表。** 一次检查带着 `If-None-Match` 获取 `releases_url?per_page=50`，并沿着下一页链接继续，最多十页，因为版本源不按版本顺序列出版本。列表有变化时，在一个事务中替换 `update_releases`。
 - **清单。** 对每个比当前运行版本更新的版本，检查会获取并保存它的 `release.json`，或者保存无法获取的原因。每次检查最多获取十二份，同时获取四份，从最新的开始。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，使用镜像时则从 `updates.releases_url` 的源获取，而且客户端从不跟随从 HTTPS 到 HTTP 的重定向。
-- **时间。** `update_check` 任务每分钟运行一次，下一次检查在 5 分钟后，再加上一分钟内的随机时间，使各个实例不会同时请求。失败后至少隔 15 分钟，如果更新源的 `Retry-After` 或 GitHub 的 `x-ratelimit-reset` 要求更晚则更晚，但最多一小时（`MAX_WAIT`），这是 GitHub 每小时速率限制最长会要求的时间。在此之前，`update_settings.blocked_until` 会推迟该任务的检查。实例管理员通过 `instance/updates/check` 发起的检查最多只在上次检查后等待一分钟，因此更新源无法阻止它，反复点击也不会频繁请求更新源。旧版本保存的等待时间同样最多算一小时。发生 panic 的任务算作失败，并在下一轮再次运行。
-- **自动更新。** 当 `update_settings.mode` 为 `automatic` 时，同一个任务用 `kaeso_update::schedule` 计算更新窗口：即实例 IANA 时区中的那个整点，通过 `jiff` 及其内置的时区数据计算，因此夏令时会让它移动。在窗口的那一小时内，任务在 `update_settings.auto_window_at` 中占用该窗口，因此一个窗口最多启动一次更新。如果上次成功检查已超过一小时，任务会先检查新版本，然后像 `apply` 一样启动计划的目标版本，设置 `update_jobs.automatic`，且不关联用户。更改模式或窗口会把 `auto_window_at` 设为当前时间，因此更改永远不会立即启动更新。
+- **时间。** `update_check` 任务每分钟运行一次，下一次检查在 5 分钟后，再加上一分钟内的随机时间，使各个实例不会同时请求。失败后至少隔 15 分钟，如果更新源的 `Retry-After` 或 GitHub 的 `x-ratelimit-reset` 要求更晚则更晚。但间隔从不超过一小时（`MAX_WAIT`），这是 GitHub 每小时速率限制最长会要求的时间。在此之前，`update_settings.blocked_until` 会推迟该任务的检查。实例管理员通过 `instance/updates/check` 发起的检查最多只在上次检查后等待一分钟。这样更新源无法阻止它，反复点击也不会频繁请求更新源。旧版本保存的等待时间同样最多算一小时。发生 panic 的任务算作失败，并在下一轮再次运行。
+- **自动更新。** 当 `update_settings.mode` 为 `automatic` 时，同一个任务用 `kaeso_update::schedule` 计算更新窗口。窗口是实例 IANA 时区中的那个整点，通过 `jiff` 及其内置的时区数据计算，因此夏令时会让它移动。在窗口的那一小时内，任务在 `update_settings.auto_window_at` 中占用该窗口，因此一个窗口最多启动一次更新。如果上次成功检查已超过一小时，任务会检查新版本。然后它像 `apply` 一样启动计划的目标版本，设置 `update_jobs.automatic`，且不关联用户。更改模式或窗口会把 `auto_window_at` 设为当前时间，因此更改永远不会立即启动更新。
 
 `kaeso_update::policy::plan` 决定提供哪个版本：所选通道上比当前运行版本更新的最新版本。版本源标记为预发布的版本一律算作预发布，无论其版本号如何。遇到新的主版本、任何被跨过的版本清单中有 `manual: true`，或者缺少清单时，该更新需要手动操作。目标版本的 `manual_since` 也会计入，因此即使网关从未见过某个被跨过的版本，更新仍会被标记为需要手动操作。
 
@@ -54,7 +56,9 @@ flowchart TD
 
 ## 版本附带的内容
 
-Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，并为它们的构建来源生成证明。随后它写出 `release.json`（`scripts/release-manifest.mjs`），由一个只能看到这个文件的作业为它生成证明。同一步骤还写出该版本的 `compose.yaml`：即 `deploy/compose.yaml`，其中每个 Kaeso 镜像都固定到版本及其索引的摘要，例如 `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`。`release.json` 写明这个文件的哈希。只有当 `release.json` 和每个镜像都能用 `gh attestation verify` 针对 `refs/heads/prod` 上的这个工作流以及 `release.json` 指明的提交通过验证时，才会创建版本：
+Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，并为它们的构建来源生成证明。随后它写出 `release.json`（`scripts/release-manifest.mjs`），由一个只能看到这个文件的作业为它生成证明。同一步骤还写出该版本的 `compose.yaml`：即 `deploy/compose.yaml`，其中每个 Kaeso 镜像都固定到版本及其索引的摘要，例如 `ghcr.io/logicplanes/kaeso-gateway:1.4.2@sha256:…`。`release.json` 写明这个文件的哈希。
+
+只有当 `release.json` 和每个镜像都能用 `gh attestation verify` 针对 `refs/heads/prod` 上的这个工作流以及 `release.json` 指明的提交通过验证时，才会创建版本：
 
 ```json
 {
@@ -93,13 +97,33 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 4. **迁移。** 它等待每个健康检查：控制台 2 分钟，网关的迁移 10 分钟。崩溃、重启或容器停止会立即失败。
 5. **上线。** 如果 `compose.yaml` 仍是它检查过的那份，它就写入新版本号和摘要，然后给镜像打标签，删除旧容器并清除维护标志。
 
-切换之前的失败不会改变任何东西（`failed`）。切换之后的失败会重新启动旧容器并等待它们（`rolled_back` 或 `rollback_failed`）。如果新网关可能已经迁移了数据库，则不做任何恢复：新的网关和控制台保留，更新以 `needs_attention` 结束。无法删除维护标志或 `…-previous` 容器时也是如此。如果 `compose.yaml` 无法写入或在更新期间被修改，更新仍以 `succeeded` 结束，原因为 `compose_unwritable` 或 `compose_changed`。
+切换之前的失败不会改变任何东西（`failed`）。切换之后的失败会重新启动旧容器并等待它们（`rolled_back` 或 `rollback_failed`）。
+
+如果新网关可能已经迁移了数据库，则不做任何恢复：新的网关和控制台保留，更新以 `needs_attention` 结束。无法删除维护标志或 `…-previous` 容器时也是如此。如果 `compose.yaml` 无法写入或在更新期间被修改，更新仍以 `succeeded` 结束，原因为 `compose_unwritable` 或 `compose_changed`。
 
 启动时，更新器最多等待 Docker 两分钟。然后它会完成处于 `online` 的更新，完成新网关变为健康的更新，并回滚其他所有更新。
 
-更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径。`GET` 可以访问版本、容器列表、按短 ID 或完整 ID 指定的容器，以及按摘要指定的镜像。`POST` 可以访问 `images/create`、为按摘要指定的 Kaeso 镜像打标签、`containers/create`，以及按完整 ID 启动、停止和重命名容器。`DELETE` 按完整 ID 删除容器。代理还只允许来自 `KAESO_DIR`（即 `.env` 中写明的实例文件夹）的绑定挂载，并拒绝 `VolumesFrom`。未设置 `KAESO_DIR` 时代理不会启动，因为空值会允许所有绑定挂载。
+更新器只通过 `http://docker-proxy:2375/v1.44/` 访问 Docker，`compose.yaml` 中的允许列表列出了它用到的每个路径：
 
-代理只匹配路径而不匹配查询参数，因此无法把 `images/create` 限制为 Kaeso 的镜像。它也无法读取 `containers/create` 请求体的其余部分，例如特权、capabilities、设备或宿主机命名空间。查看容器会显示其环境变量，因此更新器可以读取任何容器的密码。因此更新器相当于宿主机的 root 权限，需要主动开启。`guard.rs` 会在每个请求体发出前检查它。新容器必须沿用被替换容器的名称，以及每个可能放宽容器权限的 `HostConfig` 字段。这些字段涵盖特权和 capabilities、设备、命名空间和网络，以及挂载、`ReadonlyRootfs`、`Tmpfs`、`MaskedPaths` 和 `ReadonlyPaths`。它们还涵盖发布的端口、名称解析（`ExtraHosts`、`Dns`、`Links`）、`GroupAdd` 和 `CgroupParent`、资源限制（`Memory`、`PidsLimit`、`Ulimits`）、`Init` 和 `LogConfig`。拉取必须按摘要指定 Kaeso 的镜像。这些检查用于拦截更新器自身的错误，而不是拦截控制了更新器的人。
+- `GET` 可以访问版本、容器列表、按短 ID 或完整 ID 指定的容器，以及按摘要指定的镜像。
+- `POST` 可以访问 `images/create`、为按摘要指定的 Kaeso 镜像打标签、`containers/create`，以及按完整 ID 启动、停止和重命名容器。
+- `DELETE` 按完整 ID 删除容器。
+
+代理还只允许来自 `KAESO_DIR`（即 `.env` 中写明的实例文件夹）的绑定挂载，并拒绝 `VolumesFrom`。未设置 `KAESO_DIR` 时代理不会启动，因为空值会允许所有绑定挂载。
+
+代理只匹配路径而不匹配查询参数，因此无法把 `images/create` 限制为 Kaeso 的镜像。它也无法读取 `containers/create` 请求体的其余部分，例如特权、capabilities、设备或宿主机命名空间。查看容器会显示其环境变量，因此更新器可以读取任何容器的密码。因此更新器相当于宿主机的 root 权限，需要主动开启。
+
+`guard.rs` 会在每个请求体发出前检查它。新容器必须沿用被替换容器的名称，以及每个可能放宽容器权限的 `HostConfig` 字段。这些字段涵盖：
+
+- 特权和 capabilities
+- 设备、命名空间和网络
+- 挂载、`ReadonlyRootfs`、`Tmpfs`、`MaskedPaths` 和 `ReadonlyPaths`
+- 发布的端口和名称解析（`ExtraHosts`、`Dns`、`Links`）
+- `GroupAdd` 和 `CgroupParent`
+- 资源限制（`Memory`、`PidsLimit`、`Ulimits`）
+- `Init` 和 `LogConfig`
+
+拉取必须按摘要指定 Kaeso 的镜像。这些检查用于拦截更新器自身的错误，而不是拦截控制了更新器的人。
 
 ### 更新器检查的内容
 
@@ -117,7 +141,9 @@ Release 工作流构建 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，
 
 ## 边缘
 
-Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求都会立即得到维护应答；否则，网关或控制台返回 `502`、`503` 或 `504` 时才会得到它。`/kaeso-maintenance.json` 提供该标志，例如 `{"state":"updating","step":"migrating"}`，这样页面能说出当前步骤。该页面内联在 `compose.yaml` 中，其内容安全策略按哈希只允许它自己的样式和脚本。`crates/kaeso-server/tests/edge.rs` 检查 JSON 应答与 `ApiError` 和 `kaeso_codecs::dispatch::encode_error` 生成的内容一致，并检查哈希匹配。
+Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求都会立即得到维护应答；否则，网关或控制台返回 `502`、`503` 或 `504` 时才会得到它。
+
+`/kaeso-maintenance.json` 提供该标志，例如 `{"state":"updating","step":"migrating"}`，这样页面能说出当前步骤。该页面内联在 `compose.yaml` 中，其内容安全策略按哈希只允许它自己的样式和脚本。`crates/kaeso-server/tests/edge.rs` 检查 JSON 应答与 `ApiError` 和 `kaeso_codecs::dispatch::encode_error` 生成的内容一致，并检查哈希匹配。
 
 ## 测试
 

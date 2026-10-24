@@ -1,7 +1,7 @@
 ---
 title: OpenAI Responses
 description: Wie jedes Feld des Formats OpenAI Responses auf KPP abgebildet wird und zurück.
-order: 6
+order: 7
 ---
 
 Schlagen Sie hier jedes Feld des Formats OpenAI Responses nach: wohin es in KPP gehört und woher seine Abbildung stammt. Prüfen Sie es, bevor Sie ändern, wie der Codec das Feld liest oder schreibt.
@@ -23,17 +23,23 @@ Anders als die übrigen Codecs nutzt dieser kein `wire::Ext`; der nächste Absch
 
 ## Wie genaue Schreibweisen erhalten bleiben
 
-Jedes Wire-Objekt hat eine *kanonische* Kodierung, die nur aus typisierten KPP-Feldern und den strukturellen Form-Markierungen unter [Form-Markierungen](#form-markierungen) entsteht. Anfragen und Antworten aus anderen Dialekten bekommen genau diese Kodierung. Beim Dekodieren baut der Codec die kanonische Kodierung dessen, was er dekodiert hat, und hält jeden Unterschied zum empfangenen JSON als Override in den Extras des KPP-Elements fest, zu dem das Objekt gehört:
+Jedes Wire-Objekt hat eine *kanonische* Kodierung, die nur aus typisierten KPP-Feldern und den strukturellen Form-Markierungen unter [Form-Markierungen](#form-markierungen) entsteht. Anfragen und Antworten aus anderen Dialekten bekommen genau diese Kodierung. Beim Dekodieren baut der Codec die kanonische Kodierung dessen, was er dekodiert hat, und vergleicht sie mit dem empfangenen JSON. Jeden Unterschied hält er als Override in den Extras des KPP-Elements fest, zu dem das Objekt gehört:
 
 - `fields["<path>"]`: ein Schlüssel, den die kanonische Kodierung nicht schreibt oder mit einem anderen Wert schreibt. Das sind unbekannte Schlüssel und bekannte Schlüssel, die KPP nicht modelliert (`metadata`, `text.verbosity`, `detail: "low"`, …), Byte für Byte erhalten. In den Tabellen unten heißen sie **Extras**.
-- `form["set"]["<path>"]`: dasselbe für die Darstellung. Das sind `null`-Werte, ausdrücklich ausgeschriebene Standardwerte (`store: false`, `background: false`, `stream: false`, `tools: []`, `include: []`, `metadata: {}`, `text: {}`, `detail: "auto"`, `truncation: "disabled"`, `service_tier: "auto"`, `text.format: {type: text}`, `text.verbosity: "medium"`, `stream_options: {}`, `stream_options.include_obfuscation`, leere `annotations`/`logprobs`/`summary`/`content`), die Schlüssel `type`, `id`, `item_id`, `status`, `role`, `object`, `filename`, `obfuscation`, `sequence_number` sowie Zahlen, die sich vom kanonischen Wert nur in der Schreibweise unterscheiden (`1`, wo die kanonische Kodierung `1.0` schreibt). In den Tabellen unten heißen sie **Form**.
+- `form["set"]["<path>"]`: dasselbe für die Darstellung, in den Tabellen unten **Form** genannt. Es enthält `null`-Werte und ausdrücklich ausgeschriebene Standardwerte (`store: false`, `background: false`, `stream: false`, `tools: []`, `include: []`, `metadata: {}`, `text: {}`, `detail: "auto"`, `truncation: "disabled"`, `service_tier: "auto"`, `text.format: {type: text}`, `text.verbosity: "medium"`, `stream_options: {}`, `stream_options.include_obfuscation`, leere `annotations`/`logprobs`/`summary`/`content`). Außerdem enthält es die Schlüssel `type`, `id`, `item_id`, `status`, `role`, `object`, `filename`, `obfuscation` und `sequence_number`. Auch Zahlen, die sich vom kanonischen Wert nur in der Schreibweise unterscheiden, gehören hierher (`1`, wo die kanonische Kodierung `1.0` schreibt).
 - `form["unset"]`: Pfade, die die kanonische Kodierung schreibt, die im Original aber fehlten.
 
-Beim Kodieren werden die Overrides nur angewendet, wenn die Extras aus `openai_responses` stammen. Typisierte Felder haben immer Vorrang. Werte werden genau verglichen, Zahlen eingeschlossen (`1` und `1.0` unterscheiden sich). Für einen Wert, den die kanonische Kodierung reproduziert, wird nie ein Override festgehalten, und ein Test prüft, dass kein typisierter Schlüssel je als Extras-Feld gespeichert wird. Jeder Override merkt sich außerdem, was die kanonische Kodierung beim Dekodieren an seinem Pfad hatte (`form["canon"]`). Hat sich ein typisiertes Feld nach dem Dekodieren geändert (das Gateway hat `max_output_tokens` gesetzt, einer Anfrage, die nur aus einem Prompt bestand, Nachrichten hinzugefügt, eine Reasoning-Aufwandsstufe gesetzt, …), weicht der kanonische Wert an diesem Pfad ab und der veraltete Override wird übersprungen. Eine als `1` geschriebene Zahl kommt daher als `1` zurück, solange der Wert noch 1 ist, und ein geänderter Wert wird als neuer Wert geschrieben.
+Beim Kodieren werden die Overrides nur angewendet, wenn die Extras aus `openai_responses` stammen. Typisierte Felder haben immer Vorrang. Werte werden genau verglichen, Zahlen eingeschlossen (`1` und `1.0` unterscheiden sich). Für einen Wert, den die kanonische Kodierung reproduziert, wird nie ein Override festgehalten, und ein Test prüft, dass kein typisierter Schlüssel je als Extras-Feld gespeichert wird.
+
+Jeder Override merkt sich außerdem, was die kanonische Kodierung beim Dekodieren an seinem Pfad hatte (`form["canon"]`). Hat sich ein typisiertes Feld nach dem Dekodieren geändert, weicht der kanonische Wert an diesem Pfad ab und der veraltete Override wird übersprungen. Das geschieht etwa, wenn das Gateway `max_output_tokens` setzt, einer Anfrage, die nur aus einem Prompt besteht, Nachrichten hinzufügt oder eine Reasoning-Aufwandsstufe setzt. Eine als `1` geschriebene Zahl kommt daher als `1` zurück, solange der Wert noch 1 ist, und ein geänderter Wert wird als neuer Wert geschrieben.
 
 Ein `type` betrifft nur die Darstellung, wo die kanonische Kodierung an diesem Pfad ein `type` hat (Schreibweisen von Part- und Item-Typen), und beim optionalen `type: "message"` einer Eingabenachricht. Ein Objekt, das die kanonische Kodierung nicht hat und das einen anderen `type` trägt (zum Beispiel `text.format: {type: "grammar", …}`), wird als Ganzes in einem Extras-Feld aufbewahrt, sodass ein anderer Dialekt es ablehnt.
 
-Ein Schlüsselpfad kann keinen Schlüssel aufnehmen, der leer ist, `.` enthält oder mit `header:`, `@` oder `~` beginnt, weil diese Schreibweisen zu Schlüsselpfaden, weitergegebenen Headern (`header:openai-beta`) und Overrides mit Geltungsbereich gehören. Ein Objekt mit einem solchen Schlüssel wird als Ganzes verglichen: Weicht es von der kanonischen Kodierung ab, ist das ganze Objekt ein Extras-Feld an seinem eigenen Pfad (bei einem Schlüssel auf oberster Ebene der ganze Body, am leeren Pfad). Solche Schlüssel bleiben im Body: Sie werden nie als Header gesendet, und andere Dialekte lehnen sie wie jedes Extras-Feld ab. Wie jeder Override gilt das Feld nur, solange der kanonische Wert an seinem Pfad unverändert ist: Ändert sich ein typisiertes Feld in diesem Objekt (bei einem Schlüssel auf oberster Ebene jedes typisierte Feld der Anfrage, etwa das `model`), wird das Objekt kanonisch geschrieben und diese Schlüssel fallen weg.
+Ein Schlüsselpfad kann keinen Schlüssel aufnehmen, der leer ist, `.` enthält oder mit `header:`, `@` oder `~` beginnt. Diese Schreibweisen gehören zu Schlüsselpfaden, weitergegebenen Headern (`header:openai-beta`) und Overrides mit Geltungsbereich.
+
+Ein Objekt mit einem solchen Schlüssel wird als Ganzes verglichen. Weicht es von der kanonischen Kodierung ab, ist das ganze Objekt ein Extras-Feld an seinem eigenen Pfad. Bei einem Schlüssel auf oberster Ebene ist das der ganze Body, am leeren Pfad. Solche Schlüssel bleiben im Body: Sie werden nie als Header gesendet, und andere Dialekte lehnen sie wie jedes Extras-Feld ab.
+
+Wie jeder Override gilt das Feld nur, solange der kanonische Wert an seinem Pfad unverändert ist. Ändert sich ein typisiertes Feld in diesem Objekt, wird das Objekt kanonisch geschrieben und diese Schlüssel fallen weg. Bei einem Schlüssel auf oberster Ebene ist das jedes typisierte Feld der Anfrage, etwa das `model`.
 
 ## Anfrage: `CreateResponse` / `TokenCountsBody`
 
@@ -74,9 +80,25 @@ Ein Schlüsselpfad kann keinen Schlüssel aufnehmen, der leer ist, `.` enthält 
 | `metadata`, `truncation`, `service_tier`, `top_logprobs`, `max_tool_calls`, `prompt_cache_key`, `prompt_cache_retention`, `prompt_cache_options`, `prompt`, `context_management`, `moderation`, `access_programs`, `personality` (nur Zählung), unbekannte Schlüssel | Extras | Ausgeschriebene Standardwerte und `null` sind Form ([Wie genaue Schreibweisen erhalten bleiben](#wie-genaue-schreibweisen-erhalten-bleiben)). |
 | Header `openai-beta` | Extras `header:openai-beta` | Wird nur an Responses weitergegeben. |
 
-Ein Body, der kein JSON-Objekt ist, doppelte Schlüssel hat, kein `model` enthält (bei `/v1/responses`) oder ein bekanntes Feld mit falschem Typ hat, ist `InvalidRequest` und nennt das Feld (`` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``, mit gesetztem `param`), nie eine Parser-Position.
+Ein Body ist `InvalidRequest`, wenn er:
 
-`check()` lehnt außerdem bei Anfragen aus jedem Dialekt ab: `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](cross-format.md#sampling)); unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert; Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen; und alles, was `cross::check_foreign` ablehnt (fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, fremde Datei-IDs, fremde Zitate; siehe [Anfragen](cross-format.md#anfragen)). Reasoning-Blöcke, die sich nicht zurückspielen lassen, werden verworfen ([Reasoning](reasoning.md)), ebenso Cache-Hinweise aus anderen Dialekten ([Cache-Hinweise](cross-format.md#cache-hinweise)). Auch `ToolResult::is_error` wird verworfen: Es ist ein Hinweis, und der Inhalt beschreibt den Fehler ([Tool-Fehler](cross-format.md#tool-fehler)). Eine Reasoning-Konfiguration aus einem anderen Dialekt wird als ihre Aufwandsstufe gesendet: eine ausdrückliche Aufwandsstufe unverändert, ein Budget nach der [Aufwandstabelle](reasoning.md#aufwand-und-budget), `disabled` als `none`; `adaptive` oder `enabled` ohne beides wird ohne Aufwandsstufe gesendet, sodass das Modell seine Standard-Aufwandsstufe nutzt. Embeddings-Anfragen sind `Unsupported`.
+- kein JSON-Objekt ist;
+- doppelte Schlüssel hat;
+- kein `model` enthält (bei `/v1/responses`);
+- ein bekanntes Feld mit falschem Typ hat.
+
+Der Fehler nennt das Feld, nie eine Parser-Position, und setzt `param`: `` The request body is not a valid OpenAI Responses request: `max_output_tokens` must be a non-negative integer. ``
+
+`check()` lehnt außerdem bei Anfragen aus jedem Dialekt ab:
+
+- `sampling.top_k`, `seed`, `frequency_penalty`, `presence_penalty` und Stoppsequenzen, die es in der Responses-API nicht gibt ([Sampling](cross-format.md#sampling));
+- unbekannte Reasoning-Modi, benannt nach ihrem Wire-Wert;
+- Textdokumente, `title`/`context`/`citations` von Dokumenten und Text-Bildquellen;
+- alles, was `cross::check_foreign` ablehnt (fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, fremde Datei-IDs, fremde Zitate; siehe [Anfragen](cross-format.md#anfragen)).
+
+Reasoning-Blöcke, die sich nicht zurückspielen lassen, werden verworfen ([Reasoning](reasoning.md)), ebenso Cache-Hinweise aus anderen Dialekten ([Cache-Hinweise](cross-format.md#cache-hinweise)). Auch `ToolResult::is_error` wird verworfen: Es ist ein Hinweis, und der Inhalt beschreibt den Fehler ([Tool-Fehler](cross-format.md#tool-fehler)).
+
+Eine Reasoning-Konfiguration aus einem anderen Dialekt wird als ihre Aufwandsstufe gesendet: eine ausdrückliche Aufwandsstufe unverändert, ein Budget nach der [Aufwandstabelle](reasoning.md#aufwand-und-budget), `disabled` als `none`. `adaptive` oder `enabled` ohne beides wird ohne Aufwandsstufe gesendet, sodass das Modell seine Standard-Aufwandsstufe nutzt. Embeddings-Anfragen sind `Unsupported`.
 
 ### Eingabe-Items (`InputItem`)
 
@@ -92,7 +114,9 @@ Ein Body, der kein JSON-Objekt ist, doppelte Schlüssel hat, kein `model` enthä
 | `item_reference` und jeder andere Item-Typ (Aufrufe und Ausgaben von Server-Tools, `compaction`, künftige Typen) | eine Nachricht mit einem `Block::Unknown`, Form `raw_item` | Rolle `Assistant` für Typen, die auf `_call` enden, sowie `mcp_list_tools` und `mcp_approval_request`; sonst `User`. Die Rolle zählt nur für die KPP-Validierung, weil diese Items nie an einen anderen Dialekt gehen. Nur im selben Dialekt. |
 | Items, die sich nicht als ihr Typ parsen lassen (zum Beispiel ein `function_call_output` mit `call_id: null`) | `Block::Unknown` (wie oben) | Verlustfrei; der Anbieter beurteilt sie. |
 
-Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen in die aktuelle Assistentennachricht, aufeinanderfolgende `function_call_output`-Items in die aktuelle Benutzernachricht, und ein Nachrichten-Item kommt in eine Nachricht seiner Rolle, die noch kein Nachrichten-Item enthält; System- und Developer-Items kommen nie in eine bestehende Nachricht. Beim Kodieren wird jede KPP-Nachricht wieder aufgeteilt: Jede Folge von Inhaltsblöcken wird ein Nachrichten-Item, jeder andere Block ein eigenes Item. Eine Nachricht aus einem anderen Dialekt wie Anthropics `[thinking, text, tool_use, tool_use]` wird zu einem `message`-Item und zwei `function_call`-Items. Das Thinking wird verworfen ([Reasoning](reasoning.md)), außer es ist OpenAI-Reasoning, das eine Anthropic-App in einem [Reasoning-Blob](reasoning.md#reasoning-blobs) zurückgebracht hat.
+Gruppierung: Aufeinanderfolgende `function_call`- und `reasoning`-Items kommen in die aktuelle Assistentennachricht, aufeinanderfolgende `function_call_output`-Items in die aktuelle Benutzernachricht. Ein Nachrichten-Item kommt in eine Nachricht seiner Rolle, die noch kein Nachrichten-Item enthält; System- und Developer-Items kommen nie in eine bestehende Nachricht.
+
+Beim Kodieren wird jede KPP-Nachricht wieder aufgeteilt: Jede Folge von Inhaltsblöcken wird ein Nachrichten-Item, jeder andere Block ein eigenes Item. Eine Nachricht aus einem anderen Dialekt wie Anthropics `[thinking, text, tool_use, tool_use]` wird zu einem `message`-Item und zwei `function_call`-Items. Das Thinking wird verworfen ([Reasoning](reasoning.md)), außer es ist OpenAI-Reasoning, das eine Anthropic-App in einem [Reasoning-Blob](reasoning.md#reasoning-blobs) zurückgebracht hat.
 
 `id` und `status` von Nachrichten- und Funktionsaufruf-Items (`msg_…`, `fc_…`) betreffen nur die Darstellung, sodass eine Unterhaltung mit zurückgeschickten Ausgabe-Items trotzdem an einen anderen Anbieter gehen kann. IDs von Reasoning-Items sind semantisch (opake `OpenAiReasoningItemId`), weil OpenAI sie auflöst.
 
@@ -130,8 +154,8 @@ Eine Antwort aus einem anderen Dialekt wird als vollständiges `Response`-Objekt
 
 - `object: "response"`, `created_at` (`EncodeCtx::created_at`), `background: false`, `completed_at` (derselbe Zeitpunkt, wenn abgeschlossen, sonst `null`) und `error: null`.
 - Die zurückgegebenen Anfrageparameter stammen aus der Anfrage der App (`EncodeCtx::request`, so kodiert, wie dieser Codec sie sendet), mit den Standardwerten von OpenAI, wo nichts gesetzt ist: `instructions`, `max_output_tokens`, `max_tool_calls`, `prompt_cache_key`, `safety_identifier` und `user` sind `null`, `parallel_tool_calls: true`, `reasoning: {effort, summary}` (`null`, wo nicht gesetzt), `temperature: 1.0`, `top_p: 1.0`, `top_logprobs: 0`, `text: {format: {type: text}}`, `tool_choice: "auto"`, `tools: []`, `truncation: "disabled"`, `metadata: {}`. `previous_response_id: null`, `service_tier: "default"` und `store: false` (Kaeso speichert nichts) werden immer geschrieben.
-- Stoppgründe ohne Entsprechung (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) werden als `completed` gemeldet, wobei Information verloren geht: Ein Anthropic-`pause_turn` fordert die App zum Fortsetzen auf, und eine Responses-App kann das nicht erkennen. Nachrichten-Items sind `incomplete`, wenn die Antwort es ist.
-- Reasoning eines anderen Dialekts wird zu einem Reasoning-Item ([Reasoning-Blobs](reasoning.md#reasoning-blobs)): ID `rs_kaeso_…`, sein Reasoning-Text als ein `summary_text`, gefolgt von seinen Zusammenfassungen, und ein Reasoning-Blob des ursprünglichen Blocks als `encrypted_content`. Der Blob wird gesendet, egal ob die App ihn in `include` angefordert hat, weil Kaeso nichts speichert und die Agent-Schleifen der SDKs Ausgabe-Items so zurückschicken, wie sie sie bekommen haben.
+- Stoppgründe ohne Entsprechung (`StopSequence`, `Refusal`, `PauseTurn`, `Other`) werden als `completed` gemeldet. Dabei geht Information verloren: Ein Anthropic-`pause_turn` fordert die App zum Fortsetzen auf, und eine Responses-App kann das nicht erkennen. Nachrichten-Items sind `incomplete`, wenn die Antwort es ist.
+- Reasoning eines anderen Dialekts wird zu einem Reasoning-Item mit der ID `rs_kaeso_…` ([Reasoning-Blobs](reasoning.md#reasoning-blobs)). Sein Reasoning-Text ist ein `summary_text`, gefolgt von seinen Zusammenfassungen, und `encrypted_content` ist ein Reasoning-Blob des ursprünglichen Blocks. Der Blob wird gesendet, egal ob die App ihn in `include` angefordert hat. Kaeso speichert nichts, und die Agent-Schleifen der SDKs schicken Ausgabe-Items so zurück, wie sie sie bekommen haben.
 - Antwortdaten, die dieser Dialekt nicht darstellen kann, werden weggelassen ([Antworten](cross-format.md#antworten)): fremde `Unknown`-Blöcke, fremde Zitate und Extras, Bilder, Dokumente und Tool-Ergebnisse.
 - Websuchen von Anthropic werden zu `web_search_call`-Items ([gehostete Websuche](cross-format.md#gehostete-websuche)), und Aufrufe umbenannter Namespace-Tools bekommen ihren `namespace` zurück ([Tool-Namespaces](cross-format.md#tool-namespaces)).
 - Nachrichten-, Funktionsaufruf- und Websuche-Items bekommen die IDs `msg_kaeso_…`, `fc_kaeso_…` und `ws_kaeso_…`. Anfragen erkennen diese von Kaeso erfundenen IDs und senden sie nie an einen Anbieter.
@@ -146,7 +170,9 @@ Die Anfrage ist `TokenCountsBody` und wird wie `CreateResponse` in `Request::Cou
 
 ## Streams: `ResponseStreamEvent`
 
-Es gibt einen KPP-Block pro Inhaltsteil einer Nachricht, Funktionsaufruf, Reasoning-Item und sonstigem Item. Abweichungen bei `sequence_number` und `obfuscation` sind Form. Ein `event:`-Name, der nicht dem `type` der Daten entspricht, ist der Form-Override `~event`, und die SSE-Felder `id`, `retry` und unbekannte Felder eines dekodierten Frames sind der Form-Override `~sse` (`{"id", "retry", "other": [[name, value], …]}`); beide haben den Geltungsbereich des Events und werden zurückgeschrieben. Alles andere, was von den kanonischen Events abweicht, ist ein Extras-Override, dessen Geltungsbereich das angehängte Event angibt (`@open`, `@close`, `@done`, `@in_progress`, `@sdone`, `@spdone`, `@rdone`, `@rpdone`, `@text`, `@e<index>`, `@a<index>-…`).
+Es gibt einen KPP-Block pro Inhaltsteil einer Nachricht, Funktionsaufruf, Reasoning-Item und sonstigem Item. Abweichungen bei `sequence_number` und `obfuscation` sind Form.
+
+Ein `event:`-Name, der nicht dem `type` der Daten entspricht, ist der Form-Override `~event`. Die SSE-Felder `id`, `retry` und unbekannte Felder eines dekodierten Frames sind der Form-Override `~sse` (`{"id", "retry", "other": [[name, value], …]}`). Beide haben den Geltungsbereich des Events und werden zurückgeschrieben. Alles andere, was von den kanonischen Events abweicht, ist ein Extras-Override, dessen Geltungsbereich das angehängte Event angibt (`@open`, `@close`, `@done`, `@in_progress`, `@sdone`, `@spdone`, `@rdone`, `@rpdone`, `@text`, `@e<index>`, `@a<index>-…`).
 
 | SSE-Event | KPP |
 | --- | --- |
@@ -194,9 +220,13 @@ Das Kodieren von KPP-Events aus einem anderen Dialekt erzeugt die vollständige 
 - `reasoning_summary_*`-Part-Events um Zusammenfassungen herum, und `content_part.*` und `reasoning_text.*` um Reasoning-Text herum;
 - dann `response.completed`, oder `response.incomplete` bei `MaxTokens` und `ContentFilter`, mit allen Ausgabe-Items und der Nutzung.
 
-`sequence_number` zählt ab 0. Item-IDs werden erzeugt (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…`, `ws_kaeso_…` aus der Antwort-ID und dem Ausgabeindex). `obfuscation` wird nie erzeugt. Blöcke, die bei `ResponseStop` noch offen sind, werden zuerst geschlossen. Ein Stream ohne `ResponseStart` bekommt einen, mit der ID `resp_kaeso_<created_at>` aus `EncodeCtx::created_at`. Reasoning-Blöcke anderer Dialekte werden zu Reasoning-Items mit einer `rs_kaeso_…`-ID ([Reasoning-Blobs](reasoning.md#reasoning-blobs)): Der Reasoning-Text wird als `reasoning_summary_text` der Zusammenfassung 0 gestreamt (Zusammenfassungen behalten ihren Index), und `output_item.done` trägt den Reasoning-Blob des ganzen Blocks in `encrypted_content`. Nach `ResponseStop` oder `Error` lehnt der Encoder weitere Lebenszyklus-Events ab. Fremde Fehler werden zu einem `error`-Event, mit dem `code` aus der Fehlerart (siehe [Fehler](#fehler-errorresponse)).
+`sequence_number` zählt ab 0. Item-IDs werden erzeugt (`msg_kaeso_…`, `fc_kaeso_…`, `rs_kaeso_…`, `ws_kaeso_…` aus der Antwort-ID und dem Ausgabeindex). `obfuscation` wird nie erzeugt. Ein Stream ohne `ResponseStart` bekommt einen, mit der ID `resp_kaeso_<created_at>` aus `EncodeCtx::created_at`.
 
-Was ein anderer Dialekt sendet und dieser Dialekt nicht darstellen kann (zusätzliche Events wie Anthropic-`ping`, fremde unbekannte Blöcke), löst getaktete SSE-Kommentare aus, `: keepalive` ([Keepalives](cross-format.md#keepalives)): einen pro zusätzlichem Event und einen pro 1.024 Byte verborgenem Text. `StreamEncoder::keepalive` gibt dem Gateway denselben Frame. Es gibt kein Endsignal für den Stream.
+Blöcke, die bei `ResponseStop` noch offen sind, werden zuerst geschlossen. Nach `ResponseStop` oder `Error` lehnt der Encoder weitere Lebenszyklus-Events ab. Fremde Fehler werden zu einem `error`-Event, mit dem `code` aus der Fehlerart (siehe [Fehler](#fehler-errorresponse)).
+
+Reasoning-Blöcke anderer Dialekte werden zu Reasoning-Items mit einer `rs_kaeso_…`-ID ([Reasoning-Blobs](reasoning.md#reasoning-blobs)). Der Reasoning-Text wird als `reasoning_summary_text` der Zusammenfassung 0 gestreamt, und Zusammenfassungen behalten ihren Index. `output_item.done` trägt den Reasoning-Blob des ganzen Blocks in `encrypted_content`.
+
+Was ein anderer Dialekt sendet und dieser Dialekt nicht darstellen kann, etwa zusätzliche Events wie Anthropic-`ping` oder fremde unbekannte Blöcke, löst getaktete SSE-Kommentare aus: `: keepalive` ([Keepalives](cross-format.md#keepalives)). Der Encoder schreibt einen pro zusätzlichem Event und einen pro 1.024 Byte verborgenem Text. `StreamEncoder::keepalive` gibt dem Gateway denselben Frame. Es gibt kein Endsignal für den Stream.
 
 ## Schema-Eigenschaften ohne eigene Zeile
 
@@ -254,7 +284,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 
 Die Zeilen mit `type` und `code` haben Vorrang vor dem Status. Andere Codes entscheiden hier nicht, sondern der Status: `rate_limit_exceeded`, `rate_limit_error` und `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` und die Bild-Codes (beginnend mit `invalid_image` oder `image_` oder endend auf `_image`; `InvalidRequest`). Sie entscheiden nur, wo es keinen Status gibt: in einem `error`-Event eines Streams und im `error.code` einer fehlgeschlagenen Antwort. Ein Fehlerobjekt ohne Meldung bekommt `The provider returned HTTP <status> without a message.`
 
-Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (Chat, Responses, Embeddings) stammen, zurückgespielt, solange sie unverändert sind, also solange die aus dem Body erneut dekodierte Art der Art des Fehlers entspricht und die Meldung dieselbe ist. Andere Fehler bekommen:
+Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (Chat, Responses, Embeddings) stammen, zurückgespielt, solange sie unverändert sind. Unverändert ist ein Fehler, solange die aus seinem Body erneut dekodierte Art der Art des Fehlers entspricht und die Meldung dieselbe ist. Andere Fehler bekommen:
 
 | `ErrorKind` | Status | `type` | `code` |
 | --- | --- | --- | --- |
@@ -302,7 +332,7 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 
 `openai_responses::for_chatgpt_plan` schreibt einen `GenerateRequest` für die Responses-Route um, die über Sign in with ChatGPT ein ChatGPT-Abo bedient ([Einschränkungen der Vorschau](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). Das Gateway ruft es für einen Anbieter-Schlüssel auf, der ein ChatGPT-Konto ist.
 
-- Es lässt `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` und `previous_response_id` weg: die typisierten Felder, Extras-Felder und die ausdrücklichen Standardwerte und Nullwerte in den Formen `set`, `unset` und `canon`.
+- Es lässt `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` und `previous_response_id` weg. Das betrifft die typisierten Felder, die Extras-Felder und die ausdrücklichen Standardwerte und Nullwerte in den Formen `set`, `unset` und `canon`.
 - Es setzt `stream: true` und `store: false`.
 - Es entfernt die Formen `input`, `system_items` und `instructions`, sodass `input` ein Array ist und führender Systemtext `instructions`. Jede andere Systemnachricht verliert ihre `role`-Überschreibung und wird als `developer`-Nachricht geschrieben, weil die Route `system`-Items ablehnt.
 
@@ -321,5 +351,5 @@ Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-referenc
 | `namespace`-Tools (Anfrage) | zu Funktions-Tools umbenannt | SpaceX lehnt sie mit 422 ab (`unknown variant namespace`); `Provider::tool_namespaces` ist falsch ([Tool-Namespaces](cross-format.md#tool-namespaces)). |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` der Nutzung | Responses-Apps erhalten sie zurück; die Token-Zahlen sind wie oben typisiert. |
 | `presence_penalty` (Anfrage) | Extras | SpaceX ignoriert es und gibt `0.0` zurück. |
-| `max_output_tokens` (Anfrage) | `sampling.max_output_tokens` | SpaceX wendet es nur auf die sichtbare Ausgabe an, nicht auf Reasoning-Token (Responses-Referenz), wie bei [Chat Completions](openai-chat.md#spacex). |
+| `max_output_tokens` (Anfrage) | `sampling.max_output_tokens` | SpaceX wendet es nur auf die sichtbare Ausgabe an, nicht auf Reasoning-Token (Responses-Referenz), wie bei [Chat Completions](openai-chat-providers.md#spacex). |
 | `{"error": "<message>"}` | `KppError` | Siehe die Fehlertabelle oben. |

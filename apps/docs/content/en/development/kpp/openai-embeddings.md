@@ -1,7 +1,7 @@
 ---
 title: OpenAI Embeddings
 description: How every field of the OpenAI Embeddings format maps to KPP and back.
-order: 7
+order: 8
 ---
 
 Look up any field of the OpenAI Embeddings format here: where it goes in KPP and the source of its mapping. Check it before you change how the codec reads or writes that field.
@@ -84,4 +84,4 @@ Source: OpenRouter's [embeddings reference](https://openrouter.ai/docs/api_refer
 
 ### Mistral
 
-Sources: Mistral's [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), read 2026-10-19, and the live recordings in `fixtures/openai_embeddings/providers/mistral/`, with `mistral-embed`. Mistral takes `encoding_format: base64` but answers with floats; for an app that asked for base64 the codec encodes them as base64. Mistral refuses OpenAI's `dimensions` and token-id input with a 422, and `output_dimension` on `mistral-embed` with a 400; those error bodies have no `error` object, so apps get an OpenAI error that quotes them.
+Sources: Mistral's [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), read 2026-10-19, and the live recordings in `fixtures/openai_embeddings/providers/mistral/`, with `mistral-embed`. Mistral takes `encoding_format: base64` but answers with floats; for an app that asked for base64 the codec encodes them as base64. Mistral refuses OpenAI's `dimensions` and token-id input with a 422, and `output_dimension` on `mistral-embed` with a 400. Those error bodies have no `error` object, so apps get an OpenAI error that quotes them.
