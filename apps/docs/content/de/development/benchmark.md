@@ -20,12 +20,8 @@ Der Benchmark legt frische Datenbanken auf dem Entwicklungs-Stack an, startet de
 flowchart TD
   accTitle: Die Prozesse des Benchmarks
   accDescr: Die Clients senden Anfragen über TCP an das Gateway, das in einem eigenen Prozess mit den Entwicklungsdatenbanken läuft und den Mock-Anbieter über TCP aufruft. Die Clients und der Mock-Anbieter laufen im Prozess des Benchmarks.
-  subgraph bench [Benchmark-Prozess]
-    clients[Clients]:::outside
-    mock[Mock-Anbieter]:::outside
-  end
-  clients -- TCP --> gateway[Gateway-Prozess<br>kaeso-bench gateway]:::accent
-  gateway -- TCP --> mock
+  clients[Clients]:::outside -- TCP --> gateway[Gateway-Prozess<br>kaeso-bench gateway]:::accent
+  gateway -- TCP --> mock[Mock-Anbieter]:::outside
   gateway --> data[(PostgreSQL<br>ClickHouse<br>Valkey)]
 ```
 
@@ -42,7 +38,7 @@ Diese Optionen wählen die Szenarien und ihre Größen; ohne sie gelten alle Sze
 | --- | --- | --- |
 | `--scenarios` | Alle fünf | Die Szenarien, durch Kommas getrennt: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed` |
 | `--baseline-requests`, `--baseline-concurrency` | 20.000, 64 | Nicht gestreamte Anfragen der Baseline und die Verbindungen, über die sie laufen |
-| `--streams` | 100,1000,5000 | Anzahlen gleichzeitiger Streams, je ein Lauf |
+| `--streams` | 100, 1.000, 5.000 | Anzahlen gleichzeitiger Streams, je ein Lauf |
 | `--gap-ms`, `--chunks` | 100, 100 | Der Abstand des Mocks zwischen zwei Chunks und die Chunks eines Streams |
 | `--cancel-streams`, `--cancel-share` | 1.000, 0,3 | Streams im Abbruch-Szenario und der Anteil, der die Verbindung trennt |
 | `--slow-streams`, `--slow-share` | 1.000, 0,1 | Streams im Szenario mit langsamen Clients und der Anteil, der langsam liest |

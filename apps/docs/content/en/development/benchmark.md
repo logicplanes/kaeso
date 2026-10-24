@@ -20,12 +20,8 @@ The benchmark starts fresh databases on the development stack, the mock provider
 flowchart TD
   accTitle: The benchmark's processes
   accDescr: The clients send requests over TCP to the gateway, which runs in its own process with the development databases and calls the mock provider over TCP. The clients and the mock provider run in the benchmark's process.
-  subgraph bench [Benchmark process]
-    clients[Clients]:::outside
-    mock[Mock provider]:::outside
-  end
-  clients -- TCP --> gateway[Gateway process<br>kaeso-bench gateway]:::accent
-  gateway -- TCP --> mock
+  clients[Clients]:::outside -- TCP --> gateway[Gateway process<br>kaeso-bench gateway]:::accent
+  gateway -- TCP --> mock[Mock provider]:::outside
   gateway --> data[(PostgreSQL<br>ClickHouse<br>Valkey)]
 ```
 
@@ -42,7 +38,7 @@ These options choose the scenarios and their sizes; every scenario and default a
 | --- | --- | --- |
 | `--scenarios` | All five | Scenarios to run, comma-separated: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed` |
 | `--baseline-requests`, `--baseline-concurrency` | 20,000, 64 | Non-streamed requests in the baseline and the connections they go over |
-| `--streams` | 100,1000,5000 | Concurrent stream counts, one run each |
+| `--streams` | 100, 1,000, 5,000 | Concurrent stream counts, one run each |
 | `--gap-ms`, `--chunks` | 100, 100 | The mock's gap between two chunks and the chunks in a stream |
 | `--cancel-streams`, `--cancel-share` | 1,000, 0.3 | Streams in the cancellation scenario and the share that disconnects |
 | `--slow-streams`, `--slow-share` | 1,000, 0.1 | Streams in the slow-client scenario and the share that reads slowly |

@@ -20,12 +20,8 @@ cargo run --release -p kaeso-bench
 flowchart TD
   accTitle: 基准测试的进程
   accDescr: 客户端通过 TCP 向网关发送请求；网关在独立进程中运行，使用开发数据库，并通过 TCP 调用模拟服务商。客户端和模拟服务商运行在基准测试的进程中。
-  subgraph bench [基准测试进程]
-    clients[客户端]:::outside
-    mock[模拟服务商]:::outside
-  end
-  clients -- TCP --> gateway[网关进程<br>kaeso-bench gateway]:::accent
-  gateway -- TCP --> mock
+  clients[客户端]:::outside -- TCP --> gateway[网关进程<br>kaeso-bench gateway]:::accent
+  gateway -- TCP --> mock[模拟服务商]:::outside
   gateway --> data[(PostgreSQL<br>ClickHouse<br>Valkey)]
 ```
 
@@ -42,7 +38,7 @@ flowchart TD
 | --- | --- | --- |
 | `--scenarios` | 全部五个 | 要运行的场景，以逗号分隔：`baseline`、`streams`、`cancellation`、`slow-clients`、`mixed` |
 | `--baseline-requests`、`--baseline-concurrency` | 20,000、64 | 基线中的非流式请求数，以及承载它们的连接数 |
-| `--streams` | 100,1000,5000 | 并发流的数量，每个数量运行一次 |
+| `--streams` | 100、1,000、5,000 | 并发流的数量，每个数量运行一次 |
 | `--gap-ms`、`--chunks` | 100、100 | 模拟服务商两个数据块之间的间隔，以及每个流的数据块数 |
 | `--cancel-streams`、`--cancel-share` | 1,000、0.3 | 取消场景中的流数，以及其中断开连接的比例 |
 | `--slow-streams`、`--slow-share` | 1,000、0.1 | 慢速客户端场景中的流数，以及其中慢速读取的比例 |
