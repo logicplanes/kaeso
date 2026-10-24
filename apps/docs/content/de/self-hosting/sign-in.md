@@ -1,5 +1,6 @@
 ---
 title: Anmeldung und Single Sign-on
+nav: Anmeldung und SSO
 description: Legen Sie Anmeldemethoden fest, betreiben Sie Kaeso ohne Passwörter und kommen Sie wieder hinein, wenn nichts geht.
 order: 7
 ---

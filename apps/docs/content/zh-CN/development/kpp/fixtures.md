@@ -1,5 +1,6 @@
 ---
 title: Fixture 与录制
+nav: Fixture
 description: 编解码器测试所用的真实载荷，以及如何从服务商录制新的载荷。
 order: 8
 ---

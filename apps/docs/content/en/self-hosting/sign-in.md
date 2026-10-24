@@ -1,5 +1,6 @@
 ---
 title: Sign-in and single sign-on
+nav: Sign-in and SSO
 description: Choose how people sign in, run an install without passwords, and get back in when nothing else works.
 order: 7
 ---
