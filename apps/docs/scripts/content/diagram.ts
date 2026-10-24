@@ -7,8 +7,9 @@ export const DIAGRAM_THEMES = ["light", "dark"] as const;
 export type DiagramTheme = (typeof DIAGRAM_THEMES)[number];
 
 export const DIAGRAM_LANG = "mermaid";
+export const DIAGRAM_ROLES: readonly string[] = ["accent", "outside"];
 export const DIAGRAM_COMMAND = "pnpm --filter kaeso-docs diagrams";
-const REVISION = 2;
+const REVISION = 6;
 
 export interface DiagramText {
   title?: string;
@@ -51,11 +52,30 @@ export function mermaidConfig(theme: DiagramTheme): Record<string, unknown> {
   const c = (name: keyof typeof neutral) => neutral[name][theme];
   const text = c("text");
   const secondary = c("text-secondary");
+  const ground = c("fill-1");
   const raised = c("bg-raised");
-  const well = c("fill-1");
   const ring = c("line-strong");
-  const line = c("line");
+  const edge = c("line-field");
+  const ink = c("ink");
+  const onInk = c("on-ink");
   const size = 14;
+  const small = 12;
+  const shapes = (selector: string) => ["rect", "path", "polygon", "circle", "ellipse"].map((s) => `${selector} ${s}`).join(",");
+  const css = [
+    `${shapes(".node.accent")}{fill:${ink} !important;stroke:${ink} !important;}`,
+    `.node.accent text,.node.accent tspan{fill:${onInk} !important;font-weight:600;}`,
+    `${shapes(".node.outside")}{fill:${ground} !important;stroke:${ring} !important;stroke-dasharray:4 3;}`,
+    `.node.outside text,.node.outside tspan{fill:${secondary} !important;}`,
+    `.edgeLabel text,.edgeLabel tspan,.edgeLabels text,.edgeLabels tspan{fill:${secondary};font-size:${small}px;font-weight:500 !important;}`,
+    `.edgeLabel rect,.edgeLabel .label rect,.edgeLabels rect,.labelBkg{fill:${ground} !important;opacity:1 !important;}`,
+    `.cluster>rect{fill:none;stroke:${ring};stroke-dasharray:4 4;}`,
+    `.cluster-label text,.cluster-label tspan,.cluster text{fill:${secondary};font-size:${small}px;font-weight:500;}`,
+    `.messageText{fill:${text};}`,
+    `.sequenceNumber{fill:${onInk};font-size:11px;font-weight:600;}`,
+    `marker[id$="sequencenumber"] circle{fill:${ink};stroke:none;}`,
+    `.noteText,.noteText tspan{fill:${text};font-size:13px;}`,
+    `.actor{stroke:${ring};}`,
+  ].join("");
   return {
     startOnLoad: false,
     securityLevel: "strict",
@@ -67,87 +87,92 @@ export function mermaidConfig(theme: DiagramTheme): Record<string, unknown> {
     fontSize: size,
     htmlLabels: false,
     markdownAutoWrap: false,
+    themeCSS: css,
     flowchart: {
       htmlLabels: false,
       useMaxWidth: false,
-      wrappingWidth: 360,
+      wrappingWidth: 240,
       minNodeWidth: 0,
       curve: "basis",
-      padding: 12,
-      nodeSpacing: 36,
-      rankSpacing: 44,
+      padding: 16,
+      nodeSpacing: 40,
+      rankSpacing: 48,
       diagramPadding: 4,
+      subGraphTitleMargin: { top: 4, bottom: 12 },
     },
     sequence: {
       useMaxWidth: false,
       mirrorActors: false,
       diagramMarginX: 4,
-      diagramMarginY: 4,
-      actorMargin: 32,
+      diagramMarginY: 12,
+      actorMargin: 40,
       width: 120,
+      height: 44,
       boxMargin: 8,
+      boxTextMargin: 6,
       noteMargin: 10,
-      messageMargin: 32,
+      messageMargin: 36,
       actorFontFamily: font.sans,
       noteFontFamily: font.sans,
       messageFontFamily: font.sans,
       actorFontSize: size,
-      noteFontSize: size,
+      actorFontWeight: 600,
+      noteFontSize: 13,
       messageFontSize: size,
       wrap: false,
     },
-    state: { useMaxWidth: false, minNodeWidth: 0, padding: 8 },
+    state: { useMaxWidth: false, minNodeWidth: 0, padding: 12 },
     themeVariables: {
       darkMode: theme === "dark",
-      background: c("bg-panel"),
+      background: ground,
       fontFamily: font.sans,
       fontSize: `${size}px`,
       textColor: text,
       primaryColor: raised,
       primaryBorderColor: ring,
       primaryTextColor: text,
-      secondaryColor: well,
-      secondaryBorderColor: line,
+      secondaryColor: ground,
+      secondaryBorderColor: ring,
       secondaryTextColor: text,
-      tertiaryColor: well,
-      tertiaryBorderColor: line,
+      tertiaryColor: ground,
+      tertiaryBorderColor: ring,
       tertiaryTextColor: text,
       mainBkg: raised,
       nodeBorder: ring,
       nodeTextColor: text,
-      lineColor: secondary,
-      clusterBkg: well,
-      clusterBorder: well,
+      lineColor: edge,
+      clusterBkg: "none",
+      clusterBorder: ring,
       titleColor: secondary,
-      edgeLabelBackground: c("bg-panel"),
+      edgeLabelBackground: ground,
       actorBkg: raised,
       actorBorder: ring,
       actorTextColor: text,
       actorLineColor: ring,
-      signalColor: secondary,
+      signalColor: edge,
       signalTextColor: text,
-      labelBoxBkgColor: well,
-      labelBoxBorderColor: line,
-      labelTextColor: text,
+      labelBoxBkgColor: raised,
+      labelBoxBorderColor: ring,
+      labelTextColor: secondary,
       loopTextColor: secondary,
-      noteBkgColor: well,
-      noteBorderColor: well,
-      noteTextColor: text,
-      activationBkgColor: well,
+      noteBkgColor: raised,
+      noteBorderColor: ring,
+      noteTextColor: secondary,
+      activationBkgColor: raised,
       activationBorderColor: ring,
-      sequenceNumberColor: c("on-ink"),
+      sequenceNumberColor: onInk,
       stateBkg: raised,
       stateBorder: ring,
       stateLabelColor: text,
-      compositeBackground: well,
-      compositeTitleBackground: well,
-      altBackground: well,
-      transitionColor: secondary,
-      transitionLabelColor: text,
-      specialStateColor: c("ink"),
-      innerEndBackground: c("ink"),
+      compositeBackground: ground,
+      compositeTitleBackground: ground,
+      altBackground: ground,
+      transitionColor: edge,
+      transitionLabelColor: secondary,
+      specialStateColor: ink,
+      innerEndBackground: ink,
       labelColor: text,
-      errorBkgColor: well,
+      errorBkgColor: ground,
       errorTextColor: text,
     },
   };

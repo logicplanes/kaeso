@@ -430,11 +430,12 @@ sequenceDiagram
 ```
 ~~~
 
-- Choose the type that fits: `flowchart` for parts and how they connect, `sequenceDiagram` for requests and replies between parties, `stateDiagram-v2` for a lifecycle. `flowchart TD`, top to bottom, stays readable on a phone; a diagram wider than the column scrolls inside its own frame.
-- `accTitle:` names the diagram in a few words and is required. `accDescr:` says in one or two sentences what it shows; screen readers read both, and search finds them with the diagram's labels.
+- Choose the type that fits: `flowchart` for parts and how they connect, `sequenceDiagram` for requests and replies between parties, `stateDiagram-v2` for a lifecycle. `flowchart TD`, top to bottom, stays readable on a phone. The site centres a diagram on a well, like a code block; one wider than the column scrolls inside it.
+- `accTitle:` names the diagram in a few words, is required, and shows as the caption under it. `accDescr:` says in one or two sentences what it shows; screen readers read both, and search finds them with the diagram's labels.
 - Keep labels short, in the page's language; names from the code stay as they are. `<br>` breaks a label onto a second line.
+- Mark the part of Kaeso the diagram is about with `:::accent`, as in `gateway[Gateway]:::accent`, and parties outside the install, such as apps and providers, with `:::outside`. The site draws the first in ink and the second dashed. A `subgraph` draws a boundary, such as the server Kaeso runs on.
 - Draw a diagram only where it helps; a short list or a table is often clearer.
-- No `%%` comments and no `%%{init}`: the site sets the colours, the type and the radius from Kaeso's tokens.
+- No `%%` comments, no `%%{init}` and no `classDef`, `class` or `style` lines: the site sets the colours, the type and the radius from Kaeso's tokens.
 
 The drawings are committed in `apps/docs/diagrams/`. `pnpm --filter kaeso-docs diagrams` draws new and changed diagrams with Chromium and removes the ones no page uses; the dev server and `pnpm build` draw what is missing as you go. `check:content` fails when a diagram has changed since it was drawn, and a diagram that doesn't parse fails with its file and line.
 
