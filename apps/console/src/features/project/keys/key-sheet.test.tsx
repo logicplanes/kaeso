@@ -4,6 +4,7 @@ import type { KeyView } from "~/api/generated/types";
 import { signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { createdKey } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -273,6 +274,158 @@ describe("KeySheet", () => {
     expect(await sheet()).toBeInTheDocument();
     await user.keyboard("{Escape}");
     await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
+  it("rotates your key with the grace period you choose and shows the new key once", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    on("POST", `${KEY}/rotate`, createdKey({ id: "key_next", name: "checkout-web", rotated_from: "key_web" }));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate checkout-web/ });
+    expect(within(dialog).getByRole("heading", { name: "When does the old key stop working?" })).toBeVisible();
+    expect(within(dialog).getByRole("radio", { name: "After 24 hours" })).toBeChecked();
+    await user.click(within(dialog).getByRole("radio", { name: "After 1 hour" }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "When does the new key expire?" })).toBeVisible();
+    expect(within(dialog).getByRole("combobox", { name: "Expires" })).toHaveTextContent("In 90 days");
+    await user.click(within(dialog).getByRole("button", { name: "Rotate key" }));
+
+    const reveal = await screen.findByRole("dialog", { name: "Key rotated" });
+    expect(within(reveal).getByText("Copy the new key now: it's shown once, and the old key stops in 1 hour.")).toBeInTheDocument();
+    expect(within(reveal).getByRole("textbox", { name: /^Secret for/ })).toHaveTextContent(createdKey().secret);
+    expect(requests("POST", `${KEY}/rotate`).map((r) => r.body)).toEqual([{ grace_hours: 1, expires_in_days: 90 }]);
+    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key rotated" })).not.toBeInTheDocument());
+  });
+
+  it("closes the rotation without rotating, and asks before closing the new key", async () => {
+    signedIn({ projectRights: without("limits.view") });
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    on("POST", `${KEY}/rotate`, createdKey());
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    await screen.findByRole("dialog", { name: /Rotate checkout-web/ });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Rotate checkout-web/ })).not.toBeInTheDocument());
+    expect(requests("POST", `${KEY}/rotate`)).toHaveLength(0);
+
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate checkout-web/ });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(await within(dialog).findByRole("combobox", { name: "Expires" }));
+    await user.click(await screen.findByRole("option", { name: "On a date" }));
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Rotate key" }), "Pick the day it expires");
+    await user.click(await within(dialog).findByRole("combobox", { name: "Expires" }));
+    await user.click(await screen.findByRole("option", { name: "Never" }));
+    await user.click(within(dialog).getByRole("button", { name: "Rotate key" }));
+    expect(await screen.findByRole("dialog", { name: "Key rotated" })).toBeInTheDocument();
+    expect(requests("POST", `${KEY}/rotate`).map((r) => r.body)).toEqual([{ grace_hours: 24 }]);
+    await user.keyboard("{Escape}");
+    expect(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).toBeInTheDocument();
+  });
+
+  it("says the old key stopped when it rotates without a grace period", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    on("POST", `${KEY}/rotate`, createdKey({ rotated_from: "key_web" }));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate checkout-web/ });
+    await user.click(within(dialog).getByRole("radio", { name: /Immediately/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Rotate key" }));
+    const reveal = await screen.findByRole("dialog", { name: "Key rotated" });
+    expect(within(reveal).getByText("Copy the new key now: it's shown once, and the old key has stopped working.")).toBeInTheDocument();
+    expect(requests("POST", `${KEY}/rotate`).map((r) => r.body)).toEqual([{ grace_hours: 0, expires_in_days: 90 }]);
+  });
+
+  it("rotates a service account's key through the service account", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], accounts: [serviceAccount()] });
+    keyApi(apiKey({ name: "deploy-bot", principal: { kind: "service_account", id: "sa_deploy" } }));
+    on("POST", "orgs/:org/projects/:project/service-accounts/:account/keys/:key/rotate", createdKey({ name: "deploy-bot" }));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet("deploy-bot");
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate deploy-bot/ });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Rotate key" }));
+    expect(await screen.findByRole("dialog", { name: "Key rotated" })).toBeInTheDocument();
+    const sent = requests("POST", "orgs/:org/projects/:project/service-accounts/:account/keys/:key/rotate");
+    expect(sent.map((r) => [r.params.account, r.params.key, r.body])).toEqual([["sa_deploy", "key_web", { grace_hours: 24, expires_in_days: 90 }]]);
+  });
+
+  it("links a replaced key to its replacement and offers no second rotation", async () => {
+    signedIn();
+    const replacement = apiKey({ id: "key_next", redacted: "sk-kso-NeW456…abcd", rotated_from: "key_web" });
+    projectData({ keys: [apiKey(), replacement] });
+    on("GET", KEY, ({ params }: { params: Record<string, string> }) =>
+      params.key === "key_next" ? replacement : apiKey({ replaced_by: "key_next", expires_at: "2099-01-01T00:00:00Z" }),
+    );
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    const dialog = await sheet();
+    const link = await within(dialog).findByRole("link", { name: "sk-kso-NeW456…abcd" });
+    expect(link).toHaveAttribute("href", expect.stringContaining("keys?key=key_next"));
+    expect(dialog).toHaveTextContent("Replaced by");
+    await user.click(within(dialog).getByRole("button", { name: "Key actions" }));
+    expect(await screen.findByRole("menuitem", { name: "Disable" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Rotate" })).not.toBeInTheDocument();
+  });
+
+  it("shows which key a rotated key came from", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    on("GET", KEY, ({ params }: { params: Record<string, string> }) =>
+      params.key === "key_old" ? apiKey({ id: "key_old", redacted: "sk-kso-OlD789…efgh", replaced_by: "key_web" }) : apiKey({ rotated_from: "key_old" }),
+    );
+    await renderApp(projectPath("keys?key=key_web"));
+
+    const dialog = await sheet();
+    expect(dialog).toHaveTextContent("Rotated from");
+    expect(await within(dialog).findByRole("link", { name: "sk-kso-OlD789…efgh" })).toBeInTheDocument();
+  });
+
+  it("names the right a rotation needs", async () => {
+    signedIn({ projectRights: without("keys.own.create") });
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    const rotate = await screen.findByRole("menuitem", { name: /Rotate/ });
+    expect(rotate).toHaveAttribute("aria-disabled", "true");
+    expect(rotate).toHaveTextContent(/You need Create own keys; ask .+ for it\./);
+  });
+
+  it("doesn't offer rotating someone else's key", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()] });
+    keyApi(apiKey({ principal: { kind: "user", id: "usr_grace" } }));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    expect(await screen.findByRole("menuitem", { name: "Disable" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: /Rotate/ })).not.toBeInTheDocument();
   });
 
   it.each([

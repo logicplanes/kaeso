@@ -123,6 +123,8 @@ pub struct KeyRow {
     pub created_by_kind: String,
     pub created_by_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
+    pub rotated_from: Option<Uuid>,
+    pub replaced_by: Option<Uuid>,
 }
 
 #[derive(Clone, Debug)]
@@ -141,13 +143,14 @@ pub struct NewKey<'a> {
     pub expires_at: Option<OffsetDateTime>,
     pub created_by_kind: &'a str,
     pub created_by_id: Option<Uuid>,
+    pub rotated_from: Option<Uuid>,
 }
 
 pub async fn insert(db: impl PgExecutor<'_>, k: &NewKey<'_>) -> Result<(), StoreError> {
     sqlx::query!(
         "INSERT INTO api_keys (id, org_id, project_id, user_id, service_account_id, name, secret_hash, secret_prefix, \
-         secret_last4, inference, platform, expires_at, created_by_kind, created_by_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+         secret_last4, inference, platform, expires_at, created_by_kind, created_by_id, rotated_from) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
         k.id,
         k.org_id,
         k.project_id,
@@ -161,7 +164,8 @@ pub async fn insert(db: impl PgExecutor<'_>, k: &NewKey<'_>) -> Result<(), Store
         k.platform,
         k.expires_at,
         k.created_by_kind,
-        k.created_by_id
+        k.created_by_id,
+        k.rotated_from
     )
     .execute(db)
     .await?;
@@ -176,7 +180,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at \
+         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE project_id = $1 AND id = $2",
         project_id,
         id
@@ -193,7 +197,7 @@ pub async fn get_of_user(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at \
+         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE user_id = $1 AND id = $2",
         user_id,
         id
@@ -219,7 +223,7 @@ pub async fn list(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at \
+         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE project_id = $1 AND ($2::uuid IS NULL OR user_id = $2) \
          AND ($3::uuid IS NULL OR service_account_id = $3) AND ($4 OR archived_at IS NULL) \
          AND ($5::uuid IS NULL OR id > $5) ORDER BY id LIMIT $6",
@@ -245,7 +249,7 @@ pub async fn list_of_user(
     Ok(sqlx::query_as!(
         KeyRow,
         "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, \
-         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at \
+         platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by \
          FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($2 OR archived_at IS NULL) \
          AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
         user_id,
@@ -328,6 +332,27 @@ pub async fn archive(
         == 1)
 }
 
+pub async fn retire(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+    replaced_by: Uuid,
+    stops_at: OffsetDateTime,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE api_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() \
+         WHERE project_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+        project_id,
+        id,
+        replaced_by,
+        stops_at
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
 pub async fn touch(
     db: impl PgExecutor<'_>,
     id: Uuid,
@@ -363,7 +388,7 @@ pub async fn expiring(
         Expiring,
         "SELECT k.id, k.name, k.org_id, k.project_id, p.name AS project_name, k.user_id, k.expires_at AS \"expires_at!\" \
          FROM api_keys k JOIN projects p ON p.id = k.project_id \
-         WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.expires_at > $1 \
+         WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.replaced_by IS NULL AND k.expires_at > $1 \
          AND k.expires_at <= $1 + make_interval(days => $2) \
          AND NOT EXISTS (SELECT 1 FROM key_expiry_warnings w WHERE w.key_id = k.id AND w.days_before = $2)",
         now,
@@ -432,6 +457,8 @@ pub struct OrgKeyRow {
     pub created_by_kind: String,
     pub created_by_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
+    pub rotated_from: Option<Uuid>,
+    pub replaced_by: Option<Uuid>,
 }
 
 pub struct NewOrgKey<'a> {
@@ -444,12 +471,13 @@ pub struct NewOrgKey<'a> {
     pub expires_at: Option<OffsetDateTime>,
     pub created_by_kind: &'a str,
     pub created_by_id: Option<Uuid>,
+    pub rotated_from: Option<Uuid>,
 }
 
 pub async fn insert_org(db: impl PgExecutor<'_>, k: &NewOrgKey<'_>) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO org_platform_keys (id, org_id, name, secret_hash, secret_prefix, secret_last4, expires_at, created_by_kind, created_by_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO org_platform_keys (id, org_id, name, secret_hash, secret_prefix, secret_last4, expires_at, created_by_kind, \
+         created_by_id, rotated_from) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
         k.id,
         k.org_id,
         k.name,
@@ -458,7 +486,8 @@ pub async fn insert_org(db: impl PgExecutor<'_>, k: &NewOrgKey<'_>) -> Result<()
         k.secret_last4,
         k.expires_at,
         k.created_by_kind,
-        k.created_by_id
+        k.created_by_id,
+        k.rotated_from
     )
     .execute(db)
     .await?;
@@ -473,7 +502,7 @@ pub async fn get_org(
     Ok(sqlx::query_as!(
         OrgKeyRow,
         "SELECT id, org_id, name, secret_prefix, secret_last4, expires_at, disabled_at, archived_at, last_used_at, \
-         created_by_kind, created_by_id, created_at FROM org_platform_keys WHERE org_id = $1 AND id = $2",
+         created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM org_platform_keys WHERE org_id = $1 AND id = $2",
         org_id,
         id
     )
@@ -491,7 +520,7 @@ pub async fn list_org(
     Ok(sqlx::query_as!(
         OrgKeyRow,
         "SELECT id, org_id, name, secret_prefix, secret_last4, expires_at, disabled_at, archived_at, last_used_at, \
-         created_by_kind, created_by_id, created_at FROM org_platform_keys \
+         created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM org_platform_keys \
          WHERE org_id = $1 AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
         org_id,
         include_archived,
@@ -552,6 +581,27 @@ pub async fn archive_org(
         org_id,
         id,
         at
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
+pub async fn retire_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+    replaced_by: Uuid,
+    stops_at: OffsetDateTime,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE org_platform_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() \
+         WHERE org_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+        org_id,
+        id,
+        replaced_by,
+        stops_at
     )
     .execute(db)
     .await?

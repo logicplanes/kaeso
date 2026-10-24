@@ -139,7 +139,7 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `platform_keys.view` | Plattform-Schlüssel ansehen | Die Plattform-Schlüssel der Organisation sehen (Metadaten). |  |
-| `platform_keys.create` | Plattform-Schlüssel erstellen | Plattform-Schlüssel erstellen, die alles auf Organisationsebene verwalten. | sensibel; kürzliche Anmeldung; erfordert `platform_keys.view` |
+| `platform_keys.create` | Plattform-Schlüssel erstellen | Plattform-Schlüssel erstellen und rotieren, die alles auf Organisationsebene verwalten. | sensibel; kürzliche Anmeldung; erfordert `platform_keys.view` |
 | `platform_keys.revoke` | Plattform-Schlüssel deaktivieren | Plattform-Schlüssel der Organisation deaktivieren, aktivieren oder archivieren. | erfordert `platform_keys.view` |
 
 ### Protokolle & Daten
@@ -200,11 +200,11 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
-| `keys.own.create` | Eigene Schlüssel erstellen | API-Schlüssel für sich selbst erstellen. |  |
+| `keys.own.create` | Eigene Schlüssel erstellen | API-Schlüssel für sich selbst erstellen und rotieren. |  |
 | `keys.own.manage` | Eigene Schlüssel verwalten | Eigene API-Schlüssel deaktivieren, aktivieren oder archivieren. |  |
 | `keys.all.view` | Alle Schlüssel ansehen | Jeden Schlüssel im Projekt sehen (Metadaten). |  |
 | `keys.all.manage` | Alle Schlüssel verwalten | Schlüssel aller Personen im Projekt deaktivieren, aktivieren oder archivieren. | erfordert `keys.all.view` |
-| `service_accounts.keys.create` | Dienstkonto-Schlüssel erstellen | Schlüssel für die Dienstkonten des Projekts erstellen. | erfordert `service_accounts.view` |
+| `service_accounts.keys.create` | Dienstkonto-Schlüssel erstellen | Schlüssel für die Dienstkonten des Projekts erstellen und rotieren. | erfordert `service_accounts.view` |
 | `keys.platform_access.grant` | Plattformzugriff vergeben | Einem neuen Schlüssel Zugriff auf die Platform API geben. | sensibel; kürzliche Anmeldung |
 | `security.key_policy.project.manage` | Schlüssellaufzeit festlegen | Die maximale Schlüssellaufzeit des Projekts festlegen. |  |
 

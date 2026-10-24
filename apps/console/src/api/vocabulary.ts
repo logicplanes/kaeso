@@ -86,7 +86,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "platform_keys.create": () => [
     t("rights.platformKeysCreate.name", "Create platform keys"),
-    t("rights.platformKeysCreate.description", "Create organization platform keys, which manage everything at org level."),
+    t("rights.platformKeysCreate.description", "Create and rotate organization platform keys, which manage everything at org level."),
   ],
   "platform_keys.revoke": () => [
     t("rights.platformKeysRevoke.name", "Disable platform keys"),
@@ -165,7 +165,10 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.playgroundUse.name", "Use the Playground"),
     t("rights.playgroundUse.description", "Call the project's models from the console Playground."),
   ],
-  "keys.own.create": () => [t("rights.keysOwnCreate.name", "Create own keys"), t("rights.keysOwnCreate.description", "Create API keys for oneself.")],
+  "keys.own.create": () => [
+    t("rights.keysOwnCreate.name", "Create own keys"),
+    t("rights.keysOwnCreate.description", "Create and rotate API keys for oneself."),
+  ],
   "keys.own.manage": () => [
     t("rights.keysOwnManage.name", "Manage own keys"),
     t("rights.keysOwnManage.description", "Disable, enable or archive one's own API keys."),
@@ -177,7 +180,7 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "service_accounts.keys.create": () => [
     t("rights.serviceAccountsKeysCreate.name", "Create service account keys"),
-    t("rights.serviceAccountsKeysCreate.description", "Create keys for the project's service accounts."),
+    t("rights.serviceAccountsKeysCreate.description", "Create and rotate keys for the project's service accounts."),
   ],
   "keys.platform_access.grant": () => [
     t("rights.keysPlatformAccessGrant.name", "Give keys platform access"),

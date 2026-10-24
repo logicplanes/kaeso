@@ -37,9 +37,31 @@ Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre 
 
 Wählen Sie einen Schlüssel, um sein Sheet zu öffnen. Es zeigt, wem der Schlüssel gehört, seinen Zugriff, wer ihn wann erstellt hat, seinen Ablauf, seine letzte Nutzung und seine ID. Mit dem Recht **Limits verwalten** können Sie dort jederzeit seine **Modelle** und **Limits** ändern.
 
+## Schlüssel rotieren
+
+Beim Rotieren ersetzt ein neuer Schlüssel mit demselben Namen, Inhaber, Zugriff, denselben Modellen und Limits den alten. Der alte Schlüssel funktioniert noch eine Schonfrist lang, die Sie wählen, damit Sie Ihre Apps ohne fehlgeschlagene Anfragen umstellen können. Rotieren Sie Schlüssel regelmäßig, oder sofort, wenn einer offengelegt sein könnte.
+
+1. Wählen Sie im Menü im Sheet des Schlüssels **Rotieren**.
+2. **Wann hört der alte Schlüssel auf zu funktionieren?** Wählen Sie **Sofort**, **Nach 1 Stunde**, **Nach 24 Stunden** oder **Nach 7 Tagen**.
+3. **Wann läuft der neue Schlüssel ab?** Die Optionen sind dieselben wie beim Erstellen eines Schlüssels.
+
+**Schlüssel rotiert** zeigt dann den neuen Schlüssel einmal an, wie **Schlüssel erstellt**. Bis zum Ende der Schonfrist funktionieren beide Schlüssel, dann läuft der alte ab. Würde der alte Schlüssel früher ablaufen, behält er seinen eigenen Ablauf, und Kaeso schickt für ihn keine Ablauf-E-Mails.
+
+Das Sheet des alten Schlüssels zeigt **Ersetzt durch**, das des neuen **Rotiert aus**, jeweils mit einem Link zum anderen Schlüssel. Die Liste zeigt, wann ein ersetzter Schlüssel endet, und Anfrageprotokolle und Nutzung kennzeichnen ihn als ersetzt, damit Sie sehen, welche Apps ihn noch senden. Limits des neuen Schlüssels zählen von vorn.
+
+Einen Schlüssel zu rotieren erfordert diese Rechte:
+
+| Zu rotieren | Rechte |
+| --- | --- |
+| Ihr eigener Schlüssel | **Eigene Schlüssel erstellen** sowie **Eigene Schlüssel verwalten** oder **Alle Schlüssel verwalten** |
+| Schlüssel eines Dienstkontos | **Dienstkonto-Schlüssel erstellen** und **Alle Schlüssel verwalten** |
+| Ein Schlüssel mit Plattformzugriff | Zusätzlich **Plattformzugriff vergeben**, eine Konsolensitzung und eine kürzliche Anmeldung |
+
+Den Schlüssel eines Mitglieds rotiert nur sein Inhaber, weil der neue Schlüssel mit dessen Rechten handelt. Ein archivierter oder bereits rotierter Schlüssel lässt sich nicht rotieren; rotieren Sie stattdessen seinen Nachfolger.
+
 ## Schlüssel abschalten
 
-Das Menü im Sheet eines Schlüssels hat drei Aktionen:
+Neben **Rotieren** hat das Menü im Sheet eines Schlüssels drei Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -61,6 +83,8 @@ Plattform-Schlüssel sind für Skripte und Infrastruktur, die die ganze Organisa
 2. Geben Sie an, was den Schlüssel verwendet und wann er abläuft. Die Optionen und die maximale Schlüssellaufzeit der Organisation sind dieselben wie bei API-Schlüsseln.
 
 Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen**, eine Konsolensitzung und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**; hat eine Person einen Plattform-Schlüssel deaktiviert, aktiviert ihn nur eine Person.
+
+**Rotieren** im Menü eines Plattform-Schlüssels funktioniert wie das [Rotieren eines API-Schlüssels](#schlüssel-rotieren) und behält den Namen des Schlüssels. Es erfordert beide Rechte, eine Konsolensitzung und eine kürzliche Anmeldung.
 
 ## Nächste Schritte
 

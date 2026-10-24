@@ -119,6 +119,24 @@ A request shows in the logs within a few seconds. Usage includes costs when the 
 
 Add a log's id to read one request, such as `logs/req_…`. It includes the request's content when the project logs content.
 
+## Rotate the app's key
+
+Replace the app's key before it expires, or at once if it leaked. Rotating creates a new key with the same name, access, models and limits, and keeps the old key working for `grace_hours`: 0, 1, 24 or 168. Look up the key's id, then rotate it with a 24-hour grace period:
+
+```bash
+KEY=$(curl -s "$ORG_URL/projects/$PROJECT/keys?service_account=$ACCOUNT" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" | jq -r '.data[0].id')
+
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys/$KEY/rotate" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"grace_hours": 24, "expires_in_days": 90}' | jq -r .secret
+)
+```
+
+`KAESO_API_KEY` now holds the new key. Store it where the app reads it within 24 hours; then the old key expires. The new key's `rotated_from` and the old key's `replaced_by` link the two, and request logs and usage keep each key's own id.
+
 ## Use a project key instead
 
 An API key with platform access works the same way inside its own project, with its member's or service account's rights. Send it as `Authorization: Bearer sk-kso-…`. It can add models with `models.manage` and read usage and logs with `usage.view` and `logs.metadata.view`.

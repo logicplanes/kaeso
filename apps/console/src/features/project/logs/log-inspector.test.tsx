@@ -97,6 +97,15 @@ describe("LogInspector", () => {
     expect(usage).toHaveTextContent("The stream ended before the provider's final count; cost and limits use these numbers.");
   });
 
+  it("names a replaced key as replaced", async () => {
+    signedIn();
+    projectData({ keys: [apiKey({ replaced_by: "key_next" })] });
+    logsData({ rows: [logRow()], entries: [logEntry()] });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    expect(section(await sheet(), "Sent by")).toHaveTextContent("checkout-web (replaced)");
+  });
+
   it("shows the timing and the key of a plain request", async () => {
     signedIn();
     projectData({ keys: [apiKey()] });

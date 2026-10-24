@@ -184,7 +184,7 @@ rights!(
         Security2faRequire = "security.2fa.require", Security, "Require two-factor", false, true, false, [], "Require two-factor authentication for members.";
         SecurityKeyPolicyManage = "security.key_policy.manage", Security, "Set key lifetime", false, false, false, [], "Set the organization's maximum key lifetime.";
         PlatformKeysView = "platform_keys.view", Keys, "View platform keys", false, false, false, [], "See the organization's platform keys (metadata).";
-        PlatformKeysCreate = "platform_keys.create", Keys, "Create platform keys", true, true, false, [PlatformKeysView], "Create organization platform keys, which manage everything at org level.";
+        PlatformKeysCreate = "platform_keys.create", Keys, "Create platform keys", true, true, false, [PlatformKeysView], "Create and rotate organization platform keys, which manage everything at org level.";
         PlatformKeysRevoke = "platform_keys.revoke", Keys, "Disable platform keys", false, false, false, [PlatformKeysView], "Disable, enable or archive organization platform keys.";
         LogsSettingsManage = "logs.settings.manage", Logs, "Manage log settings", false, false, false, [], "Set log retention and switch content logging on or off for the organization.";
         LogsStorageView = "logs.storage.view", Logs, "View log storage", false, false, false, [], "See how many log entries exist and how much space they take.";
@@ -213,11 +213,11 @@ rights!(
         ServiceAccountsArchive = "service_accounts.archive", Members, "Archive service accounts", false, false, false, [ServiceAccountsView], "Archive service accounts and their keys.";
         ApiRequest = "api.request", ModelUse, "Call models with keys", false, false, false, [], "Call the project's models with one's own API keys.";
         PlaygroundUse = "playground.use", ModelUse, "Use the Playground", false, false, false, [], "Call the project's models from the console Playground.";
-        KeysOwnCreate = "keys.own.create", Keys, "Create own keys", false, false, false, [], "Create API keys for oneself.";
+        KeysOwnCreate = "keys.own.create", Keys, "Create own keys", false, false, false, [], "Create and rotate API keys for oneself.";
         KeysOwnManage = "keys.own.manage", Keys, "Manage own keys", false, false, false, [], "Disable, enable or archive one's own API keys.";
         KeysAllView = "keys.all.view", Keys, "View all keys", false, false, false, [], "See every key in the project (metadata).";
         KeysAllManage = "keys.all.manage", Keys, "Manage all keys", false, false, false, [KeysAllView], "Disable, enable or archive anyone's keys in the project.";
-        ServiceAccountsKeysCreate = "service_accounts.keys.create", Keys, "Create service account keys", false, false, false, [ServiceAccountsView], "Create keys for the project's service accounts.";
+        ServiceAccountsKeysCreate = "service_accounts.keys.create", Keys, "Create service account keys", false, false, false, [ServiceAccountsView], "Create and rotate keys for the project's service accounts.";
         KeysPlatformAccessGrant = "keys.platform_access.grant", Keys, "Give keys platform access", true, true, false, [], "Give a new key access to the Platform API.";
         SecurityKeyPolicyProjectManage = "security.key_policy.project.manage", Keys, "Set key lifetime", false, false, false, [], "Set the project's maximum key lifetime.";
         ModelsView = "models.view", Models, "View models", false, false, false, [], "See the project's models, aliases and routing.";

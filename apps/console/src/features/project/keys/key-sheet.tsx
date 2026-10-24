@@ -1,11 +1,30 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Button, Empty, IconButton, KeyDisplay, KeyValue, Menu, Sheet, Skeleton, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Button,
+  DialogScope,
+  Empty,
+  IconButton,
+  KeyDisplay,
+  KeyValue,
+  Link,
+  Menu,
+  Sheet,
+  Skeleton,
+  StepDialog,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
-import type { KeyView } from "~/api/generated/types";
+import type { CreatedKey_KeyView, KeyRotate, KeyView } from "~/api/generated/types";
+import { modelAccessQuery } from "~/api/queries/members";
+import { orgQuery } from "~/api/queries/orgs";
+import { projectQuery } from "~/api/queries/projects";
+import { useKeyReveal } from "~/kaeso/create-key-flow";
+import { rotatedHint, rotationSteps, useRotationChoices } from "~/kaeso/rotate-key";
 import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { accessLabel } from "~/format/labels";
@@ -53,6 +72,7 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
   const partyName = usePartyName(org, project);
   useRememberRecent(key.data ? { kind: "key", id: keyId, label: key.data.name, href: `/orgs/${org}/projects/${project}/keys?key=${keyId}` } : null);
   const [archiving, setArchiving] = useState(false);
+  const [rotating, setRotating] = useState(false);
 
   const own = key.data?.principal.kind === "user" && key.data.principal.id === session.user.id;
   const canManage = rights.has("keys.all.manage") || (own && rights.has("keys.own.manage"));
@@ -118,6 +138,14 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
   }
   const k = key.data;
   const reason = canManage ? undefined : needs(own ? "keys.own.manage" : "keys.all.manage");
+  const forAccount = k.principal.kind === "service_account";
+  const rotatable = (own || forAccount) && !k.replaced_by;
+  const manageRight = forAccount ? "keys.all.manage" : rights.has("keys.all.manage") ? null : "keys.own.manage";
+  const rotateNeeds = [
+    forAccount ? "service_accounts.keys.create" : "keys.own.create",
+    manageRight,
+    k.access === "inference" ? null : "keys.platform_access.grant",
+  ].find((r): r is string => !!r && !rights.has(r));
 
   return (
     <div className="flex flex-col gap-24">
@@ -145,6 +173,16 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
                   </Menu.Item>
                 )
               )}
+              {rotatable && (
+                <Menu.Item
+                  icon={icons.key}
+                  disabled={!!rotateNeeds}
+                  {...(rotateNeeds ? { description: needs(rotateNeeds) } : {})}
+                  onClick={() => setRotating(true)}
+                >
+                  {t("keys.rotate", "Rotate")}
+                </Menu.Item>
+              )}
               <Menu.Item icon={icons.delete} variant="danger" onClick={() => setArchiving(true)}>
                 {common.archive()}
               </Menu.Item>
@@ -159,6 +197,8 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
           { label: common.created(), value: t("keys.createdBy", "{date} by {name}", { date: formatDate(k.created_at), name: partyName(k.created_by) }) },
           { label: common.expires(), value: k.expires_at ? expiryDetail(k.expires_at) : common.never() },
           { label: common.lastUsed(), value: k.last_used_at ? formatRelative(k.last_used_at) : common.never() },
+          ...(k.replaced_by ? [{ label: t("keys.replacedBy", "Replaced by"), value: <KeyLink org={org} project={project} keyId={k.replaced_by} /> }] : []),
+          ...(k.rotated_from ? [{ label: t("keys.rotatedFrom", "Rotated from"), value: <KeyLink org={org} project={project} keyId={k.rotated_from} /> }] : []),
           { label: t("keys.id", "Id"), value: k.id, copy: k.id },
         ]}
       />
@@ -195,6 +235,61 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
         loading={archive.isPending}
         onConfirm={() => archive.mutateAsync()}
       />
+      <DialogScope open={rotating}>
+        <RotateKeyFlow org={org} project={project} k={k} open={rotating} onClose={() => setRotating(false)} />
+      </DialogScope>
     </div>
+  );
+}
+
+function KeyLink({ org, project, keyId }: { org: string; project: string; keyId: string }) {
+  const other = useQuery(keyQuery(org, project, keyId));
+  return <Link href={`/orgs/${org}/projects/${project}/keys?key=${keyId}`}>{other.data?.redacted ?? keyId}</Link>;
+}
+
+function RotateKeyFlow({ org, project, k, open, onClose }: { org: string; project: string; k: KeyView; open: boolean; onClose: () => void }) {
+  const rights = useProjectRights(org, project);
+  const projectView = useQuery(projectQuery(org, project));
+  const orgView = useQuery(orgQuery(org));
+  const access = useQuery({ ...modelAccessQuery(org, project, { kind: "key", id: k.id }), enabled: rights.has("limits.view") });
+  const maxDays = projectView.data?.max_key_lifetime_days ?? orgView.data?.max_key_lifetime_days ?? null;
+  const choices = useRotationChoices(maxDays);
+  const [created, setCreated] = useState<{ key: CreatedKey_KeyView; models: string[] } | null>(null);
+  const reveal = useKeyReveal(org, project, created, onClose, {
+    title: t("keys.rotated", "Key rotated"),
+    description: rotatedHint(choices.grace),
+  });
+  const rotate = useApiMutation({
+    mutationFn: async (body: KeyRotate) => {
+      const account = k.principal.kind === "service_account" ? k.principal.id : null;
+      if (account)
+        return data(
+          await api.POST("/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/keys/{key}/rotate", {
+            params: { path: { org, project, account, key: k.id } },
+            body,
+          }),
+        );
+      return data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/keys/{key}/rotate", { params: { path: { org, project, key: k.id } }, body }));
+    },
+    invalidates: [
+      ["orgs", org, "projects", project, "keys"],
+      ["me", "keys"],
+    ],
+    onSuccess: (key) => setCreated({ key, models: access.data?.effective ?? [] }),
+  });
+  return (
+    <>
+      <StepDialog
+        open={open}
+        onOpenChange={(o) => !o && (created ? reveal.done() : onClose())}
+        result={reveal.result}
+        title={t("keys.rotateTitle", "Rotate {name}", { name: k.name })}
+        submitLabel={t("keys.rotateKey", "Rotate key")}
+        submitting={rotate.isPending}
+        onSubmit={() => choices.ready && rotate.mutate(choices.body)}
+        steps={rotationSteps(choices, maxDays, "project")}
+      />
+      {reveal.confirm}
+    </>
   );
 }

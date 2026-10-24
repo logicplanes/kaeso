@@ -202,6 +202,65 @@ describe("platform keys", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(requests("POST", "orgs/:org/platform-keys/:key/archive")).toHaveLength(0);
   });
+  it("rotates a key, keeps the old one for the chosen grace period and shows the new one once", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    on("POST", "orgs/:org/platform-keys/:key/rotate", createdPlatformKey({ id: "opk_next", rotated_from: "opk_terraform" }));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate Terraform/ });
+    await user.click(within(dialog).getByRole("radio", { name: "After 7 days" }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "When does the new key expire?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Rotate key" }));
+    const reveal = await screen.findByRole("dialog", { name: "Platform key rotated" });
+    expect(within(reveal).getByText("Copy the new key now: it's shown once, and the old key stops in 7 days.")).toBeInTheDocument();
+    expect(requests("POST", "orgs/:org/platform-keys/opk_terraform/rotate").map((r) => r.body)).toEqual([{ grace_hours: 168, expires_in_days: 90 }]);
+  });
+
+  it("closes the rotation without rotating, and asks before closing the new key", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    on("POST", "orgs/:org/platform-keys/:key/rotate", createdPlatformKey());
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    await screen.findByRole("dialog", { name: /Rotate Terraform/ });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Rotate Terraform/ })).not.toBeInTheDocument());
+    expect(requests("POST", "orgs/:org/platform-keys/:key/rotate")).toHaveLength(0);
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rotate" }));
+    const dialog = await screen.findByRole("dialog", { name: /Rotate Terraform/ });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Rotate key" }));
+    expect(await screen.findByRole("dialog", { name: "Platform key rotated" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Platform key rotated" })).not.toBeInTheDocument());
+  });
+
+  it("says when a replaced key stops and offers no second rotation", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey({ replaced_by: "opk_next", expires_at: fromNow(3 * 3_600_000) })]));
+    const { user } = await renderApp(PATH);
+    expect(await cellOf("Terraform")).toHaveTextContent("Replaced; stops in 3 h");
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    expect(await screen.findByRole("menuitem", { name: "Disable" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Rotate" })).not.toBeInTheDocument();
+  });
+
+  it("names the right a rotation needs", async () => {
+    withRights(["org.view", "platform_keys.view", "platform_keys.revoke"], { role: "admin" });
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    const rotate = await screen.findByRole("menuitem", { name: /Rotate/ });
+    expect(rotate).toHaveAttribute("aria-disabled", "true");
+    expect(rotate).toHaveTextContent("You need Create platform keys");
+  });
 });
 
 describe("creating a platform key", () => {

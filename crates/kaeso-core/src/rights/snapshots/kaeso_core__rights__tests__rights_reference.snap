@@ -28,7 +28,7 @@ expression: rights_reference()
 | `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
 | `security.key_policy.manage` | Security | Set key lifetime | Set the organization's maximum key lifetime. |  |  |  |
 | `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |
-| `platform_keys.create` ⚠ | Keys | Create platform keys | Create organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
+| `platform_keys.create` ⚠ | Keys | Create platform keys | Create and rotate organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
 | `platform_keys.revoke` | Keys | Disable platform keys | Disable, enable or archive organization platform keys. | `platform_keys.view` |  |  |
 | `logs.settings.manage` | Logs & data | Manage log settings | Set log retention and switch content logging on or off for the organization. |  |  |  |
 | `logs.storage.view` | Logs & data | View log storage | See how many log entries exist and how much space they take. |  |  |  |
@@ -57,11 +57,11 @@ expression: rights_reference()
 | `service_accounts.archive` | Members & access | Archive service accounts | Archive service accounts and their keys. | `service_accounts.view` |  |  |
 | `api.request` | Model use | Call models with keys | Call the project's models with one's own API keys. |  |  |  |
 | `playground.use` | Model use | Use the Playground | Call the project's models from the console Playground. |  |  |  |
-| `keys.own.create` | Keys | Create own keys | Create API keys for oneself. |  |  |  |
+| `keys.own.create` | Keys | Create own keys | Create and rotate API keys for oneself. |  |  |  |
 | `keys.own.manage` | Keys | Manage own keys | Disable, enable or archive one's own API keys. |  |  |  |
 | `keys.all.view` | Keys | View all keys | See every key in the project (metadata). |  |  |  |
 | `keys.all.manage` | Keys | Manage all keys | Disable, enable or archive anyone's keys in the project. | `keys.all.view` |  |  |
-| `service_accounts.keys.create` | Keys | Create service account keys | Create keys for the project's service accounts. | `service_accounts.view` |  |  |
+| `service_accounts.keys.create` | Keys | Create service account keys | Create and rotate keys for the project's service accounts. | `service_accounts.view` |  |  |
 | `keys.platform_access.grant` ⚠ | Keys | Give keys platform access | Give a new key access to the Platform API. |  | ✓ |  |
 | `security.key_policy.project.manage` | Keys | Set key lifetime | Set the project's maximum key lifetime. |  |  |  |
 | `models.view` | Models | View models | See the project's models, aliases and routing. |  |  |  |

@@ -113,6 +113,21 @@ pub fn expires_at(
     }
 }
 
+pub const GRACE_HOURS: [u32; 4] = [0, 1, 24, 168];
+
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum GraceError {
+    #[error("Choose a grace period of 0, 1, 24 or 168 hours.")]
+    Choice,
+}
+
+pub fn grace_ends_at(hours: u32, now: OffsetDateTime) -> Result<OffsetDateTime, GraceError> {
+    if !GRACE_HOURS.contains(&hours) {
+        return Err(GraceError::Choice);
+    }
+    Ok(now + Duration::hours(i64::from(hours)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,5 +214,21 @@ mod tests {
         assert_eq!(max_lifetime(Some(90), Some(30)), Some(30));
         assert_eq!(max_lifetime(None, Some(30)), Some(30));
         assert_eq!(max_lifetime(None, None), None);
+    }
+
+    #[test]
+    fn grace_periods_are_the_offered_choices() {
+        let now = datetime!(2026-10-11 12:00 UTC);
+        assert_eq!(grace_ends_at(0, now), Ok(now));
+        assert_eq!(grace_ends_at(1, now), Ok(now + Duration::hours(1)));
+        assert_eq!(grace_ends_at(24, now), Ok(now + Duration::days(1)));
+        assert_eq!(grace_ends_at(168, now), Ok(now + Duration::days(7)));
+        for other in [2, 12, 48, 720] {
+            assert_eq!(
+                grace_ends_at(other, now),
+                Err(GraceError::Choice),
+                "{other}"
+            );
+        }
     }
 }

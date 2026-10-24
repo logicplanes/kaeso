@@ -12,7 +12,7 @@ import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { periodUSD } from "~/kaeso/usage-panels";
 import { bucketLabel, type Granularity } from "~/format/buckets";
-import { serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
+import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import { projectPath } from "~/shell/pages";
 import type { OverviewSearch } from "./overview-page";
 import { useProjectRights } from "~/auth/rights";
@@ -68,7 +68,11 @@ export function Breakdown({
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const partiesLoading = usePartyNamesLoading(org, project);
-  const keyName = (id: string) => (id === "playground" ? t("project.overview.playground", "Playground") : (keys.data?.find((k) => k.id === id)?.name ?? id));
+  const keyName = (id: string) => {
+    if (id === "playground") return t("project.overview.playground", "Playground");
+    const key = keys.data?.find((k) => k.id === id);
+    return key ? keyLabel(key) : id;
+  };
   const waiting = !failed && (loading || (by === "key" && keys.isLoading) || (by === "member" && partiesLoading));
   const sorted = waiting ? [] : by === "day" ? [...rows].sort((a, b) => b.key.localeCompare(a.key)) : [...rows].sort((a, b) => b.requests - a.requests);
   const label = (r: UsageRow) => {

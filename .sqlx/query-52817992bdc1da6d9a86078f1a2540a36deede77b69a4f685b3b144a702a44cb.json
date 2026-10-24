@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_platform_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() WHERE org_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "52817992bdc1da6d9a86078f1a2540a36deede77b69a4f685b3b144a702a44cb"
+}

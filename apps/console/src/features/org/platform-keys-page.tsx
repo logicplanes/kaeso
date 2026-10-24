@@ -19,7 +19,7 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
-import type { CreatedKey_OrgKeyView, OrgKeyView } from "~/api/generated/types";
+import type { CreatedKey_OrgKeyView, KeyRotate, OrgKeyView } from "~/api/generated/types";
 import { orgQuery, platformKeysQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
@@ -28,6 +28,7 @@ import { common } from "~/i18n/common";
 import { asKeyState } from "~/features/project/keys/party";
 import { expiryText } from "~/features/project/keys/expiry";
 import { ExpiryPicker, expiryRequest, type Expiry } from "~/kaeso/expiry-picker";
+import { rotatedHint, rotationSteps, useRotationChoices } from "~/kaeso/rotate-key";
 import { usePageCreateAction } from "~/shell/create-action";
 import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
@@ -42,6 +43,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
   const keys = useQuery({ ...platformKeysQuery(org, scope !== "active"), enabled: rights.has("platform_keys.view") });
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState<OrgKeyView | null>(null);
+  const [rotating, setRotating] = useState<OrgKeyView | null>(null);
   const canCreate = rights.has("platform_keys.create");
   const canRevoke = rights.has("platform_keys.revoke");
   usePageCreateAction({
@@ -102,6 +104,16 @@ export function PlatformKeysPage({ org }: { org: string }) {
                     {t("org.platformKeys.disable", "Disable")}
                   </Menu.Item>
                 )
+              )}
+              {!k.replaced_by && (
+                <Menu.Item
+                  icon={icons.key}
+                  disabled={!canCreate}
+                  {...(canCreate ? {} : { description: needs("platform_keys.create") })}
+                  onClick={() => setRotating(k)}
+                >
+                  {t("org.platformKeys.rotate", "Rotate")}
+                </Menu.Item>
               )}
               <Menu.Item icon={icons.delete} variant="danger" onClick={() => setArchiving(k)}>
                 {common.archive()}
@@ -165,6 +177,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         }
       />
       {creating && <CreatePlatformKeyDialog org={org} onClose={() => setCreating(false)} />}
+      {rotating && <RotatePlatformKeyDialog org={org} k={rotating} onClose={() => setRotating(null)} />}
       <AlertDialog
         open={!!archiving}
         onOpenChange={(o) => !o && setArchiving(null)}
@@ -231,20 +244,54 @@ function CreatePlatformKeyDialog({ org, onClose }: { org: string; onClose: () =>
   );
 }
 
+function RotatePlatformKeyDialog({ org, k, onClose }: { org: string; k: OrgKeyView; onClose: () => void }) {
+  const orgView = useQuery(orgQuery(org));
+  const maxDays = orgView.data?.max_key_lifetime_days ?? null;
+  const choices = useRotationChoices(maxDays);
+  const [created, setCreated] = useState<CreatedKey_OrgKeyView | null>(null);
+  const rotate = useApiMutation({
+    mutationFn: async (body: KeyRotate) =>
+      data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/rotate", { params: { path: { org, key: k.id } }, body })),
+    invalidates: [["orgs", org, "platform-keys"]],
+    onSuccess: setCreated,
+  });
+  const reveal = usePlatformKeyReveal(org, created, onClose, {
+    title: t("org.platformKeys.rotated", "Platform key rotated"),
+    description: rotatedHint(choices.grace),
+  });
+  return (
+    <>
+      <StepDialog
+        open
+        onOpenChange={(o) => !o && (created ? reveal.done() : onClose())}
+        result={reveal.result}
+        title={t("org.platformKeys.rotateTitle", "Rotate {name}", { name: k.name })}
+        submitLabel={t("org.platformKeys.rotateKey", "Rotate key")}
+        submitting={rotate.isPending}
+        onSubmit={() => choices.ready && rotate.mutate(choices.body)}
+        steps={rotationSteps(choices, maxDays, "org")}
+      />
+      {reveal.confirm}
+    </>
+  );
+}
+
 function platformSnippets(org: string, secret: string): CodeTab[] {
   const url = `${window.location.origin}/platform/v1/orgs/${org}/projects`;
   return [{ label: "curl", lang: "bash", code: `curl ${url} \\\n  -H "Authorization: Bearer ${secret}"` }];
 }
 
-function usePlatformKeyReveal(org: string, created: CreatedKey_OrgKeyView | null, onDone: () => void) {
+function usePlatformKeyReveal(org: string, created: CreatedKey_OrgKeyView | null, onDone: () => void, heading?: { title: string; description: string }) {
   const [copied, setCopied] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const done = () => (copied ? onDone() : setConfirm(true));
   const result: StepDialogResult | undefined = created
     ? {
         size: "lg",
-        title: t("org.platformKeys.created", "Platform key created"),
-        description: t("org.platformKeys.createdHint", "Copy the key for {name} now; it's shown once and Kaeso stores only a hash.", { name: created.name }),
+        title: heading?.title ?? t("org.platformKeys.created", "Platform key created"),
+        description:
+          heading?.description ??
+          t("org.platformKeys.createdHint", "Copy the key for {name} now; it's shown once and Kaeso stores only a hash.", { name: created.name }),
         footer: <Button onClick={done}>{common.done()}</Button>,
         content: (
           <SecretReveal

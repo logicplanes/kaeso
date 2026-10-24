@@ -104,6 +104,18 @@ describe("OverviewPage", () => {
     expect(requests("GET", USAGE).map((r) => Object.fromEntries(r.query))).toContainEqual({ from: "2026-10-01", to: "2026-10-14", group_by: "model" });
   });
 
+  it("tells a replaced key from its replacement in usage by key", async () => {
+    signedIn();
+    projectData({ keys: [apiKey({ replaced_by: "key_next" }), apiKey({ id: "key_next", rotated_from: "key_web" })] });
+    usage({ key: [usageRow({ key: "key_next", requests: 10 }), usageRow({ key: "key_web", requests: 3 })] });
+    await renderApp(projectPath(`?${PERIOD}&by=key`));
+
+    const table = await breakdown();
+    await waitFor(() =>
+      expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringMatching(/^checkout-web\d/), expect.stringContaining("checkout-web (replaced)")]),
+    );
+  });
+
   it("groups by key, member and day from the segmented control", async () => {
     signedIn();
     projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });

@@ -1031,6 +1031,7 @@ async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_i
             expires_at: None,
             created_by_kind: "user",
             created_by_id: Some(owner),
+            rotated_from: None,
         },
     )
     .await

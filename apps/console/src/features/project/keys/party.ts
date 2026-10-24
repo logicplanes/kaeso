@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { KeyState } from "@logicplanes/kaeso-ui";
+import type { KeyView } from "~/api/generated/types";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { useSession } from "~/auth/session";
 import { useProjectRights } from "~/auth/rights";
@@ -8,6 +9,9 @@ import { t } from "~/i18n";
 import { partyText, userLabel, type PartyLabel, type PartyRef } from "~/kaeso/party";
 
 export const asKeyState = (s: string): KeyState => (s === "disabled" || s === "expired" || s === "archived" ? s : "active");
+
+export const keyLabel = (k: Pick<KeyView, "name" | "replaced_by">): string =>
+  k.replaced_by ? t("keys.replacedName", "{name} (replaced)", { name: k.name }) : k.name;
 
 export const serviceAccountName = (name: string) => t("keys.party.serviceAccount", "{name} (service account)", { name });
 

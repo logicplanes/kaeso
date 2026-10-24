@@ -139,7 +139,7 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `platform_keys.view` | 查看平台密钥 | 查看组织的平台密钥（元数据）。 |  |
-| `platform_keys.create` | 创建平台密钥 | 创建可管理组织级一切内容的组织平台密钥。 | 敏感；需近期登录；需要 `platform_keys.view` |
+| `platform_keys.create` | 创建平台密钥 | 创建和轮换可管理组织级一切内容的组织平台密钥。 | 敏感；需近期登录；需要 `platform_keys.view` |
 | `platform_keys.revoke` | 停用平台密钥 | 停用、启用或归档组织平台密钥。 | 需要 `platform_keys.view` |
 
 ### 日志与数据
@@ -200,11 +200,11 @@ order: 4
 
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
-| `keys.own.create` | 创建自己的密钥 | 为自己创建 API 密钥。 |  |
+| `keys.own.create` | 创建自己的密钥 | 为自己创建和轮换 API 密钥。 |  |
 | `keys.own.manage` | 管理自己的密钥 | 停用、启用或归档自己的 API 密钥。 |  |
 | `keys.all.view` | 查看所有密钥 | 查看项目中的所有密钥（元数据）。 |  |
 | `keys.all.manage` | 管理所有密钥 | 停用、启用或归档项目中任何人的密钥。 | 需要 `keys.all.view` |
-| `service_accounts.keys.create` | 创建服务账号密钥 | 为项目的服务账号创建密钥。 | 需要 `service_accounts.view` |
+| `service_accounts.keys.create` | 创建服务账号密钥 | 为项目的服务账号创建和轮换密钥。 | 需要 `service_accounts.view` |
 | `keys.platform_access.grant` | 授予密钥平台访问权限 | 授予新密钥访问 Platform API 的权限。 | 敏感；需近期登录 |
 | `security.key_policy.project.manage` | 设置密钥有效期 | 设置项目的密钥最长有效期。 |  |
 

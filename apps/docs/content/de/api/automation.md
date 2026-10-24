@@ -119,6 +119,24 @@ Eine Anfrage erscheint innerhalb weniger Sekunden in den Protokollen. Die Nutzun
 
 Hängen Sie die ID eines Protokolleintrags an, um eine einzelne Anfrage zu lesen, etwa `logs/req_…`. Er enthält den Inhalt der Anfrage, wenn das Projekt Inhalte protokolliert.
 
+## Schlüssel der App rotieren
+
+Ersetzen Sie den Schlüssel der App, bevor er abläuft, oder sofort, wenn er offengelegt wurde. Das Rotieren erstellt einen neuen Schlüssel mit demselben Namen, Zugriff, denselben Modellen und Limits, und der alte Schlüssel funktioniert noch `grace_hours` lang: 0, 1, 24 oder 168. Ermitteln Sie die ID des Schlüssels und rotieren Sie ihn mit einer Schonfrist von 24 Stunden:
+
+```bash
+KEY=$(curl -s "$ORG_URL/projects/$PROJECT/keys?service_account=$ACCOUNT" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" | jq -r '.data[0].id')
+
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys/$KEY/rotate" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"grace_hours": 24, "expires_in_days": 90}' | jq -r .secret
+)
+```
+
+`KAESO_API_KEY` enthält jetzt den neuen Schlüssel. Hinterlegen Sie ihn innerhalb von 24 Stunden dort, wo die App ihn liest; danach läuft der alte Schlüssel ab. `rotated_from` des neuen und `replaced_by` des alten Schlüssels verbinden die beiden, und Anfrageprotokolle und Nutzung behalten die eigene ID jedes Schlüssels.
+
 ## Stattdessen einen Projektschlüssel verwenden
 
 Ein API-Schlüssel mit Plattformzugriff funktioniert innerhalb seines eigenen Projekts genauso, mit den Rechten seines Mitglieds oder Dienstkontos. Senden Sie ihn als `Authorization: Bearer sk-kso-…`. Er kann mit `models.manage` Modelle hinzufügen und mit `usage.view` und `logs.metadata.view` Nutzung und Protokolle lesen.

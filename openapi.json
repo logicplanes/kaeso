@@ -8965,6 +8965,91 @@
         "x-kaeso-access": "right:platform_keys.revoke"
       }
     },
+    "/platform/v1/orgs/{org}/platform-keys/{key}/rotate": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Rotates an org platform key: a new key with the same name, while the old\nkey keeps working for the grace period. Only with a console session.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `platform_keys.revoke`, and the caller must hold every right of the admin role, as for creating one.\n\n**Right:** `platform_keys.create` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgPlatformKeysKeyRotate",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgPlatformKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRotate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKey_OrgKeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:platform_keys.create"
+      }
+    },
     "/platform/v1/orgs/{org}/projects": {
       "get": {
         "tags": [
@@ -10839,6 +10924,99 @@
           }
         ],
         "x-kaeso-access": "right:limits.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/keys/{key}/rotate": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Rotates one of the caller's keys: a new key with the same name, access,\nmodels and limits, while the old key keeps working for the grace period.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a key with platform access needs what creating one needs.\n\n**Right:** `keys.own.create` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectKeysKeyRotate",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRotate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKey_KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:keys.own.create"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/limits": {
@@ -14318,6 +14496,107 @@
         "x-kaeso-access": "right:service_accounts.keys.create"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/keys/{key}/rotate": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Rotates a service account's key: a new key with the same name, access,\nmodels and limits, while the old key keeps working for the grace period.",
+        "description": "Answers with the new key and its secret, shown once. The old key stops at the end of the grace period, or at its own expiry if that is sooner, and links to the new key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access needs what creating one needs.\n\n**Right:** `service_accounts.keys.create` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectServiceAccountsAccountKeysKeyRotate",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "account",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ServiceAccountId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRotate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedKey_KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:service_accounts.keys.create"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/models": {
       "get": {
         "tags": [
@@ -16987,6 +17266,28 @@
                 "description": "A redacted form for recognising it, e.g. `sk-kso-AbC123…wxyz`.",
                 "example": "sk-kso-AbC123…wxyz"
               },
+              "replaced_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ApiKeyId",
+                    "description": "The key that replaced it; it stops working at `expires_at`."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rotated_from": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ApiKeyId",
+                    "description": "The key it replaced, when it was made by rotating that key."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "state": {
                 "type": "string",
                 "description": "`active`, `disabled`, `expired` or `archived`.",
@@ -17060,6 +17361,28 @@
               "redacted": {
                 "type": "string",
                 "description": "A redacted form, e.g. `sk-kso-org-AbC123…wxyz`."
+              },
+              "replaced_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OrgPlatformKeyId",
+                    "description": "The platform key that replaced it; it stops working at `expires_at`."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rotated_from": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OrgPlatformKeyId",
+                    "description": "The platform key it replaced, when it was made by rotating that key."
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "state": {
                 "type": "string",
@@ -18595,6 +18918,30 @@
           }
         }
       },
+      "KeyRotate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ExpiryRequest",
+            "description": "When the new key expires."
+          },
+          {
+            "type": "object",
+            "required": [
+              "grace_hours"
+            ],
+            "properties": {
+              "grace_hours": {
+                "type": "integer",
+                "format": "int32",
+                "description": "How long the old key keeps working: 0 (it stops at once), 1, 24 or 168\nhours.",
+                "example": 24,
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "How to rotate a key: how long the old key keeps working, and when\nthe new key expires."
+      },
       "KeyView": {
         "type": "object",
         "description": "An API key, without its secret.",
@@ -18660,6 +19007,28 @@
             "type": "string",
             "description": "A redacted form for recognising it, e.g. `sk-kso-AbC123…wxyz`.",
             "example": "sk-kso-AbC123…wxyz"
+          },
+          "replaced_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApiKeyId",
+                "description": "The key that replaced it; it stops working at `expires_at`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rotated_from": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ApiKeyId",
+                "description": "The key it replaced, when it was made by rotating that key."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "type": "string",
@@ -19778,6 +20147,28 @@
                   "description": "A redacted form for recognising it, e.g. `sk-kso-AbC123…wxyz`.",
                   "example": "sk-kso-AbC123…wxyz"
                 },
+                "replaced_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiKeyId",
+                      "description": "The key that replaced it; it stops working at `expires_at`."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rotated_from": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiKeyId",
+                      "description": "The key it replaced, when it was made by rotating that key."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "state": {
                   "type": "string",
                   "description": "`active`, `disabled`, `expired` or `archived`.",
@@ -20322,6 +20713,28 @@
                 "redacted": {
                   "type": "string",
                   "description": "A redacted form, e.g. `sk-kso-org-AbC123…wxyz`."
+                },
+                "replaced_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OrgPlatformKeyId",
+                      "description": "The platform key that replaced it; it stops working at `expires_at`."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "rotated_from": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OrgPlatformKeyId",
+                      "description": "The platform key it replaced, when it was made by rotating that key."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "state": {
                   "type": "string",
@@ -22175,6 +22588,28 @@
           "redacted": {
             "type": "string",
             "description": "A redacted form, e.g. `sk-kso-org-AbC123…wxyz`."
+          },
+          "replaced_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrgPlatformKeyId",
+                "description": "The platform key that replaced it; it stops working at `expires_at`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rotated_from": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrgPlatformKeyId",
+                "description": "The platform key it replaced, when it was made by rotating that key."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "state": {
             "type": "string",

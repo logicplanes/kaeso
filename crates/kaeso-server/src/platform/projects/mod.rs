@@ -59,6 +59,8 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::disable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::enable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::archive)))
+        .routes(s.route(Access::Project(R::KeysOwnCreate), routes!(keys::rotate)))
+        .routes(s.route(Access::Project(R::ServiceAccountsKeysCreate), routes!(keys::rotate_for_service_account)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(models::search)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(models::preview)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(models::list)))

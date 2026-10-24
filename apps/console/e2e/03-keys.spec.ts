@@ -10,6 +10,7 @@ const row = (page: Page, name: string) =>
     .filter({ has: page.getByText(name, { exact: true }) });
 
 let secret = "";
+let preview = "";
 
 async function openKeys(page: Page) {
   await signInToProject(page);
@@ -56,6 +57,7 @@ test("the next key starts on an empty first step, and the last key's secret is n
   const field = reveal.getByRole("textbox", { name: "Secret for deploy-preview" });
   await expect(field).toHaveText(/^sk-kso-/);
   const next = (await field.textContent()) ?? "";
+  preview = next;
   expect(next).not.toBe(secret);
   await reveal.getByRole("button", { name: "Done" }).click();
   await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
@@ -87,6 +89,35 @@ test("the key authenticates with the gateway", async ({ request }) => {
   expect(res.status()).toBe(200);
   const bad = await request.get("/v1/models", { headers: { authorization: "Bearer sk-kso-not-a-key" } });
   expect(bad.status()).toBe(401);
+});
+
+test("rotating a key shows the new key once, and the old key works until the grace period ends", async ({ page, request }) => {
+  expect(preview).toMatch(/^sk-kso-/);
+  await openKeys(page);
+  await row(page, "deploy-preview").click();
+  const sheet = page.getByRole("dialog", { name: "deploy-preview" });
+  await sheet.getByRole("button", { name: "Key actions" }).click();
+  await page.getByRole("menuitem", { name: "Rotate" }).click();
+  const dialog = page.getByRole("dialog", { name: "Rotate deploy-preview" });
+  await expect(dialog.getByRole("heading", { name: "When does the old key stop working?" })).toBeVisible();
+  await dialog.getByRole("radio", { name: "After 1 hour" }).check();
+  await submitSteps(dialog, "Rotate key");
+
+  const reveal = page.getByRole("dialog", { name: "Key rotated" });
+  await expect(reveal.getByText("Copy the new key now: it's shown once, and the old key stops in 1 hour.")).toBeVisible();
+  const field = reveal.getByRole("textbox", { name: "Secret for deploy-preview" });
+  await expect(field).toHaveText(/^sk-kso-/);
+  const rotated = (await field.textContent()) ?? "";
+  expect(rotated).not.toBe(preview);
+  await reveal.getByRole("button", { name: "Copy key" }).click();
+  await reveal.getByRole("button", { name: "Done" }).click();
+  await expect(reveal).toBeHidden();
+
+  for (const key of [preview, rotated]) expect((await request.get("/v1/models", { headers: { authorization: `Bearer ${key}` } })).status()).toBe(200);
+  await expect(sheet.getByText("Replaced by")).toBeVisible();
+  await expect(row(page, "deploy-preview").getByText(/^Replaced; stops in/)).toBeVisible();
+  await sheet.getByRole("link", { name: /^sk-kso-/ }).click();
+  await expect(sheet.getByText("Rotated from")).toBeVisible();
 });
 
 test("disabling a key can be undone, and a disabled key is refused", async ({ page, request }) => {
