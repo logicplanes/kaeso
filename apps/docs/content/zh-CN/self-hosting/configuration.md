@@ -185,7 +185,18 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 项目目录中的模型可以设置自己的超时（[模型和别名](../console/models-and-aliases.md)）。
 
-当网关的环境设置了代理时，网关会通过 `HTTPS_PROXY`（`http` 基础 URL 用 `HTTP_PROXY`，或 `ALL_PROXY`）中的代理调用服务商，`NO_PROXY` 中的主机除外。代理能看到 `http` 调用中的服务商密钥，因此通过代理时请使用 `https` 基础 URL。
+当网关的环境设置了代理时，网关会通过 `HTTPS_PROXY`（`http` 基础 URL 用 `HTTP_PROXY`，或 `ALL_PROXY`）中的代理调用服务商，`NO_PROXY` 中的主机除外。代理能看到 `http` 调用中的服务商密钥，因此通过代理时请使用 `https` 基础 URL。自定义服务商除外：网关直接调用它们（[自定义服务商](#自定义服务商)）。
+
+### 自定义服务商
+
+| 变量 | TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- | --- |
+| `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | 允许组织管理员添加自己的服务商，例如自托管的 vLLM 或内部代理（[自定义服务商](../console/custom-providers.md)）。设为 `false` 时，拒绝发往已添加服务商的请求，但保留这些服务商。 |
+| `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | 自定义服务商可以访问的私有、环回或其他非公网网络，以逗号分隔，例如 `10.0.0.0/8` 或 `127.0.0.1/32`。明文 `http` 只能访问这些网络。 |
+
+自定义服务商的基础 URL 由组织管理员选择，因此网关会把关它连接的目标。每次连接时，网关都会解析主机名并检查每个地址。它会拒绝私有、环回、链路本地和云元数据地址，除非 `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` 列出了它们所在的网络。主机名之后解析到其他地址时，会在下一次连接时重新检查。链路本地和云元数据地址（例如 `169.254.169.254`）即使被列出的网络覆盖，也始终会被拒绝。
+
+网关也不会跟随自定义服务商的重定向，并且调用它时不经过 `HTTPS_PROXY` 中的代理，因为代理会绕过这些检查自行解析主机名。只有当每位组织管理员都可以通过网关访问某个网络中的服务器时，才允许该网络。若 vLLM 与网关容器位于同一主机上，请列出 Docker 网络，例如 `172.16.0.0/12`。
 
 ### 发往应用的流
 

@@ -90,6 +90,12 @@ A provider id is lowercase letters and digits with single hyphens between them, 
 
 A compile-time check holds every id in `PROVIDERS` to the rule. The PostgreSQL CHECK constraints on the `provider` columns use the same pattern, which a store test compares. Another test checks every provider in the shipped models.dev snapshot.
 
+## Custom providers
+
+An organization's own providers live in the `custom_providers` table, one row per organization and id. `OrgProviders` in `crates/kaeso-core/src/providers.rs` resolves an id to a `ProviderRef`: the organization's custom provider first, then the built-in one, so a built-in provider a later release adds under a taken id never receives that organization's keys. The request path never queries for it: the project's cached `ProjectModels` carries its organization's custom providers, and every change to one forgets the cached models of the organization's projects.
+
+A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Completions, with no refused-key messages and no account sign-in. Its calls go through `kaeso_upstream::guard`, the same address check OIDC discovery uses. The resolver checks every address a name resolves to on each new connection, `check_literal` checks an IP address in the URL before each call, and guarded clients use no proxy and their own connection pool. Metrics label every custom provider `custom`; request logs and usage keep its id.
+
 ## Model data
 
 `crates/kaeso-core/data` holds the model data each release ships:
@@ -98,6 +104,7 @@ A compile-time check holds every id in `PROVIDERS` to the rule. The PostgreSQL C
 | --- | --- |
 | `models-dev.json` | A snapshot of [models.dev](https://models.dev), filtered to the providers Kaeso calls, so a fresh install works without network access. The folder's `README.md` records when it was fetched and its SHA-256 |
 | `supplement.toml` | Fields models.dev doesn't have, each with its source in the `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts` where models.dev lists none, and `egress_dialect`, the format Kaeso sends to an OpenAI model |
+| `models-dev-providers.txt` | Every provider id on models.dev, which a custom provider can't take |
 
 A catalogue entry's value is its override, else models.dev, else the supplement. The gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`) and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins.
 

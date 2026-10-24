@@ -79,6 +79,10 @@ base_url = "https://openrouter.ai/api"
 [providers.mistral]
 base_url = "https://api.mistral.ai"
 
+[custom_providers]
+enabled = true
+allowed_networks = ""
+
 [upstream]
 connect_timeout = "10s"
 request_timeout = "600s"

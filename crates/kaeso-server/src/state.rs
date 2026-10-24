@@ -60,6 +60,9 @@ impl AppState {
     pub fn new(p: Parts) -> AppState {
         let caches = Caches::new(&p.valkey, &p.keyring);
         let connect_timeout = p.config.upstream.connect_timeout;
+        let reach = kaeso_upstream::guard::Reach::networks(
+            p.config.custom_providers.allowed_networks.clone(),
+        );
         let translating = crate::model_api::memory::Budget::new(p.config.body_limits.in_flight.0);
         caches.listen(&p.valkey);
         AppState(Arc::new(Inner {
@@ -75,7 +78,8 @@ impl AppState {
             upstream: kaeso_upstream::Upstream::new(
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
-            ),
+            )
+            .guarding(reach),
             limits: p
                 .limits
                 .unwrap_or_else(|| Arc::new(crate::services::limits::ValkeyLimits)),

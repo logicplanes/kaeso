@@ -197,7 +197,9 @@ try {
 | 429 | 达到了速率限制或预算，或者请求的费用可能超过其剩余额度，消息会指明是哪一个。预算用尽时，消息会说明何时重置。 |
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
 | 500 | Kaeso 无法解密服务商密钥，或模型的服务商在此实例中不可用。 |
+| 500 | 模型的服务商是自定义服务商，而实例已关闭自定义服务商。 |
 | 502 | Kaeso 无法连接服务商，或传输失败。 |
+| 502 | 自定义服务商位于实例不允许的地址，或其回复的形式无法按其格式读取。 |
 | 502 | 服务商拒绝了项目的服务商密钥，或因计费或配额原因拒绝了它。 |
 | 503 | Kaeso 无法加载目录、密钥、服务商密钥或限额，或正在重启。OpenAI 格式对这些情况返回 500。 |
 | 503 | 服务商过载，适用于 OpenAI 格式。 |
@@ -225,6 +227,20 @@ try {
 因此，应用收到的是一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。组织管理员可在**服务商**下检查该密钥。
 
 请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
+
+### 自定义服务商
+
+[自定义服务商](../console/custom-providers.md)的错误消息会以 ID 指明它，方便您区分自己服务器的问题和服务商的问题：
+
+| 发生了什么 | 状态码 | 消息 |
+| --- | --- | --- |
+| Kaeso 无法连接它 | 502 | “Kaeso cannot reach the custom provider `…`; check its base URL.” |
+| 它的地址不被允许 | 502 | “The custom provider `…` is at an address this install does not allow; ask its operator.” |
+| 它拒绝了项目的密钥 | 502 | “The custom provider `…` refused this project's key; ask an organization admin to check it under Providers.” |
+| 它需要密钥，但在 Kaeso 中设为不使用密钥 | 502 | “The custom provider `…` asks for a key; an organization admin sets how it signs in under Providers.” |
+| 它的回复不符合其格式 | 502 | “The custom provider `…` answered in a form `…` cannot read; check its API format.” |
+
+当服务商以其格式返回错误时，您的应用会像对待任何服务商一样收到该错误。请求日志保留服务商的原话。
 
 ### 服务商不提供的模型
 

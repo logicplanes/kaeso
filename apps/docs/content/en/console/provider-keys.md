@@ -8,7 +8,7 @@ Provider keys are your organization's keys for the [model providers Kaeso calls]
 
 ## Add a key
 
-**Providers** lists the providers your organization has keys for. Until it has one, the page explains provider keys and offers **Add provider key**. Once there are more than eight keys, a search above the list finds them by provider, key or project name.
+**Providers** lists the providers your organization has keys for under **Provider keys**. Until it has one, the page explains provider keys and offers **Add provider key**. Once there are more than eight keys, a search above the list finds them by provider, key or project name. Next to it, **Custom providers** lists the servers your organization added itself ([custom providers](custom-providers.md)).
 
 1. On **Providers**, choose **Add provider key**.
 2. **Which provider is the key for?** Search for the provider and choose it. Providers that already have keys come first, with their key counts.

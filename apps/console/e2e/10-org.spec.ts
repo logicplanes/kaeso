@@ -244,6 +244,69 @@ test("provider keys: several per provider, one default, assigned to a project, r
   await expect(page.getByText("…0p1c")).toHaveCount(0);
 });
 
+test("custom providers: one is added on its tab, gets a key and a priced model, and goes with both when deleted", async ({ page }) => {
+  await openOrgSettings(page, "General");
+  const org = /\/settings\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
+  await page.goto(`/orgs/${org}/providers?tab=custom`);
+  await expect(page.getByRole("tab", { name: /Custom providers/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("No custom providers yet")).toBeVisible();
+  await page.getByRole("button", { name: "Add custom provider" }).first().click();
+  const add = page.getByRole("dialog", { name: "Add custom provider" });
+  await add.getByRole("textbox", { name: "Name" }).fill("Research vLLM");
+  await expect(add.getByRole("textbox", { name: "Id" })).toHaveValue("research-vllm");
+  await add.getByRole("textbox", { name: "Base URL" }).fill("http://provider:8080");
+  await add.getByRole("button", { name: "Add custom provider" }).click();
+  await expect(toastText(page, "Research vLLM added")).toBeVisible();
+  const row = page.getByRole("row").filter({ hasText: "research-vllm" });
+  await expect(row.getByText("OpenAI Chat Completions")).toBeVisible();
+  await expect(row.getByText("Not used yet")).toBeVisible();
+
+  await page.getByRole("tab", { name: /Provider keys/ }).click();
+  await page.getByRole("button", { name: "Add provider key", exact: true }).click();
+  const key = page.getByRole("dialog", { name: "Add provider key" });
+  await key.getByRole("option", { name: /^Research vLLM/ }).click();
+  await key.getByRole("button", { name: "Continue" }).click();
+  await expect(key.getByText("Paste the key that Research vLLM expects.")).toBeVisible();
+  await key.getByRole("textbox", { name: "Research vLLM API key", exact: true }).fill("lab-mock-key-000000000001");
+  await key.getByLabel("Name", { exact: true }).fill("Lab");
+  const submit = key.getByRole("button", { name: "Add key" });
+  if (!(await submit.isVisible())) await key.getByRole("button", { name: "Continue" }).click();
+  await submit.click();
+  await expect(toastText(page, /^(Research vLLM · Lab added|Lab is the Research vLLM default)$/)).toBeVisible();
+
+  const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as {
+    data: { org_id: string; projects: { id: string; is_default: boolean }[] }[];
+  };
+  const project = memberships.data.find((m) => m.org_id === org)?.projects.find((p) => p.is_default)?.id ?? "";
+  await page.goto(`/orgs/${org}/projects/${project}/models?add=true`);
+  const dialog = page.getByRole("dialog", { name: "Add models" });
+  await dialog.getByRole("button", { description: "Provider" }).click();
+  await page.getByRole("option", { name: /^Research vLLM/ }).click();
+  const listed = dialog.getByRole("grid", { name: "Models Research vLLM lists" }).getByRole("gridcell").first();
+  const model = ((await listed.textContent()) ?? "").trim();
+  await listed.click();
+  const values = page.getByRole("dialog", { name: "Add a Research vLLM model" });
+  await expect(values.getByText(/Kaeso can't know these values for Research vLLM/)).toBeVisible();
+  await values.getByRole("checkbox", { name: "Text" }).first().click();
+  await values.getByRole("checkbox", { name: "Text" }).nth(1).click();
+  await values.getByRole("textbox", { name: "Context" }).fill("32768");
+  await values.getByRole("textbox", { name: "Output limit" }).fill("4096");
+  await values.getByRole("textbox", { name: "Input price" }).fill("0.1");
+  await values.getByRole("textbox", { name: "Output price" }).fill("0.2");
+  await values.getByRole("button", { name: "Add model" }).click();
+  await expect(toastText(page, `Added ${model}`)).toBeVisible();
+
+  await page.goto(`/orgs/${org}/providers?tab=custom`);
+  await expect(row.getByText("1 key · 1 model")).toBeVisible();
+  await page.getByRole("button", { name: "Actions for Research vLLM" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  const confirm = page.getByRole("alertdialog", { name: "Delete Research vLLM?" });
+  await expect(confirm.getByText("Its 1 key and 1 model in 1 project go too; requests to them fail.")).toBeVisible();
+  await confirm.getByRole("button", { name: "Delete provider" }).click();
+  await expect(toastText(page, "Research vLLM deleted")).toBeVisible();
+  await expect(page.getByText("No custom providers yet")).toBeVisible();
+});
+
 test("security: the maximum key lifetime is set; requiring two-factor authentication without it asks first", async ({ page }) => {
   await openOrgSettings(page, "Security");
   await expect(page.getByRole("switch", { name: "Require single sign-on" })).toHaveAttribute("aria-disabled", "true");
@@ -317,6 +380,7 @@ test("audit log: the changes above are recorded, filtered by action, and open wi
   await openOrgSettings(page, "Audit log");
   const grid = page.getByRole("table", { name: "Audit log" });
   await expect(grid.getByText("Organization changed").first()).toBeVisible();
+  await expect(grid.getByText("Custom provider deleted")).toBeVisible();
   await page.getByRole("combobox", { name: "Action" }).fill("Platform keys");
   await page.getByRole("option", { name: /^Platform keys: every action/ }).click();
   await expect(grid.getByText("Platform key created")).toBeVisible();

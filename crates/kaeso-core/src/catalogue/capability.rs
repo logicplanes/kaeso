@@ -66,7 +66,7 @@ pub fn prepare(
     let name = eff.model_id.as_str();
     let adaptive_thinking = eff
         .provider
-        .dialects
+        .dialects()
         .contains(&DialectId::AnthropicMessages)
         .then_some(eff.fields.adaptive_thinking)
         .flatten();
@@ -103,7 +103,7 @@ pub fn prepare(
             })
         }
         Request::CountTokens(g) => {
-            let Some(dialect) = eff.provider.count_tokens else {
+            let Some(dialect) = eff.provider.count_tokens() else {
                 return Err(refuse(
                     "token counting",
                     Some("model"),
@@ -358,7 +358,7 @@ pub fn model_info(id: &str, eff: &Effective) -> ModelInfo {
     let mut info = ModelInfo::new(id);
     info.display_name = Some(eff.display_name().to_owned());
     info.created_at = eff.fields.release_date.as_deref().and_then(release_seconds);
-    info.owned_by = Some(eff.provider.id.to_owned());
+    info.owned_by = Some(eff.provider.id().to_owned());
     info.context_window = eff.fields.context_limit;
     info.max_output_tokens = eff.fields.output_limit;
     info

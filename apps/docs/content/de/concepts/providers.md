@@ -106,6 +106,10 @@ Manche Modelle bieten mehrere Anbieter an: Groq, OpenRouter und Together AI bedi
 
 Kaeso sendet jede Anfrage an den einen Anbieter, zu dem ihr Modellname führt, und weicht nicht auf einen anderen aus, wenn dieser ausfällt. [Wie eine Anfrage ein Modell nennt](../console/models-and-aliases.md#wie-eine-anfrage-ein-modell-nennt) zeigt, in welcher Reihenfolge Kaeso Namen liest, und warum ein Name wie `openai/gpt-4o` OpenAI statt OpenRouter erreichen kann.
 
+## Eigene Anbieter
+
+Eine Organisation kann einen Server hinzufügen, den Kaeso nicht mitbringt, etwa ein selbst betriebenes vLLM oder einen internen Proxy, als eigenen Anbieter. Kaeso ruft ihn im reinen Format auf, das er spricht, und Preise, Limits und Fähigkeiten seiner Modelle legen Sie selbst fest ([Eigene Anbieter](../console/custom-providers.md)).
+
 ## Ausgehende Verbindungen
 
 Das Gateway ruft jeden Anbieter über HTTPS unter seiner Basis-URL auf. Beschränkt Ihr Netzwerk ausgehende Verbindungen, erlauben Sie den Host jedes Anbieters, den Ihre Organisationen nutzen, etwa `api.groq.com` für Groq. [Unterstützte Anbieter](supported-providers.md) nennt den Host jedes Anbieters, die [Anforderungen](../self-hosting/requirements.md#netzwerk) listen jede Verbindung einer Installation, und [Anbietereinstellungen](../self-hosting/configuration.md#anbietereinstellungen) ändern die Basis-URL eines Anbieters.

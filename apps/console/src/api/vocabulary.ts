@@ -64,6 +64,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.providerCredentialsDelete.name", "Delete provider keys"),
     t("rights.providerCredentialsDelete.description", "Remove a provider key from the organization."),
   ],
+  "providers.custom.view": () => [
+    t("rights.providersCustomView.name", "View custom providers"),
+    t("rights.providersCustomView.description", "See the organization's custom providers, with their addresses and formats."),
+  ],
+  "providers.custom.manage": () => [
+    t("rights.providersCustomManage.name", "Manage custom providers"),
+    t("rights.providersCustomManage.description", "Add, change and delete the organization's custom providers, the endpoints that get its requests and keys."),
+  ],
   "security.sso.manage": () => [
     t("rights.securitySsoManage.name", "Manage SSO"),
     t("rights.securitySsoManage.description", "Configure the organization's identity provider and the role of people who arrive through it."),

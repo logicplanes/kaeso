@@ -209,6 +209,28 @@
             "cloud_only": false,
             "owner_only": false,
             "needs": ["org.view", "provider_credentials.view"]
+          },
+          {
+            "id": "providers.custom.view",
+            "scope": "org",
+            "name": "View custom providers",
+            "description": "See the organization's custom providers, with their addresses and formats.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "providers.custom.manage",
+            "scope": "org",
+            "name": "Manage custom providers",
+            "description": "Add, change and delete the organization's custom providers, the endpoints that get its requests and keys.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view", "providers.custom.view"]
           }
         ]
       },

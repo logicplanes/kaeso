@@ -127,7 +127,17 @@ export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   return null;
 }
 
-export function ModelForm({ value, onChange, dialects }: { value: FieldDraft; onChange: (d: FieldDraft) => void; dialects: readonly string[] }) {
+export function ModelForm({
+  value,
+  onChange,
+  dialects,
+  overrideNote = true,
+}: {
+  value: FieldDraft;
+  onChange: (d: FieldDraft) => void;
+  dialects: readonly string[];
+  overrideNote?: boolean;
+}) {
   const set = (patch: Partial<FieldDraft>) => onChange({ ...value, ...patch });
   const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price", label: string) => (
     <NumberInput
@@ -242,9 +252,11 @@ export function ModelForm({ value, onChange, dialects }: { value: FieldDraft; on
         step="1"
         unit={t("models.unit.seconds", "seconds")}
       />
-      <Text variant="small" tone="secondary">
-        {t("models.overrideNote", "Saved values override models.dev for this project only.")}
-      </Text>
+      {overrideNote && (
+        <Text variant="small" tone="secondary">
+          {t("models.overrideNote", "Saved values override models.dev for this project only.")}
+        </Text>
+      )}
     </div>
   );
 }

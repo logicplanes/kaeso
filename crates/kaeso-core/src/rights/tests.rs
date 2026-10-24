@@ -486,6 +486,7 @@ fn sensitive_rights_need_a_recent_sign_in() {
             "org.ownership.transfer",
             "provider_credentials.create",
             "provider_credentials.replace",
+            "providers.custom.manage",
             "security.sso.manage",
             "security.sso.require",
             "security.2fa.require",

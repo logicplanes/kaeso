@@ -249,5 +249,6 @@
   "kaeso.providerKey.newCodeFirst": "Zuerst einen neuen Code holen",
   "kaeso.providerKey.newCode": "Neuen Code holen",
   "kaeso.providerKey.getCode": "Anmeldecode holen",
-  "kaeso.providerKey.experimental": "Experimentell"
+  "kaeso.providerKey.experimental": "Experimentell",
+  "kaeso.providerKey.customHelp": "Den Schlüssel einfügen, den {provider} erwartet."
 }

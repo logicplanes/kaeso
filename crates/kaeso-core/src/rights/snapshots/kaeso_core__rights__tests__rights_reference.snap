@@ -23,6 +23,8 @@ expression: rights_reference()
 | `provider_credentials.create` | Providers | Add provider keys | Add provider keys to the organization. | `provider_credentials.view` | ✓ |  |
 | `provider_credentials.replace` | Providers | Change provider keys | Replace and rename provider keys, choose each provider's default and assign keys to projects. | `provider_credentials.view` | ✓ |  |
 | `provider_credentials.delete` ⚠ | Providers | Delete provider keys | Remove a provider key from the organization. | `provider_credentials.view` |  |  |
+| `providers.custom.view` | Providers | View custom providers | See the organization's custom providers, with their addresses and formats. |  |  |  |
+| `providers.custom.manage` ⚠ | Providers | Manage custom providers | Add, change and delete the organization's custom providers, the endpoints that get its requests and keys. | `providers.custom.view` | ✓ |  |
 | `security.sso.manage` | Security | Manage SSO | Configure the organization's identity provider and the role of people who arrive through it. |  | ✓ |  |
 | `security.sso.require` ⚠ | Security | Require SSO | Require the accounts this organization manages to sign in only through its SSO. |  | ✓ |  |
 | `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
@@ -116,6 +118,8 @@ expression: rights_reference()
 | `provider_credentials.create` | ✓ | ✓ |  |  |  |  |
 | `provider_credentials.replace` | ✓ | ✓ |  |  |  |  |
 | `provider_credentials.delete` | ✓ | ✓ |  |  |  |  |
+| `providers.custom.view` | ✓ | ✓ |  | ✓ | ✓ |  |
+| `providers.custom.manage` | ✓ | ✓ |  |  |  |  |
 | `security.sso.manage` | ✓ | ✓ |  |  |  |  |
 | `security.sso.require` | ✓ | ✓ |  |  |  |  |
 | `security.2fa.require` | ✓ | ✓ |  |  |  |  |

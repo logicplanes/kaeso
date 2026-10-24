@@ -158,5 +158,9 @@
   "rights.usageOrgView.description": "Die Nutzung aller Projekte sehen.",
   "rights.usageOrgView.name": "Gesamtnutzung ansehen",
   "rights.usageView.description": "Die Nutzung des Projekts sehen.",
-  "rights.usageView.name": "Nutzung ansehen"
+  "rights.usageView.name": "Nutzung ansehen",
+  "rights.providersCustomView.name": "Eigene Anbieter ansehen",
+  "rights.providersCustomView.description": "Die eigenen Anbieter der Organisation mit ihren Adressen und Formaten sehen.",
+  "rights.providersCustomManage.name": "Eigene Anbieter verwalten",
+  "rights.providersCustomManage.description": "Eigene Anbieter der Organisation hinzufügen, ändern und löschen, also die Endpunkte, die ihre Anfragen und Schlüssel erhalten."
 }

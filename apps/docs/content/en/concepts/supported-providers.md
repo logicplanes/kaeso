@@ -4,7 +4,7 @@ description: Look up every provider Kaeso calls, with its id, formats, host and 
 order: 2
 ---
 
-Kaeso has the providers below built in, listed by name. [Providers](providers.md) explains how to use one and what differs between them.
+Kaeso has the providers below built in, listed by name. [Providers](providers.md) explains how to use one and what differs between them. An organization can also add a server of its own that speaks one of these formats ([custom providers](../console/custom-providers.md)).
 
 ## Columns
 

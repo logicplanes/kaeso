@@ -225,7 +225,10 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         api_key_id: caller.key_id,
         catalogue_model_id: outcome.catalogue_model_id,
         model_id: outcome.model_id.clone().unwrap_or_default(),
-        provider: outcome.provider.unwrap_or_default().to_owned(),
+        provider: outcome
+            .custom_provider
+            .clone()
+            .unwrap_or_else(|| outcome.provider.unwrap_or_default().to_owned()),
         requests: 1,
         errors: i64::from(outcome.is_error()),
         input_tokens: i(usage.input_tokens),

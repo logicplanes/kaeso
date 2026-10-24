@@ -31,7 +31,13 @@ fn entry(provider: &str, model: &str) -> Entry {
 }
 
 fn eff(e: &Entry) -> Effective {
-    effective(e, &snapshot(), &Supplement::embedded().unwrap()).unwrap()
+    effective(
+        e,
+        &snapshot(),
+        &Supplement::embedded().unwrap(),
+        &OrgProviders::default(),
+    )
+    .unwrap()
 }
 
 fn feed(cost: &str) -> Vec<u8> {
@@ -46,7 +52,13 @@ fn a_price_a_feed_zeroes_leaves_the_model_unpriced_for_a_spend_budget() {
     let ids = crate::provider::known_ids();
     let parsed = models_dev::parse(&feed(r#"{"input":0,"output":0}"#), &ids).unwrap();
     let e = entry("openai", "gpt-4o");
-    let zeroed = effective(&e, &parsed.snapshot, &Supplement::default()).unwrap();
+    let zeroed = effective(
+        &e,
+        &parsed.snapshot,
+        &Supplement::default(),
+        &OrgProviders::default(),
+    )
+    .unwrap();
     assert_eq!(zeroed.fields.input_price, Some(dec!(0)));
     let refused = crate::cost::unpriced_model(
         &zeroed.fields,
@@ -135,9 +147,15 @@ fn delisted_models_keep_their_last_known_values() {
     last.id = "gone-model".into();
     e.last_known = Some(last);
     e.delisted = true;
-    let x = effective(&e, &snap, &Supplement::default()).unwrap();
+    let x = effective(&e, &snap, &Supplement::default(), &OrgProviders::default()).unwrap();
     assert_eq!(x.fields.input_price, Some(dec!(2.5)));
-    let bare = effective(&entry("openai", "unknown"), &snap, &Supplement::default()).unwrap();
+    let bare = effective(
+        &entry("openai", "unknown"),
+        &snap,
+        &Supplement::default(),
+        &OrgProviders::default(),
+    )
+    .unwrap();
     assert_eq!(bare.fields, Fields::default());
 }
 
@@ -209,8 +227,8 @@ fn patches_set_and_remove_overrides() {
 
 #[test]
 fn values_are_checked() {
-    let openai = provider::provider("openai").unwrap();
-    let anthropic = provider::provider("anthropic").unwrap();
+    let openai = &ProviderRef::BuiltIn(provider::provider("openai").unwrap());
+    let anthropic = &ProviderRef::BuiltIn(provider::provider("anthropic").unwrap());
     let ok = Fields {
         input_modalities: Some(vec!["text".into(), "image".into()]),
         efforts: Some(vec!["low".into()]),
@@ -696,7 +714,7 @@ fn a_thinking_budget_that_becomes_an_effort_the_model_lacks_is_refused() {
 fn mistral_models_speak_chat_completions_and_mistral_embed_embeds() {
     let small = eff(&entry("mistral", "mistral-small-latest"));
     assert_eq!(small.dialect, DialectId::OpenAiChat);
-    assert_eq!(small.provider.chat.provider, "Mistral");
+    assert_eq!(small.provider.chat().provider, "Mistral");
     assert!(!small.is_embeddings());
     let embed = eff(&entry("mistral", "mistral-embed"));
     assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
@@ -761,10 +779,10 @@ fn duties_fill_what_kpp_cannot_know() {
 #[test]
 fn a_provider_without_token_counting_refuses_count_requests_and_still_generates() {
     let mut e = eff(&entry("openai", "gpt-4o"));
-    e.provider = Box::leak(Box::new(Provider {
+    e.provider = ProviderRef::BuiltIn(Box::leak(Box::new(provider::Provider {
         count_tokens: None,
-        ..*e.provider
-    }));
+        ..*e.provider.built_in().unwrap()
+    })));
     for ingress in [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
@@ -1113,4 +1131,81 @@ mod indexed {
             names.len()
         );
     }
+}
+
+fn custom_provider(id: &str, generation: DialectId) -> crate::providers::CustomProvider {
+    crate::providers::CustomProvider::new(crate::providers::Draft {
+        uuid: Uuid::now_v7(),
+        id: provider::ProviderId::parse(id).unwrap(),
+        name: "Internal proxy".into(),
+        base_url: "https://proxy.example.com".into(),
+        auth: crate::providers::CustomAuth::XApiKey,
+        generation,
+        embeddings: None,
+        count_tokens: None,
+    })
+    .unwrap()
+}
+
+#[test]
+fn a_custom_providers_model_resolves_only_in_its_organization_with_the_values_set_by_hand() {
+    let mut e = entry("anthropic", "claude-haiku-4-5");
+    e.custom = true;
+    e.overrides = Fields {
+        input_price: Some(dec!(0.5)),
+        output_price: Some(dec!(1)),
+        context_limit: Some(8192),
+        ..Fields::default()
+    };
+    let org = OrgProviders::new(vec![custom_provider(
+        "anthropic",
+        DialectId::AnthropicMessages,
+    )]);
+    let own = effective(&e, &snapshot(), &Supplement::embedded().unwrap(), &org).unwrap();
+    assert_eq!(own.provider.name(), "Internal proxy");
+    assert_eq!(own.dialect, DialectId::AnthropicMessages);
+    assert_eq!(own.fields.context_limit, Some(8192));
+    assert_eq!(
+        own.fields.adaptive_thinking, None,
+        "no supplement or models.dev value reaches a custom provider's model"
+    );
+    assert_eq!(own.fields.output_limit, None);
+
+    let mut vllm = entry("my-vllm", "llama-3.3-70b");
+    vllm.custom = true;
+    let org = OrgProviders::new(vec![custom_provider("my-vllm", DialectId::OpenAiChat)]);
+    let supplement = Supplement::embedded().unwrap();
+    assert_eq!(
+        effective(&vllm, &snapshot(), &supplement, &org)
+            .unwrap()
+            .dialect,
+        DialectId::OpenAiChat
+    );
+    assert!(
+        effective(&vllm, &snapshot(), &supplement, &OrgProviders::default()).is_none(),
+        "another organization cannot resolve the provider"
+    );
+}
+
+#[test]
+fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
+    let org = OrgProviders::new(vec![custom_provider(
+        "my-proxy",
+        DialectId::AnthropicMessages,
+    )]);
+    let mut e = entry("my-proxy", "claude-x");
+    e.custom = true;
+    let e = effective(&e, &snapshot(), &Supplement::embedded().unwrap(), &org).unwrap();
+    let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
+    let u = prepare(&mut count, DialectId::AnthropicMessages, &e).unwrap_err();
+    assert_eq!(u.message, "The model `claude-x` cannot count tokens.");
+    assert!(
+        Fields {
+            egress_dialect: Some(DialectId::OpenAiChat),
+            ..Fields::default()
+        }
+        .validate(&e.provider)
+        .is_err(),
+        "a custom provider speaks only the dialects it names"
+    );
 }

@@ -34,6 +34,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | `api.github.com` | Der Updater und `gh attestation verify`, um die Attestierungen eines Releases zu holen |
 | Ausgehend | Ihr SMTP-Server | Anmeldelinks, Einladungen, Warnungen und Sicherheitshinweise ([E-Mail](email.md)) |
 | Ausgehend | Die Identitätsanbieter Ihrer Organisationen | Single Sign-on, wenn eine Organisation einen verbindet ([Anmeldung](sign-in.md)) |
+| Ausgehend | Die Basis-URLs der eigenen Anbieter Ihrer Organisationen | Ihre Anfragen, direkt und nie über einen Proxy ([Eigene Anbieter](configuration.md#eigene-anbieter)) |
 
 Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten sind, und Sie aktualisieren von Hand. Schalten Sie die ausgehenden Abfragen ab, wie [Installationen ohne Internetzugang](upgrades.md#installationen-ohne-internetzugang) zeigt.
 

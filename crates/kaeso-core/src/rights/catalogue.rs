@@ -179,6 +179,8 @@ rights!(
         ProviderCredentialsCreate = "provider_credentials.create", Providers, "Add provider keys", false, true, false, [ProviderCredentialsView], "Add provider keys to the organization.";
         ProviderCredentialsReplace = "provider_credentials.replace", Providers, "Change provider keys", false, true, false, [ProviderCredentialsView], "Replace and rename provider keys, choose each provider's default and assign keys to projects.";
         ProviderCredentialsDelete = "provider_credentials.delete", Providers, "Delete provider keys", true, false, false, [ProviderCredentialsView], "Remove a provider key from the organization.";
+        ProvidersCustomView = "providers.custom.view", Providers, "View custom providers", false, false, false, [], "See the organization's custom providers, with their addresses and formats.";
+        ProvidersCustomManage = "providers.custom.manage", Providers, "Manage custom providers", true, true, false, [ProvidersCustomView], "Add, change and delete the organization's custom providers, the endpoints that get its requests and keys.";
         SecuritySsoManage = "security.sso.manage", Security, "Manage SSO", false, true, false, [], "Configure the organization's identity provider and the role of people who arrive through it.";
         SecuritySsoRequire = "security.sso.require", Security, "Require SSO", true, true, false, [], "Require the accounts this organization manages to sign in only through its SSO.";
         Security2faRequire = "security.2fa.require", Security, "Require two-factor", false, true, false, [], "Require two-factor authentication for members.";

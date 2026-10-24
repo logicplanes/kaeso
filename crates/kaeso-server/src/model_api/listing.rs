@@ -50,7 +50,7 @@ async fn visible(
         if !access.allows(entry.id) || entry.is_unavailable() {
             continue;
         }
-        if let Some(eff) = crate::services::catalogue::effective(state, entry) {
+        if let Some(eff) = crate::services::catalogue::effective(state, entry, &models.providers) {
             let name = crate::services::catalogue::request_name(entry, &models.catalogue);
             out.push(info(state, &name, entry, &eff));
             listed.entry(entry.id).or_insert((entry, eff));
@@ -147,7 +147,8 @@ async fn get_inner(
     {
         return Err(not_found());
     }
-    let eff = crate::services::catalogue::effective(state, entry).ok_or_else(not_found)?;
+    let eff = crate::services::catalogue::effective(state, entry, &models.providers)
+        .ok_or_else(not_found)?;
     if entry.is_unavailable() {
         return Err(super::pipeline::unserved(&eff));
     }

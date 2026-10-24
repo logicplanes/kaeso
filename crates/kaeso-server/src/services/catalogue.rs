@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use kaeso_core::catalogue::resolve::Catalogue;
 use kaeso_core::catalogue::{self as core, Effective};
+use kaeso_core::providers::OrgProviders;
 use kaeso_store::StoreError;
 use kaeso_store::pg::catalogue::{self, ProjectModels};
 use uuid::Uuid;
@@ -48,9 +49,18 @@ pub async fn forget(state: &AppState, project: Uuid) {
         .await;
 }
 
-pub fn effective(state: &AppState, entry: &core::Entry) -> Option<Effective> {
+pub fn effective(
+    state: &AppState,
+    entry: &core::Entry,
+    providers: &OrgProviders,
+) -> Option<Effective> {
     let loaded = state.models_dev.current();
-    core::effective(entry, &loaded.snapshot, state.models_dev.supplement())
+    core::effective(
+        entry,
+        &loaded.snapshot,
+        state.models_dev.supplement(),
+        crate::services::custom_providers::in_effect(state, providers),
+    )
 }
 
 pub fn request_name(entry: &core::Entry, catalogue: &Catalogue) -> String {

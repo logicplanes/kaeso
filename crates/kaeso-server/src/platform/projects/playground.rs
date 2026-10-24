@@ -2,7 +2,6 @@ use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
-use kaeso_core::provider;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
 use kaeso_store::pg::credentials;
 use serde::Serialize;
@@ -216,9 +215,8 @@ fn refusal(f: &Failure) -> ApiError {
             ),
             retry_after: retry_after(e),
         },
-        Stage::MissingCredential(p) => ApiError::Conflict(format!(
-            "No provider key for {} is set up for this project; an org admin can add one.",
-            provider::provider(p).map_or(*p, |p| p.name)
+        Stage::MissingCredential(name) => ApiError::Conflict(format!(
+            "No provider key for {name} is set up for this project; an org admin can add one."
         )),
         Stage::SignedOut(product) => ApiError::Conflict(format!(
             "The {product} account of this project's provider key is signed out; sign in again."
@@ -236,7 +234,10 @@ fn refusal(f: &Failure) -> ApiError {
         ),
         Stage::Upstream => provider_error(
             StatusCode::BAD_GATEWAY,
-            "Kaeso cannot reach the provider right now; try again shortly.",
+            &own(
+                &e.message,
+                "Kaeso cannot reach the provider right now; try again shortly.",
+            ),
             e,
         ),
         Stage::Provider => from_provider(e),
@@ -244,12 +245,19 @@ fn refusal(f: &Failure) -> ApiError {
         Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
         Stage::Reply => provider_error(
             StatusCode::BAD_GATEWAY,
-            "The provider's answer could not be read; try again.",
+            &own(
+                &e.message,
+                "The provider's answer could not be read; try again.",
+            ),
             e,
         ),
         Stage::Shutdown => ApiError::Unavailable(
             "Kaeso is restarting and ended this request; send it again.".into(),
         ),
+        Stage::CustomProvidersOff => ApiError::Conflict(own(
+            &e.message,
+            "Custom providers are turned off on this install; ask its operator.",
+        )),
         Stage::Caller | Stage::Setup | Stage::Credential => {
             ApiError::internal(format!("playground request failed: {}", e.message))
         }
@@ -392,7 +400,7 @@ pub async fn models(
     let project = &ctx.project()?.project;
     let models = crate::services::catalogue::project_models(&state, project.id).await?;
     let access = models.access(None, Some(session.user_id), None);
-    let mut keys: Vec<(&str, bool)> = Vec::new();
+    let mut keys: Vec<(String, bool)> = Vec::new();
     let mut out = Vec::new();
     for entry in models
         .catalogue
@@ -400,20 +408,26 @@ pub async fn models(
         .iter()
         .filter(|e| access.allows(e.id))
     {
-        let Some(eff) = crate::services::catalogue::effective(&state, entry) else {
+        let Some(eff) = crate::services::catalogue::effective(&state, entry, &models.providers)
+        else {
             continue;
         };
         if eff.is_embeddings() {
             continue;
         }
-        let provider_key = match keys.iter().find(|(p, _)| *p == eff.provider.id) {
+        let provider_key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {
             Some((_, has)) => *has,
             None => {
-                let has =
-                    credentials::resolve(&state.pg, project.org_id, project.id, eff.provider.id)
-                        .await?
-                        .is_some();
-                keys.push((eff.provider.id, has));
+                let has = eff.provider.auth().is_none()
+                    || credentials::resolve(
+                        &state.pg,
+                        project.org_id,
+                        project.id,
+                        eff.provider.id(),
+                    )
+                    .await?
+                    .is_some();
+                keys.push((eff.provider.id().to_owned(), has));
                 has
             }
         };

@@ -166,7 +166,8 @@ async fn one(upstream: &Upstream, base: &Url, path: &str) -> Run {
     let resp = upstream
         .send(Call {
             base_url: base,
-            auth: AuthStyle::Bearer,
+            auth: Some(AuthStyle::Bearer),
+            guarded: false,
             credential: &credential,
             request: request.into(),
             stream: true,

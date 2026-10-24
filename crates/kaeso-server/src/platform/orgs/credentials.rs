@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
 use kaeso_core::provider::{AuthMethod, ProviderId};
+use kaeso_core::providers::ProviderRef;
 use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
 use serde::{Deserialize, Serialize};
@@ -160,7 +161,9 @@ impl CredentialView {
 #[serde(deny_unknown_fields)]
 #[schema(description = "A new provider key.")]
 pub struct CredentialCreate {
-    #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`, `togetherai`, `groq`, `openrouter` or `mistral`."]
+    #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n\
+        `togetherai`, `groq`, `openrouter`, `mistral`, or one of the organization's\n\
+        custom providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
@@ -259,6 +262,25 @@ pub(super) fn validate_provider(
     })
 }
 
+pub(super) async fn provider_in_org(
+    state: &AppState,
+    org: Uuid,
+    provider: &str,
+) -> ApiResult<ProviderRef> {
+    let providers = crate::services::custom_providers::of_org(state, &state.pg, org).await?;
+    providers.get(provider).ok_or_else(|| {
+        let mut ids: Vec<&str> = kaeso_core::provider::PROVIDERS
+            .iter()
+            .map(|p| p.id)
+            .collect();
+        ids.extend(providers.custom().iter().map(|c| c.id().as_str()));
+        ApiError::invalid(
+            "provider",
+            format!("The provider must be one of {}.", ids.join(", ")),
+        )
+    })
+}
+
 pub(super) async fn view(
     db: &mut sqlx::PgConnection,
     org: Uuid,
@@ -307,7 +329,16 @@ pub async fn create(
     Body(req): Body<CredentialCreate>,
 ) -> ApiResult<(StatusCode, Json<CredentialView>)> {
     let org = ctx.org()?.org.id;
-    let provider = validate_provider(&req.provider)?;
+    let provider = provider_in_org(&state, org, &req.provider).await?;
+    if provider.auth().is_none() {
+        return Err(ApiError::invalid(
+            "provider",
+            format!(
+                "The custom provider `{}` takes no key; Kaeso calls it without one.",
+                provider.id()
+            ),
+        ));
+    }
     let name = validate_name(&req.name)?;
     let (secret, last4) = validate_secret(&req.secret)?;
     let view = add(
@@ -316,7 +347,7 @@ pub async fn create(
         org,
         Added {
             id: CredentialId::new(),
-            provider: provider.id,
+            provider: provider.id(),
             name: &name,
             make_default: req.make_default,
             secret,

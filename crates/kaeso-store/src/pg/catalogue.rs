@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use kaeso_core::catalogue::resolve::{Access, Alias, Catalogue};
 use kaeso_core::catalogue::{Availability, Entry, Fields};
 use kaeso_core::models_dev;
+use kaeso_core::providers::OrgProviders;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgExecutor};
@@ -663,6 +664,7 @@ pub async fn clear_service_account(
 #[serde(from = "Stored")]
 pub struct ProjectModels {
     pub catalogue: Catalogue,
+    pub providers: OrgProviders,
     pub users: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
@@ -678,12 +680,15 @@ struct Stored {
     keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
     #[serde(default)]
     open: BTreeSet<Uuid>,
+    #[serde(default)]
+    providers: OrgProviders,
 }
 
 impl From<Stored> for ProjectModels {
     fn from(s: Stored) -> ProjectModels {
         ProjectModels {
             catalogue: Catalogue::new(s.entries, s.aliases),
+            providers: s.providers,
             users: s.users,
             service_accounts: s.service_accounts,
             keys: s.keys,
@@ -694,13 +699,14 @@ impl From<Stored> for ProjectModels {
 
 impl Serialize for ProjectModels {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("ProjectModels", 6)?;
+        let mut out = serializer.serialize_struct("ProjectModels", 7)?;
         out.serialize_field("entries", self.catalogue.entries())?;
         out.serialize_field("aliases", self.catalogue.aliases())?;
         out.serialize_field("users", &self.users)?;
         out.serialize_field("service_accounts", &self.service_accounts)?;
         out.serialize_field("keys", &self.keys)?;
         out.serialize_field("open", &self.open)?;
+        out.serialize_field("providers", &self.providers)?;
         out.end()
     }
 }
@@ -724,8 +730,14 @@ pub async fn project_models(
             target: a.catalogue_model_id,
         })
         .collect();
+    let providers = super::custom_providers::of_project(&mut *db, project_id)
+        .await?
+        .iter()
+        .map(super::custom_providers::CustomProviderRow::custom_provider)
+        .collect::<Result<Vec<_>, _>>()?;
     let mut out = ProjectModels {
         catalogue: Catalogue::new(entries, aliases),
+        providers: OrgProviders::new(providers),
         ..ProjectModels::default()
     };
     let users = sqlx::query!(
@@ -864,6 +876,7 @@ mod tests {
                 "entries",
                 "keys",
                 "open",
+                "providers",
                 "service_accounts",
                 "users"
             ]
@@ -877,10 +890,11 @@ mod tests {
         assert!(back.access(None, Some(user), None).allows(gpt.id));
         assert!(!back.access(None, None, None).allows(gpt.id));
         older.as_object_mut().unwrap().remove("open");
+        older.as_object_mut().unwrap().remove("providers");
         let older: ProjectModels = serde_json::from_value(older).unwrap();
         assert!(
-            older.open.is_empty(),
-            "a value cached before `open` reads back"
+            older.open.is_empty() && older.providers == OrgProviders::default(),
+            "a value cached before `open` and `providers` reads back"
         );
     }
 

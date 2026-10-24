@@ -228,6 +228,6 @@ describe("the gateway's words in its answers", () => {
       expect(name, id).toBeTruthy();
       expect(description, id).toBeTruthy();
     }
-    expect(knownRights()).toHaveLength(64);
+    expect(knownRights()).toHaveLength(66);
   });
 });

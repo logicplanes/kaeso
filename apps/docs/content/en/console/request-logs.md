@@ -1,7 +1,7 @@
 ---
 title: Request logs
 description: Find any request a project served, see what was sent and returned, export logs, and choose what is kept.
-order: 7
+order: 8
 ---
 
 Kaeso logs every model request: the model, the provider, the status, tokens, cost, timing, the key and who sent it. With content logging on, it also keeps what the app sent and what it got back. A request shows up a few seconds after it ends.

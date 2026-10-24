@@ -146,6 +146,7 @@
   "kaeso.providerKey.continueWith": "Continue with {product}",
   "kaeso.providerKey.copyCode": "Copy code",
   "kaeso.providerKey.count": "{count, plural, one {# key} other {# keys}}",
+  "kaeso.providerKey.customHelp": "Paste the key that {provider} expects.",
   "kaeso.providerKey.default": "Default",
   "kaeso.providerKey.deviceCode": "Code",
   "kaeso.providerKey.deviceEnded": "This sign-in ended; get a new code to try again.",

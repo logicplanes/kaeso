@@ -90,6 +90,12 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 编译期检查确保 `PROVIDERS` 中的每个 ID 都符合这条规则。PostgreSQL 中 `provider` 列的 CHECK 约束使用同一模式，由一个存储测试进行比对。另一个测试检查随附的 models.dev 快照中的每个服务商。
 
+## 自定义服务商
+
+组织自有的服务商存放在 `custom_providers` 表中，每个组织和 ID 一行。`crates/kaeso-core/src/providers.rs` 中的 `OrgProviders` 将 ID 解析为 `ProviderRef`：先找组织的自定义服务商，再找内置服务商，因此后续版本以已占用 ID 新增的内置服务商永远不会收到该组织的密钥。请求路径不会为此查询数据库：项目缓存的 `ProjectModels` 带有其组织的自定义服务商，对自定义服务商的每次修改都会清除该组织各项目的模型缓存。
+
+自定义服务商使用原样的方言，Chat Completions 对应 `ChatProfile::OPENAI`，没有密钥被拒的消息，也没有账户登录。它的调用经过 `kaeso_upstream::guard`，即 OIDC 发现所用的同一地址检查。解析器在每次新建连接时检查名称解析到的每个地址，`check_literal` 在每次调用前检查 URL 中的 IP 地址，受保护的客户端不使用代理，并有自己的连接池。指标将每个自定义服务商标记为 `custom`；请求日志和用量保留其 ID。
+
 ## 模型数据
 
 `crates/kaeso-core/data` 保存每个版本附带的模型数据：
@@ -98,6 +104,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | --- | --- |
 | `models-dev.json` | [models.dev](https://models.dev) 的快照，筛选为 Kaeso 调用的服务商，使全新实例无需联网即可工作。该目录的 `README.md` 记录了获取时间和 SHA-256 |
 | `supplement.toml` | models.dev 中没有的字段，每项的来源都写在 `README.md` 中：`adaptive_thinking`、`forced_tool_choice: false`、models.dev 未列出时的 `efforts`，以及 `egress_dialect`，即 Kaeso 发给 OpenAI 模型时使用的格式 |
+| `models-dev-providers.txt` | models.dev 上的每个服务商 ID，自定义服务商不能使用这些 ID |
 
 目录条目的值依次取自其覆盖值、models.dev 和补充数据。网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`），并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。
 

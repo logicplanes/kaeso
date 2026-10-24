@@ -11,6 +11,7 @@ publish.workspace = true
 
 [dependencies]
 kaeso-core.workspace = true
+kaeso-kpp.workspace = true
 sqlx.workspace = true
 clickhouse.workspace = true
 redis.workspace = true

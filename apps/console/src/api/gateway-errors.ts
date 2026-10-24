@@ -66,6 +66,7 @@ const messages = (): Rule[] => [
   rule("errors.notFound.key", () => t("errors.notFound.key", "No such key, or you cannot see it.")),
   rule("errors.notFound.platformKey", () => t("errors.notFound.platformKey", "No such platform key, or you cannot see it.")),
   rule("errors.notFound.credential", () => t("errors.notFound.credential", "No such credential, or you cannot see it.")),
+  rule("errors.notFound.customProvider", () => t("errors.notFound.customProvider", "No such custom provider, or you cannot see it.")),
   rule("errors.notFound.serviceAccount", () => t("errors.notFound.serviceAccount", "No such service account, or you cannot see it.")),
   rule("errors.notFound.activeServiceAccount", () => t("errors.notFound.activeServiceAccount", "No such active service account, or you cannot see it.")),
   rule("errors.notFound.alias", () => t("errors.notFound.alias", "No such alias, or you cannot see it.")),
@@ -73,6 +74,7 @@ const messages = (): Rule[] => [
   rule("errors.notFound.limit", () => t("errors.notFound.limit", "No such limit, or you cannot see it.")),
   rule("errors.stale.catalogueModel", () => t("errors.stale.catalogueModel", "This catalogue model was changed since you loaded it; reload it and try again.")),
   rule("errors.stale.limit", () => t("errors.stale.limit", "This limit was changed since you loaded it; reload it and try again.")),
+  rule("errors.stale.customProvider", () => t("errors.stale.customProvider", "This custom provider was changed since you loaded it; reload it and try again.")),
   rule("errors.notFound.logEntry", () => t("errors.notFound.logEntry", "No such log entry, or you cannot see it.")),
   rule("errors.notFound.auditEvent", () => t("errors.notFound.auditEvent", "No such audit event, or you cannot see it.")),
   rule("errors.notFound.picture", () => t("errors.notFound.picture", "No such picture, or you cannot see it.")),
@@ -318,6 +320,60 @@ const messages = (): Rule[] => [
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
   rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id, such as `openai`.")),
   rule("errors.providerOneOf", (v) => t("errors.providerOneOf", "The provider must be one of {providers}.", v)),
+  rule("errors.customProvider.turnedOff", () => t("errors.customProvider.turnedOff", "Custom providers are turned off on this install; ask its operator.")),
+  rule("errors.customProvider.idForm", () => t("errors.customProvider.idForm", "`id` must be lowercase letters and digits with single hyphens between them.")),
+  rule("errors.customProvider.idLength", () => t("errors.customProvider.idLength", "`id` can have at most 40 characters.")),
+  rule("errors.customProvider.idBuiltIn", (v) => t("errors.customProvider.idBuiltIn", "`{id}` is a built-in provider; choose another id.", v)),
+  rule("errors.customProvider.idModelsDev", (v) =>
+    t("errors.customProvider.idModelsDev", "`{id}` is a provider listed on models.dev that Kaeso may add; choose another id.", v),
+  ),
+  rule("errors.customProvider.idTaken", (v) => t("errors.customProvider.idTaken", "This organization already has a custom provider `{id}`.", v)),
+  rule("errors.customProvider.name", () => t("errors.customProvider.name", "The name must be 1 to 100 characters, without control characters.")),
+  rule("errors.customProvider.urlLength", () => t("errors.customProvider.urlLength", "`base_url` must be a URL of at most 2048 characters.")),
+  rule("errors.customProvider.urlScheme", () =>
+    t("errors.customProvider.urlScheme", "`base_url` must start with `https://`, or `http://` for an allowed network."),
+  ),
+  rule("errors.customProvider.urlHost", () =>
+    t("errors.customProvider.urlHost", "`base_url` must be a full URL with a host, such as `https://llm.example.com`."),
+  ),
+  rule("errors.customProvider.urlCredentials", () =>
+    t("errors.customProvider.urlCredentials", "`base_url` can't hold a user name or password; add a provider key instead."),
+  ),
+  rule("errors.customProvider.urlQuery", () => t("errors.customProvider.urlQuery", "`base_url` can't have a query or a fragment.")),
+  rule("errors.customProvider.urlPlainHttp", () => t("errors.customProvider.urlPlainHttp", "`base_url` uses `http` for a public address; use `https`.")),
+  rule("errors.customProvider.urlRefused", () => t("errors.customProvider.urlRefused", "`base_url` points to an address this install does not allow.")),
+  rule("errors.customProvider.generation", () =>
+    t("errors.customProvider.generation", "`generation` must be `openai_chat`, `openai_responses` or `anthropic_messages`."),
+  ),
+  rule("errors.customProvider.embeddings", () => t("errors.customProvider.embeddings", "`embeddings` must be `openai_embeddings` or `null`.")),
+  rule("errors.customProvider.countTokens", () =>
+    t("errors.customProvider.countTokens", "`count_tokens` must be `null` or the `generation` format, which must count tokens."),
+  ),
+  rule("errors.customProvider.keysFirst", () => t("errors.customProvider.keysFirst", "Delete the provider's keys before switching it to no key.")),
+  rule("errors.customProvider.takesNoKey", (v) =>
+    t("errors.customProvider.takesNoKey", "The custom provider `{provider}` takes no key; Kaeso calls it without one.", v),
+  ),
+  rule("errors.customProvider.noSignIn", (v) =>
+    t("errors.customProvider.noSignIn", "The id `{provider}` names this organization's custom provider, which has no account sign-in.", v),
+  ),
+  rule("errors.customProvider.customModel", (v) =>
+    t("errors.customProvider.customModel", "`{provider}` is a custom provider; send `custom: true` with the model's values.", v),
+  ),
+  rule("errors.customProvider.oneModelAtATime", () =>
+    t("errors.customProvider.oneModelAtATime", "Add a custom provider's models one at a time, with their values."),
+  ),
+  rule("errors.customProvider.listingOnlyCustom", () =>
+    t("errors.customProvider.listingOnlyCustom", "Only custom providers list their models here; search models.dev for the others."),
+  ),
+  rule("errors.customProvider.listingKeyRefused", (v) =>
+    t("errors.customProvider.listingKeyRefused", "The custom provider `{provider}` refused this project's key; check it under Providers.", v),
+  ),
+  rule("errors.customProvider.noListing", (v) =>
+    t("errors.customProvider.noListing", "The custom provider `{provider}` has no model listing; type the model id instead.", v),
+  ),
+  rule("errors.customProvider.listingFailed", (v) =>
+    t("errors.customProvider.listingFailed", "The custom provider `{provider}` did not list its models; type the model id instead.", v),
+  ),
   rule("errors.accountSignedOut", (v) => t("errors.accountSignedOut", "The {product} account of this project's provider key is signed out; sign in again.", v)),
   rule("errors.replaceAccount", () => t("errors.replaceAccount", "This key signs in with an account; sign in again instead of replacing it.")),
   rule("errors.accountSignInExpired", () => t("errors.accountSignInExpired", "This sign-in expired or was already used; start again.")),
@@ -642,6 +698,28 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.bodyTooLarge", (v) => t("errors.modelApi.bodyTooLarge", "The request body is larger than {limit} bytes.", v), { limit: "number" }),
   rule("errors.modelApi.streamOnly", () => t("errors.modelApi.streamOnly", "Only streamed requests are served here; send `stream: true`.")),
   rule("errors.modelApi.providerUnavailable", (v) => t("errors.modelApi.providerUnavailable", "The provider `{provider}` is not available.", v)),
+  rule("errors.modelApi.customUnreachable", (v) =>
+    t("errors.modelApi.customUnreachable", "Kaeso cannot reach the custom provider `{provider}`; check its base URL.", v),
+  ),
+  rule("errors.modelApi.customAddressRefused", (v) =>
+    t("errors.modelApi.customAddressRefused", "The custom provider `{provider}` is at an address this install does not allow; ask its operator.", v),
+  ),
+  rule("errors.modelApi.customAsksForKey", (v) =>
+    t("errors.modelApi.customAsksForKey", "The custom provider `{provider}` asks for a key; an organization admin sets how it signs in under Providers.", v),
+  ),
+  rule("errors.modelApi.customKeyRefused", (v) =>
+    t(
+      "errors.modelApi.customKeyRefused",
+      "The custom provider `{provider}` refused this project's key; ask an organization admin to check it under Providers.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.customUnreadable", (v) =>
+    t("errors.modelApi.customUnreadable", "The custom provider `{provider}` answered in a form `{dialect}` cannot read; check its API format.", v),
+  ),
+  rule("errors.modelApi.customTurnedOff", (v) =>
+    t("errors.modelApi.customTurnedOff", "Custom providers are turned off on this install, so `{provider}` cannot be called.", v),
+  ),
   rule("errors.modelApi.credentialSealed", () =>
     t("errors.modelApi.credentialSealed", "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."),
   ),

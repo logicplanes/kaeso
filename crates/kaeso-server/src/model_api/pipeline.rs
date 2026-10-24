@@ -15,6 +15,7 @@ use kaeso_core::estimate::{self, Tally};
 use kaeso_core::id::{OrgId, ProjectId, RequestId};
 use kaeso_core::limits::WorstCase;
 use kaeso_core::provider::AuthMethod;
+use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, Reply, Request, RequestKind, StreamMode};
 use kaeso_store::pg::catalogue::Answer;
 use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
@@ -181,6 +182,7 @@ fn blank_outcome() -> Outcome {
         kind: RequestKind::Generate,
         egress: None,
         provider: None,
+        custom_provider: None,
         requested_model: None,
         catalogue_model_id: None,
         model_id: None,
@@ -217,9 +219,10 @@ pub enum Stage {
     AmbiguousModel(String),
     ModelAccess(String),
     Setup,
+    CustomProvidersOff,
     Capability,
     Limits,
-    MissingCredential(&'static str),
+    MissingCredential(String),
     SignedOut(&'static str),
     NoApiAccess(&'static str),
     Credential,
@@ -338,8 +341,15 @@ pub(super) fn header_list(headers: &HeaderMap) -> HeaderList {
         .collect()
 }
 
-pub(crate) fn base_url<'a>(state: &'a AppState, provider: &str) -> Option<&'a Url> {
-    state.config.providers.get(provider).map(|p| &p.base_url)
+pub(crate) fn base_url<'a>(state: &'a AppState, provider: &'a ProviderRef) -> Option<&'a Url> {
+    match provider.custom() {
+        Some(c) => Some(c.base_url()),
+        None => state
+            .config
+            .providers
+            .get(provider.id())
+            .map(|p| &p.base_url),
+    }
 }
 
 pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
@@ -348,6 +358,7 @@ pub(super) fn transport_kind(e: &UpstreamError) -> &'static str {
         UpstreamError::Connect(_) => "connect",
         UpstreamError::Transfer(_) => "transfer",
         UpstreamError::TooLarge(_) => "too_large",
+        UpstreamError::Refused(_) => "refused",
         UpstreamError::Client(_) | UpstreamError::Method(_) => "client",
     }
 }
@@ -388,7 +399,7 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
                 "The provider did not answer in time ({what}). Kaeso does not retry; try again or raise the model's timeout."
             ),
         ),
-        UpstreamError::Connect(_) => error(
+        UpstreamError::Connect(_) | UpstreamError::Refused(_) => error(
             ErrorKind::ProviderError,
             502,
             "Kaeso cannot reach the provider. Try again shortly.",
@@ -417,6 +428,65 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
                 "The provider's response is larger than this install accepts.",
             )
         }
+    }
+}
+
+pub(crate) fn upstream_error_from(e: &UpstreamError, provider: &ProviderRef) -> KppError {
+    let Some(custom) = provider.custom() else {
+        return upstream_error(e);
+    };
+    let id = custom.id();
+    match e {
+        UpstreamError::Connect(_) => error(
+            ErrorKind::ProviderError,
+            502,
+            format!("Kaeso cannot reach the custom provider `{id}`; check its base URL."),
+        ),
+        UpstreamError::Refused(_) => error(
+            ErrorKind::ProviderError,
+            502,
+            format!(
+                "The custom provider `{id}` is at an address this install does not allow; ask its operator."
+            ),
+        ),
+        other => upstream_error(other),
+    }
+}
+
+fn refused_custom_key(err: &KppError, provider: &ProviderRef, keyless: bool) -> Option<KppError> {
+    let id = provider.custom()?.id();
+    if !matches!(
+        err.kind,
+        ErrorKind::Authentication | ErrorKind::PermissionDenied | ErrorKind::Billing
+    ) {
+        return None;
+    }
+    let message = if keyless {
+        format!(
+            "The custom provider `{id}` asks for a key; an organization admin sets how it signs in under Providers."
+        )
+    } else {
+        format!(
+            "The custom provider `{id}` refused this project's key; ask an organization admin to check it under Providers."
+        )
+    };
+    Some(error(ErrorKind::ProviderError, 502, message))
+}
+
+fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppError {
+    match provider.custom() {
+        Some(c) if err.kind == ErrorKind::ProviderError && err.raw.is_none() => {
+            tracing::info!(provider = %c.id(), %dialect, error = %err.message, "a custom provider answered in a form its dialect cannot read");
+            error(
+                ErrorKind::ProviderError,
+                502,
+                format!(
+                    "The custom provider `{}` answered in a form `{dialect}` cannot read; check its API format.",
+                    c.id()
+                ),
+            )
+        }
+        _ => err,
     }
 }
 
@@ -483,7 +553,8 @@ pub(crate) fn unserved(eff: &Effective) -> KppError {
         404,
         format!(
             "{} does not serve `{}` to this project's key; check the key's access.",
-            eff.provider.name, eff.model_id
+            eff.provider.name(),
+            eff.model_id
         ),
     )
     .with_param("model")
@@ -623,7 +694,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             Stage::ModelAccess(req.model().to_owned()),
         ));
     }
-    let eff = crate::services::catalogue::effective(state, entry).ok_or_else(|| {
+    let eff = crate::services::catalogue::effective(state, entry, &models.providers).ok_or_else(|| {
+        let turned_off = models
+            .providers
+            .get(&entry.provider)
+            .is_some_and(|p| p.custom().is_some());
+        if turned_off {
+            return Failure::new(
+                error(
+                    ErrorKind::ProviderError,
+                    500,
+                    format!(
+                        "Custom providers are turned off on this install, so `{}` cannot be called.",
+                        entry.provider
+                    ),
+                ),
+                Stage::CustomProvidersOff,
+            );
+        }
         Failure::new(
             error(
                 ErrorKind::ProviderError,
@@ -635,7 +723,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     })?;
     let served = Served {
         model: Some(eff.model_id.clone()),
-        provider: Some(eff.provider.id),
+        provider: Some(eff.provider.id().to_owned()),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -650,7 +738,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         let o = rec.outcome();
         o.catalogue_model_id = Some(entry.id);
         o.model_id = Some(eff.model_id.clone());
-        o.provider = Some(eff.provider.id);
+        o.provider = Some(eff.provider.metric_label());
+        o.custom_provider = eff.provider.custom().map(|c| c.id().to_string());
         o.prices = Some(eff.fields.clone());
     }
     let app_req = Arc::new(req.clone());
@@ -680,17 +769,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         idle: u.stream_idle_timeout,
     }
     .with_model_override(eff.fields.timeout_seconds);
-    let credential = credentials::resolve(
+    let credential = credentials::for_provider(
         state,
         OrgId::from_uuid(caller.org_id),
         ProjectId::from_uuid(caller.project_id),
-        eff.provider.id,
+        &eff.provider,
     )
     .await
     .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.id))(error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model")),
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model")),
         CredentialError::Crypto(_) => {
-            tracing::error!(provider = eff.provider.id, "a provider credential cannot be decrypted");
+            tracing::error!(provider = eff.provider.id(), "a provider credential cannot be decrypted");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))
         }
         CredentialError::Store(err) => {
@@ -700,12 +789,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
             ErrorKind::ProviderError,
             502,
-            format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name),
+            format!("The {product} account of this project's {provider} key is signed out. Ask an organization admin to sign in again under Providers.", provider = eff.provider.name()),
         )),
         CredentialError::NoApiAccess { product } => fail(Stage::NoApiAccess(product))(error(
             ErrorKind::ProviderError,
             502,
-            format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name),
+            format!("The {product} plan of this project's {provider} key has no API access. Ask an organization admin to add an API key under Providers.", provider = eff.provider.name()),
         )),
         CredentialError::Unrenewed { product } => fail(Stage::Credential)(error(
             ErrorKind::ProviderError,
@@ -715,12 +804,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     })?;
     let account = eff
         .provider
-        .account
+        .account()
         .filter(|a| a.method == credential.method);
     let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
     if let Some(a) = chatgpt {
-        plan.dialect =
-            super::accounts::prepare(&mut req, a, eff.provider).map_err(fail(Stage::Capability))?;
+        plan.dialect = super::accounts::prepare(&mut req, a, eff.provider.name())
+            .map_err(fail(Stage::Capability))?;
         rec.outcome().egress = Some(plan.dialect);
     }
 
@@ -731,7 +820,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         kind,
         at: rec.outcome().started_at,
         timeout: timeouts.request,
-        worst: WorstCase::of(&req, request_bytes, &eff.fields, eff.provider),
+        worst: WorstCase::of(&req, request_bytes, &eff.fields, &eff.provider),
         unpriced: kaeso_core::cost::unpriced_model(
             &eff.fields,
             &entry.overrides,
@@ -779,9 +868,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     }
 
     let mut ectx = EgressCtx::new(&app_req)
-        .with_provider(eff.provider.id)
-        .with_tool_namespaces(eff.provider.tool_namespaces)
-        .with_chat_profile(eff.provider.chat);
+        .with_provider(eff.provider.id())
+        .with_tool_namespaces(eff.provider.tool_namespaces())
+        .with_chat_profile(eff.provider.chat());
     if let Some(a) = plan.adaptive_thinking {
         ectx = ectx.with_adaptive_thinking(a);
     }
@@ -796,7 +885,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
-    let sent_req = counted_at_provider(account, eff.provider, plan.dialect).then_some(req);
+    let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
     let sent = u64::try_from(sent_bytes).unwrap_or(u64::MAX);
@@ -824,7 +913,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
     let base = match &account_base {
         Some(base) => base,
-        None => base_url(state, eff.provider.id).ok_or_else(|| {
+        None => base_url(state, &eff.provider).ok_or_else(|| {
             fail(Stage::Setup)(error(
                 ErrorKind::ProviderError,
                 500,
@@ -832,7 +921,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             ))
         })?,
     };
-    let provider = eff.provider.id;
+    let provider = eff.provider.metric_label();
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
     rec.outcome().overhead = Some(sent_at.duration_since(rec.started));
@@ -845,7 +934,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
     let sending = state.upstream.send(Call {
         base_url: base,
-        auth: eff.provider.auth,
+        auth: eff.provider.auth(),
+        guarded: eff.provider.custom().is_some(),
         credential: &credential.secret,
         request: Outgoing::from(encoded),
         stream: (stream || chatgpt.is_some()) && kind == RequestKind::Generate,
@@ -861,7 +951,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     };
     let resp = sent.map_err(|e| {
         count_upstream_error(transport_kind(&e), provider);
-        fail(Stage::Upstream)(upstream_error(&e))
+        if let UpstreamError::Refused(r) = &e {
+            tracing::warn!(provider = eff.provider.id(), host = %r.host, "a custom provider's address is not allowed on this install");
+        }
+        fail(Stage::Upstream)(upstream_error_from(&e, &eff.provider))
     })?;
     if let Some(held) = &mut rec.held {
         held.keep(kept);
@@ -880,7 +973,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         org_id: caller.org_id,
         project_id: caller.project_id,
         entry: entry.id,
-        provider: eff.provider.id,
+        provider: eff.provider.id(),
         key: credential.key(),
         availability,
         at: state.clock.now(),
@@ -892,8 +985,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let counter = InputCounter {
         state: state.clone(),
         credential: credential.clone(),
-        provider,
-        auth: eff.provider.auth,
+        provider: eff.provider.clone(),
         dialect: plan.dialect,
         asked: sent_req.map(|req| (app_req, req)),
         adaptive_thinking: plan.adaptive_thinking,
@@ -991,8 +1083,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 }
             };
             if !success {
+                let status = if (400..600).contains(&status) {
+                    status
+                } else {
+                    502
+                };
                 let err = provider_error(
-                    eff.provider,
+                    &eff.provider,
                     plan.dialect,
                     status,
                     &resp.headers,
@@ -1002,6 +1099,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 count_upstream_error(err.kind.as_str(), provider);
                 let err = super::accounts::usage_limit(account, err);
                 if err.kind == ErrorKind::NotFound
+                    && !credential.is_keyless()
                     && let Probe::Unserved =
                         state.availability.probe(state, &credential, &eff).await
                 {
@@ -1009,7 +1107,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                     availability::record(state, &learnt(Availability::Unavailable)).await;
                     return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
                 }
-                if let Some(refused) = refused_key(&err) {
+                if let Some(refused) =
+                    refused_custom_key(&err, &eff.provider, credential.is_keyless())
+                        .or_else(|| refused_key(&err))
+                {
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
                     let mut failure = fail(Stage::KeyRefused)(refused);
@@ -1019,8 +1120,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 return Err(fail(Stage::Provider)(err));
             }
             let headers = resp.headers;
+            let decoded_by = eff.provider.clone();
             let (reply, out) = off_thread(bytes.len(), move || {
-                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)?;
+                let reply = decode_reply(dialect, status, &headers, &bytes, &ectx)
+                    .map_err(|e| unreadable(e, &decoded_by, dialect))?;
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 Ok::<_, KppError>((reply, out))
             })
@@ -1063,7 +1166,7 @@ async fn reply_with(
 }
 
 fn provider_error(
-    provider: &kaeso_core::provider::Provider,
+    provider: &ProviderRef,
     dialect: DialectId,
     status: u16,
     headers: &HeaderList,
@@ -1098,10 +1201,7 @@ pub(crate) fn redact_key_fragments(err: &mut KppError) {
     }
 }
 
-pub(crate) fn declared_key_refusal(
-    provider: &kaeso_core::provider::Provider,
-    mut err: KppError,
-) -> KppError {
+pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) -> KppError {
     if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
         err.kind = ErrorKind::Authentication;
     }
@@ -1139,37 +1239,37 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
 // provider's configured base URL, so no account request may reach it.
 fn counted_at_provider(
     account: Option<kaeso_core::provider::AccountSignIn>,
-    provider: &kaeso_core::provider::Provider,
+    provider: &ProviderRef,
     dialect: DialectId,
 ) -> bool {
-    account.is_none() && provider.count_tokens == Some(dialect)
+    account.is_none() && provider.count_tokens() == Some(dialect)
 }
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn no_account_request_is_counted_at_the_providers_base_url() {
-        let openai = kaeso_core::provider::provider("openai").unwrap();
+        let openai = ProviderRef::from(kaeso_core::provider::provider("openai").unwrap());
         let grok = kaeso_core::provider::provider("xai")
             .and_then(|p| p.account)
             .unwrap();
         let counted =
-            |account| super::counted_at_provider(account, openai, DialectId::OpenAiResponses);
+            |account| super::counted_at_provider(account, &openai, DialectId::OpenAiResponses);
         assert!(counted(None));
         assert!(!counted(Some(grok)));
-        assert!(!counted(openai.account));
+        assert!(!counted(openai.account()));
     }
 
     use super::*;
 
     #[test]
     fn a_provider_errors_upstream_reason_reaches_its_message_without_key_fragments() {
-        let openrouter = kaeso_core::provider::provider("openrouter").unwrap();
+        let openrouter = ProviderRef::from(kaeso_core::provider::provider("openrouter").unwrap());
         let body = br#"{"error": {"message": "Provider returned error", "code": 429, "metadata": {"raw": "Rate limit reached for key sk-proj-Ab1xYz789 in organization org-AbCdEf123456."}}}"#;
         let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
-        let ctx = EgressCtx::new(&req).with_chat_profile(openrouter.chat);
+        let ctx = EgressCtx::new(&req).with_chat_profile(openrouter.chat());
         let err = provider_error(
-            openrouter,
+            &openrouter,
             DialectId::OpenAiChat,
             429,
             &HeaderList::new(),
@@ -1207,10 +1307,10 @@ mod tests {
             ),
         ];
         for (provider, dialect, body) in cases {
-            let p = kaeso_core::provider::provider(provider).unwrap();
+            let p = ProviderRef::from(kaeso_core::provider::provider(provider).unwrap());
             let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
-            let ctx = EgressCtx::new(&req).with_chat_profile(p.chat);
-            let err = provider_error(p, dialect, 429, &HeaderList::new(), body, &ctx);
+            let ctx = EgressCtx::new(&req).with_chat_profile(p.chat());
+            let err = provider_error(&p, dialect, 429, &HeaderList::new(), body, &ctx);
             for app in [
                 DialectId::OpenAiChat,
                 DialectId::OpenAiResponses,

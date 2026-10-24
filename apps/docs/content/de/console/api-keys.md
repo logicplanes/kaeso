@@ -1,7 +1,7 @@
 ---
 title: API-Schlüssel
 description: Erstellen Sie Schlüssel für Apps und Skripte, begrenzen Sie, was sie dürfen, und schalten Sie sie ab.
-order: 5
+order: 6
 ---
 
 Apps und Skripte rufen Kaeso mit einem API-Schlüssel auf. Ein Schlüssel gehört einem Mitglied oder einem Dienstkonto in einem Projekt und handelt dort mit dessen Rechten. Eigener Modellzugriff und eigene Limits können ihn weiter einschränken.

@@ -8,7 +8,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::models_dev::{self, price};
-use crate::provider::{self, Provider};
+use crate::provider;
+use crate::providers::{OrgProviders, ProviderRef};
 
 pub const MODALITIES: &[&str] = &["text", "image", "pdf", "audio", "video"];
 
@@ -250,7 +251,7 @@ impl Fields {
         Ok(())
     }
 
-    pub fn validate(&self, provider: &Provider) -> Result<(), FieldError> {
+    pub fn validate(&self, provider: &ProviderRef) -> Result<(), FieldError> {
         if let Some(n) = &self.display_name
             && (n.trim().is_empty() || n.chars().count() > 200)
         {
@@ -301,15 +302,15 @@ impl Fields {
             }
         }
         if let Some(d) = self.egress_dialect
-            && !provider.dialects.contains(&d)
+            && !provider.dialects().contains(&d)
         {
             return Err(FieldError::new(
                 "egress_dialect",
                 format!(
                     "`{d}` is not a dialect of {}; use one of {}.",
-                    provider.name,
+                    provider.name(),
                     provider
-                        .dialects
+                        .dialects()
                         .iter()
                         .map(|d| d.as_str())
                         .collect::<Vec<_>>()
@@ -318,7 +319,7 @@ impl Fields {
             ));
         }
         if self.adaptive_thinking.is_some()
-            && !provider.dialects.contains(&DialectId::AnthropicMessages)
+            && !provider.dialects().contains(&DialectId::AnthropicMessages)
         {
             return Err(FieldError::new(
                 "adaptive_thinking",
@@ -431,7 +432,7 @@ impl Supplement {
                     ..Fields::default()
                 };
                 fields
-                    .validate(provider)
+                    .validate(&ProviderRef::BuiltIn(provider))
                     .map_err(|err| format!("{provider_id}.{model}: {err}"))?;
                 models
                     .entry(provider_id.clone())
@@ -506,7 +507,7 @@ impl Entry {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Effective {
     pub id: uuid::Uuid,
-    pub provider: &'static Provider,
+    pub provider: ProviderRef,
     pub model_id: String,
     pub fields: Fields,
     pub dialect: DialectId,
@@ -536,19 +537,24 @@ pub fn effective(
     entry: &Entry,
     snapshot: &models_dev::Snapshot,
     supplement: &Supplement,
+    providers: &OrgProviders,
 ) -> Option<Effective> {
-    let provider = provider::provider(&entry.provider)?;
-    let upstream = snapshot
-        .model(&entry.provider, &entry.model_id)
-        .or(entry.last_known.as_ref())
-        .map(Fields::from_models_dev)
-        .unwrap_or_default();
-    let supplemental = supplement
-        .get(&entry.provider, &entry.model_id)
-        .cloned()
-        .unwrap_or_default();
-    let fields = entry.overrides.clone().over(&upstream).over(&supplemental);
-    let dialect = fields.egress_dialect.unwrap_or(provider.generation);
+    let provider = providers.get(&entry.provider)?;
+    let fields = if provider.custom().is_some() {
+        entry.overrides.clone()
+    } else {
+        let upstream = snapshot
+            .model(&entry.provider, &entry.model_id)
+            .or(entry.last_known.as_ref())
+            .map(Fields::from_models_dev)
+            .unwrap_or_default();
+        let supplemental = supplement
+            .get(&entry.provider, &entry.model_id)
+            .cloned()
+            .unwrap_or_default();
+        entry.overrides.clone().over(&upstream).over(&supplemental)
+    };
+    let dialect = fields.egress_dialect.unwrap_or(provider.generation());
     Some(Effective {
         id: entry.id,
         provider,

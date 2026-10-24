@@ -387,7 +387,10 @@ pub async fn record(state: &AppState, o: &Outcome) {
         endpoint: endpoint(o.ingress, o.kind).into(),
         ingress_dialect: o.ingress.as_str().into(),
         egress_dialect: o.egress.map(|d| d.as_str().to_owned()).unwrap_or_default(),
-        provider: o.provider.unwrap_or_default().into(),
+        provider: o
+            .custom_provider
+            .clone()
+            .unwrap_or_else(|| o.provider.unwrap_or_default().into()),
         requested_model: o.requested_model.clone().unwrap_or_default(),
         resolved_model: o.model_id.clone().unwrap_or_default(),
         stream: o.stream,

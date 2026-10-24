@@ -1,7 +1,7 @@
 ---
 title: API keys
 description: Create keys for apps and scripts, limit what they can do, and turn them off.
-order: 5
+order: 6
 ---
 
 Apps and scripts call Kaeso with an API key. A key belongs to a member or a service account in one project, and acts with their rights there. Its own model access and limits can narrow it further.

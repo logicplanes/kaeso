@@ -46,6 +46,9 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         &json!({
             "id": "groq",
             "name": "Groq",
+            "custom": false,
+            "takes_key": true,
+            "hides_built_in": null,
             "key_page": { "url": "https://console.groq.com/keys", "label": "API Keys" },
             "key_prefix": "gsk_",
             "dialects": ["openai_chat"],

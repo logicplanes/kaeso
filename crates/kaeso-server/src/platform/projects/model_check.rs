@@ -5,7 +5,7 @@ use axum::extract::State;
 use futures::StreamExt;
 use kaeso_core::catalogue::Availability;
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
-use kaeso_core::provider;
+use kaeso_core::providers::OrgProviders;
 use kaeso_kpp::ErrorKind;
 use kaeso_store::pg::catalogue::{self, Answer, EntryRow, Recorded};
 use kaeso_store::pg::credentials::KeyInUse;
@@ -98,21 +98,28 @@ struct Found {
     key: KeyInUse,
 }
 
+// A model whose provider takes no key, or a custom provider this install has turned
+// off, keeps its availability: an answer is recorded only against the key that gave it.
 async fn check_one(
     state: &AppState,
     org: OrgId,
     project: ProjectId,
+    providers: &OrgProviders,
     row: &EntryRow,
     listings: &Listings,
-) -> ApiResult<Result<Found, CheckFailure>> {
+) -> ApiResult<Option<Result<Found, CheckFailure>>> {
     let entry = row.entry()?;
-    let eff = service::effective(state, &entry)
-        .ok_or_else(|| ApiError::internal(format!("unknown provider `{}`", row.provider)))?;
-    let name = eff.provider.name;
-    let credential = match credentials::resolve(state, org, project, eff.provider.id).await {
+    let Some(eff) = service::effective(state, &entry, providers) else {
+        return Ok(None);
+    };
+    if eff.provider.auth().is_none() {
+        return Ok(None);
+    }
+    let name = eff.provider.name();
+    let credential = match credentials::resolve(state, org, project, eff.provider.id()).await {
         Ok(c) => c,
         Err(ResolveError::Missing { .. }) => {
-            return Ok(Err(failure(row, name, CheckFailureReason::NoKey)));
+            return Ok(Some(Err(failure(row, name, CheckFailureReason::NoKey))));
         }
         Err(ResolveError::Crypto(e)) => {
             return Err(ApiError::internal(format!(
@@ -121,34 +128,46 @@ async fn check_one(
         }
         Err(ResolveError::Store(e)) => return Err(e.into()),
         Err(ResolveError::SignedOut { .. } | ResolveError::NoApiAccess { .. }) => {
-            return Ok(Err(failure(row, name, CheckFailureReason::KeyRefused)));
+            return Ok(Some(Err(failure(
+                row,
+                name,
+                CheckFailureReason::KeyRefused,
+            ))));
         }
         Err(ResolveError::Unrenewed { .. }) => {
-            return Ok(Err(failure(row, name, CheckFailureReason::ProviderError)));
+            return Ok(Some(Err(failure(
+                row,
+                name,
+                CheckFailureReason::ProviderError,
+            ))));
         }
     };
     let found = |availability| {
-        Ok(Ok(Found {
+        Ok(Some(Ok(Found {
             availability,
             key: credential.key(),
-        }))
+        })))
     };
     match availability::probe(state, &credential, &eff, listings).await {
         Probe::Served => found(Availability::Available),
         Probe::Unserved => found(Availability::Unavailable),
         Probe::Inconclusive(e) => {
-            tracing::info!(provider = eff.provider.id, model = %eff.model_id, error = %e.message, "a model check was inconclusive");
-            Ok(Err(failure(row, name, CheckFailureReason::Inconclusive)))
+            tracing::info!(provider = eff.provider.id(), model = %eff.model_id, error = %e.message, "a model check was inconclusive");
+            Ok(Some(Err(failure(
+                row,
+                name,
+                CheckFailureReason::Inconclusive,
+            ))))
         }
         Probe::Failed(e) => {
-            tracing::info!(provider = eff.provider.id, model = %eff.model_id, kind = e.kind.as_str(), error = %e.message, "a model check failed");
+            tracing::info!(provider = eff.provider.id(), model = %eff.model_id, kind = e.kind.as_str(), error = %e.message, "a model check failed");
             let reason = match e.kind {
                 ErrorKind::Authentication | ErrorKind::PermissionDenied | ErrorKind::Billing => {
                     CheckFailureReason::KeyRefused
                 }
                 _ => CheckFailureReason::ProviderError,
             };
-            Ok(Err(failure(row, name, reason)))
+            Ok(Some(Err(failure(row, name, reason))))
         }
     }
 }
@@ -183,15 +202,17 @@ pub async fn check(
     let project_id = ensure_active(&ctx, MODELS_ARCHIVED)?;
     let org = ctx.org()?.id();
     let project = ctx.project()?.id();
+    let providers = Arc::new(super::models::org_providers(&state, &ctx).await?);
     let rows = catalogue::list(&state.pg, project_id).await?;
     let listings = Arc::new(Listings::default());
     let outcomes: Vec<_> = futures::stream::iter(rows.clone().into_iter().map(|row| {
         let state = state.clone();
         let listings = listings.clone();
+        let providers = providers.clone();
         async move {
             (
                 row.id,
-                check_one(&state, org, project, &row, &listings).await,
+                check_one(&state, org, project, &providers, &row, &listings).await,
             )
         }
     }))
@@ -204,8 +225,9 @@ pub async fn check(
     let mut failed = Vec::new();
     for ((id, outcome), row) in outcomes.into_iter().zip(&rows) {
         let found = match outcome? {
-            Ok(found) => found,
-            Err(f) => {
+            None => continue,
+            Some(Ok(found)) => found,
+            Some(Err(f)) => {
                 failed.push(f);
                 continue;
             }
@@ -226,9 +248,10 @@ pub async fn check(
                 Availability::Unavailable => unavailable.push(name),
             },
             Recorded::KeyChanged => {
-                let provider =
-                    provider::provider(&row.provider).map_or(row.provider.as_str(), |p| p.name);
-                failed.push(failure(row, provider, CheckFailureReason::KeyChanged));
+                let provider = providers
+                    .get(&row.provider)
+                    .map_or_else(|| row.provider.clone(), |p| p.name().to_owned());
+                failed.push(failure(row, &provider, CheckFailureReason::KeyChanged));
             }
             Recorded::EntryGone => {}
         }
@@ -248,7 +271,7 @@ pub async fn check(
     let aliases = catalogue::list_aliases(&state.pg, project_id).await?;
     let models = rows
         .iter()
-        .map(|r| view(&state, r, &aliases))
+        .map(|r| view(&state, &providers, r, &aliases))
         .collect::<ApiResult<Vec<_>>>()?;
     Ok(Json(CheckResult { models, failed }))
 }
