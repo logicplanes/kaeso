@@ -127,8 +127,9 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 KEY=$(curl -s "$ORG_URL/projects/$PROJECT/keys?service_account=$ACCOUNT" \
   -H "Authorization: Bearer $KAESO_PLATFORM_KEY" | jq -r '.data[0].id')
 
+KEY_URL="$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys/$KEY"
 KAESO_API_KEY=$(
-  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys/$KEY/rotate" \
+  curl -s "$KEY_URL/rotate" \
     -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
     -H "content-type: application/json" \
     -d '{"grace_hours": 24, "expires_in_days": 90}' | jq -r .secret
