@@ -1089,6 +1089,7 @@
   "Wider than its column": "比内容栏更宽",
   "A few words under the figure that say what it shows, such as a diagram's title.": "显示在图示下方、说明其内容的几个词，例如图示的标题。",
   "What the figure shows, usually a ThemeImage.": "图示展示的内容，通常是一个 ThemeImage。",
+  "Where a figure wider than its column starts, as a share of its width: 0.5, the middle, by default.": "比所在栏更宽的图从哪里开始显示，以其宽度的比例表示：默认 0.5，即中间。",
   "The name of the figure's scrolling region, read by screen readers.": "图示可滚动区域的名称，供屏幕阅读器朗读。",
   "The figure's background: a well like a code block's, or none.": "图示的背景：像代码块那样的底板，或者没有背景。"
 }

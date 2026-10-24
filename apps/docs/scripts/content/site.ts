@@ -3,7 +3,7 @@ import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { imageSize } from "image-size";
 import type { NavGroup, NavItem, PageMeta, SearchEntry } from "../../src/markdown/ast.ts";
 import { compile, lex, type Compiled, type DiagramTarget, type Lexed, type Resolver, type Target } from "./compile.ts";
-import { DIAGRAM_COMMAND, DIAGRAM_THEMES, diagramFile, diagramKey, mermaidVersion, svgLabels, svgSize, type DiagramJob } from "./diagram.ts";
+import { DIAGRAM_COMMAND, DIAGRAM_THEMES, diagramFile, diagramKey, mermaidVersion, svgLabels, svgFocus, svgSize, type DiagramJob } from "./diagram.ts";
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts";
 import { humanize, pathSegment } from "./slug.ts";
 
@@ -165,7 +165,8 @@ export function buildSite(contentDir: string, repoRoot: string, options: SiteOpt
     const svg = readFileSync(light, "utf8");
     const size = svgSize(svg);
     if (!size) return { kind: "problem", message: `${rel(light)} has no width and height; run \`${DIAGRAM_COMMAND}\` again` };
-    return { kind: "diagram", light: rel(light), dark: rel(dark), ...size, labels: svgLabels(svg) };
+    const focus = svgFocus(svg);
+    return { kind: "diagram", light: rel(light), dark: rel(dark), ...size, ...(focus === undefined ? {} : { focus }), labels: svgLabels(svg) };
   };
   const resolver = (page: SitePage): Resolver => ({
     anchors: new Set(page.lexed.headings.map((h) => h.id)),

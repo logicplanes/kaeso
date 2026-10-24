@@ -202,7 +202,7 @@ function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
 function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) {
   const id = useId();
   return (
-    <Figure label={ctx.t("page.diagram").replace("{title}", b.title)} caption={b.title}>
+    <Figure label={ctx.t("page.diagram").replace("{title}", b.title)} caption={b.title} focus={b.focus}>
       <ThemeImage
         light={b.light}
         dark={b.dark}

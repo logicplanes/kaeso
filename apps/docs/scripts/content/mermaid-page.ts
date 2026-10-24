@@ -137,9 +137,18 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       topGroup.append(label);
     }
   };
+  const focusOf = (svg: SVGSVGElement) => {
+    const whole = svg.getBoundingClientRect();
+    const middles = [...svg.querySelectorAll("g.node.accent")].map((n) => {
+      const r = n.getBoundingClientRect();
+      return (r.left + r.width / 2 - whole.left) / whole.width;
+    });
+    return middles.length > 0 && whole.width > 0 ? middles.reduce((a, b) => a + b, 0) / middles.length : undefined;
+  };
   const flatten = (svg: SVGSVGElement, ground: string) => {
     centre(svg);
     corner(svg, ground);
+    const focus = focusOf(svg);
     const plan: [Element, Record<string, string> | null][] = [];
     for (const el of [svg, ...svg.querySelectorAll("*")]) {
       const tag = el.tagName;
@@ -210,6 +219,7 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
     svg.removeAttribute("aria-roledescription");
     svg.removeAttribute("class");
     svg.removeAttribute("style");
+    if (focus !== undefined) svg.setAttribute("data-focus", String(Math.round(focus * 1000) / 1000));
   };
   const results: PageResult[] = [];
   for (const job of jobs) {

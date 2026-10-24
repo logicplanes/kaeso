@@ -36,7 +36,7 @@ export type Block =
   | { t: "code"; lang: CodeLang; code: string; title?: string; wrap?: true }
   | { t: "codegroup"; tabs: CodeTab[] }
   | { t: "links"; items: LinkCard[] }
-  | { t: "diagram"; light: string; dark: string; width: number; height: number; title: string; description?: string }
+  | { t: "diagram"; light: string; dark: string; width: number; height: number; focus?: number; title: string; description?: string }
   | { t: "quote"; c: Block[] }
   | { t: "callout"; kind: CalloutKind; c: Block[] }
   | { t: "table"; align: ("start" | "end")[]; head: Inline[][]; rows: Inline[][][] }

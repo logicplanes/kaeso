@@ -21,7 +21,7 @@ export interface Lexed {
 export type Target = { kind: "page"; href: string } | { kind: "file"; ref: string; width?: number; height?: number } | { kind: "problem"; message: string };
 
 export type DiagramTarget =
-  { kind: "diagram"; light: string; dark: string; width: number; height: number; labels: string[] } | { kind: "problem"; message: string };
+  { kind: "diagram"; light: string; dark: string; width: number; height: number; focus?: number; labels: string[] } | { kind: "problem"; message: string };
 
 export interface Resolver {
   resolve(href: string, as: "link" | "image"): Target;
@@ -172,6 +172,7 @@ function diagram(code: Tokens.Code, ctx: Ctx): Block | null {
     dark: target.dark,
     width: target.width,
     height: target.height,
+    ...(target.focus === undefined ? {} : { focus: target.focus }),
     title: text.title,
     ...(text.description ? { description: text.description } : {}),
   };
