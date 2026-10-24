@@ -219,15 +219,22 @@ function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) 
 
 const STACK_COLUMNS = 3;
 const BESIDE_LABEL = 48;
+const MOSTLY_SHORT = 0.75;
 
 function StackedTable({ b, label, ctx }: { b: Extract<Block, { t: "table" }>; label: string; ctx: Ctx }) {
-  const short = Array.from({ length: b.head.length }, (_, j) => b.rows.every((row) => width(plainText(row[j] ?? [])) <= BESIDE_LABEL));
-  const pairs = (row: Inline[][], fits: boolean) =>
-    row.flatMap((c, j) => (j > 0 && short[j] === fits && c.length > 0 ? [{ label: inline(b.head[j] ?? [], ctx), value: inline(c, ctx), wrap: true }] : []));
+  const fits = (c: Inline[]) => width(plainText(c)) <= BESIDE_LABEL;
+  const beside = Array.from({ length: b.head.length }, (_, j) => {
+    const cells = b.rows.map((row) => row[j] ?? []).filter((c) => c.length > 0);
+    return cells.filter(fits).length >= cells.length * MOSTLY_SHORT;
+  });
+  const pairs = (row: Inline[][], side: boolean) =>
+    row.flatMap((c, j) =>
+      j > 0 && c.length > 0 && (beside[j] === true && fits(c)) === side ? [{ label: inline(b.head[j] ?? [], ctx), value: inline(c, ctx), wrap: true }] : [],
+    );
   return (
     <ul aria-label={label} className="flex flex-col gap-12 sm:hidden">
       {b.rows.map((row, r) => {
-        const beside = pairs(row, true);
+        const side = pairs(row, true);
         const below = pairs(row, false);
         return (
           <li key={r} className="flex flex-col gap-12">
@@ -236,7 +243,7 @@ function StackedTable({ b, label, ctx }: { b: Extract<Block, { t: "table" }>; la
               <Text as="div" variant="body" weight="medium" className="wrap-break-word">
                 {inline(row[0] ?? [], ctx)}
               </Text>
-              {beside.length > 0 && <KeyValue items={beside} />}
+              {side.length > 0 && <KeyValue items={side} />}
               {below.length > 0 && <KeyValue layout="stacked" items={below} />}
             </div>
           </li>
