@@ -128,6 +128,8 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | `Request::CountTokens` aus einem anderen Dialekt | `/v1/messages/count_tokens` ohne `max_tokens`, Sampling, `metadata` und `stream` | Sie ändern die Zahl der Eingabe-Token nicht, und der Endpunkt lehnt sie ab. Die eigene Zählanfrage einer Anthropic-App wird so gesendet, wie sie ankam. |
 | Ausgabe- und Reasoning-Einstellungen eines `Request::CountTokens`, die `check()` für die Generierung ablehnen würde (JSON-Modus, eine Schemabeschreibung, `strict: false`, Aufwand `minimal`, …) | weggelassen, nicht abgelehnt | Abgelehnt wird nur, was die gezählte Eingabe ändert. |
 | `Request::Embed` | `Unsupported` | |
+| `web_search`-Tool von OpenAI Responses | `{type: web_search_20250305, name: web_search}` | Mit `allowed_domains` und `user_location`, wo gesetzt; `web_search_call`-Items von Responses im Gespräch werden verworfen ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
+| `namespace`-Tools von OpenAI Responses | ein Funktions-Tool je Tool im Namespace, namens `<namespace>__<name>` | [Tool-Namespaces](cross-format.md#tool-namespaces). |
 | fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, Zitate, fremde Datei-IDs | `Unsupported` | `cross::check_foreign` ([Anfragen](cross-format.md#anfragen)). |
 
 ## Antworten

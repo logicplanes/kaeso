@@ -128,6 +128,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
 | `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、schema 描述、`strict: false`、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
+| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `namespace` 工具 | 命名空间中的每个工具一个函数工具，名为 `<namespace>__<name>` | [工具命名空间](cross-format.md#工具命名空间)。 |
 | 外来 extras、未知的块、工具和工具选择、引用、外来文件 ID | `Unsupported` | `cross::check_foreign`（[请求](cross-format.md#请求)）。 |
 
 ## 回复

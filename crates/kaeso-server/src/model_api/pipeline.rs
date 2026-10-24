@@ -754,6 +754,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 
     let mut ectx = EgressCtx::new(&app_req)
         .with_provider(eff.provider.id)
+        .with_tool_namespaces(eff.provider.tool_namespaces)
         .with_chat_profile(eff.provider.chat);
     if let Some(a) = plan.adaptive_thinking {
         ectx = ectx.with_adaptive_thinking(a);

@@ -9,7 +9,7 @@ order: 2
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
 | extras 字段 | `Unsupported`，除非在[允许列表](#extras)中 | 省略 |
-| 未知块、工具和工具选择 | `Unsupported` | 省略未知块 |
+| 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)和[托管网页搜索](#托管网页搜索)除外 | 省略未知块，网页搜索除外 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
 | 可读推理 | 丢弃；[推理数据块](reasoning.md#推理数据块)会在其来源处恢复它 | 应用有推理形态时，以该形态展示 |
@@ -84,6 +84,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `openai_chat` | document | `file.filename` | OpenAI 要求随内联 `file_data` 一起提供的文件名。属于元数据，不是指令。 | `openai_chat/requests/file-pdf-data.json` |
 | `openai_chat` | request | `prompt_cache_key` | 把请求路由到某个提示缓存。属于缓存提示（[缓存提示](#缓存提示)）。 | `openai_chat/requests/all-params-sdk.json` |
 | `openai_responses` | request | `prompt_cache_key` | 同上。 | `openai_responses/requests/sampling-and-ids.json` |
+| `openai_responses` | request | `client_metadata` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `openai_responses` | image | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
 
 ### 条件条目
@@ -94,6 +95,35 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | --- | --- | --- | --- | --- |
 | `anthropic_messages` | request | `context_management` | 只包含 `edits`，其中至少有一个 edit，且每个 edit 都是 `clear_thinking_*`。清除思考块只决定模型能看到哪些较早的 Anthropic `thinking` 块，而这些块从不会到达其他方言（[推理](reasoning.md)）。 | Claude Code 2.1.296 在每个请求中都发送 `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}`；`anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `anthropic_messages` | message（`role: "system"`） | `output_config` | `{}`，或只有与请求的 `output_config.effort` 相同的 `effort`。重复请求的推理强度不会改变任何内容。 | Claude Code 2.1.296 会在对话中间的系统消息里重复请求的推理强度；同一个 fixture |
+
+## 工具命名空间
+
+OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称下。Codex 用这种方式归组自己的工具和每个 MCP 服务器的工具，并把对其中某个工具的调用作为带 `namespace` 的 `function_call` 发送。OpenAI 原样收到命名空间。其他所有目标都收到普通的函数工具：Anthropic、Chat Completions，以及 SpaceX 的 Responses，它会以 422 拒绝命名空间。
+
+- **工具。** 命名空间中的每个工具都变为名为 `<namespace>__<name>` 的函数工具，例如 `mcp__docs__search`。命名空间的描述放在工具自身描述之前，中间隔一个空行。
+- **对话中的调用。** 带 `namespace` 的 `function_call` 得到同样的名称，其 `namespace` 被移除。
+- **回复。** Responses 回复或流会把名称与展开后的工具相同的调用映射回 `name` 和 `namespace`。这些名称取自应用的请求（`EncodeCtx::request`），因此应用未放进命名空间的调用保留其名称。
+- **名称限制。** 展开后的名称如果不符合目标的工具名称规则，会像其他工具名称一样再被改写，并映射回来。
+- **拒绝。** 含有 `type`、`name`、`description` 和 `tools` 以外键的命名空间、其中不是函数的工具、这类工具上只有 Responses 认识的字段（例如 `defer_loading`），以及已被其他工具占用的展开名称。
+
+`EgressCtx::tool_namespaces` 表示 Responses 目标是否接受命名空间。网关根据 `Provider::tool_namespaces` 设置它，只有 OpenAI 为真。
+
+## 托管网页搜索
+
+发往 Anthropic 的 OpenAI Responses `web_search` 工具会变为 Anthropic 的服务端工具 `web_search_20250305`，名称为 `web_search`：
+
+| Responses | Anthropic |
+| --- | --- |
+| `filters.allowed_domains` | `allowed_domains` |
+| `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` |
+| `external_web_access: true`、`search_context_size: "medium"`（默认值） | 不写入；两者描述的正是 Anthropic 搜索的行为 |
+| `external_web_access: false`、其他 `search_context_size`、任何其他字段 | `Unsupported` |
+
+`external_web_access: false` 要求 OpenAI 只读取其页面缓存，这是 Codex 默认设置 `web_search = "cached"` 发送的内容。Claude 总是实时搜索，因此拒绝信息会建议设置 `web_search = "live"` 或关闭网页搜索。其他目标会像拒绝其他格式的任何工具一样拒绝 `web_search`；对于 Chat Completions 模型，拒绝信息会说明如何在 Codex 中关闭网页搜索。
+
+Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
+
+应用发回的 `web_search_call` 项在发往 Anthropic 时会被丢弃。Anthropic 只有在带上加密搜索结果时才会重放一次搜索，而这些项不携带结果；使用了这些结果的回答仍留在对话中。带有 Kaeso `ws_kaeso_` ID 的项在发往 OpenAI 时也会被丢弃，因为 OpenAI 从未签发过它们。
 
 ## 用量
 

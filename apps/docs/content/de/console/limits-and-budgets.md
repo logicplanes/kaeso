@@ -39,13 +39,13 @@ Ein Budget warnt bei bis zu 10 Prozentwerten seines Betrags, standardmäßig bei
 
 Kaeso bepreist eine Anfrage nach ihren Tokens. Manche Funktionen rechnen zusätzlich pro Aufruf oder zu einem höheren Satz ab, und das kann Kaeso nicht zählen. Solange ein Ausgabenbudget für eine Anfrage gilt, hart oder weich, lehnt Kaeso sie deshalb mit Status 403 ab, bevor sie den Anbieter erreicht, wenn sie Folgendes verwendet:
 
-- ein Werkzeug, das der Anbieter ausführt, etwa `web_search` oder `code_execution` von Anthropic oder `web_search`, `file_search`, `image_generation`, `code_interpreter` oder `mcp` von OpenAI;
+- ein Werkzeug, das der Anbieter ausführt, etwa `web_search` oder `code_execution` von Anthropic oder `web_search`, `file_search`, `image_generation`, `code_interpreter` oder `mcp` von OpenAI, auch wenn Kaeso `web_search` von OpenAI an Claude sendet;
 - `mcp_servers`, `web_search_options`, `plugins` von OpenRouter oder `search_parameters` von xAI;
 - einen `service_tier` außer `auto`, `default`, `flex`, `on_demand` oder `standard_only`, etwa `priority`;
 - die `anthropic-beta` `context-1m-…`, die lange Prompts zu einem höheren Satz abrechnet;
 - ein Modell ohne Eingabe- oder Ausgabepreis oder mit einem Preis von null, außer ein Admin hat diesen Preis am Modell von Hand gesetzt. Embeddings brauchen nur einen Eingabepreis.
 
-Werkzeuge, die die App selbst ausführt, sind erlaubt: Funktionen und eigene Werkzeuge, `bash`, `text_editor`, `computer` und `memory` von Anthropic sowie `local_shell`, `apply_patch` und `computer_use_preview` von OpenAI. Token-Budgets und Raten lehnen diese Funktionen nicht ab, und ohne Ausgabenbudget sind alle Funktionen erlaubt.
+Werkzeuge, die die App selbst ausführt, sind erlaubt: Funktionen und eigene Werkzeuge, `bash`, `text_editor`, `computer` und `memory` von Anthropic sowie `local_shell`, `apply_patch`, `computer_use_preview` und die `namespace`-Tools von OpenAI, die Funktionen gruppieren. Token-Budgets und Raten lehnen diese Funktionen nicht ab, und ohne Ausgabenbudget sind alle Funktionen erlaubt.
 
 Die Meldung nennt die Funktion und die Ebene des Budgets, etwa „This key has a spend budget that can't price `web_search_20250305`; ask an admin.“ Um eine solche Funktion zu nutzen, rufen Sie sie mit einem Schlüssel auf, für den kein Ausgabenbudget gilt: weder das des Schlüssels noch das seines Inhabers noch das des Projekts.
 
