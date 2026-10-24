@@ -1,4 +1,4 @@
-use metrics_exporter_prometheus::{BuildError, PrometheusBuilder, PrometheusHandle};
+use metrics_exporter_prometheus::{BuildError, Matcher, PrometheusBuilder, PrometheusHandle};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -39,12 +39,70 @@ const LATENCY_BUCKETS: &[f64] = &[
     120.0, 300.0, 600.0,
 ];
 
-pub fn init_metrics() -> Result<PrometheusHandle, TelemetryError> {
-    let handle = PrometheusBuilder::new()
+// Kaeso's own work before a provider call takes from about 0.1 ms to tens of milliseconds,
+// below the first latency bucket.
+const OVERHEAD_BUCKETS: &[f64] = &[
+    0.0001, 0.00025, 0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 1.0,
+];
+
+fn builder() -> Result<PrometheusBuilder, TelemetryError> {
+    PrometheusBuilder::new()
         .set_buckets(LATENCY_BUCKETS)
-        .map_err(TelemetryError::Buckets)?
+        .and_then(|b| {
+            b.set_buckets_for_metric(
+                Matcher::Full(crate::metrics::GATEWAY_OVERHEAD.to_owned()),
+                OVERHEAD_BUCKETS,
+            )
+        })
+        .map_err(TelemetryError::Buckets)
+}
+
+pub fn init_metrics() -> Result<PrometheusHandle, TelemetryError> {
+    let handle = builder()?
         .install_recorder()
         .map_err(TelemetryError::Recorder)?;
     crate::metrics::describe();
     Ok(handle)
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+
+    use super::*;
+
+    #[test]
+    fn gateway_overhead_is_counted_in_sub_millisecond_buckets() {
+        let recorder = builder().unwrap().build_recorder();
+        let handle = recorder.handle();
+        metrics::with_local_recorder(&recorder, || {
+            metrics::histogram!(crate::metrics::GATEWAY_OVERHEAD, "provider" => "openai")
+                .record(0.0003);
+            metrics::histogram!(crate::metrics::TIME_TO_FIRST_BYTE, "provider" => "openai")
+                .record(0.0003);
+        });
+        let text = handle.render();
+        assert!(
+            text.contains(
+                "kaeso_gateway_overhead_seconds_bucket{provider=\"openai\",le=\"0.00025\"} 0"
+            ),
+            "{text}"
+        );
+        assert!(
+            text.contains(
+                "kaeso_gateway_overhead_seconds_bucket{provider=\"openai\",le=\"0.0005\"} 1"
+            ),
+            "{text}"
+        );
+        assert!(
+            text.contains(
+                "kaeso_time_to_first_byte_seconds_bucket{provider=\"openai\",le=\"0.001\"} 1"
+            ),
+            "{text}"
+        );
+        assert!(
+            !text.contains("time_to_first_byte_seconds_bucket{provider=\"openai\",le=\"0.0005\"}"),
+            "{text}"
+        );
+    }
 }

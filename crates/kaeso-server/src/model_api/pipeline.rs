@@ -21,7 +21,7 @@ use kaeso_upstream::{Call, Outgoing, ResponseBody, Timeouts, UpstreamError};
 use url::Url;
 
 use super::auth;
-use super::errors::{Served, error, respond, stamp};
+use super::errors::{Served, TIMING_HEADER, error, respond, server_timing, stamp};
 use super::hooks::{
     Admission, CLIENT_DISCONNECTED, Caller, Outcome, Reservation, SHUT_DOWN, Sink, Source,
 };
@@ -76,6 +76,17 @@ impl Recording {
 
     pub(super) fn reservation(&self) -> &Reservation {
         &self.reservation
+    }
+
+    fn timing(&mut self) -> HeaderValue {
+        let elapsed = self.started.elapsed();
+        let o = self.outcome();
+        server_timing(o.overhead.unwrap_or(elapsed), o.ttfb)
+    }
+
+    fn time(&mut self, resp: &mut Response) {
+        let timing = self.timing();
+        resp.headers_mut().insert(TIMING_HEADER, timing);
     }
 
     pub(super) async fn finish(mut self, status: u16) {
@@ -173,6 +184,8 @@ fn blank_outcome() -> Outcome {
         started_at: time::OffsetDateTime::UNIX_EPOCH,
         duration: std::time::Duration::ZERO,
         ttfb: None,
+        overhead: None,
+        stream_processing: None,
         user_agent: None,
         client_ip: None,
         upstream_request_id: None,
@@ -274,13 +287,15 @@ pub async fn serve_with(
     };
     let Some(done) = done else {
         let failure = Failure::new(shutting_down(), Stage::Shutdown);
-        let resp = answer(&failure);
+        let mut resp = answer(&failure);
+        rec.time(&mut resp);
         rec.fail_as(SHUT_DOWN, &failure.err, resp.status().as_u16())
             .await;
         return resp;
     };
     match done {
-        Ok(Done::Complete(resp, status)) => {
+        Ok(Done::Complete(mut resp, status)) => {
+            rec.time(&mut resp);
             rec.finish(status).await;
             resp
         }
@@ -289,7 +304,8 @@ pub async fn serve_with(
             resp
         }
         Err(failure) => {
-            let resp = answer(&failure);
+            let mut resp = answer(&failure);
+            rec.time(&mut resp);
             rec.fail(failure.logged(), resp.status().as_u16()).await;
             resp
         }
@@ -809,6 +825,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let provider = eff.provider.id;
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
+    rec.outcome().overhead = Some(sent_at.duration_since(rec.started));
     let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {
@@ -909,6 +926,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 dispatch::stream_encoder(ingress, &encode_ctx).map_err(fail(Stage::Reply))?;
             let (tx, rx) = tokio::sync::mpsc::channel::<Bytes>(32);
             let taken = stream::Taken::default();
+            let timing = rec.timing();
             let task_rec = Recording {
                 state: rec.state.clone(),
                 sink: rec.sink.clone(),
@@ -940,6 +958,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             );
             h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
             h.insert("x-accel-buffering", HeaderValue::from_static("no"));
+            h.insert(TIMING_HEADER, timing);
             stamp(&mut resp, &served);
             Ok(Done::Streaming(resp))
         }

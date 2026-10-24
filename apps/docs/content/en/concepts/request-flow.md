@@ -117,7 +117,7 @@ After an error event from the provider, Kaeso stops reading and closes the provi
 
 A stream whose last event, such as `response.completed`, `message_stop` or `data: [DONE]`, has reached the app is finished. After that, nothing fails it: a broken provider connection, a silent provider, a stream limit or a shutdown only ends the stream, without an error event.
 
-Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, and the time to the first bytes. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
+Usage counts such a stream as an error. The request log shows how far it got in `stream_progress`: the provider's events, the bytes and keepalives written to the app, the time to the first bytes, and the time Kaeso spent translating the events. The metric `kaeso_requests_total` still counts it as 200, the status that was sent ([health and metrics](../self-hosting/monitoring.md)).
 
 An app that reads nothing of its stream for as long as `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` counts as gone: Kaeso stops the provider request and logs it as a disconnect.
 

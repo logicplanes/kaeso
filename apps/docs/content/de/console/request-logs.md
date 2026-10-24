@@ -28,6 +28,8 @@ Wählen Sie eine Anfrage, um sie zu öffnen:
 | Antwort | Was die App zurückbekommen hat |
 | Rohdaten | Der Protokolleintrag, wie die Platform API ihn liefert |
 
+Die Zeiten trennen die Arbeit von Kaeso von der des Anbieters. **Kaeso-Overhead** ist die Zeit, bevor Kaeso den Anbieter aufrief: Body lesen, Schlüssel prüfen, übersetzen und Limits prüfen. Bei einem Stream ist **Stream-Verarbeitung** die Zeit, in der Kaeso die Events des Anbieters für die App übersetzt hat, ohne die Wartezeiten auf beide Seiten. Der CSV-Export enthält beides, als `overhead_ms` und `stream_processing_ms`.
+
 Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitüberschreitung** oder **Client getrennt**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
 
 Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort, die in einem Format protokolliert wurde, das diese Konsole noch nicht lesen kann (etwa von einem neueren Gateway), erscheint so, wie sie gespeichert wurde.

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::body::Body;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::response::Response;
@@ -8,6 +10,7 @@ use crate::http::request_id;
 
 pub const MODEL_HEADER: &str = "kaeso-model";
 pub const PROVIDER_HEADER: &str = "kaeso-provider";
+pub const TIMING_HEADER: &str = "server-timing";
 
 #[derive(Clone, Debug, Default)]
 pub struct Served {
@@ -26,6 +29,15 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     {
         resp.headers_mut().insert(PROVIDER_HEADER, v);
     }
+}
+
+pub fn server_timing(kaeso: Duration, upstream: Option<Duration>) -> HeaderValue {
+    let ms = |d: Duration| d.as_secs_f64() * 1000.0;
+    let value = match upstream {
+        Some(u) => format!("kaeso;dur={:.3}, upstream;dur={:.3}", ms(kaeso), ms(u)),
+        None => format!("kaeso;dur={:.3}", ms(kaeso)),
+    };
+    HeaderValue::from_str(&value).unwrap_or_else(|_| HeaderValue::from_static("kaeso"))
 }
 
 pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response {

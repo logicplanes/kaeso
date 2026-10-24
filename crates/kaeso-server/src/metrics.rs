@@ -7,6 +7,7 @@ use metrics_exporter_prometheus::PrometheusHandle;
 pub const REQUESTS: &str = "kaeso_requests_total";
 pub const REQUEST_DURATION: &str = "kaeso_request_duration_seconds";
 pub const TIME_TO_FIRST_BYTE: &str = "kaeso_time_to_first_byte_seconds";
+pub const GATEWAY_OVERHEAD: &str = "kaeso_gateway_overhead_seconds";
 pub const TOKENS: &str = "kaeso_tokens_total";
 pub const COST: &str = "kaeso_cost_microusd_total";
 pub const LIMIT_REFUSALS: &str = "kaeso_limit_refusals_total";
@@ -37,6 +38,11 @@ pub fn describe() {
         TIME_TO_FIRST_BYTE,
         Unit::Seconds,
         "Model API time to the first byte of the reply."
+    );
+    describe_histogram!(
+        GATEWAY_OVERHEAD,
+        Unit::Seconds,
+        "Model API time from a request's arrival until Kaeso called the provider, by provider."
     );
     describe_counter!(
         TOKENS,

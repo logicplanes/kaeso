@@ -16,6 +16,7 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     ingress_dialect: "openai_chat",
     key_id: "key_web",
     model: "gpt-5.4-mini",
+    overhead_ms: 3,
     principal_id: USER,
     principal_kind: "user",
     provider: "openai",

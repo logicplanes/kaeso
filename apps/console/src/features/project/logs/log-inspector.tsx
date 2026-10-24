@@ -204,6 +204,8 @@ function useModelName(org: string, project: string) {
 
 const known = (n: number | null | undefined): n is number => typeof n === "number" && Number.isFinite(n);
 
+const milliseconds = (ms: number) => (ms < 1 ? t("logs.inspector.underOneMs", "Under 1 ms") : seconds(ms));
+
 const STATUS_OF_KIND: Record<string, readonly number[]> = {
   invalid_request: [400],
   authentication: [401],
@@ -251,6 +253,10 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   const message = logMessage(useGatewayErrors(), e.error_message, e.provider, providers.name);
   const embeddings = e.ingress_dialect === "openai_embeddings" || e.egress_dialect === "openai_embeddings";
   const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
+  const timing = [
+    ...(known(e.overhead_ms) ? [{ label: t("logs.inspector.overhead", "Kaeso overhead"), value: milliseconds(e.overhead_ms) }] : []),
+    ...(sp && known(sp.processing_ms) ? [{ label: t("logs.inspector.streamProcessing", "Stream processing"), value: milliseconds(sp.processing_ms) }] : []),
+  ];
   return (
     <div className="mt-24 flex flex-col gap-32">
       {!e.has_content && (
@@ -321,9 +327,12 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
         />
         <StatTile label={common.cost()} value={costUSD(e.cost)} detail={u.estimated ? t("logs.inspector.estimated", "Estimated") : undefined} />
       </StatGrid>
-      {known(e.ttfb_ms) && (
+      {(known(e.ttfb_ms) || timing.length > 0) && (
         <Section title={t("logs.inspector.timing", "Timing")} spacing="none">
-          <RequestTimeline ttfbMs={e.ttfb_ms} totalMs={e.duration_ms} className="w-full" />
+          <div className="flex flex-col gap-16">
+            {known(e.ttfb_ms) && <RequestTimeline ttfbMs={e.ttfb_ms} totalMs={e.duration_ms} className="w-full" />}
+            {timing.length > 0 && <KeyValue layout="stacked" className="-my-8 grid grid-cols-2 gap-x-32" items={timing} />}
+          </div>
         </Section>
       )}
       <Section title={t("logs.inspector.route", "Route")} spacing="none">

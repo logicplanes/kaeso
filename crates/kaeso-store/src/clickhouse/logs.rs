@@ -54,6 +54,8 @@ pub struct LogRow {
     pub stream_keepalives: u32,
     pub usage_estimated: bool,
     pub source: String,
+    pub overhead_ms: Option<u32>,
+    pub stream_processing_ms: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

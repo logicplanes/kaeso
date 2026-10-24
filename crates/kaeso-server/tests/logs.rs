@@ -85,6 +85,11 @@ async fn requests_are_logged_with_metadata_and_content() {
     assert_eq!(ok["usage"]["output_tokens"], 18);
     assert_eq!(ok["cost"], "0.0001");
     assert_eq!(ok["has_content"], true);
+    assert!(ok["overhead_ms"].is_u64(), "{ok}");
+    assert!(
+        data[0]["overhead_ms"].is_u64(),
+        "failures after the provider call keep it"
+    );
     assert!(ok.get("content").is_none(), "lists carry metadata only");
 
     let one = env
@@ -548,6 +553,11 @@ async fn disconnects_charge_limits_with_the_logged_estimate() {
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
     assert_eq!(entry["error_kind"], "client_disconnected", "{entry}");
+    assert!(entry["overhead_ms"].is_u64(), "{entry}");
+    assert!(
+        entry["stream_progress"]["processing_ms"].is_u64(),
+        "{entry}"
+    );
     let usage = &entry["usage"];
     assert_eq!(usage["estimated"], true, "{entry}");
     assert_eq!(usage["input_tokens"], 11, "{entry}");
@@ -611,6 +621,8 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             stream_keepalives: 0,
             usage_estimated: false,
             source: "api".into(),
+            overhead_ms: Some(1),
+            stream_processing_ms: None,
         },
         ContentRow {
             request_id: id,
@@ -707,7 +719,18 @@ async fn exports_stream_large_ranges_in_both_formats() {
         .to_bytes();
     let text = std::str::from_utf8(&body).unwrap();
     assert!(text.starts_with("id,started_at,"));
+    assert!(
+        text.lines()
+            .next()
+            .unwrap()
+            .ends_with(",source,overhead_ms,stream_processing_ms"),
+        "{text}"
+    );
     assert_eq!(text.lines().count(), 2501);
+    assert!(
+        text.lines().skip(1).all(|l| l.ends_with(",\"api\",1,")),
+        "the overhead is exported, and a stream's processing time is empty for other requests"
+    );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
 }
 

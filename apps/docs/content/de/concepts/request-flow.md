@@ -117,7 +117,7 @@ Nach einem Fehler-Event des Anbieters hört Kaeso auf zu lesen und schließt die
 
 Ein Stream, dessen letztes Event, etwa `response.completed`, `message_stop` oder `data: [DONE]`, die App erreicht hat, ist abgeschlossen. Danach lässt ihn nichts mehr fehlschlagen: Eine abgebrochene Verbindung zum Anbieter, ein schweigender Anbieter, ein Stream-Limit oder ein Herunterfahren beendet den Stream nur, ohne Fehler-Event.
 
-Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives und die Zeit bis zu den ersten Bytes. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
+Die Nutzung zählt einen solchen Stream als Fehler. Das Anfrageprotokoll zeigt in `stream_progress`, wie weit er kam: die Events des Anbieters, die an die App geschriebenen Bytes und Keepalives, die Zeit bis zu den ersten Bytes und die Zeit, die Kaeso zum Übersetzen der Events brauchte. Die Metrik `kaeso_requests_total` zählt ihn trotzdem als 200, den gesendeten Status ([Zustand und Metriken](../self-hosting/monitoring.md)).
 
 Eine App, die so lange wie `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` nichts von ihrem Stream liest, gilt als getrennt: Kaeso stoppt die Anfrage beim Anbieter und protokolliert einen Verbindungsabbruch.
 

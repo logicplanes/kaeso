@@ -181,6 +181,7 @@ Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-
 | `kaeso-request-id` | Die ID der Anfrage, `req_…`, in jeder Antwort. Das Anfrageprotokoll zeigt dieselbe ID |
 | `kaeso-provider` | Der Anbieter, der die Anfrage bedient hat, etwa `anthropic`, sobald das Modell feststeht, auch bei Fehlern |
 | `kaeso-model` | Die Modell-ID des Anbieters, sobald das Modell feststeht, auch bei Fehlern |
+| `server-timing` | `kaeso;dur=…`, die eigene Zeit von Kaeso in Millisekunden, bevor es den Anbieter aufrief, oder bis zur Antwort, wenn die Anfrage keinen erreichte. Danach `upstream;dur=…`, die Zeit des Anbieters bis zu seinem ersten Byte, sobald sie bekannt ist. Ein Stream sendet den Header mit seinen übrigen Headern, daher steht die Zeit, die Kaeso für das Übersetzen des Streams braucht, nur im [Anfrageprotokoll](../console/request-logs.md#anfrage-lesen) |
 
 ## Aufrufe aus dem Browser
 

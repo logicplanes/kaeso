@@ -38,6 +38,7 @@ services:
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models without models.dev data |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Changes in the 99th percentile per route and per provider |
+| `kaeso_gateway_overhead_seconds{provider}` | Kaeso's own time before it calls the provider: reading the body, checking the key, translating and checking limits. Its buckets start at 0.1 ms. A rise that `kaeso_time_to_first_byte_seconds` doesn't show is Kaeso's, not the provider's |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` or `connect`: a provider outage. `authentication` or `billing`: a provider key needs attention |
 | `kaeso_stream_failures_total{kind, provider}` | Streams that failed after their headers were sent. `kaeso_requests_total` counts them as 200, the request log as failures |
 | `kaeso_usage_estimates_total{reason, provider}` | Usage Kaeso had to estimate. `unreported`: a provider finished a reply without usage. `cancelled` and `failed`: apps that disconnected and streams that broke off |

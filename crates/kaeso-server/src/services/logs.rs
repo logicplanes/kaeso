@@ -416,6 +416,8 @@ pub async fn record(state: &AppState, o: &Outcome) {
         stream_keepalives: progress.keepalives,
         usage_estimated: o.usage_estimated,
         source: o.source.as_str().into(),
+        overhead_ms: o.overhead.map(ms),
+        stream_processing_ms: o.stream_processing.map(ms),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

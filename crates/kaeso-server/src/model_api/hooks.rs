@@ -129,6 +129,8 @@ pub struct Outcome {
     pub started_at: OffsetDateTime,
     pub duration: Duration,
     pub ttfb: Option<Duration>,
+    pub overhead: Option<Duration>,
+    pub stream_processing: Option<Duration>,
     pub user_agent: Option<String>,
     pub client_ip: Option<IpAddr>,
     pub upstream_request_id: Option<String>,
