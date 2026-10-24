@@ -231,6 +231,8 @@ describe("fenceInfo and safeExternal", () => {
     expect(fenceInfo("TypeScript title='a.ts'")).toEqual({ lang: "ts", title: "a.ts" });
     expect(fenceInfo("toml")).toEqual({ lang: "text" });
     expect(fenceInfo(undefined)).toEqual({ lang: "text" });
+    expect(fenceInfo("markdown")).toEqual({ lang: "text", wrap: true });
+    expect(fenceInfo("text title=policy")).toEqual({ lang: "text", title: "policy", wrap: true });
   });
 
   it("allows http, https and mailto only", () => {

@@ -46,6 +46,18 @@ describe("Markdown", () => {
     expect([...(path?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("/v1/|chat/|completions");
   });
 
+  it("wraps a prose block at every width, and code only on phones", () => {
+    const c = draw([
+      { t: "code", lang: "text", code: "Kaeso is an open-source AI gateway you run on your own servers.", wrap: true },
+      { t: "code", lang: "bash", code: "curl https://kaeso.example.com/v1/models" },
+    ]);
+    const [prose, code] = [...c.querySelectorAll("code > *")];
+    expect(prose).toHaveClass("whitespace-pre-wrap");
+    expect(prose).not.toHaveClass("max-sm:whitespace-pre-wrap");
+    expect(code).toHaveClass("max-sm:whitespace-pre-wrap");
+    expect(code).not.toHaveClass("whitespace-pre-wrap");
+  });
+
   it("renders text that looks like HTML as text", () => {
     const c = draw([{ t: "paragraph", c: [{ t: "text", v: '<img src=x onerror="alert(1)"><script>alert(2)</script>' }] }]);
     expect(c.querySelector("img, script")).toBeNull();
