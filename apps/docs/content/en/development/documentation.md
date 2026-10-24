@@ -403,7 +403,7 @@ Any other field is an error. The title is the page's only `#` heading, so headin
 
 A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't.
 
-Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation.
+Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation. An address can also go to a page outside the docs, such as `"changelog": "https://kaeso.app/changelog"`. Each language then goes to the same language there, and so does every address below the old one.
 
 A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
 
@@ -441,7 +441,7 @@ sequenceDiagram
 - Choose the type that fits: `flowchart` for parts and how they connect, `sequenceDiagram` for requests and replies between parties, `stateDiagram-v2` for a lifecycle. `flowchart TD`, top to bottom, stays readable on a phone. The site centres a diagram on a well, like a code block; one wider than the column scrolls inside it.
 - `accTitle:` names the diagram in a few words, is required, and shows as the caption under it. `accDescr:` says in one or two sentences what it shows; screen readers read both, and search finds them with the diagram's labels.
 - Keep labels short, in the page's language; names from the code stay as they are. `<br>` breaks a label onto a second line.
-- Mark the part of Kaeso the diagram is about with `:::accent`, as in `gateway[Gateway]:::accent`, and parties outside the install, such as apps and providers, with `:::outside`. The site draws the first in ink and the second dashed. A `subgraph` draws a boundary, such as the server Kaeso runs on.
+- Mark the part of Kaeso the diagram is about with `:::accent`, as in `gateway[Gateway]:::accent`, and parties outside the install, such as apps and providers, with `:::outside`. The site draws the first in ink and the second dashed. A `subgraph` draws a boundary, such as the server Kaeso runs on. Its title sits in the top-left corner, or further along the top where a line would run under it.
 - Draw a diagram only where it helps; a short list or a table is often clearer.
 - No `%%` comments, no `%%{init}` and no `classDef`, `class` or `style` lines: the site sets the colours, the type and the radius from Kaeso's tokens.
 

@@ -16,7 +16,6 @@ export interface DocsOptions {
   editBase: string;
   siteUrl: string;
   version: string;
-  changelog?: string;
   render?: Render;
 }
 
@@ -31,7 +30,6 @@ export interface PageHead {
   image: string;
   indexed: boolean;
   structured: object | null;
-  feed?: { title: string; href: string };
 }
 
 export const OG_IMAGE = { path: "/og.png", width: 1200, height: 630, alt: "Kaeso" } as const;
@@ -76,7 +74,6 @@ export function pageHtml(template: string, head: PageHead): string {
     meta("name", "twitter:image", head.image),
     ...(head.structured ? [`<script type="application/ld+json">${scriptJson(head.structured)}</script>`] : []),
     ...head.preloads.map((file) => `<link rel="modulepreload" crossorigin href="/${file}" />`),
-    ...(head.feed ? [`<link rel="alternate" type="application/atom+xml" title="${escapeHtml(head.feed.title)}" href="${escapeHtml(head.feed.href)}" />`] : []),
   ];
   return template
     .replace(/<html lang="[^"]*">/, () => `<html lang="${head.lang}">`)
@@ -98,7 +95,7 @@ export function redirectHtml(lang: Locale, title: string, siteUrl: string, to: s
     '    <meta name="robots" content="noindex" />',
     '    <meta name="color-scheme" content="light dark" />',
     `    <meta http-equiv="refresh" content="0; url=${href}" />`,
-    `    <link rel="canonical" href="${escapeHtml(absoluteUrl(siteUrl, to.split("#")[0] ?? to))}" />`,
+    `    <link rel="canonical" href="${escapeHtml(to.startsWith("https://") ? to : absoluteUrl(siteUrl, to.split("#")[0] ?? to))}" />`,
     `    <title>${escapeHtml(title)}</title>`,
     "  </head>",
     "  <body>",
@@ -110,7 +107,7 @@ export function redirectHtml(lang: Locale, title: string, siteUrl: string, to: s
 }
 
 export function redirectRules(redirects: Docs["redirects"]): string {
-  return LOCALES.flatMap((l) => redirects[l].map((r) => `${r.from} ${r.to} 301`))
+  return LOCALES.flatMap((l) => redirects[l].flatMap((r) => [`${r.from} ${r.to} 301`, ...(r.below ? [`${r.from}/* ${r.to} 301`] : [])]))
     .map((line) => `${line}\n`)
     .join("");
 }
@@ -194,7 +191,6 @@ function withAssets(page: SitePage, root: string): string {
   const content: PageContent = {
     blocks: blocks(compiled.blocks),
     toc: compiled.toc,
-    ...(page.compiled?.changelog ? { changelog: page.compiled.changelog } : {}),
   };
   let json = JSON.stringify(content);
   const imports: string[] = [];
@@ -273,10 +269,9 @@ export function htmlFiles(path: string, isFolderIndex: boolean): string[] {
 
 export function kaesoDocs(options: DocsOptions): Plugin {
   const contentDir = resolve(options.root, options.contentDir);
-  const changelog = options.changelog ? resolve(options.root, options.changelog) : undefined;
   let docs: Docs | null = null;
   let isBuild = false;
-  const current = () => (docs ??= buildDocs(contentDir, options.root, options.version, changelog));
+  const current = () => (docs ??= buildDocs(contentDir, options.root, options.version));
   const summary = (d: Docs) => `content: ${d.problems.length} to fix in ${options.contentDir}/\n  ${d.problems.join("\n  ")}`;
   const render = options.render ?? browserRender(options.root);
   const draw = async (d: Docs, prune: boolean): Promise<string[]> => {
@@ -305,7 +300,6 @@ export function kaesoDocs(options: DocsOptions): Plugin {
       }
       const d = current();
       for (const locale of LOCALES) for (const page of d.sites[locale].pages) this.addWatchFile(page.file);
-      if (changelog) this.addWatchFile(changelog);
       if (isBuild && d.problems.length) this.error(summary(d));
     },
     configureServer(server) {
@@ -332,9 +326,8 @@ export function kaesoDocs(options: DocsOptions): Plugin {
       };
       report();
       server.watcher.add(contentDir);
-      if (changelog) server.watcher.add(changelog);
       const changed = (file: string) => {
-        if (!resolve(file).startsWith(contentDir) && resolve(file) !== changelog) return;
+        if (!resolve(file).startsWith(contentDir)) return;
         docs = null;
         invalidate();
         report();
@@ -366,7 +359,7 @@ export function kaesoDocs(options: DocsOptions): Plugin {
       for (const locale of LOCALES) {
         const siteName = MESSAGES[locale]["site.name"];
         const shared = preload.locale(locale);
-        const head = (path: string | null, title: string, description: string, extra: string[], feed?: PageHead["feed"]): PageHead => ({
+        const head = (path: string | null, title: string, description: string, extra: string[]): PageHead => ({
           lang: locale,
           title: documentTitle(title, siteName),
           description,
@@ -377,14 +370,11 @@ export function kaesoDocs(options: DocsOptions): Plugin {
           image: absoluteUrl(options.siteUrl, OG_IMAGE.path),
           indexed: path !== null,
           structured: path === null ? null : structuredData(options.siteUrl, siteName, locale, { path, title, description }),
-          ...(feed ? { feed } : {}),
         });
         const site = d.sites[locale];
         for (const meta of site.metas) {
           const page = site.pages.find((p) => p.path === meta.path);
-          const repository = page?.compiled?.changelog?.repository;
-          const feed = repository ? { title: MESSAGES[locale]["changelog.feed"], href: `${repository}/releases.atom` } : undefined;
-          const html = pageHtml(template, head(meta.path, meta.title, meta.description, preload.page(meta.path), feed));
+          const html = pageHtml(template, head(meta.path, meta.title, meta.description, preload.page(meta.path)));
           for (const file of htmlFiles(meta.path, page?.local.endsWith("index.md") ?? false)) writeHtml(outDir, file, html);
         }
         const folder = locale === DEFAULT_LOCALE ? "" : `${locale}/`;
