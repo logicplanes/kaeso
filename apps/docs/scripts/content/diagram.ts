@@ -9,7 +9,7 @@ export type DiagramTheme = (typeof DIAGRAM_THEMES)[number];
 export const DIAGRAM_LANG = "mermaid";
 export const DIAGRAM_ROLES: readonly string[] = ["accent", "outside"];
 export const DIAGRAM_COMMAND = "pnpm --filter kaeso-docs diagrams";
-const REVISION = 3;
+const REVISION = 4;
 
 export interface DiagramText {
   title?: string;
@@ -73,7 +73,7 @@ export function mermaidConfig(theme: DiagramTheme): Record<string, unknown> {
     `.messageText{fill:${text};}`,
     `.sequenceNumber{fill:${onInk};font-size:11px;font-weight:600;}`,
     `marker[id$="sequencenumber"] circle{fill:${ink};stroke:none;}`,
-    `.noteText,.noteText tspan{fill:${secondary};font-size:13px;}`,
+    `.noteText,.noteText tspan{fill:${text};font-size:13px;}`,
     `.actor{stroke:${ring};}`,
   ].join("");
   return {

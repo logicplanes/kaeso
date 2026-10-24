@@ -82,8 +82,19 @@ export async function renderInPage({ jobs, configs, radius }: PageInput): Promis
       if (Math.abs(x - Number(move[1])) > 0.5) label.setAttribute("transform", `translate(${x}, ${move[2]})`);
     }
   };
+  const corner = (svg: SVGSVGElement) => {
+    for (const cluster of svg.querySelectorAll("g.cluster")) {
+      const frame = cluster.querySelector(":scope > rect") as SVGRectElement | null;
+      const label = cluster.querySelector(":scope > g.cluster-label") as SVGGElement | null;
+      if (!frame || !label) continue;
+      const box = frame.getBBox();
+      const inner = label.getBBox();
+      label.setAttribute("transform", `translate(${box.x + 12 - inner.x}, ${box.y + 8 - inner.y})`);
+    }
+  };
   const flatten = (svg: SVGSVGElement) => {
     centre(svg);
+    corner(svg);
     const plan: [Element, Record<string, string> | null][] = [];
     for (const el of [svg, ...svg.querySelectorAll("*")]) {
       const tag = el.tagName;
