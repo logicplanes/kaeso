@@ -93,6 +93,7 @@ export interface CommandListProps {
   onEscape?: (() => void) | undefined;
   escapeClears?: boolean | undefined;
   match?: ((item: CommandListItem, query: string) => number) | undefined;
+  counts?: boolean | undefined;
   inputProps?: { [attribute: `data-${string}`]: string } | undefined;
   className?: string | undefined;
   "data-force"?: string | undefined;
@@ -163,6 +164,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     onEscape,
     escapeClears = true,
     match = fuzzy,
+    counts = true,
     inputProps,
     className,
     "data-force": force,
@@ -349,7 +351,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const optionId = (i: number) => `${uid}-${i}-${(options[i]?.item.value ?? "").replace(/\s/g, "_")}`;
   const groupLabelId = (gi: number) => `${uid}-g-${gi}`;
   const header = (group: CommandListGroup, gi: number) => {
-    const count = query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
+    const count = !counts ? undefined : query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
     return (
       <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised px-16")}>
         {group.leading}

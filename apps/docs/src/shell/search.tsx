@@ -64,6 +64,7 @@ export default function Search({ index }: { index: SearchEntry[] }) {
       onOpenChange={setSearchOpen}
       groups={groups}
       hotkey={false}
+      counts={false}
       query={query}
       onQueryChange={setSearchQuery}
       placeholder={t("search.placeholder")}
