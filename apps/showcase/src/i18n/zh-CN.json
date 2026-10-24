@@ -394,6 +394,8 @@
   "Long code lines wrap instead of scrolling sideways (narrow columns).": "长代码行自动换行而不是横向滚动（窄栏）。",
   "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response).": "长行自动换行而不是横向滚动：用于窄栏中的代码（模型的回复）。",
   "Long text and links wrap like prose; the row grows and keeps its padding, and one-line rows stay 44px.": "长文本和链接像正文一样换行；行会变高并保留内边距，单行的行仍为 44px。",
+  "Compact": "紧凑",
+  "A reference table of five or more columns puts 8px between them, so it fits the column without scrolling.": "五列及以上的参考表格在列之间留 8px，这样无需滚动就能放进栏中。",
   "Long values that wrap": "会换行的长值",
   "Makes it a link to this address.": "使其成为指向此地址的链接。",
   "Mark: favicons, app icons, avatars": "图形标志：网站图标、应用图标、头像",
