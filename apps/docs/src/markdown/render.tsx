@@ -129,8 +129,7 @@ const DIAGRAM_SHRINK = 0.75;
 
 export function diagramMinWidth(width: number): string | undefined {
   const least = width * DIAGRAM_SHRINK;
-  if (least < DIAGRAM_MIN_WIDTHS[0][0]) return undefined;
-  return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least && min <= width)?.[1] ?? "min-w-800";
+  return DIAGRAM_MIN_WIDTHS.findLast(([min]) => min <= least)?.[1];
 }
 
 const hasLink = (xs: Inline[]): boolean => xs.some((x) => x.t === "link" || ("c" in x && hasLink(x.c)));
