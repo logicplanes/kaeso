@@ -73,7 +73,12 @@ A member's rights in a project add up from three sources: their project role, th
 
 Every change of roles and rights follows these rules:
 
-1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. This applies to changing a member's role or rights, inviting and resending an invitation, adding a project member, creating or changing a service account or a custom role, and choosing the single sign-on role. For an invitation and the single sign-on role, it also covers the role they bring in the default project, unless the invitation names the default project itself.
+1. **Give only what you hold.** You can give only rights you hold yourself, in the same scope: organization rights in the organization, project rights in that project. You can give rights in every project only if you hold them in every project. For an invitation and the single sign-on role, the rule also covers the role they bring in the default project, unless the invitation names the default project itself. The rule applies when you:
+   - change a member's role or rights;
+   - invite someone or resend an invitation;
+   - add a project member;
+   - create or change a service account or a custom role;
+   - choose the single sign-on role.
 2. **Act only on peers.** You can change a member's role and rights, or remove the member, only if you hold every right the member holds in that scope. In a project, that includes the rights their organization role gives them there. The same goes for changing or archiving a service account.
 3. **Owners manage owners.** Only owners make, change, remove and invite owners, in the organization and in each of its projects, and only an owner transfers ownership. An organization never loses its last owner.
 4. **Needs are checked.** Kaeso checks what every right a change gives needs. A change can't remove a right that a remaining right needs, even when that remaining right already lacks another of its needs. Kaeso refuses a change to a custom role that would leave a holder with a right but without one it needs. The holders' own rights never change with it.

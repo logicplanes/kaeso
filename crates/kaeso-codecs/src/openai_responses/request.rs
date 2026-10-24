@@ -296,7 +296,7 @@ pub(super) fn decode(
     })
 }
 
-fn decode_tool(raw: &RawValue, origin: &Origin) -> ToolDef {
+pub(super) fn decode_tool(raw: &RawValue, origin: &Origin) -> ToolDef {
     let unknown = || ToolDef::Unknown(RawItem::new(origin.clone(), RawJson::from(raw)));
     if type_tag(raw).ok().flatten().as_deref() != Some("function") {
         return unknown();

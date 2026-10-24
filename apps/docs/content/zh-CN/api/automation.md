@@ -1,5 +1,6 @@
 ---
 title: 用 Platform API 实现自动化
+nav: 自动化
 description: 通过脚本为应用设置项目、模型和密钥，并读取其用量和日志。
 order: 4
 ---

@@ -2,6 +2,8 @@
 
 | file | what it covers | provenance |
 |---|---|---|
+| `codex-namespace-tools.json` | Codex CLI 0.159.0 turn after an MCP tool call: `namespace` tools (`multi_agent_v1`, `mcp__fake`) next to function tools, hosted `web_search` with `external_web_access: true`, a `function_call` with `namespace` fed back, `client_metadata` (turn and thread ids, `x-codex-turn-metadata`), `prompt_cache_key` | recorded: `codex exec` request captured by a local endpoint on 2026-10-24, with the model catalog Kaeso users generate for non-OpenAI models and one MCP server; instructions, tool list and descriptions shortened, ids, paths and the installation id replaced by placeholders |
+| `codex-web-search-resume.json` | Codex CLI 0.159.0 resuming a thread: a `web_search_call` item and the assistant answer fed back, then a new user turn | recorded: `codex exec resume --last` request captured the same way; the `web_search_call` and message ids are OpenAI's from `responses/web-search.json` |
 | `error-mid-stream.json` | plain streaming request | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |
 | `explicit-nulls.json` | every nullable field set to explicit `null` (incl. `previous_response_id`/`conversation`/`background`: null must NOT be treated as stateful); `tools: []` | schema: CreateResponse (nullable anyOf members) (openapi.yaml@e95c0fe615f4) |
 | `failed-stream.json` | plain request whose stream fails | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |

@@ -13,22 +13,22 @@ order: 1
 ```mermaid
 sequenceDiagram
   accTitle: 模型 API 的请求路径
-  accDescr: 网关检查密钥，用 KPP 解码请求，解析模型，检查限额，选择服务商密钥，用 KPP 编码请求并发送。它用 KPP 解码回复并为应用编码，然后在 Valkey 和 PostgreSQL 中计入用量，并在 ClickHouse 中记录请求。
+  accDescr: 模型 API 检查密钥，用 KPP 解码请求，解析模型，检查限额，选择服务商密钥，用 KPP 编码请求并发送。它用 KPP 解码回复并为应用编码，作出回复，然后在 Valkey 和 PostgreSQL 中计入用量，并在 ClickHouse 中记录请求。
   participant App as 应用
-  participant Gateway as 网关
+  participant Gateway as model_api
   participant KPP
   participant Provider as 服务商
-  participant Stores as Valkey、PostgreSQL、<br>ClickHouse
+  participant Stores as 存储
   App->>Gateway: /v1 上的请求
-  Gateway->>Gateway: 1 密钥
-  Gateway->>KPP: 2 解码
-  Gateway->>Gateway: 3 模型、4 限额、<br>5 服务商密钥
-  Gateway->>KPP: 6 编码
-  Gateway->>Provider: 6 发送
+  Note over Gateway: 检查密钥
+  Gateway->>KPP: 解码
+  Note over Gateway: 解析模型<br>检查限额<br>选择服务商密钥
+  Gateway->>KPP: 编码
+  Gateway->>Provider: 发送
   Provider-->>Gateway: 回复
-  Gateway->>KPP: 7 解码回复、<br>8 编码回复
+  Gateway->>KPP: 解码、编码
   Gateway-->>App: 回复
-  Gateway->>Stores: 9 计入用量、10 记录日志
+  Gateway->>Stores: 计费、记录日志
 ```
 
 Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥或平台密钥进行认证。随后每个端点恰好检查一项权限，由服务修改 PostgreSQL 并写入审计事件。

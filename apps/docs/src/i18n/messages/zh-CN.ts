@@ -12,6 +12,7 @@ export const zhCN: Messages = {
   "search.empty": "没有匹配项，换个词试试。",
   "search.pages": "页面",
   "search.headings": "页面内",
+  "search.mentioned": "还提到它的页面",
   "search.theme": "主题",
   "search.language": "语言",
   "search.loadFailed": "搜索加载失败，请重试",

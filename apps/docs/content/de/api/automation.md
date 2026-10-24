@@ -1,5 +1,6 @@
 ---
 title: Mit der Platform API automatisieren
+nav: Automatisierung
 description: Ein Projekt, ein Modell und einen Schlüssel für eine App per Skript einrichten und Nutzung und Protokolle lesen.
 order: 4
 ---

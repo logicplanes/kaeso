@@ -28,7 +28,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 
 ## Hinweise
 
-Was Sie über manche Anbieter noch wissen sollten. Die [Anbieterprofile](../development/kpp/openai-chat.md#anbieterprofile) nennen jedes Feld von Chat Completions, das ein Anbieter umbenennt oder ablehnt:
+Was Sie über manche Anbieter noch wissen sollten. Die [Anbieterprofile](../development/kpp/openai-chat-providers.md#anbieterprofile) nennen jedes Feld von Chat Completions, das ein Anbieter umbenennt oder ablehnt:
 
 - **DeepSeek.** Erhält `developer`-Nachrichten als `system`-Nachrichten.
 - **Groq.** Erhält `developer`-Nachrichten als `system`-Nachrichten und lehnt manche Felder ab, etwa `logit_bias`.

@@ -10,11 +10,12 @@ The documentation is the `kaeso-docs` package in `apps/docs`: Markdown pages, co
 flowchart TD
   accTitle: From Markdown to the site
   accDescr: At build time, scripts/content reads the pages in content and the drawn diagrams in diagrams, checks them and writes virtual modules for each language's site, each page and the search. The React app in src draws them with the UI library, and Vite writes dist.
-  pages[content/language/**/*.md] --> content[scripts/content, in Vite<br>frontmatter, links, anchors, images,<br>search words, every language]
-  diagrams[diagrams/*.svg<br>Mermaid blocks, drawn] --> content
-  content --> modules[Virtual modules<br>site, page and search per language]
-  modules --> app[src/, React and kaeso-ui]
-  app --> dist[dist/]
+  subgraph build [At build time, in Vite]
+    pages[content/<br>the pages] --> compiler
+    diagrams[diagrams/<br>the drawn diagrams] --> compiler
+    compiler[scripts/content<br>checks frontmatter, links,<br>anchors and images]:::accent --> modules[Virtual modules<br>site, pages and search<br>for every language]
+  end
+  modules --> app[src/<br>React and kaeso-ui] --> dist[dist/<br>the static site]
 ```
 
 ## The build

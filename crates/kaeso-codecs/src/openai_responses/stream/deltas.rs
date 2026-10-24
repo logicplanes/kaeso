@@ -4,6 +4,7 @@ use super::{Blk, Emit, Engine, NEW_PART, PartKind, ev, int, sc};
 use crate::cross::{ReplyPolicy, reply_opaque_visible, reply_policy};
 use crate::openai_responses::DIALECT;
 use crate::openai_responses::node::Node;
+use crate::web_search;
 
 impl Engine {
     pub(super) fn delta(
@@ -137,6 +138,11 @@ impl Engine {
                 }
                 (Blk::Unknown { last, .. }, Delta::Unknown(item)) if item.origin.is(DIALECT) => {
                     *last = Some(Node::raw(&item.raw));
+                }
+                (Blk::Search(search), Delta::Unknown(item)) => {
+                    if let Some(partial) = web_search::anthropic_input_delta(item) {
+                        search.input.push_str(&partial);
+                    }
                 }
                 _ => {}
             }

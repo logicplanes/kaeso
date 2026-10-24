@@ -10,6 +10,7 @@ export const en = {
   "search.empty": "Nothing matches. Try another word.",
   "search.pages": "Pages",
   "search.headings": "On pages",
+  "search.mentioned": "Also mentioned on",
   "search.theme": "Theme",
   "search.language": "Language",
   "search.loadFailed": "The search couldn't load; try again",
