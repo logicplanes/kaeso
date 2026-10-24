@@ -51,6 +51,7 @@ pub enum Reply {
     ModelNotFound,
     Trickle,
     ToolCall,
+    WebSearch,
 }
 
 struct Grant {
@@ -576,6 +577,10 @@ async fn api(
                 Reply::ToolCall => {
                     let path = kpp_fixtures().join("openai_responses/streams/plan-function-call-stream.sse");
                     stream(std::fs::read_to_string(path).expect("the plan's tool call stream fixture"))
+                }
+                Reply::WebSearch => {
+                    let path = kpp_fixtures().join("openai_responses/streams/recorded-web-search-stream.sse");
+                    stream(std::fs::read_to_string(path).expect("the web search stream fixture"))
                 }
                 Reply::Text => {
                     let path = kpp_fixtures().join("openai_responses/streams/text-basic-stream.sse");

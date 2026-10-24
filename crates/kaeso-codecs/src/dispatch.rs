@@ -1,5 +1,6 @@
 use kaeso_kpp::{
-    DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
+    DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, RawItem, Reply, Request,
+    RequestKind,
 };
 
 use crate::anthropic_messages::AnthropicMessages;
@@ -127,6 +128,24 @@ pub fn decode_provider_error(
 ) -> KppError {
     dispatch!(dialect, decode_provider_error(status, headers, body, ctx))
         .unwrap_or_else(|e| KppError::new(ErrorKind::ProviderError, e.message).with_status(status))
+}
+
+pub fn finished_item(dialect: DialectId, start: &RawItem, deltas: &[RawItem]) -> Option<RawItem> {
+    match dialect {
+        DialectId::OpenAiResponses => Some(crate::openai_responses::assembly::finished_item(
+            start, deltas,
+        )),
+        _ => None,
+    }
+}
+
+pub fn reports_item_progress(dialect: DialectId, frame: &RawItem) -> bool {
+    match dialect {
+        DialectId::OpenAiResponses => {
+            crate::openai_responses::assembly::reports_item_progress(frame)
+        }
+        _ => false,
+    }
 }
 
 pub fn models_dialect(headers: &HeaderList) -> DialectId {

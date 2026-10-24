@@ -4,8 +4,8 @@ use kaeso_codecs::openai_embeddings::OpenAiEmbeddings;
 use kaeso_codecs::openai_responses::OpenAiResponses;
 use kaeso_codecs::{Codec, EgressCtx, HeaderList, dispatch};
 use kaeso_kpp::{
-    Block, DialectId, DocumentBlock, ErrorKind, GenerateRequest, Message, Origin, Request,
-    RequestKind, Role, Source, StreamMode,
+    Block, DialectId, DocumentBlock, ErrorKind, GenerateRequest, Message, Origin, RawItem, RawJson,
+    Request, RequestKind, Role, Source, StreamMode,
 };
 
 const DIALECTS: [DialectId; 4] = [
@@ -326,4 +326,30 @@ fn a_chat_fixture_with_a_null_max_tokens_is_refused_for_anthropic_under_that_nam
         err.message,
         "Anthropic Messages requires an output limit. Set `max_tokens` for the request."
     );
+}
+
+#[test]
+fn only_a_responses_stream_folds_an_item_it_does_not_model_into_the_item_it_ended_as() {
+    let item = |d: DialectId, v: &str| RawItem::new(d, RawJson::from_string(v.to_owned()).unwrap());
+    let r = DialectId::OpenAiResponses;
+    let start = item(r, r#"{"type":"web_search_call","status":"in_progress"}"#);
+    let done = item(r, r#"{"type":"web_search_call","status":"completed"}"#);
+    assert_eq!(
+        dispatch::finished_item(r, &start, std::slice::from_ref(&done)),
+        Some(done)
+    );
+    assert_eq!(dispatch::finished_item(r, &start, &[]), Some(start.clone()));
+    let a = DialectId::AnthropicMessages;
+    assert_eq!(dispatch::finished_item(a, &start, &[]), None);
+    let progress = item(
+        r,
+        r#"{"event":"response.web_search_call.searching","data":{"type":"response.web_search_call.searching","item_id":"ws_1","output_index":1}}"#,
+    );
+    let other = item(
+        r,
+        r#"{"event":"response.queued","data":{"type":"response.queued"}}"#,
+    );
+    assert!(dispatch::reports_item_progress(r, &progress));
+    assert!(!dispatch::reports_item_progress(r, &other));
+    assert!(!dispatch::reports_item_progress(a, &progress));
 }

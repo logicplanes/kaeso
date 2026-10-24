@@ -336,6 +336,8 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 - It sets `stream: true` and `store: false`.
 - It drops forms `input`, `system_items` and `instructions`, so `input` is an array and leading system text is `instructions`. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
 
+Because the route only streams, the gateway gathers its stream into one reply when the app's request doesn't stream. An item KPP doesn't model, such as `web_search_call`, is then the item that `response.output_item.done` sent (`dispatch::finished_item`). The `response.*` events that report an item's progress by its `item_id`, such as `response.web_search_call.searching`, stay out of the reply, because the finished item carries what they say (`dispatch::reports_item_progress`).
+
 ## Providers that use this format
 
 Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.

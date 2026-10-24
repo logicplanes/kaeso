@@ -336,6 +336,8 @@ order: 7
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`、`system_items` 和 `instructions`，因此 `input` 为数组，开头的系统文本成为 `instructions`。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
 
+由于这条路由只支持流式，当应用的请求不是流式时，网关会把它的流汇总成一个回复。KPP 未建模的项目（例如 `web_search_call`）就是 `response.output_item.done` 发送的那个项目（`dispatch::finished_item`）。通过 `item_id` 报告项目进度的 `response.*` 事件（例如 `response.web_search_call.searching`）不会出现在回复中，因为完成的项目已经包含它们报告的内容（`dispatch::reports_item_progress`）。
+
 ## 使用此格式的服务商
 
 提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。

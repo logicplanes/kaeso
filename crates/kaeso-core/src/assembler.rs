@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use kaeso_codecs::dispatch;
 use kaeso_kpp::{
     Block, BlockHeader, Delta, DialectId, Extras, KppError, RawItem, RawJson, ReasoningBlock,
     RefusalBlock, Response, StopReason, StreamEvent, TextBlock, ToolCallBlock, Usage,
@@ -221,10 +222,15 @@ impl Assembler {
         let response = self.started.then(|| {
             let mut blocks = Vec::new();
             for slot in self.slots.into_values() {
-                blocks.push(into_block(slot.body));
+                blocks.push(into_block(slot.body, self.origin));
                 blocks.extend(slot.unknown.into_iter().map(Block::Unknown));
             }
-            blocks.extend(self.unplaced.into_iter().map(Block::Unknown));
+            blocks.extend(
+                self.unplaced
+                    .into_iter()
+                    .filter(|item| !dispatch::reports_item_progress(self.origin, item))
+                    .map(Block::Unknown),
+            );
             let mut r = Response::new(self.id, self.model, blocks);
             r.stop = self.stop.unwrap_or_default();
             r.usage = self.usage.unwrap_or_default();
@@ -251,7 +257,7 @@ fn unknown_with_deltas(start: RawItem, deltas: Vec<RawItem>) -> RawItem {
     RawItem::new(start.origin, raw)
 }
 
-fn into_block(body: Body) -> Block {
+fn into_block(body: Body, origin: DialectId) -> Block {
     match body {
         Body::Text(t) => Block::Text(t),
         Body::Tool {
@@ -279,7 +285,10 @@ fn into_block(body: Body) -> Block {
             Block::Reasoning(r)
         }
         Body::Refusal(r) => Block::Refusal(r),
-        Body::Unknown(start, deltas) => Block::Unknown(unknown_with_deltas(start, deltas)),
+        Body::Unknown(start, deltas) => Block::Unknown(
+            dispatch::finished_item(origin, &start, &deltas)
+                .unwrap_or_else(|| unknown_with_deltas(start, deltas)),
+        ),
     }
 }
 
