@@ -76,7 +76,7 @@ gh stack submit
 
 每项变更都遵守以下规则，其中大多数由 CI 检查：
 
-- **只在代码无法说明原因时写注释。** 名称、类型、小函数和测试说明代码做什么，本文档说明如何使用。注释只写细心的读者否则会忽略的原因：针对别处缺陷的变通做法（附上链接）、类型无法保证的安全约束，或某个限制或顺序的来源。注释从不描述下一行代码在做什么；不要提交被注释掉的代码或 `TODO` 备注，请改为创建 issue。文档注释只用于已发布的 crate 和包的公共 API。这些页面的代码块中从不包含注释。**Comments** 任务会拒绝 `TODO`、`FIXME`、`XXX` 和 `HACK` 备注，其余由评审决定。
+- **只在代码无法说明原因时写注释。** 名称、类型、小函数和测试说明代码做什么，本文档说明如何使用。注释只写细心的读者否则会忽略的原因。它说明针对别处缺陷的变通做法（附上链接）、类型无法保证的安全约束，或某个限制或顺序的来源。注释从不描述下一行代码在做什么；不要提交被注释掉的代码或 `TODO` 备注，请改为创建 issue。文档注释只用于已发布的 crate 和包的公共 API。这些页面的代码块中从不包含注释。**Comments** 任务会拒绝 `TODO`、`FIXME`、`XXX` 和 `HACK` 备注，其余由评审决定。
 - **测试断言的是人或应用看到的内容。** 测试是确定性的：注入时钟，不使用 sleep。覆盖率阈值只升不降。
 - **界面只使用 `@logicplanes/kaeso-ui`**，`className` 只用于布局，每个词都有三种语言（[翻译](translations.md)）。
 - **JavaScript 只用 pnpm**，一次性工具用 `pnpm dlx`。Cargo 构建 Rust 代码，锁文件只通过各自的工具修改。
@@ -99,7 +99,9 @@ Kaeso 采用 MIT 许可证，它发布的所有内容都只依赖宽松许可证
 | `kaeso-kpp`、`kaeso-codecs` | 同一列表，没有例外 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | UI 库、控制台和文档 | MIT、ISC、BSD-2-Clause、BSD-3-Clause、Apache-2.0 和 0BSD | `pnpm build` 之后运行 `pnpm licenses:check` |
 
-`cargo deny check` 还会拒绝有安全公告的 crate、已撤回的 crate、通配符版本，以及来自未知注册表或 Git 仓库的 crate。少数只通过其他 crate 间接进入网关的 crate 对另一种宽松许可证有例外，`deny.toml` 逐一列出了它们。不会影响 Kaeso 且没有修复版本的安全公告，会连同原因同时在 `deny.toml` 和 OpenSSF Scorecard 读取的 `osv-scanner.toml` 中忽略；两份列表不一致时 `pnpm test` 会失败。只在测试或构建中运行的工具（例如 axe-core）永远不会进入软件包、镜像或发布的网站。UI 库的字体 Inter 和 Geist Mono 采用 SIL Open Font License，缺少其许可证文件的软件包会被 `pnpm release:check` 拒绝。
+`cargo deny check` 还会拒绝有安全公告的 crate、已撤回的 crate、通配符版本，以及来自未知注册表或 Git 仓库的 crate。少数只通过其他 crate 间接进入网关的 crate 对另一种宽松许可证有例外。`deny.toml` 逐一列出了它们。不会影响 Kaeso 且没有修复版本的安全公告，会连同原因同时在 `deny.toml` 和 OpenSSF Scorecard 读取的 `osv-scanner.toml` 中忽略；两份列表不一致时 `pnpm test` 会失败。
+
+只在测试或构建中运行的工具（例如 axe-core）永远不会进入软件包、镜像或发布的网站。UI 库的字体 Inter 和 Geist Mono 采用 SIL Open Font License，缺少其许可证文件的软件包会被 `pnpm release:check` 拒绝。
 
 KPP 的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，其政策禁止 `tokio`、`reqwest`、`hyper` 和 `axum`。其他任何依赖都要先征得维护者同意。
 

@@ -10,7 +10,7 @@ order: 1
 
 这些类型的形态取决于编解码器保持无损所需要的东西：
 
-- **`Extras`** 有三个字段：`origin`、`fields`（逐字节保存的原始 JSON）和 `form`（呈现标记）。同一方言内的往返必须重现被 KPP 规范化抹掉的写法，例如 `content` 是字符串还是数组、`null` 还是缺失、`1` 还是 `1.0`，以及 chunk 边界和 SSE 帧的 `id` 与 `retry` 字段。这些标记不携带含义，因此不会像未知的 `fields` 那样让其他方言拒绝请求。两个空的 `Extras` 无论来源如何都相等。
+- **`Extras`** 有三个字段：`origin`、`fields`（逐字节保存的原始 JSON）和 `form`（呈现标记）。同一方言内的往返必须重现被 KPP 规范化抹掉的写法。例如 `content` 是字符串还是数组、`null` 还是缺失、`1` 还是 `1.0`，以及 chunk 边界和 SSE 帧的 `id` 与 `retry` 字段。这些标记不携带含义，因此不会像未知的 `fields` 那样让其他方言拒绝请求。两个空的 `Extras` 无论来源如何都相等。
 - **转发的请求头**（`anthropic-beta`、`anthropic-version`、`openai-beta`）保存在 `Extras::fields` 中，键以 `header:` 开头；重复的请求头用 `", "` 连接。请求头也像其他 extra 一样绑定到其方言。以 `header:` 开头的请求体键看起来会像转发的请求头，因此通过 `wire::Ext` 读取请求体的编解码器，即 Anthropic Messages、OpenAI Chat Completions 和 OpenAI Embeddings，会拒绝它（[线路结构体](#线路结构体)）；OpenAI Responses 把这样的键保留在请求体中，只有真正的请求头才会被转发。
 - **原始项。** `Box<RawValue>` 包装在 `RawJson` 中，按字节比较。未知的块、工具、工具选择、流事件和 delta 都是 `RawItem { origin, raw }`；引用是 `Citation { origin, raw }`，因为各方言的引用格式几乎没有共同之处。
 - **回复。** `Reply` 是 `Generate`、`CountTokens` 或 `Embed`，`RequestKind` 也对应这三种。
@@ -25,24 +25,24 @@ order: 1
 KPP 流的结构是 `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`，任何位置都可能出现 `Error`，`Extra` 则携带 KPP 没有建模的方言事件。
 
 ```mermaid
-stateDiagram-v2
+flowchart TD
   accTitle: KPP 流事件的顺序
   accDescr: 流以 ResponseStart 开始。随后是任意数量的块，每个块由 BlockStart、任意数量的 BlockDelta 和 BlockStop 组成，然后是任意数量的 ResponseDelta，最后由 ResponseStop 结束。Error 可能出现在任何位置。
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: 任意数量
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: 下一个块
-  BlockStop --> ResponseDelta: 任意数量
-  ResponseStart --> ResponseDelta: 没有块
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
+  start[ResponseStart]:::accent
+  subgraph blocks [任意数量的块]
+    bstart[BlockStart] --> bdelta[BlockDelta<br>任意数量] --> bstop[BlockStop]
+  end
+  start --> bstart
+  bstop -- 下一个块 --> bstart
+  bstop --> rdelta[ResponseDelta<br>任意数量]
+  start -- 没有块 --> rdelta
+  rdelta --> stop[ResponseStop]:::accent
 ```
 
 - **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2 等。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。
 - **每个生命周期事件都携带 `Extras`**，因此同一方言内的回放能精确重现原始事件，包括各事件自己的字段，例如 OpenAI 的 `obfuscation`。
 - **失败在带内报告**：先给出到目前为止解码出的事件，最后是一个 `StreamEvent::Error`，因此同一 chunk 中先前解码的内容不会丢失。
-- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓，直到它的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。服务商在块仍打开时发送的用量会被暂缓到这些块结束，因此 `ResponseDelta` 总是在最后一个 `BlockStop` 之后。
+- **事件顺序从不改变，但可能暂缓输出。** 兼容 OpenAI 的服务商可能在第一个 chunk 之后才发送回复的 `id` 和 `model`，或工具调用的 `id` 和 `name`。这时 OpenAI Chat Completions 解码器会暂缓 `ResponseStart` 和没有内容的 chunk，直到某个 chunk 带来这些值或内容。工具调用的 `BlockStart` 及其后的每个事件也会被暂缓。它们会一直等到该调用的 `id` 和 `name` 都已到达、该块结束，或者流结束或中断（[OpenAI Chat Completions](openai-chat.md#流createchatcompletionstreamresponse)）。服务商在块仍打开时发送的用量会被暂缓到这些块结束，因此 `ResponseDelta` 总是在最后一个 `BlockStop` 之后。
 
 ### 流编码器
 
@@ -65,7 +65,7 @@ Anthropic 的索引按块写出的顺序分配。不以 `ResponseStart` 开头�
 - 只有在应用请求了用量（`stream_options.include_usage`）时才发送用量，作为最后一个 `choices: []` 的 chunk；
 - `ResponseStop` 写出 `data: [DONE]`；`Error` 写出 `data: {"error": …}` 并结束流，不写 `[DONE]`。
 
-**OpenAI Responses。** 流引擎为每个 KPP 事件按 OpenAI 的发送顺序生成 SSE 事件，包括每一个冗余事件（`.done` 事件、part 事件、item 事件，以及带有全部输出 item 的最终 response 对象），并分配 `sequence_number`。解码器把同一个引擎作为影子运行：
+**OpenAI Responses。** 流引擎为每个 KPP 事件按 OpenAI 的发送顺序生成 SSE 事件，并分配 `sequence_number`。其中包括每一个冗余事件：`.done` 事件、part 事件、item 事件，以及带有全部输出 item 的最终 response 对象。解码器把同一个引擎作为影子运行：
 
 - 引擎在该位置会生成的每个 SSE 事件都关联到对应的 KPP 事件，差异记录为带作用范围的覆盖项；
 - 关联上了、但原始流中没有的事件记录在形式标记 `skip` 中；
@@ -77,10 +77,10 @@ Anthropic 的索引按块写出的顺序分配。不以 `ResponseStart` 开头�
 
 线路结构体必须保留每个字段，包括结构体没有声明的字段，还必须逐字节保留原始载荷（`RawValue`）。`#[serde(flatten)]` 无法同时做到这两点：flatten 会缓冲输入，而 `RawValue` 无法从缓冲区读取，于是工具参数和 schema 会丢失原始字节。`wire::Ext<T>` 能完成同样的工作，而且不做缓冲：
 
-- JSON 对象中 `T` 没有声明的每个键都原样保存在 `Ext::extra` 中，并成为 KPP 的 `Extras::fields`。键名以 `header:` 开头或含有 `.` 的键会被误认为转发的请求头或嵌套键路径，因此整个对象会被拒绝（`` the field `…` has a name Kaeso cannot carry; remove it ``）：在请求中是 `InvalidRequest`，在服务商的回复中是 `ProviderError`。
+- JSON 对象中 `T` 没有声明的每个键都原样保存在 `Ext::extra` 中，并成为 KPP 的 `Extras::fields`。键名以 `header:` 开头或含有 `.` 的键会被误认为转发的请求头或嵌套键路径。这样的对象会被拒绝（`` the field `…` has a name Kaeso cannot carry; remove it ``）：在请求中是 `InvalidRequest`，在服务商的回复中是 `ProviderError`。
 - `T` 已声明、但无法重现其收到时写法的每个键，都原样保存在 `Ext::verbatim` 中，并成为 KPP 的 `Extras::form`。例如在 `None` 时跳过的 `Option` 收到了 `"x": null`，在为 false 时跳过的 `bool` 收到了 `"flag": false`，在为空时跳过的 `Vec` 收到了 `"list": []`。
 
-序列化 `Ext<T>` 时，先写 `T`，再写 `T` 没有写出的 verbatim 键，最后写 extra 键。因此解码再编码的往返是精确的；而编解码器修改某个类型化字段时（例如从另一种方言转换时），修改后的值总是优先于过时的 verbatim 写法。在编解码器必须看出区别的地方，`wire::Maybe<T>` 会区分缺失和 `null`。
+序列化 `Ext<T>` 时，先写 `T`，再写 `T` 没有写出的 verbatim 键，最后写 extra 键。因此解码再编码的往返是精确的。编解码器修改某个类型化字段时（例如从另一种方言转换时），修改后的值总是优先于过时的 verbatim 写法。在编解码器必须看出区别的地方，`wire::Maybe<T>` 会区分缺失和 `null`。
 
 在 `Ext` 内部使用的线路结构体遵循以下规则：
 
@@ -105,7 +105,17 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 
 serde 跳过被忽略的值和原始值时不受其递归上限约束，否则编解码器可能以每层一个栈帧的方式遍历任意深度的原始值。`request_shape` 在一次遍历字节时统计字符串之外的深度，并拒绝更深的正文，不给出 `param`。Responses 编解码器与其规范编码的比较同样在 `MAX_DEPTH` 处停止，并把服务商回复的其余部分保留为原始值，因此深层回复也不会让栈溢出。
 
-不是 JSON 的正文，或结构不像该方言请求的正文，会尽可能统计，随后由解码报告问题所在。像 `"messages"` 这样经过转义的键，按其表示的键统计。`request_shape` 还会以 `RequestShape` 返回统计结果、嵌入输入中的 Token ID 数和正文字节数，使网关能在解码之前估算请求的内存。字节数不含请求对象、其消息、输入项和输入、内容块以及工具列表中记号之间的空白，这些空白在解码时会被丢弃，因此在这些位置填充空白不会增加估算。其他值内部的空白会计入，因为原样保留的值（例如工具的 `parameters`）会逐字节保留空白。解码器整体按原始 JSON 保留的消息或内容块，其内部的所有空白同样计入：Chat Completions 的 `function` 消息、不是对象或其消息角色不接受其类型的内容部分，以及不是对象或编解码器不认识其类型或 `source` 的 Messages 内容块。OpenAI Responses 的输入项内部的所有空白都会计入，因为该解码器会原样保留任何无法按其类型解析的输入项或内容部分，而这只有解码才能判断。
+不是 JSON 的正文，或结构不像该方言请求的正文，会尽可能统计，随后由解码报告问题所在。像 `"messages"` 这样经过转义的键，按其表示的键统计。`request_shape` 还会以 `RequestShape` 返回统计结果、嵌入输入中的 Token ID 数和正文字节数，使网关能在解码之前估算请求的内存。
+
+字节数不含解码时会丢弃的空白，因此在这些位置填充空白不会增加估算。这指的是请求对象、其消息、输入项和输入、内容块以及工具列表中记号之间的空白。其他值内部的空白会计入，因为原样保留的值（例如工具的 `parameters`）会逐字节保留空白。
+
+解码器整体按原始 JSON 保留的消息或内容块，其内部的所有空白同样计入：
+
+- Chat Completions 的 `function` 消息；
+- 不是对象或其消息角色不接受其类型的内容部分；
+- 不是对象或编解码器不认识其类型或 `source` 的 Messages 内容块。
+
+OpenAI Responses 的输入项内部的所有空白都会计入。该解码器会原样保留任何无法按其类型解析的输入项或内容部分，而这只有解码才能判断。
 
 ## 服务器发送事件
 
@@ -115,7 +125,7 @@ serde 跳过被忽略的值和原始值时不受其递归上限约束，否则�
 - 注释和未知字段会被报告，而不是被忽略；规范忽略的 `id` 或 `retry` 值作为未知字段保留（`SseEvent::other`）；
 - 没有空行结束的最后一帧仍会被报告；
 - 在一行中间结束的流会报告为 `SseError::Truncated`，而不是被丢弃。
-- 第一行是名称以 U+FEFF 开头的字段的帧，会在一个空行之后写出，因为读取方会把流开头的这些字节当作字节顺序标记并丢弃。
+- 第一行是名称以 U+FEFF 开头的字段的帧，会在一个空行之后写出。否则读取方会把流开头的这些字节当作字节顺序标记并丢弃。
 
 每个流解码器都把没有数据的帧作为 `Extra` 传递，其原始 JSON 中没有 `data` 键；每个编码器写回时也不带 `data:` 行。在 OpenAI Chat Completions 中，没有数据的 `event: error` 帧就是这样的 `Extra`，而不是错误。
 

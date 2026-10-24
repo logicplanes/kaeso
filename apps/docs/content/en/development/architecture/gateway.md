@@ -13,22 +13,22 @@ A model request passes the same steps in the same order:
 ```mermaid
 sequenceDiagram
   accTitle: The model API's request path
-  accDescr: The gateway checks the key, decodes the request with KPP, resolves the model, checks the limits, picks the provider key, encodes the request with KPP and sends it. It decodes the reply and encodes it for the app with KPP, then charges usage in Valkey and PostgreSQL and logs the request in ClickHouse.
+  accDescr: The model API checks the key, decodes the request with KPP, resolves the model, checks the limits, picks the provider key, encodes the request with KPP and sends it. It decodes the reply and encodes it for the app with KPP, replies, and then charges usage in Valkey and PostgreSQL and logs the request in ClickHouse.
   participant App
-  participant Gateway
+  participant Gateway as model_api
   participant KPP
   participant Provider
-  participant Stores as Valkey, PostgreSQL,<br>ClickHouse
+  participant Stores
   App->>Gateway: Request on /v1
-  Gateway->>Gateway: 1 key
-  Gateway->>KPP: 2 decode
-  Gateway->>Gateway: 3 model, 4 limits,<br>5 provider key
-  Gateway->>KPP: 6 encode
-  Gateway->>Provider: 6 send
+  Note over Gateway: Check the key
+  Gateway->>KPP: decode
+  Note over Gateway: Resolve the model<br>Check the limits<br>Pick the provider key
+  Gateway->>KPP: encode
+  Gateway->>Provider: Send
   Provider-->>Gateway: Reply
-  Gateway->>KPP: 7 decode reply,<br>8 encode reply
+  Gateway->>KPP: decode, encode
   Gateway-->>App: Reply
-  Gateway->>Stores: 9 charge usage, 10 log
+  Gateway->>Stores: Charge, log
 ```
 
 A Platform API request authenticates with a session cookie, an API key with platform access or a platform key. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.

@@ -11,7 +11,6 @@ export default defineConfig({
     kaesoDocs({
       root,
       contentDir: "e2e/fixtures/content",
-      changelog: "e2e/fixtures/CHANGELOG.md",
       editBase: "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/",
       siteUrl: "https://docs.kaeso.app",
       version: kaesoVersion(root),

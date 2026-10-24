@@ -42,7 +42,9 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 
 ## Languages
 
-`services::mail_lang` in `kaeso-server` picks the language. The person's choice in their account settings wins (`users.locale`; `null` means Automatic). Otherwise it takes the first language Kaeso writes from the `Accept-Language` of the request that caused the email. If the database can't answer, the fallbacks decide, so the lookup never stops an email. [Email](../../self-hosting/email.md#languages) has the rules for each kind of recipient.
+`services::mail_lang` in `kaeso-server` picks the language. The person's choice in their account settings wins (`users.locale`; `null` means Automatic). Otherwise it takes the first language Kaeso writes from the `Accept-Language` of the request that caused the email.
+
+If the database can't answer, the fallbacks decide, so the lookup never stops an email. [Email](../../self-hosting/email.md#languages) has the rules for each kind of recipient.
 
 Each email's function has one `match` on the language, with whole sentences and values put in by name, never fragments joined together. German addresses people with "Sie". Chinese uses "您", full-width punctuation, and a space between Chinese and Latin words or digits, which `locale::zh` puts at the seams. Dates and numbers follow the language:
 
@@ -54,7 +56,9 @@ Each email's function has one `match` on the language, with whole sentences and 
 
 ## The wordmark
 
-Emails carry the wordmark as two inline PNGs, light and dark, about 6 KB together. A self-hosted install's address may be internal, and many mail apps block remote images, so linked images could fail. Each PNG is three times its display size and rendered from `assets/wordmark-light.svg` and `assets/wordmark-dark.svg`. A test renders the SVGs again with resvg and fails when the committed PNGs differ. To write them again:
+Emails carry the wordmark as two inline PNGs, light and dark, about 6 KB together. A self-hosted install's address may be internal, and many mail apps block remote images, so linked images could fail.
+
+Each PNG is three times its display size and rendered from `assets/wordmark-light.svg` and `assets/wordmark-dark.svg`. A test renders the SVGs again with resvg and fails when the committed PNGs differ. To write them again:
 
 ```bash
 KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
@@ -66,7 +70,7 @@ Kaeso sets dark mode itself instead of leaving it to each mail app's inversion. 
 
 1. **Apps that follow `prefers-color-scheme`**, such as Apple Mail and Thunderbird. The document declares both color schemes, so they don't invert it, and `@media (prefers-color-scheme: dark)` switches every role to its dark token with `!important`.
 2. **Outlook.com and the new Outlook**, which darken emails themselves and mark what they recolor with `data-ogsc` and `data-ogsb`. The same rules under those attributes replace their guesses with Kaeso's dark values.
-3. **Apps that invert without asking**, such as the Gmail apps. The light design is built to survive inversion: near-black text, a button that becomes the dark theme's light pill, a white halo around the light wordmark, and a dark wordmark that stays hidden.
+3. **Apps that invert without asking**, such as the Gmail apps. The light design is built to survive inversion. Its text is near-black, and its button becomes the dark theme's light pill. A white halo surrounds the light wordmark, and the dark wordmark stays hidden.
 
 The stylesheet comes from the same token macro as the inline styles. Tests check that every dark rule is `!important` and that every role has a rule in each layer.
 

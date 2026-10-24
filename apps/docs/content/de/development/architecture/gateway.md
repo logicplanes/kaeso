@@ -13,22 +13,22 @@ Eine Modellanfrage durchläuft immer dieselben Schritte in derselben Reihenfolge
 ```mermaid
 sequenceDiagram
   accTitle: Der Weg einer Anfrage an die Modell-API
-  accDescr: Das Gateway prüft den Schlüssel, dekodiert die Anfrage mit KPP, löst das Modell auf, prüft die Limits, wählt den Anbieter-Schlüssel, kodiert die Anfrage mit KPP und sendet sie. Es dekodiert die Antwort und kodiert sie mit KPP für die App, verbucht dann die Nutzung in Valkey und PostgreSQL und protokolliert die Anfrage in ClickHouse.
+  accDescr: Die Modell-API prüft den Schlüssel, dekodiert die Anfrage mit KPP, löst das Modell auf, prüft die Limits, wählt den Anbieter-Schlüssel, kodiert die Anfrage mit KPP und sendet sie. Sie dekodiert die Antwort und kodiert sie mit KPP für die App, antwortet, verbucht dann die Nutzung in Valkey und PostgreSQL und protokolliert die Anfrage in ClickHouse.
   participant App
-  participant Gateway
+  participant Gateway as model_api
   participant KPP
   participant Provider as Anbieter
-  participant Stores as Valkey, PostgreSQL,<br>ClickHouse
+  participant Stores as Speicher
   App->>Gateway: Anfrage an /v1
-  Gateway->>Gateway: 1 Schlüssel
-  Gateway->>KPP: 2 dekodieren
-  Gateway->>Gateway: 3 Modell, 4 Limits,<br>5 Anbieter-Schlüssel
-  Gateway->>KPP: 6 kodieren
-  Gateway->>Provider: 6 senden
+  Note over Gateway: Schlüssel prüfen
+  Gateway->>KPP: dekodieren
+  Note over Gateway: Modell auflösen<br>Limits prüfen<br>Anbieter-Schlüssel wählen
+  Gateway->>KPP: kodieren
+  Gateway->>Provider: Senden
   Provider-->>Gateway: Antwort
-  Gateway->>KPP: 7 Antwort dekodieren,<br>8 Antwort kodieren
+  Gateway->>KPP: dekodieren, kodieren
   Gateway-->>App: Antwort
-  Gateway->>Stores: 9 Nutzung verbuchen, 10 protokollieren
+  Gateway->>Stores: Verbuchen, protokollieren
 ```
 
 Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff oder einem Plattform-Schlüssel. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.

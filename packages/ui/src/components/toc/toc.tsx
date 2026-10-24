@@ -23,23 +23,45 @@ export interface TableOfContentsProps {
   className?: string | undefined;
 }
 
+const READING_LINE = 0.3;
+
+function scrollParent(el: HTMLElement): Element {
+  for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(parent).overflowY) && parent.scrollHeight > parent.clientHeight) return parent;
+  }
+  return document.scrollingElement ?? document.documentElement;
+}
+
 export const TableOfContents = forwardRef<HTMLElement, TableOfContentsProps>(function TableOfContents({ items, title: titleProp, active, className }, ref) {
   const t = useUiText();
   const title = titleProp ?? t("tableOfContents.title", "On this page");
   const [seen, setSeen] = useState(items[0]?.id);
   useEffect(() => {
-    if (active !== undefined || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) if (e.isIntersecting) setSeen(e.target.id);
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    );
-    items.forEach((i) => {
-      const el = document.getElementById(i.id);
-      if (el) io.observe(el);
-    });
-    return () => io.disconnect();
+    if (active !== undefined) return;
+    const headings = items.map((i) => document.getElementById(i.id)).filter((el): el is HTMLElement => el !== null);
+    const first = headings[0];
+    if (!first) return;
+    const scroller = scrollParent(first);
+    let frame = 0;
+    const pick = () => {
+      frame = 0;
+      const line = window.innerHeight * READING_LINE;
+      let id = first.id;
+      for (const h of headings) if (h.getBoundingClientRect().top <= line) id = h.id;
+      const end = scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+      setSeen(end ? (headings.at(-1)?.id ?? id) : id);
+    };
+    const schedule = () => {
+      frame ||= requestAnimationFrame(pick);
+    };
+    pick();
+    document.addEventListener("scroll", schedule, { capture: true, passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+    };
   }, [items, active]);
   const current = active ?? seen;
   return (

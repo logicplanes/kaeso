@@ -6,7 +6,7 @@ import { GROUPS, TOPICS, context, draft, escaped, hazard, history, linked, notes
 
 export const MODEL = "claude-haiku-5-5";
 export const API_URL = "https://ai.logicplanes.com";
-export const DOCS_URL = "https://docs.kaeso.app";
+export const CHANGELOG_URL = "https://kaeso.app/changelog";
 const MAX_TOKENS = 64000;
 const REQUEST_TIMEOUT = 600_000;
 const DEADLINE = 900_000;
@@ -503,7 +503,7 @@ export function briefFrom(value, people = new Set()) {
   return { brief: problems.length ? null : value, problems };
 }
 
-export function body({ changelog, version, brief = null, docs = DOCS_URL, notify = () => {} }) {
+export function body({ changelog, version, brief = null, notify = () => {} }) {
   const { repository, releases } = history(changelog);
   const found = releases.find((entry) => entry.version === version);
   if (!found) throw new Error(`CHANGELOG.md has no section for ${version}`);
@@ -549,7 +549,7 @@ export function body({ changelog, version, brief = null, docs = DOCS_URL, notify
         .filter(Boolean)
         .map(cut);
   const footer = [
-    `[Full changelog](${docs}/changelog#v${version})`,
+    `[Full changelog](${CHANGELOG_URL}/${version})`,
     ...(found.compare && found.previous ? [`[v${found.previous}...v${version}](${found.compare})`] : []),
   ].join(" · ");
   return paragraphs([

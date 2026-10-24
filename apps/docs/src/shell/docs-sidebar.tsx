@@ -1,6 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
-import { IconButton, Sidebar, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
-import { homePath } from "~/i18n/locales";
+import { Icon, IconButton, Sidebar, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
+import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
 import { LanguageSelect } from "./language-select";
@@ -10,6 +10,12 @@ export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
   const t = useText();
   return <IconButton icon={icons.search} aria-label={t("search.open")} aria-haspopup="dialog" tooltip={tooltip} onClick={openSearch} />;
 }
+
+const CHANGELOG: Record<Locale, string> = {
+  en: "https://kaeso.app/changelog",
+  de: "https://kaeso.app/de/changelog",
+  "zh-CN": "https://kaeso.app/zh-CN/changelog",
+};
 
 export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
   const t = useText();
@@ -22,13 +28,18 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
       <Sidebar.Content>
-        {nav.map((group) => (
+        {nav.map((group, i) => (
           <Sidebar.Group key={group.id} id={group.id} {...(group.label ? { label: group.label } : {})}>
             {group.items.map((item) => (
               <Sidebar.Item key={item.path} href={item.path} active={pathname === item.path} depth={item.depth}>
                 {item.label}
               </Sidebar.Item>
             ))}
+            {i === 0 && (
+              <Sidebar.Item href={CHANGELOG[locale]} trailing={<Icon icon={icons.externalLink} size="xs" />}>
+                {t("nav.changelog")}
+              </Sidebar.Item>
+            )}
           </Sidebar.Group>
         ))}
       </Sidebar.Content>

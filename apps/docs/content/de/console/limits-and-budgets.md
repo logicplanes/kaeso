@@ -47,7 +47,7 @@ Kaeso bepreist eine Anfrage nach ihren Tokens. Manche Funktionen rechnen zusätz
 
 Werkzeuge, die die App selbst ausführt, sind erlaubt: Funktionen und eigene Werkzeuge, `bash`, `text_editor`, `computer` und `memory` von Anthropic sowie `local_shell`, `apply_patch`, `computer_use_preview` und die `namespace`-Tools von OpenAI, die Funktionen gruppieren. Token-Budgets und Raten lehnen diese Funktionen nicht ab, und ohne Ausgabenbudget sind alle Funktionen erlaubt.
 
-Die Meldung nennt die Funktion und die Ebene des Budgets, etwa „This key has a spend budget that can't price `web_search_20250305`; ask an admin.“ Um eine solche Funktion zu nutzen, rufen Sie sie mit einem Schlüssel auf, für den kein Ausgabenbudget gilt: weder das des Schlüssels noch das seines Inhabers noch das des Projekts.
+Um eine solche Funktion zu nutzen, rufen Sie sie mit einem Schlüssel auf, für den kein Ausgabenbudget gilt: weder das des Schlüssels noch das seines Inhabers noch das des Projekts. Die Fehlermeldung nennt die Funktion und die Ebene des Budgets, etwa „This key has a spend budget that can't price `web_search_20250305`; ask an admin.“
 
 ## Limit ändern
 
@@ -62,7 +62,9 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 - Über einer Rate sagt die Meldung, wann ein neuer Versuch möglich ist, und der Header `Retry-After` nennt die Sekunden.
 - Bei einem aufgebrauchten Budget sagt die Meldung, wann das Budget neu beginnt.
 
-Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann: ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells) zu den Preisen des Modells. Das Limit von SpaceX lässt das Reasoning aus, daher hält eine Anfrage an ein Reasoning-Modell von SpaceX das Ausgabelimit des Modells. Ein ChatGPT-Konto kann kein Ausgabelimit senden, daher hält auch eine Anfrage darüber das Ausgabelimit des Modells. Unter einem Budget hält sie mindestens, was eine durchschnittliche Anfrage im Zeitraum oder in den 30 Tagen davor gekostet hat. Ein Stream hält es, solange er läuft.
+Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann, zu den Preisen des Modells. Das sind ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells). Ein Stream hält es, solange er läuft.
+
+Das Limit von SpaceX lässt das Reasoning aus, daher hält eine Anfrage an ein Reasoning-Modell von SpaceX das Ausgabelimit des Modells. Ein ChatGPT-Konto kann kein Ausgabelimit senden, daher hält auch eine Anfrage darüber das Ausgabelimit des Modells. Unter einem Budget hält eine Anfrage mindestens, was eine durchschnittliche Anfrage im Zeitraum oder in den 30 Tagen davor gekostet hat.
 
 Eine Anfrage, die mehr kosten könnte, als von einem harten Budget oder einer Token-Rate übrig ist, lehnt Kaeso ab, auch wenn nichts anderes läuft. Die Meldung bittet um weniger Ausgabe-Token. Hat eine Token-Rate Platz für die Anfrage, sobald ältere Anfragen aus ihrer Minute fallen, nennt die Meldung stattdessen, wann ein neuer Versuch möglich ist. Um unter einem kleinen Budget mehr Anfragen gleichzeitig auszuführen, senden Sie ein niedrigeres Ausgabelimit.
 

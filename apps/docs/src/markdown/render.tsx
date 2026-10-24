@@ -1,6 +1,20 @@
 import { Fragment, useId, useRef, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
+import {
+  Banner,
+  CheckboxBox,
+  Code,
+  CodeBlock,
+  Figure,
+  KeyValue,
+  Link,
+  ScrollArea,
+  Separator,
+  Table,
+  Text,
+  ThemeImage,
+  VisuallyHidden,
+} from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
@@ -31,6 +45,9 @@ function plainText(xs: Inline[]): string {
 
 const LIST_SEPARATOR: Record<Locale, string> = { en: ", ", de: ", ", "zh-CN": "、" };
 const SHORT_COLUMN = 20;
+const MANY_COLUMNS = 5;
+const NARROW_CELLS = 4;
+const LONG_HEADER = 24;
 const WHOLE_CODE = 16;
 const WIDE = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\ufe30-\ufe4f\uff00-\uffef]/u;
 
@@ -44,7 +61,8 @@ function shortColumns(rows: Inline[][][], columns: number): boolean[] {
   return Array.from({ length: columns }, (_, j) => rows.every((row) => width(plainText(row[j] ?? [])) <= SHORT_COLUMN));
 }
 
-const SOFT_BREAK = /(?<=\w[./_:,]+)(?=\w)/;
+const SOFT_BREAK = /(?<=\S[./_:,({[@=-]+)(?=[^\s./_:,(){}[\]@=-])|(?<=[a-z\d])(?=[A-Z][a-z])/;
+const CJK_LIST_PUNCTUATION = /[、，；：]$/;
 
 function codeText(v: string): ReactNode[] {
   return v.split(SOFT_BREAK).map((part, i) => (
@@ -59,7 +77,12 @@ function inline(xs: Inline[], ctx: Ctx): ReactNode[] {
   return xs.map((x, i) => {
     switch (x.t) {
       case "text":
-        return <Fragment key={i}>{x.v}</Fragment>;
+        return (
+          <Fragment key={i}>
+            {x.v}
+            {xs[i + 1]?.t === "code" && CJK_LIST_PUNCTUATION.test(x.v) && <wbr />}
+          </Fragment>
+        );
       case "strong":
         return (
           <Text key={i} as="strong" variant={ctx.size} weight="semibold" tone="inherit">
@@ -121,16 +144,13 @@ const DIAGRAM_MIN_WIDTHS = [
   [440, "min-w-440"],
   [480, "min-w-480"],
   [560, "min-w-560"],
-  [640, "min-w-640"],
-  [720, "min-w-720"],
-  [800, "min-w-800"],
 ] as const;
 const DIAGRAM_SHRINK = 0.75;
 
 export function diagramMinWidth(width: number): string | undefined {
   const least = width * DIAGRAM_SHRINK;
   if (least < DIAGRAM_MIN_WIDTHS[0][0]) return undefined;
-  return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least && min <= width)?.[1] ?? "min-w-800";
+  return DIAGRAM_MIN_WIDTHS.find(([min]) => min >= least)?.[1] ?? "min-w-560";
 }
 
 const hasLink = (xs: Inline[]): boolean => xs.some((x) => x.t === "link" || ("c" in x && hasLink(x.c)));
@@ -182,20 +202,47 @@ function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
 function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) {
   const id = useId();
   return (
-    <figure className="flex min-w-0 flex-col">
-      <ScrollArea orientation="horizontal" aria-label={ctx.t("page.diagram").replace("{title}", b.title)}>
-        <ThemeImage
-          light={b.light}
-          dark={b.dark}
-          alt={b.title}
-          width={b.width}
-          height={b.height}
-          aria-describedby={b.description ? id : undefined}
-          className={diagramMinWidth(b.width)}
-        />
-      </ScrollArea>
+    <Figure label={ctx.t("page.diagram").replace("{title}", b.title)} caption={b.title}>
+      <ThemeImage
+        light={b.light}
+        dark={b.dark}
+        alt={b.title}
+        width={b.width}
+        height={b.height}
+        aria-describedby={b.description ? id : undefined}
+        className={diagramMinWidth(b.width)}
+      />
       {b.description && <VisuallyHidden id={id}>{b.description}</VisuallyHidden>}
-    </figure>
+    </Figure>
+  );
+}
+
+const STACK_COLUMNS = 3;
+const BESIDE_LABEL = 48;
+
+function StackedTable({ b, label, ctx }: { b: Extract<Block, { t: "table" }>; label: string; ctx: Ctx }) {
+  const short = Array.from({ length: b.head.length }, (_, j) => b.rows.every((row) => width(plainText(row[j] ?? [])) <= BESIDE_LABEL));
+  const pairs = (row: Inline[][], fits: boolean) =>
+    row.flatMap((c, j) => (j > 0 && short[j] === fits && c.length > 0 ? [{ label: inline(b.head[j] ?? [], ctx), value: inline(c, ctx), wrap: true }] : []));
+  return (
+    <ul aria-label={label} className="flex flex-col gap-12 sm:hidden">
+      {b.rows.map((row, r) => {
+        const beside = pairs(row, true);
+        const below = pairs(row, false);
+        return (
+          <li key={r} className="flex flex-col gap-12">
+            {r > 0 && <Separator />}
+            <div className="flex flex-col gap-4">
+              <Text as="div" variant="body" weight="medium" className="wrap-break-word">
+                {inline(row[0] ?? [], ctx)}
+              </Text>
+              {beside.length > 0 && <KeyValue items={beside} />}
+              {below.length > 0 && <KeyValue layout="stacked" items={below} />}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -290,31 +337,40 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       const cell: Ctx = { ...ctx, size: "body", tone: "default", cell: true };
       const short = shortColumns(b.rows, b.head.length);
       const columns = b.head.map(plainText).join(LIST_SEPARATOR[ctx.locale]);
+      const stacked = b.head.length >= STACK_COLUMNS;
+      const label = ctx.t("page.table").replace("{columns}", columns);
       return (
-        <ScrollArea key={i} orientation="horizontal" aria-label={ctx.t("page.table").replace("{columns}", columns)}>
-          <Table>
-            <Table.Head>
-              <Table.Row>
-                {b.head.map((c, j) => (
-                  <Table.HeaderCell key={j} align={b.align[j] ?? "start"}>
-                    {inline(c, cell)}
-                  </Table.HeaderCell>
-                ))}
-              </Table.Row>
-            </Table.Head>
-            <Table.Body>
-              {b.rows.map((row, r) => (
-                <Table.Row key={r}>
-                  {row.map((c, j) => (
-                    <Table.Cell key={j} align={b.align[j] ?? "start"} className={`align-top ${short[j] ? "whitespace-nowrap" : "min-w-140"}`}>
+        <Fragment key={i}>
+          <ScrollArea orientation="horizontal" aria-label={label} {...(stacked ? { className: "max-sm:hidden" } : {})}>
+            <Table density={b.head.length >= MANY_COLUMNS ? "compact" : "default"}>
+              <Table.Head>
+                <Table.Row>
+                  {b.head.map((c, j) => (
+                    <Table.HeaderCell key={j} align={b.align[j] ?? "start"} wrap={width(plainText(c)) > LONG_HEADER}>
                       {inline(c, cell)}
-                    </Table.Cell>
+                    </Table.HeaderCell>
                   ))}
                 </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
-        </ScrollArea>
+              </Table.Head>
+              <Table.Body>
+                {b.rows.map((row, r) => (
+                  <Table.Row key={r}>
+                    {row.map((c, j) => (
+                      <Table.Cell
+                        key={j}
+                        align={b.align[j] ?? "start"}
+                        className={`align-top ${short[j] ? "whitespace-nowrap" : b.head.length >= NARROW_CELLS ? "min-w-120" : "min-w-140"}`}
+                      >
+                        {inline(c, cell)}
+                      </Table.Cell>
+                    ))}
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </ScrollArea>
+          {stacked && <StackedTable b={b} label={label} ctx={cell} />}
+        </Fragment>
       );
     }
     case "diagram":

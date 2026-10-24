@@ -83,7 +83,7 @@ The list shows each key's name, its last four characters, the projects that use 
 | Rename | Changes the name the console shows |
 | Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
-An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT, and a Grok account shows **No API access** when xAI refuses its plan. Its requests then fail until someone with **Change provider keys** chooses **Sign in again**.
+An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.
 
 When you delete the default, the provider's most recently added other key becomes the default. If there is none, requests to that provider fail. The dialog tells you which applies.
 

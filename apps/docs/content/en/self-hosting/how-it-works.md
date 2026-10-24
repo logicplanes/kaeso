@@ -10,14 +10,24 @@ A Kaeso install is one Docker Compose project that answers on one domain. Knowin
 ```mermaid
 flowchart TD
   accTitle: The services of a Kaeso install
-  accDescr: Caddy takes HTTPS requests and sends the APIs to the gateway and everything else to the console. Only the gateway reaches PostgreSQL, ClickHouse and Valkey, and it calls the providers.
-  clients[Apps and browsers] -->|HTTPS| caddy[Caddy]
-  caddy -->|/v1 and /platform| gateway[Gateway]
-  caddy -->|Every other path| console[Console]
-  gateway --> postgres[(PostgreSQL)]
-  gateway --> clickhouse[(ClickHouse)]
-  gateway --> valkey[(Valkey)]
-  gateway -->|HTTPS| providers[Model providers]
+  accDescr: Apps and browsers reach the install only through Caddy, on ports 80 and 443. Caddy sends /v1 and /platform to the gateway and every other path to the console. PostgreSQL, ClickHouse and Valkey sit on an internal network that only the gateway reaches, and the gateway calls the model providers over HTTPS.
+  clients[Apps and browsers]:::outside
+  subgraph server [Your server]
+    caddy[Caddy<br>ports 80 and 443]
+    gateway[Gateway]:::accent
+    console[Console]
+    subgraph data [Internal network]
+      postgres[(PostgreSQL)]
+      clickhouse[(ClickHouse)]
+      valkey[(Valkey)]
+    end
+  end
+  providers[Model providers]:::outside
+  clients -- HTTPS --> caddy
+  caddy -- /v1 and /platform --> gateway
+  caddy -- every other path --> console
+  gateway --> postgres & clickhouse & valkey
+  gateway -- HTTPS --> providers
 ```
 
 ## Services
@@ -33,7 +43,9 @@ flowchart TD
 | `clickhouse` | Stores request logs and usage rollups | The volume `clickhouse` |
 | `valkey` | Holds rate and budget counters and shared caches | The volume `valkey` |
 
-The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)). Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. It also puts the Caddyfile and the updating page from `compose.yaml` into `caddy_site`, since Compose can't give files to a container with a read-only file system. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
+The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)).
+
+Before Caddy starts, `caddy-init` runs once and hands Caddy's volumes to the user Caddy runs as. It also puts the Caddyfile and the updating page from `compose.yaml` into `caddy_site`, since Compose can't give files to a container with a read-only file system. In the same way, `updater-init` hands the updater its volumes. It gives the updater's group read and write access to `compose.yaml`, which the updater rewrites in place, and takes write access from everyone else.
 
 ## Files
 

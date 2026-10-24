@@ -28,7 +28,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 补充说明
 
-关于部分服务商的其他须知事项。服务商会改名或拒绝的每个 Chat Completions 字段，见[服务商配置](../development/kpp/openai-chat.md#服务商配置)：
+关于部分服务商的其他须知事项。服务商会改名或拒绝的每个 Chat Completions 字段，见[服务商配置](../development/kpp/openai-chat-providers.md#服务商配置)：
 
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。

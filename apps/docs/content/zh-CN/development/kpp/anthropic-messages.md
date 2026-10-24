@@ -10,7 +10,13 @@ order: 4
 - **端点：**`POST /v1/messages`（JSON 和 SSE）、`POST /v1/messages/count_tokens`，以及[模型端点](#模型)
 - **Fixture：**`crates/kaeso-codecs/fixtures/anthropic_messages/`
 
-**来源。** Anthropic 的 OpenAPI 规范 `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml`（`anthropic-sdk-python/.stats.yml` 中最后一个 `openapi_spec_url`，SDK 提交 `41aa7674`）、`anthropic-sdk-python@b4b7916d`（1.13.0）中的 SDK 类型，以及 [Claude 文档](https://platform.claude.com/docs/en/)（`api/messages/create`、`api/messages/count_tokens`、`api/errors`、`api/versioning`、`build-with-claude/streaming`、`…/thinking`、`…/extended-thinking`、`…/effort`、`…/prompt-caching`、`…/structured-outputs`、`…/citations`、`…/pdf-support`、`…/vision`、`agents-and-tools/tool-use/*`、`…/handling-stop-reasons`）。SDK 类型比规范新的地方以 SDK 类型为准，只在 SDK 类型中出现的字段会注明这一点。下文的 schema 名称均指规范中的名称。
+**来源。** 这些映射依据以下来源：
+
+- Anthropic 的 OpenAPI 规范 `anthropic-465bff21a179090915396565d1ae8f705cf8596e2ec920eb121072f25b8a7d68.yml`（`anthropic-sdk-python/.stats.yml` 中最后一个 `openapi_spec_url`，SDK 提交 `41aa7674`）
+- `anthropic-sdk-python@b4b7916d`（1.13.0）中的 SDK 类型
+- [Claude 文档](https://platform.claude.com/docs/en/)（`api/messages/create`、`api/messages/count_tokens`、`api/errors`、`api/versioning`、`build-with-claude/streaming`、`…/thinking`、`…/extended-thinking`、`…/effort`、`…/prompt-caching`、`…/structured-outputs`、`…/citations`、`…/pdf-support`、`…/vision`、`agents-and-tools/tool-use/*`、`…/handling-stop-reasons`）
+
+SDK 类型比规范新的地方以 SDK 类型为准，只在 SDK 类型中出现的字段会注明这一点。下文的 schema 名称均指规范中的名称。
 
 ## 表格的读法
 
@@ -22,9 +28,11 @@ order: 4
 
 **数字。** 类型化的数值字段按 `u32` 或 `u64` 读取，`temperature` 和 `top_p` 按 JSON 数字读取，KPP 以 `f64` 保存它们。超出其范围的值不会被修改，而是解码失败：在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: `top_k` must be a non-negative integer. ``），在服务商回复中为 `ProviderError`。
 
-**Kaeso 无法承载的键。** Kaeso 逐字段读取的每个对象都会把未知键保存为 extras 字段，但以 `header:` 开头或包含 `.` 的键除外：这样的键会被误认为转发的请求头或嵌套的键路径，因此整个对象会被拒绝（[线路结构体](codec-design.md#线路结构体)）。在请求中为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
+**Kaeso 无法承载的键。** Kaeso 逐字段读取的每个对象都会把未知键保存为 extras 字段。例外是以 `header:` 开头或包含 `.` 的键：这样的键会被误认为转发的请求头或嵌套的键路径。此时整个对象会被拒绝（[线路结构体](codec-design.md#线路结构体)）。
 
-- **逐字段读取**：请求体、消息、`metadata`、`output_config`、`thinking`、`tool_choice`、函数工具、[内容块](#内容块)表格中的已知块类型及其 `source`、`cache_control` 和 `citations` 对象、回复、Token 计数、流事件及其增量、模型信息和模型列表。
+在请求中，拒绝为 `InvalidRequest`（`` The request body is not a valid Anthropic Messages request: the field `a.b` has a name Kaeso cannot carry; remove it. ``），在回复、流或模型列表中为 `ProviderError`。顶层带有这种键的错误响应体被视为不是 `ErrorResponse` 的响应体（[错误](#错误)）。
+
+- **逐字段读取**：请求体、消息、`metadata`、`output_config`、`thinking`、`tool_choice`、函数工具、回复、Token 计数、流事件及其增量、模型信息和模型列表。[内容块](#内容块)表格中的已知块类型及其 `source`、`cache_control` 和 `citations` 对象也是如此。
 - **完整保存，不做检查**：未知的块和工具、`input_schema`、工具输入、引用、`usage` 和 `output_config.format`。
 
 ## 请求
@@ -158,9 +166,9 @@ Schema `Message`。
 
 - **停止原因。** `ContentFilter` 变为 `refusal`，因为 Anthropic 没有内容过滤类的停止原因。若 `Other(s)` 是 Anthropic 文档中的值，则写为 `s`；否则 `length`、`max_output_tokens` 和 `max_completion_tokens` 变为 `max_tokens`，`function_call` 和 `tool_calls` 变为 `tool_use`，`content_filter` 变为 `refusal`，其余一律变为 `end_turn`。自有的 `Other` 值按收到时的原样写出。
 - **拒绝回复。** `Refusal` 块变为 `text` 块。
-- **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串，其他 JSON 值则原样保存。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具，因此来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）；网关仍会记录该回复及其用量。带有此类参数的请求会被 `check()` 拒绝。
-- **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：先是其摘要，然后是推理文本，作为 `thinking`（段落之间以空行分隔），并以原始块的推理数据块作为 `signature`。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
-- **省略的内容**（[回复](cross-format.md#回复)）：并非从 Anthropic Messages 读取、没有签名的 Anthropic 推理（自有的未签名思考按收到时的原样写出）；图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。
+- **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。其他 JSON 值保持原样。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具。因此，来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）。网关仍会记录该回复及其用量。带有此类参数的请求会被 `check()` 拒绝。
+- **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）。其 `thinking` 先是摘要，然后是推理文本，段落之间以空行分隔。其 `signature` 是原始块的推理数据块。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
+- **省略的内容**（[回复](cross-format.md#回复)）：图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。没有签名的 Anthropic 推理也会被省略，除非它是从 Anthropic Messages 读取的：自有的未签名思考按收到时的原样写出。
 
 ## Token 计数
 
@@ -209,8 +217,8 @@ Schema `MessageStreamEvent`。
 - **一次一个块。** 交错的块按开始顺序缓冲，带停止原因的 `ResponseDelta` 或 `ResponseStop` 会关闭所有打开的块。来自其他方言、不带停止原因的 `ResponseDelta`（例如某些 OpenAI 兼容提供商在每个 chunk 上发送的运行中用量）只更新最后 `message_delta` 的用量。因此，一个直到结束才关闭文本块的 OpenAI 流，会在最后才送出它的工具调用。多个外来的 `ResponseDelta` 会合并为一个 `message_delta`。
 - **缺少 `ResponseStart`** 时，会生成一个 ID 为空、模型为请求中模型的 `message_start`。
 - **拒绝回复**变为文本块。
-- **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，只要参数不为空。不构成 JSON 对象的参数（例如被输出上限截断）按收到时的原样发送，就像 Anthropic 自己流式发送被 `max_tokens` 截断的调用一样，因此应用能看到模型写了什么。Anthropic 自己的流按收到时的原样回放。
-- **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）：摘要和推理文本作为 `thinking_delta`，各部分之间有一个空行；不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
+- **工具调用参数**：来自其他方言的参数会被收集，在块结束时作为一个 `input_json_delta` 写出，只要参数不为空。不构成 JSON 对象的参数（例如被输出上限截断）按收到时的原样发送。Anthropic 自己流式发送被 `max_tokens` 截断的调用时也是如此，因此应用能看到模型写了什么。Anthropic 自己的流按收到时的原样回放。
+- **推理块**：来自其他方言的推理块变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）。摘要和推理文本作为 `thinking_delta` 写出，各部分之间有一个空行。不透明增量被收集起来，块结束时写出一个 `signature_delta`，其中是整个块的推理数据块。
 - **省略的内容**（[回复](cross-format.md#回复)）：外来的引用增量和未知增量、未知块以及 `Extra` 事件，与完整回复一致。在它们到达期间，编码器会按节奏写出 `event: ping` 帧（`{"type": "ping"}`，与 Anthropic 发送的相同）：每个外来的额外事件一帧，每 1,024 字节隐藏文本一帧（[保活消息](cross-format.md#保活消息)）。`StreamEncoder::keepalive` 会把同样的帧交给网关。
 - **停止原因：**`StopReason::Other` 的映射方式与回复相同。
 - **错误**：KPP `Error` 变为 `event: error`，其内容与[错误](#错误)中的响应体相同，但不含 `request_id`：从 Anthropic 解码的错误按收到时的原样写出，其他错误为 `{"type":"error","error":{type,message}}`。
@@ -235,14 +243,21 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 - `error.message` → `message`；整个响应体（含 `request_id` 和 `error.details`）→ `raw`；HTTP 状态码 → `status`；`retry-after-ms` 或 `retry-after` → `retry_after`，写回时为 `retry-after`，向上取整为整秒。
 - 提示过长与其他错误一样是 400 `invalid_request_error`，只有消息能区分它。如果 Anthropic 改变措辞，该错误会被解码为 `InvalidRequest`。
-- 未知的 `error.type`，或不是 `ErrorResponse` 的响应体（例如 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，或顶层带有 Kaeso 无法承载的键的 JSON），按状态码确定类型：400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`，408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`，其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
+- 未知的 `error.type`，或不是 `ErrorResponse` 的响应体，按状态码确定类型。这类响应体的例子有 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，以及顶层带有 Kaeso 无法承载的键的 JSON。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
+- 状态码 400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`。状态码 408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`。其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
-- `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID；网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
+- `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
 
 ## 模型
 
-`GET /v1/models` 和 `GET /v1/models/{model_id}`。代码：`anthropic_messages/models.rs`；fixture：`crates/kaeso-codecs/fixtures/anthropic_messages/models/`。来源：[列出模型](https://platform.claude.com/docs/en/api/models/list.md)和[获取模型](https://platform.claude.com/docs/en/api/models/retrieve.md)页面，SDK 的 `types/model_info.py`、`model_list_params.py`、`model_capabilities.py` 和 `model_line.py`，以及规范中的 `ModelInfo` 和 `ListResponse_ModelInfo_`。规范中的结构没有 `lifecycle`、`deprecated_at`、`retires_at` 和 `line`，也没有 `lifecycle` 查询参数；以文档和 SDK 为准，编码器原本会填入默认值的每个字段都按可选字段解码，并记录其缺失（形式标记 `none`），因此两种结构都能往返。应用的请求带有 `anthropic-version` 时被视为 Anthropic 请求（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）。
+`GET /v1/models` 和 `GET /v1/models/{model_id}`。应用的请求带有 `anthropic-version` 时被视为 Anthropic 请求（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）。
+
+- **代码：**`anthropic_messages/models.rs`
+- **Fixture：**`crates/kaeso-codecs/fixtures/anthropic_messages/models/`
+- **来源：**[列出模型](https://platform.claude.com/docs/en/api/models/list.md)和[获取模型](https://platform.claude.com/docs/en/api/models/retrieve.md)页面，SDK 的 `types/model_info.py`、`model_list_params.py`、`model_capabilities.py` 和 `model_line.py`，以及规范中的 `ModelInfo` 和 `ListResponse_ModelInfo_`
+
+规范中的结构没有 `lifecycle`、`deprecated_at`、`retires_at` 和 `line`，也没有 `lifecycle` 查询参数。以文档和 SDK 为准。编码器原本会填入默认值的每个字段都按可选字段解码，并记录其缺失（形式标记 `none`），因此两种结构都能往返。
 
 ### 查询参数
 
@@ -274,11 +289,11 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 | `line`（`ModelLine` 或 `null`） | extras 字段 `line` | `null` |
 | 未知键 | extras 字段 | |
 
-`capabilities` 和 `line` 之所以放在 extras 中，是因为 `ModelCapabilities` 是一棵庞大且增长迅速的 Anthropic 功能名称树（批处理、引用、推理强度级别、思考类型、服务器工具、上下文管理策略），在其他方言中没有对应项；而 `line` 是 Anthropic 的产品系列（`opus`、`sonnet` 等），文档明确说不要从 `id` 推断。KPP 只会为 Anthropic 应用透传它们，而 extras 已经逐字节地做到了这一点。
+`capabilities` 和 `line` 放在 extras 中，而不是类型化的 KPP 字段。`ModelCapabilities` 是一棵庞大且增长迅速的 Anthropic 功能名称树（批处理、引用、推理强度级别、思考类型、服务器工具、上下文管理策略），在其他方言中没有对应项。`line` 是 Anthropic 的产品系列（`opus`、`sonnet` 等），文档明确说不要从 `id` 推断。KPP 只会为 Anthropic 应用透传它们，而 extras 已经逐字节地做到了这一点。
 
 **日期。** RFC 3339 的 `date-time` 会转换为 Unix 秒（应用时区偏移，截去秒的小数部分，`T` 和 `Z` 大小写均可），并写回为 `YYYY-MM-DDTHH:MM:SSZ`。如果收到的写法无法以这种方式还原（`.117Z`、`-07:00`、`t`），就保存在形式标记 `spelling` 中，只要它仍表示同一秒，就会再次写出。无法解析的日期和 1970 年之前的日期 → `ProviderError`。任何一分钟内都接受 `:60` 秒；它被视为下一分钟的第一秒，并保留其写法。`9999-12-31T23:59:59Z` 之后的 KPP 时间无法用年份为四位数的 RFC 3339 表示；当兼容 OpenAI 的 `created` 以毫秒为单位时就会出现这种情况。此时 `created_at` 取纪元时间，即文档规定的未知值，`deprecated_at` 和 `retires_at` 取 `null`。
 
-**缺失或 `null`。** 收到时缺失的字段，或在上述默认值为某个值的地方收到 `null` 的字段，会记录在形式标记 `none` 中并以同样的方式写出，因此没有 `lifecycle` 的较旧规范结构也能往返。Anthropic 模型上缺失的 `capabilities` 和 `line` 仍保持缺失。
+**缺失或 `null`。** 收到时缺失的字段，或在上述默认值为某个值的地方收到 `null` 的字段，会记录在形式标记 `none` 中并以同样的方式写出。这样，没有 `lifecycle` 的较旧规范结构也能往返。Anthropic 模型上缺失的 `capabilities` 和 `line` 仍保持缺失。
 
 ### 模型列表
 
@@ -293,8 +308,14 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 对 Anthropic 应用有损的部分：`owned_by`（OpenAI）在这里没有对应字段，来自其他方言的 extras 会被省略（[回复](cross-format.md#回复)）。来自其他方言的模型会得到上述默认值（`display_name` 为 ID，`lifecycle: "active"`，`capabilities: null`，`line`、`max_*` 和日期为 `null`）。
 
-在出站一侧，`encode_model_request` 构建带 `anthropic-version: 2023-06-01`、不带请求体的 `GET /v1/models/{model_id}`，它也能解析 `claude-sonnet-4-5` 这样的别名（[获取模型](https://platform.claude.com/docs/en/api/models/retrieve.md)页面），`encode_models_request` 构建带同一请求头的 `GET /v1/models`，附带查询中的 `limit`、`after_id`、`before_id` 和 `lifecycle[]`，每个值都经过百分号编码（其他参数为 `Unsupported`），`decode_models` 和 `decode_model` 接收服务商的响应；非 2xx 状态码交给 `decode_error`。解码出的 extras 带有来源 `anthropic_messages`，但没有服务商，因为这些函数不接收 `EgressCtx`。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。
+在出站一侧，以下函数构建请求并读取响应：
+
+- `encode_model_request` 构建带 `anthropic-version: 2023-06-01`、不带请求体的 `GET /v1/models/{model_id}`。这个请求也能解析 `claude-sonnet-4-5` 这样的别名（[获取模型](https://platform.claude.com/docs/en/api/models/retrieve.md)页面）。
+- `encode_models_request` 构建带同一请求头的 `GET /v1/models`，附带查询中的 `limit`、`after_id`、`before_id` 和 `lifecycle[]`，每个值都经过百分号编码。其他参数为 `Unsupported`。
+- `decode_models` 和 `decode_model` 接收服务商的响应。非 2xx 状态码交给 `decode_error`。
+
+解码出的 extras 带有来源 `anthropic_messages`，但没有服务商，因为这些函数不接收 `EgressCtx`。ID 为 `.` 或 `..` 时结果为 `InvalidRequest`，因为 URL 解析器即使在百分号编码后也会去掉这样的路径段。
 
 ## 往返
 
-没有例外：每个请求、Token 计数请求、回复、Token 计数回复、模型列表、流和错误的 fixture 都能往返（`tests/`、`models_tests.rs`），而且每个流 fixture 在解码再编码之后，累积起来也与其配对的回复一致。
+每个 fixture 都能往返，没有例外：请求、Token 计数请求、回复、Token 计数回复、模型列表、流和错误（`tests/`、`models_tests.rs`）。每个流 fixture 在解码再编码之后，累积起来也与其配对的回复一致。
