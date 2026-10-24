@@ -119,6 +119,8 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 Die Coverage-Befehle sind Aliasse in `.cargo/config.toml`, wo auch ihre Schwellen und die ausgelassenen Dateien stehen. Tests, die die Datenbanken brauchen, schlagen fehl, statt übersprungen zu werden, wenn die Datenbanken fehlen.
 
+`cargo coverage-gateway` führt außerdem jedes Szenario des [Gateway-Benchmarks](benchmark.md) in kleiner Größe aus. Es schlägt bei einem offen gebliebenen Stream fehl, bei einem Abbruch, der den Anbieter nie erreicht, oder bei Speicher, der ohne Grenze wächst, nie bei einer Zeit.
+
 `cargo sqlx prepare --check` braucht `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` mit angewandten Migrationen. Das Gateway des Stacks wendet sie beim Start an. Ohne den Stack führen Sie `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres` aus.
 
 `kaeso-kpp` und `kaeso-codecs` nennen das älteste unterstützte Rust als `rust-version` in ihrer `Cargo.toml`, und CI testet jedes Crate damit. Um das selbst zu tun, installieren Sie diese Version mit `rustup toolchain install <version>` und führen `cargo +<version> test --locked -p <crate>` aus.
@@ -207,6 +209,9 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | `[mock:fixture=NAME]` im Prompt | Antwortet mit dieser Fixture im Format des Anbieters; `providers/<id>/<name>` wählt die Aufzeichnung eines Anbieters |
 | `[mock:gate=NAME]` im Prompt | Hält die Anfrage fest, bis der Test das Gate öffnet |
 | `[mock:steps=NAME]` im Prompt | Sendet das erste Event eines Streams, dann ein weiteres bei jedem Schritt, den der Test das Gate weiterschaltet |
+| `[mock:gen=N]` im Prompt | Erfindet eine Antwort aus N Tokens, gestreamt als ein Text-Delta pro 4 Tokens mit 80 Tokens pro Sekunde oder der Rate, die `[mock:tps=N]` festlegt |
+| `[mock:endless]` mit `[mock:gen=N]` im Prompt | Wiederholt die Text-Deltas des erfundenen Streams ohne Ende und kodiert jedes erst, wenn es gesendet wird. Bei mehr als einem Delta pro Millisekunde gehen die Deltas jeder Millisekunde als ein Chunk hinaus |
+| `[mock:tag=NAME]` im Prompt | Benennt den Stream, sodass `MockProvider::closed_at(NAME)` angibt, wann er vor seinem Ende geschlossen wurde |
 | Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |

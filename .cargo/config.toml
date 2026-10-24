@@ -27,7 +27,7 @@ coverage-gateway = [
   "xtask",
   "--all-features",
   "--ignore-filename-regex",
-  "(/tests/|/tests?\\.rs|/kaeso-testkit/|/kaeso/src/main\\.rs|/kaeso-server/src/telemetry\\.rs)",
+  "(/tests/|/tests?\\.rs|/kaeso-testkit/|/kaeso-bench/|/kaeso/src/main\\.rs|/kaeso-server/src/telemetry\\.rs)",
   "--fail-under-lines",
   "91",
 ]

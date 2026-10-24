@@ -24,6 +24,7 @@ Cargo builds the Rust workspace and pnpm the TypeScript workspace, both from the
 - [Contributing](contributing.md): Report a problem, propose a change and get your pull request merged.
 - [Development stack](stack.md): Change ports, run a second stack or run the gateway from source.
 - [Testing](testing.md): Run the checks a change must pass, and find the suite that covers your code.
+- [Gateway benchmark](benchmark.md): Measure the time and memory Kaeso adds, from single requests to thousands of streams.
 - [Translations](translations.md): Write every word in English, German and Simplified Chinese.
 - [Writing documentation](documentation.md): Write and translate the pages of this site.
 - [Architecture](architecture/index.md): Learn how the gateway, the console, the docs and the updater are built.

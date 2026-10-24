@@ -119,6 +119,8 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 The coverage commands are aliases in `.cargo/config.toml`, which also holds their thresholds and the files they leave out. Tests that need the databases fail, rather than skip, when the databases aren't there.
 
+`cargo coverage-gateway` also runs every scenario of the [gateway benchmark](benchmark.md) at small sizes. It fails on a stream left open, a disconnect that never reaches the provider or memory that grows without bound, never on a time.
+
 `cargo sqlx prepare --check` needs `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` with the migrations applied. The stack's gateway applies them when it starts. Without it, run `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres`.
 
 `kaeso-kpp` and `kaeso-codecs` name the oldest Rust they support as `rust-version` in their `Cargo.toml`, and CI tests each crate with it. To do the same, install that version with `rustup toolchain install <version>` and run `cargo +<version> test --locked -p <crate>`.
@@ -207,6 +209,9 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | `[mock:fixture=NAME]` in the prompt | Replies with that fixture of the provider's format; `providers/<id>/<name>` picks a provider's recording |
 | `[mock:gate=NAME]` in the prompt | Holds the request until the test opens the gate |
 | `[mock:steps=NAME]` in the prompt | Sends a stream's first event, then one more each time the test steps the gate |
+| `[mock:gen=N]` in the prompt | Makes up a reply of N tokens, streamed as a text delta per 4 tokens at 80 tokens a second, or the rate `[mock:tps=N]` sets |
+| `[mock:endless]` with `[mock:gen=N]` in the prompt | Repeats the made-up stream's text deltas without end, encoding each only when it is sent. A pace above a delta a millisecond sends each millisecond's deltas as one chunk |
+| `[mock:tag=NAME]` in the prompt | Names the stream, so `MockProvider::closed_at(NAME)` returns when it was closed before its end |
 | A model id starting with `unserved-` | The format's model not found |
 | `[mock:gate=NAME]` in the provider key | Holds `GET /v1/models` and `GET /v1/models/{id}` |
 | `[mock:models=absent]` in the provider key | Answers both models endpoints with a bare 404 |

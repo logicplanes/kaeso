@@ -363,7 +363,7 @@ jobs:
           {
             echo "### Gateway line coverage"
             echo '```'
-            cargo llvm-cov report --summary-only --ignore-filename-regex '(/tests/|/tests?\.rs|/kaeso-testkit/|/kaeso/src/main\.rs|/kaeso-server/src/telemetry\.rs|/crates/kaeso-kpp/|/crates/kaeso-codecs/|/crates/kpp-conformance/|/crates/xtask/)' | tail -n 1
+            cargo llvm-cov report --summary-only --ignore-filename-regex '(/tests/|/tests?\.rs|/kaeso-testkit/|/kaeso-bench/|/kaeso/src/main\.rs|/kaeso-server/src/telemetry\.rs|/crates/kaeso-kpp/|/crates/kaeso-codecs/|/crates/kpp-conformance/|/crates/xtask/)' | tail -n 1
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 

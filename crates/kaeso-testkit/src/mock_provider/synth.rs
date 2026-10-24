@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use axum::body::Bytes;
 use axum::http::HeaderMap;
-use kaeso_codecs::{EncodeCtx, HeaderList, dispatch};
+use kaeso_codecs::{EncodeCtx, HeaderList, StreamEncoder, dispatch};
 use kaeso_kpp::{DialectId, Reply, Request, RequestKind, StreamEvent};
 use serde_json::json;
 
@@ -155,6 +155,72 @@ pub(super) fn complete(
     }))
     .ok()?;
     dispatch::encode_response(dialect, &reply, &EncodeCtx::for_request(req)).ok()
+}
+
+pub(super) struct Endless {
+    encoder: Box<dyn StreamEncoder>,
+    pieces: Vec<String>,
+    gap: Duration,
+    next: usize,
+}
+
+// Timers fire at most once a millisecond, so a faster pace sends that millisecond's deltas
+// as one chunk.
+const TICK: Duration = Duration::from_millis(1);
+
+impl Endless {
+    pub(super) fn chunk(&mut self) -> Option<(Duration, Bytes)> {
+        let deltas = (TICK.as_secs_f64() / self.gap.as_secs_f64())
+            .ceil()
+            .max(1.0) as usize;
+        let mut bytes = Vec::new();
+        for _ in 0..deltas {
+            let piece = self.pieces.get(self.next % self.pieces.len().max(1))?;
+            self.next += 1;
+            let event = serde_json::from_value::<StreamEvent>(
+                json!({ "block_delta": { "index": 0, "delta": { "text": piece } } }),
+            )
+            .ok()?;
+            bytes.extend(self.encoder.encode(&event).ok()?);
+        }
+        Some((self.gap.max(TICK), Bytes::from(bytes)))
+    }
+}
+
+// Opens a stream like `stream` and then repeats its text deltas without end, encoding each
+// only when it is sent, so a stream that is never read costs the mock no memory.
+pub(super) fn endless(
+    dialect: DialectId,
+    body: &[u8],
+    headers: &HeaderMap,
+    shape: Shape,
+    seed: u64,
+) -> Option<(Vec<(Duration, Bytes)>, Endless)> {
+    let req = decode(dialect, body, headers)?;
+    let mut encoder =
+        dispatch::stream_encoder(dialect, &EncodeCtx::for_request(req.clone())).ok()?;
+    let event = |v: serde_json::Value| serde_json::from_value::<StreamEvent>(v).ok();
+    let mut head = Vec::new();
+    for e in [
+        event(json!({ "response_start": {
+            "id": id_for(dialect, seed),
+            "model": req.model(),
+            "usage": shape.usage(1),
+        }}))?,
+        event(json!({ "block_start": { "index": 0, "block": "text" } }))?,
+    ] {
+        let bytes = encoder.encode(&e).ok()?;
+        if !bytes.is_empty() {
+            head.push((Duration::ZERO, Bytes::from(bytes)));
+        }
+    }
+    let endless = Endless {
+        encoder,
+        pieces: pieces(shape.out, seed),
+        gap: Duration::from_secs_f64(TOKENS_PER_DELTA as f64 / shape.tps),
+        next: 0,
+    };
+    Some((head, endless))
 }
 
 pub(super) fn stream(
@@ -319,6 +385,55 @@ mod tests {
             assert!(
                 paced >= Duration::from_millis(1800) && paced <= Duration::from_millis(1900),
                 "{dialect:?}: {paced:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_endless_stream_keeps_sending_text_at_its_pace() {
+        for dialect in DIALECTS {
+            let body = request(dialect, true);
+            let shape = Shape::of("[mock:gen=8] [mock:tps=400]", body.len()).unwrap();
+            let (head, mut rest) =
+                endless(dialect, &body, &HeaderMap::new(), shape, 7).expect("encoded");
+            let req = decode(dialect, &body, &HeaderMap::new()).unwrap();
+            let mut decoder = dispatch::stream_decoder(dialect, &EgressCtx::new(&req)).unwrap();
+            let mut events = Vec::new();
+            for (_, c) in &head {
+                events.extend(decoder.feed(c));
+            }
+            for _ in 0..500 {
+                let (gap, chunk) = rest.chunk().unwrap();
+                assert_eq!(gap, Duration::from_millis(10), "{dialect:?}");
+                events.extend(decoder.feed(&chunk));
+            }
+            let deltas = events
+                .iter()
+                .filter(|e| matches!(e, StreamEvent::BlockDelta(_)))
+                .count();
+            let opening = usize::from(dialect == DialectId::OpenAiChat);
+            assert_eq!(deltas, 500 + opening, "{dialect:?}");
+            assert!(
+                !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
+                "{dialect:?}"
+            );
+
+            let fast = Shape::of("[mock:gen=8] [mock:tps=400000]", body.len()).unwrap();
+            let (_, mut rest) = endless(dialect, &body, &HeaderMap::new(), fast, 7).unwrap();
+            let (gap, chunk) = rest.chunk().unwrap();
+            assert_eq!(gap, Duration::from_millis(1), "{dialect:?}");
+            let mut decoder = dispatch::stream_decoder(dialect, &EgressCtx::new(&req)).unwrap();
+            for (_, c) in &head {
+                decoder.feed(c);
+            }
+            let deltas = decoder
+                .feed(&chunk)
+                .iter()
+                .filter(|e| matches!(e, StreamEvent::BlockDelta(_)))
+                .count();
+            assert_eq!(
+                deltas, 100,
+                "{dialect:?}: a millisecond's deltas in one chunk"
             );
         }
     }
