@@ -8,7 +8,9 @@ A project's catalogue, on its **Models** page, lists the models its keys may cal
 
 ## Add models
 
-Choose **Add models**, pick a provider from the searchable list next to the search field, with providers your organization has connected first, and search its models. The dialog remembers the provider until you reload the console or sign out. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one. Each model shows its context window and its input and output prices, newest first; when more than 50 models match, the dialog shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
+Choose **Add models**, then pick a provider from the searchable list next to the search field and search its models. Providers your organization has connected come first. The dialog remembers the provider until you reload the console or sign out. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one.
+
+The dialog lists models newest first, each with its context window and its input and output prices. When more than 50 models match, it shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
 Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
 
@@ -27,11 +29,13 @@ A model in the catalogue isn't always one the provider serves to the project's p
 | Unavailable | The provider said it doesn't serve it to this key |
 | Not checked | Nothing has said so yet, or a provider key of the organization changed since |
 
-Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. A model that can't be checked keeps its availability, and the report says why, for example that the project has no key for that provider, or that the provider refused the key, also when only its model listing refused it.
+Choose **Check availability** to ask each model's provider, with the project's provider key. Kaeso marks a model unavailable only when the provider answers "not found" and its model listing confirms the model is missing. When Kaeso can't check a model, the model keeps its availability, and the report says why. For example, the project has no key for that provider, or the provider refused the key, even when only its model listing refused it.
 
 Requests update availability too. When the provider answers a request with "not found" and its listing confirms it, the model becomes unavailable, and the app gets an [error that says so](../api/errors.md). When a request for an unavailable model succeeds, the model becomes available again. Each answer counts only for the provider key that got it.
 
-An unavailable model stays in the catalogue, and Kaeso answers requests for it with that error without calling the provider. Every five minutes, it lets one request through to the provider to ask again, so a model the key gained access to becomes available again by itself; **Check availability** updates it at once. Requests never go to another model. The model API's list of models (`GET /v1/models`) leaves it out. To fix it, give the provider key access to the model, or remove the model from the catalogue. The audit log records every check.
+An unavailable model stays in the catalogue, and Kaeso answers requests for it with that error without calling the provider. Requests never go to another model. The model API's list of models (`GET /v1/models`) leaves it out.
+
+To fix it, give the provider key access to the model, or remove the model from the catalogue. Every five minutes, Kaeso lets one request through to the provider to ask again. Once the key has access, the model becomes available again by itself, or at once when you choose **Check availability**. The audit log records every check.
 
 ## Change a model's values
 
@@ -42,7 +46,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: mode
 | Display name | The name the console shows |
 | Inputs, outputs | Text, images, audio, video, embeddings |
 | Context, output limit | The model's token limits |
-| Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one, as models.dev lists it; writes to Anthropic's one-hour cache cost twice the input price, [Anthropic's rule](https://platform.claude.com/docs/en/about-claude/pricing), or the cache write price when the model has no input price |
+| Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one, as models.dev lists it. Writes to Anthropic's one-hour cache cost twice the input price, [Anthropic's rule](https://platform.claude.com/docs/en/about-claude/pricing), or the cache write price when the model has no input price |
 | Sends as | The API format Kaeso calls the model with: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
 | Accepts temperature | Whether the model takes `temperature` |
@@ -71,7 +75,7 @@ Kaeso looks up the model a request names in this order:
 
 If two providers have a model with the same id, use the `provider/model` form. Kaeso splits it at the first `/`, so a model id that contains `/` keeps it: `togetherai/Qwen/Qwen3.5-9B` names Together AI's `Qwen/Qwen3.5-9B`.
 
-A model id can contain `/`, such as OpenRouter's `anthropic/claude-sonnet-4.5` or Groq's `openai/gpt-oss-20b`. Because Kaeso looks for a provider and a model before a model id, a name that starts with another provider's id goes to that provider: in a project with OpenRouter's `openai/gpt-4o` and OpenAI's `gpt-4o`, `openai/gpt-4o` calls OpenAI. Put the provider in front to be sure: `openrouter/openai/gpt-4o` always calls OpenRouter's model, and `groq/openai/gpt-oss-20b` always calls Groq's.
+A model id can contain `/`, such as OpenRouter's `anthropic/claude-sonnet-4.5` or Groq's `openai/gpt-oss-20b`. Kaeso looks for a provider and a model before a model id, so a name that starts with another provider's id goes to that provider. In a project with OpenRouter's `openai/gpt-4o` and OpenAI's `gpt-4o`, `openai/gpt-4o` calls OpenAI. Put the provider in front to be sure: `openrouter/openai/gpt-4o` always calls OpenRouter's model, and `groq/openai/gpt-oss-20b` always calls Groq's.
 
 ## Next steps
 

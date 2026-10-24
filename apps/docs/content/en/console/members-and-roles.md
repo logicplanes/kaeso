@@ -16,7 +16,9 @@ Open **Organization settings** › **Members** and choose **Invite members**. Th
 2. **What can they do in the organization?** Choose their organization role.
 3. **Which projects?** Add the projects they join, each with a role. They always join the default project.
 
-**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**. Once someone accepts an invitation, their other pending invitations to the organization are revoked. An invitation never changes the roles of someone who is already a member. On **Members**, search by name or email address, or choose a role to see who holds it.
+**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**.
+
+Once someone accepts an invitation, Kaeso revokes their other pending invitations to the organization. An invitation never changes the roles of someone who is already a member. On **Members**, search by name or email address, or choose a role to see who holds it.
 
 An organization with [single sign-on](organizations-and-projects.md#single-sign-on) can also let people from its email domains join without an invitation. That works only for people new to Kaeso. Someone who already has an account needs an invitation, and links the account to the identity provider from their **Account**.
 

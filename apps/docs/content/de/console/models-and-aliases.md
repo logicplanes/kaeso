@@ -8,7 +8,9 @@ Der Katalog eines Projekts auf seiner Seite **Modelle** listet die Modelle, die 
 
 ## Modelle hinzufügen
 
-Wählen Sie **Modelle hinzufügen**, wählen Sie in der durchsuchbaren Liste neben dem Suchfeld einen Anbieter, die von Ihrer Organisation verbundenen zuerst, und durchsuchen Sie seine Modelle. Der Dialog merkt sich den Anbieter, bis Sie die Konsole neu laden oder sich abmelden. Hat die Organisation keinen [Anbieter-Schlüssel](provider-keys.md) für ihn, weist der Dialog darauf hin, dass Anfragen an seine Modelle fehlschlagen, bis jemand einen hinzufügt. Jedes Modell zeigt sein Kontextfenster sowie seine Eingabe- und Ausgabepreise, die neuesten zuerst; passen mehr als 50 Modelle, zeigt der Dialog die ersten 50 und sagt, wie viele passen, sodass die Suche sie eingrenzt. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
+Wählen Sie **Modelle hinzufügen**, wählen Sie dann in der durchsuchbaren Liste neben dem Suchfeld einen Anbieter und durchsuchen Sie seine Modelle. Die von Ihrer Organisation verbundenen Anbieter stehen zuerst. Der Dialog merkt sich den Anbieter, bis Sie die Konsole neu laden oder sich abmelden. Hat die Organisation keinen [Anbieter-Schlüssel](provider-keys.md) für ihn, weist der Dialog darauf hin, dass Anfragen an seine Modelle fehlschlagen, bis jemand einen hinzufügt.
+
+Der Dialog listet die Modelle, die neuesten zuerst, jedes mit seinem Kontextfenster sowie seinen Eingabe- und Ausgabepreisen. Passen mehr als 50 Modelle, zeigt er die ersten 50 und sagt, wie viele passen, sodass Sie sie mit der Suche eingrenzen. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
 
 Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen. Zwei Abkürzungen decken den Rest ab:
 
@@ -27,11 +29,13 @@ Nicht jedes Modell im Katalog stellt der Anbieter dem Anbieter-Schlüssel des Pr
 | Nicht verfügbar | Der Anbieter hat erklärt, dass er es diesem Schlüssel nicht bereitstellt |
 | Nicht geprüft | Noch liegt keine Antwort vor, oder ein Anbieter-Schlüssel der Organisation hat sich seither geändert |
 
-Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Ein Modell, das sich nicht prüfen lässt, behält seine Verfügbarkeit, und die Meldung nennt den Grund, etwa dass das Projekt keinen Schlüssel für diesen Anbieter hat oder dass der Anbieter den Schlüssel abgelehnt hat, auch wenn nur seine Modellliste ihn ablehnt.
+Wählen Sie **Verfügbarkeit prüfen**, um den Anbieter jedes Modells mit dem Anbieter-Schlüssel des Projekts zu fragen. Kaeso markiert ein Modell nur dann als nicht verfügbar, wenn der Anbieter mit „nicht gefunden“ antwortet und seine Modellliste bestätigt, dass das Modell fehlt. Kann Kaeso ein Modell nicht prüfen, behält das Modell seine Verfügbarkeit, und die Meldung nennt den Grund. Zum Beispiel hat das Projekt keinen Schlüssel für diesen Anbieter, oder der Anbieter hat den Schlüssel abgelehnt, auch wenn nur seine Modellliste ihn ablehnt.
 
 Auch Anfragen ändern die Verfügbarkeit. Antwortet der Anbieter auf eine Anfrage mit „nicht gefunden“ und bestätigt seine Modellliste das, wird das Modell nicht verfügbar, und die App erhält einen [Fehler, der das sagt](../api/errors.md). Gelingt eine Anfrage nach einem nicht verfügbaren Modell, wird es wieder verfügbar. Jede Antwort zählt nur für den Anbieter-Schlüssel, der sie erhalten hat.
 
-Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso beantwortet Anfragen danach mit diesem Fehler, ohne den Anbieter aufzurufen. Alle fünf Minuten lässt es eine Anfrage zum Anbieter durch, um erneut zu fragen; so wird ein Modell, auf das der Schlüssel Zugriff erhalten hat, von selbst wieder verfügbar. **Verfügbarkeit prüfen** aktualisiert es sofort. Anfragen gehen nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus. Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Das Audit-Log verzeichnet jede Prüfung.
+Ein nicht verfügbares Modell bleibt im Katalog, und Kaeso beantwortet Anfragen danach mit diesem Fehler, ohne den Anbieter aufzurufen. Anfragen gehen nie an ein anderes Modell. Die Modellliste der Modell-API (`GET /v1/models`) lässt es aus.
+
+Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, oder entfernen Sie das Modell aus dem Katalog. Alle fünf Minuten lässt Kaeso eine Anfrage zum Anbieter durch, um erneut zu fragen. Hat der Schlüssel Zugriff erhalten, wird das Modell von selbst wieder verfügbar, oder sofort, wenn Sie **Verfügbarkeit prüfen** wählen. Das Audit-Log verzeichnet jede Prüfung.
 
 ## Werte eines Modells ändern
 
@@ -42,7 +46,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Anzeigename | Der Name, den die Konsole zeigt |
 | Eingaben, Ausgaben | Text, Bilder, Audio, Video, Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
-| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten, wie models.dev ihn führt; Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten das Doppelte des Eingabepreises, [Anthropics Regel](https://platform.claude.com/docs/en/about-claude/pricing), oder den Cache-Schreibpreis, wenn das Modell keinen Eingabepreis hat |
+| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten, wie models.dev ihn führt. Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten das Doppelte des Eingabepreises, [Anthropics Regel](https://platform.claude.com/docs/en/about-claude/pricing), oder den Cache-Schreibpreis, wenn das Modell keinen Eingabepreis hat |
 | Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Unterstützt Temperatur | Ob das Modell `temperature` annimmt |
@@ -71,7 +75,7 @@ Kaeso sucht das Modell, das eine Anfrage nennt, in dieser Reihenfolge:
 
 Haben zwei Anbieter ein Modell mit derselben ID, verwenden Sie die Form `provider/model`. Kaeso trennt sie am ersten `/`, eine Modell-ID mit `/` bleibt also erhalten: `togetherai/Qwen/Qwen3.5-9B` meint `Qwen/Qwen3.5-9B` von Together AI.
 
-Eine Modell-ID kann `/` enthalten, etwa OpenRouters `anthropic/claude-sonnet-4.5` oder Groqs `openai/gpt-oss-20b`. Weil Kaeso die Form Anbieter/Modell vor einer Modell-ID sucht, geht ein Name, der mit der ID eines anderen Anbieters beginnt, an diesen Anbieter: Hat ein Projekt OpenRouters `openai/gpt-4o` und OpenAIs `gpt-4o`, ruft `openai/gpt-4o` OpenAI auf. Stellen Sie den Anbieter voran, um sicherzugehen: `openrouter/openai/gpt-4o` ruft immer das Modell von OpenRouter auf, `groq/openai/gpt-oss-20b` immer das von Groq.
+Eine Modell-ID kann `/` enthalten, etwa OpenRouters `anthropic/claude-sonnet-4.5` oder Groqs `openai/gpt-oss-20b`. Kaeso sucht die Form Anbieter/Modell vor einer Modell-ID, daher geht ein Name, der mit der ID eines anderen Anbieters beginnt, an diesen Anbieter. Hat ein Projekt OpenRouters `openai/gpt-4o` und OpenAIs `gpt-4o`, ruft `openai/gpt-4o` OpenAI auf. Stellen Sie den Anbieter voran, um sicherzugehen: `openrouter/openai/gpt-4o` ruft immer das Modell von OpenRouter auf, `groq/openai/gpt-oss-20b` immer das von Groq.
 
 ## Nächste Schritte
 
