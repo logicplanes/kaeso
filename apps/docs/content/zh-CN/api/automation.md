@@ -119,6 +119,24 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 在地址后加上日志条目的 ID 即可读取单个请求，例如 `logs/req_…`。项目记录内容时，条目中包含请求的内容。
 
+## 轮换应用的密钥
+
+在应用的密钥过期前替换它，或在密钥泄露时立即替换。轮换会创建一个名称、访问权限、模型和限额都相同的新密钥，旧密钥在 `grace_hours`（0、1、24 或 168）内继续可用。先查出密钥的 ID，再以 24 小时的宽限期轮换它：
+
+```bash
+KEY=$(curl -s "$ORG_URL/projects/$PROJECT/keys?service_account=$ACCOUNT" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" | jq -r '.data[0].id')
+
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys/$KEY/rotate" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"grace_hours": 24, "expires_in_days": 90}' | jq -r .secret
+)
+```
+
+`KAESO_API_KEY` 现在保存的是新密钥。请在 24 小时内把它存到应用读取的位置，之后旧密钥会过期。新密钥的 `rotated_from` 和旧密钥的 `replaced_by` 将两者关联起来，请求日志和用量则保留各个密钥自己的 ID。
+
 ## 改用项目密钥
 
 具有平台访问权限的 API 密钥在其所属项目内同样适用，并以其成员或服务账号的权限行事。以 `Authorization: Bearer sk-kso-…` 发送。它可以凭 `models.manage` 添加模型，凭 `usage.view` 和 `logs.metadata.view` 读取用量和日志。

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT k.id, k.name, k.org_id, k.project_id, p.name AS project_name, k.user_id, k.expires_at AS \"expires_at!\" FROM api_keys k JOIN projects p ON p.id = k.project_id WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.expires_at > $1 AND k.expires_at <= $1 + make_interval(days => $2) AND NOT EXISTS (SELECT 1 FROM key_expiry_warnings w WHERE w.key_id = k.id AND w.days_before = $2)",
+  "query": "SELECT k.id, k.name, k.org_id, k.project_id, p.name AS project_name, k.user_id, k.expires_at AS \"expires_at!\" FROM api_keys k JOIN projects p ON p.id = k.project_id WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.replaced_by IS NULL AND k.expires_at > $1 AND k.expires_at <= $1 + make_interval(days => $2) AND NOT EXISTS (SELECT 1 FROM key_expiry_warnings w WHERE w.key_id = k.id AND w.days_before = $2)",
   "describe": {
     "columns": [
       {
@@ -97,5 +97,5 @@
       true
     ]
   },
-  "hash": "3fa0ab7e61236e3dd20184f9758aaaad5da8cfb21bbcab943b2b765e0f9351ee"
+  "hash": "ef705d25768cdbf142ceb5ed462cdc25c7db30cbadb91875e60bbd0744a78ddb"
 }

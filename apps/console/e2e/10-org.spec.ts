@@ -340,6 +340,35 @@ test("audit log: the changes above are recorded, filtered by action, and open wi
   expect(lines.every((l) => (JSON.parse(l) as { action: string }).action.startsWith("platform_key."))).toBe(true);
 });
 
+test("platform keys: a rotated key stops at once when there is no grace period", async ({ page, request }) => {
+  await openOrgSettings(page, "Platform keys");
+  const org = /\/settings\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
+  await page.getByRole("button", { name: "Create platform key" }).click();
+  const create = page.getByRole("dialog", { name: "Create platform key" });
+  await create.getByLabel("Name").fill("Pulumi");
+  await submitSteps(create, "Create key");
+  const created = page.getByRole("dialog", { name: "Platform key created" });
+  const old = (await created.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
+  await created.getByRole("button", { name: "Copy key" }).click();
+  await created.getByRole("button", { name: "Done" }).click();
+
+  const row = page.getByRole("gridcell").filter({ hasText: "Pulumi" });
+  await row.getByRole("button", { name: "Actions for Pulumi" }).click();
+  await page.getByRole("menuitem", { name: "Rotate" }).click();
+  const dialog = page.getByRole("dialog", { name: "Rotate Pulumi" });
+  await dialog.getByRole("radio", { name: /Immediately/ }).check();
+  await submitSteps(dialog, "Rotate key");
+  const reveal = page.getByRole("dialog", { name: "Platform key rotated" });
+  const rotated = (await reveal.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
+  expect(rotated).toMatch(/^sk-kso-org-/);
+  await reveal.getByRole("button", { name: "Copy key" }).click();
+  await reveal.getByRole("button", { name: "Done" }).click();
+
+  const projects = `/platform/v1/orgs/${org}/projects`;
+  expect((await request.get(projects, { headers: { authorization: `Bearer ${old}` } })).status()).toBe(401);
+  expect((await request.get(projects, { headers: { authorization: `Bearer ${rotated}` } })).status()).toBe(200);
+});
+
 test("usage: the old settings page opens the overview with its period", async ({ page }) => {
   await openOrgSettings(page, "General");
   await expect(page.locator(`nav[aria-label="Settings"] a[href^="/settings/orgs/"]`).getByText("Usage", { exact: true })).toHaveCount(0);

@@ -32,7 +32,7 @@ import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
-import { usePartyName } from "../keys/party";
+import { keyLabel, usePartyName } from "../keys/party";
 import { COLUMNS, columnLabel, logColumns, logsLayout, providerInModel, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
 import { scrollParentOf, useLiveLogs } from "./live";
@@ -137,7 +137,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     return () => window.removeEventListener("keydown", step);
   }, [log]);
 
-  const keyName = (id: string) => keys.data?.find((k) => k.id === id)?.name ?? id;
+  const keyName = (id: string) => {
+    const key = keys.data?.find((k) => k.id === id);
+    return key ? keyLabel(key) : id;
+  };
   const spansDays = filters.from ? filters.from !== filters.to : filters.range !== "1h";
   const phone = usePhone();
   const errors = useGatewayErrors();
@@ -146,7 +149,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
 
-  const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: k.name }));
+  const keyOptions = (keys.data ?? []).map((k) => ({ value: k.id, label: keyLabel(k) }));
   const memberOptions = [
     ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name })),
     ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: t("logs.filter.serviceAccount", "{name} (service account)", { name: a.name }) })),

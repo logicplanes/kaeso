@@ -1,9 +1,9 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
+use kaeso_core::id::{ApiKeyId, CatalogueModelId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::keys::KeyKind;
-use kaeso_core::rights::{ProjectRight, ProjectRights};
+use kaeso_core::rights::{ProjectRight, ProjectRights, Right};
 use kaeso_store::pg::keys::{self, KeyFilter, NewKey};
 use kaeso_store::pg::service_accounts;
 use secrecy::ExposeSecret;
@@ -11,11 +11,11 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::{KEYS_ARCHIVED, ensure_active};
-use crate::platform::access::{Caller, Ctx};
+use crate::platform::access::{Caller, Ctx, denied};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{
-    CreatedKey, ExpiryRequest, KeyAccess, KeyView, creator_of, new_secret, project_max,
+    CreatedKey, ExpiryRequest, KeyAccess, KeyRotate, KeyView, creator_of, new_secret, project_max,
     validate_name,
 };
 use crate::platform::pagination::{List, PageParams};
@@ -41,12 +41,18 @@ pub struct KeyCreate {
     pub limits: Option<Vec<super::limits::KeyLimit>>,
 }
 
+struct Rotation<'a> {
+    old: &'a keys::KeyRow,
+    stops_at: time::OffsetDateTime,
+}
+
 async fn create_key(
     state: &AppState,
     ctx: &Ctx,
     req: KeyCreate,
     user: Option<UserId>,
     service_account: Option<uuid::Uuid>,
+    rotation: Option<Rotation<'_>>,
 ) -> ApiResult<(StatusCode, Json<CreatedKey<KeyView>>)> {
     ensure_active(ctx, KEYS_ARCHIVED)?;
     let name = validate_name(&req.name)?;
@@ -115,6 +121,7 @@ async fn create_key(
             expires_at,
             created_by_kind: created_kind,
             created_by_id: created_id,
+            rotated_from: rotation.as_ref().map(|r| r.old.id),
         },
     )
     .await?;
@@ -135,12 +142,35 @@ async fn create_key(
         .await?
         .ok_or_else(|| ApiError::internal("new key vanished"))?;
     let view = KeyView::from_row(&row, ctx.now);
-    ctx.audit(Some(ctx.org()?.id()), "key.create")
-        .target("key", id)
-        .after(&view)
-        .write(&mut tx)
-        .await?;
+    match &rotation {
+        None => {
+            ctx.audit(Some(ctx.org()?.id()), "key.create")
+                .target("key", id)
+                .after(&view)
+                .write(&mut tx)
+                .await?;
+        }
+        Some(r) => {
+            if !keys::retire(&mut *tx, r.old.project_id, r.old.id, id.uuid(), r.stops_at).await? {
+                return Err(ApiError::Conflict(
+                    "The key changed meanwhile; reload and try again.".into(),
+                ));
+            }
+            let retired = keys::get(&mut *tx, r.old.project_id, r.old.id)
+                .await?
+                .ok_or_else(|| ApiError::not_found("key"))?;
+            ctx.audit(Some(ctx.org()?.id()), "key.rotate")
+                .target("key", ApiKeyId::from_uuid(r.old.id))
+                .before(KeyView::from_row(r.old, ctx.now))
+                .after(KeyView::from_row(&retired, ctx.now))
+                .write(&mut tx)
+                .await?;
+        }
+    }
     tx.commit().await?;
+    if let Some(r) = &rotation {
+        crate::services::keys::forget(state, &[r.old.id]).await;
+    }
     if models.is_some() {
         crate::services::catalogue::forget(state, project.project.id).await;
     }
@@ -177,7 +207,7 @@ pub async fn create(
             "Service accounts get keys through service-accounts/{account}/keys.".into(),
         )
     })?;
-    create_key(&state, &ctx, req, Some(user), None).await
+    create_key(&state, &ctx, req, Some(user), None, None).await
 }
 
 #[utoipa::path(
@@ -195,6 +225,15 @@ pub async fn create_for_service_account(
     Path((_o, _p, account)): Path<(String, String, String)>,
     Body(req): Body<KeyCreate>,
 ) -> ApiResult<(StatusCode, Json<CreatedKey<KeyView>>)> {
+    let svc = keyed_service_account(&state, &ctx, &account).await?;
+    create_key(&state, &ctx, req, None, Some(svc), None).await
+}
+
+async fn keyed_service_account(
+    state: &AppState,
+    ctx: &Ctx,
+    account: &str,
+) -> ApiResult<uuid::Uuid> {
     let account: ServiceAccountId = account
         .parse()
         .map_err(|_| ApiError::not_found("service account"))?;
@@ -204,7 +243,7 @@ pub async fn create_for_service_account(
         .ok_or_else(|| ApiError::not_found("active service account"))?;
     let rights = super::service_accounts::grant_of(&svc)?.effective();
     kaeso_core::rights::check_project_grant(ctx.project()?.rights, ProjectRights::EMPTY, rights)?;
-    create_key(&state, &ctx, req, None, Some(svc.id)).await
+    Ok(svc.id)
 }
 
 #[derive(Debug, Deserialize, IntoParams)]
@@ -451,4 +490,163 @@ pub async fn archive(
         )
         .await?,
     ))
+}
+
+async fn replacement(
+    state: &AppState,
+    old: &keys::KeyRow,
+    req: &KeyRotate,
+) -> ApiResult<KeyCreate> {
+    if old.archived_at.is_some() {
+        return Err(ApiError::Conflict(
+            "The key is archived and cannot change.".into(),
+        ));
+    }
+    if old.replaced_by.is_some() {
+        return Err(ApiError::Conflict(
+            "This key was rotated already; rotate the key that replaced it.".into(),
+        ));
+    }
+    let mut conn = state.pg.acquire().await?;
+    let models = kaeso_store::pg::catalogue::access(
+        &mut conn,
+        old.project_id,
+        kaeso_store::pg::catalogue::Subject::Key(old.id),
+    )
+    .await?;
+    let limits: Vec<super::limits::KeyLimit> =
+        kaeso_store::pg::limits::list(&mut *conn, old.project_id)
+            .await?
+            .into_iter()
+            .filter(|l| l.api_key_id == Some(old.id))
+            .map(|l| super::limits::KeyLimit {
+                kind: l.kind,
+                model: l.catalogue_model_id.map(CatalogueModelId::from_uuid),
+                period: l.period,
+                amount: Some(l.amount),
+                hard: Some(l.hard),
+                alert_thresholds: Some(
+                    l.alert_thresholds
+                        .iter()
+                        .filter_map(|t| u8::try_from(*t).ok())
+                        .collect(),
+                ),
+            })
+            .collect();
+    Ok(KeyCreate {
+        name: old.name.clone(),
+        access: KeyAccess::from_flags(old.inference, old.platform),
+        expiry: req.expiry.clone(),
+        models: models.map(|m| m.into_iter().map(CatalogueModelId::from_uuid).collect()),
+        limits: (!limits.is_empty()).then_some(limits),
+    })
+}
+
+fn require_right(ctx: &Ctx, right: ProjectRight) -> ApiResult<()> {
+    if ctx.project()?.rights.contains(right) {
+        Ok(())
+    } else {
+        Err(denied(Right::Project(right), "project"))
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/projects/{project}/keys/{key}/rotate",
+    summary = "Rotates one of the caller's keys: a new key with the same name, access,\n\
+    models and limits, while the old key keeps working for the grace period.",
+    description = "Answers with the new key and its secret, shown once. The old key stops at \
+    the end of the grace period, or at its own expiry if that is sooner, and links to the new \
+    key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a \
+    key with platform access needs what creating one needs.",
+    tag = "projects",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("key" = ApiKeyId, Path)),
+    request_body = KeyRotate,
+    responses((status = 201, body = CreatedKey<KeyView>))
+)]
+pub async fn rotate(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_o, _p, id)): Path<(String, String, String)>,
+    Body(req): Body<KeyRotate>,
+) -> ApiResult<(StatusCode, Json<CreatedKey<KeyView>>)> {
+    let row = key(&state, &ctx, &id).await?;
+    if row.service_account_id.is_some() {
+        return Err(ApiError::bad_request(
+            "Rotate a service account's key through service-accounts/{account}/keys/{key}/rotate.",
+        ));
+    }
+    let user = ctx
+        .acting_user()
+        .filter(|u| Some(u.uuid()) == row.user_id)
+        .ok_or_else(|| {
+            ApiError::PermissionDenied(
+                "Only a key's owner can rotate it; the new key acts with the owner's rights."
+                    .into(),
+            )
+        })?;
+    if !ctx.project()?.rights.contains(ProjectRight::KeysAllManage) {
+        require_right(&ctx, ProjectRight::KeysOwnManage)?;
+    }
+    let stops_at = req.grace_ends_at(ctx.now)?;
+    let create = replacement(&state, &row, &req).await?;
+    create_key(
+        &state,
+        &ctx,
+        create,
+        Some(user),
+        None,
+        Some(Rotation {
+            old: &row,
+            stops_at,
+        }),
+    )
+    .await
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/projects/{project}/service-accounts/{account}/keys/{key}/rotate",
+    summary = "Rotates a service account's key: a new key with the same name, access,\n\
+    models and limits, while the old key keeps working for the grace period.",
+    description = "Answers with the new key and its secret, shown once. The old key stops at \
+    the end of the grace period, or at its own expiry if that is sooner, and links to the new \
+    key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access \
+    needs what creating one needs.",
+    tag = "projects",
+    params(
+        ("org" = OrgId, Path),
+        ("project" = ProjectId, Path),
+        ("account" = ServiceAccountId, Path),
+        ("key" = ApiKeyId, Path)
+    ),
+    request_body = KeyRotate,
+    responses((status = 201, body = CreatedKey<KeyView>))
+)]
+pub async fn rotate_for_service_account(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_o, _p, account, id)): Path<(String, String, String, String)>,
+    Body(req): Body<KeyRotate>,
+) -> ApiResult<(StatusCode, Json<CreatedKey<KeyView>>)> {
+    let svc = keyed_service_account(&state, &ctx, &account).await?;
+    let row = key(&state, &ctx, &id).await?;
+    if row.service_account_id != Some(svc) {
+        return Err(ApiError::not_found("key"));
+    }
+    require_right(&ctx, ProjectRight::KeysAllManage)?;
+    let stops_at = req.grace_ends_at(ctx.now)?;
+    let create = replacement(&state, &row, &req).await?;
+    create_key(
+        &state,
+        &ctx,
+        create,
+        None,
+        Some(svc),
+        Some(Rotation {
+            old: &row,
+            stops_at,
+        }),
+    )
+    .await
 }

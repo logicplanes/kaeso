@@ -266,7 +266,13 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   );
 }
 
-function useKeyReveal(org: string, project: string, created: { key: CreatedKey_KeyView; models: string[] } | null, onDone: () => void) {
+export function useKeyReveal(
+  org: string,
+  project: string,
+  created: { key: CreatedKey_KeyView; models: string[] } | null,
+  onDone: () => void,
+  heading?: { title: string; description: string },
+) {
   const [copied, setCopied] = useState(false);
   const catalogue = useQuery(catalogueQuery(org, project));
   const models = created?.models ?? [];
@@ -276,8 +282,8 @@ function useKeyReveal(org: string, project: string, created: { key: CreatedKey_K
   const result: StepDialogResult | undefined = created
     ? {
         size: "lg",
-        title: t("kaeso.createKey.created", "Key created"),
-        description: t("kaeso.createKey.createdHint", "Copy the key now: it's shown once, and Kaeso keeps only a hash of it."),
+        title: heading?.title ?? t("kaeso.createKey.created", "Key created"),
+        description: heading?.description ?? t("kaeso.createKey.createdHint", "Copy the key now: it's shown once, and Kaeso keeps only a hash of it."),
         footer: <Button onClick={done}>{t("common.done", "Done")}</Button>,
         content: (
           <SecretReveal

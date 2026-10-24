@@ -139,7 +139,7 @@ Every change of roles and rights follows these rules:
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `platform_keys.view` | View platform keys | See the organization's platform keys (metadata). |  |
-| `platform_keys.create` | Create platform keys | Create organization platform keys, which manage everything at org level. | sensitive; recent sign-in; needs `platform_keys.view` |
+| `platform_keys.create` | Create platform keys | Create and rotate organization platform keys, which manage everything at org level. | sensitive; recent sign-in; needs `platform_keys.view` |
 | `platform_keys.revoke` | Disable platform keys | Disable, enable or archive organization platform keys. | needs `platform_keys.view` |
 
 ### Logs & data
@@ -200,11 +200,11 @@ Every change of roles and rights follows these rules:
 
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
-| `keys.own.create` | Create own keys | Create API keys for oneself. |  |
+| `keys.own.create` | Create own keys | Create and rotate API keys for oneself. |  |
 | `keys.own.manage` | Manage own keys | Disable, enable or archive one's own API keys. |  |
 | `keys.all.view` | View all keys | See every key in the project (metadata). |  |
 | `keys.all.manage` | Manage all keys | Disable, enable or archive anyone's keys in the project. | needs `keys.all.view` |
-| `service_accounts.keys.create` | Create service account keys | Create keys for the project's service accounts. | needs `service_accounts.view` |
+| `service_accounts.keys.create` | Create service account keys | Create and rotate keys for the project's service accounts. | needs `service_accounts.view` |
 | `keys.platform_access.grant` | Give keys platform access | Give a new key access to the Platform API. | sensitive; recent sign-in |
 | `security.key_policy.project.manage` | Set key lifetime | Set the project's maximum key lifetime. |  |
 

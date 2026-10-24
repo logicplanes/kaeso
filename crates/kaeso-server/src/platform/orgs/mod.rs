@@ -90,6 +90,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
             Access::Org(R::PlatformKeysRevoke),
             routes!(platform_keys::archive),
         ))
+        .routes(s.route(
+            Access::Org(R::PlatformKeysCreate),
+            routes!(platform_keys::rotate),
+        ))
         .routes(s.route(Access::Org(R::ProviderCredentialsCreate), routes!(credentials::create)))
         .routes(s.route(Access::Org(R::ProviderCredentialsView), routes!(credentials::list)))
         .routes(s.route(Access::Org(R::ProviderCredentialsView), routes!(credentials::get)))

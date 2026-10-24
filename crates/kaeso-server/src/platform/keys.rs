@@ -73,6 +73,28 @@ impl ExpiryRequest {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, ToSchema)]
+#[schema(
+    description = "How to rotate a key: how long the old key keeps working, and when\n\
+    the new key expires."
+)]
+pub struct KeyRotate {
+    #[doc = "How long the old key keeps working: 0 (it stops at once), 1, 24 or 168\n\
+        hours."]
+    #[schema(example = 24)]
+    pub grace_hours: u32,
+    #[doc = "When the new key expires."]
+    #[serde(flatten)]
+    pub expiry: ExpiryRequest,
+}
+
+impl KeyRotate {
+    pub fn grace_ends_at(&self, now: OffsetDateTime) -> ApiResult<OffsetDateTime> {
+        kaeso_core::keys::grace_ends_at(self.grace_hours, now)
+            .map_err(|e| ApiError::invalid("grace_hours", e.to_string()))
+    }
+}
+
 pub fn project_max(ctx: &Ctx) -> ApiResult<Option<i32>> {
     Ok(max_lifetime(
         ctx.org()?.org.max_key_lifetime_days,
@@ -121,6 +143,10 @@ pub struct KeyView {
     #[doc = "Created."]
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    #[doc = "The key it replaced, when it was made by rotating that key."]
+    pub rotated_from: Option<ApiKeyId>,
+    #[doc = "The key that replaced it; it stops working at `expires_at`."]
+    pub replaced_by: Option<ApiKeyId>,
 }
 
 fn state_of(
@@ -186,6 +212,8 @@ impl KeyView {
             last_used_at: k.last_used_at,
             created_by: creator(&k.created_by_kind, k.created_by_id),
             created_at: k.created_at,
+            rotated_from: k.rotated_from.map(ApiKeyId::from_uuid),
+            replaced_by: k.replaced_by.map(ApiKeyId::from_uuid),
         }
     }
 }
@@ -212,6 +240,10 @@ pub struct OrgKeyView {
     #[doc = "Created."]
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
+    #[doc = "The platform key it replaced, when it was made by rotating that key."]
+    pub rotated_from: Option<OrgPlatformKeyId>,
+    #[doc = "The platform key that replaced it; it stops working at `expires_at`."]
+    pub replaced_by: Option<OrgPlatformKeyId>,
 }
 
 impl OrgKeyView {
@@ -230,6 +262,8 @@ impl OrgKeyView {
             last_used_at: k.last_used_at,
             created_by: creator(&k.created_by_kind, k.created_by_id),
             created_at: k.created_at,
+            rotated_from: k.rotated_from.map(OrgPlatformKeyId::from_uuid),
+            replaced_by: k.replaced_by.map(OrgPlatformKeyId::from_uuid),
         }
     }
 }

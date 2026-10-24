@@ -37,9 +37,31 @@ Give each app and each environment its own key. Its usage, logs and limits are t
 
 Choose a key to open its sheet. It shows whom the key belongs to, its access, who created it and when, its expiry, its last use and its id. With the right **Manage limits**, you can change its **Models** and **Limits** there at any time.
 
+## Rotate a key
+
+Rotating replaces a key with a new one that has the same name, owner, access, models and limits. The old key keeps working for a grace period you choose, so you can move your apps over without failed requests. Rotate keys on a schedule, or at once when one may have leaked.
+
+1. In the menu of the key's sheet, choose **Rotate**.
+2. **When does the old key stop working?** Choose **Immediately**, **After 1 hour**, **After 24 hours** or **After 7 days**.
+3. **When does the new key expire?** The choices are the same as when you create a key.
+
+**Key rotated** then shows the new key once, like **Key created**. Both keys work until the grace period ends, and then the old key expires. An old key that would expire sooner keeps its own expiry, and Kaeso sends no expiry emails for it.
+
+The old key's sheet shows **Replaced by** and the new key's sheet **Rotated from**, each with a link to the other key. The list shows when a replaced key stops, and request logs and usage name it as replaced, so you can see which apps still send it. Limits on the new key start counting afresh.
+
+Rotating a key needs these rights:
+
+| To rotate | Rights |
+| --- | --- |
+| Your own key | **Create own keys**, and **Manage own keys** or **Manage all keys** |
+| A service account's key | **Create service account keys** and **Manage all keys** |
+| A key with platform access | Also **Give keys platform access**, a console session and a recent sign-in |
+
+Only its owner can rotate a member's key, because the new key acts with the owner's rights. A key that is archived or was rotated already can't be rotated; rotate its replacement instead.
+
 ## Turn a key off
 
-The menu of a key's sheet has three actions:
+Besides **Rotate**, the menu of a key's sheet has three actions:
 
 | Action | What it does |
 | --- | --- |
@@ -61,6 +83,8 @@ Platform keys are for scripts and infrastructure that manage the whole organizat
 2. Say what uses the key, and when it expires. The choices and the organization's maximum key lifetime are the same as for API keys.
 
 Creating a platform key needs the right **Create platform keys**, a console session and a recent sign-in. You disable, enable and archive platform keys like API keys, with the right **Disable platform keys**; a platform key that a person disabled is enabled only by a person.
+
+**Rotate** in a platform key's menu works like [rotating an API key](#rotate-a-key) and keeps the key's name. It needs both rights, a console session and a recent sign-in.
 
 ## Next steps
 

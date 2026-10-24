@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
+  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM api_keys WHERE user_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -189,15 +189,34 @@
             "name": "created_at"
           }
         }
+      },
+      {
+        "ordinal": 17,
+        "name": "rotated_from",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "rotated_from"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "replaced_by",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "api_keys",
+            "name": "replaced_by"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
-        "Bool",
-        "Uuid",
-        "Int8",
-        "UuidArray"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -217,8 +236,10 @@
       true,
       false,
       true,
-      false
+      false,
+      true,
+      true
     ]
   },
-  "hash": "6abcaa6ff8054a884415394f9d5e363893101bdea71398013a81c1c6f044f041"
+  "hash": "0f4d5e70560481ba0b6fa51b0e45f29e46e7da762d4f584388a0b6bb1a476efd"
 }

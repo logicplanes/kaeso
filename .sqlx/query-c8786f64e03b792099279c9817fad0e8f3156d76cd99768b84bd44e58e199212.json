@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE api_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() WHERE project_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c8786f64e03b792099279c9817fad0e8f3156d76cd99768b84bd44e58e199212"
+}

@@ -297,6 +297,11 @@ const messages = (): Rule[] => [
   rule("errors.serviceAccountKeysPath", (v) => t("errors.serviceAccountKeysPath", "Service accounts get keys through service-accounts/{account}/keys.", v)),
   rule("errors.keyArchived", () => t("errors.keyArchived", "The key is archived and cannot change.")),
   rule("errors.keyChangedMeanwhile", () => t("errors.keyChangedMeanwhile", "The key changed meanwhile; reload and try again.")),
+  rule("errors.keyRotatedAlready", () => t("errors.keyRotatedAlready", "This key was rotated already; rotate the key that replaced it.")),
+  rule("errors.onlyOwnerRotates", () => t("errors.onlyOwnerRotates", "Only a key's owner can rotate it; the new key acts with the owner's rights.")),
+  rule("errors.serviceAccountKeyRotatePath", (v) =>
+    t("errors.serviceAccountKeyRotatePath", "Rotate a service account's key through service-accounts/{account}/keys/{key}/rotate.", v),
+  ),
   rule("errors.platformAccessRight", () =>
     t("errors.platformAccessRight", "Giving a key platform access needs the right `keys.platform_access.grant` in this project."),
   ),
@@ -304,6 +309,7 @@ const messages = (): Rule[] => [
   rule("errors.noPlatformKeyToChange", () => t("errors.noPlatformKeyToChange", "No such platform key that can change.")),
   rule("errors.expiryBoth", () => t("errors.expiryBoth", "Send either `expires_in_days` or `expires_on`, not both.")),
   rule("errors.expiryChoice", () => t("errors.expiryChoice", "Choose an expiry of 1, 7, 30 or 90 days, a date, or never.")),
+  rule("errors.graceChoice", () => t("errors.graceChoice", "Choose a grace period of 0, 1, 24 or 168 hours.")),
   rule("errors.expiryPast", () => t("errors.expiryPast", "The expiry date must be in the future.")),
   rule("errors.keyMaxDays", (v) => t("errors.keyMaxDays", "Keys in this project may live at most {days} days.", v)),
   rule("errors.keyNeverNotAllowed", (v) => t("errors.keyNeverNotAllowed", 'Keys in this project must expire within {days} days; "never" is not allowed.', v)),

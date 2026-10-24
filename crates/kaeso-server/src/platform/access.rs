@@ -518,7 +518,7 @@ async fn check(
     Ok(ctx)
 }
 
-fn denied(right: Right, on: &str) -> ApiError {
+pub(crate) fn denied(right: Right, on: &str) -> ApiError {
     ApiError::MissingRight {
         right: right.as_str(),
         message: format!(
