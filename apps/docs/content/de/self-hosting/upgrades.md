@@ -133,6 +133,28 @@ Im Fenster sucht das Gateway nach Releases, wenn es das in der letzten Stunde ni
 
 ### Ergebnisse
 
+Jedes Update endet mit einem von fünf Ergebnissen, je nachdem, wo es aufhört:
+
+```mermaid
+flowchart TD
+  accTitle: Wie ein Update endet
+  accDescr: Der Updater prüft die Signaturen und lädt die Images herunter. Scheitert das, endet das Update mit Nicht eingespielt, und nichts ändert sich. Dann stellt er die Container um, und das neue Gateway migriert die Datenbanken. Ist es wieder erreichbar, endet das Update mit Aktualisiert. Scheitert es, startet der Updater die vorherige Version wieder und endet mit Zurückgesetzt, oder mit Zurücksetzen fehlgeschlagen, wenn diese nicht startet. Kann das neue Gateway die Datenbanken schon migriert haben, endet das Update stattdessen mit Prüfung nötig.
+  subgraph before [Noch nichts geändert]
+    check[Signaturen prüfen] --> download[Herunterladen]
+  end
+  subgraph after [Container umgestellt]
+    switch[Umstellen] --> migrate[Migrieren] --> online[Wieder erreichbar]
+  end
+  download --> switch
+  online --> updated[Aktualisiert]:::accent
+  before -. scheitert .-> notinstalled([Nicht eingespielt])
+  after -. scheitert .-> migrated[Kann das neue Gateway die<br>Datenbanken migriert haben?]
+  migrated -. ja .-> attention([Prüfung nötig])
+  migrated -. nein .-> restore[Vorherige Version<br>wieder starten]
+  restore --> rolled([Zurückgesetzt])
+  restore -. scheitert .-> rfailed([Zurücksetzen<br>fehlgeschlagen])
+```
+
 Der Verlauf der Seite zeigt, wie jedes Update ausgegangen ist:
 
 | Ergebnis | Bedeutung |
