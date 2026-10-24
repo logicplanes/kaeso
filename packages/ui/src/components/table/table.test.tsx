@@ -1,0 +1,32 @@
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { Table } from "./table.js";
+
+describe("Table", () => {
+  it("leaves room at the end of a text column for a link's hover bleed, and keeps numbers on the edge", () => {
+    render(
+      <Table>
+        <Table.Head>
+          <Table.Row>
+            <Table.HeaderCell>Model</Table.HeaderCell>
+            <Table.HeaderCell>Notes</Table.HeaderCell>
+            <Table.HeaderCell align="end">Requests</Table.HeaderCell>
+          </Table.Row>
+        </Table.Head>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>claude-haiku-4-5</Table.Cell>
+            <Table.Cell>
+              <a href="/console/models-and-aliases">Aliases</a>
+            </Table.Cell>
+            <Table.Cell align="end">1,200</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>,
+    );
+    for (const name of ["Model", "Notes"]) expect(screen.getByRole("columnheader", { name })).toHaveClass("first:pl-0", "last:pr-2");
+    expect(screen.getByRole("columnheader", { name: "Requests" })).toHaveClass("last:pr-0", "text-right");
+    expect(screen.getByRole("cell", { name: "Aliases" })).toHaveClass("last:pr-2");
+    expect(screen.getByRole("cell", { name: "1,200" })).toHaveClass("last:pr-0", "tabular");
+  });
+});

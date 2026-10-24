@@ -10,6 +10,8 @@ export const KAESO_TABLE_VARIANTS = {
 } as const;
 export const KAESO_TABLE_DEFAULT_VARIANTS = { align: "start" } as const;
 
+const LAST = { start: "last:pr-2", end: "last:pr-0" } as const;
+
 const Root = forwardRef<HTMLTableElement, HTMLAttributes<HTMLTableElement>>(function Table({ className, ...props }, ref) {
   return <table ref={ref} className={cn("w-full border-collapse text-body", className)} {...props} />;
 });
@@ -33,7 +35,8 @@ const HeaderCell = forwardRef<HTMLTableCellElement, Omit<ThHTMLAttributes<HTMLTa
         ref={ref}
         scope="col"
         className={cn(
-          "h-36 px-12 text-caption font-medium whitespace-nowrap text-fg-secondary hairline-b-strong first:pl-0 last:pr-0",
+          "h-36 px-12 text-caption font-medium whitespace-nowrap text-fg-secondary hairline-b-strong first:pl-0",
+          LAST[align],
           KAESO_TABLE_VARIANTS.align[align].classes,
           className,
         )}
@@ -52,7 +55,8 @@ const Cell = forwardRef<HTMLTableCellElement, TableCellProps>(function TableCell
     <td
       ref={ref}
       className={cn(
-        "h-44 px-12 py-12 align-middle text-fg first:pl-0 last:pr-0",
+        "h-44 px-12 py-12 align-middle text-fg first:pl-0",
+        LAST[align],
         KAESO_TABLE_VARIANTS.align[align].classes,
         tone && STATUS_TONE_TEXT[tone],
         className,
