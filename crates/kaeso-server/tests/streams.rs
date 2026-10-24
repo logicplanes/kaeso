@@ -306,6 +306,7 @@ async fn disconnects_are_charged_an_estimate() {
     let id = disconnect_after_first_text(&env, "claude-haiku-4-5").await;
     let o = outcome(&env, |o| o.request_id.to_string() == id).await;
     assert_eq!((o.status, o.cancelled), (499, true));
+    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
     assert!(o.usage_estimated);
     let u = o.usage.clone().unwrap();
     assert_eq!(u.input_tokens, 10);
@@ -529,7 +530,11 @@ async fn an_app_that_stops_reading_ends_its_stream() {
     let o = outcome(&env, |o| o.request_id.to_string() == id).await;
     assert!(o.cancelled);
     assert_eq!(o.status, 499);
-    assert_eq!(o.error_kind.as_deref(), Some("client_disconnected"));
+    assert_eq!(o.error_kind.as_deref(), Some("client_stalled"));
+    assert_eq!(
+        o.error_message.as_deref(),
+        Some("The app stopped reading the stream for too long; Kaeso ended it.")
+    );
     drop(body);
 }
 

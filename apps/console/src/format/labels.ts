@@ -21,6 +21,7 @@ const ERROR_KINDS: Record<string, () => string> = {
   provider_error: () => t("format.errorKind.providerError", "Provider error"),
   stream_interrupted: () => t("format.errorKind.streamInterrupted", "Stream interrupted"),
   client_disconnected: () => t("format.errorKind.clientDisconnected", "Client disconnected"),
+  client_stalled: () => t("format.errorKind.clientStalled", "Client stalled"),
   shutdown: () => t("format.errorKind.shutdown", "Gateway shutdown"),
 };
 export const ERROR_KIND_IDS = Object.keys(ERROR_KINDS);

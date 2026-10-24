@@ -66,6 +66,7 @@ describe("labels", () => {
       "Provider error",
       "Stream interrupted",
       "Client disconnected",
+      "Client stalled",
       "Gateway shutdown",
     ]);
   });
@@ -88,6 +89,7 @@ describe("labels", () => {
       "Anbieterfehler",
       "Stream unterbrochen",
       "Client getrennt",
+      "Client liest nicht mehr",
       "Gateway heruntergefahren",
     ]);
   });

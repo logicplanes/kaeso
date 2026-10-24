@@ -587,6 +587,7 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.method", (v) => t("errors.modelApi.method", "`{path}` does not accept `{method}` requests.", v)),
   rule("errors.modelApi.restarting", () => t("errors.modelApi.restarting", "Kaeso is restarting and ended this request. Send it again.")),
   rule("errors.modelApi.appClosed", () => t("errors.modelApi.appClosed", "The app closed the connection before the reply was complete.")),
+  rule("errors.modelApi.appStalled", () => t("errors.modelApi.appStalled", "The app stopped reading the stream for too long; Kaeso ended it.")),
   rule(
     "errors.modelApi.timeout",
     (v) => t("errors.modelApi.timeout", "The provider did not answer in time ({stage}). Kaeso does not retry; try again or raise the model's timeout.", v),

@@ -431,6 +431,7 @@
   "errors.modelApi.accountRefused": "Der Anbieter hat den Anbieter-Schlüssel dieses Projekts aus Abrechnungs- oder Kontingentgründen abgelehnt. Einen Admin der Organisation bitten, ihn unter Anbieter zu prüfen.",
   "errors.modelApi.ambiguous": "Den Modellnamen `{model}` bieten in diesem Projekt mehrere Anbieter an ({providers}). Einen Namen mit Präfix wie `{provider}/{model}` verwenden.",
   "errors.modelApi.appClosed": "Die App hat die Verbindung geschlossen, bevor die Antwort vollständig war.",
+  "errors.modelApi.appStalled": "Die App hat den Stream zu lange nicht gelesen; Kaeso hat ihn beendet.",
   "errors.modelApi.bodyTimeout": "Der Anfrage-Body ist nicht rechtzeitig angekommen; erneut senden.",
   "errors.modelApi.bodyTooLarge": "Der Anfrage-Body ist größer als {limit} Byte.",
   "errors.modelApi.credentialSealed": "Kaeso kann die Anbieter-Zugangsdaten nicht entschlüsseln. Der Betreiber muss die eingerichteten Hauptschlüssel prüfen.",

@@ -133,6 +133,7 @@
   "format.errorKind.authentication": "Authentifizierung",
   "format.errorKind.billing": "Abrechnung",
   "format.errorKind.clientDisconnected": "Client getrennt",
+  "format.errorKind.clientStalled": "Client liest nicht mehr",
   "format.errorKind.contentFiltered": "Inhalt gefiltert",
   "format.errorKind.contextTooLong": "Kontext zu lang",
   "format.errorKind.invalidRequest": "Ungültige Anfrage",

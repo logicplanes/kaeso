@@ -8,7 +8,14 @@ async fn model_requests_are_measured() {
         .install_recorder()
         .unwrap();
     kaeso_server::metrics::describe();
-    let env = common::v1::env(None, Some(&[("KAESO_KEY_FAILURES_PER_ADDRESS", "1")])).await;
+    let env = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_KEY_FAILURES_PER_ADDRESS", "1"),
+            ("KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT", "1s"),
+        ]),
+    )
+    .await;
     call(
         &env,
         "/v1/messages",
@@ -72,6 +79,32 @@ async fn model_requests_are_measured() {
         "kaeso_stream_failures_total{kind=\"stream_interrupted\",provider=\"anthropic\"} 1";
     let text = handle.render();
     assert!(text.contains(needle), "missing `{needle}` in:\n{text}");
+
+    let mut stalled = messages(
+        "claude-haiku-4-5",
+        "Hi [mock:fixture=thinking-long-tool-loop] [mock:slow=10]",
+    );
+    stalled["stream"] = serde_json::json!(true);
+    let req = axum::http::Request::builder()
+        .uri("/v1/messages")
+        .method("POST")
+        .header("x-api-key", &env.key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&stalled).unwrap(),
+        ))
+        .unwrap();
+    let unread = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let needle = "kaeso_stream_failures_total{kind=\"client_stalled\",provider=\"anthropic\"} 1";
+    common::eventually("the stalled stream to be counted", || {
+        let counted = handle.render().contains(needle);
+        async move { counted }
+    })
+    .await;
+    drop(unread);
 
     let created = env
         .app

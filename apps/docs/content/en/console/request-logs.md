@@ -30,7 +30,7 @@ Choose a request to open it:
 
 The timing keeps Kaeso's own work apart from the provider's. **Kaeso overhead** is the time before Kaeso called the provider: reading the body, checking the key, translating and checking limits. For a stream, **Stream processing** is the time Kaeso spent translating the provider's events for the app, without the waits for either side. The CSV export has both, as `overhead_ms` and `stream_processing_ms`.
 
-A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout** or **Client disconnected**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
+A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
 
 The **Request** and **Reply** tabs need the right **View prompts and outputs**. They tell you when that right is missing, when content wasn't logged, or when it has passed its retention. Kaeso never keeps embedding vectors. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as it was stored.
 

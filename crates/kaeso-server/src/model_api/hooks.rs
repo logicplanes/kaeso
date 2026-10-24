@@ -97,6 +97,8 @@ pub const STREAM_LIMIT: &str = "stream_limit";
 
 pub const CLIENT_DISCONNECTED: &str = "client_disconnected";
 
+pub const CLIENT_STALLED: &str = "client_stalled";
+
 pub const SHUT_DOWN: &str = "shutdown";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

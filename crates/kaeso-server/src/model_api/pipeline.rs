@@ -23,7 +23,8 @@ use url::Url;
 use super::auth;
 use super::errors::{Served, TIMING_HEADER, error, respond, server_timing, stamp};
 use super::hooks::{
-    Admission, CLIENT_DISCONNECTED, Caller, Outcome, Reservation, SHUT_DOWN, Sink, Source,
+    Admission, CLIENT_DISCONNECTED, CLIENT_STALLED, Caller, Outcome, Reservation, SHUT_DOWN, Sink,
+    Source,
 };
 use super::input_count::InputCounter;
 use super::listing::project_models;
@@ -115,6 +116,15 @@ impl Recording {
 
     pub(super) async fn finish_cancelled(mut self) {
         mark_cancelled(self.outcome());
+        self.finish(499).await;
+    }
+
+    pub(super) async fn finish_stalled(mut self) {
+        let o = self.outcome();
+        o.cancelled = true;
+        o.error_kind = Some(CLIENT_STALLED.to_owned());
+        o.error_message =
+            Some("The app stopped reading the stream for too long; Kaeso ended it.".to_owned());
         self.finish(499).await;
     }
 

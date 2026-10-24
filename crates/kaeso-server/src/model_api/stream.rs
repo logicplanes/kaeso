@@ -18,7 +18,7 @@ use kaeso_upstream::UpstreamError;
 
 const INCOMPLETE: &str = "incomplete";
 
-use super::hooks::{SHUT_DOWN, STREAM_INTERRUPTED, STREAM_LIMIT, StreamProgress};
+use super::hooks::{CLIENT_STALLED, SHUT_DOWN, STREAM_INTERRUPTED, STREAM_LIMIT, StreamProgress};
 use super::input_count::InputCounter;
 use super::pipeline::{
     EstimateReason, Recording, count_estimate, count_upstream_error, shutting_down, transport_kind,
@@ -153,10 +153,11 @@ struct ToApp {
     state: crate::state::AppState,
     patience: Duration,
     stopping: bool,
+    stalled: bool,
 }
 
 impl ToApp {
-    async fn deliver(&self, bytes: Bytes) -> bool {
+    async fn deliver(&mut self, bytes: Bytes) -> bool {
         let patience = if self.stopping {
             SHUTDOWN_WRITE
         } else {
@@ -166,6 +167,7 @@ impl ToApp {
             sent = self.tx.send(bytes) => sent.is_ok(),
             () = tokio::time::sleep(patience) => {
                 tracing::info!(waited = ?patience, "the app stopped reading a stream; ending it");
+                self.stalled = !self.stopping;
                 false
             }
             () = self.state.in_flight.cut(), if !self.stopping => false,
@@ -355,6 +357,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         state: state.clone(),
         patience: state.config.upstream.stream_idle_timeout,
         stopping: false,
+        stalled: false,
     };
     let limits = &state.config.streams;
     let max_bytes = limits.max_bytes.0;
@@ -585,6 +588,13 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         o.usage = Some(estimate::complete(&reported, &tally, input));
         o.usage_estimated = true;
         count_estimate(reason, o.provider.unwrap_or_default());
+    }
+    if cancelled && app.stalled {
+        let provider = rec.outcome().provider.unwrap_or_default();
+        metrics::counter!(crate::metrics::STREAM_FAILURES, "kind" => CLIENT_STALLED, "provider" => provider)
+            .increment(1);
+        rec.finish_stalled().await;
+        return;
     }
     if cancelled {
         rec.finish_cancelled().await;

@@ -133,6 +133,7 @@
   "format.errorKind.authentication": "身份验证",
   "format.errorKind.billing": "计费",
   "format.errorKind.clientDisconnected": "客户端已断开",
+  "format.errorKind.clientStalled": "客户端停止读取",
   "format.errorKind.contentFiltered": "内容被过滤",
   "format.errorKind.contextTooLong": "上下文过长",
   "format.errorKind.invalidRequest": "无效请求",
