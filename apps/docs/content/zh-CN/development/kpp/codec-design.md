@@ -25,18 +25,18 @@ order: 1
 KPP 流的结构是 `ResponseStart → (BlockStart → BlockDelta* → BlockStop)* → ResponseDelta* → ResponseStop`，任何位置都可能出现 `Error`，`Extra` 则携带 KPP 没有建模的方言事件。
 
 ```mermaid
-stateDiagram-v2
+flowchart TD
   accTitle: KPP 流事件的顺序
   accDescr: 流以 ResponseStart 开始。随后是任意数量的块，每个块由 BlockStart、任意数量的 BlockDelta 和 BlockStop 组成，然后是任意数量的 ResponseDelta，最后由 ResponseStop 结束。Error 可能出现在任何位置。
-  [*] --> ResponseStart
-  ResponseStart --> BlockStart
-  BlockStart --> BlockDelta: 任意数量
-  BlockDelta --> BlockStop
-  BlockStop --> BlockStart: 下一个块
-  BlockStop --> ResponseDelta: 任意数量
-  ResponseStart --> ResponseDelta: 没有块
-  ResponseDelta --> ResponseStop
-  ResponseStop --> [*]
+  start[ResponseStart]:::accent
+  subgraph blocks [任意数量的块]
+    bstart[BlockStart] --> bdelta[BlockDelta<br>任意数量] --> bstop[BlockStop]
+  end
+  start --> bstart
+  bstop -- 下一个块 --> bstart
+  bstop --> rdelta[ResponseDelta<br>任意数量]
+  start -- 没有块 --> rdelta
+  rdelta --> stop[ResponseStop]:::accent
 ```
 
 - **块索引**是 KPP 自己的：按块开始的顺序依次为 0、1、2 等。块可以交错（OpenAI 就是这样流式传输并行工具调用的），因此每个事件都注明它所属的块。

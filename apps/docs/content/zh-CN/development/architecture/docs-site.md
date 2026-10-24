@@ -10,11 +10,12 @@ order: 3
 flowchart TD
   accTitle: 从 Markdown 到站点
   accDescr: 构建时，scripts/content 读取 content 中的页面和 diagrams 中已绘制的图示，进行检查，并为每种语言的站点、每个页面和搜索写出虚拟模块。src 中的 React 应用用 UI 库绘制它们，Vite 写出 dist。
-  pages[content/语言/**/*.md] --> content[scripts/content，在 Vite 中<br>frontmatter、链接、锚点、图片、<br>搜索词、每种语言]
-  diagrams[diagrams/*.svg<br>已绘制的 Mermaid 块] --> content
-  content --> modules[虚拟模块<br>每种语言的站点、页面和搜索]
-  modules --> app[src/，React 和 kaeso-ui]
-  app --> dist[dist/]
+  subgraph build [构建时，在 Vite 中]
+    pages[content/<br>页面] --> compiler
+    diagrams[diagrams/<br>已绘制的图示] --> compiler
+    compiler[scripts/content<br>检查 frontmatter、链接、<br>锚点和图片]:::accent --> modules[虚拟模块<br>每种语言的站点、<br>页面和搜索]
+  end
+  modules --> app[src/<br>React 和 kaeso-ui] --> dist[dist/<br>静态站点]
 ```
 
 ## 构建

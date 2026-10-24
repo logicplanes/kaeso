@@ -36,21 +36,16 @@ let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &En
 ```mermaid
 sequenceDiagram
   accTitle: The path of a request through KPP
-  accDescr: The Anthropic Messages codec decodes the app's request into KPP, which is validated. The OpenAI Chat Completions codec checks it, encodes it, and the gateway sends it to the provider. The provider's reply is decoded into KPP by the same codec and encoded in the app's format by the app's codec.
-  participant App
-  participant In as Anthropic Messages codec
-  participant KPP
-  participant Out as OpenAI Chat codec
-  participant Provider
-  App->>In: Body and headers
-  In->>KPP: 1 decode
-  Note over KPP: 2 validate
-  KPP->>Out: 3 check and encode
-  Out->>Provider: Provider's request
-  Provider-->>Out: Reply
-  Out-->>KPP: 4 decode the reply
-  KPP-->>In: 5 encode the reply
-  In-->>App: Reply in the app's format
+  accDescr: An app with the Anthropic SDK sends a Messages request. In the gateway, KPP decodes it with the Messages codec, validates it and encodes it with the OpenAI Chat codec, and the gateway sends it to the provider. KPP decodes the provider's reply with the OpenAI Chat codec and encodes it for the app with the Messages codec.
+  participant App as App, Anthropic SDK
+  participant Gateway as Gateway, with KPP
+  participant Provider as Provider, OpenAI Chat
+  App->>Gateway: Messages request
+  Note over Gateway: decode_request, Messages<br>validate<br>encode_request, OpenAI Chat
+  Gateway->>Provider: Chat Completions request
+  Provider-->>Gateway: Chat Completions reply
+  Note over Gateway: decode_response, OpenAI Chat<br>encode_response, Messages
+  Gateway-->>App: Messages reply
 ```
 
 1. **Decode.** The app's codec reads the body and headers into a KPP `Request`. `decode_request` takes a `RequestKind`, because Anthropic's `/v1/messages` and `/v1/messages/count_tokens` bodies can't be told apart without the endpoint. Whatever KPP doesn't model is kept in `Extras`, bound to the dialect it came from.

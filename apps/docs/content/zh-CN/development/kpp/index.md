@@ -36,21 +36,16 @@ let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &En
 ```mermaid
 sequenceDiagram
   accTitle: 请求经过 KPP 的路径
-  accDescr: Anthropic Messages 编解码器把应用的请求解码为 KPP 并进行校验。OpenAI Chat Completions 编解码器检查并编码它，网关再把它发送给服务商。服务商的回复由同一个编解码器解码为 KPP，再由应用一侧的编解码器以应用的格式编码。
-  participant App as 应用
-  participant In as Anthropic Messages 编解码器
-  participant KPP
-  participant Out as OpenAI Chat 编解码器
-  participant Provider as 服务商
-  App->>In: 请求体和请求头
-  In->>KPP: 1 解码
-  Note over KPP: 2 校验
-  KPP->>Out: 3 检查并编码
-  Out->>Provider: 服务商格式的请求
-  Provider-->>Out: 回复
-  Out-->>KPP: 4 解码回复
-  KPP-->>In: 5 编码回复
-  In-->>App: 应用格式的回复
+  accDescr: 使用 Anthropic SDK 的应用发送 Messages 请求。在网关中，KPP 用 Messages 编解码器解码请求、进行校验，再用 OpenAI Chat 编解码器编码，网关随后把它发送给服务商。KPP 用 OpenAI Chat 编解码器解码服务商的回复，再用 Messages 编解码器为应用编码。
+  participant App as 应用，Anthropic SDK
+  participant Gateway as 网关，含 KPP
+  participant Provider as 服务商，OpenAI Chat
+  App->>Gateway: Messages 请求
+  Note over Gateway: decode_request，Messages<br>validate<br>encode_request，OpenAI Chat
+  Gateway->>Provider: Chat Completions 请求
+  Provider-->>Gateway: Chat Completions 回复
+  Note over Gateway: decode_response，OpenAI Chat<br>encode_response，Messages
+  Gateway-->>App: Messages 回复
 ```
 
 1. **解码。** 应用一侧的编解码器把请求体和请求头读成一个 KPP `Request`。`decode_request` 接受一个 `RequestKind`，因为不知道端点，就无法区分 Anthropic 的 `/v1/messages` 和 `/v1/messages/count_tokens` 请求体。KPP 没有建模的内容保存在 `Extras` 中，并绑定到它所来自的方言。
