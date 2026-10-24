@@ -69,8 +69,10 @@ cargo xtask record openai_responses --count --all
 
 ```bash
 export <ID>_API_KEY=…
-cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
-cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run \
+  tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> \
+  tools-single stream-include-usage
 ```
 
 | 选项 | 作用 |

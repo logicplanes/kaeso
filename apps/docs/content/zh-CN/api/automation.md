@@ -40,7 +40,8 @@ PROJECT=$(curl -s "$ORG_URL/projects" \
 curl -s "$ORG_URL/credentials" \
   -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
   -H "content-type: application/json" \
-  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" '{provider: "anthropic", name: "Production", secret: $secret}')"
+  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" \
+    '{provider: "anthropic", name: "Production", secret: $secret}')"
 ```
 
 某个服务商的第一个密钥会成为它的默认密钥；除非为项目另行分配，每个项目都使用它。响应只显示密钥的最后四个字符，Kaeso 不会再次显示密钥本身。
@@ -68,10 +69,12 @@ ACCOUNT=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts" \
   -H "content-type: application/json" \
   -d '{"name": "support-bot", "role": "developer"}' | jq -r .id)
 
-KAESO_API_KEY=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
-  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
-  -H "content-type: application/json" \
-  -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret)
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret
+)
 ```
 
 `KAESO_API_KEY` 现在保存着应用的密钥 `sk-kso-…`。Kaeso 只显示一次密钥本身，请把它存放到应用读取的位置。
@@ -85,7 +88,13 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 响应是来自 Claude 的 Messages 回复。应用如何在代码中设置 SDK，见[模型 API](model-api.md)。
@@ -95,8 +104,10 @@ curl https://kaeso.example.com/v1/messages \
 按模型读取项目的用量，以及它最新的十个请求：
 
 ```bash
-curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
-curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
 ```
 
 请求会在几秒内出现在日志中。调用方拥有 `costs.view` 权限时，用量中包含费用。用量接受以下查询参数：
@@ -123,7 +134,10 @@ JAR=$(mktemp)
 curl -s -c "$JAR" https://kaeso.example.com/platform/v1/auth/password \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}'
+  -d '{
+    "email": "owner@example.com",
+    "password": "correct horse battery staple"
+  }'
 ```
 
 之后，上面的请求改用 `-b "$JAR" -H "Origin: https://kaeso.example.com"` 代替 `Authorization` 请求头即可。会话以您自己的权限行事，并可用 `POST orgs/{org}/projects/{project}/keys` 为您自己的用户创建密钥。

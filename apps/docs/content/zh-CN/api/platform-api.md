@@ -27,7 +27,8 @@ with urllib.request.urlopen(request) as response:
 ```
 
 ```ts tab="TypeScript"
-const response = await fetch("https://kaeso.example.com/platform/v1/orgs/org_…/projects", {
+const url = "https://kaeso.example.com/platform/v1/orgs/org_…/projects";
+const response = await fetch(url, {
   headers: { Authorization: `Bearer ${process.env.KAESO_PLATFORM_KEY}` },
 });
 console.log(await response.json());
@@ -233,11 +234,16 @@ docker compose exec gateway kaeso openapi > openapi.json
 请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary` 和必须为 `true` 的 `stream`。使用[会话](automation.md#改用会话)：
 
 ```bash
-curl -N https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…/playground/responses \
+project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…
+curl -N "$project/playground/responses" \
   -b "$JAR" \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "input": "Write a haiku about gateways.", "stream": true}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "input": "Write a haiku about gateways.",
+    "stream": true
+  }'
 ```
 
 试验场请求与其他模型请求一样，只是由成员在没有密钥的情况下发出：

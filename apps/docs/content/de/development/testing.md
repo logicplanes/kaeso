@@ -241,7 +241,9 @@ Führen Sie ein Target mit einem Korpus-Ordner und den Fixtures des Dialekts als
 
 ```bash
 mkdir -p fuzz/corpus/decode_openai_chat
-cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
+cargo +nightly fuzz run decode_openai_chat \
+  fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat \
+  -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
 Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 60 Sekunden bei jedem Pull Request, der KPP oder `fuzz/` ändert. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt `fuzz-crash-<target>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.

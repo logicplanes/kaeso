@@ -49,7 +49,8 @@ docker compose -f deploy/compose.dev.yaml up -d --wait
 Die Mock-Releases antworten so, als gäbe es ein Patch-Release und als funktioniere der Updater. Um einen anderen Zustand auf der Seite **Updates** zu sehen, senden Sie ein Szenario:
 
 ```bash
-curl -X POST http://127.0.0.1:18092/__scenario -d '{"releases": "major", "outcome": "rolled_back"}'
+curl -X POST http://127.0.0.1:18092/__scenario \
+  -d '{"releases": "major", "outcome": "rolled_back"}'
 ```
 
 Felder, die Sie weglassen, kehren zu ihrem Standard zurück:
@@ -90,9 +91,11 @@ Wählen Sie im zweiten Klon einen Projektnamen und freie Ports und starten Sie d
 
 ```bash
 export KAESO_STACK_PROJECT=kaeso-two KAESO_PUBLIC_URL=http://localhost:3001
-export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191 KAESO_RELEASES_PORT=18192 KAESO_ACCOUNTS_PORT=18193
+export KAESO_GATEWAY_PORT=18180 KAESO_IDP_PORT=18191
+export KAESO_RELEASES_PORT=18192 KAESO_ACCOUNTS_PORT=18193
 export KAESO_MAIL_PORT=58125 KAESO_MAIL_SMTP_PORT=51125
-export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223 KAESO_VALKEY_PORT=56479
+export KAESO_POSTGRES_PORT=55532 KAESO_CLICKHOUSE_PORT=58223
+export KAESO_VALKEY_PORT=56479
 pnpm dev --port 3001
 ```
 

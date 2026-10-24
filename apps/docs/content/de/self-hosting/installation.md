@@ -11,7 +11,8 @@ Der [Schnellstart](../get-started/quick-start.md) installiert das neueste Releas
 Der Schnellstart lädt die `compose.yaml` des neuesten stabilen Releases. Für ein anderes Release laden Sie die Datei vom Tag dieses Releases:
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
 ```
 
 Jedem Release liegen außerdem zwei Beispieldateien bei: [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) mit den üblichen Variablen der `.env` und [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) mit jeder Einstellung des Gateways.
@@ -23,13 +24,15 @@ Setzen Sie `KAESO_DOMAIN=localhost` in der `.env`, starten Sie Kaeso und öffnen
 curl und die SDKs vertrauen Caddys lokaler Zertifizierungsstelle nicht. Kopieren Sie ihr Stammzertifikat aus dem Container:
 
 ```bash
-docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
+docker compose cp \
+  caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
 ```
 
 Übergeben Sie das Zertifikat dann dem Client, der Kaeso aufruft:
 
 ```bash tab="curl"
-curl --cacert caddy-root.crt https://localhost/v1/models -H "Authorization: Bearer $KAESO_API_KEY"
+curl --cacert caddy-root.crt https://localhost/v1/models \
+  -H "Authorization: Bearer $KAESO_API_KEY"
 ```
 
 ```bash tab="Python"

@@ -127,7 +127,13 @@ import { tRich } from "~/i18n/rich";
 <Button>{t("keys.create", "Create key")}</Button>;
 toast.success(t("keys.revoked", "{name} revoked", { name: key.name }));
 t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
-tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
+tRich("signIn.newHere", "New here? {link}", {
+  link: (
+    <Link href="/sign-up">
+      {t("signIn.createAccount", "Create an account")}
+    </Link>
+  ),
+});
 ```
 
 - **`t(key, english, values?)`** 返回一个字符串。在渲染时或需要文本时（提示消息、标题）调用它，从不在模块顶层调用：导入时计算出的常量会停留在页面启动时的语言。标签表格要写成函数（`() => t(…)`），或者在组件内部构建。
@@ -156,7 +162,14 @@ import { useUiText } from "../../i18n/context";
 export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
   const t = useUiText();
   const label = labelProp ?? t("copyButton.copy", "Copy");
-  return <Button shape="circle" icon={icons.copy} aria-label={label} onClick={() => copy(value)} />;
+  return (
+    <Button
+      shape="circle"
+      icon={icons.copy}
+      aria-label={label}
+      onClick={() => copy(value)}
+    />
+  );
 }
 ```
 
@@ -173,7 +186,12 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 ### 在应用中
 
 ```tsx
-import { LocaleProvider, loadUiMessages, resolveUiLocale, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
+import {
+  LocaleProvider,
+  loadUiMessages,
+  resolveUiLocale,
+  type UiMessages,
+} from "@logicplanes/kaeso-ui/i18n";
 
 const locale = resolveUiLocale(navigator.language);
 const messages: UiMessages = await loadUiMessages(locale);

@@ -24,13 +24,29 @@ An app sends an Anthropic Messages request, and the model is served through Open
 use kaeso_codecs::{EgressCtx, EncodeCtx, dispatch};
 use kaeso_kpp::{DialectId, RequestKind};
 
-let req = dispatch::decode_request(DialectId::AnthropicMessages, RequestKind::Generate, &body, &headers)?;
+let req = dispatch::decode_request(
+    DialectId::AnthropicMessages,
+    RequestKind::Generate,
+    &body,
+    &headers,
+)?;
 req.validate()?;
 let mut egress = EgressCtx::new(&req).with_provider("openai");
-let outgoing = dispatch::encode_request(DialectId::OpenAiChat, &req, &mut egress)?;
+let outgoing =
+    dispatch::encode_request(DialectId::OpenAiChat, &req, &mut egress)?;
 
-let reply = dispatch::decode_response(DialectId::OpenAiChat, status, &reply_headers, &reply_body, &egress)?;
-let answer = dispatch::encode_response(DialectId::AnthropicMessages, &reply, &EncodeCtx::for_request(req))?;
+let reply = dispatch::decode_response(
+    DialectId::OpenAiChat,
+    status,
+    &reply_headers,
+    &reply_body,
+    &egress,
+)?;
+let answer = dispatch::encode_response(
+    DialectId::AnthropicMessages,
+    &reply,
+    &EncodeCtx::for_request(req),
+)?;
 ```
 
 ```mermaid

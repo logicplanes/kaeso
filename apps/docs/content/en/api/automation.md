@@ -40,7 +40,8 @@ Add the organization's Anthropic key. Skip this step if the organization already
 curl -s "$ORG_URL/credentials" \
   -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
   -H "content-type: application/json" \
-  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" '{provider: "anthropic", name: "Production", secret: $secret}')"
+  -d "$(jq -n --arg secret "$ANTHROPIC_API_KEY" \
+    '{provider: "anthropic", name: "Production", secret: $secret}')"
 ```
 
 The first key of a provider becomes its default, which every project uses unless you assign it another. The answer shows only the key's last four characters, and Kaeso never shows the secret again.
@@ -68,10 +69,12 @@ ACCOUNT=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts" \
   -H "content-type: application/json" \
   -d '{"name": "support-bot", "role": "developer"}' | jq -r .id)
 
-KAESO_API_KEY=$(curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
-  -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
-  -H "content-type: application/json" \
-  -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret)
+KAESO_API_KEY=$(
+  curl -s "$ORG_URL/projects/$PROJECT/service-accounts/$ACCOUNT/keys" \
+    -H "Authorization: Bearer $KAESO_PLATFORM_KEY" \
+    -H "content-type: application/json" \
+    -d '{"name": "support-bot", "expires_in_days": 90}' | jq -r .secret
+)
 ```
 
 `KAESO_API_KEY` now holds the app's key, `sk-kso-…`. Kaeso shows a key's secret only once, so store it where the app reads it.
@@ -85,7 +88,13 @@ curl https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "claude-haiku-4-5", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "claude-haiku-4-5",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 The answer is a Messages reply from Claude. The app's own code sets up its SDK as the [model API](model-api.md) shows.
@@ -95,8 +104,10 @@ The answer is a Messages reply from Claude. The app's own code sets up its SDK a
 Read the project's usage by model, and its ten newest requests:
 
 ```bash
-curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
-curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/usage?group_by=model" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
+curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
+  -H "Authorization: Bearer $KAESO_PLATFORM_KEY"
 ```
 
 A request shows in the logs within a few seconds. Usage includes costs when the caller has the right `costs.view`, and takes these query parameters:
@@ -123,7 +134,10 @@ JAR=$(mktemp)
 curl -s -c "$JAR" https://kaeso.example.com/platform/v1/auth/password \
   -H "Origin: https://kaeso.example.com" \
   -H "content-type: application/json" \
-  -d '{"email": "owner@example.com", "password": "correct horse battery staple"}'
+  -d '{
+    "email": "owner@example.com",
+    "password": "correct horse battery staple"
+  }'
 ```
 
 The requests above then work with `-b "$JAR" -H "Origin: https://kaeso.example.com"` in place of the `Authorization` header. A session acts with your own rights, and creates keys for your own user with `POST orgs/{org}/projects/{project}/keys`.

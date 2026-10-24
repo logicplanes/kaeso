@@ -270,18 +270,30 @@ curl https://kaeso.example.com/v1/responses \
 import os
 from openai import OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
-response = client.responses.create(model="claude-haiku-4-5", input="Write a haiku about gateways.")
+response = client.responses.create(
+    model="claude-haiku-4-5",
+    input="Write a haiku about gateways.",
+)
 print(response.output_text)
 ```
 
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
-const response = await client.responses.create({ model: "claude-haiku-4-5", input: "Write a haiku about gateways." });
+const response = await client.responses.create({
+  model: "claude-haiku-4-5",
+  input: "Write a haiku about gateways.",
+});
 console.log(response.output_text);
 ```
 ~~~

@@ -69,8 +69,10 @@ Jeder andere Anbieter in `crates/kaeso-core/src/provider.rs` wird genauso mit `-
 
 ```bash
 export <ID>_API_KEY=…
-cargo xtask record openai_chat --provider <id> --model <model> --dry-run tools-single stream-include-usage
-cargo xtask record openai_chat --provider <id> --model <model> tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> --dry-run \
+  tools-single stream-include-usage
+cargo xtask record openai_chat --provider <id> --model <model> \
+  tools-single stream-include-usage
 ```
 
 | Option | Wirkung |

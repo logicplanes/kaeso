@@ -20,7 +20,8 @@ Valkey holds only counters, caches and short-lived data, and needs no backup. Th
 Dump the database while Kaeso runs:
 
 ```bash
-docker compose exec -T postgres pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
+docker compose exec -T postgres \
+  pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
 ```
 
 ## Restore PostgreSQL
@@ -29,7 +30,8 @@ Stop the gateway, restore the dump and start the gateway again. `--clean --if-ex
 
 ```bash
 docker compose stop gateway
-docker compose exec -T postgres pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
+docker compose exec -T postgres \
+  pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
 docker compose start gateway
 ```
 

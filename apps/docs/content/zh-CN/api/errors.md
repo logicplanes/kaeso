@@ -19,10 +19,16 @@ curl -i https://kaeso.example.com/v1/responses \
 import os
 from openai import APIStatusError, OpenAI
 
-client = OpenAI(base_url="https://kaeso.example.com/v1", api_key=os.environ["KAESO_API_KEY"])
+client = OpenAI(
+    base_url="https://kaeso.example.com/v1",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
-    client.responses.create(model="gpt-9", input="Write a haiku about gateways.")
+    client.responses.create(
+        model="gpt-9",
+        input="Write a haiku about gateways.",
+    )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
     print(error.message)
@@ -31,10 +37,16 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import OpenAI from "openai";
 
-const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_API_KEY });
+const client = new OpenAI({
+  baseURL: "https://kaeso.example.com/v1",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
-  await client.responses.create({ model: "gpt-9", input: "Write a haiku about gateways." });
+  await client.responses.create({
+    model: "gpt-9",
+    input: "Write a haiku about gateways.",
+  });
 } catch (error) {
   if (!(error instanceof OpenAI.APIError)) throw error;
   console.log(error.status, error.headers?.get("kaeso-request-id"));
@@ -81,20 +93,31 @@ curl -i https://kaeso.example.com/v1/messages \
   -H "x-api-key: $KAESO_API_KEY" \
   -H "anthropic-version: 2023-06-01" \
   -H "content-type: application/json" \
-  -d '{"model": "gpt-9", "max_tokens": 1024, "messages": [{"role": "user", "content": "Write a haiku about gateways."}]}'
+  -d '{
+    "model": "gpt-9",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Write a haiku about gateways."}
+    ]
+  }'
 ```
 
 ```python tab="Python"
 import os
 from anthropic import Anthropic, APIStatusError
 
-client = Anthropic(base_url="https://kaeso.example.com", api_key=os.environ["KAESO_API_KEY"])
+client = Anthropic(
+    base_url="https://kaeso.example.com",
+    api_key=os.environ["KAESO_API_KEY"],
+)
 
 try:
     client.messages.create(
         model="gpt-9",
         max_tokens=1024,
-        messages=[{"role": "user", "content": "Write a haiku about gateways."}],
+        messages=[
+            {"role": "user", "content": "Write a haiku about gateways."}
+        ],
     )
 except APIStatusError as error:
     print(error.status_code, error.response.headers["kaeso-request-id"])
@@ -104,7 +127,10 @@ except APIStatusError as error:
 ```ts tab="TypeScript"
 import Anthropic from "@anthropic-ai/sdk";
 
-const client = new Anthropic({ baseURL: "https://kaeso.example.com", apiKey: process.env.KAESO_API_KEY });
+const client = new Anthropic({
+  baseURL: "https://kaeso.example.com",
+  apiKey: process.env.KAESO_API_KEY,
+});
 
 try {
   await client.messages.create({

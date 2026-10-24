@@ -20,7 +20,8 @@ Valkey enthält nur Zähler, Caches und kurzlebige Daten und braucht kein Backup
 Sichern Sie die Datenbank, während Kaeso läuft:
 
 ```bash
-docker compose exec -T postgres pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
+docker compose exec -T postgres \
+  pg_dump -U kaeso -Fc kaeso > kaeso-$(date +%F).dump
 ```
 
 ## PostgreSQL wiederherstellen
@@ -29,7 +30,8 @@ Halten Sie das Gateway an, stellen Sie den Dump wieder her und starten Sie das G
 
 ```bash
 docker compose stop gateway
-docker compose exec -T postgres pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
+docker compose exec -T postgres \
+  pg_restore -U kaeso -d kaeso --clean --if-exists < kaeso-2026-10-15.dump
 docker compose start gateway
 ```
 

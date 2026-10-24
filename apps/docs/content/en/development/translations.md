@@ -127,7 +127,13 @@ import { tRich } from "~/i18n/rich";
 <Button>{t("keys.create", "Create key")}</Button>;
 toast.success(t("keys.revoked", "{name} revoked", { name: key.name }));
 t("keys.count", "{count, plural, one {# key} other {# keys}}", { count });
-tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> });
+tRich("signIn.newHere", "New here? {link}", {
+  link: (
+    <Link href="/sign-up">
+      {t("signIn.createAccount", "Create an account")}
+    </Link>
+  ),
+});
 ```
 
 - **`t(key, english, values?)`** returns a string. Call it while rendering or when the text is needed (a toast, a title), never at module level: a constant computed on import stays in the language the page started in. Tables of labels become functions (`() => t(…)`) or are built inside the component.
@@ -156,7 +162,14 @@ import { useUiText } from "../../i18n/context";
 export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
   const t = useUiText();
   const label = labelProp ?? t("copyButton.copy", "Copy");
-  return <Button shape="circle" icon={icons.copy} aria-label={label} onClick={() => copy(value)} />;
+  return (
+    <Button
+      shape="circle"
+      icon={icons.copy}
+      aria-label={label}
+      onClick={() => copy(value)}
+    />
+  );
 }
 ```
 
@@ -173,7 +186,12 @@ export function CopyButton({ value, label: labelProp }: CopyButtonProps) {
 ### In an app
 
 ```tsx
-import { LocaleProvider, loadUiMessages, resolveUiLocale, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
+import {
+  LocaleProvider,
+  loadUiMessages,
+  resolveUiLocale,
+  type UiMessages,
+} from "@logicplanes/kaeso-ui/i18n";
 
 const locale = resolveUiLocale(navigator.language);
 const messages: UiMessages = await loadUiMessages(locale);
