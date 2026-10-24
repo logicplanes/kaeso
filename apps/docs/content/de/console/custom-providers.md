@@ -59,7 +59,7 @@ curl https://kaeso.example.com/v1/chat/completions \
   -H "content-type: application/json" \
   -d '{
     "model": "research-vllm/llama-3.3-70b",
-    "messages": [{"role": "user", "content": "Schreibe ein Haiku über Gateways."}]
+    "messages": [{"role": "user", "content": "Write a haiku about gateways."}]
   }'
 ```
 
@@ -73,7 +73,7 @@ client = OpenAI(
 )
 completion = client.chat.completions.create(
     model="research-vllm/llama-3.3-70b",
-    messages=[{"role": "user", "content": "Schreibe ein Haiku über Gateways."}],
+    messages=[{"role": "user", "content": "Write a haiku about gateways."}],
 )
 print(completion.choices[0].message.content)
 ```
@@ -87,7 +87,7 @@ const client = new OpenAI({
 });
 const completion = await client.chat.completions.create({
   model: "research-vllm/llama-3.3-70b",
-  messages: [{ role: "user", content: "Schreibe ein Haiku über Gateways." }],
+  messages: [{ role: "user", content: "Write a haiku about gateways." }],
 });
 console.log(completion.choices[0].message.content);
 ```
