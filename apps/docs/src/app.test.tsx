@@ -60,6 +60,7 @@ describe("the site", () => {
     const nav = screen.getByRole("navigation", { name: "Documentation" });
     expect(within(nav).getByRole("link", { name: "Keys and limits" })).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link", { current: "page" }).map((link) => link.textContent)).toEqual(["Keys and limits"]);
+    expect(within(nav).getByRole("link", { name: "Changelog" })).toHaveAttribute("href", "https://kaeso.app/changelog");
     expect(screen.getByRole("link", { name: /Edit on GitHub/ })).toHaveAttribute(
       "href",
       "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/e2e/fixtures/content/en/guides/keys-and-limits.md",
@@ -216,5 +217,14 @@ describe("search", () => {
     await user.click(await screen.findByRole("option", { name: "Use the dark theme" }));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
     expect(screen.getByRole("combobox", { name: "Theme" })).toHaveTextContent("Dark");
+    for (const [query, option, label] of [
+      ["light", "Use the light theme", "Light"],
+      ["system", "Use the system theme", "System"],
+    ] as const) {
+      await user.click(phoneBar().getByRole("button", { name: "Search" }));
+      await user.type(await screen.findByPlaceholderText("Search the documentation"), query);
+      await user.click(await screen.findByRole("option", { name: option }));
+      await waitFor(() => expect(screen.getByRole("combobox", { name: "Theme" })).toHaveTextContent(label));
+    }
   });
 });

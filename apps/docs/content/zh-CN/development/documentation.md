@@ -405,7 +405,7 @@ Every request to the model API carries an API key.
 
 文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。
 
-其他网站的链接和书签仍使用旧地址。因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。
+其他网站的链接和书签仍使用旧地址。因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。地址也可以指向文档之外的页面，例如 `"changelog": "https://kaeso.app/changelog"`。每种语言会转到那里的同一语言，旧地址之下的所有地址也一样。
 
 分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
 

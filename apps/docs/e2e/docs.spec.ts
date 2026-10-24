@@ -36,7 +36,6 @@ test("every page is built with its own title, description and alternates", async
   const sitemap = await (await request.get("/sitemap.xml")).text();
   const english = [
     "/",
-    "/changelog",
     "/guides",
     "/guides/keys-and-limits",
     "/guides/provider-keys",
@@ -44,8 +43,6 @@ test("every page is built with its own title, description and alternates", async
     "/reference/platform-api",
     "/reference/platform-api/keys",
     "/reference/models",
-    "/changelog/1.1",
-    "/changelog/1.0",
   ];
   const locs = [...sitemap.matchAll(/<loc>https:\/\/docs\.kaeso\.app([^<]*)<\/loc>/g)].map((m) => m[1] || "/");
   expect(locs.filter((l) => !/^\/(de|zh-CN)(\/|$)/.test(l))).toEqual(english);
@@ -56,7 +53,7 @@ test("every page is built with its own title, description and alternates", async
 test("the build passes the site check: every page in the sitemap, with its alternates and link previews", () => {
   const docs = fileURLToPath(new URL("..", import.meta.url));
   const out = execFileSync("node", ["../../scripts/check-site.mjs", "dist-e2e", "https://docs.kaeso.app"], { cwd: docs, encoding: "utf8" });
-  expect(out).toMatch(/^site: 33 pages, all 33 in sitemap\.xml/);
+  expect(out).toMatch(/^site: 24 pages, all 24 in sitemap\.xml/);
 });
 
 test("a page names its language, its preview image and what it is", async ({ request }) => {
@@ -109,6 +106,18 @@ test("a relative link between two Markdown files opens the page at its heading",
 test("a link to a heading opens there on first load too", async ({ page }) => {
   await page.goto("/guides/keys-and-limits#checklist");
   await expect(page.getByRole("heading", { level: 2, name: "Checklist" })).toBeInViewport();
+});
+
+test("the sidebar's changelog leads to kaeso.app in the page's language", async ({ page }) => {
+  for (const [path, name, href] of [
+    ["/", "Changelog", "https://kaeso.app/changelog"],
+    ["/de", "Änderungen", "https://kaeso.app/de/changelog"],
+    ["/zh-CN", "更新日志", "https://kaeso.app/zh-CN/changelog"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole("link", { name, exact: true })).toHaveAttribute("href", href);
+  }
+  await expect(page.locator('a[href$="/changelog"]:not([href^="https://kaeso.app"])')).toHaveCount(0);
 });
 
 test("previous and next follow the sidebar", async ({ page }) => {

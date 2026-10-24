@@ -403,7 +403,7 @@ Any other field is an error. The title is the page's only `#` heading, so headin
 
 A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't.
 
-Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation.
+Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation. An address can also go to a page outside the docs, such as `"changelog": "https://kaeso.app/changelog"`. Each language then goes to the same language there, and so does every address below the old one.
 
 A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
 

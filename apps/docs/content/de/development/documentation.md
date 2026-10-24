@@ -405,7 +405,7 @@ Jedes andere Feld ist ein Fehler. Der Titel ist die einzige `#`-Überschrift der
 
 Der Name einer Datei ist ihre Adresse: Kleinbuchstaben, Wörter mit Bindestrichen verbunden (`provider-keys.md`). Wer eine Datei umbenennt oder verschiebt, ändert ihre Adresse in jeder Sprache, und jeder Link darauf muss folgen; der Build nennt die, die es nicht tun.
 
-Links von anderen Websites und Lesezeichen verwenden weiter die alte Adresse. Tragen Sie sie deshalb in `apps/docs/redirects.json` ein, zusammen mit der Seite, auf die sie umgezogen ist, und wahlweise deren Überschrift: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. Der Build schreibt dann in jeder Sprache eine Seite an die alte Adresse, die die Leser weiterschickt, zur selben Überschrift der Übersetzung.
+Links von anderen Websites und Lesezeichen verwenden weiter die alte Adresse. Tragen Sie sie deshalb in `apps/docs/redirects.json` ein, zusammen mit der Seite, auf die sie umgezogen ist, und wahlweise deren Überschrift: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. Der Build schreibt dann in jeder Sprache eine Seite an die alte Adresse, die die Leser weiterschickt, zur selben Überschrift der Übersetzung. Eine Adresse kann auch zu einer Seite außerhalb der Dokumentation führen, etwa `"changelog": "https://kaeso.app/changelog"`. Jede Sprache führt dann zur selben Sprache dort, ebenso jede Adresse unterhalb der alten.
 
 Ein Ordner innerhalb einer Gruppe braucht eine `index.md`, und Ordner sind höchstens drei Ebenen tief verschachtelt. Dateien und Ordner, deren Name mit `_` beginnt, werden nicht veröffentlicht.
 
