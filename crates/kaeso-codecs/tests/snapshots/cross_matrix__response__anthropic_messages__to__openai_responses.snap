@@ -601,6 +601,15 @@ expression: outcomes
         "type": "message"
       },
       {
+        "action": {
+          "query": "Nobel Prize in Physics 2026",
+          "type": "search"
+        },
+        "id": "ws_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_1",
+        "status": "completed",
+        "type": "web_search_call"
+      },
+      {
         "content": [
           {
             "annotations": [],
@@ -609,10 +618,19 @@ expression: outcomes
             "type": "output_text"
           }
         ],
-        "id": "msg_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_1",
+        "id": "msg_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_2",
         "role": "assistant",
         "status": "completed",
         "type": "message"
+      },
+      {
+        "action": {
+          "query": "2026 Nobel Prize in Physics laureates",
+          "type": "search"
+        },
+        "id": "ws_kaeso_msg011RuYjfcpCtqxm3vucSQBPC_3",
+        "status": "in_progress",
+        "type": "web_search_call"
       }
     ],
     "parallel_tool_calls": true,
@@ -4085,6 +4103,15 @@ expression: outcomes
         "type": "message"
       },
       {
+        "action": {
+          "query": "claude shannon birth date",
+          "type": "search"
+        },
+        "id": "ws_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1",
+        "status": "completed",
+        "type": "web_search_call"
+      },
+      {
         "content": [
           {
             "annotations": [],
@@ -4105,7 +4132,7 @@ expression: outcomes
             "type": "output_text"
           }
         ],
-        "id": "msg_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1",
+        "id": "msg_kaeso_msg01R2R14PadDFvMb1xgawpzvm_2",
         "role": "assistant",
         "status": "completed",
         "type": "message"

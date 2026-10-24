@@ -440,11 +440,12 @@ sequenceDiagram
 ```
 ~~~
 
-- Wählen Sie den passenden Typ: `flowchart` für Teile und wie sie verbunden sind, `sequenceDiagram` für Anfragen und Antworten zwischen Beteiligten, `stateDiagram-v2` für einen Lebenszyklus. `flowchart TD`, von oben nach unten, bleibt auf dem Telefon lesbar; ein Diagramm, das breiter als die Spalte ist, scrollt in seinem eigenen Rahmen.
-- `accTitle:` benennt das Diagramm in wenigen Wörtern und ist Pflicht. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet beides, ebenso wie die Beschriftungen des Diagramms.
+- Wählen Sie den passenden Typ: `flowchart` für Teile und wie sie verbunden sind, `sequenceDiagram` für Anfragen und Antworten zwischen Beteiligten, `stateDiagram-v2` für einen Lebenszyklus. `flowchart TD`, von oben nach unten, bleibt auf dem Telefon lesbar. Die Website zeigt ein Diagramm mittig auf einer Fläche wie einen Codeblock; ist es breiter als die Spalte, scrollt es darin.
+- `accTitle:` benennt das Diagramm in wenigen Wörtern, ist Pflicht und steht als Bildunterschrift darunter. `accDescr:` sagt in ein oder zwei Sätzen, was es zeigt; Screenreader lesen beides vor, und die Suche findet beides, ebenso wie die Beschriftungen des Diagramms.
 - Halten Sie Beschriftungen kurz, in der Sprache der Seite; Namen aus dem Code bleiben, wie sie sind. `<br>` bricht eine Beschriftung in eine zweite Zeile um.
+- Markieren Sie den Teil von Kaeso, um den es im Diagramm geht, mit `:::accent`, etwa `gateway[Gateway]:::accent`, und Beteiligte außerhalb der Installation, etwa Apps und Anbieter, mit `:::outside`. Die Website zeichnet den ersten Teil in Tinte und die anderen gestrichelt. Ein `subgraph` zeichnet eine Grenze, etwa den Server, auf dem Kaeso läuft.
 - Zeichnen Sie ein Diagramm nur, wo es hilft; eine kurze Liste oder eine Tabelle ist oft klarer.
-- Keine `%%`-Kommentare und kein `%%{init}`: Die Website setzt Farben, Schrift und Radius aus Kaesos Tokens.
+- Keine `%%`-Kommentare, kein `%%{init}` und keine Zeilen mit `classDef`, `class` oder `style`: Die Website setzt Farben, Schrift und Radius aus Kaesos Tokens.
 
 Die Zeichnungen liegen committet in `apps/docs/diagrams/`. `pnpm --filter kaeso-docs diagrams` zeichnet neue und geänderte Diagramme mit Chromium und entfernt die, die keine Seite mehr nutzt; der Dev-Server und `pnpm build` zeichnen Fehlendes nebenbei. `check:content` schlägt fehl, wenn sich ein Diagramm seit dem Zeichnen geändert hat, und ein Diagramm, das sich nicht parsen lässt, schlägt mit Datei und Zeile fehl.
 

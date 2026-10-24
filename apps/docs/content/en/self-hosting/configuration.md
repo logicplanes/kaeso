@@ -52,9 +52,11 @@ Every service in `compose.yaml` has a memory limit and a process limit. The defa
 | `updater` | `UPDATER_MEMORY`, `256m` | `UPDATER_PIDS`, `128` |
 | `docker-proxy` | `DOCKER_PROXY_MEMORY`, `128m` | `DOCKER_PROXY_PIDS`, `64` |
 
-Memory takes Docker's units, such as `768m` or `3g`. A service that reaches its memory limit is stopped and restarted. ClickHouse sizes its own memory use to the limit.
+Memory takes Docker's units, such as `768m` or `3g`. Docker stops and restarts a service that reaches its memory limit. ClickHouse sizes its own memory use to the limit.
 
-Valkey keeps its data within `VALKEY_MAXMEMORY`, `512mb` by default, which stays below `VALKEY_MEMORY` so Valkey is never stopped for memory. It never evicts a key to make room, so a rate or budget counter is never dropped without notice. When Valkey is full, it refuses new keys: the gateway then serves from PostgreSQL instead of its cache, lets requests under rate limits and soft budgets through, and answers `503` under hard budgets until there is room again. Most of Valkey's memory holds [reasoning continuity](#reasoning-continuity), which `continuity.reasoning_ttl` bounds.
+Valkey keeps its data within `VALKEY_MAXMEMORY`, `512mb` by default, which stays below `VALKEY_MEMORY` so Valkey is never stopped for memory. It never evicts a key to make room, so a rate or budget counter is never dropped without notice.
+
+When Valkey is full, it refuses new keys. Until there is room again, the gateway serves from PostgreSQL instead of its cache. It lets requests under rate limits and soft budgets through, and answers `503` under hard budgets. Most of Valkey's memory holds [reasoning continuity](#reasoning-continuity), which `continuity.reasoning_ttl` bounds.
 
 Docker rotates each service's log at 10 MB and keeps five files.
 
@@ -257,7 +259,7 @@ The gateway counts failed API key lookups per client address in Valkey, so a cli
 - Valid keys never count. A key the instance used in the last 30 seconds still works from a blocked address; other valid keys wait for the window to end.
 - IPv6 addresses count per /64.
 - Behind a proxy, the client address comes from `X-Forwarded-For` only when the proxy is in `KAESO_TRUSTED_PROXIES`. Otherwise every client shares the proxy's allowance.
-- Docker Desktop, Colima and rootless Docker pass published ports through a proxy of their own, so Caddy sees every client at one address, and all clients share one allowance. Run Kaeso on Docker Engine with rootful networking where the limit should hold per client.
+- Docker Desktop, Colima and rootless Docker pass published ports through a proxy of their own. Caddy then sees every client at one address, and all clients share one allowance. To keep the limit per client, run Kaeso on Docker Engine with rootful networking.
 - While Valkey can't be reached, failures aren't counted.
 
 Each block adds to `kaeso_key_failure_blocks_total` and logs `too many failed API key lookups from one address` with the address ([health and metrics](monitoring.md)).

@@ -1,0 +1,259 @@
+{
+  "model": "claude-sonnet-5-5",
+  "instructions": "You are Codex, a coding agent. You and the user share one workspace.",
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_0199f3a2-6c71-7000-8000-000000000001",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-24</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_0199f3a2-6c72-7000-8000-000000000002",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Call echo with the text hi."
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "id": "fc_1",
+      "name": "echo",
+      "namespace": "mcp__fake",
+      "arguments": "{\"text\":\"hi\"}",
+      "call_id": "call_1"
+    },
+    {
+      "type": "function_call_output",
+      "id": "fco_0199f3a2-6d01-7b44-8e5d-4f6a8b0c2d34",
+      "call_id": "call_1",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "Wall time: 0.0021 seconds\nOutput:"
+        },
+        {
+          "type": "input_text",
+          "text": "MCP tool call requires approval, but approval policy is never"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "justification": {
+            "type": "string",
+            "description": "User-facing approval question for `require_escalated`; omit otherwise."
+          },
+          "login": {
+            "type": "boolean",
+            "description": "True runs the shell with -l/-i semantics; false disables them. Defaults to true."
+          },
+          "max_output_tokens": {
+            "type": "number",
+            "description": "Output token budget. Defaults to 10000 tokens; larger requests may be capped by policy."
+          },
+          "prefix_rule": {
+            "type": "array",
+            "description": "Reusable approval prefix for `cmd`, only with `sandbox_permissions: \"require_escalated\"`; for example [\"git\", \"pull\"].",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sandbox_permissions": {
+            "type": "string",
+            "description": "Per-command sandbox override. Defaults to `use_default`; use `require_escalated` for unsandboxed execution.",
+            "enum": [
+              "use_default",
+              "require_escalated"
+            ]
+          },
+          "shell": {
+            "type": "string",
+            "description": "Shell binary to launch. Defaults to the user's default shell."
+          },
+          "tty": {
+            "type": "boolean",
+            "description": "True allocates a PTY for the command; false or omitted uses plain pipes."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          },
+          "yield_time_ms": {
+            "type": "number",
+            "description": "Wait before yielding output. Defaults to 10000 ms; effective range is 250-30000 ms."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "type": "namespace",
+      "name": "multi_agent_v1",
+      "description": "Tools for spawning and managing sub-agents.",
+      "tools": [
+        {
+          "type": "function",
+          "name": "spawn_agent",
+          "description": "Spawn a sub-agent for a well-scoped task. Returns the spawned agent id plus the user-facing nickname when available.",
+          "strict": false,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "fork_context": {
+                "type": "boolean",
+                "description": "True forks the current thread history into the new agent; false or omitted starts with only the initial prompt."
+              },
+              "items": {
+                "type": "array",
+                "description": "Structured input items. Use this to pass explicit mentions (for example app:// connector paths).",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "audio_url": {
+                      "type": "string",
+                      "description": "Audio data URL when type is audio."
+                    },
+                    "image_url": {
+                      "type": "string",
+                      "description": "Image URL when type is image."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Display name when type is skill or mention."
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "Path when type is local_image/local_audio/skill, or structured mention target such as app://<connector-id> or plugin://<plugin-name>@<marketplace-name> when type is mention."
+                    },
+                    "text": {
+                      "type": "string",
+                      "description": "Text content when type is text."
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Input item type: text, image, local_image, audio, local_audio, skill, or mention."
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "message": {
+                "type": "string",
+                "description": "Initial plain-text task for the new agent. Use either message or items."
+              },
+              "model": {
+                "type": "string",
+                "description": "Model override for the new agent. Omit unless an explicit override is needed."
+              },
+              "reasoning_effort": {
+                "type": "string",
+                "description": "Reasoning effort override for the new agent. Omit to inherit the parent effort."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "type": "function",
+          "name": "wait_agent",
+          "description": "Wait for agents to reach a final status. Completed statuses may include the agent's final message. Returns empty status when timed out. Once the agent reaches a final status, a notification message will be received containing the same completed status.",
+          "strict": false,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "targets": {
+                "type": "array",
+                "description": "Agent ids to wait on. Pass multiple ids to wait for whichever finishes first.",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "timeout_ms": {
+                "type": "number",
+                "description": "Timeout in milliseconds. Defaults to 30000, min 10000, max 3600000. Prefer longer waits (minutes) to avoid busy polling."
+              }
+            },
+            "required": [
+              "targets"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    {
+      "type": "namespace",
+      "name": "mcp__fake",
+      "description": "Tools in the mcp__fake namespace.",
+      "tools": [
+        {
+          "type": "function",
+          "name": "echo",
+          "description": "Echo text back",
+          "strict": false,
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "web_search",
+      "external_web_access": true
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "medium",
+    "summary": "auto"
+  },
+  "store": false,
+  "stream": true,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "prompt_cache_key": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01",
+  "client_metadata": {
+    "thread_id": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01",
+    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01\",\"thread_id\":\"0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01\",\"agent_name\":\"/root\",\"turn_id\":\"0199f3a2-6c71-7e22-8c3b-2d4e6f8a0b12\",\"window_id\":\"0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01:0\",\"window_number\":0,\"context_window_id\":\"0199f3a2-6c4f-7a33-9d4c-3e5f7a9b1c23\",\"request_kind\":\"turn\",\"root_turn_id\":\"0199f3a2-6c71-7e22-8c3b-2d4e6f8a0b12\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"read-only\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":false,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792818563949,\"analytics_enabled\":true,\"model\":\"claude-sonnet-5-5\"}",
+    "x-codex-window-id": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01:0",
+    "x-codex-installation-id": "00000000-0000-4000-8000-000000000000",
+    "turn_id": "0199f3a2-6c71-7e22-8c3b-2d4e6f8a0b12",
+    "session_id": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01",
+    "root_turn_id": "0199f3a2-6c71-7e22-8c3b-2d4e6f8a0b12"
+  }
+}

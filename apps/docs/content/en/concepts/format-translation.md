@@ -9,9 +9,18 @@ Your app can call any chat model in its own format, so the OpenAI SDK can call C
 ```mermaid
 flowchart TD
   accTitle: Format translation
-  accDescr: KPP decodes the app's request into its canonical format and encodes it in the provider's format. The reply takes the same way back.
-  app[Request in the app's format] -- decode --> kpp[KPP, the canonical format]
-  kpp -- encode --> provider[Request in the provider's format]
+  accDescr: An app using the OpenAI SDK sends Chat Completions. In the gateway, KPP's Chat Completions codec decodes the request into KPP's canonical request, and the Messages codec encodes it for Anthropic. The reply takes the same way back.
+  app[Your app, with the OpenAI SDK]:::outside
+  subgraph kpp [KPP, in the gateway]
+    decode[Chat Completions codec]
+    canonical[Canonical request]:::accent
+    encode[Messages codec]
+  end
+  provider[Anthropic]:::outside
+  app -- Chat Completions --> decode
+  decode -- decode --> canonical
+  canonical -- encode --> encode
+  encode -- Messages --> provider
 ```
 
 KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat Completions, Responses and Embeddings, and Anthropic Messages. The reply takes the same way back, event by event for a stream. Embeddings go only to embeddings models, which only some [providers](supported-providers.md) have. [Model API](../api/model-api.md) lists the endpoints of each format.
@@ -58,7 +67,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 ### Requests to any provider
 
-These are refused in every format, even when the format stays the same:
+Kaeso refuses these in every format, even when the format stays the same:
 
 - more than one choice (`n`)
 - Chat Completions audio input (`input_audio`)

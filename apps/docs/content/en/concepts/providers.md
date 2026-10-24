@@ -53,11 +53,11 @@ Kaeso sends the first request to Anthropic as Messages and the second to Groq as
 ```mermaid
 flowchart TD
   accTitle: One app, many providers
-  accDescr: An app sends every request in its own format. Kaeso translates each one into the format of the model's provider, for example Messages for Anthropic, Responses for OpenAI and Chat Completions for Groq.
-  app[Your app, in its own format] --> kaeso[Kaeso]
-  kaeso -- Messages --> anthropic[Anthropic]
-  kaeso -- Responses --> openai[OpenAI]
-  kaeso -- Chat Completions --> groq[Groq]
+  accDescr: Your app sends every request as Chat Completions. Kaeso translates each one into the format of the model's provider, such as Messages for Anthropic, Responses for OpenAI and Chat Completions for Groq.
+  app[Your app]:::outside -- Chat Completions --> kaeso[Kaeso]:::accent
+  kaeso -- Messages --> anthropic[Anthropic]:::outside
+  kaeso -- Responses --> openai[OpenAI]:::outside
+  kaeso -- Chat Completions --> groq[Groq]:::outside
 ```
 
 ## Using a provider
@@ -73,7 +73,7 @@ Three steps make a provider's models callable from a project:
 Every chat format reaches every chat model, but providers don't all offer the same things. The **Formats** column of [supported providers](supported-providers.md) shows what each one offers:
 
 - **Formats.** Kaeso calls each provider in a format it serves, such as Messages for Anthropic. When the app's format differs, Kaeso refuses a field that the provider's format can't express, with an error that names it. It never drops the field silently ([what Kaeso refuses](format-translation.md#what-kaeso-refuses)).
-- **Fields a provider refuses.** Providers that speak Chat Completions don't all take all of it, and Kaeso knows how each one differs. It renames a field whose spelling differs, such as Mistral's `random_seed` for `seed`. It refuses a field the provider doesn't take before anything is sent, with 400 in the app's format: "`logit_bias` is not supported by Mistral; remove it from the request." The [Chat Completions reference](../development/kpp/openai-chat.md#provider-profiles) lists each provider's differences.
+- **Fields a provider refuses.** Providers that speak Chat Completions don't all take all of it, and Kaeso knows how each one differs. It renames a field whose spelling differs, such as Mistral's `random_seed` for `seed`. It refuses a field the provider doesn't take before sending anything. The app gets 400 in its own format: "`logit_bias` is not supported by Mistral; remove it from the request." The [Chat Completions reference](../development/kpp/openai-chat-providers.md#provider-profiles) lists each provider's differences.
 - **Token counts.** `/v1/messages/count_tokens` and `/v1/responses/input_tokens` ask the model's provider for the count, and only providers whose formats include token counts can give one. For other models, Kaeso answers 400: "The model `…` cannot count tokens." It never estimates the count.
 - **Embeddings.** Only providers whose formats include Embeddings have embeddings models, which `/v1/embeddings` calls. Chat formats can't call an embeddings model, and a chat model creates no embeddings.
 - **Model ids.** Each provider names its models in its own way. Some ids contain `/`, such as Together AI's `Qwen/Qwen3.5-9B` and OpenRouter's `anthropic/claude-sonnet-4.5`, which names the model's maker.

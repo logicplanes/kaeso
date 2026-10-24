@@ -9,17 +9,25 @@ The gateway finds releases and asks the updater to apply one; the updater verifi
 ```mermaid
 flowchart TD
   accTitle: How an install learns about releases and updates
-  accDescr: The gateway checks update.kaeso.app for releases, keeps its state in PostgreSQL and asks the updater over the internal network updates with a bearer token. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io, reaches Docker only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
-  gateway[Gateway] -- checks for releases --> releases[update.kaeso.app]
-  gateway --> postgres[(PostgreSQL)]
-  gateway -- bearer token, network updates --> updater[Updater]
-  updater -- release.json, compose.yaml --> github[github.com]
-  updater -- attestations --> api[api.github.com]
-  updater -- images --> ghcr[ghcr.io]
-  updater -- network docker --> proxy[docker-proxy]
-  proxy --> socket[Docker socket]
-  updater -- maintenance flag --> maintenance[(Volume maintenance)]
-  caddy[Caddy] -- updating page, JSON 503s --> maintenance
+  accDescr: The gateway gets the list of releases from update.kaeso.app, keeps its update state in PostgreSQL and starts an update on the updater with a bearer token over the internal network updates. The updater fetches release.json and compose.yaml from github.com, attestations from api.github.com and images from ghcr.io. It reaches the Docker socket only through docker-proxy on the internal network docker, and writes the maintenance flag that Caddy reads to serve the updating page and the JSON 503s.
+  feed[update.kaeso.app]:::outside
+  github[GitHub]:::outside
+  subgraph server [Your server]
+    gateway[Gateway]:::accent
+    postgres[(PostgreSQL)]
+    updater[Updater]
+    proxy[docker-proxy]
+    socket[Docker socket]
+    flag[(Maintenance flag)]
+    caddy[Caddy]
+  end
+  feed -- releases --> gateway
+  gateway --> postgres
+  gateway -- starts an update --> updater
+  github -- release files,<br>attestations, images --> updater
+  updater -- network docker --> proxy --> socket
+  updater --> flag
+  flag -- updating page --> caddy
 ```
 
 ## The release feed

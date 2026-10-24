@@ -5,6 +5,7 @@ use super::{EVENT_KEY, Engine, SSE_KEY, event_extras, skipped};
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
 use crate::openai_responses::DIALECT;
+use crate::openai_responses::namespaces::Namespaces;
 use crate::openai_responses::node::Node;
 use crate::openai_responses::overrides::apply;
 use crate::openai_responses::response::echo_fields;
@@ -21,7 +22,11 @@ pub(crate) struct Encoder {
 impl Encoder {
     pub(crate) fn new(ctx: &EncodeCtx) -> Encoder {
         Encoder {
-            engine: Engine::new(echo_fields(ctx), ctx.created_at.unwrap_or(0)),
+            engine: Engine::new(
+                echo_fields(ctx),
+                ctx.created_at.unwrap_or(0),
+                Namespaces::of(ctx.request.as_deref()),
+            ),
             created_at: ctx.created_at.unwrap_or(0),
             model: ctx
                 .request

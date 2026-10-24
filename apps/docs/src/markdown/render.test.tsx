@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { Block } from "./ast";
+import type { Block, Inline } from "./ast";
 import { TextProvider } from "~/i18n/text";
 import { Markdown, diagramMinWidth } from "./render";
 import { CODE_TAB_STORAGE_KEY, forgetCodeTab } from "./code-tab";
@@ -28,7 +28,7 @@ describe("Markdown", () => {
     expect(c.querySelector("code")).toHaveTextContent("sk-kso-…");
   });
 
-  it("lets long identifiers wrap only after their separators, and keeps their text", () => {
+  it("lets long identifiers wrap only after their separators and between the words of a type name, and keeps their text", () => {
     const c = draw([
       {
         t: "paragraph",
@@ -42,7 +42,7 @@ describe("Markdown", () => {
     const [field, role, path] = [...c.querySelectorAll("code")];
     expect(field).toHaveTextContent("sampling.max_output_tokens");
     expect([...(field?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("sampling.|max_|output_|tokens");
-    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|SystemMessage");
+    expect([...(role?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("Role::|System|Message");
     expect([...(path?.childNodes ?? [])].map((n) => (n.nodeName === "WBR" ? "|" : n.textContent)).join("")).toBe("/v1/|chat/|completions");
   });
 
@@ -151,17 +151,99 @@ describe("Markdown", () => {
         ],
       },
     ]);
-    expect(screen.getByRole("region", { name: "Table: Page, Setting, What to do" })).toBeInTheDocument();
-    expect(screen.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Page", "Setting", "What to do"]);
-    expect(screen.getByRole("link", { name: "Quick start" })).toHaveAttribute("href", "/get-started/quick-start");
-    expect(screen.getByRole("cell", { name: summary })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Point Claude Code/ })).toHaveAttribute("href", "https://kaeso.app/");
-    expect(screen.getByText("metrics_listen").querySelector("wbr")).toBeNull();
-    const long = screen.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
+    const table = within(screen.getByRole("region", { name: "Table: Page, Setting, What to do" }));
+    expect(table.getAllByRole("columnheader").map((h) => h.textContent)).toEqual(["Page", "Setting", "What to do"]);
+    expect(table.getByRole("link", { name: "Quick start" })).toHaveAttribute("href", "/get-started/quick-start");
+    expect(table.getByRole("cell", { name: summary })).toBeInTheDocument();
+    expect(table.getByRole("link", { name: /Point Claude Code/ })).toHaveAttribute("href", "https://kaeso.app/");
+    expect(table.getByText("metrics_listen").querySelector("wbr")).toBeNull();
+    const long = table.getByText((_, el) => el?.tagName === "CODE" && el.textContent === "KAESO_METRICS_LISTEN");
     expect(long.querySelectorAll("wbr")).toHaveLength(2);
     expect(long).toHaveClass("inline");
     expect(long).not.toHaveClass("inline-block", "box-decoration-clone");
-    expect(screen.getByText("metrics_listen")).toHaveClass("inline", "whitespace-nowrap");
+    expect(table.getByText("metrics_listen")).toHaveClass("inline", "whitespace-nowrap");
+  });
+
+  it("draws a table of three or more columns again for phones, each row its first cell over labelled values, short ones beside their label", () => {
+    const summary = "Start the gateway, the console and the databases with Docker Compose, then send the first request";
+    draw([
+      {
+        t: "table",
+        align: ["start", "start", "start"],
+        head: [[{ t: "text", v: "Page" }], [{ t: "text", v: "Setting" }], [{ t: "text", v: "What to do" }]],
+        rows: [
+          [[{ t: "text", v: "Quick start" }], [{ t: "code", v: "metrics_listen" }], [{ t: "text", v: summary }]],
+          [[{ t: "text", v: "Coding tools" }], [], [{ t: "text", v: "Point a coding tool at the install" }]],
+        ],
+      },
+      {
+        t: "table",
+        align: ["start", "start"],
+        head: [[{ t: "text", v: "Level" }], [{ t: "text", v: "Requests" }]],
+        rows: [[[{ t: "text", v: "Key" }], [{ t: "text", v: "60" }]]],
+      },
+    ]);
+    const list = screen.getByRole("list", { name: "Table: Page, Setting, What to do" });
+    expect(list).toHaveClass("sm:hidden");
+    expect(screen.getByRole("region", { name: "Table: Page, Setting, What to do" }).closest(".max-sm\\:hidden")).not.toBeNull();
+    const rows = within(list).getAllByRole("listitem");
+    const pairs = (row: HTMLElement | undefined, which: string) => [...(row?.querySelectorAll(which) ?? [])].map((el) => el.textContent);
+    expect(rows[0]).toHaveTextContent(/^Quick start/);
+    expect(pairs(rows[0], "dt, dd")).toEqual(["Setting", "metrics_listen", "What to do", summary]);
+    expect(rows[0]?.querySelectorAll("dl")).toHaveLength(2);
+    expect(pairs(rows[1], "dt")).toEqual(["What to do"]);
+    expect(screen.queryByRole("list", { name: "Table: Level, Requests" })).toBeNull();
+  });
+
+  it("lets long code in a table break after its separators and brackets, a Chinese list break after each comma, and a wide table's text columns narrow further", () => {
+    const code = (v: string): Inline => ({ t: "code", v });
+    const text = (v: string): Inline => ({ t: "text", v });
+    const container = draw([
+      {
+        t: "table",
+        align: ["start", "start", "start", "start", "start"],
+        head: [[text("Route")], [text("Right")], [text("Fields")], [text("Default")], [text("Notes")]],
+        rows: [
+          [
+            [code("GET orgs/{org}/projects/{project}")],
+            [code("roles.manage")],
+            [code("tools[].name"), text("、"), code(".description"), text("、"), code(".strict")],
+            [code("Kaeso <kaeso@localhost>")],
+            [text("Answers with the rights a project role holds, one row for each right in the catalogue")],
+          ],
+        ],
+      },
+    ]);
+    const route = within(screen.getByRole("region", { name: "Table: Route, Right, Fields, Default, Notes" })).getByText(
+      (_, el) => el?.tagName === "CODE" && el.textContent === "GET orgs/{org}/projects/{project}",
+    );
+    expect(route.querySelectorAll("wbr")).toHaveLength(3);
+    const sender = within(screen.getByRole("region", { name: /^Table: Route/ })).getByText(
+      (_, el) => el?.tagName === "CODE" && el.textContent === "Kaeso <kaeso@localhost>",
+    );
+    expect(sender.querySelectorAll("wbr")).toHaveLength(1);
+    const fields = container.querySelector("table td:nth-child(3)");
+    expect(fields?.querySelectorAll(":scope > wbr")).toHaveLength(2);
+    expect(container.querySelector("table td:nth-child(5)")).toHaveClass("min-w-120");
+  });
+
+  it("breaks a long type name between its words, and narrows a table's gutters at five columns and its text columns from four", () => {
+    const code = (v: string): Inline => ({ t: "code", v });
+    const text = (v: string): Inline => ({ t: "text", v });
+    const note = text("Dropped for other dialects when it only holds edits that every target can apply");
+    const table = (columns: number): Block => ({
+      t: "table",
+      align: Array.from({ length: columns }, () => "start" as const),
+      head: Array.from({ length: columns }, (_, i) => [text(`Column ${i + 1}`)]),
+      rows: [Array.from({ length: columns }, (_, i) => (i === 0 ? [code("BetaContextManagementConfigParam")] : [note]))],
+    });
+    const container = draw([table(5), table(4), table(3)]);
+    const [five, four, three] = [...container.querySelectorAll("table")];
+    expect(five?.querySelector("code")?.querySelectorAll("wbr")).toHaveLength(4);
+    expect(five?.querySelector("td:nth-child(2)")).toHaveClass("px-8", "min-w-120");
+    expect(five?.querySelector("th")).toHaveClass("px-8");
+    expect(four?.querySelector("td:nth-child(2)")).toHaveClass("px-12", "min-w-120");
+    expect(three?.querySelector("td:nth-child(2)")).toHaveClass("px-12", "min-w-140");
   });
 
   it("draws a Chinese table in a region named in Chinese, with its words in their cells", () => {
@@ -239,14 +321,15 @@ describe("Markdown", () => {
     expect(screen.getAllByRole("img", { name: "Ablauf" })[0]).not.toHaveAttribute("aria-describedby");
   });
 
-  it("lets a diagram shrink to a phone by a quarter at most, and scroll in its region beyond that", () => {
+  it("lets a diagram shrink by a quarter at most, never needing more than the framed column, and scroll in its region beyond that", () => {
     expect(diagramMinWidth(300)).toBeUndefined();
     expect(diagramMinWidth(420)).toBeUndefined();
     expect(diagramMinWidth(430)).toBe("min-w-360");
+    expect(diagramMinWidth(479)).toBe("min-w-360");
     expect(diagramMinWidth(630)).toBe("min-w-480");
     expect(diagramMinWidth(640)).toBe("min-w-480");
-    expect(diagramMinWidth(874)).toBe("min-w-720");
-    expect(diagramMinWidth(2000)).toBe("min-w-800");
+    expect(diagramMinWidth(775)).toBe("min-w-560");
+    expect(diagramMinWidth(2000)).toBe("min-w-560");
   });
 });
 
