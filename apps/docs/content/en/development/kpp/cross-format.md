@@ -46,7 +46,7 @@ A request built in code, without an origin, gets the target's names. Content is 
 
 OpenAI Chat's deprecated function calling round-trips within Chat and crosses to no other dialect. Legacy calls have no call ids, so they are no KPP tool calls:
 
-- the top-level `functions` and `function_call` are extras of the request, refused as, for example, `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. ``;
+- the top-level `functions` and `function_call` are extras of the request. A refusal reads, for example, `` `functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format. ``;
 - an assistant message's `function_call` is an extra of the message, refused as `messages[i].function_call`;
 - a `function` message becomes a user message holding one unknown block, refused as `` `function` message ``.
 
@@ -54,16 +54,16 @@ OpenAI Chat's deprecated function calling round-trips within Chat and crosses to
 
 Replies flow from one provider to one app, and refusing a finished, paid-for reply would be worse than showing less of it. Data of another dialect is therefore, in this order of preference (`cross::reply_policy`, `cross::reasoning_reply_policy`):
 
-1. **Mapped** where the app's dialect can represent it: reasoning of another dialect becomes an OpenAI Responses reasoning item or an Anthropic `thinking` block, with the original block wrapped in a [reasoning blob](reasoning.md#reasoning-blobs) that the app sends back unchanged.
-2. **Left out** where it can't, and replaced by [keepalive](#keepalives) frames in streams so the connection never goes silent: reasoning for OpenAI Chat apps (the gateway [keeps it](reasoning.md#reasoning-kept-by-the-gateway) between turns), unknown blocks and stream extras from another dialect, foreign citations and extras.
+1. **Mapped** where the app's dialect can represent it. Reasoning of another dialect becomes an OpenAI Responses reasoning item or an Anthropic `thinking` block. The original block is wrapped in a [reasoning blob](reasoning.md#reasoning-blobs) that the app sends back unchanged.
+2. **Left out** where it can't. In streams, [keepalive](#keepalives) frames replace it, so the connection never goes silent. This covers reasoning for OpenAI Chat apps (the gateway [keeps it](reasoning.md#reasoning-kept-by-the-gateway) between turns), unknown blocks and stream extras from another dialect, foreign citations and extras.
 
-The gateway logs the KPP reply in full, so nothing is lost from Kaeso's records. Unknown blocks, citations and extras reach another dialect only when the provider sends something the request didn't ask for, because the request side refuses foreign server tools, citations and similar features.
+The gateway logs the KPP reply in full, so nothing is lost from Kaeso's records. The request side refuses foreign server tools, citations and similar features. So unknown blocks, citations and extras reach another dialect only when the provider sends something the request didn't ask for.
 
 Stop reasons the app's format doesn't have are mapped to the closest one it has; each dialect's mapping page lists them.
 
 ## Extras
 
-Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field, unless the field is on the allowlist below and is dropped instead: it holds only fields known not to change what the model writes, such as beta headers and resolution hints.
+Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field. A field on the allowlist below is dropped instead. The allowlist holds only fields known not to change what the model writes, such as beta headers and resolution hints.
 
 An entry is allowed only when the field is known to have no effect on the model's output. Every entry needs a one-line reason and the fixture that shows a real client sending it.
 
@@ -151,7 +151,7 @@ Frames reach the wire in two ways:
 - **In band.** An encoder adds the frame to what `StreamEncoder::encode` returns when an event from another dialect produced no bytes. A pacer limits this without a clock. Another dialect's extra event, such as `ping`, always earns a frame, because the provider already paces it. Hidden text, such as thinking the app can't see or buffered tool arguments, earns one frame per `kaeso_codecs::HIDDEN_TEXT_PER_KEEPALIVE` bytes, 1,024. Anything the encoder writes resets the count. Events of the app's own dialect never earn frames, so a same-dialect replay stays exact.
 - **Driven by the gateway.** `StreamEncoder::keepalive` returns the frame on demand, for upstream silence the encoder can't see. The gateway writes it when it has written nothing to the app for `KAESO_STREAMS_KEEPALIVE_INTERVAL`, 15 seconds by default.
 
-The OpenAI Chat encoder also sends its role chunk as soon as the response starts, rather than with the first text, so the app hears from the stream while the model thinks.
+The OpenAI Chat encoder also sends its role chunk as soon as the response starts, rather than with the first text. That way the app hears from the stream while the model thinks.
 
 ## Structured output
 
@@ -181,12 +181,14 @@ KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, w
 
 ## Reply ids
 
-A reply keeps the provider's id as it is, whatever the app's format. A Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`). An OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id. The codecs never make up an id in the app's own pattern: the provider's id names the reply at the provider, and apps treat reply ids as opaque strings. The exceptions are Responses output items, which other formats don't have ([Responses storage and ids](#responses-storage-and-ids)), and a Responses stream without a start event, which gets the id `resp_kaeso_<created_at>` ([OpenAI Responses](openai-responses.md)).
+A reply keeps the provider's id as it is, whatever the app's format. A Claude reply reaches an OpenAI Chat Completions or Responses app with its Anthropic id (`msg_…`). An OpenAI reply reaches an Anthropic Messages app with OpenAI's id (`chatcmpl-…` or `resp_…`). Streams carry the same id.
+
+The codecs never make up an id in the app's own pattern. The provider's id names the reply at the provider, and apps treat reply ids as opaque strings. Responses output items are an exception, because other formats don't have them ([Responses storage and ids](#responses-storage-and-ids)). So is a Responses stream without a start event, which gets the id `resp_kaeso_<created_at>` ([OpenAI Responses](openai-responses.md)).
 
 ## Responses storage and ids
 
 - **`store: false`.** Requests from other dialects encoded for OpenAI Responses carry `"store": false`: Kaeso is stateless, and without it OpenAI would store every translated conversation. Requests decoded from Responses keep the app's spelling, so an absent `store` still means OpenAI stores the response.
-- **Item ids.** Responses output items need ids, which replies from other dialects don't have. Kaeso gives them ids starting with `msg_kaeso_`, `fc_kaeso_` and `rs_kaeso_`; when an app sends them back, the request decoder removes them, so OpenAI never receives an id it did not issue.
+- **Item ids.** Responses output items need ids, which replies from other dialects don't have. Kaeso gives them ids starting with `msg_kaeso_`, `fc_kaeso_` and `rs_kaeso_`. When an app sends them back, the request decoder removes them, so OpenAI never receives an id it did not issue.
 
 ## Cache hints
 
@@ -198,14 +200,14 @@ Cache hints are hints. OpenAI caches by itself, so hints from other dialects are
 
 ## Files
 
-A provider file id (`file-…`) is usable only within that provider's file store, and the two OpenAI generation dialects share one, so `cross::check_foreign` takes the target's `Origin`: its dialect and provider. File ids crossing to another provider are `Unsupported`.
+A provider file id (`file-…`) is usable only within that provider's file store. The two OpenAI generation dialects share one store, so `cross::check_foreign` takes the target's `Origin`: its dialect and provider. File ids crossing to another provider are `Unsupported`.
 
 ## The Anthropic version
 
 The Anthropic codec pins one API version, `2023-06-01`, exported as `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`. It is the only version Anthropic's [versioning page](https://platform.claude.com/docs/en/api/versioning) lists, the one the official SDKs send, and the one every Anthropic fixture assumes.
 
 - **Egress.** Every request the Anthropic codec encodes carries `anthropic-version: 2023-06-01`, unless the app's own Anthropic request forwarded an `anthropic-version` naming a newer version: a well-formed `YYYY-MM-DD` that sorts after the pinned one. A malformed or older value is ignored. A request from another dialect never carries the header, so it always gets the pinned version.
-- **Ingress.** A forwarded `anthropic-version` equal to the pinned version is not stored in the request's extras: the codec sends it anyway, and keeping it would bind every Anthropic SDK request to its dialect. Any other value is kept as the extra `header:anthropic-version` and compared on egress as above.
+- **Ingress.** A forwarded `anthropic-version` equal to the pinned version is not stored in the request's extras. The codec sends it anyway, and keeping it would bind every Anthropic SDK request to its dialect. Any other value is kept as the extra `header:anthropic-version` and compared on egress as above.
 - **Why newer wins.** Anthropic only adds to a version, with new optional inputs and new output values, and an app that asks for a newer version relies on its behaviour. The decoders tolerate unknown fields, blocks and events, so a newer version degrades to extras and unknown items rather than failing.
 
 To change the pin, change the constant, record the fixtures again with `cargo xtask record` ([recording](fixtures.md#recording-live-responses)), and update this section.
