@@ -22,10 +22,14 @@ version={{version}}
 (
   set -euo pipefail
   dir="$(mktemp -d)"
-  curl -fsSL -o "$dir/compose.yaml" "https://github.com/logicplanes/kaeso/releases/download/v$version/compose.yaml"
-  curl -fsSL -o "$dir/release.json" "https://github.com/logicplanes/kaeso/releases/download/v$version/release.json"
-  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso --signer-workflow logicplanes/kaeso/.github/workflows/release.yml --source-ref refs/heads/prod
-  echo "$(jq -r .compose.sha256 "$dir/release.json")  $dir/compose.yaml" | sha256sum -c -
+  url="https://github.com/logicplanes/kaeso/releases/download/v$version"
+  curl -fsSL -o "$dir/compose.yaml" "$url/compose.yaml"
+  curl -fsSL -o "$dir/release.json" "$url/release.json"
+  gh attestation verify "$dir/release.json" --repo logicplanes/kaeso \
+    --signer-workflow logicplanes/kaeso/.github/workflows/release.yml \
+    --source-ref refs/heads/prod
+  sum="$(jq -r .compose.sha256 "$dir/release.json")"
+  echo "$sum  $dir/compose.yaml" | sha256sum -c -
   jq -e --arg version "$version" '.version == $version' "$dir/release.json"
   mv "$dir/compose.yaml" "$dir/release.json" .
   rmdir "$dir"

@@ -122,12 +122,13 @@ LANGUAGES = ("en", "de", "zh-CN")
     ["README.md", *(f"apps/docs/content/{lang}/get-started/quick-start.md" for lang in LANGUAGES)],
 )
 def test_the_install_pages_download_the_latest_release_asset(page):
-    assert f"curl -fsSLO {RELEASE_ASSET}" in (ROOT / page).read_text()
+    assert re.search(rf"curl -fsSLO (\\\n +)?{re.escape(RELEASE_ASSET)}\n", (ROOT / page).read_text())
 
 
 @pytest.mark.parametrize("lang", LANGUAGES)
 def test_the_upgrade_guide_downloads_the_chosen_release_assets_by_their_names(lang):
     page = (ROOT / "apps" / "docs" / "content" / lang / "self-hosting" / "upgrades.md").read_text()
     assert "version={{version}}\n" in page
+    assert f'url="{RELEASES}/download/v$version"\n' in page
     for asset in ("compose.yaml", "release.json"):
-        assert f'curl -fsSL -o "$dir/{asset}" "{RELEASES}/download/v$version/{asset}"' in page
+        assert f'curl -fsSL -o "$dir/{asset}" "$url/{asset}"' in page

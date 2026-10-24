@@ -249,7 +249,9 @@ Run a target with a corpus folder and the dialect's fixtures as the seed corpus.
 
 ```bash
 mkdir -p fuzz/corpus/decode_openai_chat
-cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
+cargo +nightly fuzz run decode_openai_chat \
+  fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat \
+  -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
 The **Fuzz** workflow runs every target for 10 minutes each night, and for 60 seconds on every pull request that changes KPP or `fuzz/`. It fails on a crash and keeps the input as the artifact `fuzz-crash-<target>`. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.

@@ -249,7 +249,9 @@ cargo install cargo-fuzz
 
 ```bash
 mkdir -p fuzz/corpus/decode_openai_chat
-cargo +nightly fuzz run decode_openai_chat fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
+cargo +nightly fuzz run decode_openai_chat \
+  fuzz/corpus/decode_openai_chat crates/kaeso-codecs/fixtures/openai_chat \
+  -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
 **Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP 或 `fuzz/` 的拉取请求，则让每个目标运行 60 秒。出现崩溃时它会失败，并把输入保存为制品 `fuzz-crash-<target>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。

@@ -11,7 +11,8 @@ The [quick start](../get-started/quick-start.md) installs the newest release on 
 The quick start downloads the `compose.yaml` of the newest stable release. To install another release, download the file from that release's tag:
 
 ```bash
-curl -fsSLO https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
+curl -fsSLO \
+  https://github.com/logicplanes/kaeso/releases/download/v{{version}}/compose.yaml
 ```
 
 Each release also attaches two example files: [`env.example`](https://github.com/logicplanes/kaeso/releases/latest/download/env.example) with the usual variables of `.env`, and [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) with every setting of the gateway.
@@ -23,13 +24,15 @@ Set `KAESO_DOMAIN=localhost` in `.env`, start Kaeso and open `https://localhost`
 curl and the SDKs don't trust Caddy's local authority. Copy its root certificate out of the container:
 
 ```bash
-docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
+docker compose cp \
+  caddy:/data/caddy/pki/authorities/local/root.crt caddy-root.crt
 ```
 
 Then hand the certificate to the client that calls Kaeso:
 
 ```bash tab="curl"
-curl --cacert caddy-root.crt https://localhost/v1/models -H "Authorization: Bearer $KAESO_API_KEY"
+curl --cacert caddy-root.crt https://localhost/v1/models \
+  -H "Authorization: Bearer $KAESO_API_KEY"
 ```
 
 ```bash tab="Python"
