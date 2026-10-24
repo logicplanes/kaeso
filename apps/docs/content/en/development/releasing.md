@@ -94,7 +94,8 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
 4. Run the Release workflow on `prod` with the version. Tick **manual** in the workflow's inputs when the release needs steps by hand, so the updater never installs it:
 
    ```bash
-   gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
+   gh workflow run release.yml --repo logicplanes/kaeso --ref prod \
+     -f version=0.2.0
    ```
 
    Approve the run's jobs as they wait. Before you approve **Tag**, read the notes in the summary of **Prepare** ([review before the tag](#review-before-the-tag)).

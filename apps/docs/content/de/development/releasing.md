@@ -94,7 +94,8 @@ Der Workflow **Labels** setzt die Bereichs-Labels und `internal` bei jedem Push 
 4. Starten Sie den Release-Workflow auf `prod` mit der Version. Setzen Sie in den Eingaben des Workflows **manual**, wenn das Release Schritte von Hand braucht, damit der Updater es nie installiert:
 
    ```bash
-   gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
+   gh workflow run release.yml --repo logicplanes/kaeso --ref prod \
+     -f version=0.2.0
    ```
 
    Geben Sie die Jobs des Laufs frei, sobald sie warten. Bevor Sie **Tag** freigeben, lesen Sie die Notizen in der Zusammenfassung von **Prepare** ([Prüfung vor dem Tag](#prüfung-vor-dem-tag)).

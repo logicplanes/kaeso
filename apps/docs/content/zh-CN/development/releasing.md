@@ -94,7 +94,8 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更，然�
 4. 在 `prod` 上用版本号运行 Release 工作流。如果版本需要手动步骤，在工作流的输入中勾选 **manual**，这样更新器永远不会安装它：
 
    ```bash
-   gh workflow run release.yml --repo logicplanes/kaeso --ref prod -f version=0.2.0
+   gh workflow run release.yml --repo logicplanes/kaeso --ref prod \
+     -f version=0.2.0
    ```
 
    运行中的任务等待批准时，逐一批准。批准 **Tag** 之前，先阅读 **Prepare** 摘要中的说明（[打标签前的审阅](#打标签前的审阅)）。
