@@ -383,7 +383,7 @@ async fn a_plan_request_holds_the_models_whole_output_limit_whatever_cap_it_aske
     p.app
         .post(
             &format!("/orgs/{}/projects/{}/limits", p.owner.org_id, p.project),
-            json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 1000 }),
+            json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 200_000 }),
             Some(&p.owner.cookie),
         )
         .await
@@ -413,7 +413,7 @@ async fn a_plan_request_holds_the_models_whole_output_limit_whatever_cap_it_aske
     );
     assert_eq!(
         second.json()["error"]["message"],
-        "The project's daily token budget of 1000 tokens is nearly used up by requests in progress; retry in a moment."
+        "The project's daily token budget of 200000 tokens is nearly used up by requests in progress; retry in a moment."
     );
     assert_eq!(p.sent().len(), 1);
     p.services.cleanup().await;

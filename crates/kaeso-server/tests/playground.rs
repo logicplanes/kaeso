@@ -821,18 +821,12 @@ async fn member_and_project_limits_and_budgets_apply() {
     env.app.clock.advance(time::Duration::seconds(61));
     limit(
         &env,
-        json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 60 }),
+        json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 100 }),
     )
     .await;
-    completed(
-        &play(
-            &env.app,
-            &path,
-            &env.owner.cookie,
-            &ask("claude-haiku-4-5", "Hi"),
-        )
-        .await,
-    );
+    let mut capped = ask("claude-haiku-4-5", "Hi");
+    capped["max_output_tokens"] = json!(18);
+    completed(&play(&env.app, &path, &env.owner.cookie, &capped).await);
     let r = env
         .app
         .post(
@@ -842,12 +836,9 @@ async fn member_and_project_limits_and_budgets_apply() {
         )
         .await;
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{:?}", r.body);
-    let message = r.body["error"]["message"].as_str().unwrap();
-    assert!(
-        message.starts_with(
-            "Budget used up: the project's daily token budget of 60 tokens; it resets at "
-        ),
-        "{message}"
+    assert_eq!(
+        r.body["error"]["message"],
+        "This request could exceed the project's daily token budget of 100 tokens; ask for fewer output tokens."
     );
     assert!(r.headers.get("retry-after").is_none());
     let v1 = call(

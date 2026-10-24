@@ -394,6 +394,15 @@ const messages = (): Rule[] => [
     limit: "limit",
   }),
   rule("errors.rateLimit.key", (v) => t("errors.rateLimit.key", "Rate limit reached: this key's {limit}; retry in {seconds} seconds.", v), { limit: "limit" }),
+  rule("errors.mayExceed.project", (v) => t("errors.mayExceed.project", "This request could exceed the project's {limit}; ask for fewer output tokens.", v), {
+    limit: "limit",
+  }),
+  rule("errors.mayExceed.member", (v) => t("errors.mayExceed.member", "This request could exceed the member's {limit}; ask for fewer output tokens.", v), {
+    limit: "limit",
+  }),
+  rule("errors.mayExceed.key", (v) => t("errors.mayExceed.key", "This request could exceed this key's {limit}; ask for fewer output tokens.", v), {
+    limit: "limit",
+  }),
   rule(
     "errors.nearlyUsedUp.project",
     (v) => t("errors.nearlyUsedUp.project", "The project's {limit} is nearly used up by requests in progress; retry in a moment.", v),

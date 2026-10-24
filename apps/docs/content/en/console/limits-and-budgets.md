@@ -64,7 +64,9 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 
 While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most: its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own) at the model's prices. SpaceX's limit leaves reasoning out, so a request to a SpaceX reasoning model holds the model's own output limit. A ChatGPT account can't send an output limit, so a request through one holds the model's own too. Under a budget, it holds at least what an average request cost in the period, or in the 30 days before. A stream holds it for as long as it runs.
 
-A request with nothing else running always passes, so requests side by side never overrun a limit by more than one request. To run more requests side by side under a small budget, send a lower output limit. A request to a model without an output limit runs alone under a hard budget with no finished request in its period or the 30 days before.
+A request that could cost more than what's left of a hard budget or a token rate is refused, even with nothing else running. The message asks for fewer output tokens. Under a token rate that has room for the request once older requests leave the minute, the message says when to retry instead. To run more requests side by side under a small budget, send a lower output limit.
+
+Kaeso can't bound a request that sets no output limit, to a model with neither an output limit nor a context window. Such a request passes when nothing else runs, so it can overrun a limit by itself. Under a hard budget with no finished request in its period or the 30 days before, it runs alone.
 
 > [!NOTE]
 > Kaeso counts limits in Valkey. While Valkey can't be reached, rates and soft budgets let requests through, and hard budgets refuse them with status 503.
