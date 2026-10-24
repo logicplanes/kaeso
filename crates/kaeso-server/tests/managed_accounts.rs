@@ -1,4 +1,4 @@
-#![allow(clippy::unwrap_used, clippy::indexing_slicing)]
+#![allow(clippy::unwrap_used, clippy::panic, clippy::indexing_slicing)]
 
 mod common;
 
@@ -191,6 +191,85 @@ async fn requiring_sso_takes_password_and_link_sign_in_from_managed_accounts_onl
 
     let r = require_sso(&app, &team, false).await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    password(&app, "ada@acme.example")
+        .await
+        .expect_status(StatusCode::OK);
+    s.cleanup().await;
+}
+
+async fn operator_session(app: &App, email: &str) -> String {
+    use kaeso_server::services::users::{OperatorSignIn, operator_sign_in_link};
+    use secrecy::ExposeSecret;
+
+    let OperatorSignIn::Link(url) = operator_sign_in_link(&app.state, email).await.unwrap() else {
+        panic!("no link for {email}");
+    };
+    let token = url
+        .expose_secret()
+        .split("#token=")
+        .nth(1)
+        .unwrap()
+        .to_owned();
+    app.post("/auth/magic-link/verify", json!({ "token": token }), None)
+        .await
+        .expect_status(StatusCode::OK)
+        .cookie()
+        .unwrap()
+}
+
+async fn reset_link(app: &App, email: &str) -> String {
+    let before = app.mail.to(email).len();
+    app.post("/auth/password-reset", json!({ "email": email }), None)
+        .await
+        .expect_status(StatusCode::OK);
+    app.wait_for_mail(email, before + 1).await;
+    app.last_token(email)
+}
+
+#[tokio::test]
+async fn requiring_sso_takes_password_reset_from_managed_accounts_too() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let team = team(&app).await;
+    let link = reset_link(&app, "ada@acme.example").await;
+    require_sso(&app, &team, true)
+        .await
+        .expect_status(StatusCode::OK);
+    let ada = operator_session(&app, "ada@acme.example").await;
+
+    let sent = app.mail.to("ada@acme.example").len();
+    for email in ["Ada@Acme.example", "nobody@acme.example"] {
+        let r = app
+            .post("/auth/password-reset", json!({ "email": email }), None)
+            .await;
+        assert_eq!(
+            (r.status, r.body["error"]["message"].as_str().unwrap()),
+            (StatusCode::FORBIDDEN, SSO_ONLY),
+            "{email}: the same answer whether or not the account exists"
+        );
+    }
+    assert_eq!(app.mail.to("ada@acme.example").len(), sent);
+    reset_link(&app, "bob@else.example").await;
+
+    let r = app
+        .post(
+            "/auth/password-reset/verify",
+            json!({ "token": link, "password": "a brand new passphrase" }),
+            None,
+        )
+        .await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str().unwrap()),
+        (StatusCode::FORBIDDEN, SSO_ONLY),
+        "a link sent before SSO was required"
+    );
+    app.get("/auth/session", &ada)
+        .await
+        .expect_status(StatusCode::OK);
+
+    require_sso(&app, &team, false)
+        .await
+        .expect_status(StatusCode::OK);
     password(&app, "ada@acme.example")
         .await
         .expect_status(StatusCode::OK);

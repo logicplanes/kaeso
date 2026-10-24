@@ -678,7 +678,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Sends a reset link if the address has an active account. Always answers\nthe same way.",
+        "summary": "Sends a reset link if the address has an active account. Always answers\nthe same way, unless the org that manages the address's domain requires SSO.",
         "description": "**Access:** public; no authentication.",
         "operationId": "postAuthPasswordReset",
         "requestBody": {
@@ -798,7 +798,7 @@
           "auth"
         ],
         "summary": "Sets a new password with a reset link and ends every session of the\nuser. The link works once.",
-        "description": "It also unlocks the codes from the authenticator app that 10 wrong codes in a row locked (`auth/totp`).\n\n**Access:** public; no authentication.",
+        "description": "It also unlocks the codes from the authenticator app that 10 wrong codes in a row locked (`auth/totp`). It refuses an account whose managing org requires SSO, even with a link sent before the org turned that on.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthPasswordResetVerify",
         "requestBody": {
           "content": {

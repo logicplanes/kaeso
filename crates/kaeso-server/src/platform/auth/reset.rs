@@ -41,7 +41,7 @@ fn passwords_on(state: &AppState) -> ApiResult<()> {
     post,
     path = "/auth/password-reset",
     summary = "Sends a reset link if the address has an active account. Always answers\n\
-    the same way.",
+    the same way, unless the org that manages the address's domain requires SSO.",
     tag = "auth",
     request_body = ResetRequest,
     responses((status = 200, description = "Accepted; an email was sent if the account exists.", body = EmailSent))
@@ -57,6 +57,7 @@ pub async fn request(
     let Ok(email) = kaeso_core::email::normalize(&req.email) else {
         return Ok(answer);
     };
+    crate::services::managed::refuse_other_sign_in(&state.pg, &email).await?;
     if throttle::hit(
         &state,
         EMAILS_PER_ADDRESS,
@@ -183,7 +184,8 @@ pub struct PasswordChanged {
     summary = "Sets a new password with a reset link and ends every session of the\n\
     user. The link works once.",
     description = "It also unlocks the codes from the authenticator app that 10 wrong codes in a \
-    row locked (`auth/totp`).",
+    row locked (`auth/totp`). It refuses an account whose managing org requires SSO, even with \
+    a link sent before the org turned that on.",
     tag = "auth",
     request_body = ResetVerifyRequest,
     responses((status = 200, description = "The password is changed; sign in with it.", body = PasswordChanged))
@@ -209,6 +211,9 @@ pub async fn verify(
         .await?
         .filter(|u| u.state == "active")
         .ok_or_else(|| ApiError::PermissionDenied("This account is deactivated.".into()))?;
+    if let Some(email) = &user.email {
+        crate::services::managed::refuse_other_sign_in(&state.pg, email).await?;
+    }
     users::set_password(&mut *tx, user.id, &password_hash).await?;
     users::mark_verified(&mut *tx, user.id, ctx.now).await?;
     totp::clear_failed_codes(&mut *tx, user.id).await?;

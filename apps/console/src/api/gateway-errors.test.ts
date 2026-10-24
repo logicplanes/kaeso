@@ -38,6 +38,14 @@ describe("a refusal with a budget or a rate", () => {
     expect(unreadable.message).toBe("Budget des Projekts aufgebraucht (Monats-Ausgabenbudget von 5 USD); es wird am soon zurückgesetzt.");
   });
 
+  it("tells the person a request could cross a budget in their language", async () => {
+    await speak("de");
+    const error = await errorFromResponse(refusal("This request could exceed this key's monthly spend budget of 1 USD; ask for fewer output tokens."));
+    expect(error.message).toBe(
+      "Diese Anfrage könnte das Limit dieses Schlüssels (Monats-Ausgabenbudget von 1 USD) überschreiten; weniger Ausgabe-Token anfordern.",
+    );
+  });
+
   it("keeps an amount that isn't a number as the gateway wrote it", async () => {
     await speak("de");
     const error = await errorFromResponse(refusal("Rate limit reached: the project's request rate of many requests per minute; retry in 3 seconds."));

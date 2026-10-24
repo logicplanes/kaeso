@@ -80,13 +80,14 @@ for i = 1, #KEYS do
         if oldest == nil or sec < oldest then oldest = sec end
       end
     end
-    if enforced and sum >= units then
-      local retry = 1
-      if oldest ~= nil then retry = oldest + 60 - now end
-      if retry < 1 then retry = 1 end
-      return {1, i, retry}
-    end
+    local retry = 1
+    if oldest ~= nil then retry = math.max(oldest + 60 - now, 1) end
+    if enforced and sum >= units then return {1, i, retry} end
     if t == 2 then
+      if bounded and sum + reserve > units then
+        if reserve > units then return {4, i} end
+        return {1, i, retry}
+      end
       local n, held = flying(key)
       if n > 0 and sum + held + reserve > units then return {3, i} end
       own[i] = reserve
@@ -102,6 +103,7 @@ for i = 1, #KEYS do
       local avg = tonumber(redis.call('HGET', key, 'a') or '0')
       if count > 0 then avg = math.ceil(v / count) end
       local mine = math.max(avg, reserve)
+      if bounded and v + reserve > units then return {4, i} end
       local n, held = flying(key)
       if n > 0 then
         if not bounded and avg <= 0 then return {3, i} end
@@ -327,6 +329,7 @@ fn noun(subject: Subject) -> &'static str {
 enum Why {
     Over(i64),
     Busy,
+    TooLarge,
 }
 
 fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
@@ -344,6 +347,16 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
+            param: None,
+        },
+        Why::TooLarge => Refusal {
+            status: 429,
+            message: format!(
+                "This request could exceed {} {}{scope}; ask for fewer output tokens.",
+                noun(l.subject),
+                l.describe()
+            ),
+            retry_after: None,
             param: None,
         },
         Why::Over(retry) if l.kind.is_rate() => {
@@ -526,6 +539,7 @@ impl Limits for ValkeyLimits {
                     Ok(Admit::Pass) => return Ok(reservation(state, a, &applicable)),
                     Ok(Admit::Refused(i, retry)) => return refused(i, Why::Over(retry)),
                     Ok(Admit::Busy(i)) => return refused(i, Why::Busy),
+                    Ok(Admit::TooLarge(i)) => return refused(i, Why::TooLarge),
                     Ok(Admit::Missing(list)) if attempt == 0 => {
                         for i in list {
                             if let Some(l) = applicable.get(i)
@@ -615,6 +629,7 @@ enum Admit {
     Pass,
     Refused(usize, i64),
     Busy(usize),
+    TooLarge(usize),
     Missing(Vec<usize>),
 }
 
@@ -645,6 +660,7 @@ async fn run_admit(
         [0] => Admit::Pass,
         [1, i, retry] => Admit::Refused(index(*i), *retry),
         [3, i] => Admit::Busy(index(*i)),
+        [4, i] => Admit::TooLarge(index(*i)),
         [2, rest @ ..] => Admit::Missing(rest.iter().map(|i| index(*i)).collect()),
         other => return Err(LimitsError::Protocol(other.to_vec())),
     })
