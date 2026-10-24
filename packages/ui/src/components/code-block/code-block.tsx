@@ -3,6 +3,7 @@ import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { cn } from "../../utils/cn.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
+import { INDENT, dropIndent } from "./indent.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 
@@ -102,14 +103,15 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
             )}
           >
             {lineNumbers && <span className="mr-16 inline-block w-24 shrink-0 text-right text-fg-tertiary select-none tabular">{i + 1}</span>}
-            <span className={cn("min-w-0", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
+            {wrap && INDENT.test(line) && <span className="shrink-0 whitespace-pre">{INDENT.exec(line)?.[0]}</span>}
+            <span className={cn("min-w-0", wrap === true && "pl-16 -indent-16", wrap === "phone" && "max-sm:pl-16 max-sm:-indent-16")}>
               {tokenLines?.[i]?.length
-                ? tokenLines[i].map((token, j) => (
+                ? dropIndent(tokenLines[i], wrap ? (INDENT.exec(line)?.[0].length ?? 0) : 0).map((token, j) => (
                     <span key={j} className={token.className || undefined}>
                       {token.content}
                     </span>
                   ))
-                : line || " "}
+                : (wrap ? line.replace(INDENT, "") : line) || " "}
             </span>
           </span>
         ))}

@@ -147,7 +147,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 每个错误都使用同一种正文：
 
-```json
+```json wrap
 {
   "error": {
     "type": "permission_denied",

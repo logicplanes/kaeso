@@ -238,6 +238,8 @@ describe("fenceInfo and safeExternal", () => {
     expect(fenceInfo(undefined)).toEqual({ lang: "text" });
     expect(fenceInfo("markdown")).toEqual({ lang: "text", wrap: true });
     expect(fenceInfo("text title=policy")).toEqual({ lang: "text", title: "policy", wrap: true });
+    expect(fenceInfo("json wrap")).toEqual({ lang: "json", wrap: true });
+    expect(fenceInfo('json title="wrap it"')).toEqual({ lang: "json", title: "wrap it" });
   });
 
   it("allows http, https and mailto only", () => {

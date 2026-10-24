@@ -147,7 +147,7 @@ Eine zur Löschung vorgemerkte Organisation ist schreibgeschützt, bis sie wiede
 
 Jeder Fehler hat denselben Body:
 
-```json
+```json wrap
 {
   "error": {
     "type": "permission_denied",

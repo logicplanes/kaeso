@@ -111,7 +111,14 @@ export function fenceInfo(info: string | undefined): { lang: CodeLang; title?: s
   const name = raw.split(/\s+/)[0]?.toLowerCase() ?? "";
   const title = attribute(raw, "title");
   const tab = attribute(raw, "tab");
-  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(PROSE.has(name) ? { wrap: true as const } : {}) };
+  const wrap =
+    PROSE.has(name) ||
+    raw
+      .replace(/"[^"]*"|'[^']*'/g, "")
+      .split(/\s+/)
+      .slice(1)
+      .includes("wrap");
+  return { lang: LANGS[name] ?? "text", ...(title ? { title } : {}), ...(tab ? { tab } : {}), ...(wrap ? { wrap: true as const } : {}) };
 }
 
 export function safeExternal(href: string): string | null {

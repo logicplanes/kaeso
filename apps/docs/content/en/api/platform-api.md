@@ -147,7 +147,7 @@ An organization scheduled for deletion is read-only until it is restored or dele
 
 Every error has the same body:
 
-```json
+```json wrap
 {
   "error": {
     "type": "permission_denied",
