@@ -1,0 +1,26 @@
+[package]
+name = "kaeso-bench"
+description = "End-to-end benchmark of the Kaeso gateway against the mock provider. Never published."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+
+[dependencies]
+kaeso-server.workspace = true
+kaeso-testkit.workspace = true
+tokio = { workspace = true, features = ["process"] }
+hyper = { workspace = true, features = ["client"] }
+hyper-util.workspace = true
+http-body-util.workspace = true
+bytes.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+secrecy.workspace = true
+
+[lints]
+workspace = true

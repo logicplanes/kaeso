@@ -53,6 +53,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 | `kaeso-update` | Updates ohne I/O: das Release-Manifest, die Update-Richtlinie und das Protokoll des Updaters ([Updates](updates.md)) |
 | `kaeso-updater` | Der optionale Updater, der einzige Teil von Kaeso, der mit Docker spricht ([Updates](updates.md)) |
 | `kaeso-testkit` | Nur für Tests: Datenbanken für Entwicklung und Tests, der aus den Fixtures von KPP gebaute Mock-Anbieter und ein Mock-Identitätsanbieter |
+| `kaeso-bench` | Der [Gateway-Benchmark](../benchmark.md): das ganze Gateway in einem eigenen Prozess, zwischen echten Clients und dem Mock-Anbieter |
 | `kaeso-kpp`, `kaeso-codecs` | Die Typen und Codecs von KPP ([KPP-Interna](../kpp/index.md)) |
 | `kpp-conformance` | Der Server hinter der [SDK-Konformität](../testing.md#sdk-konformität) |
 | `xtask` | `cargo xtask models-dev` aktualisiert die Modelldaten, und `cargo xtask record` [zeichnet Antworten der Anbieter auf](../kpp/fixtures.md#live-antworten-aufzeichnen) |

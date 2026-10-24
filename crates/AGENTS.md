@@ -16,6 +16,7 @@ Rules for the Rust workspace: the gateway, the updater and KPP. The root [`AGENT
 | `kaeso-update`    | Updates without I/O: the release manifest, the update policy (channels, major versions, steps by hand) and the updater's protocol, shared by the gateway and the updater.                 |
 | `kaeso-updater`   | The optional updater binary: verifies a release's signed provenance and switches a Compose install to it, through a Docker socket proxy. The only crate that talks to Docker.         |
 | `kaeso-testkit`   | Test-only: development and test databases, the mock provider built from KPP's fixtures, a mock identity provider.                                                                        |
+| `kaeso-bench`     | The end-to-end benchmark: the whole gateway in a process of its own between real clients and the mock provider. `cargo run --release -p kaeso-bench`; its `--smoke` run is a test. Never published. |
 | `kaeso-kpp`       | KPP's types, `validate()` and `required_capabilities()`. No codec logic, no I/O. Published on crates.io.                                                                                  |
 | `kaeso-codecs`    | One sans-IO codec per dialect, plus `dispatch`, `cross`, `continuity`, `keepalive`, `sse` and `testing`; the fixtures in `crates/kaeso-codecs/fixtures`. Published on crates.io.          |
 | `kpp-conformance` | The server the SDK conformance suite in `e2e/conformance` runs against. Never published.                                                                                                  |

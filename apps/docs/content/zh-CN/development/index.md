@@ -24,6 +24,7 @@ Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区，两者都在仓
 - [参与贡献](contributing.md)：报告问题、提出变更，并让拉取请求顺利合并。
 - [开发栈](stack.md)：更改端口、运行第二个栈，或从源码运行网关。
 - [测试](testing.md)：运行变更必须通过的检查，并找到覆盖代码的测试套件。
+- [网关基准测试](benchmark.md)：测量 Kaeso 增加的时间和内存，从单个请求到数千个流。
 - [翻译](translations.md)：用英语、德语和简体中文写出每一个词。
 - [编写文档](documentation.md)：编写和翻译本站的页面。
 - [架构](architecture/index.md)：了解网关、控制台、文档和更新器的构建方式。
