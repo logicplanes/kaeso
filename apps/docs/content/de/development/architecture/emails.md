@@ -42,7 +42,9 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 
 ## Sprachen
 
-`services::mail_lang` in `kaeso-server` wählt die Sprache. Die Wahl der Person in ihren Kontoeinstellungen gewinnt (`users.locale`; `null` heißt Automatisch). Sonst nimmt es die erste Sprache, die Kaeso schreibt, aus dem `Accept-Language` der Anfrage, die die E-Mail ausgelöst hat. Kann die Datenbank nicht antworten, entscheiden die Rückfallregeln, sodass die Abfrage nie eine E-Mail aufhält. [E-Mail](../../self-hosting/email.md#sprachen) nennt die Regeln für jede Art von Empfänger.
+`services::mail_lang` in `kaeso-server` wählt die Sprache. Die Wahl der Person in ihren Kontoeinstellungen gewinnt (`users.locale`; `null` heißt Automatisch). Sonst nimmt es die erste Sprache, die Kaeso schreibt, aus dem `Accept-Language` der Anfrage, die die E-Mail ausgelöst hat.
+
+Kann die Datenbank nicht antworten, entscheiden die Rückfallregeln, sodass die Abfrage nie eine E-Mail aufhält. [E-Mail](../../self-hosting/email.md#sprachen) nennt die Regeln für jede Art von Empfänger.
 
 Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen und namentlich eingesetzten Werten, nie zusammengesetzten Bruchstücken. Deutsch spricht Menschen mit „Sie“ an. Chinesisch nutzt „您“, Satzzeichen in voller Breite und ein Leerzeichen zwischen chinesischen und lateinischen Wörtern oder Ziffern, das `locale::zh` an den Nahtstellen setzt. Datumsangaben und Zahlen folgen der Sprache:
 
@@ -54,7 +56,9 @@ Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen un
 
 ## Die Wortmarke
 
-E-Mails tragen die Wortmarke als zwei eingebettete PNGs, hell und dunkel, zusammen etwa 6 KB. Die Adresse einer selbst betriebenen Installation kann intern sein, und viele Mail-Apps blockieren externe Bilder, verlinkte Bilder könnten also fehlen. Jedes PNG hat die dreifache Anzeigegröße und wird aus `assets/wordmark-light.svg` und `assets/wordmark-dark.svg` gerendert. Ein Test rendert die SVGs erneut mit resvg und schlägt fehl, wenn die committeten PNGs abweichen. So schreiben Sie sie neu:
+E-Mails tragen die Wortmarke als zwei eingebettete PNGs, hell und dunkel, zusammen etwa 6 KB. Die Adresse einer selbst betriebenen Installation kann intern sein, und viele Mail-Apps blockieren externe Bilder, verlinkte Bilder könnten also fehlen.
+
+Jedes PNG hat die dreifache Anzeigegröße und wird aus `assets/wordmark-light.svg` und `assets/wordmark-dark.svg` gerendert. Ein Test rendert die SVGs erneut mit resvg und schlägt fehl, wenn die committeten PNGs abweichen. So schreiben Sie sie neu:
 
 ```bash
 KAESO_UPDATE_MAIL_ASSETS=1 cargo test -p kaeso-mail assets
@@ -66,7 +70,7 @@ Kaeso legt den Dunkelmodus selbst fest, statt ihn der Invertierung jeder Mail-Ap
 
 1. **Apps, die `prefers-color-scheme` folgen**, etwa Apple Mail und Thunderbird. Das Dokument erklärt beide Farbschemata, sodass sie es nicht invertieren, und `@media (prefers-color-scheme: dark)` schaltet jede Rolle mit `!important` auf ihr dunkles Token.
 2. **Outlook.com und das neue Outlook**, die E-Mails selbst abdunkeln und das Umgefärbte mit `data-ogsc` und `data-ogsb` markieren. Dieselben Regeln unter diesen Attributen ersetzen ihre Schätzung durch die dunklen Werte von Kaeso.
-3. **Apps, die ungefragt invertieren**, etwa die Gmail-Apps. Das helle Design übersteht die Invertierung: fast schwarzer Text, ein Button, der zur hellen Pille des dunklen Themes wird, ein weißer Rand um die helle Wortmarke und eine dunkle Wortmarke, die verborgen bleibt.
+3. **Apps, die ungefragt invertieren**, etwa die Gmail-Apps. Das helle Design übersteht die Invertierung. Sein Text ist fast schwarz, und sein Button wird zur hellen Pille des dunklen Themes. Ein weißer Rand umgibt die helle Wortmarke, und die dunkle Wortmarke bleibt verborgen.
 
 Das Stylesheet kommt aus demselben Token-Makro wie die Inline-Stile. Tests prüfen, dass jede dunkle Regel `!important` ist und jede Rolle in jeder Ebene eine Regel hat.
 

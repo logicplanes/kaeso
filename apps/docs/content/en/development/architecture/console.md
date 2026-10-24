@@ -26,11 +26,11 @@ The console is a static React app in `apps/console`, served on the gateway's dom
 - **Rights come from the API, never guessed.** Organization rights come from `auth/session`, project rights from `GET …/projects/{project}/my-rights`, and each right's name, description, category and needs from `GET orgs/{org}/rights`. A `403` is final: an area a person can't see is hidden, and a single action is disabled with the right's name and who can give it (`useNeedsRight`).
 - **Providers come from the API too.** Each provider's name, key page, key prefix and formats come from `GET orgs/{org}/providers`, which the organization's route loads once and keeps for an hour. The console names no provider in its code, so a provider the gateway adds appears without a new console. An id the gateway no longer lists, such as in old logs, shows as the id with a capital first letter.
 - **No secrets in the browser.** The console never reads the session cookie, and it shows key secrets once and never stores them. `localStorage` holds only the last organization and project, recently opened items, the theme, the language, the sidebar's width and state, the request log's columns and the playground's unsent prompts. `sessionStorage` holds an invitation's token only while its invitee signs in to accept it. Other tokens from links, and the secrets a mutation returns, stay in memory and are dropped once used or once their dialog closes.
-- **Dialogs open fresh.** What a dialog keeps, such as fields, the step, a result or a secret shown once, lives in a component that mounts anew on every open: inside a `DialogScope`, or rendered only while the dialog is open. A sheet for one row never shows another row's data.
+- **Dialogs open fresh.** Everything a dialog keeps lives in a component that mounts anew on every open: inside a `DialogScope`, or rendered only while the dialog is open. That includes fields, the step, a result or a secret shown once. A sheet for one row never shows another row's data.
 - **Tokens in links travel in the fragment.** The console reads `location.hash` once, calls the API, and replaces the address without it.
 - **Every visible element comes from `@logicplanes/kaeso-ui`**, and `className` holds layout only: margin, width, grid, flex, gap and position. `pnpm lint` enforces it with the rules in `apps/console/eslint/kaeso.js`.
 - **Every word in three languages**, through `t()` ([translations](../translations.md#the-console)).
-- **Descriptions are one sentence that fits on one line.** The limit depends on the place: 60 characters for a settings row (50 beside an input), 80 for a section or page (70 beside actions), 100 for a dialog, 90 for an empty state and 60 for a toast. `src/copy.test.ts` checks rows, sections and pages in every language, German and Chinese with 15% slack.
+- **Descriptions are one sentence that fits on one line.** The limit depends on the place. A settings row allows 60 characters (50 beside an input), and a section or page 80 (70 beside actions). A dialog allows 100, an empty state 90 and a toast 60. `src/copy.test.ts` checks rows, sections and pages in every language, German and Chinese with 15% slack.
 
 ## Data
 
@@ -49,7 +49,18 @@ The console has no styles of its own. `@logicplanes/kaeso-ui` provides every vis
 
 The router splits routes (`autoCodeSplitting`), so a page's code loads with the page. The build rewrites imports from `@logicplanes/kaeso-ui` to the library's per-component entry points, and each `icons.name` to that icon's own import (`uiEntryImports` in `vite.config.ts`). A page then carries only the components and icons it draws.
 
-What the first paint doesn't need loads when it is used: the toaster, the command palette, the recent sign-in dialog, the shortcuts list, "Create organization", the sidebar's menus, tooltips and the date picker's calendar. The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A request log, a project's audit log and a project's overview start their data in the route's loader, from a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load.
+What the first paint doesn't need loads when it is used:
+
+- The toaster
+- The command palette
+- The recent sign-in dialog
+- The shortcuts list
+- "Create organization"
+- The sidebar's menus
+- Tooltips
+- The date picker's calendar
+
+The sidebar's menus and the calendar also load once the page is idle, so the first press opens them at once. The breakdown, cost share and period picker of the project and organization overviews, and the sign-in steps after the email address, load alongside the data they wait for. A request log, a project's audit log and a project's overview start their data in the route's loader, from a module of their own (`src/api/queries/route-prefetch.ts`) that only those routes load.
 
 `pnpm build` fails when a route's first paint grows past its ceiling in `scripts/budget.mjs`, or when page code from `src/features` reaches the entry. To get back under it:
 

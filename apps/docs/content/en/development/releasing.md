@@ -30,13 +30,17 @@ Everything else reads the version instead of stating it. A page writes `\{{versi
 
 ## The changelog
 
-`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and pull requests never change it. The Release workflow writes each version's section from the pull requests merged since the last release. Each pull request's title as merged becomes its line, with a link to the pull request, and its labels choose where the line goes. The title as merged is the subject of the pull request's squash commit on `prod`, so editing a pull request after its merge changes nothing. For a pull request merged another way, it is the title at the moment of the merge.
+`CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and pull requests never change it. The Release workflow writes each version's section from the pull requests merged since the last release. Each pull request's title as merged becomes its line, with a link to the pull request, and its labels choose where the line goes.
+
+The title as merged is the subject of the pull request's squash commit on `prod`, so editing a pull request after its merge changes nothing. For a pull request merged another way, it is the title at the moment of the merge.
 
 Pull requests labelled `internal` are left out. Dependabot's updates become one line, "Dependencies updated". A pull request labelled `breaking` is also named at the top of the section.
 
 To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on `dev`. The release puts those lines first, then a line for each pull request that none of them links as `[#42](…/pull/42)`. This suits a release whose notes need more than titles, and a hotfix, whose commits have no pull request.
 
-When the repository's `release` environment has the secret `LOG_AI_KEY`, the workflow has a model draft the section through the maintainer's Kaeso install, from the merged pull requests. The model reads each one as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository. It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+When the repository's `release` environment has the secret `LOG_AI_KEY`, a model drafts the section from the merged pull requests. The workflow calls it through the maintainer's Kaeso install. The model reads each pull request as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository.
+
+It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
@@ -44,7 +48,9 @@ pnpm release:notes --dry-run --since v{{version}} --head origin/dev
 
 A stable release after pre-releases of its version folds their sections into one, so its notes cover everything since the last stable release.
 
-The GitHub release opens with one sentence, up to five highlights and the breaking changes, then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**, one line each with its topic and pull requests. The contributors and links to the full changelog and the compare view close it. The model writes the opening with the section; without the model, the release has no highlights, and its breaking changes are cut to their first sentence. The preview above prints the GitHub release after the notes.
+The GitHub release opens with one sentence, up to five highlights and the breaking changes. It then lists every entry of the section under its own heading, such as **Added**, **Changed**, **Removed** or **Fixed**. Each entry is one line with its topic and pull requests. The contributors and links to the full changelog and the compare view close it.
+
+The model writes the opening with the section; without the model, the release has no highlights, and its breaking changes are cut to their first sentence. The preview above prints the GitHub release after the notes.
 
 ### What the notes may say
 
@@ -61,7 +67,9 @@ A draft that still fails after one correction falls back to the titles. A title 
 
 ### Review before the tag
 
-Every job that uses a secret, writes to the repository or publishes runs in the `release` environment, so it waits for the maintainer's approval. Approving **Release notes** lets the model draft. **Prepare** then writes the changelog and shows the section and the GitHub release in its summary, exactly as the release publishes them. **Tag** waits for your approval after that, so read the summary first. If anything in it is wrong, reject **Tag**, fix the cause on `dev` and run Release again.
+Every job that uses a secret, writes to the repository or publishes runs in the `release` environment, so it waits for the maintainer's approval. Approving **Release notes** lets the model draft. **Prepare** then writes the changelog and shows the section and the GitHub release in its summary, exactly as the release publishes them.
+
+**Tag** waits for your approval after that, so read the summary first. If anything in it is wrong, reject **Tag**, fix the cause on `dev` and run Release again.
 
 ### Labels
 

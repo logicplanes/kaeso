@@ -38,7 +38,9 @@ Eine Seite gibt es, weil echte Leser sie öffnen, um etwas zu erledigen. Bevor S
 3. **Steht es schon woanders?** Ein Thema hat eine Seite. Überschneiden sich zwei Seiten, erklärt eine davon, und die andere verlinkt darauf.
 4. **Würde ein Absatz auf einer anderen Seite reichen?** Eine Seite unter etwa 150 Wörtern, oder eine, die nur Links aufzählt, wird zum Abschnitt der Seite, von der ihre Leser kommen.
 
-Eine Seite, die an einer dieser Fragen scheitert, wird entfernt oder zusammengelegt, nicht gekürzt. Zahlen und Listen, nach denen nur CI handelt, etwa Bundle-Budgets oder Coverage-Schwellen, bleiben im Code oder in der Konfiguration, die sie durchsetzt; die Dokumentation nennt den Befehl, der sie prüft. Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen, tragen ihre Adresse mit der passendsten Seite in `apps/docs/redirects.json` ein ([Wo eine Seite liegt](#wo-eine-seite-liegt)) und reparieren die Links, die der Build nennt.
+Eine Seite, die an einer dieser Fragen scheitert, wird entfernt oder zusammengelegt, nicht gekürzt. Zahlen und Listen, nach denen nur CI handelt, etwa Bundle-Budgets oder Coverage-Schwellen, bleiben im Code oder in der Konfiguration, die sie durchsetzt. Die Dokumentation nennt den Befehl, der sie prüft.
+
+Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen. Tragen Sie ihre Adresse mit der passendsten Seite in `apps/docs/redirects.json` ein ([Wo eine Seite liegt](#wo-eine-seite-liegt)), und reparieren Sie dann die Links, die der Build nennt.
 
 ## Seitentypen
 
@@ -87,7 +89,7 @@ The command returns once the gateway, the console and the databases are healthy.
 ~~~
 
 - Ein Weg von Anfang bis Ende, ohne Abzweigungen. Optionen und Alternativen stehen auf den Anleitungen, auf die die Schritte verlinken.
-- Jeder Schritt ist eine `##`-Überschrift, die die Aufgabe im Infinitiv nennt, ein Satz dazu, was der Schritt tut, ein Befehl oder eine Codegruppe und ein Satz dazu, was die Leser sehen, wenn es geklappt hat.
+- Jeder Schritt ist eine `##`-Überschrift, die die Aufgabe im Infinitiv nennt. Darunter sagt ein Satz, was der Schritt tut, gefolgt von einem Befehl oder einer Codegruppe. Ein letzter Satz sagt, was die Leser sehen, wenn es geklappt hat.
 - Höchstens zehn Schritte. Der letzte Schritt beweist, dass es funktioniert, etwa eine erste Anfrage und ihre Antwort.
 
 ### Anleitung
@@ -214,7 +216,7 @@ Schreiben Sie so, wie eine hilfsbereite Kollegin etwas am Whiteboard erklärt: d
 - **Titel und Überschriften** in deutscher Groß- und Kleinschreibung, sonst wie ein Satz. Eine Überschrift, die eine Aufgabe nennt, steht im Infinitiv mit dem Verb am Ende („Schlüssel erstellen“); eine, die eine Sache nennt, ist ein Substantiv („Modellnamen“).
 - **Beschreiben Sie Kaeso so, wie der Code es tut.** Prüfen Sie Einstellungen an der Konfiguration des Gateways, Beschriftungen am englischen Katalog der Konsole und Verhalten an Gateway, KPP und Konsole. Dokumentieren Sie nie ein Feature, das es nicht gibt, und nie einen Plan: Pläne gehören in Issues.
 
-Aus unseren eigenen Seiten:
+Aus Kaesos eigenen Seiten:
 
 | Statt | Schreiben Sie |
 | --- | --- |
@@ -246,7 +248,7 @@ Formatierung zeigt, was etwas ist, nie, wie wichtig es ist.
 Leser kopieren Code, bevor sie den Text lesen, deshalb muss der Code so funktionieren, wie er dasteht.
 
 - **Mit einem lauffähigen Beispiel beginnen.** Jede API-Seite und jede Anleitung, in der eine App Kaeso aufruft, zeigt auf ihrem ersten Bildschirm eine minimale Anfrage, die funktioniert: direkt nach der Einleitung, vor der ersten `##`-Überschrift.
-- **Lauffähig, wie eingefügt.** Die Leser ändern nur die Platzhalter: die Adresse `kaeso.example.com`, den Schlüssel in der Umgebungsvariable `KAESO_API_KEY` (als `sk-kso-…`, wo ein Literal unvermeidbar ist) und das Modell `claude-haiku-4-5` oder `gpt-5-mini`. Verwenden Sie auf einer Seite durchgehend denselben Prompt: „Write a haiku about gateways.“
+- **Lauffähig, wie eingefügt.** Die Leser ändern nur die Platzhalter: die Adresse `kaeso.example.com`, den Schlüssel in der Umgebungsvariable `KAESO_API_KEY` und das Modell `claude-haiku-4-5` oder `gpt-5-mini`. Wo ein Schlüssel als Literal unvermeidbar ist, schreiben Sie ihn als `sk-kso-…`. Verwenden Sie auf einer Seite durchgehend denselben Prompt: „Write a haiku about gateways.“
 - **Minimal.** Nur die Felder, die das Beispiel braucht. Ein Block in einer Anleitung bleibt unter 25 Zeilen; längerer Code verlinkt auf eine Datei auf GitHub.
 - **Schlüssel kommen aus der Umgebung.** Der Code liest `KAESO_API_KEY`: `os.environ["KAESO_API_KEY"]` in Python, `process.env.KAESO_API_KEY` in TypeScript, `$KAESO_API_KEY` in curl. Schreiben Sie nie einen Schlüssel in SDK-Code.
 - **Die offiziellen SDKs.** Python nutzt `openai` und `anthropic` mit ihren synchronen Clients; TypeScript nutzt `openai` und `@anthropic-ai/sdk` als ES-Module mit Top-Level-`await`. Die Basis-URL des OpenAI SDK ist `https://kaeso.example.com/v1`, die des Anthropic SDK `https://kaeso.example.com`. Die App der Leser installiert sie mit `pip install openai anthropic` und `npm install openai @anthropic-ai/sdk`; Befehle für die Arbeit an diesem Repository nutzen pnpm.
@@ -401,7 +403,11 @@ Jedes andere Feld ist ein Fehler. Der Titel ist die einzige `#`-Überschrift der
 | `content/de/console/api-keys.md` | `/de/console/api-keys` | Dieselbe Seite auf Deutsch |
 | `content/zh-CN/console/api-keys.md` | `/zh-CN/console/api-keys` | Dieselbe Seite auf vereinfachtem Chinesisch |
 
-Der Name einer Datei ist ihre Adresse: Kleinbuchstaben, Wörter mit Bindestrichen verbunden (`provider-keys.md`). Wer eine Datei umbenennt oder verschiebt, ändert ihre Adresse in jeder Sprache, und jeder Link darauf muss folgen; der Build nennt die, die es nicht tun. Links von anderen Websites und Lesezeichen verwenden weiter die alte Adresse. Tragen Sie sie deshalb in `apps/docs/redirects.json` ein, zusammen mit der Seite, auf die sie umgezogen ist, und wahlweise deren Überschrift: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. Der Build schreibt dann in jeder Sprache eine Seite an die alte Adresse, die die Leser weiterschickt, zur selben Überschrift der Übersetzung. Ein Ordner innerhalb einer Gruppe braucht eine `index.md`, und Ordner sind höchstens drei Ebenen tief verschachtelt. Dateien und Ordner, deren Name mit `_` beginnt, werden nicht veröffentlicht.
+Der Name einer Datei ist ihre Adresse: Kleinbuchstaben, Wörter mit Bindestrichen verbunden (`provider-keys.md`). Wer eine Datei umbenennt oder verschiebt, ändert ihre Adresse in jeder Sprache, und jeder Link darauf muss folgen; der Build nennt die, die es nicht tun.
+
+Links von anderen Websites und Lesezeichen verwenden weiter die alte Adresse. Tragen Sie sie deshalb in `apps/docs/redirects.json` ein, zusammen mit der Seite, auf die sie umgezogen ist, und wahlweise deren Überschrift: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. Der Build schreibt dann in jeder Sprache eine Seite an die alte Adresse, die die Leser weiterschickt, zur selben Überschrift der Übersetzung.
+
+Ein Ordner innerhalb einer Gruppe braucht eine `index.md`, und Ordner sind höchstens drei Ebenen tief verschachtelt. Dateien und Ordner, deren Name mit `_` beginnt, werden nicht veröffentlicht.
 
 ## Bilder
 
@@ -411,7 +417,9 @@ Legen Sie das Bild neben die Seite oder in einen Ordner `images/` daneben, und g
 ![Die Seite API-Schlüssel mit einem Schlüssel](images/api-keys.png)
 ```
 
-PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites werden nicht angezeigt, und ein Bild ohne Alternativtext lässt den Build fehlschlagen. Wählen Sie Bilder, die auf hellem und dunklem Hintergrund lesbar sind; ein SVG kann seine Farben selbst mit `@media (prefers-color-scheme: dark)` umschalten. Ein Link auf jede andere Datei in `content/` veröffentlicht diese Datei. Fügen Sie einen Screenshot nur hinzu, wo die Leser sich allein mit den Beschriftungen nicht zurechtfinden. Ein Bild zeigt nie ein Diagramm: Zeichnen Sie es als [Mermaid-Block](#diagramme).
+PNG, JPEG, GIF, WebP, AVIF und SVG funktionieren. Bilder von anderen Websites werden nicht angezeigt, und ein Bild ohne Alternativtext lässt den Build fehlschlagen. Wählen Sie Bilder, die auf hellem und dunklem Hintergrund lesbar sind; ein SVG kann seine Farben selbst mit `@media (prefers-color-scheme: dark)` umschalten.
+
+Ein Link auf jede andere Datei in `content/` veröffentlicht diese Datei. Fügen Sie einen Screenshot nur hinzu, wo die Leser sich allein mit den Beschriftungen nicht zurechtfinden. Ein Bild zeigt nie ein Diagramm: Zeichnen Sie es als [Mermaid-Block](#diagramme).
 
 ## Diagramme
 
@@ -478,7 +486,12 @@ Die eigenen Texte der Website, etwa **Auf GitHub bearbeiten** oder die Suche, st
 
 ## Die Aufnahme im README
 
-Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Theme der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine mit Beispieldaten gefüllte Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript verbindet auf **Anbieter** einen Anthropic-Schlüssel, erstellt auf **API-Schlüssel** einen Schlüssel, sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt, und wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
+Das README beginnt mit einer kurzen Aufnahme der Konsole in einer hellen und einer dunklen Fassung, `.github/assets/demo-light.gif` und `.github/assets/demo-dark.gif`; GitHub zeigt die, die zum Theme der Leser passt. `apps/console/scripts/demo.mjs` nimmt beide mit Playwright gegen den Entwicklungs-Stack und seine mit Beispieldaten gefüllte Organisation auf, sodass nur der Mock-Anbieter, seine Platzhalter-Schlüssel und die erfundenen Personen des Seeds zu sehen sind. Das Skript erledigt in der Konsole vier Schritte:
+
+- Es verbindet auf **Anbieter** einen Anthropic-Schlüssel.
+- Es erstellt auf **API-Schlüssel** einen Schlüssel.
+- Es sendet damit eine Anfrage aus einem Terminal-Fenster, das es über die Seite legt.
+- Es wartet auf **Anfrageprotokolle** mit eingeschaltetem **Live**, bis die Anfrage erscheint.
 
 Für eine neue Aufnahme beginnen Sie mit einem frischen Stack voller Beispieldaten und laufender Konsole und installieren vorher `ffmpeg`, zum Beispiel mit `brew install ffmpeg`:
 
@@ -495,7 +508,9 @@ Dann in einem zweiten Terminal:
 pnpm demo
 ```
 
-Das Skript nimmt mit 1280 × 800 und dem Geräte-Skalierungsfaktor 2 auf, macht aus den Bildern GIFs mit 20 Bildern pro Sekunde und je einer Palette, schreibt beide nach `.github/assets` und nennt ihre Größe; jedes sollte unter 4 MB bleiben. Es läuft auch auf einem Stack, auf dem es schon aufgenommen hat: Vorher entfernt es den Anthropic-Schlüssel und archiviert seinen eigenen Schlüssel, die früheren Anfragen bleiben aber in den Protokollen. Das README verlinkt die GIFs auf `dev`, eine neue Aufnahme erscheint dort also, sobald ihr Pull Request gemergt ist.
+Das Skript nimmt mit 1280 × 800 und dem Geräte-Skalierungsfaktor 2 auf. Es macht aus den Bildern GIFs mit 20 Bildern pro Sekunde und je einer Palette. Es schreibt beide nach `.github/assets` und nennt ihre Größe. Halten Sie jedes unter 4 MB.
+
+Es läuft auch auf einem Stack, auf dem es schon aufgenommen hat. Dann entfernt es vorher den Anthropic-Schlüssel und archiviert seinen eigenen Schlüssel, die früheren Anfragen bleiben aber in den Protokollen. Das README verlinkt die GIFs auf `dev`, eine neue Aufnahme erscheint dort also, sobald ihr Pull Request gemergt ist.
 
 ## Vor dem Merge
 
