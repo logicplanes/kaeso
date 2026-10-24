@@ -16,12 +16,13 @@ export interface FigureProps {
   label: string;
   caption?: ReactNode | undefined;
   surface?: keyof typeof KAESO_FIGURE_VARIANTS.surface | undefined;
+  focus?: number | undefined;
   className?: string | undefined;
 }
 
 const TOUCHED = ["pointerdown", "wheel", "keydown"] as const;
 
-function useCentred() {
+function useFocused(focus: number) {
   const content = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const inner = content.current;
@@ -32,7 +33,8 @@ function useCentred() {
       touched = true;
     };
     const centre = () => {
-      if (!touched) viewport.scrollLeft = (viewport.scrollWidth - viewport.clientWidth) / 2;
+      const room = viewport.scrollWidth - viewport.clientWidth;
+      if (!touched) viewport.scrollLeft = Math.min(room, Math.max(0, focus * viewport.scrollWidth - viewport.clientWidth / 2));
     };
     centre();
     for (const name of TOUCHED) viewport.addEventListener(name, touch, { passive: true });
@@ -41,12 +43,12 @@ function useCentred() {
       stop();
       for (const name of TOUCHED) viewport.removeEventListener(name, touch);
     };
-  }, []);
+  }, [focus]);
   return content;
 }
 
-export const Figure = forwardRef<HTMLElement, FigureProps>(function Figure({ children, label, caption, surface = "well", className }, ref) {
-  const content = useCentred();
+export const Figure = forwardRef<HTMLElement, FigureProps>(function Figure({ children, label, caption, surface = "well", focus = 0.5, className }, ref) {
+  const content = useFocused(focus);
   return (
     <figure ref={ref} className={cn("flex min-w-0 flex-col gap-12", className)}>
       <ScrollArea orientation="horizontal" aria-label={label} className={KAESO_FIGURE_VARIANTS.surface[surface].classes}>

@@ -1089,6 +1089,7 @@
   "Wider than its column": "Breiter als die Spalte",
   "A few words under the figure that say what it shows, such as a diagram's title.": "Ein paar Wörter unter der Abbildung, die sagen, was sie zeigt, etwa der Titel eines Diagramms.",
   "What the figure shows, usually a ThemeImage.": "Was die Abbildung zeigt, meist ein ThemeImage.",
+  "Where a figure wider than its column starts, as a share of its width: 0.5, the middle, by default.": "Wo eine Abbildung beginnt, die breiter als ihre Spalte ist, als Anteil ihrer Breite: standardmäßig 0.5, die Mitte.",
   "The name of the figure's scrolling region, read by screen readers.": "Der Name des scrollbaren Bereichs der Abbildung, den Screenreader vorlesen.",
   "The figure's background: a well like a code block's, or none.": "Der Hintergrund der Abbildung: eine Fläche wie bei einem Codeblock oder keiner."
 }

@@ -191,6 +191,11 @@ describe("diagrams", () => {
     expect(out.seen.map((s) => s.line)).toEqual([1, 10, 17]);
   });
 
+  it("keeps where a drawing's subject sits, so a wide diagram opens on it", () => {
+    expect(page(FLOW, { ...drawn, focus: 0.18 }).blocks[0]).toMatchObject({ t: "diagram", focus: 0.18 });
+    expect(page(FLOW).blocks[0]).not.toHaveProperty("focus");
+  });
+
   it("names the file's line of a diagram without a title, with a comment, its own styles, or not drawn yet", () => {
     expect(page("```mermaid\nflowchart LR\n  a --> b\n```").problems).toEqual([
       ":5: the diagram has no `accTitle: …`: name it in a few words for screen readers and search",

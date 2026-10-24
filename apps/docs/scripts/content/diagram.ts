@@ -9,7 +9,7 @@ export type DiagramTheme = (typeof DIAGRAM_THEMES)[number];
 export const DIAGRAM_LANG = "mermaid";
 export const DIAGRAM_ROLES: readonly string[] = ["accent", "outside"];
 export const DIAGRAM_COMMAND = "pnpm --filter kaeso-docs diagrams";
-const REVISION = 7;
+const REVISION = 8;
 
 export interface DiagramText {
   title?: string;
@@ -206,6 +206,12 @@ export function svgLabels(svg: string): string[] {
         .trim(),
     )
     .filter(Boolean);
+}
+
+export function svgFocus(svg: string): number | undefined {
+  const root = /<svg\b[^>]*>/.exec(svg)?.[0] ?? "";
+  const focus = Number(/\sdata-focus="([\d.]+)"/.exec(root)?.[1]);
+  return focus >= 0 && focus <= 1 ? focus : undefined;
 }
 
 export function svgSize(svg: string): { width: number; height: number } | null {

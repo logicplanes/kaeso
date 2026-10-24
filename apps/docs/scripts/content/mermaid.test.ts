@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Browser } from "@playwright/test";
 import { neutral } from "@logicplanes/kaeso-tokens";
-import { svgLabels, svgSize } from "./diagram.ts";
+import { svgFocus, svgLabels, svgSize } from "./diagram.ts";
 import { interFonts, launchRenderer, renderMermaid } from "./mermaid.ts";
 import { renderInPage } from "./mermaid-page.ts";
 
@@ -34,6 +34,18 @@ describe("renderMermaid", () => {
       expect(svg).toContain("Inter Variable");
     }
     expect(svgSize(result.svg.light)).toEqual(svgSize(result.svg.dark));
+    expect(svgFocus(result.svg.light)).toBeUndefined();
+  }, 60_000);
+
+  it("records where Kaeso's part sits across the drawing, so a diagram wider than a phone opens on it", async () => {
+    const [result] = await render(
+      "flowchart LR\n  accTitle: Left to right\n  app[App] --> gateway[Gateway]:::accent --> one[One] --> two[Two] --> three[Three]",
+    );
+    if (!result?.ok) throw new Error(JSON.stringify(result));
+    const focus = svgFocus(result.svg.light);
+    expect(focus).toBeGreaterThan(0.15);
+    expect(focus).toBeLessThan(0.4);
+    expect(svgFocus(result.svg.dark)).toBe(focus);
   }, 60_000);
 
   it("draws Kaeso's part in ink, outside parties dashed, and a subgraph's title on top of the lines in its corner", async () => {
