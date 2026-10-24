@@ -81,9 +81,21 @@ describe("the look", () => {
     expect(vars(light)).toMatchObject({
       primaryColor: neutral["bg-raised"].light,
       primaryTextColor: neutral.text.light,
-      lineColor: neutral["text-secondary"].light,
+      lineColor: neutral["line-field"].light,
+      background: neutral["fill-1"].light,
+      edgeLabelBackground: neutral["fill-1"].light,
     });
     expect(vars(dark)).toMatchObject({ primaryColor: neutral["bg-raised"].dark, primaryTextColor: neutral.text.dark, darkMode: true });
     expect(DIAGRAM_RADIUS).toBe(10);
+  });
+
+  it("draws an accent node in ink and an outside node dashed, in each theme", () => {
+    for (const theme of ["light", "dark"] as const) {
+      const css = mermaidConfig(theme).themeCSS as string;
+      expect(css).toContain(`.node.accent rect`);
+      expect(css).toContain(`fill:${neutral.ink[theme]};stroke:${neutral.ink[theme]}`);
+      expect(css).toContain(`.node.accent text,.node.accent tspan{fill:${neutral["on-ink"][theme]}`);
+      expect(css).toMatch(/\.node\.outside rect[^{]*\{[^}]*stroke-dasharray:4 3/);
+    }
   });
 });

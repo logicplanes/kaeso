@@ -1,6 +1,6 @@
 import { Fragment, useId, useRef, type ReactNode } from "react";
 import { flushSync } from "react-dom";
-import { Banner, CheckboxBox, Code, CodeBlock, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
+import { Banner, CheckboxBox, Code, CodeBlock, Figure, Link, ScrollArea, Separator, Table, Text, ThemeImage, VisuallyHidden } from "@logicplanes/kaeso-ui";
 import type { Locale } from "~/i18n/locales";
 import { useSiteLocale, useText, type Translate } from "~/i18n/text";
 import type { MessageKey } from "~/i18n/messages";
@@ -182,20 +182,18 @@ function LinkCards({ items, ctx }: { items: LinkCard[]; ctx: Ctx }) {
 function Diagram({ b, ctx }: { b: Extract<Block, { t: "diagram" }>; ctx: Ctx }) {
   const id = useId();
   return (
-    <figure className="flex min-w-0 flex-col">
-      <ScrollArea orientation="horizontal" aria-label={ctx.t("page.diagram").replace("{title}", b.title)}>
-        <ThemeImage
-          light={b.light}
-          dark={b.dark}
-          alt={b.title}
-          width={b.width}
-          height={b.height}
-          aria-describedby={b.description ? id : undefined}
-          className={diagramMinWidth(b.width)}
-        />
-      </ScrollArea>
+    <Figure label={ctx.t("page.diagram").replace("{title}", b.title)} caption={b.title}>
+      <ThemeImage
+        light={b.light}
+        dark={b.dark}
+        alt={b.title}
+        width={b.width}
+        height={b.height}
+        aria-describedby={b.description ? id : undefined}
+        className={diagramMinWidth(b.width)}
+      />
       {b.description && <VisuallyHidden id={id}>{b.description}</VisuallyHidden>}
-    </figure>
+    </Figure>
   );
 }
 
