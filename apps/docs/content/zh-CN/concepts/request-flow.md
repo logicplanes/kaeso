@@ -115,13 +115,17 @@ KPP 把回复解码为规范格式，再编码为应用的格式，流式回复�
 
 收到服务商的错误事件后，Kaeso 会停止读取并关闭对服务商的请求，服务商随之停止生成。
 
+流的最后一个事件（例如 `response.completed`、`message_stop` 或 `data: [DONE]`）到达应用后，该流即已完成。此后任何情况都不会再让它失败：与服务商的连接中断、服务商静默、流达到上限或网关关闭，都只会结束该流，不会发送错误事件。
+
 用量会把这样的流计为错误。请求日志在 `stream_progress` 中显示它进行到了哪一步：服务商的事件、写入应用的字节数和保活消息，以及到第一批字节的耗时。指标 `kaeso_requests_total` 仍按已发出的状态码把它计为 200（[健康状态和指标](../self-hosting/monitoring.md)）。
 
 如果应用在 `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT` 这么长的时间内没有读取其流的任何内容，就视为已断开：Kaeso 会停止对服务商的请求，并将其记录为连接断开。
 
 ## 连接断开
 
-应用关闭连接时，Kaeso 会立即停止对服务商的请求，服务商随之停止生成。Kaeso 将该请求记录为 499，错误类型为 `client_disconnected`。
+应用在流的最后一个事件到达之前关闭连接时，Kaeso 会立即停止对服务商的请求，服务商随之停止生成。Kaeso 将该请求记录为 499，错误类型为 `client_disconnected`。
+
+许多应用（例如 Codex）一收到最后一个事件就会关闭连接。Kaeso 会把这样的流记录为已完成，状态码为 200，用量为服务商报告的用量。
 
 这样的请求，以及中途中断的流，Kaeso 按服务商报告的用量计费，再加上对剩余部分的估算：
 
@@ -138,7 +142,7 @@ Kaeso 一旦把非流式请求发送给服务商，就会按其大小估算的�
 
 收到关闭信号时，网关不再接受新连接。已打开的请求和流有 `KAESO_SHUTDOWN_GRACE` 的时间完成，默认 30 秒。
 
-届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始的流则改为以错误事件结束。
+届时仍未结束的请求会收到应用格式的错误“Kaeso is restarting and ended this request. Send it again.”：状态码为 503，OpenAI 格式下为 500。已开始但尚未完成的流则改为以错误事件结束。
 
 Kaeso 以错误类型 `shutdown` 为两者计费并记录日志，流的用量为估算值。一秒后，Kaeso 会关闭仍然打开的连接。
 
