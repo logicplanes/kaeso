@@ -681,7 +681,7 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
     assert_eq!(
         r.json()["error"],
         json!({
-            "message": "The model `claude-opus-5-5` does not accept `tool_choice` `required`; send `auto` and ask for the tool in the prompt.",
+            "message": "The model `claude-opus-5-5` does not accept `tool_choice` `required`; send `auto` and name the tool in the prompt.",
             "type": "invalid_request_error",
             "param": "tool_choice",
             "code": null,
@@ -736,7 +736,7 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(
         r.json()["error"]["message"],
-        "The model `claude-opus-5-5` does not accept `tool_choice` `any`; send `auto` and ask for the tool in the prompt."
+        "The model `claude-opus-5-5` does not accept `tool_choice` `any`; send `auto` and name the tool in the prompt."
     );
     assert_eq!(env.mock.received().len(), before, "nothing was sent");
 
@@ -769,7 +769,7 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(
         r.json()["error"]["message"],
-        "The model `claude-opus-4-5` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+        "The model `claude-opus-4-5` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
     );
     let mut effort = messages("claude-haiku-4-5", "Hi");
     effort["output_config"] = json!({"effort": "low"});

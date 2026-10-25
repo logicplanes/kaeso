@@ -130,15 +130,15 @@ describe("a refusal from the Playground's capability checks", () => {
 
   it("translates the named tool choice and keeps a choice written as code", async () => {
     await speak("de");
-    const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and ask for the tool in the prompt.";
+    const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(named))).message).toBe(
-      "Das Modell `o3` nimmt eine benannte Funktion in `tool_choice` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+      "Das Modell `o3` nimmt eine benannte Funktion in `tool_choice` nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
     );
-    const code = "The model `o3` does not accept `tool_choice` `required`; send `auto` and ask for the tool in the prompt.";
+    const code = "The model `o3` does not accept `tool_choice` `required`; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(code))).message).toBe(
-      "Das Modell `o3` nimmt `tool_choice` `required` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+      "Das Modell `o3` nimmt `tool_choice` `required` nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
     );
-    const unknown = "The model `o3` does not accept a brand new choice; send `auto` and ask for the tool in the prompt.";
+    const unknown = "The model `o3` does not accept a brand new choice; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(unknown))).message).toBe(unknown);
   });
 });
