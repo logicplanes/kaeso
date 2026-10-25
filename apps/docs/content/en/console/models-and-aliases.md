@@ -58,6 +58,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: mode
 | Temperature | Whether the model takes `temperature` |
 | Forced tool choice | Whether the model takes `tool_choice` set to `required`, `any` or a named tool. Kaeso refuses such requests for a model that doesn't, before it calls the provider |
 | Adaptive thinking, efforts | How the model's reasoning is turned on, and the efforts it takes |
+| Thinking binding | Whether an Anthropic model checks that replayed thinking comes from the same conversation. For such a model, Kaeso asks Anthropic to drop thinking that apps in other formats send back changed, instead of failing the request |
 | Timeout | How many seconds a request to this model may take. Empty uses the install's request timeout |
 | Released | The model's release date |
 
