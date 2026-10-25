@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Toast as BaseToast } from "@base-ui/react/toast";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { observeResize } from "../../utils/observe-resize.js";
@@ -90,26 +90,24 @@ function useMultiline(title: ReactNode, description: ReactNode) {
   return [ref, multi] as const;
 }
 
-export function ToastCapsule({
-  tone = "neutral",
-  title,
-  description,
-  action,
-  closable,
-  "data-force": force,
-}: {
+export interface ToastCapsuleProps {
   tone?: Tone | undefined;
   title: ReactNode;
   description?: ReactNode | undefined;
   action?: string | undefined;
   closable?: boolean | undefined;
   "data-force"?: string | undefined;
-}) {
-  const [ref, multi] = useMultiline(title, description);
+}
+
+export const ToastCapsule = forwardRef<HTMLDivElement, ToastCapsuleProps>(function ToastCapsule(
+  { tone = "neutral", title, description, action, closable, "data-force": force },
+  ref,
+) {
+  const [surface, multi] = useMultiline(title, description);
   const t = useUiText();
   return (
-    <div role="status" className="k-toast-static relative w-max">
-      <div ref={ref} className={cn(SURFACE, multi ? "rounded-toast" : "rounded-pill", tone === "neutral" ? "pl-16" : "pl-14", action ? "pr-6" : "pr-16")}>
+    <div ref={ref} role="status" className="k-toast-static relative w-max">
+      <div ref={surface} className={cn(SURFACE, multi ? "rounded-toast" : "rounded-pill", tone === "neutral" ? "pl-16" : "pl-14", action ? "pr-6" : "pr-16")}>
         <ToneIcon tone={tone} />
         <span className="min-w-0 text-pretty">
           {title}
@@ -128,7 +126,7 @@ export function ToastCapsule({
       )}
     </div>
   );
-}
+});
 ToastCapsule.displayName = "ToastCapsule";
 
 type ManagedToast = ReturnType<typeof BaseToast.useToastManager>["toasts"][number];
