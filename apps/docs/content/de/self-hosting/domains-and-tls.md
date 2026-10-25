@@ -4,7 +4,7 @@ description: Stellen Sie Kaeso mit Zertifikat unter Ihrer Domain bereit oder hin
 order: 5
 ---
 
-Eine Installation antwortet unter einer Domain. Caddy bezieht das Zertifikat, leitet `/v1` und `/platform` an das Gateway weiter und alle anderen Pfade an die Konsole.
+Eine Installation antwortet unter einer Domain. Caddy bezieht das Zertifikat, leitet die APIs und den MCP-Server samt seiner Anmeldung an das Gateway weiter und alle anderen Pfade an die Konsole.
 
 ## Domain festlegen
 
@@ -51,8 +51,10 @@ Leiten Sie dann diese Pfade weiter:
 
 | Pfad | An |
 | --- | --- |
-| `/v1/` und `/platform/` | Das Gateway, Port 8080 |
+| `/v1/`, `/platform/`, `/mcp`, `/oauth/` und `/.well-known/oauth-` | Das Gateway, Port 8080 |
 | Alles andere | Die Konsole, Port 3000 |
+
+Agenten melden sich über `/oauth/` und `/.well-known/oauth-` an und rufen dann `/mcp` auf ([MCP-Server](../api/mcp.md)). Ein Proxy, der diese Pfade an die Konsole leitet, hindert jeden Agenten am Verbinden.
 
 Richten Sie den Proxy für Kaeso ein:
 

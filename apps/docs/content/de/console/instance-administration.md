@@ -51,6 +51,17 @@ Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern e
 
 Passwörter, Anmeldelinks und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt, ob Passwörter und Anmeldelinks eingeschaltet sind, und **System** die E-Mail, beide nur zur Ansicht. Single Sign-on richtet jede Organisation auf ihrer Seite **Sicherheit** ein. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 
+## Agenten zulassen
+
+Agenten wie Claude Code oder Codex handeln über den [MCP-Server](../api/mcp.md) für ihren Benutzer. Unter **Allgemein** enthält **Agenten** die Agenten-Richtlinie der Instanz:
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| Agenten zulassen | Standardmäßig an. Ausgeschaltet kann sich kein Agent anmelden, und jeder Agent erhält bei seiner nächsten Anfrage 403 |
+| Höchstens auf der Instanz | **Keine**, **Lesen**, **Konfigurieren** oder **Admin**, für die Instanzrechte, die ein Instanz-Admin seinen Agenten geben kann. **Konfigurieren** ist der Standard |
+
+Nur die Konsolensitzung eines Instanz-Admins ändert die Richtlinie; kein Agent kann das. Ein Agent macht nie jemanden zum Instanz-Admin, ändert nie Single Sign-on für Instanz-Admins und löscht nie einen Benutzer oder eine Organisation sofort. [Instanzrechte](../concepts/rights.md#instanzrechte) listet, was jedes Recht erlaubt.
+
 ## Modelldaten synchronisieren
 
 **Modellquellen** zeigt die models.dev-Daten der Installation: die verwendeten Daten, die letzte Synchronisierung und die automatische Synchronisierung, standardmäßig alle 24 Stunden. **Synchronisieren** holt die Daten sofort. Ist models.dev nicht erreichbar, bleiben die aktuellen Daten in Gebrauch.
@@ -74,7 +85,7 @@ Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**.
 
 ## Audit-Log lesen
 
-Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt.
+Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und **Von Agenten ausgeführt** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)).
 
 ## Nächste Schritte
 

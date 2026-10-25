@@ -28,7 +28,7 @@ Die **Übersicht** eines Projekts zeigt dieselben Zahlen für ein Projekt, aufge
 | --- | --- |
 | Allgemein | Bild, Name und Organisations-ID, **Inhaberschaft übertragen** und das Löschen der Organisation |
 | Mitglieder | Mitglieder, Einladungen und Rollen ([Mitglieder und Rollen](members-and-roles.md)) |
-| Sicherheit | Single Sign-on, die Anforderungen an die Anmeldung und die maximale Schlüssellaufzeit |
+| Sicherheit | Single Sign-on, die Anforderungen an die Anmeldung, die maximale Schlüssellaufzeit und die Agenten der Mitglieder |
 | Plattform-Schlüssel | Schlüssel für Skripte, die die Organisation verwalten ([Plattform-Schlüssel](api-keys.md#plattform-schlüssel)) |
 | Protokollierung | Inhaltsprotokollierung, Aufbewahrung, Speicher und das Löschen von Protokollen ([Anfrageprotokolle](request-logs.md#aufbewahrung)) |
 | Audit-Log | Jede Änderung in der Organisation ([Audit-Log](#audit-log-lesen)) |
@@ -79,6 +79,19 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 
 Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole fragt vor dem Speichern nach. Wenn Sie Single Sign-on verlangen, bleibt Ihre eigene Sitzung bestehen; ein [Anmeldelink vom Server](../self-hosting/sign-in.md#wieder-hineinkommen) ist also nie Ihr einziger Weg zurück. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.
 
+## Agenten von Mitgliedern zulassen
+
+Mitglieder können Agenten wie Claude Code oder Codex verbinden, die über den [MCP-Server](../api/mcp.md) für sie handeln. Unter **Sicherheit** enthält der Abschnitt **Agenten** die Agenten-Richtlinie der Organisation. Sie entscheidet, ob diese Agenten in der Organisation handeln dürfen und wie weit:
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| Agenten von Mitgliedern zulassen | Standardmäßig an. Ausgeschaltet erhält jeder Agent in dieser Organisation bei seiner nächsten Anfrage 403 und arbeitet anderswo weiter |
+| Höchstens erlaubt | **Observer**, **Builder**, **Operator** oder **Vollzugriff**, jeweils einschließlich der Vorlagen davor. **Vollzugriff** ist der Standard. Ein Agent erhält hier nie mehr, was auch immer sein Mitglied ihm gegeben hat |
+
+Die Richtlinie zu ändern, erfordert **Rollen zuweisen** und eine Konsolensitzung; kein Agent kann sie ändern. [Agenten](../concepts/rights.md#vorlagen) listet, was jede Vorlage enthält.
+
+Dieselbe Seite listet die Agenten, die in der Organisation handeln dürfen, mit ihrem Mitglied, ihrer Harness und wann sie erstellt, zuletzt genutzt wurden und ablaufen. Sie zu sehen, erfordert **Mitglieder ansehen**. **Zugriff entziehen** schließt die Organisation für einen Agenten und erfordert **Rollen zuweisen**. Der Agent arbeitet in den anderen Organisationen seines Mitglieds weiter, und sein Mitglied kann ihm diese wieder öffnen.
+
 ## Organisation löschen
 
 Wählen Sie unter **Allgemein** **Organisation löschen** und bestätigen Sie mit dem Namen der Organisation. Sie brauchen dafür das Recht **Organisation löschen**, das Inhaber haben, und die Installation muss das Löschen erlauben.
@@ -92,6 +105,8 @@ Wählen Sie unter **Allgemein** **Organisation löschen** und bestätigen Sie mi
 Das **Audit-Log** der Organisation unter **Organisationseinstellungen** verzeichnet jede Änderung in der Organisation. Das **Audit-Log** eines Projekts in dessen Seitenleiste verzeichnet jede Änderung im Projekt.
 
 Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Aktion und ihr Ziel. Filtern Sie nach Akteur, Aktion, Ziel-ID und Tagen. Wählen Sie einen Eintrag, um IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher zu sehen.
+
+Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit dem kleinen Bild des Agenten unten rechts. Fahren Sie darüber, um Mitglied, Agent und Harness zu sehen. **Von Agenten ausgeführt** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
 
 | Aktion | Recht |
 | --- | --- |

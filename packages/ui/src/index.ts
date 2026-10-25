@@ -65,6 +65,7 @@ export * from "./components/status-dot/index.js";
 export * from "./components/code-block/index.js";
 export * from "./components/badge/index.js";
 export * from "./components/avatar/index.js";
+export * from "./components/agent-avatar/index.js";
 export * from "./components/stat/index.js";
 export * from "./components/key-value/index.js";
 export * from "./components/qr-code/index.js";

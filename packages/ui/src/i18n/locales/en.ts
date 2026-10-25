@@ -1,4 +1,6 @@
 const en: Readonly<Record<string, string>> = {
+  "agentAttribution.label": "{name} via {agent} ({harness})",
+  "agentAvatar.otherHarness": "Other",
   "alertDialog.cancel": "Cancel",
   "alertDialog.typeToConfirm": "Type {text} to confirm",
   "appFrame.expandSidebar": "Expand sidebar",

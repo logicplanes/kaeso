@@ -200,5 +200,15 @@
   "format.audit.action.customProviderCreate": "已添加自定义服务商",
   "format.audit.action.customProviderUpdate": "已修改自定义服务商",
   "format.audit.action.customProviderDelete": "已删除自定义服务商",
-  "format.targetKind.customProvider": "自定义服务商"
+  "format.targetKind.customProvider": "自定义服务商",
+  "format.audit.action.agentAuthorize": "智能体已授权",
+  "format.audit.action.agentOrgAccessRevoke": "已对智能体关闭组织",
+  "format.audit.action.agentRevoke": "智能体已撤销",
+  "format.audit.action.agentRightsUpdate": "智能体权限已更改",
+  "format.audit.action.agentUpdate": "智能体已重命名或续期",
+  "format.audit.action.instanceAgentsPolicy": "实例的智能体策略已更改",
+  "format.audit.action.securityAgentsPolicy": "组织的智能体策略已更改",
+  "format.audit.kind.agent": "智能体",
+  "format.harness.other": "其他",
+  "format.targetKind.agent": "智能体"
 }

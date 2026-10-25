@@ -31,12 +31,13 @@ sequenceDiagram
   Gateway->>Stores: Charge, log
 ```
 
-A Platform API request authenticates with a session cookie, an API key with platform access or a platform key. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
+A Platform API request authenticates with a session cookie, an API key with platform access, a platform key or an agent's access token. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
 
 | Code | Where |
 | --- | --- |
 | The model API (`/v1`) | `crates/kaeso-server/src/model_api` |
 | The Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
+| The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | The services both use | `crates/kaeso-server/src/services` |
 
 ## Crates
@@ -44,7 +45,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | Crate | Job |
 | --- | --- |
 | `kaeso` | The binary: its command line (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), startup and shutdown. The only crate that may use `anyhow` |
-| `kaeso-server` | The routers for `/v1`, `/platform/v1`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
+| `kaeso-server` | The routers for `/v1`, `/platform/v1`, `/mcp`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
 | `kaeso-core` | Domain rules without I/O: ids, rights and roles, the key format, model resolution, the catalogue, capabilities, limits, costs and the stream reply assembler. `data/` holds the model data each release ships |
 | `kaeso-store` | PostgreSQL through sqlx, ClickHouse, the Valkey connections (one for limit checks and counters, two for cache entries and kept reasoning) with the cache invalidation, and the migrations of both databases |
 | `kaeso-upstream` | Provider transport: HTTP clients, auth headers, base URLs, timeouts, streaming bodies and cancellation |

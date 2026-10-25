@@ -201,7 +201,7 @@ flowchart TD
 | 请求 | 响应 |
 | --- | --- |
 | 控制台页面 | 503，并显示一个使用浏览器语言的页面，说明正在发生什么，每 5 秒检查一次，Kaeso 恢复后自动返回 |
-| `/platform/v1/*` | 503，带有 Platform API 的错误，类型为 `unavailable` |
+| `/platform/v1/*`、`/mcp`、`/oauth/*` 和 `/.well-known/oauth-*` | 503，带有 Platform API 的错误，类型为 `unavailable` |
 | `/v1/messages`，以及带 `anthropic-version` 请求头的其他 `/v1/*` | 529，带有 Anthropic 的 `overloaded_error` |
 | 其他 `/v1/*` | 503，带有 OpenAI 的 `service_unavailable_error` |
 

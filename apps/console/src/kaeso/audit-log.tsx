@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
+  AgentAttribution,
   Avatar,
   Button,
   CodeBlock,
@@ -16,14 +17,16 @@ import {
   Section,
   Sheet,
   Skeleton,
+  Switch,
   Text,
   Tooltip,
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDate } from "@logicplanes/kaeso-ui/format";
+import { harnessLabel } from "~/format/harness";
 import { isApiError } from "~/api/errors";
-import type { AuditEventView } from "~/api/generated/types";
+import type { ActorView, AuditEventView } from "~/api/generated/types";
 import { auditEventQuery, auditLogQuery, auditParams, type AuditFilters, type AuditScope, type AuditSearch } from "~/api/queries/audit";
 import { auditActionLabel, auditActionOptions, rightsChangeSummary, snapshotName, targetKindLabel } from "~/format/audit";
 import { rightName, useCatalogue } from "./catalogue";
@@ -85,7 +88,7 @@ export function AuditLog({
   const [target, setTarget] = useState(filters.target ?? "");
   const rows = useMemo(() => log.data?.pages.flatMap((p) => p.data) ?? [], [log.data]);
   const set = (patch: SearchPatch<AuditSearch>) => onSearch(patchSearch(search, patch));
-  const filtered = !!(filters.actor || filters.action || filters.target || filters.from);
+  const filtered = !!(filters.actor || filters.action || filters.target || filters.from || filters.by_agents);
   const snapshotNames = useMemo(() => {
     const names = new Map<string, string>();
     for (const r of rows) {
@@ -119,7 +122,8 @@ export function AuditLog({
         col.custom(
           { id: "actor", header: t("kaeso.audit.actor", "Actor"), size: phone ? 64 : 168, priority: 1 },
           (r: AuditEventView) => r.actor,
-          (v: PartyRef) => {
+          (v: ActorView) => {
+            if (v.agent) return <AgentActor agent={v.agent} label={partyLabel({ kind: "user", id: v.id })} phone={phone} />;
             const label = partyLabel(v);
             if (phone)
               return (
@@ -204,6 +208,12 @@ export function AuditLog({
             onBlur={() => target.trim() !== (filters.target ?? "") && set({ target: target.trim() || undefined, event: undefined })}
           />
         </div>
+        <Switch
+          size="sm"
+          label={t("kaeso.audit.byAgents", "Done by agents")}
+          checked={!!filters.by_agents}
+          onCheckedChange={(on) => set({ by_agents: on || undefined, event: undefined })}
+        />
         <DateRangePicker
           size="sm"
           aria-label={t("kaeso.audit.days", "Days")}
@@ -247,6 +257,37 @@ export function AuditLog({
         onClose={() => set({ event: undefined })}
       />
     </>
+  );
+}
+
+function agentName(agent: NonNullable<ActorView["agent"]>): { name: string; harness: string } {
+  return { name: agent.name ?? t("kaeso.audit.deletedAgent", "Deleted agent"), harness: agent.harness ?? "other" };
+}
+
+function actorText(actor: ActorView, partyLabel: (p: PartyRef) => PartyLabel): string {
+  if (!actor.agent) return partyText(partyLabel(actor));
+  const agent = agentName(actor.agent);
+  return t("kaeso.audit.viaAgent", "{name} · via {agent} ({harness})", {
+    name: partyText(partyLabel({ kind: "user", id: actor.id })),
+    agent: agent.name,
+    harness: harnessLabel(agent.harness),
+  });
+}
+
+function AgentActor({ agent, label, phone }: { agent: NonNullable<ActorView["agent"]>; label: PartyLabel; phone: boolean }) {
+  const shown = agentName(agent);
+  const text = t("kaeso.audit.viaAgent", "{name} · via {agent} ({harness})", {
+    name: partyText(label),
+    agent: shown.name,
+    harness: harnessLabel(shown.harness),
+  });
+  return (
+    <Tooltip content={text}>
+      <span className="flex min-w-0 items-center gap-8">
+        <AgentAttribution name={label.name} src={label.avatarUrl} agent={shown} size={20} />
+        {!phone && <span className="truncate">{partyText(label)}</span>}
+      </span>
+    </Tooltip>
   );
 }
 
@@ -348,7 +389,7 @@ function AuditEventSheet({
                   zone: zoneName(new Date(e.at)),
                 }),
               },
-              { label: t("kaeso.audit.actor", "Actor"), value: partyText(partyLabel(e.actor)) },
+              { label: t("kaeso.audit.actor", "Actor"), value: actorText(e.actor, partyLabel) },
               {
                 label: t("kaeso.audit.target", "Target"),
                 value:

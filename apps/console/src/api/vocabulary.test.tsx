@@ -5,6 +5,7 @@ import { apply, load, type Locale } from "~/i18n";
 import german from "~/i18n/locales/de/rights.json";
 import { ORG, PROJECT, catalogue, signedIn } from "~/test/fixtures";
 import { member, paged } from "~/test/fixtures/org";
+import { agents } from "~/test/fixtures/agents";
 import { on } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { api, data } from "./client";
@@ -45,6 +46,26 @@ describe("the gateway's words in a German session", () => {
       expect(right.name, right.id).not.toBe(englishName);
       expect(right.description, right.id).toBe(catalog[`rights.${camel(right.id)}.description`]);
     }
+  });
+
+  it("name the agent presets, instance presets and new rights in German", async () => {
+    await speak("de");
+    on("GET", "me/agents/catalogue", agents);
+    const got = data(await api.GET("/platform/v1/me/agents/catalogue"));
+    expect(got.presets.map((p) => p.name)).toEqual(["Observer", "Builder", "Operator", "Vollzugriff"]);
+    expect(got.presets[0]?.description).toBe("Liest Nutzung, Kosten, Modelle, Limits, Log-Metadaten und Audit-Logs; nie Prompts oder Ausgaben.");
+    expect(got.instance_presets.map((p) => p.name)).toEqual(["Keine", "Lesen", "Konfigurieren", "Admin"]);
+    expect(got.instance.categories[0]?.name).toBe("Instanz");
+    expect(got.instance.categories[0]?.rights[0]?.name).toBe("System ansehen");
+    expect(got.account.categories[0]?.rights[0]?.name).toBe("Konto ansehen");
+  });
+
+  it("leave a preset the gateway already named in another way as it is", async () => {
+    await speak("de");
+    const renamed = { ...agents, presets: agents.presets.map((p) => ({ ...p, name: `${p.name}!`, description: "" })) };
+    on("GET", "me/agents/catalogue", renamed);
+    const got = data(await api.GET("/platform/v1/me/agents/catalogue"));
+    expect(got.presets[0]).toMatchObject({ name: "Observer!", description: "" });
   });
 
   it("name deleted people and roles in German, except in logged records", async () => {

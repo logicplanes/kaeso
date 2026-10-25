@@ -207,6 +207,37 @@ describe("AuditLog", () => {
     expect(option.querySelector("img")).toBeNull();
   });
 
+  it("shows the person behind an agent with the agent's avatar and filters by agents", async () => {
+    const byAgent = auditEvent({
+      id: "evt_agent",
+      action: "project.create",
+      actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_release", name: "Release helper", harness: "codex" } },
+    });
+    orgLog([byAgent]);
+    on("GET", "orgs/:org/audit-log/:event", byAgent);
+    const { user, router } = await renderApp(PATH);
+    const row = () =>
+      within(screen.getByRole("table", { name: "Audit log" }))
+        .getAllByRole("row")
+        .slice(1)[0] as HTMLElement;
+    await table();
+    await waitFor(() => expect(within(row()).getByText("Grace Hopper")).toBeInTheDocument());
+    expect(within(row()).getByRole("img", { name: /Grace Hopper.*Release helper/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Done by agents" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by_agents: true }));
+    await waitFor(() => expect(logQuery()).toContainEqual(expect.objectContaining({ by_agents: "true" })));
+    await user.click(row());
+    expect(await screen.findByText("Grace Hopper · via Release helper (Codex)")).toBeInTheDocument();
+  });
+
+  it("names an agent that is gone and turns the agents filter off again", async () => {
+    orgLog([auditEvent({ id: "evt_gone", actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_gone", name: null, harness: null } } })]);
+    const { user, router } = await renderApp(`${PATH}?by_agents=true`);
+    expect(await within(await table()).findByRole("img", { name: /Grace Hopper via Deleted agent \(Other\)/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Done by agents" }));
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty("by_agents"));
+  });
+
   it("says when there are no events yet", async () => {
     orgLog([]);
     await renderApp(PATH);

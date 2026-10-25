@@ -201,7 +201,7 @@ While the updater switches versions, or whenever the gateway or the console does
 | Request | Answer |
 | --- | --- |
 | A console page | 503 with a page in the browser's language that says what is happening, checks every 5 seconds and returns when Kaeso is back |
-| `/platform/v1/*` | 503 with the Platform API's error, type `unavailable` |
+| `/platform/v1/*`, `/mcp`, `/oauth/*` and `/.well-known/oauth-*` | 503 with the Platform API's error, type `unavailable` |
 | `/v1/messages`, and other `/v1/*` with an `anthropic-version` header | 529 with Anthropic's `overloaded_error` |
 | Other `/v1/*` | 503 with OpenAI's `service_unavailable_error` |
 

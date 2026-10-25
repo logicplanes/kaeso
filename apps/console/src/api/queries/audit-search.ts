@@ -6,6 +6,7 @@ export interface AuditFilters {
   target?: string;
   from?: string;
   to?: string;
+  by_agents?: boolean;
 }
 
 export type AuditSearch = AuditFilters & { event?: string };
@@ -23,6 +24,7 @@ export function validateAuditSearch(s: Record<string, unknown>): AuditSearch {
   if (action) out.action = action;
   if (target) out.target = target;
   if (from && to && from <= to) Object.assign(out, { from, to });
+  if (s.by_agents === true || s.by_agents === "true") out.by_agents = true;
   if (event) out.event = event;
   return out;
 }
