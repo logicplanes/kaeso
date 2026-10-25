@@ -9,12 +9,16 @@ export const KAESO_GRANT_SUMMARY_DEFAULT_VARIANTS = {} as const;
 export interface GrantSummaryProps {
   items: readonly ReactNode[];
   footer?: ReactNode | undefined;
+  action?: ReactNode | undefined;
   "aria-label": string;
   className?: string | undefined;
 }
 
-/** What an agent or a key may do, one short line per item after a check mark, on a group surface with an optional note below. */
-export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(function GrantSummary({ items, footer, "aria-label": ariaLabel, className }, ref) {
+/** What an agent or a key may do, one short line per item after a check mark, on a group surface, with an optional note and action below. */
+export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(function GrantSummary(
+  { items, footer, action, "aria-label": ariaLabel, className },
+  ref,
+) {
   return (
     <div ref={ref} className={cn("flex flex-col gap-16 rounded-group bg-raised p-16 shadow-xs", className)}>
       <ul aria-label={ariaLabel} className="flex flex-col gap-10">
@@ -25,7 +29,12 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
           </li>
         ))}
       </ul>
-      {footer && <p className="text-small text-fg-tertiary text-pretty">{footer}</p>}
+      {(footer || action) && (
+        <div className="flex items-center justify-between gap-12 pt-12 hairline-t">
+          <p className="min-w-0 text-small text-fg-tertiary text-pretty">{footer}</p>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+      )}
     </div>
   );
 });

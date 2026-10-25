@@ -62,15 +62,14 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Manage your agents
 
-**Agents** lists every agent you authorized: its picture, name and model family, a summary of its rights, the organizations it can reach, and when it was created, last used and expires. Choose an agent to open its page, where you can:
+**Agents** lists every agent you authorized: its picture, name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
 
 - rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;
-- give it a new expiry with **New lifetime from today**;
 - **Revoke** it, which signs it out at once;
 - read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
 
-An agent stops working when it expires, after 90 days without use, or when you revoke it. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
+An agent keeps working until you revoke it, or until it goes 90 days unused. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 
 ## Confirm a sensitive action
 

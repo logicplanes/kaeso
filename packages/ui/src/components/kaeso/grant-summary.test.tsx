@@ -18,4 +18,10 @@ describe("GrantSummary", () => {
     const { container } = render(<GrantSummary aria-label="Rights" items={["Reads the instance"]} />);
     expect(container.querySelector("p")).toBeNull();
   });
+
+  it("puts an action next to the note", () => {
+    render(<GrantSummary aria-label="Rights" items={["Reads the instance"]} footer="For 7 days" action={<button type="button">Customize</button>} />);
+    expect(screen.getByRole("button", { name: "Customize" })).toBeInTheDocument();
+    expect(screen.getByText("For 7 days")).toBeInTheDocument();
+  });
 });

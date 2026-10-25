@@ -122,8 +122,8 @@ sequenceDiagram
 
 - 智能体的名称，即其客户端注册时使用的名称。
 - 预设**观察者**、**构建者**、**运维者**和**完全访问**，默认选中**构建者**，并用一个简短列表说明所选预设允许的操作。除非您关闭，它也包括您以后加入的组织。
-- 登录的有效期，以及您可以随时撤销它。
-- **自定义**，用于打开智能体的名称、**到期时间**（**7 天**、**30 天**、**90 天**或**永不**，默认 **90 天**）以及每个层级的权限：**实例**、**组织**和**账户**。
+- 它会一直工作，直到您撤销它。
+- **自定义**，打开一个对话框，其中有智能体的名称，以及每个权限层级的标签页：**组织**、**实例**和**账户**。授权之前不会有任何更改。
 - 您当前登录的账户，以及浏览器将返回的主机。
 
 **授权**会把浏览器带回智能体并附上授权码。**拒绝**则附上 `access_denied` 返回。登录请求有效 15 分钟，授权码有效 5 分钟。
@@ -181,7 +181,7 @@ sequenceDiagram
 - **列出。** `tools/list` 只显示智能体当前在其任一组织和项目中可以使用的工具。
 - **参数。** 工具接受操作的路径参数（例如 `org` 和 `project`）、查询参数，以及作为请求体的 `body`。路径参数必填，工具没有的参数会被 Kaeso 拒绝。
 - **结果。** 工具以文本和 `structuredContent` 两种形式返回 Platform API 的 JSON。超过 200 KB 的结果会被截断；请用 `limit` 请求更小的一页。
-- **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的图标和名称；其他值一律视为 `unknown`。在智能体首次调用之前，Kaeso 根据其客户端注册的名称推测模型系列。
+- **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的图标和名称；其他值一律视为 `unknown`。在首次调用之前，智能体显示为 `unknown`。
 - **提示。** 读取类工具标有 `readOnlyHint`，删除类工具标有 `destructiveHint`。
 - **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织。
 
@@ -225,12 +225,12 @@ sequenceDiagram
 | 令牌 | 前缀 | 有效期 |
 | --- | --- | --- |
 | 访问令牌 | `kso_at_` | 1 小时 |
-| 刷新令牌 | `kso_rt_` | 直到智能体的登录结束。每次使用都会换成新的 |
+| 刷新令牌 | `kso_rt_` | 直到智能体被撤销或 90 天未使用。每次使用都会换成新的 |
 | 授权码 | `kso_ac_` | 5 分钟，只能使用一次 |
 
 刷新令牌或授权码被第二次使用时，整个登录随之结束，因为其中之一必定已经泄露。由此登录得到的所有令牌都会失效，智能体必须重新连接。
 
-智能体在其登录结束、90 天没有请求或被您撤销时停止工作。停用其用户也会使它停止，为实例关闭智能体同样如此。
+智能体会一直工作，直到您撤销它，或它 90 天没有请求。停用其用户也会使它停止，为实例关闭智能体同样如此。
 
 ## OAuth 端点
 
@@ -267,7 +267,7 @@ Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果�
 | 操作 | 记录时机 |
 | --- | --- |
 | `agent.authorize` | 您授权一个智能体 |
-| `agent.update` | 您重命名智能体，或更改其到期时间 |
+| `agent.update` | 您重命名智能体 |
 | `agent.rights_update` | 您更改智能体的权限 |
 | `agent.revoke` | 您撤销一个智能体 |
 | `agent.org_access_revoke` | 组织管理员对某个智能体关闭组织 |
@@ -280,8 +280,8 @@ Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果�
 
 | 路由 | 访问 | 作用 |
 | --- | --- | --- |
-| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括模型系列、客户端、权限（`grant`）、创建时间、上次使用时间和到期时间 |
-| `PATCH me/agents/{agent}` | 会话 | 更改 `name` 或 `expiry`：`7d`、`30d`、`90d` 或 `never`，从现在起算 |
+| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括模型系列、客户端、权限（`grant`）、创建时间和上次使用时间 |
+| `PATCH me/agents/{agent}` | 会话 | 更改 `name` |
 | `PUT me/agents/{agent}/rights` | 会话 | 替换智能体的权限。授予它原本没有的敏感权限需要[近期登录](platform-api.md#近期登录) |
 | `DELETE me/agents/{agent}` | 会话 | 撤销智能体。其令牌立即失效 |
 | `GET me/agents/{agent}/activity` | 会话 | 其工具调用，最新的在前 |

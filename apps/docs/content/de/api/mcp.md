@@ -122,8 +122,8 @@ Die Zustimmungsseite liegt unter `https://kaeso.example.com/authorize`, und die 
 
 - Den Namen des Agenten, wie sein Client ihn registriert hat.
 - Die Vorlagen **Observer**, **Builder**, **Operator** und **Vollzugriff**, mit **Builder** ausgewählt, und eine kurze Liste, was die Auswahl erlaubt. Sie umfasst Organisationen, denen Sie später beitreten, sofern Sie das nicht abschalten.
-- Wie lange die Anmeldung gilt, und dass Sie sie jederzeit widerrufen können.
-- **Anpassen**, das den Namen des Agenten, seinen **Ablauf** (**7 Tage**, **30 Tage**, **90 Tage** oder **Nie**, mit **90 Tage** als Standard) und die Rechte jeder Ebene öffnet: **Instanz**, **Organisationen** und **Konto**.
+- Dass er arbeitet, bis Sie ihn widerrufen.
+- **Anpassen**, das einen Dialog mit dem Namen des Agenten und einem Tab für jede Ebene der Rechte öffnet: **Organisationen**, **Instanz** und **Konto**. Nichts ändert sich, bevor Sie autorisieren.
 - Das Konto, mit dem Sie angemeldet sind, und den Host, zu dem Ihr Browser zurückkehrt.
 
 **Autorisieren** schickt Ihren Browser mit einem Code zurück zum Agenten. **Ablehnen** schickt ihn mit `access_denied` zurück. Eine Anmeldeanfrage gilt 15 Minuten, ihr Code 5 Minuten.
@@ -181,7 +181,7 @@ Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benann
 - **Auflistung.** `tools/list` zeigt nur die Tools, die der Agent jetzt nutzen kann, in einer seiner Organisationen und Projekte.
 - **Argumente.** Ein Tool nimmt die Pfadparameter der Operation, etwa `org` und `project`, ihre Query-Parameter und `body` für den Anfragekörper. Pfadparameter sind Pflicht, und Kaeso lehnt ein Argument ab, das das Tool nicht hat.
 - **Ergebnisse.** Ein Tool antwortet mit dem JSON der Platform API als Text und als `structuredContent`. Eine Antwort über 200 KB wird gekürzt; fordern Sie mit `limit` eine kleinere Seite an.
-- **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt Bild und Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zum ersten Aufruf des Agenten schätzt Kaeso die Familie aus dem Namen, den sein Client registriert hat.
+- **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt Bild und Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zu seinem ersten Aufruf erscheint ein Agent als `unknown`.
 - **Hinweise.** Lesende Tools tragen `readOnlyHint`, löschende `destructiveHint`.
 - **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten.
 
@@ -225,12 +225,12 @@ Eine unbekannte Methode erhält den JSON-RPC-Fehler `-32601`, ein unbekanntes To
 | Token | Beginnt mit | Gilt |
 | --- | --- | --- |
 | Access-Token | `kso_at_` | 1 Stunde |
-| Refresh-Token | `kso_rt_` | Bis die Anmeldung des Agenten endet. Jede Nutzung ersetzt es durch ein neues |
+| Refresh-Token | `kso_rt_` | Bis der Agent widerrufen wird oder 90 Tage ungenutzt bleibt. Jede Nutzung ersetzt es durch ein neues |
 | Autorisierungscode | `kso_ac_` | 5 Minuten und eine Nutzung |
 
 Wird ein Refresh-Token oder ein Code ein zweites Mal genutzt, endet diese ganze Anmeldung, denn eines davon muss abgeflossen sein. Jedes Token daraus hört auf zu funktionieren, und der Agent muss neu verbunden werden.
 
-Ein Agent hört auf zu funktionieren, wenn seine Anmeldung endet, nach 90 Tagen ohne Anfrage oder wenn Sie ihn widerrufen. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation.
+Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ohne Anfrage bleibt. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation.
 
 ## OAuth-Endpunkte
 
@@ -267,7 +267,7 @@ Eine Änderung durch einen Agenten landet wie jede andere im Audit-Log, mit der 
 | Aktion | Verzeichnet, wenn |
 | --- | --- |
 | `agent.authorize` | Sie einen Agenten autorisieren |
-| `agent.update` | Sie einen Agenten umbenennen oder seinen Ablauf ändern |
+| `agent.update` | Sie einen Agenten umbenennen |
 | `agent.rights_update` | Sie die Rechte eines Agenten ändern |
 | `agent.revoke` | Sie einen Agenten widerrufen |
 | `agent.org_access_revoke` | Ein Admin der Organisation sie für einen Agenten schließt |
@@ -280,8 +280,8 @@ Die Konsole verwaltet Agenten über diese Routen, in [`openapi.json`](platform-a
 
 | Route | Zugriff | Tut |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Modellfamilie, Client, Rechten (`grant`), Erstellung, letzter Nutzung und Ablauf |
-| `PATCH me/agents/{agent}` | Sitzung | Ändert `name` oder `expiry`: `7d`, `30d`, `90d` oder `never`, ab jetzt gezählt |
+| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Modellfamilie, Client, Rechten (`grant`), Erstellung und letzter Nutzung |
+| `PATCH me/agents/{agent}` | Sitzung | Ändert `name` |
 | `PUT me/agents/{agent}/rights` | Sitzung | Ersetzt die Rechte des Agenten. Ein sensibles Recht zu geben, das er nicht hatte, erfordert eine [kürzliche Anmeldung](platform-api.md#kürzliche-anmeldung) |
 | `DELETE me/agents/{agent}` | Sitzung | Widerruft den Agenten. Seine Tokens hören sofort auf zu funktionieren |
 | `GET me/agents/{agent}/activity` | Sitzung | Seine Tool-Aufrufe, die neuesten zuerst |

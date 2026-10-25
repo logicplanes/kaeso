@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT a.id, a.name, a.model, a.user_id, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar, a.created_at, a.last_used_at, a.expires_at FROM agents a JOIN org_memberships m ON m.user_id = a.user_id AND m.org_id = $1 JOIN users u ON u.id = a.user_id LEFT JOIN agent_orgs ao ON ao.agent_id = a.id AND ao.org_id = $1 WHERE a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > $2) AND (ao.included OR (ao.agent_id IS NULL AND a.future_orgs)) ORDER BY a.id DESC",
+  "query": "SELECT a.id, a.name, a.model, a.user_id, u.name AS user_name, u.email AS user_email, u.avatar AS user_avatar, a.created_at, a.last_used_at FROM agents a JOIN org_memberships m ON m.user_id = a.user_id AND m.org_id = $1 JOIN users u ON u.id = a.user_id LEFT JOIN agent_orgs ao ON ao.agent_id = a.id AND ao.org_id = $1 WHERE a.revoked_at IS NULL AND (ao.included OR (ao.agent_id IS NULL AND a.future_orgs)) ORDER BY a.id DESC",
   "describe": {
     "columns": [
       {
@@ -101,23 +101,11 @@
             "name": "last_used_at"
           }
         }
-      },
-      {
-        "ordinal": 9,
-        "name": "expires_at",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "agents",
-            "name": "expires_at"
-          }
-        }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -129,9 +117,8 @@
       true,
       true,
       false,
-      true,
       true
     ]
   },
-  "hash": "28259ce22b43f273cda1d18d47adaa008a360d99867bbe4b6477a0a776b9f323"
+  "hash": "424dcb06ba7809ea791b611a0d1a7446ece180860e73e367d0b8f5cf602679b1"
 }

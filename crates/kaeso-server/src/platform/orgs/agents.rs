@@ -39,9 +39,6 @@ pub struct OrgAgentView {
     #[doc = "When it last used Kaeso; `null` if never."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_used_at: Option<OffsetDateTime>,
-    #[doc = "When its sign-in ends; `null` for never."]
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub expires_at: Option<OffsetDateTime>,
 }
 
 #[utoipa::path(
@@ -60,7 +57,7 @@ pub async fn list(
     Path(_org): Path<String>,
 ) -> ApiResult<Json<List<OrgAgentView>>> {
     let org = ctx.org()?;
-    let rows = agents::in_org(&state.pg, org.org.id, ctx.now).await?;
+    let rows = agents::in_org(&state.pg, org.org.id).await?;
     Ok(Json(List::complete(
         rows.into_iter()
             .map(|a| OrgAgentView {
@@ -80,7 +77,6 @@ pub async fn list(
                 },
                 created_at: a.created_at,
                 last_used_at: a.last_used_at,
-                expires_at: a.expires_at,
             })
             .collect(),
     )))
@@ -103,7 +99,7 @@ pub async fn revoke(
 ) -> ApiResult<StatusCode> {
     let org = ctx.org()?;
     let id: AgentId = id.parse().map_err(|_| ApiError::not_found("agent"))?;
-    let found = agents::in_org(&state.pg, org.org.id, ctx.now)
+    let found = agents::in_org(&state.pg, org.org.id)
         .await?
         .into_iter()
         .find(|a| a.id == id.uuid())

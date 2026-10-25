@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL",
+  "query": "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, revoked_at FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL FOR UPDATE",
   "describe": {
     "columns": [
       {
@@ -192,17 +192,6 @@
       },
       {
         "ordinal": 17,
-        "name": "expires_at",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "agents",
-            "name": "expires_at"
-          }
-        }
-      },
-      {
-        "ordinal": 18,
         "name": "revoked_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -237,9 +226,8 @@
       true,
       false,
       true,
-      true,
       true
     ]
   },
-  "hash": "7b492a787310f579f4ff9455376c057152c5010777fbeb551c8b766d00d0836d"
+  "hash": "b10b2b072baadf75559323ae3cd2c733bfa7097a71c2d90d11259775cb19ecd8"
 }

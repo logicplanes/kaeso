@@ -259,10 +259,7 @@ pub async fn authenticate(
     else {
         return Ok(Err(Refusal::Invalid));
     };
-    if user_state != "active"
-        || agent.expires_at.is_some_and(|e| now >= e)
-        || unused_too_long(&agent, now)
-    {
+    if user_state != "active" || unused_too_long(&agent, now) {
         return Ok(Err(Refusal::Invalid));
     }
     let instance_policy = InstancePolicy::from_store(&agents::instance_policy(&state.pg).await?);
@@ -281,7 +278,7 @@ pub async fn authenticate(
         oidc_org_id: agent.oidc_org_id,
         signed_in_at: agent.created_at,
         last_used_at: agent.last_used_at.unwrap_or(agent.created_at),
-        expires_at: agent.expires_at.unwrap_or(now + UNUSED_LIFETIME),
+        expires_at: now + UNUSED_LIFETIME,
         user_state,
         is_instance_admin,
     };
@@ -394,7 +391,6 @@ mod tests {
             oidc_org_id: None,
             created_at: now - Duration::days(200),
             last_used_at: Some(now - Duration::days(89)),
-            expires_at: None,
             revoked_at: None,
         };
         assert!(!unused_too_long(&a, now));

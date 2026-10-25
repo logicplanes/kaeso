@@ -24,6 +24,7 @@ export const docs = {
   GrantSummary: {
     description: "What an agent or a key may do, one short line each after a check mark, on a group surface.",
     props: {
+      action: "A small button after the note, such as Customize.",
       "aria-label": 'The list\'s accessible name ("What it can do").',
       footer: "A quiet note under the lines, such as how long it lasts.",
       items: "The lines, short and without a final period.",

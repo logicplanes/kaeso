@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
-import { Checkbox, Collapsible, RightsMatrix, Segmented, Switch, Text, type RightChange, type RightsGroup } from "@logicplanes/kaeso-ui";
+import { useState, type ReactNode } from "react";
+import { Button, Checkbox, Collapsible, Dialog, RightsMatrix, Segmented, Switch, Tabs, type RightChange, type RightsGroup } from "@logicplanes/kaeso-ui";
 import type { AgentCatalogue, Grantable, GrantableOrg } from "~/api/generated/types";
 import { t } from "~/i18n";
-import { heldInProjects, presetDraft, presetPart, presetText, sorted, summary, type AgentDraft, type OrgDraft, type PresetId } from "./agent-grant";
+import { heldInProjects, presetDraft, presetPart, sorted, type AgentDraft, type OrgDraft, type PresetId } from "./agent-grant";
 
 type Scope = "instance" | "account" | "org" | "project";
 
@@ -42,19 +42,6 @@ function applied(cat: AgentCatalogue, scope: Scope, current: readonly string[], 
   return sorted(cat, scope, next);
 }
 
-export function PresetLine({ cat, grantable, value }: { cat: AgentCatalogue; grantable: Grantable; value: AgentDraft }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <Text variant="small" tone="secondary">
-        {value.customized
-          ? t("kaeso.agents.customBasedOn", "Custom (based on {preset})", { preset: presetText(cat, value.preset, "name") })
-          : presetText(cat, value.preset, "description")}
-      </Text>
-      <Text variant="small">{summary(cat, grantable, value)}</Text>
-    </div>
-  );
-}
-
 export function PresetPicker({
   cat,
   grantable,
@@ -78,14 +65,6 @@ export function PresetPicker({
         onChange({ ...next, future: { ...next.future, on: value.future.on } });
       }}
     />
-  );
-}
-
-function Section({ title, hint, children, defaultOpen }: { title: string; hint?: string; children: ReactNode; defaultOpen?: boolean }) {
-  return (
-    <Collapsible title={title} hint={hint} defaultOpen={defaultOpen}>
-      <div className="flex flex-col gap-16">{children}</div>
-    </Collapsible>
   );
 }
 
@@ -150,106 +129,131 @@ export function AgentGrantEditor({
   grantable,
   value,
   onChange,
-  defaultOpen = false,
+  open,
+  onOpenChange,
+  title,
+  description,
+  start,
   children,
 }: {
   cat: AgentCatalogue;
   grantable: Grantable;
   value: AgentDraft;
   onChange: (d: AgentDraft) => void;
-  defaultOpen?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  start?: "organizations";
   children?: ReactNode;
 }) {
+  const [tab, setTab] = useState("organizations");
   const edit = (d: Partial<AgentDraft>) => onChange({ ...value, ...d, customized: true });
   const editOrg = (id: string, o: OrgDraft) => edit({ orgs: { ...value.orgs, [id]: o } });
   const presetRights = (part: "org" | "project") => presetPart(cat, value.preset, part);
   const instancePresets = cat.instance_presets.filter((p) => p.rights.every((r) => grantable.instance.includes(r)));
   const instancePreset = instancePresets.find((p) => p.rights.length === value.instance.length && p.rights.every((r) => value.instance.includes(r)));
-  const included = grantable.orgs.filter((o) => value.orgs[o.id]?.included).length;
   return (
-    <Collapsible title={t("kaeso.rights.customize", "Customize")} defaultOpen={defaultOpen}>
-      <div className="flex flex-col gap-16">
-        {children}
+    <Dialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      size="lg"
+      anchor="top"
+      footer={
+        <Dialog.Close>
+          <Button variant="primary">{t("common.done", "Done")}</Button>
+        </Dialog.Close>
+      }
+    >
+      {children && <div className="mb-24">{children}</div>}
+      <Tabs value={tab} onValueChange={setTab}>
+        <Tabs.List>
+          <Tabs.Tab value="organizations">{t("kaeso.agents.organizations", "Organizations")}</Tabs.Tab>
+          {grantable.instance.length > 0 && <Tabs.Tab value="instance">{t("kaeso.agents.instance", "Instance")}</Tabs.Tab>}
+          <Tabs.Tab value="account">{t("kaeso.agents.account", "Account")}</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="organizations">
+          <div className="mt-24 flex flex-col gap-16">
+            {grantable.orgs.map((o) => {
+              const draft = value.orgs[o.id] ?? { included: false, rights: [], all: true, projectRights: [], selected: {} };
+              return (
+                <div key={o.id} className="flex flex-col gap-12">
+                  <Checkbox
+                    label={o.name}
+                    description={o.allowed ? undefined : t("kaeso.agents.orgClosed", "This organization doesn't allow agents.")}
+                    disabled={!o.allowed}
+                    checked={draft.included}
+                    onCheckedChange={(on) =>
+                      editOrg(
+                        o.id,
+                        on && !draft.rights.length
+                          ? {
+                              ...draft,
+                              included: true,
+                              rights: presetRights("org").filter((r) => o.rights.includes(r)),
+                              projectRights: presetRights("project").filter((r) => heldInProjects(o).includes(r)),
+                            }
+                          : { ...draft, included: on },
+                      )
+                    }
+                  />
+                  {draft.included && (
+                    <Collapsible
+                      title={t("kaeso.agents.rightsIn", "Rights in {org}", { org: o.name })}
+                      hint={t("kaeso.rights.count", "{count, plural, one {# right} other {# rights}}", {
+                        count: draft.rights.length + draft.projectRights.length,
+                      })}
+                      defaultOpen={start === "organizations"}
+                    >
+                      <OrgRights cat={cat} org={o} value={draft} onChange={(next) => editOrg(o.id, next)} />
+                    </Collapsible>
+                  )}
+                </div>
+              );
+            })}
+            <Switch
+              label={t("kaeso.agents.futureOrgs", "Also orgs I join later")}
+              description={t("kaeso.agents.futureOrgsHint", "With the preset's rights, never more than you hold there.")}
+              checked={value.future.on}
+              onCheckedChange={(on) => edit({ future: { on, rights: presetRights("org"), projectRights: presetRights("project") } })}
+            />
+          </div>
+        </Tabs.Panel>
         {grantable.instance.length > 0 && (
-          <Section title={t("kaeso.agents.instance", "Instance")} hint={instancePreset?.name ?? t("kaeso.agents.custom", "Custom")}>
-            <Segmented
-              aria-label={t("kaeso.agents.instancePreset", "Instance preset")}
-              size="sm"
-              options={instancePresets.map((p) => ({ value: p.id, label: p.name }))}
-              value={instancePreset?.id ?? ""}
-              onValueChange={(id) => edit({ instance: instancePresets.filter((p) => p.id === id).flatMap((p) => p.rights) })}
-            />
-            <RightsMatrix
-              aria-label={t("kaeso.agents.instanceRights", "Rights on the instance")}
-              groups={groups(cat, "instance", value.instance, grantable.instance)}
-              onRightsChange={(c) => edit({ instance: applied(cat, "instance", value.instance, c) })}
-            />
-          </Section>
+          <Tabs.Panel value="instance">
+            <div className="mt-24 flex flex-col gap-16">
+              <Segmented
+                aria-label={t("kaeso.agents.instancePreset", "Instance preset")}
+                size="sm"
+                options={instancePresets.map((p) => ({ value: p.id, label: p.name }))}
+                value={instancePreset?.id ?? ""}
+                onValueChange={(id) => edit({ instance: instancePresets.filter((p) => p.id === id).flatMap((p) => p.rights) })}
+              />
+              <RightsMatrix
+                aria-label={t("kaeso.agents.instanceRights", "Rights on the instance")}
+                groups={groups(cat, "instance", value.instance, grantable.instance)}
+                onRightsChange={(c) => edit({ instance: applied(cat, "instance", value.instance, c) })}
+              />
+            </div>
+          </Tabs.Panel>
         )}
-        <Section
-          title={t("kaeso.agents.organizations", "Organizations")}
-          hint={t("kaeso.agents.orgsChosen", "{count} of {total}", { count: included, total: grantable.orgs.length })}
-          defaultOpen
-        >
-          {grantable.orgs.map((o) => {
-            const draft = value.orgs[o.id] ?? { included: false, rights: [], all: true, projectRights: [], selected: {} };
-            return (
-              <div key={o.id} className="flex flex-col gap-12">
-                <Checkbox
-                  label={o.name}
-                  description={o.allowed ? undefined : t("kaeso.agents.orgClosed", "This organization doesn't allow agents.")}
-                  disabled={!o.allowed}
-                  checked={draft.included}
-                  onCheckedChange={(on) =>
-                    editOrg(
-                      o.id,
-                      on && !draft.rights.length
-                        ? {
-                            ...draft,
-                            included: true,
-                            rights: presetRights("org").filter((r) => o.rights.includes(r)),
-                            projectRights: presetRights("project").filter((r) => heldInProjects(o).includes(r)),
-                          }
-                        : { ...draft, included: on },
-                    )
-                  }
-                />
-                {draft.included && (
-                  <Collapsible
-                    title={t("kaeso.agents.rightsIn", "Rights in {org}", { org: o.name })}
-                    hint={t("kaeso.rights.count", "{count, plural, one {# right} other {# rights}}", {
-                      count: draft.rights.length + draft.projectRights.length,
-                    })}
-                  >
-                    <OrgRights cat={cat} org={o} value={draft} onChange={(next) => editOrg(o.id, next)} />
-                  </Collapsible>
-                )}
-              </div>
-            );
-          })}
-          <Switch
-            label={t("kaeso.agents.futureOrgs", "Also orgs I join later")}
-            description={t("kaeso.agents.futureOrgsHint", "With the preset's rights, never more than you hold there.")}
-            checked={value.future.on}
-            onCheckedChange={(on) => edit({ future: { on, rights: presetRights("org"), projectRights: presetRights("project") } })}
-          />
-        </Section>
-        <Section
-          title={t("kaeso.agents.account", "Account")}
-          hint={t("kaeso.rights.count", "{count, plural, one {# right} other {# rights}}", { count: value.account.length })}
-        >
-          <RightsMatrix
-            aria-label={t("kaeso.agents.accountRights", "Rights on your account")}
-            groups={groups(
-              cat,
-              "account",
-              value.account,
-              grantable.account.filter((r) => r !== "account.view"),
-            )}
-            onRightsChange={(c) => edit({ account: sorted(cat, "account", ["account.view", ...applied(cat, "account", value.account, c)]) })}
-          />
-        </Section>
-      </div>
-    </Collapsible>
+        <Tabs.Panel value="account">
+          <div className="mt-24 flex flex-col gap-16">
+            <RightsMatrix
+              aria-label={t("kaeso.agents.accountRights", "Rights on your account")}
+              groups={groups(
+                cat,
+                "account",
+                value.account,
+                grantable.account.filter((r) => r !== "account.view"),
+              )}
+              onRightsChange={(c) => edit({ account: sorted(cat, "account", ["account.view", ...applied(cat, "account", value.account, c)]) })}
+            />
+          </div>
+        </Tabs.Panel>
+      </Tabs>
+    </Dialog>
   );
 }

@@ -530,7 +530,6 @@
   "errors.orgCreationDomainNotAllowed": "Mit Ihrer E-Mail-Adresse lassen sich hier keine Organisationen erstellen; wenden Sie sich an einen Instanz-Admin.",
   "errors.orgCreationInstanceAdminsOnly": "In dieser Installation können nur Instanz-Admins Organisationen erstellen.",
   "errors.agentCallsModels": "Ein Agent braucht `api.request` in diesem Projekt, um Schlüssel für Modellaufrufe zu erstellen.",
-  "errors.agentExpiry": "`expiry` muss `7d`, `30d`, `90d` oder `never` sein.",
   "errors.agentInstanceRights": "Nur Instanz-Admins können einem Agenten Instanzrechte geben.",
   "errors.agentLacksRight": "Dieser Agent hat `{right}` nicht; sein Benutzer kann es in der Konsole vergeben.",
   "errors.agentNeedsSession": "Agenten können das nicht; es braucht eine Konsolensitzung.",

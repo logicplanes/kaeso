@@ -1,20 +1,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  AgentAvatar,
-  AlertDialog,
-  Banner,
-  Button,
-  Code,
-  Empty,
-  Field,
-  Input,
-  Segmented,
-  SettingsGroup,
-  SettingsRow,
-  SettingsSection,
-} from "@logicplanes/kaeso-ui";
+import { AgentAvatar, AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -24,9 +11,8 @@ import { agentActivityQuery, agentCatalogueQuery, agentQuery, grantableQuery } f
 import { useApiMutation } from "~/auth/mutation";
 import { LoadFailed } from "~/features/org/load-failed";
 import { t } from "~/i18n";
-import { AgentGrantEditor, PresetLine, PresetPicker } from "~/kaeso/agent-grant-editor";
-import { expiryOptions, type Expiry } from "~/kaeso/agent-expiry";
-import { fromGrant, gainedSensitive, rightLabels, toGrant, withRequested, type AgentDraft } from "~/kaeso/agent-grant";
+import { AgentGrantEditor, PresetPicker } from "~/kaeso/agent-grant-editor";
+import { fromGrant, gainedSensitive, rightLabels, summaryLines, toGrant, withRequested, type AgentDraft } from "~/kaeso/agent-grant";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { toast } from "~/shell/toast";
 import { agentDates } from "./agents-page";
@@ -75,23 +61,20 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
   const [requested] = useState(() => (search.add ? withRequested(cat, grantable, saved, search.add, search.org, search.project) : null));
   const [draft, setDraft] = useState<AgentDraft>(requested?.draft ?? saved);
   const [name, setName] = useState(agent.name);
-  const [expiry, setExpiry] = useState<Expiry | "">("");
   const [confirming, setConfirming] = useState<string[] | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const [customizing, setCustomizing] = useState(() => !!requested);
 
   const details = useApiMutation({
     mutationFn: async () =>
       data(
         await api.PATCH("/platform/v1/me/agents/{agent}", {
           params: { path: { agent: agent.id } },
-          body: { name: name.trim(), ...(expiry ? { expiry } : {}) },
+          body: { name: name.trim() },
         }),
       ),
     invalidates: AGENTS,
-    onSuccess: () => {
-      setExpiry("");
-      toast(t("account.agentSaved", "Agent saved"));
-    },
+    onSuccess: () => toast(t("account.agentSaved", "Agent saved")),
   });
   const rights = useApiMutation({
     mutationFn: async (d: AgentDraft) =>
@@ -158,20 +141,12 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
               className="flex-1"
             />
           </div>
-          <Field label={t("account.agentRenew", "New lifetime from today")}>
-            <Segmented
-              aria-label={t("account.agentRenew", "New lifetime from today")}
-              options={expiryOptions()}
-              value={expiry}
-              onValueChange={(v) => setExpiry(v as Expiry)}
-            />
-          </Field>
           <div>
             <Button
               variant="primary"
               size="sm"
               loading={details.isPending}
-              disabled={!name.trim() || (name.trim() === agent.name && !expiry)}
+              disabled={!name.trim() || name.trim() === agent.name}
               onClick={() => void details.mutateAsync()}
             >
               {t("common.save", "Save")}
@@ -182,8 +157,26 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
       <SettingsSection title={t("account.agentRights", "Rights")}>
         <div className="flex flex-col gap-16">
           <PresetPicker cat={cat} grantable={grantable} value={draft} onChange={setDraft} />
-          <PresetLine cat={cat} grantable={grantable} value={draft} />
-          <AgentGrantEditor cat={cat} grantable={grantable} value={draft} onChange={setDraft} defaultOpen={!!requested} />
+          <GrantSummary
+            aria-label={t("public.agentCan", "What it can do")}
+            items={summaryLines(cat, grantable, draft)}
+            action={
+              <Button size="sm" variant="secondary" onClick={() => setCustomizing(true)}>
+                {t("kaeso.rights.customize", "Customize")}
+              </Button>
+            }
+          />
+          <AgentGrantEditor
+            cat={cat}
+            grantable={grantable}
+            value={draft}
+            onChange={setDraft}
+            open={customizing}
+            onOpenChange={setCustomizing}
+            title={t("kaeso.agents.customizeTitle", "Customize {name}", { name: agent.name })}
+            description={t("account.customizeAgentHint", "Nothing changes until you save the rights.")}
+            {...(requested ? { start: "organizations" as const } : {})}
+          />
           <div className="flex gap-8">
             <Button variant="primary" size="sm" loading={rights.isPending} disabled={!changedRights} onClick={saveRights}>
               {t("account.saveAgentRights", "Save rights")}

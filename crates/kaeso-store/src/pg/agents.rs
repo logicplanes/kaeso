@@ -134,7 +134,6 @@ pub struct Agent {
     pub oidc_org_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
     pub last_used_at: Option<OffsetDateTime>,
-    pub expires_at: Option<OffsetDateTime>,
     pub revoked_at: Option<OffsetDateTime>,
 }
 
@@ -175,8 +174,8 @@ pub async fn insert_agent(
     sqlx::query!(
         "INSERT INTO agents (id, user_id, client_id, name, model, preset, customized, \
          instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, \
-         sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
+         sign_in_method, second_factor, oidc_org_id, created_at, last_used_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
         a.id,
         a.user_id,
         a.client_id,
@@ -194,7 +193,6 @@ pub async fn insert_agent(
         a.oidc_org_id,
         a.created_at,
         a.last_used_at,
-        a.expires_at,
     )
     .execute(&mut *db)
     .await?;
@@ -268,7 +266,7 @@ pub async fn get(
         Agent,
         "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
-         second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
+         second_factor, oidc_org_id, created_at, last_used_at, revoked_at \
          FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL",
         id,
         user_id
@@ -286,7 +284,7 @@ pub async fn lock(
         Agent,
         "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
-         second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
+         second_factor, oidc_org_id, created_at, last_used_at, revoked_at \
          FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL FOR UPDATE",
         id,
         user_id
@@ -300,7 +298,7 @@ pub async fn list(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<Vec<Agent>, 
         Agent,
         "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
-         second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
+         second_factor, oidc_org_id, created_at, last_used_at, revoked_at \
          FROM agents WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id DESC",
         user_id
     )
@@ -346,20 +344,10 @@ pub async fn grant_of(db: &mut sqlx::PgConnection, a: &Agent) -> Result<Grant, S
     })
 }
 
-pub struct Details<'a> {
-    pub name: &'a str,
-    pub expires_at: Option<OffsetDateTime>,
-}
-
-pub async fn update(db: impl PgExecutor<'_>, id: Uuid, d: &Details<'_>) -> Result<(), StoreError> {
-    sqlx::query!(
-        "UPDATE agents SET name = $2, expires_at = $3 WHERE id = $1",
-        id,
-        d.name,
-        d.expires_at,
-    )
-    .execute(db)
-    .await?;
+pub async fn rename(db: impl PgExecutor<'_>, id: Uuid, name: &str) -> Result<(), StoreError> {
+    sqlx::query!("UPDATE agents SET name = $2 WHERE id = $1", id, name)
+        .execute(db)
+        .await?;
     Ok(())
 }
 
@@ -420,7 +408,7 @@ pub async fn revoke_unused(
 ) -> Result<u64, StoreError> {
     let done = sqlx::query!(
         "UPDATE agents SET revoked_at = $2 WHERE revoked_at IS NULL \
-         AND ((expires_at IS NOT NULL AND expires_at <= $2) OR COALESCE(last_used_at, created_at) < $1)",
+         AND COALESCE(last_used_at, created_at) < $1",
         unused_since,
         now
     )
@@ -575,7 +563,7 @@ pub async fn authenticate(
     let row = sqlx::query!(
         "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, \
          a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, \
-         a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, \
+         a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, \
          a.revoked_at, t.expires_at AS token_expires_at, u.state AS user_state, u.is_instance_admin \
          FROM agent_tokens t JOIN agents a ON a.id = t.agent_id JOIN users u ON u.id = a.user_id \
          WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND a.revoked_at IS NULL \
@@ -604,7 +592,6 @@ pub async fn authenticate(
             oidc_org_id: r.oidc_org_id,
             created_at: r.created_at,
             last_used_at: r.last_used_at,
-            expires_at: r.expires_at,
             revoked_at: r.revoked_at,
         },
         token_expires_at: r.token_expires_at,
@@ -620,7 +607,7 @@ pub async fn agent_for_refresh(
     let row = sqlx::query!(
         "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, \
          a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, \
-         a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, \
+         a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, \
          a.revoked_at, u.state AS user_state, u.is_instance_admin \
          FROM agents a JOIN users u ON u.id = a.user_id WHERE a.id = $1 AND a.revoked_at IS NULL",
         id
@@ -646,7 +633,6 @@ pub async fn agent_for_refresh(
             oidc_org_id: r.oidc_org_id,
             created_at: r.created_at,
             last_used_at: r.last_used_at,
-            expires_at: r.expires_at,
             revoked_at: r.revoked_at,
         },
         token_expires_at: None,
@@ -734,25 +720,19 @@ pub struct OrgAgent {
     pub user_avatar: Option<String>,
     pub created_at: OffsetDateTime,
     pub last_used_at: Option<OffsetDateTime>,
-    pub expires_at: Option<OffsetDateTime>,
 }
 
-pub async fn in_org(
-    db: impl PgExecutor<'_>,
-    org_id: Uuid,
-    now: OffsetDateTime,
-) -> Result<Vec<OrgAgent>, StoreError> {
+pub async fn in_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<OrgAgent>, StoreError> {
     Ok(sqlx::query_as!(
         OrgAgent,
         "SELECT a.id, a.name, a.model, a.user_id, u.name AS user_name, u.email AS user_email, \
-         u.avatar AS user_avatar, a.created_at, a.last_used_at, a.expires_at \
+         u.avatar AS user_avatar, a.created_at, a.last_used_at \
          FROM agents a JOIN org_memberships m ON m.user_id = a.user_id AND m.org_id = $1 \
          JOIN users u ON u.id = a.user_id \
          LEFT JOIN agent_orgs ao ON ao.agent_id = a.id AND ao.org_id = $1 \
-         WHERE a.revoked_at IS NULL AND (a.expires_at IS NULL OR a.expires_at > $2) \
+         WHERE a.revoked_at IS NULL \
          AND (ao.included OR (ao.agent_id IS NULL AND a.future_orgs)) ORDER BY a.id DESC",
-        org_id,
-        now
+        org_id
     )
     .fetch_all(db)
     .await?)

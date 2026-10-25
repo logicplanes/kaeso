@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, a.revoked_at, u.state AS user_state, u.is_instance_admin FROM agents a JOIN users u ON u.id = a.user_id WHERE a.id = $1 AND a.revoked_at IS NULL",
+  "query": "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.revoked_at, t.expires_at AS token_expires_at, u.state AS user_state, u.is_instance_admin FROM agent_tokens t JOIN agents a ON a.id = t.agent_id JOIN users u ON u.id = a.user_id WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND a.revoked_at IS NULL AND (t.expires_at IS NULL OR t.expires_at > $2)",
   "describe": {
     "columns": [
       {
@@ -192,23 +192,23 @@
       },
       {
         "ordinal": 17,
-        "name": "expires_at",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "agents",
-            "name": "expires_at"
-          }
-        }
-      },
-      {
-        "ordinal": 18,
         "name": "revoked_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
             "table": "agents",
             "name": "revoked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "token_expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agent_tokens",
+            "name": "expires_at"
           }
         }
       },
@@ -237,7 +237,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Bytea",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -264,5 +265,5 @@
       false
     ]
   },
-  "hash": "c511196c70a26b5791876d583049a987024ca0d2b45e332c24418ef8a85bdf75"
+  "hash": "6fc8e4ea2203f689027e3601ffa27601e1b7a03d8274ed35241c7218d32c68c6"
 }

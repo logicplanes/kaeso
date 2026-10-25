@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Button, Field, GrantSummary, Input, Segmented, Spinner, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, GrantSummary, Input, Spinner, Text } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { fieldError } from "~/api/field-error";
@@ -15,7 +15,6 @@ import { AGENT_REQUEST_KEY } from "~/auth/user-data";
 import { t } from "~/i18n";
 import { AgentGrantEditor, PresetPicker } from "~/kaeso/agent-grant-editor";
 import { DEFAULT_PRESET, gainedSensitive, presetDraft, rightLabels, summaryLines, toGrant, type AgentDraft } from "~/kaeso/agent-grant";
-import { expiryOptions, type Expiry } from "~/kaeso/agent-expiry";
 import { PublicPage } from "~/shell/public-page";
 import { usePageTitle } from "~/shell/title";
 import { readStored, writeStored } from "~/storage";
@@ -132,7 +131,7 @@ function ConsentForm({
   grantable: Grantable;
 }) {
   const [name, setName] = useState(request.client);
-  const [expiry, setExpiry] = useState<Expiry>("90d");
+  const [customizing, setCustomizing] = useState(false);
   const [draft, setDraft] = useState<AgentDraft>(() => presetDraft(cat, grantable, DEFAULT_PRESET));
   const [confirming, setConfirming] = useState<string[] | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -148,7 +147,7 @@ function ConsentForm({
       const result = await withSignInAgain(async () =>
         data(
           await api.POST("/platform/v1/me/agent-requests/approve", {
-            body: { request: token, name: name.trim(), expiry, grant: toGrant(draft) },
+            body: { request: token, name: name.trim(), grant: toGrant(draft) },
           }),
         ),
       );
@@ -189,24 +188,24 @@ function ConsentForm({
       <GrantSummary
         aria-label={t("public.agentCan", "What it can do")}
         items={summaryLines(cat, grantable, draft)}
-        footer={
-          expiry === "never"
-            ? t("public.agentNoEnd", "Until you revoke it in your account settings.")
-            : t("public.agentEnds", "For {days} days; revoke it any time in your account settings.", { days: expiry.replace("d", "") })
+        footer={t("public.agentUntilRevoked", "Until you revoke it")}
+        action={
+          <Button size="sm" variant="secondary" onClick={() => setCustomizing(true)}>
+            {t("kaeso.rights.customize", "Customize")}
+          </Button>
         }
       />
-      <AgentGrantEditor cat={cat} grantable={grantable} value={draft} onChange={setDraft}>
+      <AgentGrantEditor
+        cat={cat}
+        grantable={grantable}
+        value={draft}
+        onChange={setDraft}
+        open={customizing}
+        onOpenChange={setCustomizing}
+        title={t("kaeso.agents.customizeTitle", "Customize {name}", { name: shownName })}
+        description={t("public.customizeAgentHint", "Nothing changes until you authorize.")}
+      >
         <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} error={fieldError(error, "name")} />
-        <Field label={t("kaeso.agents.expiry", "Expiry")}>
-          <Segmented
-            aria-label={t("kaeso.agents.expiry", "Expiry")}
-            fullWidth
-            size="sm"
-            options={expiryOptions()}
-            value={expiry}
-            onValueChange={(v) => setExpiry(v as Expiry)}
-          />
-        </Field>
       </AgentGrantEditor>
       <div className="mt-8 flex flex-col gap-8">
         <Button variant="primary" size="xl" fullWidth loading={busy} disabled={!name.trim() || busy} onClick={askFirst}>

@@ -11,11 +11,10 @@ import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 
 export const mcpUrl = (): string => `${window.location.origin}/mcp`;
 
-export function agentDates(a: Pick<AgentView, "created_at" | "last_used_at" | "expires_at">): string {
-  return t("account.agentDates", "Added {created} · used {used} · {expires}", {
+export function agentDates(a: Pick<AgentView, "created_at" | "last_used_at">): string {
+  return t("account.agentAddedUsed", "Added {created} · used {used}", {
     created: formatDate(a.created_at),
     used: a.last_used_at ? formatRelative(a.last_used_at) : t("account.agentNeverUsed", "never"),
-    expires: a.expires_at ? t("account.agentExpires", "ends {when}", { when: formatDate(a.expires_at) }) : t("account.agentNoExpiry", "no end date"),
   });
 }
 

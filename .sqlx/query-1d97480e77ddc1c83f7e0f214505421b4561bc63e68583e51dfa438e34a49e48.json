@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, a.revoked_at, t.expires_at AS token_expires_at, u.state AS user_state, u.is_instance_admin FROM agent_tokens t JOIN agents a ON a.id = t.agent_id JOIN users u ON u.id = a.user_id WHERE t.token_hash = $1 AND t.kind = 'access' AND t.revoked_at IS NULL AND a.revoked_at IS NULL AND (t.expires_at IS NULL OR t.expires_at > $2)",
+  "query": "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, revoked_at FROM agents WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id DESC",
   "describe": {
     "columns": [
       {
@@ -192,17 +192,6 @@
       },
       {
         "ordinal": 17,
-        "name": "expires_at",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "agents",
-            "name": "expires_at"
-          }
-        }
-      },
-      {
-        "ordinal": 18,
         "name": "revoked_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -211,45 +200,11 @@
             "name": "revoked_at"
           }
         }
-      },
-      {
-        "ordinal": 19,
-        "name": "token_expires_at",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "agent_tokens",
-            "name": "expires_at"
-          }
-        }
-      },
-      {
-        "ordinal": 20,
-        "name": "user_state",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "state"
-          }
-        }
-      },
-      {
-        "ordinal": 21,
-        "name": "is_instance_admin",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "users",
-            "name": "is_instance_admin"
-          }
-        }
       }
     ],
     "parameters": {
       "Left": [
-        "Bytea",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -270,12 +225,8 @@
       true,
       false,
       true,
-      true,
-      true,
-      true,
-      false,
-      false
+      true
     ]
   },
-  "hash": "4da18ab34b52b07b7abc798648cdc630402c592ff87b1fd8f01a22f357614ea4"
+  "hash": "1d97480e77ddc1c83f7e0f214505421b4561bc63e68583e51dfa438e34a49e48"
 }

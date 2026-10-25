@@ -62,15 +62,14 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Agenten verwalten
 
-**Agenten** listet jeden Agenten, den Sie autorisiert haben: sein Bild, seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt, zuletzt genutzt wurde und abläuft. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
+**Agenten** listet jeden Agenten, den Sie autorisiert haben: sein Bild, seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
 
 - ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;
-- ihm mit **Neue Laufzeit ab heute** einen neuen Ablauf geben;
 - ihn **Widerrufen**, was ihn sofort abmeldet;
 - seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
 
-Ein Agent hört auf zu funktionieren, wenn er abläuft, nach 90 Tagen ohne Nutzung oder wenn Sie ihn widerrufen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
+Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ungenutzt bleibt. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 
 ## Sensible Aktion bestätigen
 

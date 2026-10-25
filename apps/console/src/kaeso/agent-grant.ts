@@ -31,12 +31,6 @@ export function presetPart(cat: AgentCatalogue, id: string, part: "org" | "proje
   return cat.presets.filter((p) => p.id === id).flatMap((p) => p[part]);
 }
 
-export const presetText = (cat: AgentCatalogue, id: string, field: "name" | "description"): string =>
-  cat.presets
-    .filter((p) => p.id === id)
-    .map((p) => p[field])
-    .join("");
-
 export function heldInProjects(org: GrantableOrg): string[] {
   const held = new Set(org.every_project);
   for (const p of org.projects) for (const r of p.rights) held.add(r);

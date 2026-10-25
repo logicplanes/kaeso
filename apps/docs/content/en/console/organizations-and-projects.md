@@ -90,7 +90,7 @@ Members can connect agents, such as Claude Code or Codex, that act for them thro
 
 Changing the policy needs **Change member roles** and a console session; no agent can change it. [Agents](../concepts/rights.md#presets) lists what each preset holds.
 
-The same page lists the agents that may act in the organization, with their member, model family, and when they were created, last used and expire. Seeing them needs **View members**. **Close access** closes the organization to an agent and needs **Change member roles**. The agent keeps working in its member's other organizations, and its member can open this one to it again.
+The same page lists the agents that may act in the organization, with their member, model family, and when they were created and last used. Seeing them needs **View members**. **Close access** closes the organization to an agent and needs **Change member roles**. The agent keeps working in its member's other organizations, and its member can open this one to it again.
 
 ## Delete an organization
 

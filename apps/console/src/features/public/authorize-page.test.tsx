@@ -49,17 +49,21 @@ describe("connecting an agent", () => {
         .getAllByRole("listitem")
         .map((li) => li.textContent),
     ).toEqual(["Manages projects, keys, and models in Northwind", "Reads the rest of Northwind", "Also in organizations you join later"]);
-    expect(screen.getByText("For 90 days; revoke it any time in your account settings.")).toBeInTheDocument();
+    expect(screen.getByText("Until you revoke it")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Customize" }));
-    await user.click(screen.getByRole("radio", { name: "Never" }));
-    expect(screen.getByText("Until you revoke it in your account settings.")).toBeInTheDocument();
-    await user.clear(screen.getByLabelText("Name"));
-    await user.type(screen.getByLabelText("Name"), "Release helper");
-    await user.click(screen.getByRole("radio", { name: "30 days" }));
+    const dialog = await screen.findByRole("dialog", { name: "Customize Claude Code" });
+    expect(within(dialog).getByText("Nothing changes until you authorize.")).toBeInTheDocument();
+    await user.clear(within(dialog).getByLabelText("Name"));
+    await user.type(within(dialog).getByLabelText("Name"), "Release helper");
+    expect(within(dialog).getByRole("heading", { name: "Customize Release helper" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByRole("heading", { name: "Connect Release helper" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Authorize" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("http://127.0.0.1:3333/callback?code=c&state=s"));
     const [sent] = requests("POST", "me/agent-requests/approve").map((r) => r.body as Record<string, unknown>);
-    expect(sent).toMatchObject({ request: "req_tok", name: "Release helper", expiry: "30d", grant: { future_orgs: expect.any(Object) } });
+    expect(sent).toMatchObject({ request: "req_tok", name: "Release helper", grant: { future_orgs: expect.any(Object) } });
+    expect(sent).not.toHaveProperty("expiry");
     expect((sent?.grant as { orgs: { org: string; included: boolean }[] }).orgs).toEqual(
       expect.arrayContaining([expect.objectContaining({ org: ORG, included: true }), expect.objectContaining({ org: "org_contoso", included: false })]),
     );

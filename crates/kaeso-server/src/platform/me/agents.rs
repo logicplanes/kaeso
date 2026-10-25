@@ -23,7 +23,7 @@ use crate::platform::params::{Path, Query};
 use crate::platform::rights::{RightView, ScopeCatalogue, group};
 use crate::platform::validate::validate_name;
 use crate::platform::views::avatar_url;
-use crate::services::agents::{self as service, Expiry, Granting, MODELS};
+use crate::services::agents::{self as service, Granting, MODELS};
 use crate::state::AppState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -174,7 +174,7 @@ pub struct AgentView {
     #[schema(example = "Release helper")]
     pub name: String,
     #[doc = "The model family it reports with every tool call, one of the catalogue's\n\
-        `models`; until its first call, guessed from its client's name, else `unknown`."]
+        `models`; `unknown` until its first call."]
     #[schema(example = "claude")]
     pub model: String,
     #[doc = "The name its client registered with."]
@@ -189,9 +189,6 @@ pub struct AgentView {
         stops working."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub last_used_at: Option<OffsetDateTime>,
-    #[doc = "When its sign-in ends; `null` for never."]
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub expires_at: Option<OffsetDateTime>,
 }
 
 async fn view(state: &AppState, a: &Agent) -> ApiResult<AgentView> {
@@ -209,7 +206,6 @@ async fn view(state: &AppState, a: &Agent) -> ApiResult<AgentView> {
         grant: GrantBody::of(&grant),
         created_at: a.created_at,
         last_used_at: a.last_used_at,
-        expires_at: a.expires_at,
     })
 }
 
@@ -254,19 +250,17 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-#[schema(description = "Changes to an agent; fields left out stay.")]
+#[schema(description = "A new name for an agent.")]
 pub struct AgentUpdate {
     #[doc = "Its name, 1 to 100 characters."]
-    pub name: Option<String>,
-    #[doc = "A new lifetime from now: `7d`, `30d`, `90d` or `never`."]
-    #[schema(example = "90d")]
-    pub expiry: Option<String>,
+    #[schema(example = "Release helper")]
+    pub name: String,
 }
 
 #[utoipa::path(
     patch,
     path = "/me/agents/{agent}",
-    summary = "Renames an agent or gives it a new lifetime.",
+    summary = "Renames an agent.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     request_body = AgentUpdate,
@@ -284,29 +278,12 @@ pub async fn update(
     let a = agents::lock(&mut tx, user.uuid(), id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("agent"))?;
-    let name = req
-        .name
-        .as_deref()
-        .map(|n| validate_name("name", n))
-        .transpose()?
-        .unwrap_or_else(|| a.name.clone());
-    let expires_at = match req.expiry.as_deref() {
-        Some(e) => Expiry::parse(e)?.from(ctx.now),
-        None => a.expires_at,
-    };
-    agents::update(
-        &mut *tx,
-        a.id,
-        &agents::Details {
-            name: &name,
-            expires_at,
-        },
-    )
-    .await?;
+    let name = validate_name("name", &req.name)?;
+    agents::rename(&mut *tx, a.id, &name).await?;
     ctx.audit(None, Action::AgentUpdate)
         .target("agent", id)
-        .before(serde_json::json!({ "name": a.name, "expires_at": a.expires_at.map(|t| t.unix_timestamp()) }))
-        .after(serde_json::json!({ "name": name, "expires_at": expires_at.map(|t| t.unix_timestamp()) }))
+        .before(serde_json::json!({ "name": a.name }))
+        .after(serde_json::json!({ "name": name }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -821,9 +798,6 @@ pub struct AgentApproval {
     #[doc = "The agent's name, 1 to 100 characters."]
     #[schema(example = "Release helper")]
     pub name: String,
-    #[doc = "How long its sign-in lasts: `7d`, `30d`, `90d` or `never`."]
-    #[schema(example = "90d")]
-    pub expiry: String,
     #[doc = "Its rights."]
     pub grant: GrantBody,
 }
@@ -840,10 +814,11 @@ pub struct AgentRedirect {
 #[utoipa::path(
     post,
     path = "/me/agent-requests/approve",
-    summary = "Lets an agent sign in with the chosen name, rights and lifetime.",
+    summary = "Lets an agent sign in with the chosen name and rights.",
     description = "Only rights the user holds, the policies allow and agents may be given.\n\
     Sensitive rights need a sign-in within the last 15 minutes. The browser\n\
-    goes on to `redirect_to`, where the agent exchanges the code for tokens.",
+    goes on to `redirect_to`, where the agent exchanges the code for tokens. The\n\
+    agent keeps working until it is revoked or goes 90 days unused.",
     tag = "agents",
     request_body = AgentApproval,
     responses((status = 200, body = AgentRedirect))
@@ -855,7 +830,6 @@ pub async fn approve(
 ) -> ApiResult<Json<AgentRedirect>> {
     let session = ctx.session()?.clone();
     let name = validate_name("name", &req.name)?;
-    let expires_at = Expiry::parse(&req.expiry)?.from(ctx.now);
     let r = pending(
         &state,
         &ctx,
@@ -865,13 +839,6 @@ pub async fn approve(
     )
     .await?;
     let grant = validated(&state, &ctx, None, &req.grant).await?;
-    let client = agents::get_client(&state.pg, r.client_id).await?;
-    let names: Vec<&str> = client
-        .iter()
-        .flat_map(|c| [Some(c.name.as_str()), c.software_id.as_deref()])
-        .flatten()
-        .collect();
-    let model = service::guess_model(&names);
     let id = AgentId::new();
     let mut tx = state.pg.begin().await?;
     if !agents::use_request(&mut *tx, r.id, ctx.now).await? {
@@ -886,7 +853,7 @@ pub async fn approve(
             user_id: session.user_id,
             client_id: Some(r.client_id),
             name: name.clone(),
-            model: model.to_owned(),
+            model: "unknown".to_owned(),
             preset: String::new(),
             customized: false,
             instance_rights: Vec::new(),
@@ -899,7 +866,6 @@ pub async fn approve(
             oidc_org_id: session.oidc_org_id,
             created_at: ctx.now,
             last_used_at: None,
-            expires_at,
             revoked_at: None,
         },
         &grant.to_store(),
@@ -910,9 +876,7 @@ pub async fn approve(
         .target("agent", id)
         .after(serde_json::json!({
             "name": name,
-            "model": model,
             "client": r.client_name,
-            "expires_at": expires_at.map(|t| t.unix_timestamp()),
             "grant": GrantBody::of(&grant),
         }))
         .write(&mut tx)

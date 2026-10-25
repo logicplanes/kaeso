@@ -1125,5 +1125,6 @@
   "A list named by `aria-label`; the check marks are decorative.": "Eine Liste, benannt durch `aria-label`; die Häkchen sind Dekoration.",
   "The list's accessible name (\"What it can do\").": "Der barrierefreie Name der Liste („Was es darf“).",
   "What an agent may do in a few short lines, each after a check mark, as on its consent page.": "Was ein Agent darf, in wenigen kurzen Zeilen, jede nach einem Häkchen, wie auf seiner Zustimmungsseite.",
-  "What an agent or a key may do, one short line each after a check mark, on a group surface.": "Was ein Agent oder ein Schlüssel darf, je eine kurze Zeile nach einem Häkchen, auf einer Gruppenfläche."
+  "What an agent or a key may do, one short line each after a check mark, on a group surface.": "Was ein Agent oder ein Schlüssel darf, je eine kurze Zeile nach einem Häkchen, auf einer Gruppenfläche.",
+  "A small button after the note, such as Customize.": "Eine kleine Schaltfläche nach dem Hinweis, etwa Anpassen."
 }

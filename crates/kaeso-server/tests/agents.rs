@@ -126,7 +126,7 @@ fn builder(org: &str) -> Value {
 async fn approve(app: &App, cookie: &str, request: &str, grant: Value) -> common::Resp {
     app.post(
         "/me/agent-requests/approve",
-        json!({ "request": request, "name": "Release helper", "expiry": "90d", "grant": grant }),
+        json!({ "request": request, "name": "Release helper", "grant": grant }),
         Some(cookie),
     )
     .await
@@ -907,7 +907,7 @@ async fn the_agents_tab_lists_renames_regrants_and_revokes() {
     let agent = &listed.body["data"][0];
     assert_eq!(agent["id"], a.agent);
     assert_eq!(agent["client"], "Claude Code");
-    assert_eq!(agent["model"], "claude");
+    assert_eq!(agent["model"], "unknown");
     assert_eq!(agent["grant"]["preset"], "builder");
     assert_eq!(
         agent["grant"]["orgs"][0]["rights"],
@@ -918,20 +918,19 @@ async fn the_agents_tab_lists_renames_regrants_and_revokes() {
             "costs.org.view"
         ])
     );
-    assert!(agent["expires_at"].is_string());
+    assert!(agent.get("expires_at").is_none());
 
     let renamed = app
         .call(
             Method::PATCH,
             &format!("/me/agents/{}", a.agent),
-            Some(json!({ "name": "Ops", "expiry": "never" })),
+            Some(json!({ "name": "Ops" })),
             Some(&owner.cookie),
         )
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(renamed.body["name"], "Ops");
-    assert_eq!(renamed.body["model"], "claude");
-    assert!(renamed.body["expires_at"].is_null());
+    assert_eq!(renamed.body["model"], "unknown");
 
     let mut more = builder(&owner.org_id);
     more["customized"] = json!(true);
@@ -1002,18 +1001,10 @@ async fn the_agents_tab_lists_renames_regrants_and_revokes() {
 }
 
 #[tokio::test]
-async fn an_agent_stops_when_it_expires_or_goes_unused_for_ninety_days() {
+async fn an_agent_keeps_working_until_it_goes_unused_for_ninety_days() {
     let (_s, app, owner) = setup().await;
     let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
     let b = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
-    app.call(
-        Method::PATCH,
-        &format!("/me/agents/{}", a.agent),
-        Some(json!({ "expiry": "7d" })),
-        Some(&owner.cookie),
-    )
-    .await
-    .expect_status(StatusCode::OK);
     let refresh = |s: &Signed| {
         form(&[
             ("grant_type", "refresh_token"),
@@ -1021,12 +1012,12 @@ async fn an_agent_stops_when_it_expires_or_goes_unused_for_ninety_days() {
             ("client_id", &s.client),
         ])
     };
-    app.clock.advance(time::Duration::days(8));
-    let late = oauth_post(&app, "/oauth/token", refresh(&a))
+    app.clock.advance(time::Duration::days(60));
+    let used = oauth_post(&app, "/oauth/token", refresh(&a))
         .await
-        .expect_status(StatusCode::BAD_REQUEST);
-    assert_eq!(late.body["error"], "invalid_grant");
-    app.clock.advance(time::Duration::days(83));
+        .expect_status(StatusCode::OK);
+    assert!(used.body["access_token"].is_string());
+    app.clock.advance(time::Duration::days(31));
     let unused = oauth_post(&app, "/oauth/token", refresh(&b))
         .await
         .expect_status(StatusCode::BAD_REQUEST);
@@ -1034,7 +1025,7 @@ async fn an_agent_stops_when_it_expires_or_goes_unused_for_ninety_days() {
     let report = kaeso_server::jobs::cleanup::run(app.state.clone())
         .await
         .unwrap();
-    assert!(report.contains("revoked 2 agents"), "{report}");
+    assert!(report.contains("revoked 1 agents"), "{report}");
 }
 
 #[tokio::test]

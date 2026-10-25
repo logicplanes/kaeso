@@ -1125,5 +1125,6 @@
   "A list named by `aria-label`; the check marks are decorative.": "由 `aria-label` 命名的列表；对勾仅作装饰。",
   "The list's accessible name (\"What it can do\").": "列表的无障碍名称（“它可以做什么”）。",
   "What an agent may do in a few short lines, each after a check mark, as on its consent page.": "用几行简短文字说明智能体可以做什么，每行前有一个对勾，就像在其授权页面上一样。",
-  "What an agent or a key may do, one short line each after a check mark, on a group surface.": "说明智能体或密钥可以做什么，每项一行，前有对勾，显示在分组表面上。"
+  "What an agent or a key may do, one short line each after a check mark, on a group surface.": "说明智能体或密钥可以做什么，每项一行，前有对勾，显示在分组表面上。",
+  "A small button after the note, such as Customize.": "说明后面的小按钮，例如“自定义”。"
 }

@@ -8,7 +8,6 @@ use kaeso_core::rights::{
 };
 use kaeso_store::pg::{agents, members};
 use sqlx::PgPool;
-use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
 use crate::auth::agents::{
@@ -26,67 +25,8 @@ pub const MODELS: &[&str] = &[
     "yi", "nemotron", "olmo", "sonar", "reka", "unknown",
 ];
 
-const CLIENT_MODELS: &[(&str, &str)] = &[
-    ("claude", "claude"),
-    ("codex", "gpt"),
-    ("openai", "gpt"),
-    ("chatgpt", "gpt"),
-    ("gpt", "gpt"),
-    ("gemini", "gemini"),
-    ("grok", "grok"),
-    ("mistral", "mistral"),
-    ("deepseek", "deepseek"),
-    ("qwen", "qwen"),
-    ("kimi", "kimi"),
-];
-
-pub fn guess_model(names: &[&str]) -> &'static str {
-    names
-        .iter()
-        .map(|n| n.to_lowercase())
-        .find_map(|n| {
-            CLIENT_MODELS
-                .iter()
-                .find(|(part, _)| n.contains(part))
-                .map(|(_, model)| *model)
-        })
-        .unwrap_or("unknown")
-}
-
 pub fn known_model(model: &str) -> Option<&'static str> {
     MODELS.iter().copied().find(|m| *m == model)
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Expiry {
-    Week,
-    Month,
-    Quarter,
-    Never,
-}
-
-impl Expiry {
-    pub fn parse(s: &str) -> ApiResult<Expiry> {
-        match s {
-            "7d" => Ok(Expiry::Week),
-            "30d" => Ok(Expiry::Month),
-            "90d" => Ok(Expiry::Quarter),
-            "never" => Ok(Expiry::Never),
-            _ => Err(ApiError::invalid(
-                "expiry",
-                "`expiry` must be `7d`, `30d`, `90d` or `never`.",
-            )),
-        }
-    }
-
-    pub fn from(self, now: OffsetDateTime) -> Option<OffsetDateTime> {
-        match self {
-            Expiry::Week => Some(now + Duration::days(7)),
-            Expiry::Month => Some(now + Duration::days(30)),
-            Expiry::Quarter => Some(now + Duration::days(90)),
-            Expiry::Never => None,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -530,36 +470,11 @@ mod tests {
     use kaeso_core::rights::{InstancePreset, OrgPreset, ProjectPreset};
 
     #[test]
-    fn models_are_guessed_from_the_names_clients_register() {
-        assert_eq!(guess_model(&["Claude Code"]), "claude");
-        assert_eq!(guess_model(&["codex-mcp-client"]), "gpt");
-        assert_eq!(guess_model(&["gemini-cli-mcp-client"]), "gemini");
-        assert_eq!(guess_model(&["Cursor"]), "unknown");
-        assert_eq!(guess_model(&["My tool", "com.anthropic.claude"]), "claude");
-        assert_eq!(guess_model(&[]), "unknown");
+    fn only_known_model_families_are_kept() {
         for m in MODELS {
             assert_eq!(known_model(m), Some(*m));
         }
         assert_eq!(known_model("claude_code"), None);
-    }
-
-    #[test]
-    fn expiry_offers_a_week_a_month_a_quarter_or_never() {
-        let now = OffsetDateTime::now_utc();
-        assert_eq!(
-            Expiry::parse("7d").ok().and_then(|e| e.from(now)),
-            Some(now + Duration::days(7))
-        );
-        assert_eq!(
-            Expiry::parse("30d").ok().and_then(|e| e.from(now)),
-            Some(now + Duration::days(30))
-        );
-        assert_eq!(
-            Expiry::parse("90d").ok().and_then(|e| e.from(now)),
-            Some(now + Duration::days(90))
-        );
-        assert_eq!(Expiry::parse("never").ok().map(|e| e.from(now)), Some(None));
-        assert!(Expiry::parse("1y").is_err());
     }
 
     fn held(preset: OrgPreset, policy: OrgPolicy) -> HeldOrg {

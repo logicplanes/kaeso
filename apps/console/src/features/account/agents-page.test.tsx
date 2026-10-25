@@ -48,7 +48,7 @@ describe("the agents tab", () => {
     expect(await screen.findByText("Release helper")).toBeInTheDocument();
     expect(screen.getByText("Claude")).toBeInTheDocument();
     expect(await screen.findByText(/^Manages .* in Northwind\.$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Added .* · used .* · ends /)).toBeInTheDocument();
+    expect(screen.getByText(/^Added .* · used .+$/)).toBeInTheDocument();
     expect(screen.getByText(/\/mcp$/)).toBeInTheDocument();
   });
 
@@ -70,9 +70,8 @@ describe("the agents tab", () => {
     const name = screen.getByLabelText("Name");
     await user.clear(name);
     await user.type(name, "Ops");
-    await user.click(screen.getByRole("radio", { name: "Never" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops", expiry: "never" }]));
+    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops" }]));
   });
 
   it("adds the right an agent asked for once the person saves", async () => {
@@ -81,6 +80,10 @@ describe("the agents tab", () => {
     on("PUT", "me/agents/:agent/rights", agentView());
     const { user } = await renderApp(`/settings/account/agents/${AGENT}?add=limits.manage&org=${ORG}&project=${PROJECT}`);
     expect(await screen.findByText("The agent asks for Manage limits")).toBeInTheDocument();
+    const dialog = await screen.findByRole("dialog", { name: "Customize Release helper" });
+    expect(within(dialog).getByRole("group", { name: "Rights in Northwind" })).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await user.click(screen.getByRole("button", { name: "Save rights" }));
     await waitFor(() => expect(requests("PUT", "me/agents/:agent/rights")).toHaveLength(1));
     const [sent] = requests("PUT", "me/agents/:agent/rights").map(
@@ -104,17 +107,17 @@ describe("the agents tab", () => {
 
   it("says when the agents couldn't load", async () => {
     signedIn();
-    agentApi(agentView({ last_used_at: null, expires_at: null }));
+    agentApi(agentView({ last_used_at: null }));
     on("GET", "me/agents", apiError(500, "internal", "Something went wrong in the gateway; report request req_1 to your admin."));
     await renderApp("/settings/account/agents");
     expect(await screen.findByText("Your agents couldn't load")).toBeInTheDocument();
   });
 
-  it("says when an agent was never used and never ends", async () => {
+  it("says when an agent was never used", async () => {
     signedIn();
-    agentApi(agentView({ last_used_at: null, expires_at: null }));
+    agentApi(agentView({ last_used_at: null }));
     await renderApp(`/settings/account/agents/${AGENT}`);
-    expect(await screen.findByText(/^Added .* · used never · no end date$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Added .* · used never$/)).toBeInTheDocument();
   });
 
   it("says when an agent is gone", async () => {
@@ -162,9 +165,11 @@ describe("the agents tab", () => {
   it("says when the person lacks the right an agent asked for", async () => {
     signedIn();
     agentApi();
-    await renderApp(`/settings/account/agents/${AGENT}?add=limits.manage&org=${ORG}&project=${OTHER_PROJECT}`);
+    const { user } = await renderApp(`/settings/account/agents/${AGENT}?add=limits.manage&org=${ORG}&project=${OTHER_PROJECT}`);
     expect(await screen.findByText("The agent asks for Manage limits, which you don't hold")).toBeInTheDocument();
     expect(screen.getByText("Ask an admin for it first; an agent never gets more than you hold.")).toBeInTheDocument();
+    await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("button", { name: "Save rights" })).toBeDisabled();
   });
 

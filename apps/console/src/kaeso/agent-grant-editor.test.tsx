@@ -1,23 +1,51 @@
-import { useEffect, useState } from "react";
-import { screen, within } from "@testing-library/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Grantable } from "~/api/generated/types";
 import { ORG, OTHER_PROJECT, PROJECT } from "~/test/fixtures";
 import { agents, grantable } from "~/test/fixtures/agents";
 import { renderUi } from "~/test/render";
-import { presetDraft, type AgentDraft } from "./agent-grant";
-import { AgentGrantEditor, PresetLine, PresetPicker } from "./agent-grant-editor";
+import { presetDraft, summary, type AgentDraft } from "./agent-grant";
+import { AgentGrantEditor, PresetPicker } from "./agent-grant-editor";
 
 const seen = vi.fn<(d: AgentDraft) => void>();
 
-function Editor({ g = grantable(), start }: { g?: Grantable; start?: AgentDraft }) {
+function Editor({
+  g = grantable(),
+  start,
+  closed,
+  from,
+  children,
+}: {
+  g?: Grantable;
+  start?: AgentDraft;
+  closed?: boolean;
+  from?: "organizations";
+  children?: ReactNode;
+}) {
   const [value, setValue] = useState(start ?? presetDraft(agents, g, "builder"));
+  const [open, setOpen] = useState(!closed);
   useEffect(() => seen(value), [value]);
   return (
     <>
       <PresetPicker cat={agents} grantable={g} value={value} onChange={setValue} />
-      <PresetLine cat={agents} grantable={g} value={value} />
-      <AgentGrantEditor cat={agents} grantable={g} value={value} onChange={setValue} defaultOpen />
+      <p>{summary(agents, g, value)}</p>
+      <button type="button" onClick={() => setOpen(true)}>
+        Customize
+      </button>
+      <AgentGrantEditor
+        cat={agents}
+        grantable={g}
+        value={value}
+        onChange={setValue}
+        open={open}
+        onOpenChange={setOpen}
+        title="Customize Release helper"
+        description="Nothing changes until you save the rights."
+        {...(from ? { start: from } : {})}
+      >
+        {children}
+      </AgentGrantEditor>
     </>
   );
 }
@@ -41,32 +69,52 @@ const ADMIN = [
 
 describe("AgentGrantEditor", () => {
   it("switches presets and marks a changed toggle as custom", async () => {
-    const { user } = await renderUi(<Editor />);
-    expect(screen.getByText("Works in projects like a developer and manages their models; sees personal keys.")).toBeInTheDocument();
+    const { user } = await renderUi(<Editor closed />);
     await user.click(screen.getByRole("radio", { name: "Observer" }));
     expect(latest()?.preset).toBe("observer");
-    await user.click(screen.getByRole("button", { name: /^Account/ }));
+    await user.click(screen.getByRole("button", { name: "Customize" }));
+    expect(screen.getByRole("dialog", { name: "Customize Release helper" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: "Account" }));
     await user.click(checkbox(screen.getByRole("group", { name: "Rights on your account" }), /^Edit the profile/));
     expect(latest()?.customized).toBe(true);
     expect(latest()?.account).toEqual(["account.view", "account.update"]);
-    expect(screen.getByText("Custom (based on Observer)")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("radio", { name: "Observer" })).not.toBeChecked();
   });
 
-  it("gives instance admins an instance section with presets and single rights", async () => {
+  it("gives instance admins an instance tab with presets and single rights", async () => {
     const { user } = await renderUi(<Editor g={grantable({ instance: ADMIN })} />);
-    await user.click(screen.getByRole("button", { name: /^Instance/ }));
+    await user.click(screen.getByRole("tab", { name: "Instance" }));
     await user.click(screen.getByRole("radio", { name: "Read" }));
     expect(latest()?.instance).toEqual(["instance.system.view", "instance.users.view", "instance.orgs.view", "instance.audit_log.view"]);
     expect(screen.getByText(/Also reads the instance\.$/)).toBeInTheDocument();
     await user.click(checkbox(screen.getByRole("group", { name: "Rights on the instance" }), /^Change instance settings/));
     expect(latest()?.instance).toContain("instance.settings.manage");
-    expect(screen.getByRole("button", { name: /^Instance/ })).toHaveTextContent("Custom");
+    expect(screen.getByRole("radio", { name: "Read" })).not.toBeChecked();
     expect(
       within(screen.getByRole("group", { name: "Rights on the instance" }))
         .getByText("Apply updates")
         .closest("label"),
     ).toBeTruthy();
+  });
+
+  it("shows what the page puts above the tabs, and no instance tab without instance rights", async () => {
+    await renderUi(
+      <Editor>
+        <label>
+          Name <input defaultValue="Release helper" />
+        </label>
+      </Editor>,
+    );
+    expect(screen.getByLabelText("Name")).toHaveValue("Release helper");
+    expect(screen.getByRole("tab", { name: "Organizations" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tab", { name: "Instance" })).toBeNull();
+  });
+
+  it("opens an organization's rights when it starts there", async () => {
+    await renderUi(<Editor from="organizations" />);
+    expect(await screen.findByRole("group", { name: "Rights in Northwind" })).toBeInTheDocument();
   });
 
   it("opens and closes organizations, and picks projects one by one", async () => {
@@ -106,9 +154,12 @@ describe("AgentGrantEditor", () => {
     expect(latest()?.future.rights).toContain("projects.create");
     await user.click(later);
     expect(latest()?.future.on).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await user.click(screen.getByRole("radio", { name: "Operator" }));
     expect(latest()?.preset).toBe("operator");
     expect(latest()?.future.on).toBe(false);
+    await user.click(screen.getByRole("button", { name: "Customize" }));
     await user.click(screen.getByRole("switch", { name: /Also orgs I join later/ }));
     expect(latest()?.future).toMatchObject({ on: true, rights: expect.arrayContaining(["projects.create"]) });
   });

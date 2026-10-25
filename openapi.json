@@ -4056,8 +4056,8 @@
         "tags": [
           "agents"
         ],
-        "summary": "Lets an agent sign in with the chosen name, rights and lifetime.",
-        "description": "Only rights the user holds, the policies allow and agents may be given.\nSensitive rights need a sign-in within the last 15 minutes. The browser\ngoes on to `redirect_to`, where the agent exchanges the code for tokens.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "summary": "Lets an agent sign in with the chosen name and rights.",
+        "description": "Only rights the user holds, the policies allow and agents may be given.\nSensitive rights need a sign-in within the last 15 minutes. The browser\ngoes on to `redirect_to`, where the agent exchanges the code for tokens. The\nagent keeps working until it is revoked or goes 90 days unused.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postMeAgentRequestsApprove",
         "requestBody": {
           "content": {
@@ -4513,7 +4513,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "Renames an agent or gives it a new lifetime.",
+        "summary": "Renames an agent.",
         "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "patchMeAgentsAgent",
         "parameters": [
@@ -18801,15 +18801,9 @@
         "required": [
           "request",
           "name",
-          "expiry",
           "grant"
         ],
         "properties": {
-          "expiry": {
-            "type": "string",
-            "description": "How long its sign-in lasts: `7d`, `30d`, `90d` or `never`.",
-            "example": "90d"
-          },
           "grant": {
             "$ref": "#/components/schemas/GrantBody",
             "description": "Its rights."
@@ -19064,22 +19058,15 @@
       },
       "AgentUpdate": {
         "type": "object",
-        "description": "Changes to an agent; fields left out stay.",
+        "description": "A new name for an agent.",
+        "required": [
+          "name"
+        ],
         "properties": {
-          "expiry": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "A new lifetime from now: `7d`, `30d`, `90d` or `never`.",
-            "example": "90d"
-          },
           "name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Its name, 1 to 100 characters."
+            "type": "string",
+            "description": "Its name, 1 to 100 characters.",
+            "example": "Release helper"
           }
         }
       },
@@ -19107,14 +19094,6 @@
             "format": "date-time",
             "description": "When it was authorized."
           },
-          "expires_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "When its sign-in ends; `null` for never."
-          },
           "grant": {
             "$ref": "#/components/schemas/GrantBody",
             "description": "Its rights."
@@ -19133,7 +19112,7 @@
           },
           "model": {
             "type": "string",
-            "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; until its first call, guessed from its client's name, else `unknown`.",
+            "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; `unknown` until its first call.",
             "example": "claude"
           },
           "name": {
@@ -22582,14 +22561,6 @@
                   "format": "date-time",
                   "description": "When it was authorized."
                 },
-                "expires_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "When its sign-in ends; `null` for never."
-                },
                 "grant": {
                   "$ref": "#/components/schemas/GrantBody",
                   "description": "Its rights."
@@ -22608,7 +22579,7 @@
                 },
                 "model": {
                   "type": "string",
-                  "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; until its first call, guessed from its client's name, else `unknown`.",
+                  "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; `unknown` until its first call.",
                   "example": "claude"
                 },
                 "name": {
@@ -24102,14 +24073,6 @@
                   "type": "string",
                   "format": "date-time",
                   "description": "When it was authorized."
-                },
-                "expires_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "When its sign-in ends; `null` for never."
                 },
                 "id": {
                   "$ref": "#/components/schemas/AgentId",
@@ -26075,14 +26038,6 @@
             "type": "string",
             "format": "date-time",
             "description": "When it was authorized."
-          },
-          "expires_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "When its sign-in ends; `null` for never."
           },
           "id": {
             "$ref": "#/components/schemas/AgentId",

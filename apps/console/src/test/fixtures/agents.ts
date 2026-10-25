@@ -71,7 +71,6 @@ export function agentView(overrides: Partial<AgentView> = {}): AgentView {
     grant: grantBody(),
     created_at: "2026-10-01T12:00:00Z",
     last_used_at: "2026-10-15T11:00:00Z",
-    expires_at: "2026-12-30T12:00:00Z",
     ...overrides,
   };
 }
@@ -84,7 +83,6 @@ export function orgAgent(overrides: Partial<OrgAgentView> = {}): OrgAgentView {
     user: { id: USER, name: "Ada Okafor", email: "ada@northwind.test", state: "active", avatar_url: null },
     created_at: "2026-10-01T12:00:00Z",
     last_used_at: null,
-    expires_at: null,
     ...overrides,
   };
 }

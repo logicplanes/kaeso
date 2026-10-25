@@ -452,14 +452,13 @@ async fn issue_tokens(
     db: &mut sqlx::PgConnection,
     agent: Uuid,
     family: Uuid,
-    refresh_until: Option<OffsetDateTime>,
     now: OffsetDateTime,
 ) -> Result<Tokens, StoreError> {
     let access = format!("{ACCESS_PREFIX}{}", random_token());
     let refresh = format!("{REFRESH_PREFIX}{}", random_token());
     for (kind, token, expires_at) in [
         (TokenKind::Access, &access, Some(now + ACCESS_LIFETIME)),
-        (TokenKind::Refresh, &refresh, refresh_until),
+        (TokenKind::Refresh, &refresh, None),
     ] {
         agents::insert_token(
             &mut *db,
@@ -574,20 +573,17 @@ async fn exchange(
         now,
     )
     .await?;
-    let auth = match checked {
-        Ok(auth) => auth,
-        Err(refused) => {
-            // The grant stays spent: a failed attempt must not leave a code open to more guesses.
-            tx.commit().await?;
-            return Ok(Err(refused));
-        }
-    };
+    if let Err(refused) = checked {
+        // The grant stays spent: a failed attempt must not leave a code open to more guesses.
+        tx.commit().await?;
+        return Ok(Err(refused));
+    }
     let family = if kind == TokenKind::Code {
         Uuid::now_v7()
     } else {
         spent.family
     };
-    let tokens = issue_tokens(&mut tx, spent.agent_id, family, auth.agent.expires_at, now).await?;
+    let tokens = issue_tokens(&mut tx, spent.agent_id, family, now).await?;
     agents::touch(&mut *tx, spent.agent_id, now, time::Duration::ZERO).await?;
     tx.commit().await?;
     Ok(Ok(tokens))
@@ -601,7 +597,7 @@ async fn check_grant(
     redirect_uri: Option<&str>,
     verifier: Option<&str>,
     now: OffsetDateTime,
-) -> Result<Result<agents::AgentAuth, Response>, StoreError> {
+) -> Result<Result<(), Response>, StoreError> {
     let client = client_id
         .and_then(|c| c.parse::<AgentClientId>().ok())
         .map(|c| c.uuid());
@@ -628,15 +624,12 @@ async fn check_grant(
             "The agent was revoked; connect it again.",
         )));
     };
-    if auth.user_state != "active"
-        || auth.agent.expires_at.is_some_and(|e| now >= e)
-        || unused_too_long(&auth.agent, now)
-    {
+    if auth.user_state != "active" || unused_too_long(&auth.agent, now) {
         return Ok(Err(invalid_grant(
             "The agent's sign-in has ended; connect it again.",
         )));
     }
-    Ok(Ok(auth))
+    Ok(Ok(()))
 }
 
 pub async fn revoke(State(state): State<AppState>, body: Bytes) -> Response {

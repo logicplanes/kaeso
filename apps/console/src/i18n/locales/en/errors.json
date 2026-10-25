@@ -18,7 +18,6 @@
   "errors.adminSsoNoConnection": "This organization has no SSO connection; connect one first.",
   "errors.afterNotCursor": "`after` is not a cursor from a previous page.",
   "errors.agentCallsModels": "An agent needs `api.request` in this project to create keys that call models.",
-  "errors.agentExpiry": "`expiry` must be `7d`, `30d`, `90d` or `never`.",
   "errors.agentInstanceRights": "Only instance admins can give an agent instance rights.",
   "errors.agentLacksRight": "This agent doesn't have `{right}`; its user can grant it in the console.",
   "errors.agentNeedsSession": "Agents can't do this; it needs a console session.",

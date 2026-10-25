@@ -122,8 +122,8 @@ The consent page is at `https://kaeso.example.com/authorize`, and the console as
 
 - The agent's name, as its client registered it.
 - The presets **Observer**, **Builder**, **Operator** and **Full access**, with **Builder** chosen, and a short list of what the choice allows. It includes organizations you join later, unless you turn that off.
-- How long the sign-in lasts, and that you can revoke it any time.
-- **Customize**, which opens the agent's name, its **Expiry** (**7 days**, **30 days**, **90 days** or **Never**, with **90 days** as the default) and the rights for each level: **Instance**, **Organizations** and **Account**.
+- That it keeps working until you revoke it.
+- **Customize**, which opens a dialog with the agent's name and a tab for each level of rights: **Organizations**, **Instance** and **Account**. Nothing changes until you authorize.
 - The account you are signed in as, and the host your browser returns to.
 
 **Authorize** sends your browser back to the agent with a code. **Deny** sends it back with `access_denied`. A sign-in request lasts 15 minutes, and its code 5 minutes.
@@ -181,7 +181,7 @@ Every Platform API operation an agent can use is a tool, named after its operati
 - **Listing.** `tools/list` shows only the tools the agent can use now, in any of its organizations and projects.
 - **Arguments.** A tool takes the operation's path parameters, such as `org` and `project`, its query parameters, and `body` for the request body. Path parameters are required, and Kaeso refuses an argument the tool doesn't have.
 - **Results.** A tool answers with the Platform API's JSON as text and as `structuredContent`. An answer over 200 KB is cut; ask for a smaller page with `limit`.
-- **Model.** Every tool takes `agent_model`, the model family the agent runs on: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` or `unknown`. Kaeso stores it with each call and shows the family's picture and name next to the agent; any other value counts as `unknown`. Until the agent's first call, Kaeso guesses the family from the name its client registered.
+- **Model.** Every tool takes `agent_model`, the model family the agent runs on: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` or `unknown`. Kaeso stores it with each call and shows the family's picture and name next to the agent; any other value counts as `unknown`. Until its first call, an agent shows as `unknown`.
 - **Hints.** Tools that read are marked `readOnlyHint`, and tools that delete `destructiveHint`.
 - **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first.
 
@@ -225,12 +225,12 @@ An unknown method gets the JSON-RPC error `-32601`, and an unknown tool `-32602`
 | Token | Starts with | Lasts |
 | --- | --- | --- |
 | Access token | `kso_at_` | 1 hour |
-| Refresh token | `kso_rt_` | Until the agent's sign-in ends. Every use replaces it with a new one |
+| Refresh token | `kso_rt_` | Until the agent is revoked or goes 90 days unused. Every use replaces it with a new one |
 | Authorization code | `kso_ac_` | 5 minutes, and one use |
 
 Using a refresh token or a code a second time ends that whole sign-in, because one of them must have leaked. Every token from it stops working, and the agent has to be connected again.
 
-An agent stops working when its sign-in ends, after 90 days without a request, or when you revoke it. Deactivating its user stops it too, and so does turning agents off for the install.
+An agent keeps working until you revoke it, or until it goes 90 days without a request. Deactivating its user stops it too, and so does turning agents off for the install.
 
 ## OAuth endpoints
 
@@ -267,7 +267,7 @@ A change an agent makes goes to the audit log like any other, with the actor kin
 | Action | Recorded when |
 | --- | --- |
 | `agent.authorize` | You authorize an agent |
-| `agent.update` | You rename an agent or change its expiry |
+| `agent.update` | You rename an agent |
 | `agent.rights_update` | You change an agent's rights |
 | `agent.revoke` | You revoke an agent |
 | `agent.org_access_revoke` | An organization admin closes the organization to an agent |
@@ -280,8 +280,8 @@ The console manages agents through these routes, tagged `agents` in [`openapi.js
 
 | Route | Access | Does |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their model family, client, rights (`grant`), creation, last use and expiry |
-| `PATCH me/agents/{agent}` | Session | Changes `name` or `expiry`: `7d`, `30d`, `90d` or `never`, counted from now |
+| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their model family, client, rights (`grant`), creation and last use |
+| `PATCH me/agents/{agent}` | Session | Changes `name` |
 | `PUT me/agents/{agent}/rights` | Session | Replaces the agent's rights. Giving a sensitive right it didn't have needs a [recent sign-in](platform-api.md#recent-sign-in) |
 | `DELETE me/agents/{agent}` | Session | Revokes the agent. Its tokens stop working at once |
 | `GET me/agents/{agent}/activity` | Session | Its tool calls, newest first |

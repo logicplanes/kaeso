@@ -37,7 +37,6 @@ CREATE TABLE agents (
     oidc_org_id uuid,
     created_at timestamptz NOT NULL,
     last_used_at timestamptz,
-    expires_at timestamptz,
     revoked_at timestamptz
 );
 
