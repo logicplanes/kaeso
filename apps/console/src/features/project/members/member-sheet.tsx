@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Button, Empty, KeyValue, Section, Sheet, Skeleton } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, DialogScope, Empty, KeyValue, Section, Sheet, Skeleton } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -46,9 +46,10 @@ export function MemberSheet({ org, project, userId, onClose }: { org: string; pr
   );
 }
 
+const membersKey = (org: string, project: string) => ["orgs", org, "projects", project, "members"];
+
 function MemberBody({ org, project, userId, onClose }: { org: string; project: string; userId: string; onClose: () => void }) {
   const needs = useNeedsRight(org, project);
-  const navigate = useNavigate();
   const session = useSession();
   const rights = useProjectRights(org, project);
   const giver = useProjectGiver(org, project);
@@ -62,33 +63,17 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
   );
   const [grant, setGrant] = useState<Grant | null>(null);
   const [removing, setRemoving] = useState(false);
-  const invalidates = [["orgs", org, "projects", project, "members"]];
 
   const save = useApiMutation({
     mutationFn: async (g: Grant) =>
       data(await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/members/{user}", { params: { path: { org, project, user: userId } }, body: g })),
-    invalidates: [...invalidates, ["project-rights"]],
+    invalidates: [membersKey(org, project), ["project-rights"]],
     onSuccess: (m) => {
       setGrant(null);
       toast.success(t("project.members.roleSaved", "{name} is {role} in this project now", { name: m.user.name, role: m.grant.role.name }));
     },
   });
   const self = userId === session.user.id;
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/members/{user}", { params: { path: { org, project, user: userId } } });
-    },
-    invalidates: [...invalidates, ["orgs", org, "projects", project, "keys"], ...(self ? [["me", "memberships"], ["project-rights"]] : [])],
-    onSuccess: () => {
-      if (self) {
-        toast(t("project.members.left", "You left the project"));
-        void navigate({ to: "/orgs/$org", params: { org } });
-        return;
-      }
-      toast(t("project.members.removed", "{name} removed from the project", { name: member.data?.user.name ?? userId }));
-      onClose();
-    },
-  });
 
   if (member.isPending || access.isPending || !cat || !roles) return <Skeleton className="w-full" />;
   if (member.isError) {
@@ -177,20 +162,60 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
           </Button>
         </div>
       </Section>
-      <AlertDialog
-        open={removing}
-        onOpenChange={setRemoving}
-        tone="danger"
-        title={
-          self
-            ? t("project.members.leaveTitle", "Leave this project?")
-            : t("project.members.removeTitle", "Remove {name} from the project?", { name: m.user.name })
-        }
-        description={t("project.members.removeHint", "Their keys in this project are archived and stop authenticating; they stay in the organization.")}
-        confirmLabel={self ? t("project.members.leave", "Leave project") : t("project.members.remove", "Remove from project")}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync()}
-      />
+      <DialogScope open={removing}>
+        <RemoveMemberDialog org={org} project={project} member={m} self={self} onRemoved={onClose} open={removing} onOpenChange={setRemoving} />
+      </DialogScope>
     </div>
+  );
+}
+
+function RemoveMemberDialog({
+  org,
+  project,
+  member,
+  self,
+  onRemoved,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  member: ProjectMemberView;
+  self: boolean;
+  onRemoved: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/members/{user}", { params: { path: { org, project, user: member.user.id } } });
+    },
+    invalidates: [membersKey(org, project), ["orgs", org, "projects", project, "keys"], ...(self ? [["me", "memberships"], ["project-rights"]] : [])],
+    onSuccess: () => {
+      if (self) {
+        toast(t("project.members.left", "You left the project"));
+        void navigate({ to: "/orgs/$org", params: { org } });
+        return;
+      }
+      toast(t("project.members.removed", "{name} removed from the project", { name: member.user.name }));
+      onRemoved();
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={
+        self
+          ? t("project.members.leaveTitle", "Leave this project?")
+          : t("project.members.removeTitle", "Remove {name} from the project?", { name: member.user.name })
+      }
+      description={t("project.members.removeHint", "Their keys in this project are archived and stop authenticating; they stay in the organization.")}
+      confirmLabel={self ? t("project.members.leave", "Leave project") : t("project.members.remove", "Remove from project")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }

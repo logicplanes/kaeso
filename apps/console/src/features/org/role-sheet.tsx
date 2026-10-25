@@ -1,7 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Avatar, Button, Empty, Input, KeyValue, Link, List, RightsMatrix, Section, Sheet, Skeleton, Text } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Avatar,
+  Button,
+  DialogScope,
+  Empty,
+  Input,
+  KeyValue,
+  Link,
+  List,
+  RightsMatrix,
+  Section,
+  Sheet,
+  Skeleton,
+  Text,
+} from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { RoleView } from "~/api/generated/types";
@@ -101,50 +116,7 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
   const heldHere = giver.isOwner ? undefined : role.scope === "org" ? giver.held : giver.everyProject;
   const holders = (members.data ?? []).filter((m) => m.grant.role.id === role.id);
 
-  const save = useApiMutation({
-    mutationFn: async (d: Draft) =>
-      data(
-        await api.PATCH("/platform/v1/orgs/{org}/roles/{role}", {
-          params: { path: { org, role: role.id } },
-          body: {
-            name: d.name.trim(),
-            description: d.description.trim(),
-            rights: d.rights,
-            ...(role.scope === "org" ? { project_rights: d.project_rights } : {}),
-          },
-        }),
-      ),
-    invalidates: [["orgs", org, "roles"], ["orgs", org, "members"], ["session"], ["project-rights"]],
-    onSuccess: (r) => {
-      setDraft(null);
-      setConfirming(false);
-      toast.success(
-        r.holders
-          ? t(
-              "org.role.savedFor",
-              "{count, plural, one {{name} saved for # member or service account} other {{name} saved for # members and service accounts}}",
-              {
-                name: r.name,
-                count: r.holders,
-              },
-            )
-          : t("org.role.saved", "{name} saved", { name: r.name }),
-      );
-    },
-    onError: () => setConfirming(false),
-  });
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/orgs/{org}/roles/{role}", { params: { path: { org, role: role.id } } });
-    },
-    invalidates: [["orgs", org, "roles"]],
-    onSuccess: () => {
-      toast(t("org.role.deleted", "{name} deleted", { name: role.name }));
-      onClose();
-    },
-    onError: () => setDeleting(false),
-  });
-
+  const save = useSaveRole(org, role, () => setDraft(null));
   const edit = (patch: Partial<Draft>) => setDraft({ ...editing, ...patch });
   const deleteReason =
     reason ??
@@ -297,30 +269,126 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
           </Button>
         )}
       </div>
-      <AlertDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        tone="warning"
-        title={t(
-          "org.role.changeConfirm",
-          "{count, plural, one {Change {name} for # member or service account?} other {Change {name} for # members and service accounts?}}",
-          { name: role.name, count: role.holders },
-        )}
-        description={t("org.role.changeHint", "Changes apply at once to everyone with this role.")}
-        confirmLabel={t("org.saveRole", "Save role")}
-        loading={save.isPending}
-        onConfirm={() => save.mutateAsync(editing)}
-      />
-      <AlertDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        tone="danger"
-        title={t("org.role.deleteConfirm", "Delete {name}?", { name: role.name })}
-        description={t("org.role.deleteHint", "Nobody holds it; it leaves every role picker in the organization.")}
-        confirmLabel={t("org.role.delete", "Delete role")}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync()}
-      />
+      <DialogScope open={confirming}>
+        <SaveRoleDialog org={org} role={role} draft={editing} onSaved={() => setDraft(null)} open={confirming} onOpenChange={setConfirming} />
+      </DialogScope>
+      <DialogScope open={deleting}>
+        <DeleteRoleDialog org={org} role={role} onDeleted={onClose} open={deleting} onOpenChange={setDeleting} />
+      </DialogScope>
     </div>
+  );
+}
+
+function useSaveRole(org: string, role: RoleView, onSaved: () => void, onError?: () => void) {
+  return useApiMutation({
+    mutationFn: async (d: Draft) =>
+      data(
+        await api.PATCH("/platform/v1/orgs/{org}/roles/{role}", {
+          params: { path: { org, role: role.id } },
+          body: {
+            name: d.name.trim(),
+            description: d.description.trim(),
+            rights: d.rights,
+            ...(role.scope === "org" ? { project_rights: d.project_rights } : {}),
+          },
+        }),
+      ),
+    invalidates: [["orgs", org, "roles"], ["orgs", org, "members"], ["session"], ["project-rights"]],
+    onSuccess: (r) => {
+      onSaved();
+      toast.success(
+        r.holders
+          ? t(
+              "org.role.savedFor",
+              "{count, plural, one {{name} saved for # member or service account} other {{name} saved for # members and service accounts}}",
+              {
+                name: r.name,
+                count: r.holders,
+              },
+            )
+          : t("org.role.saved", "{name} saved", { name: r.name }),
+      );
+    },
+    onError,
+  });
+}
+
+function SaveRoleDialog({
+  org,
+  role,
+  draft,
+  onSaved,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  role: RoleView;
+  draft: Draft;
+  onSaved: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const save = useSaveRole(
+    org,
+    role,
+    () => {
+      onSaved();
+      onOpenChange(false);
+    },
+    () => onOpenChange(false),
+  );
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="warning"
+      title={t(
+        "org.role.changeConfirm",
+        "{count, plural, one {Change {name} for # member or service account?} other {Change {name} for # members and service accounts?}}",
+        { name: role.name, count: role.holders },
+      )}
+      description={t("org.role.changeHint", "Changes apply at once to everyone with this role.")}
+      confirmLabel={t("org.saveRole", "Save role")}
+      loading={save.isPending}
+      onConfirm={() => save.mutateAsync(draft)}
+    />
+  );
+}
+
+function DeleteRoleDialog({
+  org,
+  role,
+  onDeleted,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  role: RoleView;
+  onDeleted: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/roles/{role}", { params: { path: { org, role: role.id } } });
+    },
+    invalidates: [["orgs", org, "roles"]],
+    onSuccess: () => {
+      toast(t("org.role.deleted", "{name} deleted", { name: role.name }));
+      onDeleted();
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("org.role.deleteConfirm", "Delete {name}?", { name: role.name })}
+      description={t("org.role.deleteHint", "Nobody holds it; it leaves every role picker in the organization.")}
+      confirmLabel={t("org.role.delete", "Delete role")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Empty, FilterRow, IconButton, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, DialogScope, Empty, FilterRow, IconButton, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
@@ -36,6 +36,7 @@ export function InvitesPanel({ org }: { org: string }) {
   const members = useQuery({ ...orgMembersQuery(org), enabled: rights.has("members.view") });
   const projects = useQuery(orgProjectsQuery(org, true));
   const [revoking, setRevoking] = useState<InviteView | null>(null);
+  const [revokeOpen, setRevokeOpen] = useState(false);
   const [now] = useState(Date.now);
   const canInvite = rights.has("members.invite");
   const canRevoke = rights.has("members.invites.revoke");
@@ -45,17 +46,10 @@ export function InvitesPanel({ org }: { org: string }) {
     invalidates: [["orgs", org, "invites"]],
     onSuccess: (i) => toast(t("org.invites.resent", "Invitation sent to {email} again", { email: i.email })),
   });
-  const revoke = useApiMutation({
-    mutationFn: async (i: InviteView) => {
-      await api.DELETE("/platform/v1/orgs/{org}/invites/{invite}", { params: { path: { org, invite: i.id } } });
-    },
-    invalidates: [["orgs", org, "invites"]],
-    onSuccess: () => {
-      setRevoking(null);
-      toast(t("org.invites.revoked", "Invitation revoked"));
-    },
-    onError: () => setRevoking(null),
-  });
+  const revoke = (i: InviteView) => {
+    setRevoking(i);
+    setRevokeOpen(true);
+  };
 
   const invitedBy = (user: string | null | undefined) => {
     if (!user) return t("org.invites.byInstanceAdmin", "Invited by an instance admin");
@@ -114,7 +108,7 @@ export function InvitesPanel({ org }: { org: string }) {
                 </Menu.Item>
               )}
               {canRevoke && (
-                <Menu.Item icon={icons.delete} variant="danger" onClick={() => setRevoking(i)}>
+                <Menu.Item icon={icons.delete} variant="danger" onClick={() => revoke(i)}>
                   {t("org.invites.revoke", "Revoke")}
                 </Menu.Item>
               )}
@@ -160,20 +154,37 @@ export function InvitesPanel({ org }: { org: string }) {
           )
         }
       />
-      <AlertDialog
-        open={!!revoking}
-        onOpenChange={(o) => !o && setRevoking(null)}
-        tone="danger"
-        title={
-          revoking
-            ? t("org.invites.revokeConfirm", "Revoke the invitation to {email}?", { email: revoking.email })
-            : t("org.invites.revokeConfirmUnnamed", "Revoke the invitation to this address?")
-        }
-        description={t("org.invites.revokeHint", "The link in the email stops working; you can invite the address again later.")}
-        confirmLabel={t("org.invites.revokeInvitation", "Revoke invitation")}
-        loading={revoke.isPending}
-        onConfirm={() => (revoking ? revoke.mutateAsync(revoking) : undefined)}
-      />
+      {revoking && (
+        <DialogScope open={revokeOpen}>
+          <RevokeDialog org={org} invite={revoking} open={revokeOpen} onOpenChange={setRevokeOpen} />
+        </DialogScope>
+      )}
     </>
+  );
+}
+
+function RevokeDialog({ org, invite, open, onOpenChange }: { org: string; invite: InviteView; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const revoke = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/invites/{invite}", { params: { path: { org, invite: invite.id } } });
+    },
+    invalidates: [["orgs", org, "invites"]],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("org.invites.revoked", "Invitation revoked"));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("org.invites.revokeConfirm", "Revoke the invitation to {email}?", { email: invite.email })}
+      description={t("org.invites.revokeHint", "The link in the email stops working; you can invite the address again later.")}
+      confirmLabel={t("org.invites.revokeInvitation", "Revoke invitation")}
+      loading={revoke.isPending}
+      onConfirm={() => revoke.mutateAsync()}
+    />
   );
 }
