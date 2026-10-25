@@ -107,7 +107,7 @@ Ein `namespace`-Tool von OpenAI Responses fasst Funktions-Tools unter einem Name
 - **Namensgrenzen.** Verletzt ein umbenanntes Tool die Regeln des Ziels für Tool-Namen, wird es danach wie jeder andere Tool-Name umgeschrieben und zurückübersetzt.
 - **Abgelehnt.** Ein Namespace mit anderen Schlüsseln als `type`, `name`, `description` und `tools`, ein Tool darin, das keine Funktion ist, ein Feld an einem solchen Tool, das nur Responses kennt, etwa `defer_loading`, und ein umbenannter Name, den schon ein anderes Tool trägt.
 
-`EgressCtx::tool_namespaces` sagt, ob ein Responses-Ziel Namespaces annimmt. Das Gateway setzt es aus `Provider::tool_namespaces`, das nur für OpenAI wahr ist.
+`ResponsesProfile::tool_namespaces` sagt, ob ein Responses-Ziel Namespaces annimmt; nur `ResponsesProfile::OPENAI` tut das. `EgressCtx::with_tool_namespaces` überschreibt es für eine Anfrage.
 
 ## Gehostete Websuche
 

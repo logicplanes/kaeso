@@ -130,6 +130,7 @@ pub struct EgressCtx {
     pub(crate) tool_names: IndexMap<String, String>,
     pub adaptive_thinking: Option<bool>,
     pub reasoning: Option<bool>,
+    pub tool_namespaces: Option<bool>,
     pub chat_profile: ChatProfile,
     pub responses_profile: ResponsesProfile,
     pub left_out: Vec<String>,
@@ -149,6 +150,7 @@ impl EgressCtx {
             tool_names: IndexMap::new(),
             adaptive_thinking: None,
             reasoning: None,
+            tool_namespaces: None,
             chat_profile: ChatProfile::OPENAI,
             responses_profile: ResponsesProfile::OPENAI,
             left_out: Vec::new(),
@@ -165,6 +167,19 @@ impl EgressCtx {
     pub fn with_reasoning(mut self, reasons: bool) -> Self {
         self.reasoning = Some(reasons);
         self
+    }
+
+    #[must_use]
+    pub fn with_tool_namespaces(mut self, supported: bool) -> Self {
+        self.tool_namespaces = Some(supported);
+        self
+    }
+
+    pub fn takes_tool_namespaces(&self, dialect: DialectId) -> bool {
+        dialect == DialectId::OpenAiResponses
+            && self
+                .tool_namespaces
+                .unwrap_or(self.responses_profile.tool_namespaces)
     }
 
     #[must_use]

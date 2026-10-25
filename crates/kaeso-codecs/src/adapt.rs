@@ -79,7 +79,7 @@ pub(crate) fn for_target<'a>(
         }
         _ => {}
     }
-    if !(target == DialectId::OpenAiResponses && profile.tool_namespaces) {
+    if !ctx.takes_tool_namespaces(target) {
         namespaces::flatten(&mut draft, target)?;
     }
     verbosity::left_out(&mut draft, target, &ctx.chat_profile);

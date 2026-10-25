@@ -880,6 +880,15 @@ fn custom_responses_providers_get_requests_as_openai_does_but_without_namespaces
     let search = sent["tools"].as_array().unwrap().last().unwrap();
     assert_eq!(search, &body["tools"][3]);
     assert!(!sent.to_string().contains("\"namespace\""), "{sent}");
+
+    let ctx = EgressCtx::new(&req)
+        .with_responses_profile(ResponsesProfile::compatible("OpenAI"))
+        .with_tool_namespaces(true);
+    let (sent, _) = sent_with(R, &req, ctx);
+    assert_eq!(
+        sent["tools"][1], body["tools"][1],
+        "the request's own setting wins"
+    );
 }
 
 #[test]

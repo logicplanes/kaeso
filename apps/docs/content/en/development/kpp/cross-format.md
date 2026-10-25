@@ -107,7 +107,7 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 - **Name limits.** A flattened name that breaks the target's tool-name rules is then rewritten like any other tool name and mapped back.
 - **Refused.** A namespace with keys other than `type`, `name`, `description` and `tools`, a tool in it that is not a function, a field on such a tool that only Responses knows, such as `defer_loading`, and a flattened name that another tool already has.
 
-`EgressCtx::tool_namespaces` says whether a Responses target takes namespaces. The gateway sets it from `Provider::tool_namespaces`, which is true only for OpenAI.
+`ResponsesProfile::tool_namespaces` says whether a Responses target takes namespaces; only `ResponsesProfile::OPENAI` does. `EgressCtx::with_tool_namespaces` overrides it for one request.
 
 ## Hosted web search
 

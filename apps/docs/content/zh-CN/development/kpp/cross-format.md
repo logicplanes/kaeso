@@ -107,7 +107,7 @@ OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称�
 - **名称限制。** 展开后的名称如果不符合目标的工具名称规则，会像其他工具名称一样再被改写，并映射回来。
 - **拒绝。** 含有 `type`、`name`、`description` 和 `tools` 以外键的命名空间、其中不是函数的工具、这类工具上只有 Responses 认识的字段（例如 `defer_loading`），以及已被其他工具占用的展开名称。
 
-`EgressCtx::tool_namespaces` 表示 Responses 目标是否接受命名空间。网关根据 `Provider::tool_namespaces` 设置它，只有 OpenAI 为真。
+`ResponsesProfile::tool_namespaces` 表示 Responses 目标是否接受命名空间；只有 `ResponsesProfile::OPENAI` 接受。`EgressCtx::with_tool_namespaces` 可为单个请求覆盖该设置。
 
 ## 托管网页搜索
 
