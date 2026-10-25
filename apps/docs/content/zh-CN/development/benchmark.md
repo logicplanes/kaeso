@@ -109,7 +109,7 @@ ulimit -n 65536
 
 `cargo coverage-gateway` 会以 `--smoke` 运行基准测试（`crates/kaeso-bench/tests/smoke.rs`），因此网关的每次变更都会让 CI 以小规模运行每个场景。
 
-## 后续步骤
+## 下一步
 
 - [测试](testing.md)：运行变更必须通过的每一项检查。
 - [健康状态和指标](../self-hosting/monitoring.md)：在运行中的实例上观察 Kaeso 的开销。

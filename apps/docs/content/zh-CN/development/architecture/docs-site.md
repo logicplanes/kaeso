@@ -30,7 +30,6 @@ flowchart TD
 | `site.ts` | 单种语言：地址、侧边栏、上一页和下一页、按 GitHub 方式解析的相对链接、图片及其尺寸 |
 | `docs.ts` | 所有语言，并检查各语言包含相同的页面、顺序也相同 |
 | `diagram.ts`、`mermaid.ts`、`diagrams.ts` | 图示：基于 Kaeso 令牌的 Mermaid 配置、在无头 Chromium 中的绘制，以及 `pnpm --filter kaeso-docs diagrams` |
-| `redirects.ts` | 根据 `redirects.json` 在旧地址生成的页面 |
 | `plugin.ts` | Vite 插件：虚拟模块、开发时的重新加载、每个页面每种语言一个 HTML 文件、`404.html` 文件和站点地图 |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`：不构建应用、执行相同的检查 |
 
@@ -67,6 +66,6 @@ flowchart TD
 
 ## 构建产物
 
-`pnpm --filter kaeso-docs build` 写出 `apps/docs/dist`：每种语言的每个页面一个 HTML 文件，带有供搜索引擎和链接预览使用的头部。旁边还有每种语言一个 `404.html`、`sitemap.xml`、`robots.txt`、`redirects.json` 中每个旧地址的页面，以及写在 `csp.txt` 和 `_headers` 中的站点[内容安全策略](../releasing.md#内容安全策略)。
+`pnpm --filter kaeso-docs build` 写出 `apps/docs/dist`：每种语言的每个页面一个 HTML 文件，带有供搜索引擎和链接预览使用的头部。旁边还有每种语言一个 `404.html`、`sitemap.xml`、`robots.txt`，以及写在 `csp.txt` 和 `_headers` 中的站点[内容安全策略](../releasing.md#内容安全策略)。
 
 构建以两项检查结束。`scripts/budget.ts` 根据打包预算检查框架和每个页面，`scripts/check-site.mjs` 检查站点地图和每个页面的头部。随后 `pnpm --filter kaeso-docs licenses:check` 检查构建中每个包的许可证。

@@ -252,6 +252,28 @@ describe("LimitsSection", () => {
     expect(requests("DELETE", LIMIT).map((r) => r.params.limit)).toEqual(["lim_member"]);
   });
 
+  it("opens the removal fresh after a refused one", async () => {
+    on("DELETE", LIMIT, apiError(409, "conflict", "The limit is being changed; try again."));
+    const { user, section } = await memberLimits();
+
+    await user.click(await within(section).findByRole("button", { name: "Remove the monthly spend budget of 20 USD" }));
+    let confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
+    await user.click(within(confirm).getByRole("button", { name: "Remove limit" }));
+    expect(await notifications().findByText("The limit is being changed; try again.")).toBeInTheDocument();
+    await waitFor(() => expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled());
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+
+    on("DELETE", LIMIT, undefined);
+    await user.click(within(section).getByRole("button", { name: "Remove the monthly spend budget of 20 USD" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
+    expect(within(confirm).getByRole("button", { name: "Remove limit" })).not.toHaveAttribute("aria-busy");
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled();
+    await user.click(within(confirm).getByRole("button", { name: "Remove limit" }));
+    expect(await notifications().findByText("Limit removed")).toBeInTheDocument();
+    expect(requests("DELETE", LIMIT).map((r) => r.params.limit)).toEqual(["lim_member", "lim_member"]);
+  });
+
   it("only shows the limits without Manage limits", async () => {
     const { section } = await memberLimits(
       [memberBudget],

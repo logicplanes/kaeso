@@ -40,7 +40,7 @@ Eine Seite gibt es, weil echte Leser sie öffnen, um etwas zu erledigen. Bevor S
 
 Eine Seite, die an einer dieser Fragen scheitert, wird entfernt oder zusammengelegt, nicht gekürzt. Zahlen und Listen, nach denen nur CI handelt, etwa Bundle-Budgets oder Coverage-Schwellen, bleiben im Code oder in der Konfiguration, die sie durchsetzt. Die Dokumentation nennt den Befehl, der sie prüft.
 
-Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen. Tragen Sie ihre Adresse mit der passendsten Seite in `apps/docs/redirects.json` ein ([Wo eine Seite liegt](#wo-eine-seite-liegt)), und reparieren Sie dann die Links, die der Build nennt.
+Um eine Seite zu entfernen, löschen Sie sie in allen drei Sprachen. Ändern Sie im selben Commit jeden Link darauf, sodass er auf die passendste andere Seite zeigt; der Build nennt die Links, die Sie übersehen haben.
 
 ## Seitentypen
 
@@ -56,7 +56,7 @@ Jede Seite gehört zu einem von fünf Typen. Wählen Sie den Typ, bevor Sie schr
 
 Anleitungen zeigen, wie eine Aufgabe geht, und verlinken für jede Option auf die Referenz. Referenzseiten führen jede Option auf und erzählen keine Geschichte. Dieselbe Tabelle steht nie auf beiden.
 
-Die `index.md` eines Ordners ist eine Übersicht: ein oder zwei Sätze dazu, was der Bereich abdeckt, dann eine [Linkliste](#nächste-schritte) seiner Seiten mit je einem Satz.
+Die `index.md` eines Ordners ist eine Übersicht: ein oder zwei Sätze dazu, was der Bereich abdeckt, dann alles, worauf jede Seite des Bereichs aufbaut, etwa seine Begriffe. Sie endet mit [nächsten Schritten](#nächste-schritte), die seine Seiten mit je einem Satz auflisten.
 
 ### Schnellstart
 
@@ -249,6 +249,7 @@ Leser kopieren Code, bevor sie den Text lesen, deshalb muss der Code so funktion
 
 - **Mit einem lauffähigen Beispiel beginnen.** Jede API-Seite und jede Anleitung, in der eine App Kaeso aufruft, zeigt auf ihrem ersten Bildschirm eine minimale Anfrage, die funktioniert: direkt nach der Einleitung, vor der ersten `##`-Überschrift.
 - **Lauffähig, wie eingefügt.** Die Leser ändern nur die Platzhalter: die Adresse `kaeso.example.com`, den Schlüssel in der Umgebungsvariable `KAESO_API_KEY` und das Modell `claude-haiku-4-5` oder `gpt-5-mini`. Wo ein Schlüssel als Literal unvermeidbar ist, schreiben Sie ihn als `sk-kso-…`. Verwenden Sie auf einer Seite durchgehend denselben Prompt: „Write a haiku about gateways.“
+- **Auch andere Namen sind reserviert.** Die Adresse der Leser ist `owner@example.com`. Was nicht Kaeso ist, etwa ein Identitätsanbieter oder ein SMTP-Server, bekommt einen anderen Namen unter `example.com` oder `.example`, etwa `login.example.com` oder `smtp.example.com`. Zeigen Sie nie einen echten Host, Schlüssel oder eine echte Person.
 - **Minimal.** Nur die Felder, die das Beispiel braucht. Ein Block in einer Anleitung bleibt unter 25 Zeilen; längerer Code verlinkt auf eine Datei auf GitHub.
 - **Schlüssel kommen aus der Umgebung.** Der Code liest `KAESO_API_KEY`: `os.environ["KAESO_API_KEY"]` in Python, `process.env.KAESO_API_KEY` in TypeScript, `$KAESO_API_KEY` in curl. Schreiben Sie nie einen Schlüssel in SDK-Code.
 - **Die offiziellen SDKs.** Python nutzt `openai` und `anthropic` mit ihren synchronen Clients; TypeScript nutzt `openai` und `@anthropic-ai/sdk` als ES-Module mit Top-Level-`await`. Die Basis-URL des OpenAI SDK ist `https://kaeso.example.com/v1`, die des Anthropic SDK `https://kaeso.example.com`. Die App der Leser installiert sie mit `pip install openai anthropic` und `npm install openai @anthropic-ai/sdk`; Befehle für die Arbeit an diesem Repository nutzen pnpm.
@@ -362,7 +363,7 @@ Ein Schnellstart, eine Anleitung und eine Übersicht enden mit `## Nächste Schr
 - [API-Schlüssel](../console/api-keys.md): Begrenzen Sie einen Schlüssel auf die Modelle und Raten, die eine App braucht.
 ```
 
-- Zwei bis vier Einträge, die wahrscheinlichste nächste Aufgabe zuerst.
+- Zwei bis vier Einträge, die wahrscheinlichste nächste Aufgabe zuerst. Eine Übersicht listet stattdessen jede Seite und jeden Bereich, zu denen sie führt, egal wie viele es sind.
 - Der Linktext ist der Titel der Seite; der Satz sagt, was die Leser dort tun können.
 - Verwenden Sie diese Form nur für Linklisten. Auch ein Listeneintrag, der mit einem Link beginnt und als Satz weitergeht, wird zur Karte; beginnen Sie solche Sätze deshalb mit einem Wort.
 - Referenz- und Fehlerbehebungsseiten haben keine nächsten Schritte.
@@ -418,7 +419,7 @@ Jedes andere Feld ist ein Fehler. Der Titel ist die einzige `#`-Überschrift der
 
 Der Name einer Datei ist ihre Adresse: Kleinbuchstaben, Wörter mit Bindestrichen verbunden (`provider-keys.md`). Wer eine Datei umbenennt oder verschiebt, ändert ihre Adresse in jeder Sprache, und jeder Link darauf muss folgen; der Build nennt die, die es nicht tun.
 
-Links von anderen Websites und Lesezeichen verwenden weiter die alte Adresse. Tragen Sie sie deshalb in `apps/docs/redirects.json` ein, zusammen mit der Seite, auf die sie umgezogen ist, und wahlweise deren Überschrift: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. Der Build schreibt dann in jeder Sprache eine Seite an die alte Adresse, die die Leser weiterschickt, zur selben Überschrift der Übersetzung. Eine Adresse kann auch zu einer Seite außerhalb der Dokumentation führen, etwa `"changelog": "https://kaeso.app/changelog"`. Jede Sprache führt dann zur selben Sprache dort, ebenso jede Adresse unterhalb der alten.
+Die alte Adresse bleibt nicht bestehen, und nichts leitet von ihr weiter. Ändern Sie jeden Link auf die Seite im selben Commit, in allen drei Sprachen.
 
 Ein Ordner innerhalb einer Gruppe braucht eine `index.md`, und Ordner sind höchstens drei Ebenen tief verschachtelt. Dateien und Ordner, deren Name mit `_` beginnt, werden nicht veröffentlicht.
 
@@ -538,7 +539,7 @@ Prüfen Sie jede Seite, die der Pull Request hinzufügt oder ändert:
 - [ ] Die Sätze sprechen die Leser an, aktiv und im Präsens, und keiner ist länger als 30 Wörter.
 - [ ] Fettdruck markiert nur Beschriftungen der Konsole und erklärte Namen; Code markiert alles, was die Leser eingeben.
 - [ ] Höchstens eine Hinweisbox pro Abschnitt und drei pro Seite, jede unter 50 Wörtern.
-- [ ] Schnellstarts, Anleitungen und Übersichten enden mit nächsten Schritten: zwei bis vier Links, jeder mit einem Satz.
+- [ ] Schnellstarts und Anleitungen enden mit nächsten Schritten aus zwei bis vier Links, Übersichten mit einem Link pro Seite; jeder Link hat einen Satz.
 - [ ] Jede Aussage stimmt mit dem Code auf `dev` überein, und die Version steht als `\{{version}}` da.
 - [ ] Die deutsche und die chinesische Seite sagen dasselbe, natürlich formuliert, mit denselben Überschriften, Hinweisboxen und Codeblöcken.
 - [ ] `pnpm --filter kaeso-docs check:content` läuft durch, und Sie haben die Seite auf der Website gelesen, hell und dunkel, in Desktop-Breite und bei 375 px.

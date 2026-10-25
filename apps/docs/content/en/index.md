@@ -85,7 +85,9 @@ flowchart TD
 
 [Request flow](concepts/request-flow.md) follows a request through the gateway. [Format translation](concepts/format-translation.md) explains what KPP carries between formats and what it refuses.
 
-## Where to start
+Kaeso is MIT licensed. The gateway, KPP, the console, the UI library and this documentation live in one repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).
+
+## Next steps
 
 - [Quick start](get-started/quick-start.md): Install Kaeso on a server and send your first request.
 - [Calling models](get-started/calling-models.md): Call models from your code with the OpenAI and Anthropic SDKs.
@@ -95,5 +97,3 @@ flowchart TD
 - [API](api/index.md): Look up the model API and the Platform API.
 - [Self-hosting](self-hosting/index.md): Plan, run and upgrade an install.
 - [Development](development/index.md): Build, test and change Kaeso itself.
-
-Kaeso is MIT licensed. The gateway, KPP, the console, the UI library and this documentation live in one repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).

@@ -73,7 +73,7 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 | OpenAI Chat Completions 或 Responses | `https://kaeso.example.com/v1` | API 密钥或 Bearer 令牌 |
 | Anthropic Messages | `https://kaeso.example.com` | API 密钥（`x-api-key`）或 Bearer 令牌 |
 
-## 后续步骤
+## 下一步
 
 - [API 密钥](../console/api-keys.md)：把工具的密钥限制在它需要的模型内，或为它设置过期日期。
 - [限额和预算](../console/limits-and-budgets.md)：限制工具可以消耗的 Token 数量或金额。

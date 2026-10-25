@@ -80,7 +80,7 @@ Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 - **Tests prüfen, was eine Person oder eine App sieht.** Sie sind deterministisch, mit injizierten Uhren und ohne Sleeps. Coverage-Schwellen steigen nur.
 - **Oberflächen nutzen nur `@logicplanes/kaeso-ui`**, mit `className` nur für Layout, und jedes Wort gibt es in drei Sprachen ([Übersetzungen](translations.md)).
 - **Nur pnpm** für JavaScript, und `pnpm dlx` für ein einmaliges Werkzeug. Cargo baut den Rust-Code, und Lockfiles ändern sich nur über ihr Werkzeug.
-- **Keine Geheimnisse und keine personenbezogenen Daten** im Repository. Nutzen Sie Platzhalter wie `kaeso.example.com`, `sk-kso-…` und `owner@example.com`.
+- **Keine Geheimnisse und keine personenbezogenen Daten** im Repository. Kaeso selbst ist `kaeso.example.com`, Schlüssel sind `sk-kso-…`, und die Leser oder Eigentümer sind `owner@example.com`. Alles andere, etwa ein Identitätsanbieter oder ein SMTP-Server, bekommt einen anderen Namen unter den reservierten Domains `example.com` oder `.example` ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)), nie einen echten Host, Schlüssel oder eine echte Person.
 - **Keine Pläne im Repository.** Roadmaps, To-do-Listen und offene Fragen gehören in Issues.
 
 Das Gateway hat eigene Regeln, etwa keine Panics und keine Gleitkommazahlen für Geld ([Regeln des Gateways](architecture/gateway.md#regeln)). KPP ebenso ([Entwurfsprinzipien](kpp/index.md#entwurfsprinzipien)).

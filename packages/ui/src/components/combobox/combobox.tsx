@@ -361,6 +361,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
 });
 Combobox.displayName = "Combobox";
 
+export const KAESO_AUTOCOMPLETE_VARIANTS = { size: KAESO_COMBOBOX_VARIANTS.size } as const;
+export const KAESO_AUTOCOMPLETE_DEFAULT_VARIANTS = { size: "md" } as const;
+
 export interface AutocompleteProps extends FieldWrapProps {
   suggestions: string[];
   value?: string | undefined;
@@ -422,7 +425,7 @@ export const Autocomplete = forwardRef<HTMLInputElement, AutocompleteProps>(func
         {...(force ? { "data-force": force } : {})}
         className={cn(
           "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
-          KAESO_COMBOBOX_VARIANTS.size[size].classes,
+          KAESO_AUTOCOMPLETE_VARIANTS.size[size].classes,
           leadingIcon && "pl-14",
           props.error && "ring-invalid",
           !(label || description || error) && className,

@@ -88,7 +88,7 @@ docker compose exec gateway kaeso master-key rewrap
 > [!WARNING]
 > 只要已保存的机密使用了未配置的密钥 ID，网关就不会启动。在 `rewrap` 报告某个密钥未被使用之前，切勿删除它。
 
-## 后续步骤
+## 下一步
 
 - [升级](upgrades.md)：更新到新版本，并留有可以回退的备份。
 - [健康状态和指标](monitoring.md)：持续关注实例是否出现问题。

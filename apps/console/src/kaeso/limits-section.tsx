@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Dialog, IconButton, LimitMeter, Section, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Dialog, DialogScope, IconButton, LimitMeter, Section, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatNumber, formatRelative, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
@@ -256,19 +256,23 @@ export function EditLimitDialog({
   );
 }
 
-export function RemoveLimitDialog({
-  org,
-  project,
-  limit,
-  open,
-  onOpenChange,
-}: {
+interface RemoveLimitProps {
   org: string;
   project: string;
   limit: LimitView;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}) {
+}
+
+export function RemoveLimitDialog(props: RemoveLimitProps) {
+  return (
+    <DialogScope open={props.open}>
+      <RemoveLimitConfirm {...props} />
+    </DialogScope>
+  );
+}
+
+function RemoveLimitConfirm({ org, project, limit, open, onOpenChange }: RemoveLimitProps) {
   const remove = useApiMutation({
     mutationFn: async () => {
       await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/limits/{limit}", {

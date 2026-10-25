@@ -8,6 +8,7 @@ import {
   Button,
   DataTable,
   Dialog,
+  DialogScope,
   Empty,
   FilterRow,
   Input,
@@ -227,43 +228,14 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
   const session = useSession();
   const user = useQuery(instanceUserQuery(userId));
   const [confirm, setConfirm] = useState<Confirm>(null);
+  const confirming = (which: Confirm) => ({ open: confirm === which, onOpenChange: (o: boolean) => !o && setConfirm(null) });
   const invalidates = [["instance", "users"]];
   const path = { params: { path: { user: userId } } };
 
-  const deactivate = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/instance/users/{user}/deactivate", path)),
-    invalidates,
-    onSuccess: (u) => {
-      setConfirm(null);
-      toast(t("instance.userDeactivated", "{name} deactivated", { name: u.name }));
-    },
-    onError: () => setConfirm(null),
-  });
   const reactivate = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/instance/users/{user}/reactivate", path)),
     invalidates,
     onSuccess: (u) => toast.success(t("instance.userReactivated", "{name} reactivated", { name: u.name })),
-  });
-  const endSessions = useApiMutation({
-    mutationFn: async () => {
-      await api.POST("/platform/v1/instance/users/{user}/sessions/revoke", path);
-    },
-    onSuccess: () => {
-      setConfirm(null);
-      toast(t("instance.sessionsEnded", "Every session ended"));
-    },
-    onError: () => setConfirm(null),
-  });
-  const reset2fa = useApiMutation({
-    mutationFn: async () => {
-      await api.POST("/platform/v1/instance/users/{user}/reset-2fa", path);
-    },
-    invalidates,
-    onSuccess: () => {
-      setConfirm(null);
-      toast(t("instance.twoFactorReset", "Two-factor authentication reset"));
-    },
-    onError: () => setConfirm(null),
   });
   const admin = useApiMutation({
     mutationFn: async (on: boolean) => data(await api.PUT("/platform/v1/instance/users/{user}/instance-admin", { ...path, body: { is_instance_admin: on } })),
@@ -274,17 +246,6 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
           ? t("instance.nowAdmin", "{name} is an instance admin", { name: u.name })
           : t("instance.noLongerAdmin", "{name} is no longer an instance admin", { name: u.name }),
       ),
-  });
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/instance/users/{user}", path);
-    },
-    invalidates,
-    onSuccess: () => {
-      toast(t("instance.userDeleted", "User deleted"));
-      onClose();
-    },
-    onError: () => setConfirm(null),
   });
 
   if (user.isPending) return <SkeletonLine lines={5} />;
@@ -397,49 +358,97 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
           </SettingsGroup>
         </Section>
       )}
-      <AlertDialog
-        open={confirm === "deactivate"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        tone="danger"
-        title={t("instance.deactivateQuestion", "Deactivate {name}?", { name: u.name })}
-        description={t("instance.deactivateConfirmHint", "They can't sign in, every session ends and their keys are disabled until you reactivate them.")}
-        confirmLabel={t("instance.deactivate", "Deactivate")}
-        loading={deactivate.isPending}
-        onConfirm={() => deactivate.mutateAsync()}
-      />
-      <AlertDialog
-        open={confirm === "sessions"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        tone="warning"
-        title={t("instance.endSessionsQuestion", "End {name}'s sessions?", { name: u.name })}
-        description={t("instance.endSessionsConfirmHint", "They're signed out everywhere and get an email about it.")}
-        confirmLabel={t("instance.endSessions", "End sessions")}
-        loading={endSessions.isPending}
-        onConfirm={() => endSessions.mutateAsync()}
-      />
-      <AlertDialog
-        open={confirm === "reset-2fa"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        tone="warning"
-        title={t("instance.reset2faQuestion", "Reset {name}'s two-factor authentication?", { name: u.name })}
-        description={t("instance.reset2faConfirmHint", "Their authenticator app and recovery codes stop working; they get an email about it.")}
-        confirmLabel={t("instance.reset2fa", "Reset two-factor")}
-        loading={reset2fa.isPending}
-        onConfirm={() => reset2fa.mutateAsync()}
-      />
-      <AlertDialog
-        open={confirm === "delete"}
-        onOpenChange={(o) => !o && setConfirm(null)}
-        tone="danger"
-        title={t("instance.deleteUserQuestion", "Delete {name}?", { name: u.name })}
-        description={t("instance.deleteUserConfirmHint", "Their name and email are removed and their keys archived; this can't be undone.")}
-        confirmLabel={t("instance.deleteUser", "Delete user")}
-        confirmText={u.email ?? u.name}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync()}
-      />
+      <DialogScope open={confirm === "deactivate"}>
+        <UserActionDialog
+          {...confirming("deactivate")}
+          tone="danger"
+          title={t("instance.deactivateQuestion", "Deactivate {name}?", { name: u.name })}
+          description={t("instance.deactivateConfirmHint", "They can't sign in, every session ends and their keys are disabled until you reactivate them.")}
+          confirmLabel={t("instance.deactivate", "Deactivate")}
+          run={async () => data(await api.POST("/platform/v1/instance/users/{user}/deactivate", path))}
+          invalidates={invalidates}
+          onDone={(d) => {
+            setConfirm(null);
+            toast(t("instance.userDeactivated", "{name} deactivated", { name: d.name }));
+          }}
+        />
+      </DialogScope>
+      <DialogScope open={confirm === "sessions"}>
+        <UserActionDialog
+          {...confirming("sessions")}
+          tone="warning"
+          title={t("instance.endSessionsQuestion", "End {name}'s sessions?", { name: u.name })}
+          description={t("instance.endSessionsConfirmHint", "They're signed out everywhere and get an email about it.")}
+          confirmLabel={t("instance.endSessions", "End sessions")}
+          run={async () => {
+            await api.POST("/platform/v1/instance/users/{user}/sessions/revoke", path);
+          }}
+          onDone={() => {
+            setConfirm(null);
+            toast(t("instance.sessionsEnded", "Every session ended"));
+          }}
+        />
+      </DialogScope>
+      <DialogScope open={confirm === "reset-2fa"}>
+        <UserActionDialog
+          {...confirming("reset-2fa")}
+          tone="warning"
+          title={t("instance.reset2faQuestion", "Reset {name}'s two-factor authentication?", { name: u.name })}
+          description={t("instance.reset2faConfirmHint", "Their authenticator app and recovery codes stop working; they get an email about it.")}
+          confirmLabel={t("instance.reset2fa", "Reset two-factor")}
+          run={async () => {
+            await api.POST("/platform/v1/instance/users/{user}/reset-2fa", path);
+          }}
+          invalidates={invalidates}
+          onDone={() => {
+            setConfirm(null);
+            toast(t("instance.twoFactorReset", "Two-factor authentication reset"));
+          }}
+        />
+      </DialogScope>
+      <DialogScope open={confirm === "delete"}>
+        <UserActionDialog
+          {...confirming("delete")}
+          tone="danger"
+          title={t("instance.deleteUserQuestion", "Delete {name}?", { name: u.name })}
+          description={t("instance.deleteUserConfirmHint", "Their name and email are removed and their keys archived; this can't be undone.")}
+          confirmLabel={t("instance.deleteUser", "Delete user")}
+          confirmText={u.email ?? u.name}
+          run={async () => {
+            await api.DELETE("/platform/v1/instance/users/{user}", path);
+          }}
+          invalidates={invalidates}
+          onDone={() => {
+            toast(t("instance.userDeleted", "User deleted"));
+            onClose();
+          }}
+        />
+      </DialogScope>
     </div>
   );
+}
+
+function UserActionDialog<T>({
+  open,
+  onOpenChange,
+  run,
+  invalidates,
+  onDone,
+  ...copy
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tone: "danger" | "warning";
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmText?: string;
+  run: () => Promise<T>;
+  invalidates?: string[][];
+  onDone: (result: T) => void;
+}) {
+  const action = useApiMutation({ mutationFn: run, invalidates, onSuccess: onDone, onError: () => onOpenChange(false) });
+  return <AlertDialog {...copy} open={open} onOpenChange={onOpenChange} loading={action.isPending} onConfirm={() => action.mutateAsync()} />;
 }
 
 function UserOrgs({ userId }: { userId: string }) {

@@ -121,7 +121,7 @@ docker compose exec gateway kaeso user sign-in-link owner@example.com
 
 即使管理该账户的组织要求单点登录，该链接也能让受管理的账户登录。这个会话可以打开此人的账户、其所属的其他组织，如果此人是实例管理员，还可以打开实例管理；要求单点登录的那个组织仍对它关闭。
 
-## 后续步骤
+## 下一步
 
 - [实例管理](../console/instance-administration.md)：管理用户、组织和实例设置。
 - [故障排除](troubleshooting.md)：解决实例中的常见问题。

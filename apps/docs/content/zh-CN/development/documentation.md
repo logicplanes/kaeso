@@ -40,7 +40,7 @@ pnpm --filter kaeso-docs dev
 
 只要有一个问题回答不了，页面就应删除或合并，而不是精简。只有 CI 才关心的数字和清单，例如打包预算或覆盖率阈值，留在执行它们的代码或配置中。文档只写出检查它们的命令。
 
-删除页面时，在三种语言中都删除它。把它的地址连同最相关的页面写进 `apps/docs/redirects.json`（见[页面的位置](#页面的位置)），然后修复构建指出的链接。
+删除页面时，在三种语言中都删除它。在同一个提交中修改所有指向它的链接，改为指向最相关的页面；构建会指出遗漏的链接。
 
 ## 页面类型
 
@@ -56,7 +56,7 @@ pnpm --filter kaeso-docs dev
 
 指南说明如何完成任务，每个选项都链接到参考页面。参考页面列出每个选项，不讲故事。同一张表格绝不同时出现在两类页面上。
 
-文件夹的 `index.md` 是概览页：用一两句话说明本部分涵盖什么，然后是本部分页面的[链接列表](#下一步)，每项配一句话。
+文件夹的 `index.md` 是概览页：用一两句话说明本部分涵盖什么，然后是本部分每个页面都依赖的内容，例如术语。它以[下一步](#下一步)结尾，列出本部分的页面，每项配一句话。
 
 ### 快速开始
 
@@ -249,6 +249,7 @@ The key is wrong, expired or disabled.
 
 - **以可运行的示例开头。** 每个 API 页面，以及每个讲应用调用 Kaeso 的指南，都要在第一屏展示一个能运行的最小请求：紧跟在引言之后、第一个 `##` 标题之前。
 - **粘贴即可运行。** 读者只需修改占位符：地址 `kaeso.example.com`、环境变量 `KAESO_API_KEY` 中的密钥，以及模型 `claude-haiku-4-5` 或 `gpt-5-mini`。无法避免写出字面密钥时，写作 `sk-kso-…`。同一页面使用同一个提示：“Write a haiku about gateways.”
+- **其他名称也使用保留域名。** 读者的地址写作 `owner@example.com`。不属于 Kaeso 的一切，例如身份提供商或 SMTP 服务器，使用 `example.com` 或 `.example` 下的其他名称，例如 `login.example.com` 或 `smtp.example.com`。绝不出现真实的主机、密钥或人员。
 - **保持最小。** 只包含示例需要的字段。指南中的代码块少于 25 行；更长的代码链接到 GitHub 上的文件。
 - **密钥来自环境变量。** 代码读取 `KAESO_API_KEY`：Python 中是 `os.environ["KAESO_API_KEY"]`，TypeScript 中是 `process.env.KAESO_API_KEY`，curl 中是 `$KAESO_API_KEY`。绝不把密钥写进 SDK 代码。
 - **使用官方 SDK。** Python 使用 `openai` 和 `anthropic` 的同步客户端；TypeScript 使用 `openai` 和 `@anthropic-ai/sdk`，以 ES 模块和顶层 `await` 编写。OpenAI SDK 的基础 URL 是 `https://kaeso.example.com/v1`，Anthropic SDK 的是 `https://kaeso.example.com`。读者的应用用 `pip install openai anthropic` 和 `npm install openai @anthropic-ai/sdk` 安装它们；在本仓库中工作的命令使用 pnpm。
@@ -362,7 +363,7 @@ See [rate limits](limits-and-budgets.md#rates) and [the API](../api/index.md).
 - [API 密钥](../console/api-keys.md)：把密钥限制在应用需要的模型和速率之内。
 ```
 
-- 两到四项，最可能的下一项任务排在最前。
+- 两到四项，最可能的下一项任务排在最前。概览页则列出它通向的每个页面或部分，不限数量。
 - 链接文字是页面标题；后面的句子说明读者在那里能做什么。
 - 这种形式只用于链接列表。以链接开头、接着写成句子的列表项也会变成卡片，因此这类句子要以文字开头。
 - 参考页面和故障排除页面没有“下一步”。
@@ -418,7 +419,7 @@ Every request to the model API carries an API key.
 
 文件名就是地址：小写，单词之间用连字符连接（`provider-keys.md`）。重命名或移动文件会改变它在每种语言中的地址，所有指向它的链接都必须随之修改；构建会指出没有更新的链接。
 
-其他网站的链接和书签仍使用旧地址。因此要把旧地址连同它移到的页面（也可以加上标题）写进 `apps/docs/redirects.json`：`"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`。构建随后会在每种语言的旧地址上生成一个页面，把读者转到译文中的同一标题。地址也可以指向文档之外的页面，例如 `"changelog": "https://kaeso.app/changelog"`。每种语言会转到那里的同一语言，旧地址之下的所有地址也一样。
+旧地址不会保留，也不会跳转到新页面。请在同一个提交中修改所有指向该页面的链接，三种语言都要改。
 
 分组中的子文件夹需要一个 `index.md`，文件夹最多嵌套三层。名称以 `_` 开头的文件和文件夹不会发布。
 
@@ -538,7 +539,7 @@ pnpm demo
 - [ ] 句子直接面向读者，使用主动语态和现在时，没有过长的句子。
 - [ ] 粗体只标记控制台标签和被说明的名称；读者要输入的一切都用代码格式。
 - [ ] 每节最多一个提示块，每页最多三个，每个都很简短。
-- [ ] 快速开始、指南和概览页以“下一步”结尾：两到四个链接，每个配一句话。
+- [ ] 快速开始和指南以两到四个链接的“下一步”结尾，概览页则每个页面一个链接；每个链接配一句话。
 - [ ] 每一句陈述都与 `dev` 上的代码一致，版本号写作 `\{{version}}`。
 - [ ] 德语和中文页面表达相同的内容，行文自然，标题、提示块和代码都相同。
 - [ ] `pnpm --filter kaeso-docs check:content` 通过，并且您已在站点上以浅色和深色、桌面宽度和 375 px 宽度阅读过该页面。

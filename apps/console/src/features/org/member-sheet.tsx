@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Avatar, Badge, Button, Empty, KeyValue, List, Section, Sheet, Skeleton, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Avatar, Badge, Button, DialogScope, Empty, KeyValue, List, Section, Sheet, Skeleton, Text } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -37,6 +37,8 @@ export function OrgMemberSheet({ org, userId, onClose }: { org: string; userId: 
   );
 }
 
+const memberInvalidations = (org: string) => [["orgs", org, "members"], ["orgs", org, "roles"], ["session"]];
+
 function MemberBody({ org, userId, onClose }: { org: string; userId: string; onClose: () => void }) {
   const navigate = useNavigate();
   const needs = useNeedsRight(org);
@@ -63,40 +65,14 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
   });
   const [removing, setRemoving] = useState(false);
   const [transferring, setTransferring] = useState(false);
-  const invalidates = [["orgs", org, "members"], ["orgs", org, "roles"], ["session"]];
 
   const save = useApiMutation({
     mutationFn: async (g: Grant) => data(await api.PATCH("/platform/v1/orgs/{org}/members/{user}", { params: { path: { org, user: userId } }, body: g })),
-    invalidates,
+    invalidates: memberInvalidations(org),
     onSuccess: (m) => {
       reset();
       toast.success(t("org.member.roleSaved", "{name} is {role} now", { name: m.user.name, role: m.grant.role.name }));
     },
-  });
-  const remove = useApiMutation({
-    mutationFn: async (target: MemberView) => {
-      await api.DELETE("/platform/v1/orgs/{org}/members/{user}", { params: { path: { org, user: userId } } });
-      return target;
-    },
-    invalidates: [...invalidates, ["orgs", org, "projects"]],
-    onSuccess: (target) => {
-      toast(
-        target.user.id === session.user.id
-          ? t("org.member.left", "You left the organization")
-          : t("org.member.removed", "{name} removed from the organization", { name: target.user.name }),
-      );
-      onClose();
-    },
-    onError: () => setRemoving(false),
-  });
-  const transfer = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/ownership-transfer", { params: { path: { org } }, body: { user_id: userId } })),
-    invalidates: [...invalidates, ["me", "memberships"]],
-    onSuccess: (m) => {
-      setTransferring(false);
-      toast.success(t("org.ownership.transferred", "{name} is an owner now; you're an admin", { name: m.user.name }));
-    },
-    onError: () => setTransferring(false),
   });
 
   if (member.isPending || !cat || !roles || (rights.has("members.view") && access.isPending)) return <Skeleton className="w-full" />;
@@ -241,30 +217,83 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
           </Button>
         </div>
       </Section>
-      <AlertDialog
-        open={transferring}
-        onOpenChange={setTransferring}
-        tone="warning"
-        title={t("org.member.makeOwner", "Make {name} an owner?", { name: m.user.name })}
-        description={t("org.member.makeOwnerHint", "They become an owner with every right, and you become an admin.")}
-        confirmLabel={t("org.ownership.transfer", "Transfer ownership")}
-        loading={transfer.isPending}
-        onConfirm={() => transfer.mutateAsync()}
-      />
-      <AlertDialog
-        open={removing}
-        onOpenChange={setRemoving}
-        tone="danger"
-        title={
-          self
-            ? t("org.member.leaveConfirm", "Leave the organization?")
-            : t("org.member.removeConfirm", "Remove {name} from the organization?", { name: m.user.name })
-        }
-        description={t("org.member.removeHint", "They leave every project, and their user keys in the organization are archived.")}
-        confirmLabel={self ? t("org.member.leave", "Leave organization") : t("org.member.removeMember", "Remove member")}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync(m)}
-      />
+      <DialogScope open={transferring}>
+        <TransferDialog org={org} member={m} open={transferring} onOpenChange={setTransferring} />
+      </DialogScope>
+      <DialogScope open={removing}>
+        <RemoveDialog org={org} member={m} self={self} onRemoved={onClose} open={removing} onOpenChange={setRemoving} />
+      </DialogScope>
     </div>
+  );
+}
+
+function TransferDialog({ org, member, open, onOpenChange }: { org: string; member: MemberView; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const transfer = useApiMutation({
+    mutationFn: async () =>
+      data(await api.POST("/platform/v1/orgs/{org}/ownership-transfer", { params: { path: { org } }, body: { user_id: member.user.id } })),
+    invalidates: [...memberInvalidations(org), ["me", "memberships"]],
+    onSuccess: (m) => {
+      onOpenChange(false);
+      toast.success(t("org.ownership.transferred", "{name} is an owner now; you're an admin", { name: m.user.name }));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="warning"
+      title={t("org.member.makeOwner", "Make {name} an owner?", { name: member.user.name })}
+      description={t("org.member.makeOwnerHint", "They become an owner with every right, and you become an admin.")}
+      confirmLabel={t("org.ownership.transfer", "Transfer ownership")}
+      loading={transfer.isPending}
+      onConfirm={() => transfer.mutateAsync()}
+    />
+  );
+}
+
+function RemoveDialog({
+  org,
+  member,
+  self,
+  onRemoved,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  member: MemberView;
+  self: boolean;
+  onRemoved: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/members/{user}", { params: { path: { org, user: member.user.id } } });
+    },
+    invalidates: [...memberInvalidations(org), ["orgs", org, "projects"]],
+    onSuccess: () => {
+      toast(
+        self ? t("org.member.left", "You left the organization") : t("org.member.removed", "{name} removed from the organization", { name: member.user.name }),
+      );
+      onRemoved();
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={
+        self
+          ? t("org.member.leaveConfirm", "Leave the organization?")
+          : t("org.member.removeConfirm", "Remove {name} from the organization?", { name: member.user.name })
+      }
+      description={t("org.member.removeHint", "They leave every project, and their user keys in the organization are archived.")}
+      confirmLabel={self ? t("org.member.leave", "Leave organization") : t("org.member.removeMember", "Remove member")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }
