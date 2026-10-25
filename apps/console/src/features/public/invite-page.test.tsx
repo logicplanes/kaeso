@@ -64,6 +64,15 @@ describe("opening an invitation", () => {
     expect(window.sessionStorage.getItem(PENDING)).toBeNull();
   });
 
+  it("forgets the token of an unusable invitation once the person leaves the page", async () => {
+    signedOut();
+    on("POST", "auth/invites/lookup", apiError(404, "not_found", "No such invitation."));
+    const { user } = await renderApp("/invite#token=inv_tok");
+    await user.click(await screen.findByRole("link", { name: "Back to sign in" }));
+    await waitFor(() => expect(window.location.pathname).toBe("/sign-in"));
+    await waitFor(() => expect(queryClient.getQueryCache().findAll({ queryKey: ["invite-lookup"] })).toEqual([]));
+  });
+
   it("keeps the invitation when the gateway can't be reached, and tries again", async () => {
     signedOut();
     on("POST", "auth/invites/lookup", () => {
@@ -162,7 +171,7 @@ describe("accepting while signed in", () => {
     });
     const { user } = await renderApp("/invite#token=inv_tok");
     await user.click(await screen.findByRole("button", { name: "Sign out to accept" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
   });
 
   it("asks to try again when the answer to signing out can't be read", async () => {
@@ -171,7 +180,7 @@ describe("accepting while signed in", () => {
     on("POST", "auth/logout", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp("/invite#token=inv_tok");
     await user.click(await screen.findByRole("button", { name: "Sign out to accept" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Sign out to accept" })).toBeInTheDocument();
   });
 });

@@ -19,7 +19,7 @@
   "shell.deletion.on": "Löschung am {day}",
   "shell.deletion.scheduled": "Zur Löschung vorgemerkt",
   "shell.export.canceled": "Export abgebrochen",
-  "shell.export.failed": "Der Export brach vorzeitig ab. Bitte erneut versuchen.",
+  "shell.export.failed": "Der Export brach vorzeitig ab; bitte erneut versuchen.",
   "shell.export.inBrowser": "Der Browser zeigt den Fortschritt an.",
   "shell.export.saved": "{size} in {duration}",
   "shell.export.started": "Export gestartet",

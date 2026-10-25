@@ -1091,5 +1091,13 @@
   "What the figure shows, usually a ThemeImage.": "图示展示的内容，通常是一个 ThemeImage。",
   "Where a figure wider than its column starts, as a share of its width: 0.5, the middle, by default.": "比所在栏更宽的图从哪里开始显示，以其宽度的比例表示：默认 0.5，即中间。",
   "The name of the figure's scrolling region, read by screen readers.": "图示可滚动区域的名称，供屏幕阅读器朗读。",
-  "The figure's background: a well like a code block's, or none.": "图示的背景：像代码块那样的底板，或者没有背景。"
+  "The figure's background: a well like a code block's, or none.": "图示的背景：像代码块那样的底板，或者没有背景。",
+  "Text that changes with state in a place sized for its widest version, so nothing around it moves.": "随状态变化的文字，所占位置按最宽的版本预留，周围的内容因此不会移动。",
+  "Aligned at the start": "起始对齐",
+  "In a column, start-aligned labels keep the text after them on one line.": "在一列中，起始对齐的标签让其后的文字保持在同一条线上。",
+  "Aligns the shorter labels at the start or in the center of the reserved width.": "将较短的标签对齐到预留宽度的起始处或中间。",
+  "What is shown now.": "当前显示的内容。",
+  "Every text this place can show (\"Copy page\", \"Copied\"). The width fits the widest, so a state change never resizes the control.": "此位置可能显示的所有文字（“复制页面”“已复制”）。宽度适应最宽的文字，状态变化时控件尺寸绝不改变。",
+  "A circle that opens system, light or dark, stored as `kaeso:theme`; its icon shows the theme in use.": "一个圆形按钮，打开跟随系统、浅色或深色选项，保存为 `kaeso:theme`；其图标显示当前使用的主题。",
+  "A filled button (`secondary`) or a quiet one (`ghost`).": "填充按钮（`secondary`）或低调按钮（`ghost`）。"
 }

@@ -283,9 +283,9 @@ describe("instance updates page", () => {
   });
 
   it.each([
-    [{ updater: { state: "not_installed", version: null } }, "The updater isn't installed, so this install updates by hand."],
+    [{ updater: { state: "not_installed", version: null } }, "The updater isn't installed; this install updates by hand."],
     [{ updater: { state: "unreachable", version: null } }, "The updater doesn't answer; check that its container runs."],
-    [{ updater: { state: "outdated", version: "40.4.0" } }, "The updater is too old for this release; update by hand once."],
+    [{ updater: { state: "outdated", version: "40.4.0" } }, "This release needs a newer updater; update by hand once."],
   ] as const)("shows the commands to update by hand when the updater can't (%#)", async (change, reason) => {
     signedIn();
     on("GET", "instance/updates", available({ can_apply: false, ...change }));
@@ -315,7 +315,7 @@ describe("instance updates page", () => {
     );
     history();
     const { user } = await renderApp(PATH);
-    const failed = await screen.findByText("The last check for releases failed; Kaeso tries again shortly.");
+    const failed = await screen.findByText("The last release check failed; Kaeso tries again shortly.");
     await hoverReason(user, failed, "api.github.com can't be reached: no connection");
   });
 

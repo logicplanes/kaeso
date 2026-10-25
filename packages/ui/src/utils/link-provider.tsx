@@ -1,11 +1,12 @@
 import { createContext, forwardRef, useContext, type AnchorHTMLAttributes, type ComponentType, type ReactNode, type Ref } from "react";
 
-export type LinkComponentProps = AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; ref?: Ref<HTMLAnchorElement> };
+export type LinkComponentProps = AnchorHTMLAttributes<HTMLAnchorElement> & { href: string; ref?: Ref<HTMLAnchorElement> | undefined };
 export type LinkComponent = ComponentType<LinkComponentProps>;
 
 const DefaultLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(function DefaultLink(props, ref) {
   return <a ref={ref} {...props} />;
 });
+DefaultLink.displayName = "DefaultLink";
 
 const LinkContext = createContext<LinkComponent>(DefaultLink);
 

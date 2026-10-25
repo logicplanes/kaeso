@@ -43,7 +43,7 @@ export function InstanceModelSourcesPage() {
     invalidates: [modelsDevQuery.queryKey, modelCatalogues],
     onSuccess: (s) =>
       s.last_error
-        ? toast.warning(t("instance.syncFailed", "models.dev couldn't be fetched; the current data stays in use"))
+        ? toast.warning(t("instance.syncFailed", "Couldn't fetch models.dev; the current data stays in use"))
         : toast.success(t("instance.synced", "Synced: {count, plural, one {# model} other {# models}}", { count: s.model_count })),
   });
   const rows: Source[] = status.data ? [{ id: "models.dev", name: "models.dev", inUse: true, status: status.data }] : [];
