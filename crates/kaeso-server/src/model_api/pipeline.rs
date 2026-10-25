@@ -874,6 +874,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if let Some(a) = plan.adaptive_thinking {
         ectx = ectx.with_adaptive_thinking(a);
     }
+    if let Some(b) = plan.thinking_binding {
+        ectx = ectx.with_thinking_binding(b);
+    }
     if let Some(r) = plan.reasoning {
         ectx = ectx.with_reasoning(r);
     }
@@ -1204,6 +1207,8 @@ pub(crate) fn redact_key_fragments(err: &mut KppError) {
 pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) -> KppError {
     if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
         err.kind = ErrorKind::Authentication;
+    } else if err.kind == ErrorKind::InvalidRequest && provider.exceeds_context(&err.message) {
+        err.kind = ErrorKind::ContextTooLong;
     }
     err
 }

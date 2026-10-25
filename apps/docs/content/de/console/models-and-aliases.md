@@ -58,6 +58,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Temperatur | Ob das Modell `temperature` annimmt |
 | Erzwungene Tool-Wahl | Ob das Modell `tool_choice` mit `required`, `any` oder einem benannten Tool annimmt. Für ein Modell ohne diese Fähigkeit lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
 | Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Stufen es annimmt |
+| Thinking-Bindung | Ob ein Anthropic-Modell prüft, dass zurückgespieltes Denken aus derselben Unterhaltung stammt. Bei einem solchen Modell bittet Kaeso Anthropic, Denken zu verwerfen, das Apps in anderen Formaten verändert zurückschicken, statt die Anfrage scheitern zu lassen |
 | Zeitlimit | Wie viele Sekunden eine Anfrage an dieses Modell dauern darf. Ohne Angabe gilt das Anfrage-Zeitlimit der Installation |
 | Veröffentlicht | Das Veröffentlichungsdatum des Modells |
 

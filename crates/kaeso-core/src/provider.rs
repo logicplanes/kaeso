@@ -185,6 +185,7 @@ pub struct Provider {
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
+    pub context_window_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
     pub tool_namespaces: bool,
     pub chat: ChatProfile,
@@ -211,6 +212,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: true,
         chat: ChatProfile::OPENAI,
@@ -236,6 +238,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("Anthropic"),
@@ -256,6 +259,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("DeepSeek")
@@ -279,6 +283,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: true,
         tool_namespaces: false,
         chat: ChatProfile::compatible("SpaceX")
@@ -306,6 +311,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("Together AI")
@@ -327,6 +333,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("Groq")
@@ -351,6 +358,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("OpenRouter")
@@ -373,6 +381,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &["too large for model with"],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("Mistral")
@@ -381,6 +390,7 @@ pub const PROVIDERS: &[Provider] = &[
             .random_seed()
             .without_end_user()
             .without_prefill()
+            .greedy_top_p()
             .thinking_parts()
             .refusing(&[
                 "audio",
@@ -443,6 +453,12 @@ impl Provider {
         self.refused_key_messages
             .iter()
             .any(|refusal| message.starts_with(refusal))
+    }
+
+    pub fn exceeds_context(&self, message: &str) -> bool {
+        self.context_window_messages
+            .iter()
+            .any(|overflow| message.contains(overflow))
     }
 }
 
@@ -657,6 +673,23 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
+        let greedy =
+            sent_with_profile("mistral", "providers/mistral/requests/greedy-sampling").unwrap();
+        assert_eq!(greedy["top_p"], 1.0, "{greedy}");
+    }
+
+    #[test]
+    fn only_mistral_reads_its_context_window_message_as_context_too_long() {
+        let message =
+            "Prompt contains 65673 tokens, too large for model with 32768 maximum context length";
+        for p in PROVIDERS {
+            assert_eq!(p.exceeds_context(message), p.id == "mistral", "{}", p.id);
+        }
+        assert!(
+            !provider("mistral")
+                .unwrap()
+                .exceeds_context("Invalid model: m")
+        );
     }
 
     #[test]

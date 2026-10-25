@@ -9,7 +9,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
 | Extras fields | `Unsupported`, unless [allowlisted](#extras) | Left out |
-| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces) and [hosted web search](#hosted-web-search) | Unknown blocks left out, except web searches |
+| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [tool search](#tool-search) and [hosted web search](#hosted-web-search) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
 | Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
@@ -108,6 +108,17 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 - **Refused.** A namespace with keys other than `type`, `name`, `description` and `tools`, a tool in it that is not a function, a field on such a tool that only Responses knows, such as `defer_loading`, and a flattened name that another tool already has.
 
 `EgressCtx::tool_namespaces` says whether a Responses target takes namespaces. The gateway sets it from `Provider::tool_namespaces`, which is true only for OpenAI.
+
+## Tool search
+
+Anthropic's tool search loads tools on demand. A tool with `defer_loading: true` stays out of the model's context until a search returns a `tool_reference` block that names it, and from then on the model sees its definition in every turn ([tool search tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)). Claude Code searches with its own `ToolSearch` tool: every session starts with a deferred `DeferredToolPlaceholder`, and once `ToolSearch` finds a tool, each later request sends that tool deferred and a `tool_result` with its `tool_reference`. Other formats have no deferred tools, so Kaeso does for them what Anthropic does:
+
+- **Tools.** A tool with `defer_loading: true` is left out until a `tool_reference` in the conversation names it, and then sent as an ordinary function tool. A deferred tool that `tool_choice` forces is sent too: Claude accepts forcing it before a search, and other formats can force only a tool they were sent. `defer_loading: false`, the default, is left out.
+- **References.** A `tool_reference` block in a `tool_result` becomes a text block with the tool's name, so the model reads which tool the search loaded.
+- **Refused as Anthropic refuses them**, with `InvalidRequest` and Anthropic's message: a reference to a tool the request doesn't send, and a request whose tools are all deferred.
+- **Refused** with `Unsupported`: a `defer_loading` that isn't a boolean, and a `tool_reference` outside a `tool_result` or with a field Kaeso doesn't know.
+
+Anthropic models get deferred tools and references as sent. The `advanced-tool-use-2025-11-20` beta that turns tool search on is part of the `anthropic-beta` header, which other formats don't get ([allowlist](#allowlist)).
 
 ## Hosted web search
 

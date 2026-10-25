@@ -1,0 +1,221 @@
+{
+  "model": "claude-sonnet-5-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line."
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "caller": {
+            "type": "direct"
+          },
+          "id": "toolu_0199pumA6DiQ6ow67Ujnv8bf",
+          "input": {
+            "query": "select:WebFetch",
+            "max_results": 1
+          },
+          "name": "ToolSearch",
+          "type": "tool_use"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_0199pumA6DiQ6ow67Ujnv8bf",
+          "content": [
+            {
+              "type": "tool_reference",
+              "tool_name": "WebFetch"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "text": "Tool loaded."
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": "<total_tokens>14983472 tokens left</total_tokens>"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "caller": {
+            "type": "direct"
+          },
+          "id": "toolu_01BWErusvWjXNyWi91GMgoJn",
+          "input": {
+            "url": "https://example.com",
+            "prompt": "What is the page's title?"
+          },
+          "name": "WebFetch",
+          "type": "tool_use"
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "tool_use_id": "toolu_01BWErusvWjXNyWi91GMgoJn",
+          "type": "tool_result",
+          "content": "The page's title is \"Example Domain.\""
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "<total_tokens>14982930 tokens left</total_tokens>",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    }
+  ],
+  "system": [
+    {
+      "type": "text",
+      "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;"
+    },
+    {
+      "type": "text",
+      "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    },
+    {
+      "type": "text",
+      "text": "You are an agent working with the user toward their goals.",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "Read",
+      "description": "Reads a file from the local filesystem.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "The absolute path to the file to read",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "ToolSearch",
+      "description": "Fetches full schema definitions for deferred tools so they can be called.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+            "type": "string"
+          },
+          "max_results": {
+            "description": "Maximum number of results to return (default: 5)",
+            "default": 5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "query",
+          "max_results"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "WebFetch",
+      "description": "Fetches a URL, converts the page to markdown, and answers `prompt` against it using a small fast model.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL to fetch content from",
+            "type": "string",
+            "format": "uri"
+          },
+          "prompt": {
+            "description": "The prompt to run on the fetched content",
+            "type": "string"
+          },
+          "offset": {
+            "description": "Character position in the page text to start reading from. Use it to read on through a page too long for one call, with the value the previous result gave.",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "url",
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "defer_loading": true
+    },
+    {
+      "name": "DeferredToolPlaceholder",
+      "description": "Reserved placeholder that keeps deferred tool loading active; never call this tool.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "defer_loading": true
+    }
+  ],
+  "metadata": {
+    "user_id": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}"
+  },
+  "max_tokens": 128000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "omitted"
+  },
+  "context_management": {
+    "edits": [
+      {
+        "type": "clear_thinking_20251015",
+        "keep": "all"
+      }
+    ]
+  },
+  "output_config": {
+    "effort": "medium"
+  },
+  "stream": true
+}

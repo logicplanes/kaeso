@@ -96,6 +96,11 @@ fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
     }
 }
 
+fn referenced_tool(item: &kaeso_kpp::RawItem) -> Option<String> {
+    let v = item.raw.to_value().ok()?;
+    (v["type"] == "tool_reference").then(|| v["tool_name"].as_str().map(str::to_owned))?
+}
+
 fn request_meaning(req: &Request) -> Value {
     let Request::Generate(r) = req else {
         return Value::Null;
@@ -119,6 +124,7 @@ fn request_meaning(req: &Request) -> Value {
                 }
                 Block::ToolResult(t) => json!({"result": t.content.iter().filter_map(|b| match b {
                     Block::Text(t) => Some(t.text.clone()),
+                    Block::Unknown(item) => referenced_tool(item),
                     _ => None,
                 }).collect::<Vec<_>>().join("")}),
                 Block::Image(_) => json!("image"),
@@ -573,7 +579,7 @@ fn claude_code_pre_release_fields_name_the_client_setting() {
 }
 
 #[test]
-fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
+fn claude_code_server_tools_and_beta_tool_fields_get_actionable_errors() {
     let refused = |req: &Request| {
         [DialectId::OpenAiChat, DialectId::OpenAiResponses].map(|target| {
             let e = dispatch::check(target, req, &EgressCtx::new(req)).unwrap_err();
@@ -582,31 +588,6 @@ fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
     };
     let mut req = anthropic_fixture("tool-search-deferred-tools");
     dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req)).unwrap();
-    for (feature, message) in refused(&req) {
-        assert_eq!(feature, "tool_reference content block");
-        assert!(message.contains("ENABLE_TOOL_SEARCH"), "{message}");
-    }
-    let Request::Generate(r) = &mut req else {
-        panic!()
-    };
-    let Block::ToolResult(result) = &mut r.messages[2].blocks[0] else {
-        panic!()
-    };
-    result.content = vec![Block::text("get_weather")];
-    for (feature, message) in refused(&req) {
-        assert_eq!(feature, "tools[1].defer_loading");
-        assert!(
-            message.contains("CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"),
-            "{message}"
-        );
-    }
-    let Request::Generate(r) = &mut req else {
-        panic!()
-    };
-    let kaeso_kpp::ToolDef::Function(f) = &mut r.tools[1] else {
-        panic!()
-    };
-    f.extras.fields.clear();
     for (feature, message) in refused(&req) {
         assert_eq!(feature, "advisor_20260301 tool");
         assert!(
@@ -621,5 +602,22 @@ fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
     for target in [DialectId::OpenAiChat, DialectId::OpenAiResponses] {
         dispatch::check(target, &req, &EgressCtx::new(&req))
             .unwrap_or_else(|e| panic!("{target}: {e}"));
+    }
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let kaeso_kpp::ToolDef::Function(f) = &mut r.tools[1] else {
+        panic!()
+    };
+    f.extras.fields.insert(
+        "eager_input_streaming".into(),
+        kaeso_kpp::RawJson::from_string("true".into()).unwrap(),
+    );
+    for (feature, message) in refused(&req) {
+        assert_eq!(feature, "tools[1].eager_input_streaming");
+        assert!(
+            message.contains("CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"),
+            "{message}"
+        );
     }
 }
