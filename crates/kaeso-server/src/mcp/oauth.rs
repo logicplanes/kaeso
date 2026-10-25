@@ -143,8 +143,6 @@ pub fn redirect_uri_allowed(uri: &str) -> bool {
     }
 }
 
-// Anyone can register an HTTPS redirect, so sending an unchecked request's error there would make
-// Kaeso an open redirect; a loopback address or a private-use scheme only reaches the user's machine.
 fn receives_errors(uri: &str) -> bool {
     Url::parse(uri).is_ok_and(|u| match u.scheme() {
         "https" => false,
