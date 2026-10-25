@@ -14,7 +14,7 @@ The gateway and the console of one release belong together. The release's `compo
 
 ## The version in the repository
 
-The root `package.json` holds the version, and only a release changes it, with `node scripts/version.mjs set <version>`. That command writes the version into every file that has to state it, such as the other `package.json` files, the crates' manifests, `openapi.json` and `deploy/compose.yaml`. `node scripts/version.mjs files` lists them.
+The root `package.json` holds the version, and only a release changes it, with `node scripts/version.mjs set <version>`. That command writes the version into every file that has to state it. Those are the other `package.json` files, the root `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json` and `deploy/compose.yaml`. It also sets the dependency lines in the READMEs of `kaeso-kpp` and `kaeso-codecs`. `node scripts/version.mjs files` lists them.
 
 Everything else reads the version instead of stating it. A page writes `\{{version}}`, the gateway reads `env!("CARGO_PKG_VERSION")`, and generated files read their `package.json`. `node scripts/version.mjs check`, part of `pnpm test`, fails on the current version anywhere else and names the file and line.
 

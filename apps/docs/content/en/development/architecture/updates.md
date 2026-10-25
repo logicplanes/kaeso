@@ -38,7 +38,7 @@ Each entry also carries `art`, the release's artwork, which update.kaeso.app cho
 
 ## The gateway
 
-`services/updates.rs` and the `update_check` job look for releases. Every five minutes the job asks whether the next check is due (`update_settings.next_check_at`).
+`services/updates.rs` and the `update_check` job look for releases. Every minute the job asks whether the next check is due (`update_settings.next_check_at`).
 
 - **Listing.** A check fetches `releases_url?per_page=50` with `If-None-Match` and follows next-page links, at most ten pages, since a feed doesn't list releases in version order. A changed list replaces `update_releases` in one transaction.
 - **Manifests.** For every release newer than the running version, the check fetches and stores its `release.json`, or the reason it couldn't. It fetches at most twelve per check, four at a time, newest first. A manifest comes only from `https://github.com/logicplanes/kaeso/releases/download/`, or from the origin of `updates.releases_url` for a mirror, and the client never follows a redirect from HTTPS to HTTP.

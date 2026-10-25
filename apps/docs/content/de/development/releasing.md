@@ -14,7 +14,7 @@ Gateway und Konsole eines Releases gehören zusammen. Die `compose.yaml` des Rel
 
 ## Die Version im Repository
 
-Die `package.json` im Wurzelverzeichnis enthält die Version, und nur ein Release ändert sie, mit `node scripts/version.mjs set <version>`. Dieser Befehl schreibt die Version in jede Datei, die sie nennen muss, etwa die übrigen `package.json`-Dateien, die Manifeste der Crates, `openapi.json` und `deploy/compose.yaml`. `node scripts/version.mjs files` listet sie auf.
+Die `package.json` im Wurzelverzeichnis enthält die Version, und nur ein Release ändert sie, mit `node scripts/version.mjs set <version>`. Dieser Befehl schreibt die Version in jede Datei, die sie nennen muss. Das sind die übrigen `package.json`-Dateien, die `Cargo.toml` im Wurzelverzeichnis, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json` und `deploy/compose.yaml`. Außerdem setzt er die Abhängigkeitszeilen in den READMEs von `kaeso-kpp` und `kaeso-codecs`. `node scripts/version.mjs files` listet sie auf.
 
 Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{version}}`, das Gateway liest `env!("CARGO_PKG_VERSION")`, und erzeugte Dateien lesen ihre `package.json`. `node scripts/version.mjs check`, Teil von `pnpm test`, schlägt fehl, wenn die aktuelle Version irgendwo anders steht, und nennt Datei und Zeile.
 
