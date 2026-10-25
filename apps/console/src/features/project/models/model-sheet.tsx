@@ -104,7 +104,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   const m = model.data;
   const shown = inUse(m);
   const provider = providers.name(m.provider);
-  const dialects = providers.dialects(m.provider);
+  const dialects = providers.get(m.provider) ? providers.dialects(m.provider) : shown.egress_dialect ? [shown.egress_dialect] : [];
   const reason = canManage ? undefined : needs("models.manage");
 
   if (editing) {
