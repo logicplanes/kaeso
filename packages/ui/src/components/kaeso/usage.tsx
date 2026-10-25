@@ -28,6 +28,9 @@ function kindLabels(t: UiText): Record<TokenKind, string> {
   };
 }
 
+export const KAESO_USAGE_BREAKDOWN_VARIANTS = {} as const;
+export const KAESO_USAGE_BREAKDOWN_DEFAULT_VARIANTS = {} as const;
+
 export const UsageBreakdown = forwardRef<HTMLDivElement, { tokens: Partial<Record<TokenKind, number>>; className?: string | undefined }>(
   function UsageBreakdown({ tokens, className }, ref) {
     const t = useUiText();

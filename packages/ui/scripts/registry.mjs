@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import docgen from "react-docgen-typescript";
 import { variantProblems } from "./variant-exports.mjs";
+import { objectAssignName } from "./component-names.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const src = join(root, "src");
@@ -31,6 +32,7 @@ const parser = docgen.withCustomConfig(join(root, "tsconfig.json"), {
   shouldExtractLiteralValuesFromEnum: true,
   shouldRemoveUndefinedFromOptional: true,
   skipChildrenPropWithoutDoc: false,
+  componentNameResolver: objectAssignName,
   propFilter: (prop) => {
     if (!prop.parent) return !prop.declarations?.some((d) => d.fileName.includes("node_modules"));
     return !prop.parent.fileName.includes("node_modules");

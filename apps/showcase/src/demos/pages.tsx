@@ -24,6 +24,7 @@ export const meta = {
   group: "Blocks",
   entry: "pages",
   import: "ListPage, TablePage, OverviewPage, EmptyPage, AuthPage",
+  variants: "PAGES",
   source: "blocks/pages",
 };
 function Frame({ children }: { children: React.ReactNode }) {
