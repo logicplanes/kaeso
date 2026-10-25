@@ -400,7 +400,7 @@ function TwoFactorDialog({
         hideClose
         footer={
           <Button variant="primary" disabled={!stored} onClick={onClose}>
-            {t("common.done", "Done")}
+            {t("common.finish", "Finish")}
           </Button>
         }
       >

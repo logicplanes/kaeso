@@ -111,7 +111,7 @@ describe("organization overview", () => {
       ).toEqual(["CCheckout assistantDefault30 requests", "SSupport triage10 requests", "OOld pilotArchived5 requests"]),
     );
     expect(screen.getByText("Requests in the period; open one to work in it")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
+    expect(screen.getByRole("link", { name: "View all projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
 
     expect(usageQueries()).toEqual(
       expect.arrayContaining([

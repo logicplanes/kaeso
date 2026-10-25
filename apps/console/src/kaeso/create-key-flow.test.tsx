@@ -50,11 +50,11 @@ describe("CreateKeyDialog", () => {
     expect(within(reveal).queryByRole("heading", { name: "Models and limits" })).not.toBeInTheDocument();
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ name: "checkout-web", access: "inference", expires_in_days: 90 }]);
     expect(within(reveal).getByText("Copy the key now: it's shown once, and Kaeso keeps only a hash of it.")).toBeInTheDocument();
-    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Did you copy the key?" });
     await user.click(within(confirm).getByRole("button", { name: "Go back" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "Did you copy the key?" })).not.toBeInTheDocument());
-    await user.click(within(screen.getByRole("dialog", { name: "Key created" })).getByRole("button", { name: "Done" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Key created" })).getByRole("button", { name: "Finish" }));
     await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
   });
@@ -79,7 +79,7 @@ describe("CreateKeyDialog", () => {
       await user.click(within(dialog).getByRole("button", { name: "Create key" }));
       const reveal = await screen.findByRole("dialog", { name: "Key created" });
       expect(within(reveal).getByRole("textbox", { name: /^Secret for/ })).toHaveTextContent(SECRET);
-      await user.click(within(reveal).getByRole("button", { name: "Done" }));
+      await user.click(within(reveal).getByRole("button", { name: "Finish" }));
       await user.click(
         within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }),
       );
@@ -125,7 +125,7 @@ describe("CreateKeyDialog", () => {
     const reveal = await screen.findByRole("dialog", { name: "Key created" });
     expect(cachedText()).toContain(SECRET);
     await user.click(within(reveal).getAllByRole("button", { name: /Copy/ })[0] as HTMLElement);
-    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
     expect(screen.queryByRole("alertdialog", { name: "Did you copy the key?" })).not.toBeInTheDocument();
     await waitFor(() => expect(cachedText()).not.toContain(SECRET));

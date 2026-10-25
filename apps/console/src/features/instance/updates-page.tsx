@@ -113,7 +113,7 @@ function Status({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (releas
         control={
           <div className="flex items-center gap-8">
             <Button size="sm" variant="ghost" onClick={showWhatsNew}>
-              {t("instance.updates.whatsNew", "What's new")}
+              {t("instance.updates.whatsNew", "See what's new")}
             </Button>
             {action}
           </div>

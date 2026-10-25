@@ -91,13 +91,13 @@ test("two-factor authentication: set up with the QR code's key, sign in with a c
 
   const codes = page.getByRole("dialog", { name: "Store your recovery codes" });
   await expect(codes).toBeVisible();
-  await expect(codes.getByRole("button", { name: "Done" })).toBeDisabled();
+  await expect(codes.getByRole("button", { name: "Finish" })).toBeDisabled();
   const recoveryCodes = (await codes.locator("pre").first().innerText()).trim().split(/\s+/);
   const recovery = recoveryCodes[0] ?? "";
   const spare = recoveryCodes[1] ?? "";
   expect(recovery).toMatch(/^[a-z0-9]{4,}(-[a-z0-9]{4,})*$/i);
   await codes.getByRole("checkbox", { name: "I stored these codes" }).click();
-  await codes.getByRole("button", { name: "Done" }).click();
+  await codes.getByRole("button", { name: "Finish" }).click();
   await expect(page.getByText("10 of 10 left", { exact: false })).toBeVisible();
 
   const other = await browser.newContext();

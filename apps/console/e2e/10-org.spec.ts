@@ -340,7 +340,7 @@ test("platform keys: one is created and shown once, calls the Platform API, and 
   expect(secret).toMatch(/^sk-kso-org-/);
   await expect(reveal.getByText("Authorization: Bearer")).toBeVisible();
   await reveal.getByRole("button", { name: "Copy key" }).click();
-  await reveal.getByRole("button", { name: "Done" }).click();
+  await reveal.getByRole("button", { name: "Finish" }).click();
 
   const res = await request.get(`/platform/v1/orgs/${org}/projects`, { headers: { authorization: `Bearer ${secret}` } });
   expect(res.status()).toBe(200);
@@ -414,7 +414,7 @@ test("platform keys: a rotated key stops at once when there is no grace period",
   const created = page.getByRole("dialog", { name: "Platform key created" });
   const old = (await created.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
   await created.getByRole("button", { name: "Copy key" }).click();
-  await created.getByRole("button", { name: "Done" }).click();
+  await created.getByRole("button", { name: "Finish" }).click();
 
   const row = page.getByRole("gridcell").filter({ hasText: "Pulumi" });
   await row.getByRole("button", { name: "Actions for Pulumi" }).click();
@@ -426,7 +426,7 @@ test("platform keys: a rotated key stops at once when there is no grace period",
   const rotated = (await reveal.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
   expect(rotated).toMatch(/^sk-kso-org-/);
   await reveal.getByRole("button", { name: "Copy key" }).click();
-  await reveal.getByRole("button", { name: "Done" }).click();
+  await reveal.getByRole("button", { name: "Finish" }).click();
 
   const projects = `/platform/v1/orgs/${org}/projects`;
   expect((await request.get(projects, { headers: { authorization: `Bearer ${old}` } })).status()).toBe(401);

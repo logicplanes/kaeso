@@ -419,7 +419,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                             {addLabel}
                           </Button>
                           <Button variant="ghost" href={docsPage("/console/provider-keys")}>
-                            {t("orgHome.aboutProviderKeys", "About provider keys")}
+                            {t("orgHome.aboutProviderKeys", "Read about provider keys")}
                           </Button>
                         </>
                       }

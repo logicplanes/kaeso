@@ -33,7 +33,7 @@ test("a new key is shown once, and closing without copying asks first", async ({
   await expect(reveal.getByText(`${new URL(page.url()).origin}/v1`, { exact: false }).first()).toBeVisible();
   await expect(reveal.getByText("/v1/v1")).toHaveCount(0);
 
-  await reveal.getByRole("button", { name: "Done" }).click();
+  await reveal.getByRole("button", { name: "Finish" }).click();
   const ask = page.getByRole("alertdialog", { name: "Did you copy the key?" });
   await expect(ask).toBeVisible();
   await ask.getByRole("button", { name: "Close without copying" }).click();
@@ -59,7 +59,7 @@ test("the next key starts on an empty first step, and the last key's secret is n
   const next = (await field.textContent()) ?? "";
   preview = next;
   expect(next).not.toBe(secret);
-  await reveal.getByRole("button", { name: "Done" }).click();
+  await reveal.getByRole("button", { name: "Finish" }).click();
   await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
   await expect(reveal).toBeHidden();
   await expect(row(page, "deploy-preview")).toBeVisible();
@@ -110,7 +110,7 @@ test("rotating a key shows the new key once, and the old key works until the gra
   const rotated = (await field.textContent()) ?? "";
   expect(rotated).not.toBe(preview);
   await reveal.getByRole("button", { name: "Copy key" }).click();
-  await reveal.getByRole("button", { name: "Done" }).click();
+  await reveal.getByRole("button", { name: "Finish" }).click();
   await expect(reveal).toBeHidden();
 
   for (const key of [preview, rotated]) expect((await request.get("/v1/models", { headers: { authorization: `Bearer ${key}` } })).status()).toBe(200);

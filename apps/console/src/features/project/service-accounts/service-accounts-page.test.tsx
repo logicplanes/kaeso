@@ -320,7 +320,7 @@ describe("ServiceAccountSheet", () => {
     await waitFor(() => expect(requests("POST", `${ACCOUNT}/keys`)).toHaveLength(1));
     expect(requests("POST", `${ACCOUNT}/keys`)[0]?.body).toEqual({ name: "deploy-key", access: "inference", expires_in_days: 90 });
     const reveal = await screen.findByRole("dialog", { name: "Key created" });
-    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Key created" })).not.toBeInTheDocument());
     expect(screen.getByRole("dialog", { name: "ci-deploy" })).toBeInTheDocument();

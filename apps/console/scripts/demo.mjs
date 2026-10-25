@@ -142,7 +142,7 @@ async function record(browser, theme, out) {
   const reveal = page.getByRole("dialog", { name: "Key created" });
   const secret = (await reveal.getByRole("textbox", { name: `Secret for ${KEY_NAME}` }).textContent()) ?? "";
   await click(reveal.getByRole("button", { name: "Copy key" }), 600);
-  await click(reveal.getByRole("button", { name: "Done", exact: true }), 300);
+  await click(reveal.getByRole("button", { name: "Finish", exact: true }), 300);
 
   await click(nav.getByRole("link", { name: "Request logs" }), 400);
   await click(page.getByRole("button", { name: "Live", exact: true }), 150);

@@ -292,7 +292,7 @@ function usePlatformKeyReveal(org: string, created: CreatedKey_OrgKeyView | null
         description:
           heading?.description ??
           t("org.platformKeys.createdHint", "Copy the key for {name} now; it's shown once and Kaeso stores only a hash.", { name: created.name }),
-        footer: <Button onClick={done}>{common.done()}</Button>,
+        footer: <Button onClick={done}>{common.finish()}</Button>,
         content: (
           <SecretReveal
             secret={created.secret}
