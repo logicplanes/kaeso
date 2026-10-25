@@ -17,6 +17,7 @@ use crate::state::AppState;
 const MAX_LISTING_PAGES: usize = 50;
 
 const LONGEST_WAIT: Duration = Duration::from_secs(30);
+const DETECTION_BUDGET: Duration = Duration::from_secs(60);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Settings {
@@ -259,6 +260,27 @@ impl Prober<'_> {
         Ok(self.route(auth, path).await? == Route::Present)
     }
 
+    async fn offers(&self, auth: CustomAuth, path: &str) -> Result<bool, Failure> {
+        match self.serves(auth, path).await {
+            Err(Failure::Unreachable) => Ok(false),
+            served => served,
+        }
+    }
+
+    async fn accepting(
+        &self,
+        auths: &[CustomAuth],
+        refused: CustomAuth,
+        path: &str,
+    ) -> Result<Option<CustomAuth>, Failure> {
+        for &auth in auths.iter().filter(|&&a| a != refused) {
+            if self.route(auth, path).await? != Route::Refused {
+                return Ok(Some(auth));
+            }
+        }
+        Ok(None)
+    }
+
     async fn unlisted(&self, auths: &[CustomAuth]) -> Result<(CustomAuth, DialectId), Failure> {
         let mut refused = false;
         for &auth in auths {
@@ -309,6 +331,17 @@ pub async fn detect(
     key: Option<&SecretString>,
     fixed: Fixed,
 ) -> Result<Detected, Failure> {
+    tokio::time::timeout(DETECTION_BUDGET, settings(state, base_url, key, fixed))
+        .await
+        .unwrap_or(Err(Failure::Unreachable))
+}
+
+async fn settings(
+    state: &AppState,
+    base_url: &Url,
+    key: Option<&SecretString>,
+    fixed: Fixed,
+) -> Result<Detected, Failure> {
     let auths: Vec<CustomAuth> = match (fixed.auth, key) {
         (Some(CustomAuth::None), _) => vec![CustomAuth::None],
         (Some(_), None) => return Err(Failure::KeyNeeded),
@@ -351,14 +384,14 @@ pub async fn detect(
         && auth == CustomAuth::Bearer
         && matches!(listing, Listing::Anthropic(_))
         && matches!(
-            prober.listing(CustomAuth::XApiKey).await?,
-            Listing::Anthropic(_)
+            prober.listing(CustomAuth::XApiKey).await,
+            Ok(Listing::Anthropic(_))
         )
     {
         auth = CustomAuth::XApiKey;
     }
 
-    let (auth, generation, models) = match listing {
+    let (mut auth, generation, models) = match listing {
         Listing::Missing => match fixed.generation {
             Some(g) => (auth, g, None),
             None => {
@@ -382,16 +415,23 @@ pub async fn detect(
         }
     };
 
-    if fixed.generation.is_some() {
-        match prober.route(auth, generation_path(generation)).await? {
-            Route::Missing => {
-                return Err(Failure::Missing(Missing::Generation(generation_path(
-                    generation,
-                ))));
-            }
-            Route::Refused => return Err(refusal),
-            Route::Present | Route::Unclear => {}
+    let path = generation_path(generation);
+    match prober.route(auth, path).await? {
+        Route::Missing if fixed.generation.is_some() => {
+            return Err(Failure::Missing(Missing::Generation(path)));
         }
+        Route::Refused => {
+            let candidates = if fixed.auth.is_some() {
+                &[][..]
+            } else {
+                &auths[..]
+            };
+            auth = prober
+                .accepting(candidates, auth, path)
+                .await?
+                .ok_or(refusal)?;
+        }
+        Route::Present | Route::Unclear | Route::Missing => {}
     }
 
     let embeddings = match fixed.embeddings {
@@ -402,7 +442,7 @@ pub async fn detect(
             }
             true
         }
-        None => prober.serves(auth, EMBEDDINGS_PATH).await?,
+        None => prober.offers(auth, EMBEDDINGS_PATH).await?,
     };
 
     let count_tokens = match (counting_path(generation), fixed.count_tokens) {
@@ -413,7 +453,7 @@ pub async fn detect(
             }
             true
         }
-        (Some(path), None) => prober.serves(auth, path).await?,
+        (Some(path), None) => prober.offers(auth, path).await?,
     };
 
     Ok(Detected {
