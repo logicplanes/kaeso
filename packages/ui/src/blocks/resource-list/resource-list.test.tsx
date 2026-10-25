@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -80,5 +81,14 @@ describe("ResourceList", () => {
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Archive" }));
     expect(onArchive).toHaveBeenLastCalledWith(["k1"]);
+  });
+});
+
+describe("ResourceList's ref", () => {
+  it("reaches the element around the toolbar and the list", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<ResourceList ref={ref} aria-label="Keys" groups={groups} />);
+    expect(ref.current).toContainElement(screen.getByRole("toolbar", { name: "Filters" }));
+    expect(ref.current).toContainElement(screen.getByText("production"));
   });
 });

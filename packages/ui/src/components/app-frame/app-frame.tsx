@@ -227,7 +227,7 @@ function usePendingDismiss(pending: boolean, toggle: RefObject<HTMLElement | nul
   }, [pending, toggle, dismiss]);
 }
 
-function MenuButton({ className }: { className?: string | undefined }) {
+const MenuButton = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function AppFrameMenuButton({ className }, ref) {
   const { openNav, sheetReady } = useAppFrame();
   const { collapsed, setCollapsed, setPeeking } = useSidebar();
   const intent = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -236,6 +236,7 @@ function MenuButton({ className }: { className?: string | undefined }) {
   const wide = () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
   return (
     <IconButton
+      ref={ref}
       onPointerEnter={() => {
         if (collapsed && wide()) intent.current = setTimeout(() => setPeeking(true), PEEK_DELAY);
       }}
@@ -255,7 +256,7 @@ function MenuButton({ className }: { className?: string | undefined }) {
       className={cn("hidden", collapsed && "lg:inline-flex", className)}
     />
   );
-}
+});
 MenuButton.displayName = "AppFrame.MenuButton";
 
 export const KAESO_APP_FRAME_BODY_VARIANTS = {

@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -52,5 +53,17 @@ describe("DeleteResource", () => {
     render(<DeleteResource kind="organization" name="northwind" consequence="Every project goes with it." onConfirm={() => undefined} inline />);
     expect(screen.getByText("Delete this organization?")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Delete organization" })).toBeDisabled();
+  });
+});
+
+describe("DeleteResource's ref", () => {
+  it("reaches the dialog when open, and the frame when inline", async () => {
+    const ref = createRef<HTMLDivElement>();
+    const props = { kind: "project", name: "checkout-assistant", consequence: "Its keys stop working at once.", onConfirm: vi.fn() };
+    const { unmount } = render(<DeleteResource ref={ref} {...props} open />);
+    expect(ref.current).toBe(await screen.findByRole("alertdialog", { name: "Delete this project?" }));
+    unmount();
+    render(<DeleteResource ref={ref} {...props} inline />);
+    expect(ref.current).toContainElement(screen.getByRole("heading", { name: "Delete this project?" }));
   });
 });

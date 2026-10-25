@@ -14,8 +14,8 @@ export const docs = {
   Menubar: {
     description: "A row of menus, as in a desktop app's title bar.",
     props: {
+      "aria-label": "The accessible name, for when there is no visible label.",
       children: "The menus.",
-      onOpenChange: "Called when a menu opens or closes.",
     },
   },
 } satisfies ComponentDocs;

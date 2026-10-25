@@ -1,7 +1,8 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Combobox } from "./combobox.js";
+import { Combobox, Highlight } from "./combobox.js";
 
 describe("Combobox", () => {
   it("takes the first match with Enter while typing", async () => {
@@ -78,5 +79,19 @@ describe("Combobox", () => {
     expect(onChange).not.toHaveBeenCalled();
     expect(input).toHaveValue("");
     expect(container.querySelector('input[name="team"]')).toHaveValue("");
+  });
+});
+
+describe("Highlight", () => {
+  it("forwards its ref to the text, with and without a query", () => {
+    const ref = createRef<HTMLSpanElement>();
+    const { rerender } = render(<Highlight ref={ref} text="gpt-5-mini" query="mini" />);
+    expect(ref.current).toHaveTextContent("gpt-5-mini");
+    expect(screen.getByText("mini")).toHaveClass("text-fg");
+    expect(ref.current).toContainElement(screen.getByText("mini"));
+    rerender(<Highlight ref={ref} text="gpt-5-mini" query="" />);
+    expect(ref.current).toBe(screen.getByText("gpt-5-mini"));
+    expect(ref.current?.tagName).toBe("SPAN");
+    expect(ref.current).not.toHaveAttribute("class");
   });
 });

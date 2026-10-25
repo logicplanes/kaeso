@@ -7,7 +7,7 @@ import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
 import { TagInput } from "../input/tag-input.js";
 import { Combobox } from "../combobox/combobox.js";
-import { useState } from "react";
+import { createRef, useState } from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -997,5 +997,45 @@ describe("Dialog anchor", () => {
     );
     expect(screen.getByRole("dialog").parentElement).toHaveClass("items-start", "pt-dialog-top");
     expect(screen.getByRole("dialog")).toHaveClass("dialog-limits-top");
+  });
+});
+
+describe("dialog refs", () => {
+  it("reach Dialog's frame when inline", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <Dialog ref={ref} inline title="Rename key">
+        <p>The new name shows in logs.</p>
+      </Dialog>,
+    );
+    expect(ref.current).toHaveAttribute("data-dialog-frame");
+    expect(ref.current).toContainElement(screen.getByRole("heading", { name: "Rename key" }));
+  });
+  it("reach AlertDialog's dialog when open, and its frame when inline", async () => {
+    const ref = createRef<HTMLDivElement>();
+    const { unmount } = render(
+      <AlertDialog ref={ref} open title="Revoke key?" description="Requests with it fail at once." confirmLabel="Revoke key" onConfirm={vi.fn()} />,
+    );
+    expect(ref.current).toBe(await screen.findByRole("alertdialog", { name: "Revoke key?" }));
+    unmount();
+    render(<AlertDialog ref={ref} inline title="Revoke key?" description="Requests with it fail at once." confirmLabel="Revoke key" onConfirm={vi.fn()} />);
+    expect(ref.current).toContainElement(screen.getByRole("heading", { name: "Revoke key?" }));
+    expect(ref.current).toContainElement(screen.getByRole("button", { name: "Revoke key" }));
+  });
+  it("reach LayerDialog's dialog", async () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<LayerDialog ref={ref} open layers={[{ title: "Add a provider", content: <p>Choose one to connect.</p> }]} />);
+    const dialog = await screen.findByRole("dialog", { name: "Add a provider" });
+    expect(ref.current).toBe(dialog);
+  });
+  it("reach StepDialog's dialog when open, and its frame when inline", async () => {
+    const ref = createRef<HTMLDivElement>();
+    const steps = [{ id: "name", title: "What is it for?", content: <input aria-label="Name" /> }];
+    const { unmount } = render(<StepDialog ref={ref} open title="Create key" submitLabel="Create key" onSubmit={vi.fn()} steps={steps} />);
+    expect(ref.current).toBe(await screen.findByRole("dialog", { name: "Create key" }));
+    unmount();
+    render(<StepDialog ref={ref} inline title="Create key" submitLabel="Create key" onSubmit={vi.fn()} steps={steps} />);
+    expect(ref.current).toHaveAttribute("data-dialog-frame");
+    expect(ref.current).toContainElement(screen.getByRole("textbox", { name: "Name" }));
   });
 });

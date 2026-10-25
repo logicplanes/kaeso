@@ -49,19 +49,30 @@ interface CreateItem extends ComboboxOption {
   __create: true;
 }
 
-export function Highlight({ text, query }: { text: string; query: string }) {
+export interface HighlightProps {
+  text: string;
+  query: string;
+}
+
+export const Highlight = forwardRef<HTMLSpanElement, HighlightProps>(function Highlight({ text, query }, ref) {
   const q = query.trim().toLowerCase();
-  if (!q) return <>{text}</>;
+  if (!q) return <span ref={ref}>{text}</span>;
   const i = text.toLowerCase().indexOf(q);
-  if (i < 0) return <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">{text}</span>;
+  if (i < 0)
+    return (
+      <span ref={ref} className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
+        {text}
+      </span>
+    );
   return (
-    <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
+    <span ref={ref} className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
       {text.slice(0, i)}
       <span className="text-fg group-data-disabled/item:text-fg-disabled">{text.slice(i, i + q.length)}</span>
       {text.slice(i + q.length)}
     </span>
   );
-}
+});
+Highlight.displayName = "Highlight";
 
 interface BaseProps extends FieldWrapProps {
   options: ComboboxOption[];

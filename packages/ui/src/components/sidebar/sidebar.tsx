@@ -13,6 +13,7 @@ import {
   type MouseEvent,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from "react";
 import { Collapsible } from "@base-ui/react/collapsible";
 import { cn } from "../../utils/cn.js";
@@ -28,6 +29,7 @@ import { NavWordmark } from "../logo/nav-wordmark.js";
 import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { HandedTrigger, triggerPropsStore } from "../tooltip/trigger-props.js";
+import { mergeRefs } from "../../utils/merge-refs.js";
 import { useUiText } from "../../i18n/context.js";
 
 const strong = (text: string) =>
@@ -285,17 +287,22 @@ const Brand = forwardRef<HTMLDivElement, SidebarBrandProps>(function SidebarBran
 });
 Brand.displayName = "Sidebar.Brand";
 
-export function BrandWordmark({ href, label = "Kaeso" }: { href?: string | undefined; label?: string | undefined }) {
+export interface BrandWordmarkProps {
+  href?: string | undefined;
+  label?: string | undefined;
+}
+
+export const BrandWordmark = forwardRef<HTMLAnchorElement | SVGSVGElement, BrandWordmarkProps>(function BrandWordmark({ href, label = "Kaeso" }, ref) {
   const LinkComp = useLinkComponent();
   return href ? (
-    <LinkComp href={href} aria-label={label} className="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
+    <LinkComp ref={ref as Ref<HTMLAnchorElement>} href={href} aria-label={label} className="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
       <NavWordmark decorative />
     </LinkComp>
   ) : (
-    <NavWordmark title={label} className="text-fg" />
+    <NavWordmark ref={ref as Ref<SVGSVGElement>} title={label} className="text-fg" />
   );
-}
-BrandWordmark.displayName = "Sidebar.BrandWordmark";
+});
+BrandWordmark.displayName = "BrandWordmark";
 
 const sidebarMenu = lazyModule(() => import("./sidebar-menu.js"), { base: () => import.meta.url });
 
@@ -320,6 +327,8 @@ function LazyMenu({
   });
   const [store] = useState(triggerPropsStore);
   const button = useRef<HTMLElement | null>(null);
+  const given = (trigger.props as { ref?: Ref<HTMLElement> | undefined }).ref;
+  const buttonRef = useMemo(() => mergeRefs(button, given), [given]);
   const pending = open && !mod;
   useEffect(() => whenIdle(() => setWanted(true)), []);
   useEffect(() => {
@@ -342,9 +351,9 @@ function LazyMenu({
   }, [pending]);
   const want = () => setWanted(true);
   const waiting = mod
-    ? { ref: button }
+    ? { ref: buttonRef }
     : {
-        ref: button,
+        ref: buttonRef,
         "aria-haspopup": "menu",
         "aria-expanded": open,
         ...(open ? { "data-popup-open": "" } : {}),
@@ -389,19 +398,10 @@ export interface SidebarSwitcherProps {
   "data-force"?: string | undefined;
 }
 
-function Switcher({
-  avatar,
-  label,
-  trailing,
-  caption,
-  captionTone = "secondary",
-  children,
-  header,
-  footer,
-  "aria-label": ariaLabel,
-  className,
-  "data-force": force,
-}: SidebarSwitcherProps) {
+const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function SidebarSwitcher(
+  { avatar, label, trailing, caption, captionTone = "secondary", children, header, footer, "aria-label": ariaLabel, className, "data-force": force },
+  ref,
+) {
   const { rail } = useSidebar();
   const t = useUiText();
   const hasCaption = showsText(caption);
@@ -416,6 +416,7 @@ function Switcher({
         footer={footer}
         trigger={
           <button
+            ref={ref}
             type="button"
             {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
             {...(force ? { "data-force": force } : {})}
@@ -447,7 +448,7 @@ function Switcher({
       {purpose.node}
     </>
   );
-}
+});
 Switcher.displayName = "Sidebar.Switcher";
 
 export interface SidebarPlaceProps {
@@ -462,7 +463,10 @@ export interface SidebarPlaceProps {
   "data-force"?: string | undefined;
 }
 
-function Place({ avatar, label, children, href, header, footer, "aria-label": ariaLabel, className, "data-force": force }: SidebarPlaceProps) {
+const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
+  { avatar, label, children, href, header, footer, "aria-label": ariaLabel, className, "data-force": force },
+  ref,
+) {
   const { rail } = useSidebar();
   const t = useUiText();
   const LinkComp = useLinkComponent();
@@ -492,7 +496,7 @@ function Place({ avatar, label, children, href, header, footer, "aria-label": ar
           header={header}
           footer={footer}
           trigger={
-            <button type="button" {...naming} {...common}>
+            <button ref={ref as Ref<HTMLButtonElement>} type="button" {...naming} {...common}>
               {inner}
             </button>
           }
@@ -504,11 +508,13 @@ function Place({ avatar, label, children, href, header, footer, "aria-label": ar
     );
   }
   const el = href ? (
-    <LinkComp href={href} {...naming} {...common}>
+    <LinkComp ref={ref as Ref<HTMLAnchorElement>} href={href} {...naming} {...common}>
       {inner}
     </LinkComp>
   ) : (
-    <div {...common}>{inner}</div>
+    <div ref={ref as Ref<HTMLDivElement>} {...common}>
+      {inner}
+    </div>
   );
   return (
     <>
@@ -522,7 +528,7 @@ function Place({ avatar, label, children, href, header, footer, "aria-label": ar
       {href && purpose.node}
     </>
   );
-}
+});
 Place.displayName = "Sidebar.Place";
 
 function PlaceName({ label }: { label: string }) {
@@ -693,9 +699,9 @@ const BackLink = forwardRef<HTMLAnchorElement, { href: string; children?: ReactN
 });
 BackLink.displayName = "Sidebar.BackLink";
 
-function Loading({ rows = 5 }: { rows?: number | undefined }) {
+const Loading = forwardRef<HTMLDivElement, { rows?: number | undefined }>(function SidebarLoading({ rows = 5 }, ref) {
   return (
-    <div className="flex flex-col gap-2" aria-busy>
+    <div ref={ref} className="flex flex-col gap-2" aria-busy>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex h-32 items-center gap-8 px-12">
           <Skeleton className="size-18 rounded-pill" />
@@ -704,10 +710,10 @@ function Loading({ rows = 5 }: { rows?: number | undefined }) {
       ))}
     </div>
   );
-}
+});
 Loading.displayName = "Sidebar.Loading";
 
-function CollapseToggle({ className }: { className?: string | undefined }) {
+const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function SidebarCollapseToggle({ className }, ref) {
   const { collapsed, setCollapsed } = useSidebar();
   const sheet = useContext(SidebarSheetContext);
   const t = useUiText();
@@ -726,6 +732,7 @@ function CollapseToggle({ className }: { className?: string | undefined }) {
   return (
     <Tooltip content={label} {...(sheet && !sheet.peek ? {} : { shortcut: ["["] })}>
       <button
+        ref={ref}
         type="button"
         aria-label={label}
         {...(sheet ? {} : { "aria-expanded": !collapsed })}
@@ -739,16 +746,17 @@ function CollapseToggle({ className }: { className?: string | undefined }) {
       </button>
     </Tooltip>
   );
-}
+});
 CollapseToggle.displayName = "Sidebar.CollapseToggle";
 
-function RailToggle({ className }: { className?: string | undefined }) {
+const RailToggle = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function SidebarRailToggle({ className }, ref) {
   const { rail, setRail } = useSidebar();
   const t = useUiText();
   const label = rail ? t("sidebar.expand", "Expand sidebar") : t("sidebar.collapse", "Collapse sidebar");
   return (
     <Tooltip content={label} side="right">
       <button
+        ref={ref}
         type="button"
         aria-label={label}
         aria-pressed={rail}
@@ -762,7 +770,7 @@ function RailToggle({ className }: { className?: string | undefined }) {
       </button>
     </Tooltip>
   );
-}
+});
 RailToggle.displayName = "Sidebar.RailToggle";
 
 export const Sidebar = Object.assign(Root, {

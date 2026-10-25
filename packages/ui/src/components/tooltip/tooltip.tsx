@@ -1,4 +1,4 @@
-import { isValidElement, useState, type FocusEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
+import { forwardRef, isValidElement, useState, type FocusEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
 import { HandedTrigger, triggerPropsStore } from "./trigger-props.js";
@@ -71,17 +71,16 @@ export function Tooltip(props: TooltipProps) {
 }
 Tooltip.displayName = "Tooltip";
 
-export function TooltipSurface({
-  children,
-  shortcut,
-  shape = "pill",
-}: {
+export interface TooltipSurfaceProps {
   children: ReactNode;
   shortcut?: string[] | string[][] | undefined;
   shape?: keyof typeof KAESO_TOOLTIP_VARIANTS.shape | undefined;
-}) {
+}
+
+export const TooltipSurface = forwardRef<HTMLDivElement, TooltipSurfaceProps>(function TooltipSurface({ children, shortcut, shape = "pill" }, ref) {
   return (
     <div
+      ref={ref}
       role="tooltip"
       className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
     >
@@ -89,5 +88,5 @@ export function TooltipSurface({
       {shortcut && <KbdSequence keys={shortcut} />}
     </div>
   );
-}
+});
 TooltipSurface.displayName = "TooltipSurface";

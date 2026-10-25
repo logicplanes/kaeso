@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -54,5 +55,18 @@ describe("Radio", () => {
     expect(europe).toHaveAccessibleDescription("Frankfurt");
     expect(screen.getByRole("radio", { name: "United States" })).toHaveAccessibleDescription("Data stays in the region. Virginia");
     expect(screen.getByRole("radio", { name: "Team" })).toHaveAccessibleDescription("Up to 20 people");
+  });
+});
+
+describe("RadioCards' ref", () => {
+  it("reaches the radio group", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <RadioCards ref={ref} aria-label="Plan" value="team">
+        <Radio value="team" label="Team" />
+        <Radio value="business" label="Business" />
+      </RadioCards>,
+    );
+    expect(ref.current).toBe(screen.getByRole("radiogroup", { name: "Plan" }));
   });
 });

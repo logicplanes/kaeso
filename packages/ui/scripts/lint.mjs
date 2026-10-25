@@ -3,6 +3,7 @@ import { join, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { lengths, motion } from "../../tokens/src/tokens.ts";
+import { componentsWithoutRef } from "./component-refs.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const LENGTHS = new Set(lengths.map(String));
@@ -28,6 +29,40 @@ function optionalWithoutUndefined(file, src) {
   visit(source);
   return found;
 }
+
+const WITHOUT_REF = new Map([
+  ["src/theme/theme-provider.tsx#ThemeProvider", "a context provider around its children"],
+  ["src/i18n/provider.tsx#LocaleProvider", "a context provider around its children"],
+  ["src/utils/link-provider.tsx#LinkProvider", "a context provider around its children"],
+  ["src/utils/inset.tsx#InsetContent", "a context provider around its children"],
+  ["src/utils/inset.tsx#GutterContent", "a context provider around its children"],
+  ["src/utils/portal-context.tsx#PortalContainer", "a context provider; its host element is a mount point after the children, not a root around them"],
+  ["src/components/tooltip/tooltip-provider.tsx#TooltipProvider", "a context provider around its children"],
+  ["src/components/sidebar/sidebar.tsx#Provider", "a context provider around its children"],
+  ["src/components/dialog/scope.tsx#DialogScope", "a context provider that remounts its children"],
+  ["src/components/tooltip/tooltip.tsx#Tooltip", "its child is the trigger and takes its own ref"],
+  ["src/components/popover/popover-root.tsx#PopoverRoot", "Base UI's root renders no element"],
+  ["src/components/popover/popover-root.tsx#PopoverTrigger", "its child is the trigger and takes its own ref"],
+  ["src/components/popover/popover-root.tsx#PopoverClose", "its child is the button and takes its own ref"],
+  ["src/components/popover/hover-card.tsx#HoverRoot", "Base UI's root renders no element"],
+  ["src/components/popover/hover-card.tsx#HoverTrigger", "its child is the trigger and takes its own ref"],
+  ["src/components/menu/menu.tsx#Root", "Base UI's root renders no element"],
+  ["src/components/menu/menu.tsx#Trigger", "its child is the trigger and takes its own ref"],
+  ["src/components/menu/menu.tsx#Sub", "Base UI's submenu root renders no element"],
+  ["src/components/menu/menu.tsx#ContextRoot", "Base UI's root renders no element"],
+  ["src/components/dialog/dialog.tsx#Close", "its child is the button and takes its own ref"],
+  ["src/blocks/pages/pages.tsx#ListPage", "a page header and body side by side, with no element around them"],
+  ["src/blocks/pages/pages.tsx#OverviewPage", "a page header and body side by side, with no element around them"],
+  ["src/blocks/pages/pages.tsx#EmptyPage", "a page header and body side by side, with no element around them"],
+  ["src/components/date-picker/date-popup.tsx#DatePopup", "internal, loaded lazily by DatePicker"],
+  ["src/components/date-picker/range-popup.tsx#RangePopup", "internal, loaded lazily by DateRangePicker"],
+  ["src/components/date-picker/iso-field.tsx#IsoField", "internal to the date pickers' popups"],
+  ["src/components/list/row-checkbox.tsx#RowCheckbox", "internal to List"],
+  ["src/components/list/virtual-rows.tsx#VirtualRows", "internal, loaded lazily by List"],
+  ["src/components/select/option-checkbox.tsx#OptionCheckbox", "internal to Select"],
+  ["src/components/sidebar/sidebar-menu.tsx#SidebarMenuRoot", "internal, loaded lazily by the sidebar's menus"],
+  ["src/components/tooltip/tooltip-root.tsx#TooltipRoot", "internal, loaded lazily by Tooltip"],
+]);
 
 const errors = [];
 const report = (file, line, msg) => errors.push(`${relative(root, file)}:${line}  ${msg}`);
@@ -88,11 +123,19 @@ const sourceFiles = walk(join(root, "src")).filter((f) => /\.tsx?$/.test(f) && !
 for (const file of sourceFiles) {
   const src = readFileSync(file, "utf8");
   for (const { line, text } of optionalWithoutUndefined(file, src)) report(file, line, `optional prop without "| undefined": ${text.slice(0, 60)}`);
+  for (const { name, line } of componentsWithoutRef(file, src)) {
+    const key = `${relative(root, file)}#${name}`;
+    if (WITHOUT_REF.has(key)) WITHOUT_REF.delete(key);
+    else report(file, line, `${name} renders an element but isn't a forwardRef; forward the ref to its root element`);
+  }
   if (/\bforwardRef\b/.test(src)) {
     const names = [...src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*forwardRef/g)].map((m) => m[1]);
     for (const name of names) if (!new RegExp(`${name}\\.displayName\\s*=`).test(src)) report(file, 1, `${name} has no displayName`);
   }
 }
+
+for (const key of WITHOUT_REF.keys())
+  errors.push(`${key}  is listed as a component without a ref, but no such exported plain function component exists; remove it from WITHOUT_REF`);
 
 for (const dir of componentDirs) {
   let entries = [];
