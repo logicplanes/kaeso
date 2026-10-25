@@ -126,14 +126,14 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         .iter()
         .map(|a| Citation::new(origin.clone(), a.clone()))
         .collect();
-    match message.content {
-        Some(StringOr::String(text)) => {
+    match (message.content, read) {
+        (Some(StringOr::String(text)), _) => {
             let mut block = TextBlock::new(text);
             block.citations = citations;
             block.extras = Extras::new(origin.clone());
             blocks.push(Block::Text(block));
         }
-        Some(StringOr::List(_)) if let Some(read) = read => {
+        (Some(StringOr::List(_)), Some(read)) => {
             for (thought, text) in read {
                 let block = match thought {
                     Some(thought) => {
@@ -161,7 +161,7 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
                 );
             }
         }
-        Some(StringOr::List(parts)) => {
+        (Some(StringOr::List(parts)), None) => {
             extras
                 .form
                 .insert(FORM_CONTENT_PARTS.to_owned(), Value::Bool(true));
@@ -191,13 +191,13 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
                 );
             }
         }
-        None if !citations.is_empty() => {
+        (None, _) if !citations.is_empty() => {
             extras.fields.insert(
                 format!("{MESSAGE}.annotations"),
                 to_raw(&message.annotations)?,
             );
         }
-        None => {}
+        (None, _) => {}
     }
     if let Some(refusal) = message.refusal {
         let mut block = kaeso_kpp::RefusalBlock::new(refusal);
