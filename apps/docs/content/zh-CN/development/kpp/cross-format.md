@@ -149,7 +149,7 @@ OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的�
 
 Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
 
-应用发回的 `web_search_call` 项在发往 Anthropic 和 Chat Completions 时会被丢弃。Anthropic 只有在带上加密搜索结果时才会重放一次搜索，而这些项不携带结果；Chat Completions 没有这种项。使用了这些结果的回答仍留在对话中。带有 Kaeso `ws_kaeso_` ID 的项在发往任何 Responses 目标时也会被丢弃，因为没有哪个 Responses 服务商签发过它们。
+应用发回的 `web_search_call` 项在发往 Anthropic 和 Chat Completions 时会被丢弃。Anthropic 只有在带上加密搜索结果时才会重放一次搜索，而这些项不携带结果；Chat Completions 没有这种项。使用了这些结果的回答仍留在对话中。带有 Kaeso `ws_kaeso_` ID 的项在发往任何 Responses 目标时也会被丢弃，因为没有哪个 Responses 服务商签发过它们。每个被丢弃的项都会在 `kaeso-left-out` 中按类型和 ID 注明，例如 `web_search_call ws_67c9…`。
 
 ## Codex 工具历史
 

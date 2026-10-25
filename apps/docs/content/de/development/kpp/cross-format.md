@@ -149,7 +149,7 @@ Eine `tool_choice`, die ein weggelassenes Tool erzwingt, bleibt `Unsupported`. W
 
 Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
 
-`web_search_call`-Items, die eine App zurücksendet, werden für Anthropic und Chat Completions verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und Chat Completions hat kein solches Item. Die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für jedes Responses-Ziel verworfen, weil kein Responses-Anbieter sie ausgegeben hat.
+`web_search_call`-Items, die eine App zurücksendet, werden für Anthropic und Chat Completions verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und Chat Completions hat kein solches Item. Die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für jedes Responses-Ziel verworfen, weil kein Responses-Anbieter sie ausgegeben hat. Jedes verworfene Item wird in `kaeso-left-out` mit Typ und ID genannt, etwa `web_search_call ws_67c9…`.
 
 ## Tool-Verlauf von Codex
 

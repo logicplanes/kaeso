@@ -149,7 +149,7 @@ A `tool_choice` that forces a tool left out stays `Unsupported`. When every tool
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
-`web_search_call` items an app sends back are dropped for Anthropic and Chat Completions. Anthropic replays a search only with its encrypted results, which these items don't carry, and Chat Completions has no such item. The answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for every Responses target as well, because no Responses provider issued them.
+`web_search_call` items an app sends back are dropped for Anthropic and Chat Completions. Anthropic replays a search only with its encrypted results, which these items don't carry, and Chat Completions has no such item. The answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for every Responses target as well, because no Responses provider issued them. Each item dropped is named in `kaeso-left-out` by its type and id, such as `web_search_call ws_67c9…`.
 
 ## Codex tool history
 

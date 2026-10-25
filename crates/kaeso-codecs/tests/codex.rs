@@ -508,7 +508,11 @@ fn web_searches_kaeso_reported_are_left_out_for_openai_and_others_kept() {
     let mut ours = body.clone();
     ours["input"][2]["id"] = json!("ws_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1");
     let req = decode(&ours);
-    let sent = send(R, &req, &mut EgressCtx::new(&req)).unwrap();
+    let (sent, left_out) = sent_with(R, &req, EgressCtx::new(&req));
+    assert_eq!(
+        left_out,
+        ["web_search_call ws_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1"]
+    );
     let types: Vec<&str> = sent["input"]
         .as_array()
         .unwrap()
@@ -686,9 +690,17 @@ fn chat_models_get_codex_requests_without_hosted_web_search() {
     assert_eq!(tool_names(C, &sent), ["exec_command"]);
     assert_eq!(left_out, ["tools[1]"]);
 
-    let req = decode(&codex("codex-web-search-resume"));
-    let (sent, _) = sent_with(C, &req, mistral(&req));
+    let body = codex("codex-web-search-resume");
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
     assert!(!sent.to_string().contains("web_search"), "{sent}");
+    let search = format!(
+        "web_search_call {}",
+        body["input"][2]["id"].as_str().unwrap()
+    );
+    assert_eq!(left_out, ["tools[3]".to_owned(), search.clone()]);
+    let (_, left_out) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(left_out, [search]);
 }
 
 #[test]

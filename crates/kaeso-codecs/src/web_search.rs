@@ -283,6 +283,21 @@ fn without_search_calls(d: &mut Draft<'_>, drop: impl Fn(Option<&str>) -> bool) 
     if !has_search_calls(d.get(), &drop) {
         return;
     }
+    let dropped: Vec<String> = d
+        .get()
+        .messages
+        .iter()
+        .flat_map(|m| &m.blocks)
+        .filter_map(search_call_id)
+        .filter(|id| drop(id.as_deref()))
+        .map(|id| match id {
+            Some(id) => format!("{SEARCH_CALL} {id}"),
+            None => SEARCH_CALL.to_owned(),
+        })
+        .collect();
+    for item in dropped {
+        d.leave_out(item);
+    }
     d.edit().messages.retain_mut(|m| {
         let held = m.blocks.len();
         m.blocks

@@ -181,7 +181,7 @@ Chat Completions 没有存放模型推理内容的字段。Chat Completions 应�
 | `kaeso-request-id` | 请求的 ID，`req_…`，每个响应都有。请求日志显示同一 ID |
 | `kaeso-provider` | 处理该请求的服务商，例如 `anthropic`；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-model` | 服务商的模型 ID；确定模型后即带有，错误响应也包括在内 |
-| `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)） |
+| `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)） |
 | `server-timing` | `kaeso;dur=…`：Kaeso 调用服务商之前自身花费的毫秒数；请求未到达服务商时，则是到 Kaeso 作出响应为止的时间。随后是 `upstream;dur=…`：服务商返回第一个字节所用的时间，得知后即带有。流式回复随响应头一起发送它，因此 Kaeso 转换流所花的时间只记录在[请求日志](../console/request-logs.md#查看请求)中 |
 
 ## 从浏览器调用
