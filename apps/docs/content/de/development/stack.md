@@ -16,7 +16,7 @@ flowchart TD
     gateway[Gateway<br>127.0.0.1:18080]:::accent
     data[(PostgreSQL<br>ClickHouse<br>Valkey)]
     subgraph mock [Mocks]
-      mocks[OpenAI und Anthropic<br>Anmeldung bei ChatGPT und Grok<br>Single Sign-on<br>Releases und Updater]
+      mocks[OpenAI, Anthropic,<br>xAI und Together AI<br>Anmeldung bei ChatGPT und Grok<br>Single Sign-on<br>Releases und Updater]
     end
     mail[Mailpit]
   end
@@ -34,7 +34,7 @@ Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway w
 | `gateway` | Das Gateway aus Ihrem Checkout | `127.0.0.1:18080` |
 | `postgres`, `clickhouse`, `valkey` | Die Datenbanken des Gateways, auch von den Rust-Tests genutzt | `127.0.0.1:55432`, `127.0.0.1:58123`, `127.0.0.1:56379` |
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
-| `provider` | Eine Mock-API für OpenAI und Anthropic, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
+| `provider` | Ein Mock der APIs von OpenAI, Anthropic, xAI und Together AI, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
 | `idp` | Ein Mock-Identitätsanbieter (OpenID Connect) für Single Sign-on | `http://idp.localhost:18091` |
 | `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Instanz** › **Updates** | `http://127.0.0.1:18092` |
 | `accounts` | Ein Mock der ChatGPT-Anmeldung unter `auth.openai.com` sowie der Grok-Anmeldung und der xAI-API unter `auth.x.ai` und `api.x.ai` im Stack, mit einem Testzertifikat, dem das Gateway vertraut | `http://127.0.0.1:18093` |

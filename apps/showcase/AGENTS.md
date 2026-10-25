@@ -5,13 +5,14 @@ Rules for the showcase at [ui.kaeso.app](https://ui.kaeso.app), `apps/showcase`:
 ## Commands
 
 ```sh
+pnpm --filter kaeso-showcase exec playwright install chromium webkit
 pnpm build:packages
 pnpm --filter kaeso-showcase dev
 pnpm --filter kaeso-showcase build
 pnpm --filter kaeso-showcase e2e
 ```
 
-`dev` serves the showcase at http://localhost:4321. `e2e` runs Playwright against the production build: accessibility (axe) in both themes, keyboard paths, type scale, motion, geometry, focus rings, phone width, resize loops, menu frames and even edges.
+`dev` serves the showcase at http://localhost:4321. `e2e` runs Playwright against the production build: accessibility (axe) in both themes, keyboard paths, type scale, motion, geometry, focus rings, phone width, resize loops, menu frames and even edges. Its test of the navigation sheet runs in WebKit too.
 
 ## Rules
 

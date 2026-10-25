@@ -14,7 +14,7 @@ Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 仓库中的版本号
 
-根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，例如其他 `package.json` 文件、各 crate 的清单、`openapi.json` 和 `deploy/compose.yaml`。`node scripts/version.mjs files` 会列出这些文件。
+根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，即其他 `package.json` 文件、根目录的 `Cargo.toml`、`Cargo.lock`、`fuzz/Cargo.lock`、`openapi.json` 和 `deploy/compose.yaml`。它还会更新 `kaeso-kpp` 和 `kaeso-codecs` 的 README 中的依赖行。`node scripts/version.mjs files` 会列出这些文件。
 
 其他地方都读取版本号，而不是写死它。页面写 `\{{version}}`，网关读取 `env!("CARGO_PKG_VERSION")`，生成的文件读取各自的 `package.json`。`node scripts/version.mjs check` 是 `pnpm test` 的一部分，只要当前版本号出现在其他任何地方就会失败，并指出文件和行号。
 
