@@ -73,7 +73,18 @@ export function presetDraft(cat: AgentCatalogue, g: Grantable, id: PresetId): Ag
 
 export function fromGrant(body: GrantBody, g: Grantable): AgentDraft {
   const orgs: Record<string, OrgDraft> = {};
-  for (const o of g.orgs) orgs[o.id] = { included: false, rights: [], all: true, projectRights: [], selected: {} };
+  const future = body.future_orgs;
+  for (const o of g.orgs)
+    orgs[o.id] =
+      future && o.allowed
+        ? {
+            included: true,
+            rights: within(future.rights ?? [], o.rights),
+            all: true,
+            projectRights: within(future.project_rights ?? [], heldInProjects(o)),
+            selected: {},
+          }
+        : { included: false, rights: [], all: true, projectRights: [], selected: {} };
   for (const o of body.orgs ?? []) {
     orgs[o.org] = {
       included: o.included,
@@ -89,9 +100,7 @@ export function fromGrant(body: GrantBody, g: Grantable): AgentDraft {
     instance: body.instance ?? [],
     account: [...new Set([ACCOUNT_VIEW, ...(body.account ?? [])])],
     orgs,
-    future: body.future_orgs
-      ? { on: true, rights: body.future_orgs.rights ?? [], projectRights: body.future_orgs.project_rights ?? [] }
-      : { on: false, rights: [], projectRights: [] },
+    future: future ? { on: true, rights: future.rights ?? [], projectRights: future.project_rights ?? [] } : { on: false, rights: [], projectRights: [] },
   };
 }
 
@@ -313,7 +322,9 @@ export function withRequested(
   const holds = scope === "org" ? target?.rights : place ? place.rights : target && heldInProjects(target);
   if (!scope || !target || !holds?.includes(right)) return unchanged;
   const current = d.orgs[target.id] ?? { included: false, rights: [], all: true, projectRights: [], selected: {} };
-  const o: OrgDraft = { ...current, included: true, selected: { ...current.selected } };
+  const o: OrgDraft = current.included
+    ? { ...current, selected: { ...current.selected } }
+    : { included: true, rights: [], all: !place, projectRights: [], selected: {} };
   if (scope === "org") o.rights = withNeeds(cat, "org", [...o.rights, right]);
   else {
     if (o.all || !place) o.projectRights = withNeeds(cat, "project", [...o.projectRights, right]);

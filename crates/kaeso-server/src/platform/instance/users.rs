@@ -375,7 +375,7 @@ pub async fn delete(
 #[utoipa::path(
     post,
     path = "/instance/users/{user}/sessions/revoke",
-    summary = "Ends every session of a user and tells them.",
+    summary = "Ends every session and agent of a user and tells them.",
     tag = "instance",
     params(("user" = UserId, Path)),
     responses((status = 204, description = "Ended."))
@@ -414,7 +414,8 @@ pub async fn end_sessions(
 #[utoipa::path(
     post,
     path = "/instance/users/{user}/reset-2fa",
-    summary = "Resets a user's two-factor authentication. Needs a recent sign-in.",
+    summary = "Resets a user's two-factor authentication and ends their sessions and agents.\n\
+    Needs a recent sign-in.",
     tag = "instance",
     params(("user" = UserId, Path)),
     responses((status = 204, description = "Reset."))

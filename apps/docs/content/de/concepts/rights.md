@@ -253,9 +253,9 @@ Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung ei
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `instance.system.view` | System ansehen | Das System, die Instanzeinstellungen, die Modellquellen und den Update-Status sehen. |  |
-| `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden. |  |
+| `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden. | sensibel |
 | `instance.model_sources.manage` | Modellquellen verwalten | Die Modelldaten von models.dev synchronisieren. |  |
-| `instance.updates.manage` | Updates verwalten | Nach Updates suchen und die Update-Einstellungen ändern. |  |
+| `instance.updates.manage` | Updates verwalten | Nach Updates suchen und die Update-Einstellungen ändern. | sensibel |
 | `instance.updates.apply` | Updates installieren | Eine neue Version von Kaeso installieren. | sensibel; erfordert `instance.updates.manage` |
 | `instance.users.view` | Benutzer ansehen | Jedes Konto der Instanz und seine Organisationen sehen. |  |
 | `instance.users.manage` | Benutzer verwalten | Konten einladen, deaktivieren und reaktivieren, ihre Sitzungen beenden und ihre Zwei-Faktor-Authentifizierung zurücksetzen. | sensibel; erfordert `instance.users.view` |

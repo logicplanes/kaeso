@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH ended AS (UPDATE agents SET revoked_at = $2 WHERE user_id = $1 AND revoked_at IS NULL RETURNING id), tokens AS (UPDATE agent_tokens t SET revoked_at = $2 FROM agents a WHERE a.id = t.agent_id AND a.user_id = $1 AND t.revoked_at IS NULL) SELECT count(*) AS \"ended!\" FROM ended",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ended!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "61c36c6f5afc4b4e863dee7a7d01296ac4837d9a7fd1c22e98052ea2bfd7c33c"
+}

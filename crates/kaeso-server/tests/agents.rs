@@ -1177,3 +1177,431 @@ async fn mcp_speaks_json_rpc_and_refuses_strangers() {
         StatusCode::UNAUTHORIZED
     );
 }
+
+fn refresh_form(s: &Signed) -> String {
+    form(&[
+        ("grant_type", "refresh_token"),
+        ("refresh_token", &s.refresh),
+        ("client_id", &s.client),
+    ])
+}
+
+async fn stopped(app: &App, s: &Signed) -> bool {
+    let call = mcp(app, &s.access, "ping", json!({})).await;
+    let refresh = oauth_post(app, "/oauth/token", refresh_form(s)).await;
+    call.status == StatusCode::UNAUTHORIZED
+        && refresh.status == StatusCode::BAD_REQUEST
+        && refresh.body["error"] == "invalid_grant"
+}
+
+#[tokio::test]
+async fn agents_stop_when_every_session_of_their_user_ends() {
+    let (_s, app, owner) = setup().await;
+    let member_grant = grant(&owner.org_id, &["org.view"], &["project.view"]);
+    let (ada, ada_id) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "ada@example.com", "role": "developer" }),
+        "Ada",
+    )
+    .await;
+    let (grace, grace_id) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "grace@example.com", "role": "developer" }),
+        "Grace",
+    )
+    .await;
+    let adas = sign_in(&app, &ada, member_grant.clone()).await;
+    let graces = sign_in(&app, &grace, member_grant).await;
+    let owners = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+
+    app.post(
+        &format!("/instance/users/{ada_id}/sessions/revoke"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert!(stopped(&app, &adas).await, "ending the sessions");
+    assert_eq!(
+        mcp(&app, &graces.access, "ping", json!({})).await.status,
+        StatusCode::OK,
+        "another user's agent keeps working"
+    );
+
+    app.post(
+        &format!("/instance/users/{grace_id}/reset-2fa"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert!(stopped(&app, &graces).await, "resetting two-factor");
+
+    let mails = app.mail.to("owner@example.com").len();
+    app.post(
+        "/auth/password-reset",
+        json!({ "email": "owner@example.com" }),
+        None,
+    )
+    .await;
+    app.wait_for_mail("owner@example.com", mails + 1).await;
+    let reset = app.last_token("owner@example.com");
+    app.post(
+        "/auth/password-reset/verify",
+        json!({ "token": reset, "password": "a brand new passphrase" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert!(stopped(&app, &owners).await, "resetting the password");
+    let password = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": "a brand new passphrase" }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let cookie = password.cookie().unwrap();
+    let listed = app
+        .get("/me/agents", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        listed.body["data"],
+        json!([]),
+        "revoked, not only signed out"
+    );
+}
+
+#[tokio::test]
+async fn a_reused_code_ends_the_tokens_it_was_exchanged_for() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "Codex").await;
+    let request = request_token(&app, &client).await;
+    let approved = approve(&app, &owner.cookie, &request, builder(&owner.org_id))
+        .await
+        .expect_status(StatusCode::OK);
+    let code = query_of(approved.body["redirect_to"].as_str().unwrap())["code"].clone();
+    let tokens = exchange(&app, &client, &code)
+        .await
+        .expect_status(StatusCode::OK);
+    let signed = Signed {
+        client: client.clone(),
+        access: tokens.body["access_token"].as_str().unwrap().to_owned(),
+        refresh: tokens.body["refresh_token"].as_str().unwrap().to_owned(),
+        agent: approved.body["agent"].as_str().unwrap().to_owned(),
+    };
+    assert_eq!(
+        mcp(&app, &signed.access, "ping", json!({})).await.status,
+        StatusCode::OK
+    );
+    let replayed = exchange(&app, &client, &code)
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(replayed.body["error"], "invalid_grant");
+    assert!(stopped(&app, &signed).await);
+}
+
+#[tokio::test]
+async fn bad_requests_from_a_web_client_end_on_the_console_not_its_address() {
+    let (_s, app, _owner) = setup().await;
+    let web = "https://agent.example/cb";
+    let registered = app
+        .raw(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/oauth/register")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(
+                    json!({ "client_name": "Web agent", "redirect_uris": [web] }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let client = registered.body["client_id"].as_str().unwrap().to_owned();
+    for (bad, error) in [
+        (
+            form(&[
+                ("client_id", &client),
+                ("redirect_uri", web),
+                ("response_type", "token"),
+            ]),
+            "unsupported_response_type",
+        ),
+        (
+            form(&[
+                ("client_id", &client),
+                ("redirect_uri", web),
+                ("response_type", "code"),
+            ]),
+            "invalid_request",
+        ),
+        (
+            form(&[
+                ("client_id", &client),
+                ("redirect_uri", web),
+                ("response_type", "code"),
+                ("code_challenge", CHALLENGE),
+                ("code_challenge_method", "S256"),
+                ("scope", "admin"),
+            ]),
+            "invalid_scope",
+        ),
+    ] {
+        let r = authorize_url(&app, &bad).await;
+        assert_eq!(
+            location(&r),
+            format!("https://kaeso.test/authorize#error={error}")
+        );
+    }
+    let good = authorize_url(
+        &app,
+        &form(&[
+            ("client_id", &client),
+            ("redirect_uri", web),
+            ("response_type", "code"),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+        ]),
+    )
+    .await;
+    assert!(location(&good).starts_with("https://kaeso.test/authorize#request="));
+}
+
+#[tokio::test]
+async fn changing_instance_settings_and_updates_is_a_sensitive_grant() {
+    let (_s, app, owner) = setup().await;
+    app.clock.advance(time::Duration::minutes(20));
+    let client = register(&app, "Claude Code").await;
+    let request = request_token(&app, &client).await;
+    for right in ["instance.settings.manage", "instance.updates.manage"] {
+        let mut g = builder(&owner.org_id);
+        g["instance"] = json!(["instance.system.view", right]);
+        let stale = approve(&app, &owner.cookie, &request, g).await;
+        assert_eq!(stale.status, StatusCode::FORBIDDEN, "{right}");
+        assert_eq!(stale.error_type(), "recent_sign_in_required", "{right}");
+    }
+    let c = app
+        .get("/me/agents/catalogue", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let sensitive: Vec<&str> = c.body["instance"]["categories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|cat| cat["rights"].as_array().unwrap())
+        .filter(|r| r["sensitive"] == true)
+        .map(|r| r["id"].as_str().unwrap())
+        .collect();
+    assert!(sensitive.contains(&"instance.settings.manage"));
+    assert!(sensitive.contains(&"instance.updates.manage"));
+}
+
+async fn personal_key(app: &App, owner: &Owner, project: &str) -> String {
+    let made = app
+        .post(
+            &format!("/orgs/{}/projects/{project}/keys", owner.org_id),
+            json!({ "name": "mine" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    made.body["id"].as_str().unwrap().to_owned()
+}
+
+async fn projects_of(app: &App, owner: &Owner) -> Vec<String> {
+    app.get(&format!("/orgs/{}/projects", owner.org_id), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK)
+        .body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p["id"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+fn with_keys(mut g: Value) -> Value {
+    g["account"] = json!([
+        "account.view",
+        "account.keys.view",
+        "account.keys.manage",
+        "account.memberships.leave"
+    ]);
+    g
+}
+
+fn listed_ids(result: &Value) -> Vec<String> {
+    assert_eq!(result["isError"], false, "{result:?}");
+    result["structuredContent"]["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| k["id"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn personal_keys_and_projects_stay_within_the_agents_grant() {
+    let (_s, app, owner) = setup().await;
+    app.post(
+        &format!("/orgs/{}/projects", owner.org_id),
+        json!({ "name": "Second" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let projects = projects_of(&app, &owner).await;
+    assert_eq!(projects.len(), 2);
+    let (first, second) = (&projects[0], &projects[1]);
+    let key = personal_key(&app, &owner, second).await;
+
+    let mut narrow = with_keys(grant(&owner.org_id, &["org.view"], &[]));
+    narrow["orgs"][0]["projects"] = json!({
+        "all": false,
+        "rights": [],
+        "selected": [{ "project": first, "rights": ["project.view", "keys.own.manage"] }]
+    });
+    let a = sign_in(&app, &owner.cookie, narrow).await;
+    let seen = tool(
+        &app,
+        &a.access,
+        "get_orgs_org_projects",
+        json!({ "org": owner.org_id }),
+    )
+    .await;
+    assert_eq!(listed_ids(&seen), vec![first.clone()], "only its project");
+    let keys = tool(&app, &a.access, "get_me_keys", json!({})).await;
+    assert!(listed_ids(&keys).is_empty(), "the key's project is closed");
+    let one = tool(&app, &a.access, "get_me_keys_key", json!({ "key": key })).await;
+    assert_eq!(one["structuredContent"]["error"]["type"], "not_found");
+    let disable = tool(
+        &app,
+        &a.access,
+        "post_me_keys_key_disable",
+        json!({ "key": key }),
+    )
+    .await;
+    assert_eq!(disable["structuredContent"]["error"]["type"], "not_found");
+
+    let wide = with_keys(grant(
+        &owner.org_id,
+        &["org.view"],
+        &["project.view", "keys.own.manage"],
+    ));
+    let b = sign_in(&app, &owner.cookie, wide).await;
+    let keys = tool(&app, &b.access, "get_me_keys", json!({})).await;
+    assert_eq!(listed_ids(&keys), vec![key.clone()]);
+    let one = tool(&app, &b.access, "get_me_keys_key", json!({ "key": key })).await;
+    assert_eq!(one["isError"], false, "{one:?}");
+
+    app.call(
+        Method::PUT,
+        &format!("/orgs/{}/security/agents", owner.org_id),
+        Some(json!({ "allowed": false, "max": "full" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let keys = tool(&app, &b.access, "get_me_keys", json!({})).await;
+    assert!(listed_ids(&keys).is_empty(), "the org refuses agents");
+    let disable = tool(
+        &app,
+        &b.access,
+        "post_me_keys_key_disable",
+        json!({ "key": key }),
+    )
+    .await;
+    assert_eq!(
+        disable["structuredContent"]["error"]["type"],
+        "permission_denied"
+    );
+    let left = tool(
+        &app,
+        &b.access,
+        "delete_me_memberships_org",
+        json!({ "org": owner.org_id }),
+    )
+    .await;
+    assert_eq!(
+        left["structuredContent"]["error"]["type"],
+        "permission_denied"
+    );
+    let kept = app
+        .get(&format!("/me/keys/{key}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(kept.body["disabled_at"].is_null());
+}
+
+#[tokio::test]
+async fn a_closed_org_cant_be_left_by_the_agent() {
+    let (_s, app, owner) = setup().await;
+    let (member, _) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "dev@example.com", "role": "developer" }),
+        "Dev",
+    )
+    .await;
+    let mut closed = with_keys(grant(&owner.org_id, &[], &[]));
+    closed["orgs"][0]["included"] = json!(false);
+    let a = sign_in(&app, &member, closed).await;
+    let left = tool(
+        &app,
+        &a.access,
+        "delete_me_memberships_org",
+        json!({ "org": owner.org_id }),
+    )
+    .await;
+    assert_eq!(left["structuredContent"]["error"]["type"], "not_found");
+    let still = app
+        .get("/me/memberships", &member)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(still.body["data"][0]["org_id"], owner.org_id);
+}
+
+#[tokio::test]
+async fn orgs_joined_later_show_as_open_and_stay_open_after_a_save() {
+    let (_s, app, owner) = setup().await;
+    let mut g = builder(&owner.org_id);
+    g["future_orgs"] = json!({
+        "rights": ["org.view", "members.view"],
+        "project_rights": ["project.view", "models.view"]
+    });
+    let a = sign_in(&app, &owner.cookie, g).await;
+    let made = app
+        .post("/me/orgs", json!({ "name": "Later" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let later = made.body["id"].as_str().unwrap().to_owned();
+    let viewed = app
+        .get(&format!("/me/agents/{}", a.agent), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let orgs = viewed.body["grant"]["orgs"].as_array().unwrap();
+    let shown = orgs.iter().find(|o| o["org"] == later).unwrap();
+    assert_eq!(shown["included"], true);
+    assert_eq!(shown["rights"], json!(["org.view", "members.view"]));
+    assert_eq!(
+        shown["projects"],
+        json!({ "all": true, "rights": ["project.view", "models.view"], "selected": [] })
+    );
+    let saved = app
+        .call(
+            Method::PUT,
+            &format!("/me/agents/{}/rights", a.agent),
+            Some(viewed.body["grant"].clone()),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(saved.body["grant"], viewed.body["grant"]);
+    let org = tool(&app, &a.access, "get_orgs_org", json!({ "org": later })).await;
+    assert_eq!(org["isError"], false, "{org:?}");
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.id, p.org_id, p.name, p.is_default, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar FROM projects p WHERE p.org_id = $1 AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) AND ($3 OR p.archived_at IS NULL) AND ($4::uuid IS NULL OR p.id > $4) ORDER BY p.id LIMIT $5",
+  "query": "SELECT p.id, p.org_id, p.name, p.is_default, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar FROM projects p WHERE p.org_id = $1 AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) AND ($6::uuid[] IS NULL OR p.id = ANY($6)) AND ($3 OR p.archived_at IS NULL) AND ($4::uuid IS NULL OR p.id > $4) ORDER BY p.id LIMIT $5",
   "describe": {
     "columns": [
       {
@@ -109,7 +109,8 @@
         "Uuid",
         "Bool",
         "Uuid",
-        "Int8"
+        "Int8",
+        "UuidArray"
       ]
     },
     "nullable": [
@@ -124,5 +125,5 @@
       true
     ]
   },
-  "hash": "16cb895dcf5c51dbc8711eb11e195f6963de3e74ed235b0ba1f08f3734b53e45"
+  "hash": "6eb6c918c1b6cd46bc3b2e160c17dd6ce0ec1f6efa98547ff7dfadb383298c35"
 }

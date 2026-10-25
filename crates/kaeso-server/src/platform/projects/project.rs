@@ -100,10 +100,15 @@ pub async fn list(
     } else {
         ctx.acting_user().map(|u| u.uuid())
     };
+    let only = match ctx.agent().and_then(|a| a.grant.org(scope.org.id)) {
+        Some(access) if !see_all => access.projects.only(),
+        _ => None,
+    };
     let rows = projects::list(
         &state.pg,
         scope.org.id,
         member,
+        only.as_deref(),
         filter.include_archived.unwrap_or(false),
         page.after,
         page.fetch(),

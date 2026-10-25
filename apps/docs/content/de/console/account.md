@@ -69,7 +69,7 @@ Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Co
 - ihn **Widerrufen**, was ihn sofort abmeldet;
 - seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
 
-Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ungenutzt bleibt. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
+Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 
 ## Sensible Aktion bestätigen
 

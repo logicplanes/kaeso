@@ -253,9 +253,9 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `instance.system.view` | 查看系统 | 查看系统、实例设置、模型数据源和更新状态。 |  |
-| `instance.settings.manage` | 更改实例设置 | 更改常规、邮件、日志、时区和账户设置，并发送测试邮件。 |  |
+| `instance.settings.manage` | 更改实例设置 | 更改常规、邮件、日志、时区和账户设置，并发送测试邮件。 | 敏感 |
 | `instance.model_sources.manage` | 管理模型数据源 | 从 models.dev 同步模型数据。 |  |
-| `instance.updates.manage` | 管理更新 | 检查更新并更改更新设置。 |  |
+| `instance.updates.manage` | 管理更新 | 检查更新并更改更新设置。 | 敏感 |
 | `instance.updates.apply` | 安装更新 | 安装新版本的 Kaeso。 | 敏感；需要 `instance.updates.manage` |
 | `instance.users.view` | 查看用户 | 查看实例的每个账户及其所在组织。 |  |
 | `instance.users.manage` | 管理用户 | 邀请、停用和重新启用账户，结束其会话并重置其双重验证。 | 敏感；需要 `instance.users.view` |

@@ -18,8 +18,8 @@ Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nen
 | --- | --- |
 | Instanz-Admin | Macht den Benutzer zum Instanz-Admin oder nimmt ihm diese Rolle |
 | Deaktivieren, Reaktivieren | Sperrt die Anmeldung, beendet seine Sitzungen und deaktiviert seine Schlüssel, oder erlaubt sie wieder |
-| Sitzungen beenden | Meldet den Benutzer überall ab |
-| Zwei-Faktor zurücksetzen | Entfernt Authenticator-App und Wiederherstellungscodes, für jemanden, der beides verloren hat |
+| Sitzungen beenden | Meldet den Benutzer überall ab und widerruft seine Agenten |
+| Zwei-Faktor zurücksetzen | Entfernt Authenticator-App und Wiederherstellungscodes, für jemanden, der beides verloren hat; beendet auch seine Sitzungen und Agenten |
 | Benutzer löschen | Entfernt Namen und E-Mail-Adresse und archiviert die Schlüssel. Der Verlauf zeigt einen gelöschten Benutzer |
 
 Kaeso informiert den Benutzer per E-Mail, wenn Sie seine Sitzungen beenden oder seine Zwei-Faktor-Authentifizierung zurücksetzen.

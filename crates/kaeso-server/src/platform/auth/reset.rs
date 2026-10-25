@@ -182,8 +182,8 @@ pub struct PasswordChanged {
 #[utoipa::path(
     post,
     path = "/auth/password-reset/verify",
-    summary = "Sets a new password with a reset link and ends every session of the\n\
-    user. The link works once.",
+    summary = "Sets a new password with a reset link and ends every session and agent of\n\
+    the user. The link works once.",
     description = "It also unlocks the codes from the authenticator app that 10 wrong codes in a \
     row locked (`auth/totp`). It refuses an account whose managing org requires SSO, even with \
     a link sent before the org turned that on.",

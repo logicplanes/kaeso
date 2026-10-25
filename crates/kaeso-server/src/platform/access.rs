@@ -586,7 +586,7 @@ async fn instance_admin(state: &AppState, session: &SessionRow) -> ApiResult<()>
     require_policy(state, session, Area::Instance { admin_sso }).await
 }
 
-fn refused(caller: &Caller, right: Right, on: &str) -> ApiError {
+pub(crate) fn refused(caller: &Caller, right: Right, on: &str) -> ApiError {
     match caller {
         Caller::Agent(_) => ApiError::MissingRight {
             right: right.as_str(),
@@ -749,7 +749,7 @@ async fn key_scope(
     ))
 }
 
-async fn agent_scope(
+pub(crate) async fn agent_scope(
     state: &AppState,
     agent: &AgentCaller,
     org: OrgId,
