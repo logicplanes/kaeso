@@ -6,11 +6,14 @@ use std::sync::Arc;
 
 use axum::http::StatusCode;
 use common::v1::{Capture, Env, call, chat, messages};
+use kaeso_testkit::mock_provider::kpp_fixtures;
 use serde_json::{Value, json};
 
 const MISTRAL_SECRET: &str = "mistral-test-credential-0004";
 const SMALL: &str = "mistral-small-latest";
 const EMBED: &str = "mistral-embed";
+const LARGE: &str = "mistral-large-4";
+const SONNET: &str = "claude-sonnet-5-5";
 const HAIKU: &str = "**Haiku:**\n*Waves crash on the shore—*\n*white foam";
 const ANSWER: &str = "No, 91 is not a prime number because it can be divided evenly by 7 and 13.";
 
@@ -271,6 +274,90 @@ async fn chat_apps_get_mistral_thinking_as_reasoning_content_and_send_it_back() 
             ]
         })
     );
+}
+
+#[tokio::test]
+async fn a_grok_cli_session_moves_from_mistral_to_claude_with_the_reasoning_it_replays() {
+    let env = env().await;
+    let org = &env.owner.org_id;
+    for (provider, model) in [("mistral", LARGE), ("anthropic", SONNET)] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/projects/{}/models", env.project),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    }
+    let path = kpp_fixtures().join("openai_chat/requests/grok-cli-reasoning-content.json");
+    let mut body: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    assert_eq!(body["model"], LARGE);
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body.clone()),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", LARGE);
+    let thinking =
+        |text: &str| json!({ "type": "thinking", "thinking": [{ "type": "text", "text": text }] });
+    assert_eq!(
+        sent["messages"][2]["content"],
+        json!([thinking("The user wants echo ok.")])
+    );
+    assert_eq!(
+        sent["messages"][4]["content"],
+        json!([thinking("Answer briefly."), { "type": "text", "text": "ok" }])
+    );
+
+    body["model"] = json!(SONNET);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-provider"), Some("anthropic"));
+    assert!(r.text().contains("data: [DONE]"), "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/v1/messages");
+    let sent = sent.json();
+    let turns: Vec<(&Value, Vec<&Value>)> = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| {
+            let blocks = m["content"].as_array().unwrap();
+            (&m["role"], blocks.iter().map(|b| &b["type"]).collect())
+        })
+        .collect();
+    assert_eq!(
+        turns,
+        [
+            (&json!("user"), vec![&json!("text")]),
+            (&json!("assistant"), vec![&json!("tool_use")]),
+            (&json!("user"), vec![&json!("tool_result")]),
+            (&json!("assistant"), vec![&json!("text")]),
+            (&json!("user"), vec![&json!("text")]),
+        ]
+    );
+    let text = sent.to_string();
+    for replayed in [
+        "reasoning_content",
+        "The user wants echo ok.",
+        "Answer briefly.",
+    ] {
+        assert!(!text.contains(replayed), "{replayed} was sent: {text}");
+    }
 }
 
 #[tokio::test]
