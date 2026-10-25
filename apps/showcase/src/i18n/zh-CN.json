@@ -1129,5 +1129,13 @@
   "Every agent looks the same; write its model family with useModelName where it matters.": "每个智能体看起来都一样；需要时用 useModelName 写出其模型系列。",
   "Every size": "每种尺寸",
   "Agent": "智能体",
-  "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.": "某人的头像，角上带有代其操作的智能体的小徽标，用于审计日志行和活动；它作为一张以两者命名的图片呈现。徽标保持在头像的方框内，因此不会被表格单元格截断。"
+  "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.": "某人的头像，角上带有代其操作的智能体的小徽标，用于审计日志行和活动；它作为一张以两者命名的图片呈现。徽标保持在头像的方框内，因此不会被表格单元格截断。",
+  "An agent client's mark on a raised tile, such as Claude, Cursor or GitHub Copilot, that opens how to connect it.": "凸起方块上的智能体客户端标志，例如 Claude、Cursor 或 GitHub Copilot，点击后显示如何连接它。",
+  "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.": "智能体客户端的标志，例如 Claude、Cursor 或 GitHub Copilot，显示在凸起的方块上，作为一个按钮，点击后显示如何连接它。",
+  "Clients": "客户端",
+  "The client's name; also the tooltip.": "客户端名称；同时也是提示文字。",
+  "Which client's mark it shows.": "显示哪个客户端的标志。",
+  "Opens how to connect the client.": "显示如何连接该客户端。",
+  "A button named by `aria-label`, which is also its tooltip; the mark is decorative.": "由 `aria-label` 命名的按钮，它同时也是提示文字；标志仅作装饰。",
+  "Every client": "每个客户端"
 }

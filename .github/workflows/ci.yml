@@ -83,6 +83,9 @@ jobs:
               - scripts/**
               - apps/**
               - packages/**
+              - plugins/**
+              - .claude-plugin/**
+              - .cursor-plugin/**
             deploy:
               - deploy/**
               - e2e/install/**

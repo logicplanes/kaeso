@@ -8,3 +8,4 @@ export * from "./role-picker.js";
 export * from "./effective-access.js";
 export * from "./provider-picker.js";
 export * from "./grant-summary.js";
+export * from "./client-button.js";

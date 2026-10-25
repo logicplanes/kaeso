@@ -88,6 +88,14 @@ const RULES = [
     write: (text, version) => replaceGroup(text, PACKAGE_VERSION, version),
   },
   {
+    what: "plugin version",
+    match: (file) => /^plugins\/[^/]+\/\.(claude|cursor)-plugin\/plugin\.json$/.test(file),
+    manifest: true,
+    required: true,
+    read: (text) => matches(text, new RegExp(PACKAGE_VERSION.source, "gm"), 2),
+    write: (text, version) => replaceGroup(text, PACKAGE_VERSION, version),
+  },
+  {
     what: "image tag",
     match: (file) => file === "deploy/compose.yaml",
     required: true,

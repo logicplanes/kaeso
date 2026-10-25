@@ -1,0 +1,16 @@
+{
+  "name": "kaeso",
+  "owner": {
+    "name": "Logicplanes"
+  },
+  "metadata": {
+    "description": "The Kaeso plugin for Cursor."
+  },
+  "plugins": [
+    {
+      "name": "kaeso",
+      "source": "plugins/kaeso",
+      "description": "Manage your self-hosted Kaeso AI gateway from your agent: organizations, projects, keys, models, limits, usage and logs, with only the rights you grant."
+    }
+  ]
+}

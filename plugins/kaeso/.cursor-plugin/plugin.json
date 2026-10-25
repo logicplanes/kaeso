@@ -1,0 +1,24 @@
+{
+  "name": "kaeso",
+  "description": "Manage your self-hosted Kaeso AI gateway from your agent: organizations, projects, keys, models, limits, usage and logs, with only the rights you grant.",
+  "version": "0.4.2",
+  "author": {
+    "name": "Logicplanes"
+  },
+  "homepage": "https://kaeso.app",
+  "repository": "https://github.com/logicplanes/kaeso",
+  "license": "MIT",
+  "keywords": ["kaeso", "ai-gateway", "mcp", "llm", "self-hosted"],
+  "logo": "assets/logo.svg",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "KAESO_URL": {
+        "type": "string",
+        "title": "Kaeso URL",
+        "description": "The address of your Kaeso install, such as https://kaeso.example.com, without a trailing slash."
+      }
+    },
+    "required": ["KAESO_URL"]
+  }
+}

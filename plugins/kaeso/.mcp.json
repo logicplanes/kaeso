@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "kaeso": {
+      "type": "http",
+      "url": "${user_config.kaeso_url}/mcp"
+    }
+  }
+}
