@@ -7,16 +7,6 @@ nav: KPP 内部实现
 
 KPP，即 Kaeso Provider Protocol，是每个模型请求都要经过的规范格式。网关把应用发来的内容解码为 KPP，再把 KPP 编码后发给服务商，回复沿同一路径返回。调用方能看到的部分在[格式转换](../../concepts/format-translation.md)中介绍；这些页面面向修改 KPP 的人。
 
-- [编解码器设计](codec-design.md)：了解类型、流和线路结构体如何让每次转换保持无损。
-- [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
-- [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
-- [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
-- [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
-- [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
-- [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
-- [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
-- [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
-
 ## 请求的路径
 
 假设应用发送了一个 Anthropic Messages 请求，而模型通过 OpenAI Chat Completions 提供：
@@ -239,3 +229,15 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 `testing::sse_diff` 逐项比较流。它先比较事件名，再按 JSON 比较数据（不是 JSON 时按文本比较），然后按顺序比较 `id`、`retry` 和未知字段。没有 `data:` 行的帧，其 `ComparableItem::Event.data` 为 `None`；注释按原文精确比较。
 
 当变更改变了跨方言输出时，要审查快照的差异：运行 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`，然后在提交之前阅读有变化的 `.snap` 文件。
+
+## 下一步
+
+- [编解码器设计](codec-design.md)：了解类型、流和线路结构体如何让每次转换保持无损。
+- [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
+- [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
+- [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
+- [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。
+- [Chat Completions 服务商](openai-chat-providers.md)：了解编解码器如何适配使用 Chat Completions 的每个服务商。
+- [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
+- [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
+- [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。

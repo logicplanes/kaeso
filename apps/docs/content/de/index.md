@@ -85,7 +85,9 @@ flowchart TD
 
 Der [Ablauf einer Anfrage](concepts/request-flow.md) verfolgt eine Anfrage durch das Gateway. Die [Formatübersetzung](concepts/format-translation.md) erklärt, was KPP zwischen Formaten überträgt und was es ablehnt.
 
-## Wo Sie anfangen
+Kaeso steht unter der MIT-Lizenz. Gateway, KPP, Konsole, UI-Bibliothek und diese Dokumentation liegen in einem Repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).
+
+## Nächste Schritte
 
 - [Schnellstart](get-started/quick-start.md): Installieren Sie Kaeso auf einem Server, und senden Sie Ihre erste Anfrage.
 - [Modelle aufrufen](get-started/calling-models.md): Rufen Sie Modelle aus Ihrem Code mit den SDKs von OpenAI und Anthropic auf.
@@ -95,5 +97,3 @@ Der [Ablauf einer Anfrage](concepts/request-flow.md) verfolgt eine Anfrage durch
 - [API](api/index.md): Schlagen Sie die Modell-API und die Platform API nach.
 - [Selbst hosten](self-hosting/index.md): Planen, betreiben und aktualisieren Sie eine Installation.
 - [Entwicklung](development/index.md): Bauen, testen und ändern Sie Kaeso selbst.
-
-Kaeso steht unter der MIT-Lizenz. Gateway, KPP, Konsole, UI-Bibliothek und diese Dokumentation liegen in einem Repository: [logicplanes/kaeso](https://github.com/logicplanes/kaeso).

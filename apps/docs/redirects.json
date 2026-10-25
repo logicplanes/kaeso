@@ -1,7 +1,0 @@
-{
-  "development/kpp/field-classes": "development/kpp/index.md#field-classes",
-  "development/dependencies": "development/contributing.md#add-a-dependency",
-  "development/performance": "development/testing.md",
-  "development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras",
-  "changelog": "https://kaeso.app/changelog"
-}

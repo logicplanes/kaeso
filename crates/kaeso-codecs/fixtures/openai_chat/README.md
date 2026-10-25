@@ -10,36 +10,7 @@ Endpoint: `POST /v1/chat/completions`, including streaming.
 | openai-python SDK (types in `src/openai/types/chat/`, tests in `tests/`) | commit `16d3d3b3c33b1b4f01114a16e4c3eba2293799ba` (2026-10-11) |
 | Docs (fetched 2026-10-11) | API reference for chat create and streaming events, plus the error-codes, rate-limits, predicted-outputs, function-calling, prompt-caching, reasoning, file-inputs, images-vision, tools-web-search and moderation guides under https://developers.openai.com/api/docs/guides/ |
 
-Every file is listed in its folder's `README.md` with exactly one provenance:
-
-- `doc:` copied from an official doc example. For the reference page this is the `x-oaiMeta.examples` of `createChatCompletion` in the pinned spec.
-- `sdk:` taken verbatim from an openai-python test or recorded snapshot. Names ending in `-sdk-2024` are live recordings from 2024. They use an older field set: no `annotations`, `service_tier` or `obfuscation`, a shorter `usage`, and no `usage: null` on non-final chunks. They are kept to test omitted fields.
-- `schema:` built by hand from the named spec schemas, because no verbatim example exists. Values such as ids, token counts and texts are made up but internally consistent.
-- `unknown-*`: these deliberately carry made-up fields or parts (`x_future_field`, `x_future_delta`, `x_future_choice_field`, content part `future_part`) to test Extras and Unknown handling. These are not real API fields.
-
-## Layout and conventions
-
-```
-requests/<name>.json         exact request body (no forwarded headers are needed for Chat; no *.headers.json)
-responses/<name>.json        exact non-streaming 200 body
-streams/<name>.sse           exact SSE bytes: `data: <json>\n\n` frames, terminated by `data: [DONE]\n\n`
-errors/<name>.json           exact error body {"error": {"message", "type", "param", "code"}}
-errors/<name>.meta.json      {"status": <http status>, "headers": {...}} (lower-case header names)
-```
-
-- Pairing: when a request, a response and a stream share a base name, they belong together. The stream is the same completion as the response, with the same id, text split into deltas, tool-call arguments, `finish_reason` and final `usage`. It is what the request returns with `"stream": true, "stream_options": {"include_usage": true}` added. The exceptions are noted in the folder READMEs: `*-sdk-2024` and `content-filter-partial`.
-- JSON files are pretty-printed with 2-space indentation. SSE `data:` lines are single-line JSON, as sent on the wire. Non-ASCII is written raw as UTF-8 (`°`, `—`).
-- Constructed streams follow the current wire shape:
-  - Chunk field order is `id, object, created, model, service_tier, system_fingerprint, choices, usage, obfuscation`.
-  - The first chunk carries `delta.role` together with `content: ""` (text), or with `content: null` plus the first tool-call header (tool calls), or with `content: null, refusal: ""` (refusals).
-  - A finish chunk with `delta: {}` follows.
-  - With `include_usage`, every earlier chunk has `"usage": null` and a last chunk with `"choices": []` carries `usage`. This follows the `usage` description in `CreateChatCompletionStreamResponse`.
-  - Every chunk carries `obfuscation`, which the spec says is "included by default". Its values are random padding.
-- Usage semantics: `prompt_tokens` includes `prompt_tokens_details.cached_tokens` (and `cache_write_tokens`), and `completion_tokens` includes `completion_tokens_details.reasoning_tokens`. In every file, `total_tokens = prompt_tokens + completion_tokens`.
-- Binary payloads are tiny but valid:
-  - PNG: 1x1.
-  - PDF: one page, with a correct xref table.
-  - WAV: a 44-byte header plus 8 silent samples.
+The layout, the provenance marks (`doc:`, `sdk:`, `schema:`) and the conventions every constructed fixture follows are in [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures). Each folder's `README.md` lists every file, what it covers and its provenance. Names ending in `-sdk-2024` are live recordings from 2024 with an older field set (no `annotations`, `service_tier` or `obfuscation`, a shorter `usage`, no `usage: null` on non-final chunks), kept to test omitted fields. They and `content-filter-partial` have no stream that matches their response exactly; the folder READMEs say why.
 
 ## Fixtures the codec must reject (`Unsupported`)
 
