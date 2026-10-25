@@ -406,6 +406,15 @@ pub(super) fn reasoning_sendable(block: &ReasoningBlock) -> bool {
             .is_some()
 }
 
+// OpenAI's `encrypted_content` is a Fernet token: the version byte 0x80, then a big-endian
+// timestamp, so it starts with `gAAAAA` (https://github.com/fernet/spec/blob/master/Spec.md).
+pub(super) fn has_openai_encryption(block: &ReasoningBlock) -> bool {
+    block
+        .opaque
+        .iter()
+        .any(|o| o.kind == OpaqueKind::OpenAiEncryptedReasoning && o.data.starts_with("gAAAAA"))
+}
+
 pub(super) fn is_kaeso_id(id: &str) -> bool {
     ["msg_kaeso_", "fc_kaeso_", "rs_kaeso_"]
         .iter()

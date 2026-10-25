@@ -291,7 +291,8 @@ pub const PROVIDERS: &[Provider] = &[
             .with_message_bookkeeping(),
         responses: ResponsesProfile::compatible("SpaceX")
             .xai_web_search()
-            .without_null_reasoning_content(),
+            .without_null_reasoning_content()
+            .without_openai_encrypted_reasoning(),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",

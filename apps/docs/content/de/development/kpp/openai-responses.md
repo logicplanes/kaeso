@@ -351,6 +351,7 @@ Jeder Anbieter in `PROVIDERS` nennt in seinem Feld `responses` ein `kaeso_codecs
 |---|---|
 | `xai_web_search()` | Sendet die gehostete Suche als `web_search`-Tool von xAI ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
 | `without_null_reasoning_content()` | Lässt ein ausdrückliches `content: null` eines Reasoning-Items weg, das die App zurücksendet. |
+| `without_openai_encrypted_reasoning()` | Lässt Reasoning-Items weg, die die App mit OpenAIs `encrypted_content` zurücksendet. Er ist ein Fernet-Token ([Fernet-Spezifikation](https://github.com/fernet/spec/blob/master/Spec.md)) und beginnt daher mit `gAAAAA`, wie in jeder Aufnahme von OpenAI in `fixtures/openai_responses/`. |
 
 ### SpaceX
 
@@ -358,7 +359,7 @@ Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-referenc
 
 | SpaceX-Feld | KPP | Hinweise |
 |---|---|---|
-| `reasoning`-Items mit `summary` und `encrypted_content`, das `grok-4.3` immer sendet | wie bei OpenAI | Ein `encrypted_content`, das ein anderer Anbieter geschrieben hat, lehnt SpaceX mit einem 400 `invalid-argument` ab. |
+| `reasoning`-Items mit `summary` und `encrypted_content`, das `grok-4.3` immer sendet | wie bei OpenAI | Ein `encrypted_content`, das ein anderer Anbieter geschrieben hat, lehnt SpaceX mit einem 400 `invalid-argument` ab (`errors/recorded-reasoning-encrypted.json`, für den von OpenAI). Der Verlauf einer App sagt nicht, welcher Anbieter ein Item geschrieben hat, daher werden Items mit dem von OpenAI weggelassen (`without_openai_encrypted_reasoning()`), etwa wenn ein Codex-Thread von GPT zu Grok wechselt. |
 | `web_search_call`-Items, `url_citation`-Annotationen | wie bei OpenAI | |
 | `namespace`-Tools (Anfrage) | zu Funktions-Tools umbenannt | SpaceX lehnt sie mit 422 ab (`unknown variant namespace`); sein Profil ist `compatible` ([Tool-Namespaces](cross-format.md#tool-namespaces)). |
 | `web_search`-Tool (Anfrage) | das Tool von xAI (`xai_web_search()`) | SpaceX lehnt `external_web_access` ab (`Argument not supported: external_web_access`) und sucht immer live ([gehostete Websuche](cross-format.md#gehostete-websuche)). |

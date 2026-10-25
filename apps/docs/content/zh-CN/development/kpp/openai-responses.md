@@ -351,6 +351,7 @@ order: 7
 |---|---|
 | `xai_web_search()` | 把托管搜索作为 xAI 的 `web_search` 工具发送（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | `without_null_reasoning_content()` | 省略应用发回的推理项上显式的 `content: null`。 |
+| `without_openai_encrypted_reasoning()` | 省略应用发回的、带 OpenAI 的 `encrypted_content` 的推理项。它是一个 Fernet 令牌（[Fernet 规范](https://github.com/fernet/spec/blob/master/Spec.md)），因此以 `gAAAAA` 开头，`fixtures/openai_responses/` 中 OpenAI 的每份录制都是如此。 |
 
 ### SpaceX
 
@@ -358,7 +359,7 @@ order: 7
 
 | SpaceX 字段 | KPP | 说明 |
 |---|---|---|
-| 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
+| 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`（`errors/recorded-reasoning-encrypted.json`，针对 OpenAI 的）。应用的历史不会说明某个项由哪个服务商生成，因此带 OpenAI 的 `encrypted_content` 的项会被省略（`without_openai_encrypted_reasoning()`），例如 Codex 线程从 GPT 切换到 Grok 时。 |
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
 | `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；它的配置是 `compatible`（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `web_search` 工具（请求） | xAI 的工具（`xai_web_search()`） | SpaceX 拒绝 `external_web_access`（`Argument not supported: external_web_access`），并且总是实时搜索（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |

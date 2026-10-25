@@ -206,7 +206,7 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 | `local_shell_call` | `Block::ToolCall` namens `local_shell`, sein `action`-Objekt als Argumente |
 | `local_shell_call_output` | `Block::ToolResult` für den Aufruf, den seine `id` nennt; Codex sendet stattdessen ein `function_call_output` |
 
-OpenAI und SpaceX bekommen die Items wie gesendet: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+OpenAI und SpaceX bekommen die Items wie gesendet: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
 
 ## Nutzung
 

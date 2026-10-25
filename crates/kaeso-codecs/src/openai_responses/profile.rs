@@ -13,6 +13,9 @@ pub struct ResponsesProfile {
     pub web_search: WebSearchTool,
     /// How reasoning items the app sends back are written.
     pub reasoning_replay: ReasoningReplay,
+    /// Whether reasoning items with OpenAI's `encrypted_content` reach the provider;
+    /// otherwise they are left out.
+    pub openai_encrypted_reasoning: bool,
 }
 
 /// The hosted `web_search` tool a Responses provider takes.
@@ -43,6 +46,7 @@ impl ResponsesProfile {
         tool_namespaces: true,
         web_search: WebSearchTool::AsSent,
         reasoning_replay: ReasoningReplay::AsSent,
+        openai_encrypted_reasoning: true,
     };
 
     /// Another provider's Responses API: as OpenAI's, but without tool namespaces, which
@@ -66,6 +70,14 @@ impl ResponsesProfile {
     #[must_use]
     pub const fn without_null_reasoning_content(mut self) -> Self {
         self.reasoning_replay = ReasoningReplay::WithoutNullContent;
+        self
+    }
+
+    /// The provider refuses OpenAI's encrypted reasoning, so reasoning items the app sends
+    /// back with it are left out.
+    #[must_use]
+    pub const fn without_openai_encrypted_reasoning(mut self) -> Self {
+        self.openai_encrypted_reasoning = false;
         self
     }
 }
