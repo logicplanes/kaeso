@@ -16,10 +16,13 @@ import {
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
 import { DocsLanguageMenu, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
-import { localizedPath } from "~/lib/languages";
+import { localizedPath, type DocsLang } from "~/lib/languages";
 
-const PRIVACY = "https://kaeso.app/datenschutz";
-const IMPRINT = "https://kaeso.app/impressum";
+const LEGAL: Record<DocsLang, { privacy: string; imprint: string }> = {
+  en: { privacy: "https://kaeso.app/datenschutz", imprint: "https://kaeso.app/impressum" },
+  de: { privacy: "https://kaeso.app/de/datenschutz", imprint: "https://kaeso.app/de/impressum" },
+  "zh-CN": { privacy: "https://kaeso.app/zh-CN/datenschutz", imprint: "https://kaeso.app/zh-CN/impressum" },
+};
 
 const clean = (p: string) => p.replace(/\.html$/, "").replace(/\/$/, "") || "/";
 
@@ -75,8 +78,8 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
             <IconButton icon={icons.legal} aria-label={docsText(lang, "Legal")} />
           </Menu.Trigger>
           <Menu.Content side="top" align="start" className="min-w-180">
-            <Menu.LinkItem href={PRIVACY}>{docsText(lang, "Privacy")}</Menu.LinkItem>
-            <Menu.LinkItem href={IMPRINT}>{docsText(lang, "Imprint")}</Menu.LinkItem>
+            <Menu.LinkItem href={LEGAL[lang].privacy}>{docsText(lang, "Privacy")}</Menu.LinkItem>
+            <Menu.LinkItem href={LEGAL[lang].imprint}>{docsText(lang, "Imprint")}</Menu.LinkItem>
           </Menu.Content>
         </Menu>
         <ThemeMenu side="top" align="start" />

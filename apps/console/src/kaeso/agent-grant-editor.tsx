@@ -163,7 +163,7 @@ export function AgentGrantEditor({
       anchor="top"
       footer={
         <Dialog.Close>
-          <Button variant="primary">{t("common.done", "Done")}</Button>
+          <Button variant="primary">{t("common.finish", "Finish")}</Button>
         </Dialog.Close>
       }
     >

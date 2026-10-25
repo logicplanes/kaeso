@@ -48,8 +48,9 @@ test.describe("legal pages", () => {
       await open(page, at(lang, "/"));
       const [legal, privacy, imprint] = words[lang];
       await page.getByRole("button", { name: legal, exact: true }).click();
-      await expect(page.getByRole("menuitem", { name: privacy, exact: true })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
-      await expect(page.getByRole("menuitem", { name: imprint, exact: true })).toHaveAttribute("href", "https://kaeso.app/impressum");
+      const site = lang === "en" ? "https://kaeso.app" : `https://kaeso.app/${lang}`;
+      await expect(page.getByRole("menuitem", { name: privacy, exact: true })).toHaveAttribute("href", `${site}/datenschutz`);
+      await expect(page.getByRole("menuitem", { name: imprint, exact: true })).toHaveAttribute("href", `${site}/impressum`);
     });
   }
 });

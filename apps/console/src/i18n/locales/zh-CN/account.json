@@ -23,7 +23,7 @@
   "account.connectClaudeHint": "当插件询问您的 Kaeso 地址时，输入 {origin}。然后运行 /mcp 登录。",
   "account.connectClient": "添加到 {client}",
   "account.connectCursorHint": "也可以从 Cursor Marketplace 安装 Kaeso，并将 {origin} 填为 KAESO_URL。",
-  "account.connectDocs": "文档",
+  "account.connectDocs": "阅读文档",
   "account.connectLead": "您的智能体通过浏览器登录，由您选择它可以做什么。",
   "account.connectPlugin": "插件",
   "account.connectServerOnly": "仅服务器",

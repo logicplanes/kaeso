@@ -78,7 +78,7 @@ describe("AgentGrantEditor", () => {
     await user.click(checkbox(screen.getByRole("group", { name: "Rights on your account" }), /^Edit the profile/));
     expect(latest()?.customized).toBe(true);
     expect(latest()?.account).toEqual(["account.view", "account.update"]);
-    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.click(screen.getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("radio", { name: "Observer" })).not.toBeChecked();
   });
@@ -154,7 +154,7 @@ describe("AgentGrantEditor", () => {
     expect(latest()?.future.rights).toContain("projects.create");
     await user.click(later);
     expect(latest()?.future.on).toBe(false);
-    await user.click(screen.getByRole("button", { name: "Done" }));
+    await user.click(screen.getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await user.click(screen.getByRole("radio", { name: "Operator" }));
     expect(latest()?.preset).toBe("operator");
