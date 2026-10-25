@@ -178,11 +178,18 @@ impl ReasoningCollector {
     }
 }
 
+fn carries_reasoning(message: &kaeso_kpp::Message) -> bool {
+    message
+        .blocks
+        .iter()
+        .any(|b| matches!(b, Block::Reasoning(r) if replayable(r)))
+}
+
 pub fn tool_calls_missing_reasoning(req: &GenerateRequest) -> Vec<String> {
     req.messages
         .iter()
         .filter(|m| m.role == Role::Assistant)
-        .filter(|m| !m.blocks.iter().any(|b| matches!(b, Block::Reasoning(_))))
+        .filter(|m| !carries_reasoning(m))
         .flat_map(|m| &m.blocks)
         .filter_map(|b| match b {
             Block::ToolCall(c) => Some(c.id.clone()),
@@ -203,12 +210,7 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
     }
     let mut inserted = 0;
     for message in &mut req.messages {
-        if message.role != Role::Assistant
-            || message
-                .blocks
-                .iter()
-                .any(|b| matches!(b, Block::Reasoning(_)))
-        {
+        if message.role != Role::Assistant || carries_reasoning(message) {
             continue;
         }
         let mut blocks = Vec::with_capacity(message.blocks.len());
@@ -396,6 +398,29 @@ mod tests {
                 Block::text("More."),
                 call("c4"),
             ]
+        );
+    }
+
+    #[test]
+    fn readable_reasoning_an_app_replays_does_not_stop_a_restore() {
+        let mut readable = ReasoningBlock::new(DialectId::OpenAiChat);
+        readable.text.push("from a Chat app".into());
+        let mut req = GenerateRequest::new("m");
+        req.messages = vec![Message::new(
+            Role::Assistant,
+            vec![Block::Reasoning(readable.clone()), call("c1")],
+        )];
+        assert_eq!(tool_calls_missing_reasoning(&req), ["c1"]);
+        let kept = [CarriedReasoning::new("c1", vec![signed("a")])];
+        assert_eq!(restore_reasoning(&mut req, &kept), 1);
+        assert_eq!(
+            req.messages[0].blocks,
+            [
+                Block::Reasoning(signed("a")),
+                Block::Reasoning(readable),
+                call("c1")
+            ],
+            "the signed block leads the turn, as its provider sent it"
         );
     }
 

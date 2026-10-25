@@ -702,24 +702,23 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
 fn replayed_reasoning(extras: &mut Extras, origin: &Origin) -> Option<ReasoningBlock> {
     let sent: Vec<(&str, Value)> = REPLAYED_REASONING
         .iter()
-        .filter_map(|key| Some((*key, extras.fields.get(*key)?.to_value().ok()?)))
-        .filter(|(key, value)| match *key {
-            "reasoning_details" => value
-                .as_array()
-                .is_some_and(|items| items.iter().all(Value::is_object)),
-            _ => value.is_string(),
-        })
+        .filter_map(|key| Some((*key, extras.fields.shift_remove(*key)?.to_value().ok()?)))
         .collect();
-    let (text, summary) = sent.iter().find_map(|(key, value)| readable(key, value))?;
+    if sent.is_empty() {
+        return None;
+    }
+    let (text, summary) = sent
+        .iter()
+        .find_map(|(key, value)| readable(key, value))
+        .unwrap_or_default();
     let mut block = ReasoningBlock::new(origin.clone());
     block.text = text;
     block.summary = summary;
     block.extras = Extras::new(origin.clone());
-    let mut fields = serde_json::Map::new();
-    for (key, value) in sent {
-        extras.fields.shift_remove(key);
-        fields.insert(key.to_owned(), value);
-    }
+    let fields: serde_json::Map<String, Value> = sent
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value))
+        .collect();
     block
         .extras
         .form

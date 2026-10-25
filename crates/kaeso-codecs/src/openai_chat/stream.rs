@@ -596,6 +596,10 @@ impl ChatStreamDecoder {
                     match read_part(&part) {
                         ChatPart::Text(t) => text.get_or_insert_with(String::new).push_str(&t),
                         ChatPart::Thinking(thought) => {
+                            let said = thoughts.iter().any(|t| !t.is_empty());
+                            if said && thought.text.iter().any(|t| !t.is_empty()) {
+                                thoughts.push("\n\n".to_owned());
+                            }
                             thoughts.extend(thought.text);
                             if !thought.rest.is_empty() {
                                 kept.push(Value::Object(thought.rest));

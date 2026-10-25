@@ -431,10 +431,7 @@ fn encode_message(
             out.push(to_raw(&ext_with(wire, &message.extras))?);
         }
         Role::User => encode_user(message, out)?,
-        Role::Assistant => {
-            let index = out.len();
-            out.push(encode_assistant(message, names, index)?);
-        }
+        Role::Assistant => out.push(encode_assistant(message, names)?),
         _ => {
             return Err(KppError::unsupported_by(
                 "message role",
@@ -503,11 +500,7 @@ fn encode_tool_message(result: &ToolResultBlock) -> Result<RawJson, KppError> {
     to_raw(&ext_with(wire, &result.extras))
 }
 
-fn encode_assistant(
-    message: &Message,
-    names: &mut Names<'_>,
-    index: usize,
-) -> Result<RawJson, KppError> {
+fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson, KppError> {
     let mut content: Vec<&Block> = Vec::new();
     let mut refusal: Option<String> = None;
     let mut tool_calls = Vec::new();
@@ -596,15 +589,22 @@ fn encode_assistant(
             _ => None,
         })
         .collect();
-    if names.ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts {
+    let profile = names.ctx.chat_profile;
+    if profile.reply.reasoning == ReplyReasoning::ThinkingParts {
         thoughts_into_content(&replayed, &mut wire, &mut wrapped)?;
-        refuse_unreadable_reasoning(&wrapped, &names.ctx.chat_profile, index)?;
     } else {
         for r in replayed {
             if let Some(Value::Object(fields)) = r.extras.form_value(DIALECT, FORM_REPLAYED) {
                 for (key, value) in fields {
                     wrapped.extra.entry(key.clone()).or_insert(to_raw(&value)?);
                 }
+            } else if let Some(field) = profile.reply.reasoning_fields.first()
+                && !r.text.concat().is_empty()
+            {
+                wrapped
+                    .extra
+                    .entry((*field).to_owned())
+                    .or_insert(to_raw(&r.text.concat())?);
             }
         }
     }
@@ -651,28 +651,6 @@ fn thoughts_into_content(
     wrapped.verbatim.shift_remove("content");
     wire.content = Some(StringOr::List(parts));
     Ok(())
-}
-
-fn refuse_unreadable_reasoning(
-    wrapped: &Ext<AssistantMessage>,
-    profile: &ChatProfile,
-    index: usize,
-) -> Result<(), KppError> {
-    let Some(key) = REPLAYED_REASONING
-        .iter()
-        .find(|key| wrapped.extra.contains_key(**key))
-    else {
-        return Ok(());
-    };
-    let param = format!("messages[{index}].{key}");
-    Err(KppError::unsupported(
-        param.clone(),
-        format!(
-            "{} takes reasoning only as text; send `{key}` as a string or remove it.",
-            profile.provider
-        ),
-    )
-    .with_param(param))
 }
 
 fn block_unsupported(block: &Block, place: &str) -> KppError {

@@ -381,10 +381,6 @@ fn every_chat_reasoning_field_is_readable_and_goes_back_as_it_came() {
         panic!("{:?}", g.messages[1])
     };
     assert_eq!(first.text, ["Use the tool."]);
-    assert!(
-        matches!(&g.messages[3].blocks[0], Block::Text(_)),
-        "encrypted only is not readable"
-    );
 
     let openai = sent(&req, ChatProfile::OPENAI).unwrap();
     assert_eq!(openai["messages"][1]["reasoning"], "Use the tool.");
@@ -394,15 +390,7 @@ fn every_chat_reasoning_field_is_readable_and_goes_back_as_it_came() {
         "opaque"
     );
 
-    let mistral = sent(&req, THINKING);
-    let err = mistral.unwrap_err();
-    assert_eq!(err.param.as_deref(), Some("messages[3].reasoning_details"));
-    let mut readable = req.clone();
-    let Request::Generate(g) = &mut readable else {
-        panic!()
-    };
-    g.messages.remove(3);
-    let mistral = sent(&readable, THINKING).unwrap();
+    let mistral = sent(&req, THINKING).unwrap();
     assert_eq!(
         mistral["messages"][1]["content"],
         json!([thinking_chunk("Use the tool."), {"type": "text", "text": "ok"}])
@@ -411,18 +399,97 @@ fn every_chat_reasoning_field_is_readable_and_goes_back_as_it_came() {
         mistral["messages"][2]["content"],
         json!([thinking_chunk("Summed up."), {"type": "text", "text": "ok"}])
     );
+    assert_eq!(
+        mistral["messages"][3],
+        json!({"role": "assistant", "content": "ok"}),
+        "encrypted reasoning has nothing Mistral can read"
+    );
 }
 
 #[test]
-fn reasoning_mistral_cannot_take_as_a_chunk_is_refused() {
+fn replayed_reasoning_without_readable_text_never_blocks_a_request() {
     let req = chat_request(json!([
         {"role": "user", "content": "hi"},
-        {"role": "assistant", "content": "ok", "reasoning_content": ["not", "text"]},
+        {"role": "assistant", "content": "a", "reasoning_content": ""},
+        {"role": "assistant", "content": "b", "reasoning_details": [
+            {"type": "reasoning.encrypted", "data": "opaque", "format": "unknown", "index": 0}]},
+        {"role": "assistant", "content": "c", "reasoning": "r", "reasoning_details": ["x"]},
+        {"role": "assistant", "content": "d", "reasoning_content": ["not", "text"]},
         {"role": "user", "content": "again"}
     ]));
-    let err = sent(&req, THINKING).unwrap_err();
-    assert_eq!(err.param.as_deref(), Some("messages[1].reasoning_content"));
-    assert!(err.message.contains("Example Cloud"), "{}", err.message);
+    let Request::Generate(g) = &req else { panic!() };
+    for m in &g.messages[1..5] {
+        assert!(matches!(m.blocks[0], Block::Reasoning(_)), "{m:?}");
+        assert!(m.extras.fields.is_empty(), "{m:?}");
+    }
+    let original = json!([
+        {"role": "assistant", "content": "a", "reasoning_content": ""},
+        {"role": "assistant", "content": "b", "reasoning_details": [
+            {"type": "reasoning.encrypted", "data": "opaque", "format": "unknown", "index": 0}]},
+        {"role": "assistant", "content": "c", "reasoning": "r", "reasoning_details": ["x"]},
+        {"role": "assistant", "content": "d", "reasoning_content": ["not", "text"]}
+    ]);
+    let openai = sent(&req, ChatProfile::OPENAI).unwrap();
+    assert_eq!(
+        openai["messages"].as_array().unwrap()[1..5],
+        original.as_array().unwrap()[..]
+    );
+
+    let mistral = sent(&req, THINKING).unwrap();
+    let contents: Vec<&Value> = (1..5).map(|i| &mistral["messages"][i]["content"]).collect();
+    assert_eq!(
+        contents,
+        [
+            &json!("a"),
+            &json!("b"),
+            &json!([thinking_chunk("r"), {"type": "text", "text": "c"}]),
+            &json!("d")
+        ]
+    );
+
+    let mut limited = req.clone();
+    if let Request::Generate(g) = &mut limited {
+        g.sampling.max_output_tokens = Some(1024);
+    }
+    for dialect in [DialectId::AnthropicMessages, DialectId::OpenAiResponses] {
+        let ctx = EgressCtx::new(&limited);
+        dispatch::check(dialect, &limited, &ctx).unwrap_or_else(|e| panic!("{dialect}: {e}"));
+    }
+}
+
+#[test]
+fn several_thinking_parts_in_one_delta_read_as_a_reply_reads_them() {
+    let sse = format!(
+        "data: {}\n\ndata: {}\n\ndata: [DONE]\n\n",
+        json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+            "choices": [{"index": 0, "delta": {"role": "assistant",
+                "content": [thinking_chunk("a"), thinking_chunk("b")]}, "finish_reason": null}]}),
+        json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+            "choices": [{"index": 0, "delta": {"content": "c"}, "finish_reason": "stop"}]})
+    );
+    let out = String::from_utf8(encode_stream(
+        DialectId::OpenAiChat,
+        &stream(sse.as_bytes()),
+    ))
+    .unwrap();
+    let thought: String = out
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|d| serde_json::from_str::<Value>(d).ok())
+        .filter_map(|c| {
+            c["choices"][0]["delta"]["reasoning_content"]
+                .as_str()
+                .map(str::to_owned)
+        })
+        .collect();
+    assert_eq!(thought, "a\n\nb");
+    let body = content_reply(
+        json!([thinking_chunk("a"), thinking_chunk("b"), {"type": "text", "text": "c"}]),
+    );
+    assert_eq!(
+        encode_reply(reply(&body))["choices"][0]["message"]["reasoning_content"],
+        "a\n\nb"
+    );
 }
 
 #[test]

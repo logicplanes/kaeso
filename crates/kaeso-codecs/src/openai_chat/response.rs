@@ -96,9 +96,7 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     let thinking = ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts;
     if thinking
         && let Some(StringOr::List(parts)) = &message.content
-        && !parts
-            .iter()
-            .any(|p| matches!(read_part(p), ChatPart::Text(_)))
+        && !parts.iter().any(|p| plain_text_part(p).is_some())
     {
         m_verbatim.insert("content".to_owned(), RawJson::null());
     }
