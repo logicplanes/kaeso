@@ -12,7 +12,7 @@ use super::error::error_body;
 use super::response::{encode_finish, encode_usage};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
-    FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_REASONING_FIELD,
+    FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_PART, FORM_REASONING_FIELD,
     FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras, start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
@@ -140,7 +140,10 @@ impl ChatStreamEncoder {
                     chunk.tool_calls.push(entry);
                     chunk.has_choice = true;
                 }
-                BlockHeader::Unknown(item) if item.origin.is(DIALECT) => {
+                BlockHeader::Unknown(item)
+                    if item.origin.is(DIALECT)
+                        && start.extras.form_value(DIALECT, FORM_PART).is_none() =>
+                {
                     self.unknown_tools.insert(start.index);
                     chunk.tool_calls.push(Entry {
                         raw: Some(item.raw.clone()),

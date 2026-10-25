@@ -257,6 +257,140 @@ fn stream_chunks_that_carry_nothing_readable_reach_chat_apps_without_an_array() 
     assert_eq!(deltas[5]["tool_calls"][0]["id"], "call_1");
 }
 
+fn kept_parts(events: &[StreamEvent]) -> Vec<(Value, Value)> {
+    let mut kept = Vec::new();
+    for (i, event) in events.iter().enumerate() {
+        let StreamEvent::BlockStart(s) = event else {
+            continue;
+        };
+        let BlockHeader::Unknown(item) = &s.block else {
+            continue;
+        };
+        assert!(
+            matches!(events.get(i + 1), Some(StreamEvent::BlockStop(stop)) if stop.index == s.index),
+            "{events:?}"
+        );
+        let place = s
+            .extras
+            .form_value(DialectId::OpenAiChat, super::stream::FORM_PART)
+            .cloned()
+            .unwrap_or(Value::Null);
+        kept.push((item.raw.to_value().unwrap(), place));
+    }
+    kept
+}
+
+fn reference(id: u32) -> Value {
+    json!({"type": "reference", "reference_ids": [id]})
+}
+
+#[test]
+fn streamed_reference_parts_stay_as_unknown_blocks_as_in_a_reply() {
+    let events = stream(&recorded(
+        "streams",
+        "sse",
+        "providers/mistral/reference-chunks",
+    ));
+    assert_eq!(
+        kept_parts(&events),
+        [
+            (reference(1), json!("thinking")),
+            (reference(1), json!("content")),
+            (reference(2), json!("content")),
+        ]
+    );
+    let mut thinking = String::new();
+    let mut answer = String::new();
+    for event in &events {
+        if let StreamEvent::BlockDelta(d) = event {
+            match &d.delta {
+                Delta::ReasoningText(t) => {
+                    thinking.push_str(t);
+                    assert_eq!(
+                        d.extras
+                            .form_value(DialectId::OpenAiChat, super::response::FORM_THINKING),
+                        Some(&json!({"closed": true}))
+                    );
+                }
+                Delta::Text(t) => answer.push_str(t),
+                _ => {}
+            }
+        }
+    }
+    assert_eq!(thinking, "The search result says it is sunny in Lisbon.");
+    assert_eq!(answer, "It is sunny in Lisbon today.");
+
+    let Reply::Generate(resp) = reply(&content_reply(json!([
+        reference(1),
+        {"type": "text", "text": "x"}
+    ]))) else {
+        panic!("not a reply")
+    };
+    assert!(
+        matches!(&resp.blocks[0], Block::Unknown(item) if item.raw.to_value().unwrap() == reference(1)),
+        "{:?}",
+        resp.blocks
+    );
+
+    for dialect in [DialectId::AnthropicMessages, DialectId::OpenAiResponses] {
+        let out = String::from_utf8(encode_stream(dialect, &events)).unwrap();
+        assert!(out.contains("It is sunny in Lisbon"), "{dialect}: {out}");
+        assert!(!out.contains("reference_ids"), "{dialect}: {out}");
+    }
+}
+
+#[test]
+fn a_streamed_thinking_part_without_readable_text_is_kept_whole() {
+    let chunk = |content: Value, finish: Value| {
+        format!(
+            "data: {}\n\n",
+            json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+                "choices": [{"index": 0, "delta": {"content": content}, "finish_reason": finish}]})
+        )
+    };
+    let referring = json!({"type": "thinking", "thinking": [reference(3)]});
+    let closing = json!({"type": "thinking", "thinking": [], "closed": true});
+    let sse = [
+        chunk(json!([thinking_chunk("Plan.")]), Value::Null),
+        chunk(json!([referring]), Value::Null),
+        chunk(json!([closing]), Value::Null),
+        chunk(json!([{"type": "thinking", "thinking": []}]), Value::Null),
+        chunk(
+            json!([reference(1), {"type": "text", "text": "x"}]),
+            json!("stop"),
+        ),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat();
+    let events = stream(sse.as_bytes());
+    assert_eq!(
+        kept_parts(&events),
+        [
+            (referring, json!("thinking")),
+            (closing, json!("thinking")),
+            (reference(1), json!("content")),
+        ]
+    );
+    let out = String::from_utf8(encode_stream(DialectId::OpenAiChat, &events)).unwrap();
+    let deltas: Vec<Value> = out
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|d| serde_json::from_str::<Value>(d).ok())
+        .map(|c| c["choices"][0]["delta"].clone())
+        .collect();
+    assert_eq!(
+        deltas,
+        [
+            json!({"reasoning_content": "Plan."}),
+            json!({}),
+            json!({}),
+            json!({}),
+            json!({"content": "x"}),
+        ],
+        "{out}"
+    );
+}
+
 #[test]
 fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_reaches_chat_apps_as_reasoning_content()
  {

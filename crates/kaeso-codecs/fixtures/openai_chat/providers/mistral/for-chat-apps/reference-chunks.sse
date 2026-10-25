@@ -1,0 +1,16 @@
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"reasoning_content":"The search result says"},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"reasoning_content":" it is sunny in Lisbon."},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"It is sunny in Lisbon"},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":" today."},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{},"finish_reason":null}]}
+
+data: {"id":"9d3e6b1f2a7c4e08b5f1c6a2d8e4b7f0","object":"chat.completion.chunk","created":1792370400,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":96,"total_tokens":121,"completion_tokens":25,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":12},"service_tier":"standard"}}
+
+data: [DONE]
+
