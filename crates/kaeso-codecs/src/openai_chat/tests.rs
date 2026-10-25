@@ -173,7 +173,8 @@ fn every_request_fixture_round_trips() {
             continue;
         }
         let req = decode(&body).unwrap_or_else(|e| panic!("{name}: {e:?}"));
-        let mut ctx = EgressCtx::new(&req);
+        let keeps_bookkeeping = super::ChatProfile::OPENAI.with_message_bookkeeping();
+        let mut ctx = EgressCtx::new(&req).with_chat_profile(keeps_bookkeeping);
         let out =
             OpenAiChat::encode_request(&req, &mut ctx).unwrap_or_else(|e| panic!("{name}: {e:?}"));
         assert_json_eq(&name, &body, &out.body);

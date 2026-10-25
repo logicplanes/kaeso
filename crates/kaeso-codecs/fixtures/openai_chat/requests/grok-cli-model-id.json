@@ -1,0 +1,82 @@
+{
+  "model": "claude-haiku-5-5",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks."
+    },
+    {
+      "role": "user",
+      "content": "<user_query>\nRun echo ok\n</user_query>"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call_kaeso_1",
+          "type": "function",
+          "function": {
+            "name": "run_terminal_command",
+            "arguments": "{\"command\": \"echo ok\", \"description\": \"Print ok.\"}"
+          }
+        }
+      ],
+      "model_id": "claude-haiku-5-5"
+    },
+    {
+      "role": "tool",
+      "content": "ok\n",
+      "tool_call_id": "call_kaeso_1"
+    },
+    {
+      "role": "assistant",
+      "content": "ok",
+      "model_id": "claude-haiku-5-5"
+    },
+    {
+      "role": "user",
+      "content": "<user_query>\nsay ok\n</user_query>"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "run_terminal_command",
+        "description": "Run a bash command and return its output.",
+        "parameters": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "required": [
+            "command",
+            "description"
+          ],
+          "properties": {
+            "command": {
+              "description": "The bash command to run.",
+              "type": "string"
+            },
+            "block_until_ms": {
+              "description": "How long to wait for the command, in milliseconds, before moving it to the background. The default is 30000 (30 seconds). The maximum is 36000000. 0 starts the command in the background immediately. The wait includes shell startup.",
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0
+            },
+            "description": {
+              "description": "One short sentence that says what this command does and why you run it.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}
