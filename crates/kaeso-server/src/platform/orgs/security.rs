@@ -14,6 +14,7 @@ use super::org::{OrgView, lock_changeable};
 use crate::auth::oidc::Provider;
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::auth::oidc::secret_aad;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{RoleBook, RoleRef, check_org, org_to_store};
@@ -375,7 +376,7 @@ pub async fn put_sso(
     } else {
         Vec::new()
     };
-    ctx.audit(Some(org), "security.sso_update")
+    ctx.audit(Some(org), Action::SecuritySsoUpdate)
         .target("org", org)
         .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified, "sessions_ended": ended.len() }))
         .write(&mut tx)
@@ -441,7 +442,7 @@ pub async fn verify_domains(
             } else {
                 Vec::new()
             };
-            ctx.audit(Some(org), "security.sso_domain_verify")
+            ctx.audit(Some(org), Action::SecuritySsoDomainVerify)
                 .target("org", org)
                 .after(serde_json::json!({ "domain": domain, "sessions_ended": ended.len() }))
                 .write(&mut tx)
@@ -484,7 +485,7 @@ pub async fn delete_sso(
     orgs::update(&mut *tx, &row).await?;
     // Only after the delete has the connection row's lock, as in `put_sso`.
     let ended = sessions_store::revoke_sso(&mut *tx, row.id, None, ctx.now).await?;
-    ctx.audit(Some(scope.id()), "security.sso_delete")
+    ctx.audit(Some(scope.id()), Action::SecuritySsoDelete)
         .target("org", scope.id())
         .after(serde_json::json!({ "sessions_ended": ended.len() }))
         .write(&mut tx)
@@ -504,7 +505,7 @@ pub struct Switch {
 async fn set_flag(
     state: &AppState,
     ctx: &Ctx,
-    action: &'static str,
+    action: Action,
     apply: impl FnOnce(&mut orgs::Org),
 ) -> ApiResult<Json<SecurityView>> {
     let scope = ctx.org()?;
@@ -569,7 +570,7 @@ pub async fn require_sso(
     Path(_org): Path<String>,
     Body(req): Body<Switch>,
 ) -> ApiResult<Json<SecurityView>> {
-    set_flag(&state, &ctx, "security.require_sso", |o| {
+    set_flag(&state, &ctx, Action::SecurityRequireSso, |o| {
         o.require_sso = req.enabled
     })
     .await
@@ -591,7 +592,7 @@ pub async fn require_2fa(
     Path(_org): Path<String>,
     Body(req): Body<Switch>,
 ) -> ApiResult<Json<SecurityView>> {
-    set_flag(&state, &ctx, "security.require_2fa", |o| {
+    set_flag(&state, &ctx, Action::SecurityRequire2fa, |o| {
         o.require_2fa = req.enabled
     })
     .await
@@ -632,7 +633,7 @@ pub async fn key_policy(
     Body(req): Body<KeyPolicy>,
 ) -> ApiResult<Json<SecurityView>> {
     let days = validate_lifetime(req.max_key_lifetime_days)?;
-    set_flag(&state, &ctx, "security.key_policy", |o| {
+    set_flag(&state, &ctx, Action::SecurityKeyPolicy, |o| {
         o.max_key_lifetime_days = days
     })
     .await

@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 
 use super::{ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_project_peer, lock_roles,
@@ -143,7 +144,7 @@ pub async fn add(
             "The user is already a member of this project.".into(),
         ));
     }
-    ctx.audit(Some(ctx.org()?.id()), "project.member_add")
+    ctx.audit(Some(ctx.org()?.id()), Action::ProjectMemberAdd)
         .target("user", req.user_id)
         .after(serde_json::json!({ "project": ProjectId::from_uuid(project).to_string(), "grant": project_view(&grant, role) }))
         .write(&mut tx)
@@ -206,7 +207,7 @@ pub async fn update(
     {
         return Err(ApiError::not_found("member"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "project.member_rights_update")
+    ctx.audit(Some(ctx.org()?.id()), Action::ProjectMemberRightsUpdate)
         .target("user", UserId::from_uuid(target.user_id))
         .before(project_view(&before, RoleRef::of_project(&target.grant())))
         .after(project_view(&after, role))
@@ -246,7 +247,7 @@ pub async fn remove(
     let keys =
         key_lifecycle::archive_user_keys_in_project(&mut *tx, project, target.user_id, ctx.now)
             .await?;
-    ctx.audit(Some(ctx.org()?.id()), "project.member_remove")
+    ctx.audit(Some(ctx.org()?.id()), Action::ProjectMemberRemove)
         .target("user", UserId::from_uuid(target.user_id))
         .after(serde_json::json!({ "project": ProjectId::from_uuid(project).to_string(), "archived_keys": keys.len() }))
         .write(&mut tx)

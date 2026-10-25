@@ -16,6 +16,7 @@ use super::{EmailSent, SignedIn, sign_in, throttle_ip};
 use crate::auth::sessions::Method;
 use crate::auth::throttle::{self, EMAILS_PER_ADDRESS, EMAILS_PER_IP, TOKENS_PER_IP};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::services::accounts;
@@ -194,7 +195,7 @@ pub async fn verify(
             "An account with this address exists; sign in instead.".into(),
         ));
     }
-    ctx.audit(None, "user.signup")
+    ctx.audit(None, Action::UserSignup)
         .by(id)
         .target("user", id)
         .after(serde_json::json!({ "email": email }))

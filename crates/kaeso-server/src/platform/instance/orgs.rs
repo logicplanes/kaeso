@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::org_to_store;
 use crate::platform::json::Body;
@@ -154,12 +155,12 @@ pub async fn create(
         .ok_or_else(|| ApiError::invalid("owner", "The owner must be an active user."))?;
     let mut tx = state.pg.begin().await?;
     let (org, _) = org_service::create(&mut tx, &name, owner).await?;
-    ctx.audit(Some(org), "org.create")
+    ctx.audit(Some(org), Action::OrgCreate)
         .target("org", org)
         .after(serde_json::json!({ "name": name, "owner": owner.to_string() }))
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.create")
+    ctx.audit(None, Action::OrgCreate)
         .target("org", org)
         .write(&mut tx)
         .await?;
@@ -273,11 +274,11 @@ pub async fn appoint_owner(
     if !org_service::add_member(&mut tx, org_id, req.user_id, &owner).await? {
         members::update_org(&mut *tx, o.id, req.user_id.uuid(), &owner).await?;
     }
-    ctx.audit(Some(org_id), "org.owner_appointed_by_instance_admin")
+    ctx.audit(Some(org_id), Action::OrgOwnerAppointedByInstanceAdmin)
         .target("user", req.user_id)
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.owner_appointed")
+    ctx.audit(None, Action::OrgOwnerAppointed)
         .target("org", org_id)
         .after(serde_json::json!({ "owner": req.user_id.to_string() }))
         .write(&mut tx)
@@ -321,13 +322,13 @@ pub async fn rename(
     row.name = name;
     orgs::update(&mut *tx, &row).await?;
     let after = OrgView::from_row(&row);
-    ctx.audit(Some(org_id), "org.update")
+    ctx.audit(Some(org_id), Action::OrgUpdate)
         .target("org", org_id)
         .before(&before)
         .after(&after)
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.update")
+    ctx.audit(None, Action::OrgUpdate)
         .target("org", org_id)
         .before(&before)
         .after(&after)
@@ -370,12 +371,12 @@ pub async fn schedule_deletion(
     row.state = "scheduled_for_deletion".into();
     row.deletion_due_at = Some(ctx.now + grace);
     orgs::update(&mut *tx, &row).await?;
-    ctx.audit(Some(org_id), "org.schedule_deletion")
+    ctx.audit(Some(org_id), Action::OrgScheduleDeletion)
         .target("org", org_id)
         .after(serde_json::json!({ "deletion_due_at": row.deletion_due_at }))
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.schedule_deletion")
+    ctx.audit(None, Action::OrgScheduleDeletion)
         .target("org", org_id)
         .after(serde_json::json!({ "deletion_due_at": row.deletion_due_at }))
         .write(&mut tx)
@@ -440,7 +441,7 @@ pub async fn delete_now(
     let before = row.deletion_due_at;
     row.deletion_due_at = Some(ctx.now);
     orgs::update(&mut *tx, &row).await?;
-    ctx.audit(None, "org.delete_now")
+    ctx.audit(None, Action::OrgDeleteNow)
         .target("org", org_id)
         .before(serde_json::json!({ "name": row.name, "deletion_due_at": before }))
         .write(&mut tx)

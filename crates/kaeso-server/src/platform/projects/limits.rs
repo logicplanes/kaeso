@@ -15,6 +15,7 @@ use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::pagination::List;
@@ -360,7 +361,7 @@ pub(crate) async fn create_limit(
     let row = store::get(&mut *tx, project.id, l.id)
         .await?
         .ok_or_else(|| ApiError::internal("new limit vanished"))?;
-    ctx.audit(Some(ctx.org()?.id()), "limit.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::LimitCreate)
         .target("limit", LimitId::from_uuid(l.id))
         .after(serde_json::json!({ "subject": subject_view(l.subject).id, "description": l.describe(), "hard": l.hard }))
         .write(&mut tx)
@@ -534,7 +535,7 @@ pub async fn update(
     if !store::update(&mut *tx, project, &l).await? {
         return Err(ApiError::not_found("limit"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "limit.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::LimitUpdate)
         .target("limit", LimitId::from_uuid(l.id))
         .before(serde_json::json!({ "description": before.describe(), "hard": before.hard, "alert_thresholds": before.thresholds }))
         .after(serde_json::json!({ "description": l.describe(), "hard": l.hard, "alert_thresholds": l.thresholds }))
@@ -580,7 +581,7 @@ pub async fn delete(
     if !store::delete(&mut *tx, project, r.id).await? {
         return Err(ApiError::not_found("limit"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "limit.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::LimitDelete)
         .target("limit", LimitId::from_uuid(l.id))
         .before(serde_json::json!({ "description": l.describe() }))
         .write(&mut tx)

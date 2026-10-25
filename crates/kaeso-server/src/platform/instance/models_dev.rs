@@ -6,6 +6,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::services::models_dev::{self, SyncError, Synced};
 use crate::state::AppState;
@@ -77,7 +78,7 @@ pub async fn sync(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Mod
         }
     })?;
     let changed = matches!(outcome, Synced::Applied(_));
-    ctx.audit(None, "models_dev.sync")
+    ctx.audit(None, Action::ModelsDevSync)
         .after(serde_json::json!({ "changed": changed }))
         .write(&mut *state.pg.acquire().await?)
         .await?;

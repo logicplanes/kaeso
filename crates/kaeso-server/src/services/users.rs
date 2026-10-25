@@ -6,6 +6,7 @@ use kaeso_store::pg::{totp, users};
 use kaeso_mail::Actor;
 
 use crate::auth::sessions;
+use crate::platform::audit::Action;
 use crate::services::mail_lang;
 use crate::state::AppState;
 
@@ -59,7 +60,7 @@ pub async fn operator_reset_2fa(
     crate::platform::audit::system(
         &mut tx,
         None,
-        "user.2fa_reset",
+        Action::User2faReset,
         Some(("user", id.to_string())),
         None,
         state.clock.now(),
@@ -123,7 +124,7 @@ pub async fn operator_sign_in_link(
     crate::platform::audit::system(
         &mut tx,
         None,
-        "user.sign_in_link",
+        Action::UserSignInLink,
         Some(("user", id.to_string())),
         None,
         now,

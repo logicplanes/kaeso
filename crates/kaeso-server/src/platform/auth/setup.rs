@@ -12,6 +12,7 @@ use super::{SignedIn, sign_in, throttle_ip};
 use crate::auth::sessions::Method;
 use crate::auth::throttle::TOKENS_PER_IP;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 pub(crate) use crate::platform::validate::{validate_email, validate_name};
@@ -131,13 +132,13 @@ pub async fn setup(
     if let Some(zone) = &timezone {
         instance::set_time_zone(&mut *tx, zone).await?;
     }
-    ctx.audit(None, "instance.setup")
+    ctx.audit(None, Action::InstanceSetup)
         .by(user)
         .target("user", user)
         .after(serde_json::json!({ "email": email, "name": name, "is_instance_admin": true, "has_password": password_hash.is_some() }))
         .write(&mut tx)
         .await?;
-    ctx.audit(Some(org), "org.create")
+    ctx.audit(Some(org), Action::OrgCreate)
         .by(user)
         .target("org", org)
         .after(serde_json::json!({
