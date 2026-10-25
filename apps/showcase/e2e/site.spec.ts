@@ -42,13 +42,14 @@ test.describe("links to the source", () => {
 });
 
 test.describe("legal pages", () => {
-  const words = { en: ["Privacy", "Imprint"], de: ["Datenschutz", "Impressum"], "zh-CN": ["隐私政策", "法律声明"] } as const;
+  const words = { en: ["Legal", "Privacy", "Imprint"], de: ["Rechtliches", "Datenschutz", "Impressum"], "zh-CN": ["法律信息", "隐私政策", "法律声明"] } as const;
   for (const lang of LANGS) {
-    test(`the sidebar links to the privacy policy and the imprint in ${lang}`, async ({ page }) => {
+    test(`the legal menu at the sidebar's foot links to the privacy policy and the imprint in ${lang}`, async ({ page }) => {
       await open(page, at(lang, "/"));
-      const [privacy, imprint] = words[lang];
-      await expect(page.getByRole("link", { name: privacy, exact: true })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
-      await expect(page.getByRole("link", { name: imprint, exact: true })).toHaveAttribute("href", "https://kaeso.app/impressum");
+      const [legal, privacy, imprint] = words[lang];
+      await page.getByRole("button", { name: legal, exact: true }).click();
+      await expect(page.getByRole("menuitem", { name: privacy, exact: true })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
+      await expect(page.getByRole("menuitem", { name: imprint, exact: true })).toHaveAttribute("href", "https://kaeso.app/impressum");
     });
   }
 });

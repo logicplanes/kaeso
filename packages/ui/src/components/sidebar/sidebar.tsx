@@ -85,6 +85,8 @@ const Ctx = createContext<SidebarCtx>({
 });
 export const useSidebar = () => useContext(Ctx);
 
+const ScrolledUnder = createContext<{ under: boolean; setUnder: (under: boolean) => void }>({ under: false, setUnder: () => undefined });
+
 export const SidebarFloatingContext = createContext(false);
 export const SidebarSheetContext = createContext<{ close: () => void; peek: boolean } | null>(null);
 
@@ -192,6 +194,8 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
   );
   const floating = useContext(SidebarFloatingContext);
   const hidden = collapsed && !floating;
+  const [under, setUnder] = useState(false);
+  const scrolledUnder = useMemo(() => ({ under, setUnder }), [under]);
   const nav = (
     <nav
       ref={ref}
@@ -206,7 +210,7 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
       style={{ ["--k-sidebar-width" as string]: `${width}px`, ...style }}
       {...props}
     >
-      {children}
+      <ScrolledUnder value={scrolledUnder}>{children}</ScrolledUnder>
     </nav>
   );
   if (floating) return nav;
@@ -552,9 +556,25 @@ function PlaceName({ label }: { label: string }) {
 
 const Content = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function SidebarContent({ className, ...props }, ref) {
   const { rail } = useSidebar();
+  const { setUnder } = useContext(ScrolledUnder);
+  const own = useRef<HTMLDivElement | null>(null);
+  const refs = useMemo(() => mergeRefs(own, ref), [ref]);
+  useEffect(() => {
+    const el = own.current;
+    if (!el) return;
+    const check = () => setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const stop = observeResize([el, ...el.children], check);
+    return () => {
+      el.removeEventListener("scroll", check);
+      stop();
+      setUnder(false);
+    };
+  }, [setUnder]);
   return (
     <div
-      ref={ref}
+      ref={refs}
       className={cn("flex min-h-0 flex-1 flex-col gap-16 overflow-y-auto overscroll-contain pt-8 pb-16 scrollbar-quiet", rail ? "px-8" : "px-16", className)}
       {...props}
     />
@@ -564,7 +584,14 @@ Content.displayName = "Sidebar.Content";
 
 const Footer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function SidebarFooter({ className, ...props }, ref) {
   const { rail } = useSidebar();
-  return <div ref={ref} className={cn("flex shrink-0 items-center gap-4 pt-8 pb-12", rail ? "px-8" : "px-16", className)} {...props} />;
+  const { under } = useContext(ScrolledUnder);
+  return (
+    <div
+      ref={ref}
+      className={cn("flex shrink-0 items-center gap-4 pt-8 pb-12 transition-control", under && "hairline-t-strong", rail ? "px-8" : "px-16", className)}
+      {...props}
+    />
+  );
 });
 Footer.displayName = "Sidebar.Footer";
 

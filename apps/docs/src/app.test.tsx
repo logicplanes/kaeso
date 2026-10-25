@@ -39,6 +39,13 @@ function phoneBar() {
   return within(bar);
 }
 
+async function themeChoice(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "Theme" }));
+  const checked = (await screen.findAllByRole("menuitemradio")).find((o) => o.getAttribute("aria-checked") === "true");
+  await user.keyboard("{Escape}");
+  return checked?.textContent;
+}
+
 function app(path: string) {
   const history = createMemoryHistory({ initialEntries: [path] });
   const router = createDocsRouter(history);
@@ -54,6 +61,7 @@ function app(path: string) {
 
 describe("the site", () => {
   it("opens a page with its title, description, sidebar and footer", async () => {
+    const user = userEvent.setup();
     app("/guides/keys-and-limits");
     expect(await screen.findByRole("heading", { level: 1, name: "Keys and limits" })).toBeInTheDocument();
     expect(screen.getByText("Create a key for an app and keep its spending inside a budget.")).toBeInTheDocument();
@@ -61,8 +69,10 @@ describe("the site", () => {
     expect(within(nav).getByRole("link", { name: "Keys and limits" })).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link", { current: "page" }).map((link) => link.textContent)).toEqual(["Keys and limits"]);
     expect(within(nav).getByRole("link", { name: "Changelog" })).toHaveAttribute("href", "https://kaeso.app/changelog");
-    expect(within(nav).getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
-    expect(within(nav).getByRole("link", { name: "Imprint" })).toHaveAttribute("href", "https://kaeso.app/impressum");
+    await user.click(within(nav).getByRole("button", { name: "Legal" }));
+    expect(await screen.findByRole("menuitem", { name: "Privacy" })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
+    expect(screen.getByRole("menuitem", { name: "Imprint" })).toHaveAttribute("href", "https://kaeso.app/impressum");
+    await user.keyboard("{Escape}");
     expect(screen.getByRole("link", { name: /Edit on GitHub/ })).toHaveAttribute(
       "href",
       "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/e2e/fixtures/content/en/guides/keys-and-limits.md",
@@ -72,20 +82,22 @@ describe("the site", () => {
     await waitFor(() => expect(document.title).toBe("Keys and limits · Kaeso documentation"));
   });
 
-  it("opens the same page in another language from the language select, and remembers the choice", async () => {
+  it("opens the same page in another language from the language menu, and remembers the choice", async () => {
     const user = userEvent.setup();
     const router = app("/guides/keys-and-limits");
     await screen.findByRole("heading", { level: 1, name: "Keys and limits" });
-    const language = screen.getByRole("combobox", { name: "Language" });
-    expect(language).toHaveTextContent("English");
-    await user.click(language);
-    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
-    await user.click(screen.getByRole("option", { name: "Deutsch" }));
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
+    expect(screen.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
+    await user.click(screen.getByRole("menuitemradio", { name: "Deutsch" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/de/guides/keys-and-limits"));
     expect(await screen.findByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Dokumentation" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Sprache" })).toHaveTextContent("Deutsch");
-    expect(screen.getByRole("combobox", { name: "Design" })).toHaveTextContent("System");
+    expect(screen.getByRole("button", { name: "Rechtliches" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Design" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Sprache" }));
+    expect(await screen.findByRole("menuitemradio", { name: "Deutsch" })).toHaveAttribute("aria-checked", "true");
+    await user.keyboard("{Escape}");
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("de");
     await waitFor(() => expect(document.documentElement.lang).toBe("de"));
   });
@@ -93,8 +105,9 @@ describe("the site", () => {
   it("shows the Chinese pages with their own text", async () => {
     app("/zh-CN");
     expect(await screen.findByRole("navigation", { name: "文档" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "语言" })).toHaveTextContent("简体中文");
-    expect(screen.getByRole("combobox", { name: "主题" })).toHaveTextContent("跟随系统");
+    expect(screen.getByRole("button", { name: "法律信息" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "主题" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "语言" })).toBeInTheDocument();
   });
 
   it("says when an address has no page, in the frame and in its language", async () => {
@@ -218,7 +231,7 @@ describe("search", () => {
     await user.type(await screen.findByPlaceholderText("Search the documentation"), "dark");
     await user.click(await screen.findByRole("option", { name: "Use the dark theme" }));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
-    expect(screen.getByRole("combobox", { name: "Theme" })).toHaveTextContent("Dark");
+    expect(await themeChoice(user)).toBe("Dark");
     for (const [query, option, label] of [
       ["light", "Use the light theme", "Light"],
       ["system", "Use the system theme", "System"],
@@ -226,7 +239,7 @@ describe("search", () => {
       await user.click(phoneBar().getByRole("button", { name: "Search" }));
       await user.type(await screen.findByPlaceholderText("Search the documentation"), query);
       await user.click(await screen.findByRole("option", { name: option }));
-      await waitFor(() => expect(screen.getByRole("combobox", { name: "Theme" })).toHaveTextContent(label));
+      expect(await themeChoice(user)).toBe(label);
     }
   });
 });

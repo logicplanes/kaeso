@@ -1,9 +1,10 @@
+import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Icon, IconButton, Link, Sidebar, Text, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
+import { Icon, IconButton, Sidebar, icons, useTheme } from "@logicplanes/kaeso-ui";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
-import { LanguageSelect } from "./language-select";
+import type { FooterMenu } from "./footer-menus";
 import { openSearch } from "./search-store";
 
 export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
@@ -17,11 +18,28 @@ const CHANGELOG: Record<Locale, string> = {
   "zh-CN": "https://kaeso.app/zh-CN/changelog",
 };
 
-const PRIVACY = "https://kaeso.app/datenschutz";
-const IMPRINT = "https://kaeso.app/impressum";
+const FooterMenus = lazy(() => import("./footer-menus"));
+
+function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
+  const t = useText();
+  const { resolvedTheme } = useTheme();
+  return (
+    <>
+      <IconButton icon={icons.legal} aria-label={t("legal.label")} aria-haspopup="menu" onClick={() => onOpen("legal")} />
+      <IconButton
+        icon={resolvedTheme === "dark" ? icons.themeDark : icons.themeLight}
+        aria-label={t("theme.label")}
+        aria-haspopup="menu"
+        onClick={() => onOpen("theme")}
+      />
+      <IconButton icon={icons.language} aria-label={t("language.label")} aria-haspopup="menu" onClick={() => onOpen("language")} />
+    </>
+  );
+}
 
 export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
   const t = useText();
+  const [opening, setOpening] = useState<FooterMenu | null>(null);
   const locale = useSiteLocale();
   const pathname = useLocation({ select: (l) => l.pathname.replace(/\/+$/, "") || "/" });
   return (
@@ -46,21 +64,10 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
           </Sidebar.Group>
         ))}
       </Sidebar.Content>
-      <Sidebar.Footer>
-        <div className="flex w-full flex-col gap-8">
-          <div className="grid w-full grid-cols-2 gap-4">
-            <LanguageSelect />
-            <ThemeSelect fullWidth />
-          </div>
-          <Text as="div" variant="small" className="mx-12 flex gap-12">
-            <Link href={PRIVACY} variant="quiet" external={false}>
-              {t("nav.privacy")}
-            </Link>
-            <Link href={IMPRINT} variant="quiet" external={false}>
-              {t("nav.imprint")}
-            </Link>
-          </Text>
-        </div>
+      <Sidebar.Footer className="gap-8">
+        <Suspense fallback={<FooterButtons onOpen={setOpening} />}>
+          <FooterMenus opening={opening} />
+        </Suspense>
       </Sidebar.Footer>
     </Sidebar>
   );

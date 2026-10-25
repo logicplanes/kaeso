@@ -207,16 +207,16 @@ test("nothing typed after ⌘K is lost while the search's code is held back, whi
 
 test("the theme switches and stays switched", async ({ page }) => {
   await page.goto("/");
-  const theme = page.getByRole("combobox", { name: "Theme" });
-  await expect(theme).toHaveText("System");
+  const theme = page.getByRole("button", { name: "Theme" });
   await theme.click();
-  await page.getByRole("option", { name: "Dark" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "System" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(theme).toHaveText("Dark");
   await theme.click();
-  await page.getByRole("option", { name: "System" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("menuitemradio", { name: "System" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
 });
 
@@ -243,8 +243,7 @@ test.describe("on a phone", () => {
     await toggle.click();
     const sheet = page.getByRole("dialog", { name: "Navigation" });
     await expect(sheet).toBeVisible();
-    await expect(sheet.getByRole("combobox", { name: "Language" })).toHaveText("English");
-    await expect(sheet.getByRole("combobox", { name: "Theme" })).toHaveText("System");
+    for (const name of ["Legal", "Theme", "Language"]) await expect(sheet.getByRole("button", { name })).toBeVisible();
     await sheet.getByRole("link", { name: "Models" }).click();
     await expect(page).toHaveURL("/reference/models");
     await expect(sheet).toBeHidden();
@@ -379,20 +378,20 @@ test.describe("on a phone", () => {
 });
 
 test.describe("languages", () => {
-  test("the language select opens the same page in another language, which the next visit remembers", async ({ page }) => {
+  test("the language menu opens the same page in another language, which the next visit remembers", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
-    await expect(page.getByRole("combobox", { name: "Language" })).toHaveText("English");
-    await page.getByRole("combobox", { name: "Language" }).click();
-    await page.getByRole("option", { name: "Deutsch" }).click();
+    await page.getByRole("button", { name: "Language" }).click();
+    await expect(page.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
+    await page.getByRole("menuitemradio", { name: "Deutsch" }).click();
     await expect(page).toHaveURL("/de/guides/keys-and-limits");
     await expect(page.getByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "de");
     await expect(page).toHaveTitle("Schlüssel und Limits · Kaeso-Dokumentation");
     await page.goto("/reference/models");
     await expect(page).toHaveURL("/de/reference/models");
-    await expect(page.getByRole("combobox", { name: "Sprache" })).toHaveText("Deutsch");
-    await page.getByRole("combobox", { name: "Sprache" }).click();
-    await page.getByRole("option", { name: "简体中文" }).click();
+    await page.getByRole("button", { name: "Sprache" }).click();
+    await expect(page.getByRole("menuitemradio", { name: "Deutsch" })).toHaveAttribute("aria-checked", "true");
+    await page.getByRole("menuitemradio", { name: "简体中文" }).click();
     await expect(page).toHaveURL("/zh-CN/reference/models");
     await expect(page.getByRole("navigation", { name: "文档" })).toBeVisible();
   });

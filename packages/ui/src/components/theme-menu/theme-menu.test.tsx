@@ -28,4 +28,17 @@ describe("ThemeMenu", () => {
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
   });
+
+  it("opens above the button and lines up with its start, for a button at the foot of a sidebar", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <ThemeMenu side="top" align="start" />
+      </ThemeProvider>,
+    );
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    const menu = await screen.findByRole("menu");
+    expect(menu).toHaveAttribute("data-side", "top");
+    expect(menu).toHaveAttribute("data-align", "start");
+  });
 });
