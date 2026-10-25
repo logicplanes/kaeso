@@ -107,6 +107,7 @@ pub struct Call<'a> {
 
 const STREAMS_PER_CONNECTION: usize = 25;
 const CONNECTIONS_PER_PROVIDER: usize = 32;
+const MAX_IDLE_ORIGINS: usize = 256;
 
 fn secret_header(
     builder: reqwest::RequestBuilder,
@@ -137,6 +138,14 @@ struct Origin {
     negotiated: Connection,
     multiplexed: Vec<Connection>,
     speaks_h2: Arc<AtomicBool>,
+}
+
+impl Origin {
+    fn busy(&self) -> bool {
+        std::iter::once(&self.negotiated)
+            .chain(&self.multiplexed)
+            .any(|c| c.in_flight.load(Ordering::Relaxed) > 0)
+    }
 }
 
 #[derive(Debug)]
@@ -289,6 +298,9 @@ impl Upstream {
             base.as_str().to_owned()
         };
         let mut origins = self.origins.lock().unwrap_or_else(PoisonError::into_inner);
+        if origins.len() >= MAX_IDLE_ORIGINS && !origins.contains_key(&key) {
+            origins.retain(|_, o| o.busy());
+        }
         let origin = match origins.entry(key) {
             Entry::Occupied(e) => e.into_mut(),
             Entry::Vacant(e) => e.insert(Origin {
@@ -735,6 +747,26 @@ mod tests {
                 .map(|c| c.in_flight.clone())
                 .collect(),
         )
+    }
+
+    #[test]
+    fn idle_origins_are_let_go_once_there_are_many_and_busy_ones_are_kept() {
+        let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
+        let busy = Url::parse("https://busy.example.com").unwrap();
+        let held = upstream.lease(&busy, true).unwrap();
+        for i in 1..MAX_IDLE_ORIGINS {
+            let idle = Url::parse(&format!("https://probe-{i}.example.com/v1")).unwrap();
+            drop(upstream.lease(&idle, true).unwrap());
+        }
+        assert_eq!(upstream.origins.lock().unwrap().len(), MAX_IDLE_ORIGINS);
+        let next = Url::parse("https://next.example.com").unwrap();
+        drop(upstream.lease(&next, true).unwrap());
+        let origins = upstream.origins.lock().unwrap();
+        assert_eq!(origins.len(), 2);
+        assert!(origins.contains_key(&format!("guarded {busy}")));
+        assert!(origins.contains_key(&format!("guarded {next}")));
+        drop(origins);
+        drop(held);
     }
 
     #[test]

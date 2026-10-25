@@ -1405,6 +1405,7 @@ type Seen = Arc<std::sync::Mutex<Vec<(String, String, Vec<u8>)>>>;
 struct Lab {
     shape: Shape,
     takes: Takes,
+    public_listing: bool,
     routes: &'static [&'static str],
     seen: Seen,
 }
@@ -1447,7 +1448,8 @@ async fn lab_answer(
             "<html>Welcome</html>".into(),
         );
     }
-    if !allowed {
+    let listing = method == axum::http::Method::GET && path == "/v1/models";
+    if !allowed && !(lab.public_listing && listing) {
         return (
             StatusCode::UNAUTHORIZED,
             json,
@@ -1475,11 +1477,25 @@ async fn lab_answer(
 }
 
 async fn lab(shape: Shape, takes: Takes, routes: &'static [&'static str]) -> (String, Lab) {
+    serve_lab(shape, takes, false, routes).await
+}
+
+async fn public_lab(shape: Shape, takes: Takes, routes: &'static [&'static str]) -> (String, Lab) {
+    serve_lab(shape, takes, true, routes).await
+}
+
+async fn serve_lab(
+    shape: Shape,
+    takes: Takes,
+    public_listing: bool,
+    routes: &'static [&'static str],
+) -> (String, Lab) {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let state = Lab {
         shape,
         takes,
+        public_listing,
         routes,
         seen: Arc::default(),
     };
@@ -1656,6 +1672,49 @@ async fn a_server_without_a_model_listing_or_a_key_is_found_by_its_routes_over_p
     assert_eq!(found.body["auth"], "x_api_key");
     assert_eq!(found.body["generation"], "anthropic_messages");
     assert_eq!(found.body["count_tokens"], Value::Null);
+}
+
+#[tokio::test]
+async fn a_server_that_lists_its_models_to_anyone_still_has_its_key_checked_on_generation() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let (openai, _) = public_lab(Shape::OpenAi, Takes::Bearer, &["/v1/chat/completions"]).await;
+    let (anthropic, _) = public_lab(Shape::Anthropic, Takes::Bearer, &["/v1/messages"]).await;
+    let openai = format!("http://{openai}");
+    let anthropic = format!("http://{anthropic}");
+
+    for (body, message) in [
+        (
+            json!({ "base_url": openai, "key": "sk-wrong-key-0000000000" }),
+            "The server refused the key; check it or choose another way to send it.",
+        ),
+        (
+            json!({ "base_url": openai }),
+            "The server asks for a key; enter the key it takes.",
+        ),
+        (
+            json!({ "base_url": anthropic, "key": "sk-wrong-key-0000000000" }),
+            "The server refused the key; check it or choose another way to send it.",
+        ),
+    ] {
+        let r = detect(&app, &owner, body.clone()).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{body}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], "key", "{body}");
+        assert_eq!(r.body["error"]["message"], message, "{body}");
+    }
+
+    for (base_url, generation) in [(&openai, "openai_chat"), (&anthropic, "anthropic_messages")] {
+        let found = detect(
+            &app,
+            &owner,
+            json!({ "base_url": base_url, "key": LAB_SECRET }),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+        assert_eq!(found.body["auth"], "bearer", "{base_url}");
+        assert_eq!(found.body["generation"], generation, "{base_url}");
+    }
 }
 
 #[tokio::test]
