@@ -11,6 +11,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 | Profil | Bild, Name, E-Mail-Adresse und Konto-ID, die Organisation, die das Konto verwaltet, sowie das Löschen des Kontos |
 | Sicherheit | Passwort, Zwei-Faktor-Authentifizierung, Wiederherstellungscodes und Verknüpfungen mit Single Sign-on |
 | Sitzungen | Die Browser, in denen Sie angemeldet sind |
+| Agenten | Die Agenten, die Sie über den [MCP-Server](../api/mcp.md) verbunden haben, mit ihren Rechten und ihrer Aktivität |
 | API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
 | Mitgliedschaften | Ihre Organisationen und deren Projekte mit Ihren Rollen sowie das Verlassen einer Organisation |
 | Benachrichtigungen | Welche E-Mails Sie erhalten |
@@ -59,12 +60,24 @@ Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mi
 
 Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
+## Agenten verwalten
+
+**Agenten** listet jeden Agenten, den Sie autorisiert haben: seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
+
+- ihn umbenennen;
+- seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;
+- ihn **Widerrufen**, was ihn sofort abmeldet;
+- seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
+
+Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ungenutzt bleibt. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
+
 ## Sensible Aktion bestätigen
 
 Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt. Eine Anmeldung über Single Sign-on zählt ab dem Zeitpunkt, zu dem Ihr Identitätsanbieter Sie zuletzt geprüft hat, und der kann lange vor der Rückkehr zu Kaeso liegen.
 
 - In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, und das Konto löschen. Ebenso die Zwei-Faktor-Authentifizierung einrichten oder ausschalten, Wiederherstellungscodes neu erzeugen sowie **Verknüpfen** und **Trennen** unter **Single Sign-on**.
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
+- Für Ihre Agenten: einem davon ein mit ⚠ gekennzeichnetes, sensibles Recht geben ([Agenten](../concepts/rights.md#sensible-rechte)).
 - Als Instanz-Admin: jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen. Ebenso eine Organisation zur Löschung vormerken, **Jetzt löschen**, **Auf … aktualisieren**, **Automatisch** für Updates wählen und die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern. **Single Sign-on für Instanz-Admins** verlangt eine Anmeldung mit Passwort oder Anmeldelink.
 
 Die Konsole fragt nach Ihrem Passwort oder sendet einen Anmeldelink oder einen Link, um ein Passwort festzulegen. Nur wenn Ihr Konto nichts davon hat, etwa weil die Organisation, die es verwaltet, Single Sign-on verlangt, bestätigt sie über Ihren Identitätsanbieter.
@@ -114,4 +127,5 @@ Beides geht nicht, solange Sie der letzte Inhaber einer Organisation sind. Mache
 
 - [Organisationen und Projekte](organizations-and-projects.md): Verlangen Sie Zwei-Faktor-Authentifizierung oder Single Sign-on für eine Organisation.
 - [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Ihre Apps und Skripte.
+- [MCP-Server](../api/mcp.md): Verbinden Sie einen Coding-Agenten und legen Sie fest, was er darf.
 - [Anmeldung und Single Sign-on](../self-hosting/sign-in.md): Sehen Sie, wie die Anmeldeseite funktioniert und wie Sie wieder hineinkommen.

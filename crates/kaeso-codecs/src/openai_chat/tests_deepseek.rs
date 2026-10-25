@@ -80,7 +80,7 @@ fn reasoning_content_stays_an_extra_of_the_reply() {
 }
 
 #[test]
-fn reasoning_content_sent_back_stays_on_its_message() {
+fn reasoning_content_sent_back_is_readable_reasoning_of_its_message() {
     let body = fixture("requests", "json", "reasoning-content-sent-back");
     let Request::Generate(req) =
         OpenAiChat::decode_request(RequestKind::Generate, &body, &HeaderList::new()).unwrap()
@@ -88,13 +88,11 @@ fn reasoning_content_sent_back_stays_on_its_message() {
         panic!()
     };
     let assistant = &req.messages[1];
-    assert!(
-        !assistant
-            .blocks
-            .iter()
-            .any(|b| matches!(b, Block::Reasoning(_)))
-    );
-    assert!(assistant.extras.fields.contains_key("reasoning_content"));
+    let Some(Block::Reasoning(thought)) = assistant.blocks.first() else {
+        panic!("{assistant:?}")
+    };
+    assert!(!thought.text.concat().is_empty());
+    assert!(!assistant.extras.fields.contains_key("reasoning_content"));
 }
 
 #[test]

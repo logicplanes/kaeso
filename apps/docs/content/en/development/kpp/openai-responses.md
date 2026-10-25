@@ -284,7 +284,7 @@ Every remaining property of the covered schemas, by name:
 
 The `type` and `code` rows win over the status. Other codes don't decide here; the status does: `rate_limit_exceeded`, `rate_limit_error` and `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` and the image codes (starting with `invalid_image` or `image_`, or ending in `_image`; `InvalidRequest`). They decide only where there is no status: in a stream `error` event and in the `error.code` of a failed response. An error object without a message gets `The provider returned HTTP <status> without a message.`
 
-Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged. An error is unchanged while the kind decoded again from its body equals the error's kind and the message is the same. Other errors get:
+Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged. An error is unchanged while the kind decoded again from its body equals the error's kind and the message is the same. A provider error from another dialect gets no `param`: it names a field of the request Kaeso built, not of the app's. Other errors get:
 
 | `ErrorKind` | Status | `type` | `code` |
 | --- | --- | --- | --- |

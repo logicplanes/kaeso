@@ -166,6 +166,25 @@ describe("ModelSheet", () => {
     expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { forced_tool_choice: true } }]);
   });
 
+  it("shows and changes whether an Anthropic model checks where replayed thinking came from", async () => {
+    const opus = catalogueModel({ effective: { ...catalogueModel().effective, thinking_binding: true } });
+    setUp([opus]);
+    on("PATCH", ONE_MODEL, opus);
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Claude Sonnet 4.5");
+    expect(await within(s).findByText("Values in use")).toBeInTheDocument();
+    expect(s).toHaveTextContent("Thinking bindingYesmodels.dev");
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    const binding = within(s).getByRole("switch", { name: "Thinking binding" });
+    expect(binding).toBeChecked();
+    await user.click(binding);
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { thinking_binding: false } }]);
+  });
+
   it("explains values that can't be saved and cancels the edit", async () => {
     setUp();
     const { user } = await renderApp(projectPath("models?model=cm_sonnet"));

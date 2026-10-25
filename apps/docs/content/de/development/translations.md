@@ -98,6 +98,9 @@ Nie übersetzt werden:
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
+| agent (connected through the MCP server) | Agent | 智能体 |
+| model family (of an agent) | Modellfamilie | 模型系列 |
+| preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
 | restore | wiederherstellen | 恢复 |
 | archive | archivieren | 归档 |

@@ -21,6 +21,8 @@ pub enum Category {
     Models,
     Limits,
     UsageCosts,
+    Instance,
+    Account,
 }
 
 impl Category {
@@ -39,6 +41,8 @@ impl Category {
             Category::ModelUse => "model_use",
             Category::Models => "models",
             Category::Limits => "limits",
+            Category::Instance => "instance",
+            Category::Account => "account",
         }
     }
 
@@ -58,6 +62,8 @@ impl Category {
             Category::Models => "Models",
             Category::Limits => "Limits & budgets",
             Category::UsageCosts => "Usage & costs",
+            Category::Instance => "Instance",
+            Category::Account => "Account",
         }
     }
 }
@@ -236,6 +242,32 @@ rights!(
     }
 );
 
+rights!(
+    InstanceRight, view = InstanceSystemView {
+        InstanceSystemView = "instance.system.view", Instance, "View the system", false, false, false, [], "See the system, the instance settings, model sources and the update status.";
+        InstanceSettingsManage = "instance.settings.manage", Instance, "Change instance settings", false, false, false, [], "Change general, mail, logging, time zone and account settings, and send a test email.";
+        InstanceModelSourcesManage = "instance.model_sources.manage", Instance, "Manage model sources", false, false, false, [], "Sync the model data from models.dev.";
+        InstanceUpdatesManage = "instance.updates.manage", Instance, "Manage updates", false, false, false, [], "Check for updates and change the update settings.";
+        InstanceUpdatesApply = "instance.updates.apply", Instance, "Apply updates", true, false, false, [InstanceUpdatesManage], "Install a new version of Kaeso.";
+        InstanceUsersView = "instance.users.view", Instance, "View users", false, false, false, [], "See every account of the instance and its organizations.";
+        InstanceUsersManage = "instance.users.manage", Instance, "Manage users", true, false, false, [InstanceUsersView], "Invite, deactivate and reactivate accounts, end their sessions and reset their two-factor.";
+        InstanceOrgsView = "instance.orgs.view", Instance, "View organizations", false, false, false, [], "See every organization with its members, projects and usage.";
+        InstanceOrgsManage = "instance.orgs.manage", Instance, "Manage organizations", true, false, false, [InstanceOrgsView], "Create and rename organizations, appoint owners and schedule or cancel their deletion.";
+        InstanceAuditLogView = "instance.audit_log.view", Instance, "View instance audit log", false, false, false, [], "Read the instance audit log.";
+    }
+);
+
+rights!(
+    AccountRight, view = AccountView {
+        AccountView = "account.view", Account, "View the account", false, false, false, [], "See the profile, organizations, notification settings and what's new.";
+        AccountUpdate = "account.update", Account, "Edit the profile", false, false, false, [], "Change the name, picture, language and appearance.";
+        AccountKeysView = "account.keys.view", Account, "View personal keys", false, false, false, [], "See the account's API keys in every project (metadata).";
+        AccountKeysManage = "account.keys.manage", Account, "Manage personal keys", true, false, false, [AccountKeysView], "Disable, enable or archive the account's API keys.";
+        AccountNotificationsManage = "account.notifications.manage", Account, "Change notifications", false, false, false, [], "Choose which emails the account gets.";
+        AccountMembershipsLeave = "account.memberships.leave", Account, "Leave organizations", true, false, false, [], "Leave organizations the account belongs to.";
+    }
+);
+
 impl OrgRight {
     pub const fn owner_only(self) -> bool {
         matches!(self, OrgRight::OrgOwnershipTransfer)
@@ -246,6 +278,8 @@ impl OrgRight {
 pub enum Right {
     Org(OrgRight),
     Project(ProjectRight),
+    Instance(InstanceRight),
+    Account(AccountRight),
 }
 
 impl Right {
@@ -253,6 +287,26 @@ impl Right {
         match self {
             Right::Org(r) => r.as_str(),
             Right::Project(r) => r.as_str(),
+            Right::Instance(r) => r.as_str(),
+            Right::Account(r) => r.as_str(),
+        }
+    }
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Right::Org(r) => r.label(),
+            Right::Project(r) => r.label(),
+            Right::Instance(r) => r.label(),
+            Right::Account(r) => r.label(),
+        }
+    }
+
+    pub const fn is_sensitive(self) -> bool {
+        match self {
+            Right::Org(r) => r.is_sensitive(),
+            Right::Project(r) => r.is_sensitive(),
+            Right::Instance(r) => r.is_sensitive(),
+            Right::Account(r) => r.is_sensitive(),
         }
     }
 
@@ -260,13 +314,14 @@ impl Right {
         match self {
             Right::Org(r) => r.needs_recent_sign_in(),
             Right::Project(r) => r.needs_recent_sign_in(),
+            Right::Instance(_) | Right::Account(_) => false,
         }
     }
 
     pub const fn needs_session(self) -> bool {
         match self {
             Right::Org(r) => r.needs_session(),
-            Right::Project(_) => false,
+            Right::Project(_) | Right::Instance(_) | Right::Account(_) => false,
         }
     }
 }
@@ -295,5 +350,28 @@ impl From<OrgRight> for Right {
 impl From<ProjectRight> for Right {
     fn from(r: ProjectRight) -> Right {
         Right::Project(r)
+    }
+}
+
+impl From<InstanceRight> for Right {
+    fn from(r: InstanceRight) -> Right {
+        Right::Instance(r)
+    }
+}
+
+impl From<AccountRight> for Right {
+    fn from(r: AccountRight) -> Right {
+        Right::Account(r)
+    }
+}
+
+impl FromStr for Right {
+    type Err = RightParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.parse()
+            .map(Right::Org)
+            .or_else(|_| s.parse().map(Right::Project))
+            .or_else(|_| s.parse().map(Right::Instance))
+            .or_else(|_| s.parse().map(Right::Account))
     }
 }

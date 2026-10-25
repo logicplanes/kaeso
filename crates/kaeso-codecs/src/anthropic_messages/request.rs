@@ -24,6 +24,7 @@ use crate::wire::{
 };
 
 const OBJECTS_FORM: &str = "objects";
+const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 const SYSTEM_FORM: &str = "system";
 
 fn invalid_body(detail: impl std::fmt::Display) -> KppError {
@@ -344,67 +345,6 @@ pub(crate) fn encode_request(
         (!list.is_empty() || system_form == Some("array")).then_some(StringOr::List(list))
     };
 
-    for m in &r.messages {
-        let role = match m.role {
-            Role::User => "user",
-            Role::Assistant => "assistant",
-            Role::System => "system",
-            _ => {
-                return Err(KppError::unsupported_by(
-                    "message role",
-                    D,
-                    "This version of Kaeso does not know the role of this message; Anthropic accepts user, assistant and system messages.",
-                ));
-            }
-        };
-        let Some(content) = enc.content(&m.blocks, &m.extras, "")? else {
-            continue;
-        };
-        if matches!(&content, StringOr::List(l) if l.is_empty()) && !m.blocks.is_empty() {
-            continue;
-        }
-        w.messages.push(own_ext(
-            MessageW {
-                role: role.to_owned(),
-                content,
-            },
-            &m.extras,
-        ));
-    }
-
-    if !count_only {
-        w.max_tokens = r.sampling.max_output_tokens;
-        w.temperature =
-            crate::wire::spelled_number(r.sampling.temperature, "temperature", &r.extras, D);
-        w.top_p = crate::wire::spelled_number(r.sampling.top_p, "top_p", &r.extras, D);
-        w.top_k = r.sampling.top_k;
-        w.stop_sequences = r.sampling.stop.clone();
-        if !r.stream.is_off() {
-            w.stream = Some(true);
-        }
-    }
-
-    let objects: Vec<&str> = r
-        .extras
-        .form_value(D, OBJECTS_FORM)
-        .and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(Value::as_str).collect())
-        .unwrap_or_default();
-    let present = |name: &str| {
-        objects.contains(&name)
-            || !nested_extra_for(&r.extras, D, name).is_empty()
-            || !verbatim_from_form(&r.extras, D, name).is_empty()
-    };
-
-    let user = if count_only { None } else { r.user.clone() };
-    if user.is_some() || present("metadata") {
-        w.metadata = Some(nested_ext(
-            MetadataW { user_id: user },
-            &r.extras,
-            "metadata",
-        ));
-    }
-
     let is_count = matches!(req, Request::CountTokens(_));
     let reasoning = r
         .reasoning
@@ -433,19 +373,93 @@ pub(crate) fn encode_request(
     {
         plan = ThinkingPlan::default();
     }
+    let rebuilt = rebuilt_thinking(r, &mut plan, reasoning, ctx, forced, own || is_count)?;
+    for m in &r.messages {
+        let role = match m.role {
+            Role::User => "user",
+            Role::Assistant => "assistant",
+            Role::System => "system",
+            _ => {
+                return Err(KppError::unsupported_by(
+                    "message role",
+                    D,
+                    "This version of Kaeso does not know the role of this message; Anthropic accepts user, assistant and system messages.",
+                ));
+            }
+        };
+        let kept: Vec<Block>;
+        let blocks = if rebuilt == Rebuilt::Dropped {
+            kept = m
+                .blocks
+                .iter()
+                .filter(|b| !matches!(b, Block::Reasoning(rb) if replays_as_thinking(rb, &ctx.origin(D))))
+                .cloned()
+                .collect();
+            &kept
+        } else {
+            &m.blocks
+        };
+        let Some(content) = enc.content(blocks, &m.extras, "")? else {
+            continue;
+        };
+        if matches!(&content, StringOr::List(l) if l.is_empty()) && !blocks.is_empty() {
+            continue;
+        }
+        w.messages.push(own_ext(
+            MessageW {
+                role: role.to_owned(),
+                content,
+            },
+            &m.extras,
+        ));
+    }
+
+    if !count_only {
+        w.max_tokens = r.sampling.max_output_tokens;
+        w.temperature =
+            crate::wire::spelled_number(r.sampling.temperature, "temperature", &r.extras, D);
+        w.top_p = crate::wire::spelled_number(r.sampling.top_p, "top_p", &r.extras, D);
+        w.top_k = r.sampling.top_k;
+        w.stop_sequences = r.sampling.stop.clone();
+        if !r.stream.is_off() {
+            w.stream = Some(true);
+        }
+    }
     if let Some(m) = plan.max_tokens {
         w.max_tokens = Some(m);
     }
-    let foreign_thinking = plan
+    let thinking_on = plan
         .thinking
         .as_ref()
-        .is_some_and(|t| t.known.ty == "enabled" || t.known.ty == "adaptive")
-        && reasoning.is_some_and(|c| !c.extras.is_from(D));
-    if foreign_thinking {
+        .is_some_and(|t| t.known.ty == "enabled" || t.known.ty == "adaptive");
+    if thinking_on && (rebuilt == Rebuilt::Bound || reasoning.is_some_and(|c| !c.extras.is_from(D)))
+    {
         w.temperature = None;
         w.top_p = None;
         w.top_k = None;
     }
+
+    let objects: Vec<&str> = r
+        .extras
+        .form_value(D, OBJECTS_FORM)
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default();
+    let present = |name: &str| {
+        objects.contains(&name)
+            || !nested_extra_for(&r.extras, D, name).is_empty()
+            || !verbatim_from_form(&r.extras, D, name).is_empty()
+    };
+
+    let user = if count_only { None } else { r.user.clone() };
+    if user.is_some() || present("metadata") {
+        w.metadata = Some(nested_ext(
+            MetadataW { user_id: user },
+            &r.extras,
+            "metadata",
+        ));
+    }
+
     let (thinking, effort) = (plan.thinking, plan.effort);
     let format = match output {
         OutputSpec::JsonSchema(spec) => Some(to_raw(&own_ext(
@@ -530,9 +544,13 @@ pub(crate) fn encode_request(
     let body = to_body(&own_ext(w, &r.extras))?;
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
+    let betas: &[&str] = match rebuilt {
+        Rebuilt::Bound => &[THINKING_BINDING_BETA],
+        _ => &[],
+    };
     Ok(EncodedRequest::post_json(
         path,
-        request_headers(&r.extras),
+        request_headers(&r.extras, betas),
         body,
     ))
 }
@@ -634,31 +652,91 @@ fn thinking_plan(
     })
 }
 
+fn continued_tool_turn(r: &GenerateRequest) -> Option<&Message> {
+    let last = r.messages.iter().rev().find(|m| m.role != Role::System)?;
+    let returns_results = last.role == Role::User
+        && last
+            .blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolResult(_)));
+    let turn = r
+        .messages
+        .iter()
+        .rev()
+        .find(|m| m.role == Role::Assistant)?;
+    (returns_results && turn.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))).then_some(turn)
+}
+
 fn tool_turn_lacks_thinking(r: &GenerateRequest, target: &Origin) -> bool {
-    let last = r.messages.iter().rev().find(|m| m.role != Role::System);
-    let returns_results = last.is_some_and(|m| {
-        m.role == Role::User && m.blocks.iter().any(|b| matches!(b, Block::ToolResult(_)))
-    });
-    let Some(turn) = r.messages.iter().rev().find(|m| m.role == Role::Assistant) else {
+    let Some(turn) = continued_tool_turn(r) else {
         return false;
-    };
-    if !returns_results || !turn.blocks.iter().any(|b| matches!(b, Block::ToolCall(_))) {
-        return false;
-    }
-    let sendable = |b: &ReasoningBlock| {
-        reasoning_replayable(b, target)
-            && (b.opaque_of(OpaqueKind::AnthropicRedactedThinking).is_some()
-                || b.opaque_of(OpaqueKind::AnthropicThinkingSignature)
-                    .is_some_and(|o| !o.data.is_empty()))
     };
     let first = turn
         .blocks
         .iter()
-        .find(|b| !matches!(b, Block::Reasoning(rb) if !sendable(rb)));
+        .find(|b| !matches!(b, Block::Reasoning(rb) if !replays_as_thinking(rb, target)));
     !matches!(first, Some(Block::Reasoning(_)))
 }
 
-fn request_headers(extras: &Extras) -> HeaderList {
+fn replays_as_thinking(b: &ReasoningBlock, target: &Origin) -> bool {
+    reasoning_replayable(b, target)
+        && (b.opaque_of(OpaqueKind::AnthropicRedactedThinking).is_some()
+            || b.opaque_of(OpaqueKind::AnthropicThinkingSignature)
+                .is_some_and(|o| !o.data.is_empty()))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Rebuilt {
+    None,
+    Bound,
+    Dropped,
+}
+
+fn rebuilt_thinking(
+    r: &GenerateRequest,
+    plan: &mut ThinkingPlan,
+    reasoning: Option<&ReasoningConfig>,
+    ctx: &EgressCtx,
+    forced: bool,
+    own_or_count: bool,
+) -> Result<Rebuilt, KppError> {
+    let target = ctx.origin(D);
+    let replays = r
+        .messages
+        .iter()
+        .flat_map(|m| &m.blocks)
+        .any(|b| matches!(b, Block::Reasoning(rb) if replays_as_thinking(rb, &target)));
+    if own_or_count
+        || !replays
+        || ctx.thinking_binding != Some(true)
+        || ctx.adaptive_thinking == Some(false)
+    {
+        return Ok(Rebuilt::None);
+    }
+    let off = reasoning.is_some_and(|c| {
+        c.effort == Some(ReasoningEffort::None) || c.mode == Some(ReasoningMode::Disabled)
+    });
+    let thinking = match &mut plan.thinking {
+        Some(t) if t.known.ty == "adaptive" => t,
+        None if !forced && !off => plan.thinking.insert(Ext::new(ThinkingConfigW {
+            ty: "adaptive".to_owned(),
+            budget_tokens: None,
+        })),
+        Some(t) if t.known.ty == "enabled" && continued_tool_turn(r).is_some() => {
+            *plan = ThinkingPlan::default();
+            return Ok(Rebuilt::Dropped);
+        }
+        _ => return Ok(Rebuilt::Dropped),
+    };
+    let binding = RawJson::from_serialize(&serde_json::json!({
+        "prefix_mismatch_behavior": "drop_block"
+    }))
+    .map_err(internal)?;
+    thinking.extra.insert("block_binding".to_owned(), binding);
+    Ok(Rebuilt::Bound)
+}
+
+fn request_headers(extras: &Extras, betas: &[&str]) -> HeaderList {
     let mut headers = HeaderList::new().with("content-type", "application/json");
     let mut version = ANTHROPIC_VERSION.to_owned();
     let mut forwarded = Vec::new();
@@ -672,6 +750,16 @@ fn request_headers(extras: &Extras) -> HeaderList {
                 forwarded.push((name.to_owned(), value));
             }
         }
+    }
+    let mut added = betas.join(",");
+    for (name, value) in &mut forwarded {
+        if name == "anthropic-beta" && !added.is_empty() {
+            value.push(',');
+            value.push_str(&std::mem::take(&mut added));
+        }
+    }
+    if !added.is_empty() {
+        forwarded.push(("anthropic-beta".to_owned(), added));
     }
     headers.push("anthropic-version", version);
     for (name, value) in forwarded {

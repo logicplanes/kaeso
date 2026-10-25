@@ -1,6 +1,7 @@
 import {
   Add01Icon,
   AiBrain01Icon,
+  AiComputerIcon,
   TestTube01Icon,
   Alert02Icon,
   AlertCircleIcon,
@@ -99,6 +100,7 @@ export const icons = {
   member: User03Icon,
   members: UserGroupIcon,
   serviceAccount: Robot01Icon,
+  agent: AiComputerIcon,
   settings: Settings01Icon,
   audit: Audit01Icon,
   instance: ServerStack01Icon,

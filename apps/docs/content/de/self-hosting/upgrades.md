@@ -201,7 +201,7 @@ Während der Updater die Version umstellt oder wann immer Gateway oder Konsole n
 | Anfrage | Antwort |
 | --- | --- |
 | Eine Konsolenseite | 503 mit einer Seite in der Sprache des Browsers, die sagt, was gerade passiert, alle 5 Sekunden prüft und zurückkehrt, sobald Kaeso wieder da ist |
-| `/platform/v1/*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
+| `/platform/v1/*`, `/mcp`, `/oauth/*` und `/.well-known/oauth-*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
 | `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses` und `/v1/embeddings` | 529 mit Anthropics `overloaded_error` |
 | Andere `/v1/*` | 503 mit OpenAIs `service_unavailable_error` |
 

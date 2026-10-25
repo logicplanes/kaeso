@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT agents_allowed, agents_max FROM instance_settings LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "agents_allowed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "agents_allowed"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "agents_max",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "instance_settings",
+            "name": "agents_max"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "945f72ebe90617e75ef9c385a99ea659435d311a8fb8d0f516b2c501aab2b0dc"
+}

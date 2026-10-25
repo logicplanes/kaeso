@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT org_id, included, rights, all_projects, project_rights FROM agent_orgs WHERE agent_id = $1 ORDER BY org_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agent_orgs",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "included",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "agent_orgs",
+            "name": "included"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agent_orgs",
+            "name": "rights"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "all_projects",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "agent_orgs",
+            "name": "all_projects"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "project_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agent_orgs",
+            "name": "project_rights"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "28506d0c654e7b9ee0eb89335ce4cae0be62695fcac916dbb1ab5cefd91ad0ff"
+}

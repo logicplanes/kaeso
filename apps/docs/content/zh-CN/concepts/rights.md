@@ -1,12 +1,12 @@
 ---
 title: 权限
-description: 查阅组织和项目中的每项权限、哪些角色拥有它，以及授予权限的规则。
+description: 查阅组织、项目、实例和账户中的每项权限、谁拥有它，以及授予权限的规则。
 order: 4
 ---
 
 一项权限允许一类操作，写作 `resource.action`，例如 `keys.all.view`。`orgs/{org}` 下的每个 Platform API 操作都只检查一项权限，检查对象为其路径中的组织或项目。[成员和角色](../console/members-and-roles.md)介绍如何在控制台中授予角色和权限。
 
-管理自己的账户不需要任何权限。实例管理也不是一项权限：它是用户上的一个标记，不授予组织或项目中的任何权限。
+在控制台会话中管理自己的账户不需要任何权限。实例管理是用户上的一个标记，而不是角色：它授予每项[实例权限](#实例权限)，但不授予组织或项目中的任何权限。智能体需要单独获得每项实例权限和[账户权限](#账户权限)（[智能体](#智能体)）。
 
 ## 说明
 
@@ -245,3 +245,76 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `project.audit_log.view` | 查看项目审计日志 | 查看此项目中变更的审计日志。 |  |
+
+## 实例权限
+
+`instance/*` 下的每个路由都检查其中一项权限。实例管理员的控制台会话拥有全部这些权限。智能体需要由实例管理员在实例的智能体策略范围内逐项授予。每项实例权限都还需要 `instance.system.view`。
+
+| 权限 | 名称 | 允许的操作 | 备注 |
+| --- | --- | --- | --- |
+| `instance.system.view` | 查看系统 | 查看系统、实例设置、模型数据源和更新状态。 |  |
+| `instance.settings.manage` | 更改实例设置 | 更改常规、邮件、日志、时区和账户设置，并发送测试邮件。 |  |
+| `instance.model_sources.manage` | 管理模型数据源 | 从 models.dev 同步模型数据。 |  |
+| `instance.updates.manage` | 管理更新 | 检查更新并更改更新设置。 |  |
+| `instance.updates.apply` | 安装更新 | 安装新版本的 Kaeso。 | 敏感；需要 `instance.updates.manage` |
+| `instance.users.view` | 查看用户 | 查看实例的每个账户及其所在组织。 |  |
+| `instance.users.manage` | 管理用户 | 邀请、停用和重新启用账户，结束其会话并重置其双重验证。 | 敏感；需要 `instance.users.view` |
+| `instance.orgs.view` | 查看组织 | 查看每个组织及其成员、项目和用量。 |  |
+| `instance.orgs.manage` | 管理组织 | 创建和重命名组织、任命所有者，以及计划或取消其删除。 | 敏感；需要 `instance.orgs.view` |
+| `instance.audit_log.view` | 查看实例审计日志 | 查看实例的审计日志。 |  |
+
+## 账户权限
+
+智能体可以使用的 `me/*` 路由都检查其中一项权限。控制台会话不需要这些权限。每项账户权限都还需要 `account.view`，每个智能体都拥有它。
+
+| 权限 | 名称 | 允许的操作 | 备注 |
+| --- | --- | --- | --- |
+| `account.view` | 查看账户 | 查看个人资料、组织、通知设置和新功能介绍。 |  |
+| `account.update` | 编辑个人资料 | 更改名称、头像、语言和外观。 |  |
+| `account.keys.view` | 查看个人密钥 | 查看账户在每个项目中的 API 密钥（元数据）。 |  |
+| `account.keys.manage` | 管理个人密钥 | 停用、启用或归档账户的 API 密钥。 | 敏感；需要 `account.keys.view` |
+| `account.notifications.manage` | 更改通知 | 选择账户接收哪些邮件。 |  |
+| `account.memberships.leave` | 退出组织 | 退出账户所属的组织。 | 敏感 |
+
+## 智能体
+
+智能体通过 [MCP 服务器](../api/mcp.md)连接，代表授权它的用户行事。它永远不会拥有其用户没有的权限，由用户选择授予它自己的哪些权限。
+
+### 预设
+
+控制台为智能体提供四个预设。每个预设只是起点，您可以在其基础上添加或移除单项权限。
+
+| 预设 | 组织权限 | 项目权限 | 账户权限 | 实例预设 |
+| --- | --- | --- | --- | --- |
+| 观察者 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
+| 构建者 | 开发者角色的权限 | 开发者角色的权限去掉 `logs.content.view`，再加上 `models.manage` | `account.view`、`account.keys.view` | 无 |
+| 运维者 | 管理员角色的权限，去掉不会授予智能体的权限 | 全部 | 除 `account.keys.manage` 和 `account.memberships.leave` 外的全部 | 配置 |
+| 完全访问 | 除不会授予智能体的权限外的全部 | 全部 | 全部 | 管理员 |
+
+默认预设是构建者。实例预设只适用于实例管理员：
+
+| 实例预设 | 权限 |
+| --- | --- |
+| 无 | 无 |
+| 只读 | `instance.system.view`、`instance.users.view`、`instance.orgs.view`、`instance.audit_log.view` |
+| 配置 | 只读的权限，再加上 `instance.settings.manage`、`instance.model_sources.manage`、`instance.updates.manage` |
+| 管理员 | 全部实例权限 |
+
+### 有效权限
+
+Kaeso 在每次请求时重新计算智能体的权限，因此对用户、角色或策略的更改会立即生效：
+
+- **在组织中：** 智能体在该组织获得的、其用户当前拥有的权限，并受组织智能体策略的限制。策略指定一个预设，智能体最多获得该预设及其之前各预设的权限。
+- **在项目中：** 智能体在该项目获得的项目权限，受同一策略限制，再加上 `projects.view.all` 或 `projects.archive.any` 所覆盖的权限。只有智能体自己拥有这两项权限时，它们才会延伸到项目中。用户必须在该项目中拥有其中的每一项权限。
+- **在实例上：** 智能体获得的实例权限，前提是其用户仍是实例管理员，并受实例智能体策略的限制。
+- **在账户中：** 智能体获得的账户权限，以及始终拥有的 `account.view`。
+
+不允许智能体的组织对所有智能体关闭。不允许智能体的实例会使所有智能体停止工作。
+
+### 不会授予智能体的权限
+
+任何智能体都不会获得 `org.ownership.transfer`、`security.sso.manage` 或 `security.sso.require`。智能体也不能扩大自己的访问权限、授权其他智能体或管理任何人的智能体。它们从不触及账户安全：邮箱地址、密码、双重验证、恢复码、会话、单点登录关联以及删除账户。[工具](../api/mcp.md#工具)列出需要控制台会话的每项操作。
+
+### 敏感权限
+
+在上面的表格中标为敏感或需近期登录的权限，对智能体而言都是敏感权限，控制台会用 ⚠ 标记。将其授予智能体需要在最近 15 分钟内登录过并进行确认。之后智能体使用它时无需自己近期登录。

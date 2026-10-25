@@ -74,7 +74,7 @@ pub struct RightsCatalogue {
     pub project: ScopeCatalogue,
 }
 
-fn group<R: Copy>(
+pub(crate) fn group<R: Copy>(
     all: &[R],
     category: impl Fn(R) -> Category,
     view: impl Fn(R) -> RightView,

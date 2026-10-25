@@ -16,6 +16,7 @@ export const ICON_GROUPS = {
     "member",
     "members",
     "serviceAccount",
+    "agent",
     "settings",
     "audit",
     "instance",

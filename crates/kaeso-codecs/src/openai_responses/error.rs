@@ -222,7 +222,7 @@ pub(crate) fn encode(err: &KppError) -> EncodedError {
                 "error": {
                     "message": err.message,
                     "type": ty,
-                    "param": err.param,
+                    "param": app_param(err),
                     "code": code,
                 }
             }),
@@ -242,8 +242,14 @@ pub(crate) fn stream_error_event(err: &KppError) -> Value {
         "type": "error",
         "code": code.unwrap_or(ty),
         "message": err.message,
-        "param": err.param,
+        "param": app_param(err),
     })
+}
+
+// A provider error from another format names a field of the request Kaeso built, not the app's.
+fn app_param(err: &KppError) -> Option<&str> {
+    let foreign = err.origin.as_ref().is_some_and(|o| !o.is(super::DIALECT));
+    err.param.as_deref().filter(|_| !foreign)
 }
 
 #[cfg(test)]

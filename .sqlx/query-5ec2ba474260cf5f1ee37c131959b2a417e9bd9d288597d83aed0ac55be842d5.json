@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE agents SET revoked_at = $2 WHERE revoked_at IS NULL AND COALESCE(last_used_at, created_at) < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5ec2ba474260cf5f1ee37c131959b2a417e9bd9d288597d83aed0ac55be842d5"
+}

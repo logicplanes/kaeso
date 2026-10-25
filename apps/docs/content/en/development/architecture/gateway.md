@@ -31,12 +31,13 @@ sequenceDiagram
   Gateway->>Stores: Charge, log
 ```
 
-A Platform API request authenticates with a session cookie, an API key with platform access or a platform key. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
+A Platform API request authenticates with a session cookie, an API key with platform access, a platform key or an agent's access token. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
 
 | Code | Where |
 | --- | --- |
 | The model API (`/v1`) | `crates/kaeso-server/src/model_api` |
 | The Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
+| The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | The services both use | `crates/kaeso-server/src/services` |
 
 ## Crates
@@ -44,7 +45,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | Crate | Job |
 | --- | --- |
 | `kaeso` | The binary: its command line (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), startup and shutdown. The only crate that may use `anyhow` |
-| `kaeso-server` | The routers for `/v1`, `/platform/v1`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
+| `kaeso-server` | The routers for `/v1`, `/platform/v1`, `/mcp`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
 | `kaeso-core` | Domain rules without I/O: ids, rights and roles, the key format, model resolution, the catalogue, capabilities, limits, costs and the stream reply assembler. `data/` holds the model data each release ships |
 | `kaeso-store` | PostgreSQL through sqlx, ClickHouse, the Valkey connections (one for limit checks and counters, two for cache entries and kept reasoning) with the cache invalidation, and the migrations of both databases |
 | `kaeso-upstream` | Provider transport: HTTP clients, auth headers, base URLs, timeouts, streaming bodies and cancellation |
@@ -113,6 +114,7 @@ The supplement holds these fields:
 | --- | --- |
 | `adaptive_thinking` | Anthropic models: whether the model accepts `thinking: {type: "adaptive"}`. With `false`, KPP turns an effort from another format into a thinking budget |
 | `forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
+| `thinking_binding` | `true` for an Anthropic model that checks a replayed thinking block against the conversation that produced it (preserved thinking: Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5 in the supplement). For such a model, a request from another format that replays Claude's thinking asks Anthropic to drop a block whose conversation changed ([Anthropic Messages](../kpp/anthropic-messages.md)). It takes effect only with adaptive thinking, which `block_binding` needs. Absent means it doesn't check |
 | `efforts` | The effort levels the model supports, used when models.dev lists none |
 | `egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI) |
 

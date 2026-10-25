@@ -1,3 +1,4 @@
+pub mod agents;
 pub mod credential_accounts;
 pub mod credentials;
 pub mod custom_providers;
@@ -48,6 +49,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
             routes!(invites::revoke),
         ))
         .routes(s.route(Access::Org(R::OrgView), routes!(security::get)))
+        .routes(s.route(Access::Org(R::MembersView), routes!(agents::list)))
+        .routes(s.route(Access::OrgSession(R::MembersRightsUpdate), routes!(agents::revoke)))
+        .routes(s.route(Access::Org(R::OrgView), routes!(agents::policy)))
+        .routes(s.route(Access::OrgSession(R::MembersRightsUpdate), routes!(agents::set_policy)))
         .routes(s.route(
             Access::Org(R::SecuritySsoManage),
             routes!(security::put_sso),

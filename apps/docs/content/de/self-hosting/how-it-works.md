@@ -10,7 +10,7 @@ Eine Kaeso-Installation ist ein Docker-Compose-Projekt, das unter einer Domain a
 ```mermaid
 flowchart TD
   accTitle: Die Dienste einer Kaeso-Installation
-  accDescr: Apps und Browser erreichen die Installation nur über Caddy, auf den Ports 80 und 443. Caddy leitet /v1 und /platform an das Gateway und alle anderen Pfade an die Konsole weiter. PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk, das nur das Gateway erreicht, und das Gateway ruft die Modellanbieter über HTTPS auf.
+  accDescr: Apps und Browser erreichen die Installation nur über Caddy, auf den Ports 80 und 443. Caddy leitet /v1, /platform, den MCP-Server und seine OAuth-Anmeldung an das Gateway und alle anderen Pfade an die Konsole weiter. PostgreSQL, ClickHouse und Valkey liegen in einem internen Netzwerk, das nur das Gateway erreicht, und das Gateway ruft die Modellanbieter über HTTPS auf.
   clients[Apps und Browser]:::outside
   subgraph server [Ihr Server]
     caddy[Caddy<br>Ports 80 und 443]
@@ -24,7 +24,7 @@ flowchart TD
   end
   providers[Modellanbieter]:::outside
   clients -- HTTPS --> caddy
-  caddy -- /v1 und /platform --> gateway
+  caddy -- /v1, /platform, /mcp und OAuth --> gateway
   caddy -- alle anderen Pfade --> console
   gateway --> postgres & clickhouse & valkey
   gateway -- HTTPS --> providers

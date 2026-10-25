@@ -2,7 +2,7 @@ use axum::body::Body as HttpBody;
 use axum::http::{HeaderValue, header};
 use axum::response::{IntoResponse, Response};
 use futures::stream::{self, StreamExt};
-use kaeso_core::id::{AuditEventId, OrgId, ProjectId, RequestId, UserId};
+use kaeso_core::id::{AgentId, AuditEventId, OrgId, ProjectId, RequestId, UserId};
 use kaeso_store::pg::audit::{self, Event, Filter};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -16,12 +16,31 @@ use super::pagination::{self, List};
 #[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "Who acted.")]
 pub struct ActorView {
-    #[doc = "`user`, `org_platform_key`, `api_key` or `system`."]
+    #[doc = "`user`, `agent` (an agent acting for the user in `id`),\n\
+        `org_platform_key`, `api_key` or `system`."]
     #[schema(example = "user")]
     pub kind: String,
-    #[doc = "The actor's id (`usr_`, `opk_` or `key_`); `null` for the system."]
+    #[doc = "The actor's id (`usr_`, `opk_` or `key_`); for `agent`, the user the\n\
+        agent acts for; `null` for the system."]
     #[schema(example = "usr_01k7a3f8m2xq4v9c5r6t8w0yz1")]
     pub id: Option<String>,
+    #[doc = "The agent, for `agent`."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub agent: Option<AgentRef>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "An agent as an audit event names it.")]
+pub struct AgentRef {
+    #[doc = "The agent."]
+    pub id: AgentId,
+    #[doc = "Its name; `null` once its user is deleted."]
+    #[schema(example = "Release helper")]
+    pub name: Option<String>,
+    #[doc = "The model family it reported, such as `claude`, `gpt` or `unknown`;\n\
+        `null` once its user is deleted."]
+    #[schema(example = "claude")]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -62,7 +81,7 @@ pub struct AuditEventView {
 impl AuditEventView {
     pub fn from_row(e: Event) -> AuditEventView {
         let actor_id = e.actor_id.map(|id| match e.actor_kind.as_str() {
-            "user" => UserId::from_uuid(id).to_string(),
+            "user" | "agent" => UserId::from_uuid(id).to_string(),
             "api_key" => kaeso_core::id::ApiKeyId::from_uuid(id).to_string(),
             "org_platform_key" => kaeso_core::id::OrgPlatformKeyId::from_uuid(id).to_string(),
             _ => id.to_string(),
@@ -75,6 +94,11 @@ impl AuditEventView {
             actor: ActorView {
                 kind: e.actor_kind,
                 id: actor_id,
+                agent: e.agent_id.map(|id| AgentRef {
+                    id: AgentId::from_uuid(id),
+                    name: e.agent_name,
+                    model: e.agent_model,
+                }),
             },
             action: e.action,
             target_kind: e.target_kind,
@@ -100,6 +124,8 @@ pub struct AuditFilter {
     #[doc = "Only events about this project (`proj_…`); always the project of the\n\
         path in a project's audit log."]
     pub project: Option<ProjectId>,
+    #[doc = "Only events done by agents (`true`)."]
+    pub by_agents: Option<bool>,
     #[doc = "Not before this time (RFC 3339)."]
     #[serde(default, deserialize_with = "super::params::rfc3339")]
     #[param(value_type = Option<String>)]
@@ -117,6 +143,7 @@ impl AuditFilter {
             action_prefix: self.action.as_deref(),
             target_id: self.target.as_deref(),
             project_id: self.project.map(|p| p.uuid()),
+            agents_only: self.by_agents.unwrap_or(false),
             from: self.from,
             to: self.to,
         }
