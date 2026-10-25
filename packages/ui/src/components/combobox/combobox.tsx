@@ -49,19 +49,30 @@ interface CreateItem extends ComboboxOption {
   __create: true;
 }
 
-export function Highlight({ text, query }: { text: string; query: string }) {
+export interface HighlightProps {
+  text: string;
+  query: string;
+}
+
+export const Highlight = forwardRef<HTMLSpanElement, HighlightProps>(function Highlight({ text, query }, ref) {
   const q = query.trim().toLowerCase();
-  if (!q) return <>{text}</>;
+  if (!q) return <span ref={ref}>{text}</span>;
   const i = text.toLowerCase().indexOf(q);
-  if (i < 0) return <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">{text}</span>;
+  if (i < 0)
+    return (
+      <span ref={ref} className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
+        {text}
+      </span>
+    );
   return (
-    <span className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
+    <span ref={ref} className="text-fg-secondary group-data-disabled/item:text-fg-disabled">
       {text.slice(0, i)}
       <span className="text-fg group-data-disabled/item:text-fg-disabled">{text.slice(i, i + q.length)}</span>
       {text.slice(i + q.length)}
     </span>
   );
-}
+});
+Highlight.displayName = "Highlight";
 
 interface BaseProps extends FieldWrapProps {
   options: ComboboxOption[];
@@ -350,6 +361,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
 });
 Combobox.displayName = "Combobox";
 
+export const KAESO_AUTOCOMPLETE_VARIANTS = { size: KAESO_COMBOBOX_VARIANTS.size } as const;
+export const KAESO_AUTOCOMPLETE_DEFAULT_VARIANTS = { size: "md" } as const;
+
 export interface AutocompleteProps extends FieldWrapProps {
   suggestions: string[];
   value?: string | undefined;
@@ -411,7 +425,7 @@ export const Autocomplete = forwardRef<HTMLInputElement, AutocompleteProps>(func
         {...(force ? { "data-force": force } : {})}
         className={cn(
           "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
-          KAESO_COMBOBOX_VARIANTS.size[size].classes,
+          KAESO_AUTOCOMPLETE_VARIANTS.size[size].classes,
           leadingIcon && "pl-14",
           props.error && "ring-invalid",
           !(label || description || error) && className,

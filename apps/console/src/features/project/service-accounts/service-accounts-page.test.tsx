@@ -57,6 +57,7 @@ describe("ServiceAccountsPage", () => {
     expect(rows[1]).toHaveTextContent("zeta-sync");
     expect(rows[1]).toHaveTextContent("0 keys");
     expect(rows[1]).toHaveTextContent("Viewer · customized");
+    for (const row of rows) expect(row.querySelector("svg")).toBeNull();
     expect(requests("GET", ACCOUNTS).map((r) => r.query.get("include_archived"))).toEqual(["true"]);
   });
 

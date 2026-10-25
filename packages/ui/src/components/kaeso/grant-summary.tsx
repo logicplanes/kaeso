@@ -3,6 +3,9 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 
+export const KAESO_GRANT_SUMMARY_VARIANTS = {} as const;
+export const KAESO_GRANT_SUMMARY_DEFAULT_VARIANTS = {} as const;
+
 export interface GrantSummaryProps {
   items: readonly ReactNode[];
   footer?: ReactNode | undefined;

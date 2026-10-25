@@ -182,7 +182,7 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
-Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every page in every language, `robots.txt`, `sitemap.xml` and a `404.html` per language. The host has to answer `/console` with `console.html`, and an unknown address with the `404.html` of its language. Moved pages have a page at their old address, and `_redirects` lists the same moves for hosts that read it.
+Upload `apps/docs/dist` and `apps/showcase/dist` as they are. They hold every page in every language, `robots.txt`, `sitemap.xml` and a `404.html` per language. The host has to answer `/console` with `console.html`, and an unknown address with the `404.html` of its language.
 
 ### Content Security Policy
 

@@ -1,4 +1,4 @@
-import { Badge, Banner, JsonView, Link, Pill, Separator, Surface, Text, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
+import { Badge, Banner, JsonView, Link, Pill, Separator, Text, Thumbnail, type ContentBlock, type ConversationMessage } from "@logicplanes/kaeso-ui";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
@@ -32,12 +32,7 @@ function webHref(src: string): string | null {
 }
 
 function ImageInput({ src, alt, mediaType }: { src: string | undefined; alt: string | undefined; mediaType: string | undefined }) {
-  if (src && DATA_IMAGE.test(src))
-    return (
-      <Surface kind="well" className="w-120 overflow-hidden">
-        <img src={src} alt={alt ?? t("logs.conversation.imageInput", "Image input")} className="block aspect-square w-120 object-cover" />
-      </Surface>
-    );
+  if (src && DATA_IMAGE.test(src)) return <Thumbnail src={src} alt={alt ?? t("logs.conversation.imageInput", "Image input")} />;
   const href = src ? webHref(src) : null;
   if (href)
     return (

@@ -87,7 +87,7 @@ Claude Code 或 Codex 等智能体通过 [MCP 服务器](../api/mcp.md)代表其
 
 实例的**审计日志**记录对用户、组织和实例设置的更改，以及更改者和更改时间。它像组织的审计日志一样标出智能体所做的更改，**由智能体执行**只显示这些更改（[查看审计日志](organizations-and-projects.md#查看审计日志)）。
 
-## 后续步骤
+## 下一步
 
 - [配置](../self-hosting/configuration.md)：设置网关的登录方式、邮件和其他设置。
 - [升级](../self-hosting/upgrades.md)：使用或不使用更新器，将实例升级到新版本。

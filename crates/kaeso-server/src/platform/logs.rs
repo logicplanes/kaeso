@@ -22,6 +22,7 @@ use super::error::{ApiError, ApiResult};
 use super::json::Body as JsonBody;
 use super::keys::creator_of;
 use super::pagination::{List, PageParams};
+use crate::platform::audit::Action;
 use crate::platform::params::{Path, Query};
 use crate::services::logs::forget;
 use crate::state::AppState;
@@ -190,7 +191,7 @@ pub async fn update_org_settings(
         )
         .await?;
     }
-    ctx.audit(Some(ctx.org()?.id()), "logs.settings_update")
+    ctx.audit(Some(ctx.org()?.id()), Action::LogsSettingsUpdate)
         .before(serde_json::json!({ "content_logging": before.content_logging, "metadata_retention_days": before.metadata_retention_days, "content_retention_days": before.content_retention_days }))
         .after(serde_json::json!({ "content_logging": org.content_logging, "metadata_retention_days": org.metadata_retention_days, "content_retention_days": org.content_retention_days }))
         .write(&mut tx)
@@ -277,7 +278,7 @@ pub async fn update_project_settings(
     let before = p.content_logging;
     p.content_logging = req.content_logging;
     projects::update(&mut *tx, &p).await?;
-    ctx.audit(Some(ctx.org()?.id()), "logs.project_content_logging")
+    ctx.audit(Some(ctx.org()?.id()), Action::LogsProjectContentLogging)
         .target("project", ProjectId::from_uuid(p.id))
         .before(serde_json::json!({ "content_logging": before }))
         .after(serde_json::json!({ "content_logging": p.content_logging }))
@@ -516,7 +517,7 @@ pub async fn delete(
         },
     )
     .await?;
-    ctx.audit(Some(ctx.org()?.id()), "logs.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::LogsDelete)
         .after(serde_json::json!({ "from": req.from, "to": req.to, "project": req.project }))
         .write(&mut tx)
         .await?;
@@ -1155,7 +1156,7 @@ pub async fn export(
     )
     .await
     .map_err(unavailable)?;
-    ctx.audit(Some(ctx.org()?.id()), "logs.export")
+    ctx.audit(Some(ctx.org()?.id()), Action::LogsExport)
         .target("project", ProjectId::from_uuid(scope.project.id))
         .after(
             serde_json::json!({ "format": if csv { "csv" } else { "jsonl" }, "content": content }),

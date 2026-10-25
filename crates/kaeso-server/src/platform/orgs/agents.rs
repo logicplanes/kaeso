@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use crate::auth::agents::OrgPolicy;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::orgs::members::MemberUser;
@@ -109,7 +110,7 @@ pub async fn revoke(
         .ok_or_else(|| ApiError::not_found("agent"))?;
     let mut tx = state.pg.begin().await?;
     agents::exclude_org(&mut tx, found.id, org.org.id).await?;
-    ctx.audit(Some(org.id()), "agent.org_access_revoke")
+    ctx.audit(Some(org.id()), Action::AgentOrgAccessRevoke)
         .target("agent", id)
         .before(serde_json::json!({
             "name": found.name,
@@ -193,7 +194,7 @@ pub async fn set_policy(
         },
     )
     .await?;
-    ctx.audit(Some(org.id()), "security.agents_policy")
+    ctx.audit(Some(org.id()), Action::SecurityAgentsPolicy)
         .target("org", org.id())
         .before(serde_json::json!({ "allowed": before.allowed, "max": before.max }))
         .after(serde_json::json!({ "allowed": req.allowed, "max": max.as_str() }))

@@ -170,7 +170,7 @@ console.log(response.output_text);
 
 如果您添加的是其他模型，请改用它的 ID。回复中是模型写的俳句。在项目中打开**请求日志**，可以看到这个请求及其状态、Token、费用和耗时。
 
-## 后续步骤
+## 下一步
 
 - [调用模型](calling-models.md)：同时使用 Anthropic SDK，流式接收回复，并在日志中找到请求。
 - [编程工具](coding-tools.md)：将 Claude Code 或 Codex 指向您的实例。

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { DIALECT_IDS } from "~/format/labels";
 import { providers } from "~/test/fixtures";
 import { credential } from "~/test/fixtures/shell";
 import { providerCatalog, providerOptions } from "./providers";
@@ -20,10 +19,10 @@ describe("the provider catalog", () => {
     expect(catalog.product("cohere")).toBe("cohere");
   });
 
-  it("offers a provider's own formats, and every format for one it doesn't list", () => {
+  it("offers a provider's own formats, and none for one it doesn't list", () => {
     expect(catalog.dialects("anthropic")).toEqual(["anthropic_messages"]);
     expect(catalog.dialects("openai")).toEqual(["openai_responses", "openai_chat", "openai_embeddings"]);
-    expect(catalog.dialects("cohere")).toEqual(DIALECT_IDS);
+    expect(catalog.dialects("cohere")).toEqual([]);
   });
 
   it("sorts by name, not by id", () => {

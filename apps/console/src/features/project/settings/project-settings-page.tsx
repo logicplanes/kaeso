@@ -6,6 +6,7 @@ import {
   AppFrame,
   Badge,
   Button,
+  DialogScope,
   Input,
   InlineCopyText,
   NumberInput,
@@ -347,16 +348,7 @@ function ArchivedOn({ date }: { date: string }) {
 }
 
 function Archive({ org, project, name, isDefault }: { org: string; project: string; name: string; isDefault: boolean }) {
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const archive = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/archive", { params: { path: { org, project } } })),
-    invalidates: [projectListKey(org), ["orgs", org, "projects", project], ["me", "memberships"], ["session"]],
-    onSuccess: () => {
-      toast(t("project.settings.archived", "{name} archived", { name }));
-      void navigate({ to: "/orgs/$org", params: { org } });
-    },
-  });
   const button = (
     <Button
       variant="danger-secondary"
@@ -378,17 +370,46 @@ function Archive({ org, project, name, isDefault }: { org: string; project: stri
           control={button}
         />
       </SettingsGroup>
-      <AlertDialog
-        open={open}
-        onOpenChange={setOpen}
-        tone="danger"
-        title={t("project.settings.archiveTitle", "Archive {name}?", { name })}
-        description={t("project.settings.archiveConfirmHint", "Its keys stop authenticating with the gateway; archiving is permanent, and history is kept.")}
-        confirmLabel={t("project.settings.archiveProject", "Archive project")}
-        confirmText={name}
-        loading={archive.isPending}
-        onConfirm={() => archive.mutateAsync()}
-      />
+      <DialogScope open={open}>
+        <ArchiveDialog org={org} project={project} name={name} open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function ArchiveDialog({
+  org,
+  project,
+  name,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  name: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const archive = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/archive", { params: { path: { org, project } } })),
+    invalidates: [projectListKey(org), ["orgs", org, "projects", project], ["me", "memberships"], ["session"]],
+    onSuccess: () => {
+      toast(t("project.settings.archived", "{name} archived", { name }));
+      void navigate({ to: "/orgs/$org", params: { org } });
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("project.settings.archiveTitle", "Archive {name}?", { name })}
+      description={t("project.settings.archiveConfirmHint", "Its keys stop authenticating with the gateway; archiving is permanent, and history is kept.")}
+      confirmLabel={t("project.settings.archiveProject", "Archive project")}
+      confirmText={name}
+      loading={archive.isPending}
+      onConfirm={() => archive.mutateAsync()}
+    />
   );
 }

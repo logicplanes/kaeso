@@ -1,7 +1,8 @@
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ChartFrame, Legend } from "./core.js";
+import { ChartFrame, ChartLive, ChartTooltip, Legend, Swatch } from "./core.js";
 
 const table = { columns: ["Day", "Input"], rows: [["2 Oct", 1200]] };
 const items = [
@@ -30,5 +31,43 @@ describe("ChartFrame", () => {
     expect(screen.queryByRole("list", { name: "Legend" })).toBeNull();
     expect(screen.getByRole("button", { name: "View as chart" }).parentElement!.children).toHaveLength(1);
     expect(container.querySelector("table")).not.toBeNull();
+  });
+});
+
+describe("chart parts", () => {
+  it("forward their refs to their root elements", () => {
+    const frame = createRef<HTMLElement>();
+    const legend = createRef<HTMLUListElement>();
+    const swatch = createRef<HTMLSpanElement>();
+    const tooltip = createRef<HTMLDivElement>();
+    const live = createRef<HTMLDivElement>();
+    render(
+      <ChartFrame
+        ref={frame}
+        label="Requests per day"
+        height={120}
+        legend={<Legend ref={legend} items={[{ id: "ok", label: "Succeeded", color: "var(--k-viz-1)" }]} />}
+      >
+        <Swatch ref={swatch} color="var(--k-viz-2)" />
+        <ChartTooltip
+          ref={tooltip}
+          x={10}
+          y={10}
+          width={400}
+          heading="12 Oct"
+          rows={[{ id: "ok", label: "Succeeded", color: "var(--k-viz-1)", value: "1,204" }]}
+          visible
+        />
+        <ChartLive ref={live}>12 Oct: Succeeded 1,204</ChartLive>
+      </ChartFrame>,
+    );
+    expect(frame.current).toBe(screen.getByRole("figure", { name: "Requests per day" }));
+    expect(legend.current).toBe(screen.getByRole("list", { name: "Legend" }));
+    expect(swatch.current).toHaveAttribute("aria-hidden");
+    expect(swatch.current).toHaveClass("size-10", "rounded-bar");
+    expect(tooltip.current).toHaveTextContent("12 Oct");
+    expect(tooltip.current).toHaveAttribute("role", "presentation");
+    expect(live.current).toHaveAttribute("aria-live", "polite");
+    expect(live.current).toHaveTextContent("12 Oct: Succeeded 1,204");
   });
 });

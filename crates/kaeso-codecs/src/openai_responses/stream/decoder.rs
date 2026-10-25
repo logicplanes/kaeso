@@ -8,7 +8,8 @@ use kaeso_kpp::{
 use serde_json::Value;
 use serde_json::value::RawValue;
 
-use super::{EVENT_KEY, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY, event_extras};
+use self::lifecycle::Lifecycle;
+use super::{EVENT_KEY, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
@@ -55,8 +56,8 @@ enum ItemKind {
 enum Action {
     Hold,
     Pre,
-    Main(Vec<StreamEvent>),
-    Unstreamed(Vec<StreamEvent>),
+    Main(Vec<Lifecycle>),
+    Unstreamed(Vec<Lifecycle>),
     HoldError(KppError),
     Broken(String),
     Other,
@@ -217,7 +218,7 @@ impl Decoder {
                 }
                 frames.push(f);
             }
-            self.run(StreamEvent::Error(err), frames, out);
+            self.run(err.into(), frames, out);
             self.inert = true;
             return;
         }
@@ -259,7 +260,7 @@ impl Decoder {
                     return;
                 };
                 if !self.engine.started()
-                    && !matches!(last, StreamEvent::Error(_))
+                    && !last.is_error()
                     && let Err(e) = self.synthesize_start(out)
                 {
                     self.flush_pending(out);
@@ -267,12 +268,12 @@ impl Decoder {
                     return;
                 }
                 for ev in events {
-                    if let Err(e) = self.engine.step(&ev, &mut |_, _, _| Ok(None)) {
+                    if let Err(e) = self.engine.step(ev.event(), &mut |_, _, _| Ok(None)) {
                         self.flush_pending(out);
                         self.fail(out, e);
                         return;
                     }
-                    out.push(ev);
+                    out.push(ev.into_event());
                 }
                 self.lifecycle(last, f, out);
                 if self.engine.terminated() {
@@ -332,10 +333,10 @@ impl Decoder {
         start.extras = Extras::new(self.origin.clone()).with_form(NATIVE, true.into());
         let mut frames = vec![created];
         frames.extend(in_progress);
-        self.run(StreamEvent::ResponseStart(start), frames, out);
+        self.run(start.into(), frames, out);
     }
 
-    fn unstreamed_parts(&mut self, item: &RawValue) -> Vec<StreamEvent> {
+    fn unstreamed_parts(&mut self, item: &RawValue) -> Vec<Lifecycle> {
         let Ok(message) = serde_json::from_str::<Value>(item.get()) else {
             return Vec::new();
         };
@@ -355,9 +356,9 @@ impl Decoder {
                 _ => return Vec::new(),
             };
             let index = self.next_index();
-            events.push(StreamEvent::BlockStart(BlockStart::new(index, header)));
-            events.push(StreamEvent::BlockDelta(BlockDelta::new(index, delta)));
-            events.push(StreamEvent::BlockStop(BlockStop::new(index)));
+            events.push(BlockStart::new(index, header).into());
+            events.push(BlockDelta::new(index, delta).into());
+            events.push(BlockStop::new(index).into());
         }
         events
     }
@@ -372,7 +373,7 @@ impl Decoder {
         let oi = f.int("output_index");
         let ci = f.int("content_index");
         let delta = || f.str("delta").map(str::to_owned);
-        let block_delta = |index: u32, d: Delta| StreamEvent::BlockDelta(BlockDelta::new(index, d));
+        let block_delta = |index: u32, d: Delta| Lifecycle::from(BlockDelta::new(index, d));
         match f.ty.as_str() {
             "response.created" if !self.engine.started() => Action::Hold,
             "response.output_item.added" => {
@@ -418,7 +419,7 @@ impl Decoder {
                 self.items.insert(oi, (index, header.1));
                 let mut start = BlockStart::new(index, header.0);
                 start.extras = Extras::new(self.origin.clone());
-                Action::Main(vec![StreamEvent::BlockStart(start)])
+                Action::Main(vec![start.into()])
             }
             "response.content_part.added" => {
                 let (Some(oi), Some(ci), Some(part)) = (oi, ci, f.raw("part")) else {
@@ -427,7 +428,7 @@ impl Decoder {
                 if let Some((index, ItemKind::Reasoning)) = self.items.get(&oi).copied() {
                     let mut d = BlockDelta::new(index, Delta::ReasoningText(String::new()));
                     d.extras = Extras::new(self.origin.clone()).with_form(NEW_PART, true.into());
-                    return Action::Main(vec![StreamEvent::BlockDelta(d)]);
+                    return Action::Main(vec![d.into()]);
                 }
                 if self.items.contains_key(&oi) {
                     return self.broken(f);
@@ -450,7 +451,7 @@ impl Decoder {
                 self.parts.insert((oi, ci), index);
                 let mut start = BlockStart::new(index, header);
                 start.extras = extras;
-                Action::Main(vec![StreamEvent::BlockStart(start)])
+                Action::Main(vec![start.into()])
             }
             "response.output_text.delta" | "response.refusal.delta" => {
                 let (Some(index), Some(text)) = (self.part(oi, ci), delta()) else {
@@ -514,7 +515,7 @@ impl Decoder {
                 if let (Some(oi), Some(ci)) = (oi, ci)
                     && let Some(index) = self.parts.remove(&(oi, ci))
                 {
-                    return Action::Main(vec![StreamEvent::BlockStop(BlockStop::new(index))]);
+                    return Action::Main(vec![BlockStop::new(index).into()]);
                 }
                 match oi.and_then(|oi| self.items.get(&oi)) {
                     Some((_, ItemKind::Reasoning)) => Action::Pre,
@@ -601,7 +602,7 @@ impl Decoder {
                     }
                     ItemKind::Call => {}
                 }
-                events.push(StreamEvent::BlockStop(BlockStop::new(index)));
+                events.push(BlockStop::new(index).into());
                 Action::Main(events)
             }
             "response.completed" | "response.incomplete" => {
@@ -631,10 +632,7 @@ impl Decoder {
                 d.extras = Extras::new(self.origin.clone());
                 let mut s = ResponseStop::new();
                 s.extras = Extras::new(self.origin.clone());
-                Action::Main(vec![
-                    StreamEvent::ResponseDelta(d),
-                    StreamEvent::ResponseStop(s),
-                ])
+                Action::Main(vec![d.into(), s.into()])
             }
             "response.failed" => {
                 let Some(w) = f
@@ -643,7 +641,7 @@ impl Decoder {
                 else {
                     return self.broken(f);
                 };
-                Action::Main(vec![StreamEvent::Error(failed_error(
+                Action::Main(vec![Lifecycle::from(failed_error(
                     &w,
                     f.value.clone(),
                     &self.origin,
@@ -686,13 +684,13 @@ impl Decoder {
         self.parts.get(&(oi?, ci?)).copied()
     }
 
-    fn lifecycle(&mut self, event: StreamEvent, main: Frame, out: &mut Vec<StreamEvent>) {
+    fn lifecycle(&mut self, event: Lifecycle, main: Frame, out: &mut Vec<StreamEvent>) {
         if !self.pending.is_empty() {
             let queue: Vec<&Frame> = self.pending.iter().chain(std::iter::once(&main)).collect();
             let mut shadow = self.engine.clone();
             let mut qi = 0;
             let ok = shadow
-                .step(&event, &mut |_, canon, _| {
+                .step(event.event(), &mut |_, canon, _| {
                     if queue.get(qi).is_some_and(|f| matches(&canon, f)) {
                         qi += 1;
                         Ok(queue.get(qi - 1).map(|f| Node::raw_value(&f.data)))
@@ -711,50 +709,52 @@ impl Decoder {
         self.run(event, frames, out);
     }
 
-    fn run(&mut self, mut event: StreamEvent, frames: Vec<Frame>, out: &mut Vec<StreamEvent>) {
+    fn run(&mut self, mut event: Lifecycle, frames: Vec<Frame>, out: &mut Vec<StreamEvent>) {
         let mut rec = Extras::new(self.origin.clone());
         let mut skips: Vec<String> = Vec::new();
         let mut qi = 0;
-        let result = self
-            .engine
-            .step(&event, &mut |scope, mut canon, seq| match frames.get(qi) {
-                Some(f) if matches(&canon, f) => {
-                    qi += 1;
-                    if !canon.has("sequence_number") {
-                        canon.insert("sequence_number", Node::Val(Value::from(seq)));
+        let result =
+            self.engine.step(
+                event.event(),
+                &mut |scope, mut canon, seq| match frames.get(qi) {
+                    Some(f) if matches(&canon, f) => {
+                        qi += 1;
+                        if !canon.has("sequence_number") {
+                            canon.insert("sequence_number", Node::Val(Value::from(seq)));
+                        }
+                        Overrides::diff(&canon, &f.data, &[]).record(&mut rec, scope);
+                        if f.event.as_deref() != Some(f.ty.as_str()) {
+                            let key = if scope.is_empty() {
+                                EVENT_KEY.to_owned()
+                            } else {
+                                format!("{scope}.{EVENT_KEY}")
+                            };
+                            let name = f.event.clone().map_or(Value::Null, Value::String);
+                            form_set_insert(&mut rec, key, name);
+                        }
+                        if let Some(sse) = &f.sse {
+                            let key = if scope.is_empty() {
+                                SSE_KEY.to_owned()
+                            } else {
+                                format!("{scope}.{SSE_KEY}")
+                            };
+                            form_set_insert(&mut rec, key, sse.clone());
+                        }
+                        Ok(Some(Node::raw_value(&f.data)))
                     }
-                    Overrides::diff(&canon, &f.data, &[]).record(&mut rec, scope);
-                    if f.event.as_deref() != Some(f.ty.as_str()) {
-                        let key = if scope.is_empty() {
-                            EVENT_KEY.to_owned()
-                        } else {
-                            format!("{scope}.{EVENT_KEY}")
-                        };
-                        let name = f.event.clone().map_or(Value::Null, Value::String);
-                        form_set_insert(&mut rec, key, name);
+                    _ => {
+                        skips.push(scope.to_owned());
+                        Ok(None)
                     }
-                    if let Some(sse) = &f.sse {
-                        let key = if scope.is_empty() {
-                            SSE_KEY.to_owned()
-                        } else {
-                            format!("{scope}.{SSE_KEY}")
-                        };
-                        form_set_insert(&mut rec, key, sse.clone());
-                    }
-                    Ok(Some(Node::raw_value(&f.data)))
-                }
-                _ => {
-                    skips.push(scope.to_owned());
-                    Ok(None)
-                }
-            });
+                },
+            );
         if result.is_err() {
             for f in &frames {
                 self.frame_extra(out, f);
             }
             return;
         }
-        if let Some(extras) = event_extras_mut(&mut event) {
+        if let Some(extras) = event.extras_mut() {
             for (k, v) in rec.fields {
                 extras.fields.insert(k, v);
             }
@@ -771,29 +771,16 @@ impl Decoder {
                 extras.origin = Some(self.origin.clone());
             }
         }
-        if let StreamEvent::BlockStart(b) = &mut event
+        if let Some(b) = event.block_start_mut()
             && let BlockHeader::ToolCall(h) = &mut b.block
         {
             h.id = self.ctx.original_tool_id(&h.id).to_owned();
             h.name = self.ctx.original_tool_name(&h.name).to_owned();
         }
-        debug_assert!(event_extras(&event).is_some() || matches!(event, StreamEvent::Error(_)));
-        out.push(event);
+        out.push(event.into_event());
         for f in frames.iter().skip(qi) {
             self.frame_extra(out, f);
         }
-    }
-}
-
-fn event_extras_mut(event: &mut StreamEvent) -> Option<&mut Extras> {
-    match event {
-        StreamEvent::ResponseStart(e) => Some(&mut e.extras),
-        StreamEvent::BlockStart(e) => Some(&mut e.extras),
-        StreamEvent::BlockDelta(e) => Some(&mut e.extras),
-        StreamEvent::BlockStop(e) => Some(&mut e.extras),
-        StreamEvent::ResponseDelta(e) => Some(&mut e.extras),
-        StreamEvent::ResponseStop(e) => Some(&mut e.extras),
-        _ => None,
     }
 }
 
@@ -855,7 +842,7 @@ impl StreamDecoder for Decoder {
         if !self.inert
             && let Some((err, frame)) = self.held_error.take()
         {
-            self.run(StreamEvent::Error(err), vec![frame], &mut out);
+            self.run(err.into(), vec![frame], &mut out);
             self.inert = true;
         }
         if !self.inert {
@@ -872,5 +859,74 @@ impl StreamDecoder for Decoder {
         }
         self.inert = true;
         out
+    }
+}
+
+// Built only from events that carry `Extras` and from errors, whose `raw` keeps the provider's
+// frames, so `run` always has a place for what it records.
+mod lifecycle {
+    use kaeso_kpp::{
+        BlockDelta, BlockStart, BlockStop, Extras, KppError, ResponseDelta, ResponseStart,
+        ResponseStop, StreamEvent,
+    };
+
+    pub(super) struct Lifecycle(StreamEvent);
+
+    impl Lifecycle {
+        pub(super) fn event(&self) -> &StreamEvent {
+            &self.0
+        }
+
+        pub(super) fn into_event(self) -> StreamEvent {
+            self.0
+        }
+
+        pub(super) fn is_error(&self) -> bool {
+            matches!(self.0, StreamEvent::Error(_))
+        }
+
+        pub(super) fn block_start_mut(&mut self) -> Option<&mut BlockStart> {
+            match &mut self.0 {
+                StreamEvent::BlockStart(b) => Some(b),
+                _ => None,
+            }
+        }
+
+        pub(super) fn extras_mut(&mut self) -> Option<&mut Extras> {
+            match &mut self.0 {
+                StreamEvent::ResponseStart(e) => Some(&mut e.extras),
+                StreamEvent::BlockStart(e) => Some(&mut e.extras),
+                StreamEvent::BlockDelta(e) => Some(&mut e.extras),
+                StreamEvent::BlockStop(e) => Some(&mut e.extras),
+                StreamEvent::ResponseDelta(e) => Some(&mut e.extras),
+                StreamEvent::ResponseStop(e) => Some(&mut e.extras),
+                _ => None,
+            }
+        }
+    }
+
+    macro_rules! from_events {
+        ($($variant:ident),*) => {$(
+            impl From<$variant> for Lifecycle {
+                fn from(e: $variant) -> Self {
+                    Self(StreamEvent::$variant(e))
+                }
+            }
+        )*};
+    }
+
+    from_events!(
+        ResponseStart,
+        BlockStart,
+        BlockDelta,
+        BlockStop,
+        ResponseDelta,
+        ResponseStop
+    );
+
+    impl From<KppError> for Lifecycle {
+        fn from(e: KppError) -> Self {
+            Self(StreamEvent::Error(e))
+        }
     }
 }

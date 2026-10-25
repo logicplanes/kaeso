@@ -182,7 +182,7 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
-Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie enthalten jede Seite in jeder Sprache, `robots.txt`, `sitemap.xml` und eine `404.html` pro Sprache. Der Host muss `/console` mit `console.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache. Verschobene Seiten haben eine Seite unter ihrer alten Adresse, und `_redirects` listet dieselben Umzüge für Hosts, die diese Datei lesen.
+Laden Sie `apps/docs/dist` und `apps/showcase/dist` unverändert hoch. Sie enthalten jede Seite in jeder Sprache, `robots.txt`, `sitemap.xml` und eine `404.html` pro Sprache. Der Host muss `/console` mit `console.html` beantworten und eine unbekannte Adresse mit der `404.html` ihrer Sprache.
 
 ### Content Security Policy
 

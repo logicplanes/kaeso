@@ -8,12 +8,14 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type FocusEvent,
   type KeyboardEvent,
   type ReactElement,
   type ReactNode,
+  type Ref,
 } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { AlertDialog as BaseAlertDialog } from "@base-ui/react/alert-dialog";
@@ -28,6 +30,7 @@ import { Button } from "../button/button.js";
 import { Input } from "../input/input.js";
 import { focusDialogSection, initialDialogControl } from "./focus.js";
 import { useResizeMotion } from "../../utils/resize-motion.js";
+import { mergeRefs } from "../../utils/merge-refs.js";
 
 export const KAESO_DIALOG_VARIANTS = {
   size: {
@@ -130,9 +133,11 @@ function DialogFrame({
   className,
   inline,
   busy,
-}: DialogProps) {
+  rootRef,
+}: DialogProps & { rootRef?: Ref<HTMLDivElement> | undefined }) {
   const { ref, under, check } = useScrolledUnder<HTMLDivElement>();
   const [box, boxRef] = useBox(inline);
+  const frameRef = useMemo(() => mergeRefs(boxRef, rootRef), [boxRef, rootRef]);
   useResizeMotion(box, check);
   useKeepFocus(box, inline);
   const t = useUiText();
@@ -143,7 +148,7 @@ function DialogFrame({
   return (
     <DialogBusy value={!!busy}>
       <div
-        ref={boxRef}
+        ref={frameRef}
         data-dialog-frame=""
         className={cn(
           "flex min-h-0 flex-col",
@@ -208,7 +213,7 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
   const container = usePortalContainer();
   const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : open);
-  if (inline) return <DialogFrame {...props} />;
+  if (inline) return <DialogFrame {...props} rootRef={ref} />;
   return (
     <BaseDialog.Root
       {...(open !== undefined ? { open } : {})}
@@ -289,11 +294,13 @@ function AlertFrame({
   close,
   busy,
   setBusy,
-}: AlertDialogProps & { close: () => void; busy: boolean; setBusy: (busy: boolean) => void }) {
+  rootRef,
+}: AlertDialogProps & { close: () => void; busy: boolean; setBusy: (busy: boolean) => void; rootRef?: Ref<HTMLDivElement> | undefined }) {
   const [typed, setTyped] = useState("");
   const pending = useRef(false);
   const t = useUiText();
   const [box, boxRef] = useBox(inline);
+  const frameRef = useMemo(() => mergeRefs(boxRef, rootRef), [boxRef, rootRef]);
   useResizeMotion(box);
   const cancelLabel = cancelProp ?? t("alertDialog.cancel", "Cancel");
   const [typeBefore, typeAfter = ""] = t("alertDialog.typeToConfirm", "Type {text} to confirm").split("{text}");
@@ -315,7 +322,7 @@ function AlertFrame({
     if (done) close();
   };
   return (
-    <div ref={boxRef} className={cn("flex w-440 flex-col gap-20 p-24", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}>
+    <div ref={frameRef} className={cn("flex w-440 flex-col gap-20 p-24", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}>
       <div className="flex flex-col gap-6">
         <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
         <Description className="text-body text-fg-secondary text-pretty">{description}</Description>
@@ -346,7 +353,7 @@ function AlertFrame({
   );
 }
 
-export function AlertDialog(props: AlertDialogProps) {
+export const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(function AlertDialog(props, ref) {
   const { open, defaultOpen, onOpenChange, trigger, inline } = props;
   const [inner, setInner] = useState(defaultOpen ?? false);
   const isOpen = open ?? inner;
@@ -359,7 +366,7 @@ export function AlertDialog(props: AlertDialogProps) {
   const container = usePortalContainer();
   const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : isOpen);
-  if (inline) return <AlertFrame {...props} close={() => undefined} busy={busy} setBusy={setBusy} />;
+  if (inline) return <AlertFrame {...props} close={() => undefined} busy={busy} setBusy={setBusy} rootRef={ref} />;
   return (
     <BaseAlertDialog.Root
       open={isOpen}
@@ -373,7 +380,7 @@ export function AlertDialog(props: AlertDialogProps) {
       <BaseAlertDialog.Portal container={container}>
         <BaseAlertDialog.Backdrop className={BACKDROP} forceRender={overSheet} />
         <BaseAlertDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor.center.classes)}>
-          <BaseAlertDialog.Popup initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
+          <BaseAlertDialog.Popup ref={ref} initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
             <InsetContent inset={false}>
               <AlertFrame {...props} close={() => setOpen(false)} busy={busy} setBusy={setBusy} />
             </InsetContent>
@@ -382,7 +389,7 @@ export function AlertDialog(props: AlertDialogProps) {
       </BaseAlertDialog.Portal>
     </BaseAlertDialog.Root>
   );
-}
+});
 AlertDialog.displayName = "AlertDialog";
 
 export const KAESO_LAYER_DIALOG_VARIANTS = KAESO_DIALOG_VARIANTS;
@@ -403,7 +410,7 @@ export interface LayerDialogProps extends Omit<DialogProps, "title" | "descripti
 
 const bodyOf = (el: HTMLElement | null | undefined) => el?.closest<HTMLElement>("[data-dialog-body]") ?? null;
 
-export function LayerDialog({ layers, layer, onLayerChange, ...props }: LayerDialogProps) {
+export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function LayerDialog({ layers, layer, onLayerChange, ...props }, ref) {
   const [inner, setInner] = useState(0);
   const t = useUiText();
   const wanted = layer ?? inner;
@@ -442,6 +449,7 @@ export function LayerDialog({ layers, layer, onLayerChange, ...props }: LayerDia
   };
   return (
     <Dialog
+      ref={ref}
       {...props}
       title={current.title}
       description={current.description}
@@ -484,5 +492,5 @@ export function LayerDialog({ layers, layer, onLayerChange, ...props }: LayerDia
       ))}
     </Dialog>
   );
-}
+});
 LayerDialog.displayName = "LayerDialog";

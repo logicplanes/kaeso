@@ -374,14 +374,17 @@ const Group = forwardRef<HTMLDivElement, { label?: ReactNode | undefined; childr
 });
 Group.displayName = "Menu.Group";
 
-function Separator() {
-  return <div role="separator" aria-orientation="horizontal" className={MENU_SEPARATOR} />;
-}
+const Separator = forwardRef<HTMLDivElement>(function MenuSeparator(_props, ref) {
+  return <div ref={ref} role="separator" aria-orientation="horizontal" className={MENU_SEPARATOR} />;
+});
 Separator.displayName = "Menu.Separator";
 
-function Header({ avatar, name, email }: { avatar?: ReactNode | undefined; name: ReactNode; email?: ReactNode | undefined }) {
+const Header = forwardRef<HTMLDivElement, { avatar?: ReactNode | undefined; name: ReactNode; email?: ReactNode | undefined }>(function MenuHeader(
+  { avatar, name, email },
+  ref,
+) {
   return (
-    <div className="flex min-w-0 items-center gap-10 px-10 pt-8 pb-10">
+    <div ref={ref} className="flex min-w-0 items-center gap-10 px-10 pt-8 pb-10">
       {avatar}
       <div className="flex min-w-0 flex-col">
         <span className="truncate text-body font-semibold text-fg">{name}</span>
@@ -389,7 +392,7 @@ function Header({ avatar, name, email }: { avatar?: ReactNode | undefined; name:
       </div>
     </div>
   );
-}
+});
 Header.displayName = "Menu.Header";
 
 function Sub({ children, open, onOpenChange }: { children: ReactNode; open?: boolean | undefined; onOpenChange?: ((o: boolean) => void) | undefined }) {
@@ -447,13 +450,23 @@ export const Menu = Object.assign(Root, {
   SubContent,
 });
 
-function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((o: boolean) => void) | undefined }) {
+export const KAESO_CONTEXT_MENU_VARIANTS = {} as const;
+export const KAESO_CONTEXT_MENU_DEFAULT_VARIANTS = {} as const;
+
+function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((open: boolean) => void) | undefined }) {
   return <BaseContextMenu.Root {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}>{children}</BaseContextMenu.Root>;
 }
 ContextRoot.displayName = "ContextMenu";
-function ContextTrigger({ children, className }: { children: ReactNode; className?: string | undefined }) {
-  return <BaseContextMenu.Trigger className={className}>{children}</BaseContextMenu.Trigger>;
-}
+const ContextTrigger = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined }>(function ContextMenuTrigger(
+  { children, className },
+  ref,
+) {
+  return (
+    <BaseContextMenu.Trigger ref={ref} className={className}>
+      {children}
+    </BaseContextMenu.Trigger>
+  );
+});
 ContextTrigger.displayName = "ContextMenu.Trigger";
 const ContextContent = forwardRef<HTMLDivElement, Omit<MenuContentProps, "side" | "align" | "sideOffset">>(function ContextMenuContent(
   { children, className, header, footer, width = "auto" },
@@ -487,21 +500,19 @@ export const ContextMenu = Object.assign(ContextRoot, {
   SubContent,
 });
 
-function MenubarRoot({
-  children,
-  className,
-  "aria-label": ariaLabel,
-}: {
-  children: ReactNode;
-  className?: string | undefined;
-  "aria-label"?: string | undefined;
-}) {
+export const KAESO_MENUBAR_VARIANTS = {} as const;
+export const KAESO_MENUBAR_DEFAULT_VARIANTS = {} as const;
+
+const MenubarRoot = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "aria-label"?: string | undefined }>(function Menubar(
+  { children, className, "aria-label": ariaLabel },
+  ref,
+) {
   return (
-    <BaseMenubar className={cn("inline-flex items-center gap-2", className)} {...(ariaLabel ? { "aria-label": ariaLabel } : {})}>
+    <BaseMenubar ref={ref} className={cn("inline-flex items-center gap-2", className)} {...(ariaLabel ? { "aria-label": ariaLabel } : {})}>
       {children}
     </BaseMenubar>
   );
-}
+});
 MenubarRoot.displayName = "Menubar";
 const MenubarTrigger = forwardRef<HTMLButtonElement, { children: ReactNode; className?: string | undefined; "data-force"?: string | undefined }>(
   function MenubarTrigger({ children, className, "data-force": force }, ref) {

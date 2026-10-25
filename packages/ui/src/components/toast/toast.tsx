@@ -1,4 +1,4 @@
-import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { Toast as BaseToast } from "@base-ui/react/toast";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { observeResize } from "../../utils/observe-resize.js";
@@ -188,7 +188,7 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
   );
 }
 
-function List({ limit }: { limit: number }) {
+function List({ limit, viewportRef }: { limit: number; viewportRef: Ref<HTMLDivElement> }) {
   const { toasts } = BaseToast.useToastManager();
   const live = toasts.filter((item) => item.transitionStatus !== "ending");
   const [frontWidth, setFrontWidth] = useState(0);
@@ -196,6 +196,7 @@ function List({ limit }: { limit: number }) {
   return (
     <BaseToast.Portal container={usePortalContainer()}>
       <BaseToast.Viewport
+        ref={viewportRef}
         aria-label={t("toast.notifications", "Notifications")}
         className="fixed right-0 bottom-24 left-0 z-60 mx-auto h-0 w-full toast-viewport-width outline-none"
         style={{ ["--k-front-width" as string]: frontWidth ? `${frontWidth}px` : "auto" }}
@@ -208,18 +209,24 @@ function List({ limit }: { limit: number }) {
   );
 }
 
-export function Toaster({ limit = 3, timeout = 5000 }: { limit?: number | undefined; timeout?: number | undefined }) {
+export interface ToasterProps {
+  limit?: number | undefined;
+  timeout?: number | undefined;
+}
+
+export const Toaster = forwardRef<HTMLDivElement, ToasterProps>(function Toaster({ limit = 3, timeout = 5000 }, ref) {
   return (
     <BaseToast.Provider toastManager={toastManager} limit={limit} timeout={timeout}>
-      <List limit={limit} />
+      <List limit={limit} viewportRef={ref} />
     </BaseToast.Provider>
   );
-}
+});
 Toaster.displayName = "Toaster";
 
 export const Toast = Object.assign(
-  function Toast(props: { limit?: number | undefined; timeout?: number | undefined }) {
-    return <Toaster {...props} />;
-  },
+  forwardRef<HTMLDivElement, ToasterProps>(function Toast(props, ref) {
+    return <Toaster ref={ref} {...props} />;
+  }),
   { add: toast },
 );
+Toast.displayName = "Toast";

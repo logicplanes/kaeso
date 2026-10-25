@@ -20,6 +20,8 @@ These pages are for people who change Kaeso itself. Everything lives in one repo
 
 Cargo builds the Rust workspace and pnpm the TypeScript workspace, both from the repository root.
 
+## Next steps
+
 - [Local setup](local-setup.md): Go from a fresh clone to the console with sample data and passing tests.
 - [Contributing](contributing.md): Report a problem, propose a change and get your pull request merged.
 - [Development stack](stack.md): Change ports, run a second stack or run the gateway from source.

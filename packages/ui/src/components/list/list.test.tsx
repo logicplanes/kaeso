@@ -244,3 +244,18 @@ describe("SelectionBar", () => {
     expect(onClear).toHaveBeenCalledOnce();
   });
 });
+
+describe("SelectionAction", () => {
+  it("forwards its ref to its button", async () => {
+    const ref = createRef<HTMLButtonElement>();
+    const onClick = vi.fn();
+    render(
+      <SelectionAction ref={ref} onClick={onClick} danger>
+        Revoke
+      </SelectionAction>,
+    );
+    expect(ref.current).toBe(screen.getByRole("button", { name: "Revoke" }));
+    await userEvent.click(ref.current!);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+});

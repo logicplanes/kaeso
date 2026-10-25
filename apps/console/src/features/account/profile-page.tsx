@@ -208,18 +208,7 @@ function ChangeEmailDialog({
 }
 
 function DeleteAccount({ email }: { email: string }) {
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/me");
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      window.location.assign("/sign-in");
-    },
-    onError: () => setOpen(false),
-  });
   return (
     <SettingsSection title={t("account.deleteAccount", "Delete account")}>
       <SettingsGroup>
@@ -234,17 +223,36 @@ function DeleteAccount({ email }: { email: string }) {
           }
         />
       </SettingsGroup>
-      <AlertDialog
-        open={open}
-        onOpenChange={setOpen}
-        tone="danger"
-        title={t("account.deleteConfirm", "Delete your account?")}
-        description={t("account.deleteConfirmHint", 'Your keys are archived and you appear as "Deleted user" in history.')}
-        confirmLabel={t("account.deleteAccount", "Delete account")}
-        confirmText={email}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync()}
-      />
+      <DialogScope open={open}>
+        <DeleteAccountDialog email={email} open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function DeleteAccountDialog({ email, open, onOpenChange }: { email: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me");
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.assign("/sign-in");
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("account.deleteConfirm", "Delete your account?")}
+      description={t("account.deleteConfirmHint", 'Your keys are archived and you appear as "Deleted user" in history.')}
+      confirmLabel={t("account.deleteAccount", "Delete account")}
+      confirmText={email}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }

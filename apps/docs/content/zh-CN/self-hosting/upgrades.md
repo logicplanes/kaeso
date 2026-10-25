@@ -217,7 +217,7 @@ flowchart TD
 2. 如果较新的版本迁移过 ClickHouse，也恢复 ClickHouse。
 3. 下载较旧版本的 `compose.yaml`，并用 `docker compose up -d --wait` 启动。
 
-## 后续步骤
+## 下一步
 
 - [备份和主密钥](backups.md)：每次升级前先备份。
 - [实例的工作原理](how-it-works.md#保持不变的名称)：了解每个版本都保留的名称，确保升级后能找到数据。

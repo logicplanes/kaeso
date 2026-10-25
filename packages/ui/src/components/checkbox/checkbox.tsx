@@ -137,6 +137,9 @@ const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ la
 });
 Root.displayName = "Checkbox";
 
+export const KAESO_CHECKBOX_GROUP_VARIANTS = {} as const;
+export const KAESO_CHECKBOX_GROUP_DEFAULT_VARIANTS = {} as const;
+
 export interface CheckboxGroupProps {
   value?: string[] | undefined;
   defaultValue?: string[] | undefined;

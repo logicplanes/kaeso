@@ -9,6 +9,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::org_to_store;
 use crate::platform::json::Body;
@@ -113,7 +114,7 @@ async fn save(
 ) -> ApiResult<()> {
     orgs::update(&mut *tx, after).await?;
     let id = OrgId::from_uuid(after.id);
-    ctx.audit(Some(id), "org.update")
+    ctx.audit(Some(id), Action::OrgUpdate)
         .target("org", id)
         .before(OrgView::from_row(before))
         .after(OrgView::from_row(after))
@@ -231,12 +232,12 @@ pub async fn delete(
     org.state = "scheduled_for_deletion".into();
     org.deletion_due_at = Some(ctx.now + grace);
     orgs::update(&mut *tx, &org).await?;
-    ctx.audit(Some(scope.id()), "org.schedule_deletion")
+    ctx.audit(Some(scope.id()), Action::OrgScheduleDeletion)
         .target("org", scope.id())
         .after(serde_json::json!({ "deletion_due_at": org.deletion_due_at }))
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.schedule_deletion")
+    ctx.audit(None, Action::OrgScheduleDeletion)
         .target("org", scope.id())
         .write(&mut tx)
         .await?;
@@ -335,7 +336,7 @@ pub async fn transfer(
         &org_to_store(&OrgGrant::preset(OrgPreset::Admin)),
     )
     .await?;
-    ctx.audit(Some(scope.id()), "org.ownership_transfer")
+    ctx.audit(Some(scope.id()), Action::OrgOwnershipTransfer)
         .target("user", req.user_id)
         .before(serde_json::json!({ "preset": target.preset }))
         .after(serde_json::json!({ "preset": "owner", "previous_owner": me.to_string() }))

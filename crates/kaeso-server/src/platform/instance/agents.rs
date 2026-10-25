@@ -7,6 +7,7 @@ use utoipa::ToSchema;
 
 use crate::auth::agents::InstancePolicy;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::state::AppState;
@@ -70,7 +71,7 @@ pub async fn set(
         },
     )
     .await?;
-    ctx.audit(None, "instance.agents_policy")
+    ctx.audit(None, Action::InstanceAgentsPolicy)
         .before(serde_json::json!({ "allowed": before.allowed, "max": before.max }))
         .after(serde_json::json!({ "allowed": req.allowed, "max": max.as_str() }))
         .write(&mut tx)

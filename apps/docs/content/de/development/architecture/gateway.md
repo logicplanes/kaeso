@@ -105,10 +105,19 @@ Ein eigener Anbieter spricht den reinen Dialekt, `ChatProfile::OPENAI` für Chat
 | Datei | Inhalt |
 | --- | --- |
 | `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugang funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde und welchen SHA-256 er hat |
-| `supplement.toml` | Felder, die models.dev nicht hat, jedes mit seiner Quelle in der `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts`, wo models.dev keine nennt, und `egress_dialect`, das Format, das Kaeso an ein OpenAI-Modell sendet |
+| `supplement.toml` | Felder, die models.dev nicht hat, jeder Eintrag mit seiner Quelle in der `README.md` des Ordners |
 | `models-dev-providers.txt` | Jede Anbieter-ID auf models.dev, die ein eigener Anbieter nicht nehmen darf |
 
-Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Das Gateway synchronisiert models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`) und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.
+Das Supplement enthält diese Felder:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `adaptive_thinking` | Anthropic-Modelle: ob das Modell `thinking: {type: "adaptive"}` annimmt. Mit `false` wandelt KPP einen Aufwand aus einem anderen Format in ein Thinking-Budget um |
+| `forced_tool_choice` | `false` für ein Modell, das eine erzwungene Tool-Wahl ablehnt (Anthropics `tool_choice` `any` oder `tool`); das Gateway lehnt dann `required`, `any` oder ein benanntes Tool ab, bevor es den Anbieter aufruft. Fehlt das Feld, nimmt das Modell eine an |
+| `efforts` | Die Aufwandsstufen, die das Modell unterstützt, wenn models.dev keine nennt |
+| `egress_dialect` | Das Format, das Kaeso sendet: einer der Dialekte des Anbieters, standardmäßig sein Generierungsdialekt (`openai_responses` für OpenAI) |
+
+Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Sofern `KAESO_MODELS_DEV_SYNC` nicht `false` ist, synchronisiert das Gateway models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`). Es behält dieselben Anbieter wie der Snapshot und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.
 
 Aktualisieren Sie den Snapshot vor einem Release:
 

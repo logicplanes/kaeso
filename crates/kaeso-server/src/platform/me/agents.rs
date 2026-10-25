@@ -15,6 +15,7 @@ use utoipa::ToSchema;
 use crate::auth::agents::{AgentGrant, InstancePolicy, Projects};
 use crate::mcp::oauth;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
@@ -302,7 +303,7 @@ pub async fn update(
         },
     )
     .await?;
-    ctx.audit(None, "agent.update")
+    ctx.audit(None, Action::AgentUpdate)
         .target("agent", id)
         .before(serde_json::json!({ "name": a.name, "expires_at": a.expires_at.map(|t| t.unix_timestamp()) }))
         .after(serde_json::json!({ "name": name, "expires_at": expires_at.map(|t| t.unix_timestamp()) }))
@@ -376,7 +377,7 @@ pub async fn set_rights(
     let before = AgentGrant::from_store(&agents::grant_of(&mut tx, &a).await?);
     let after = validated(&state, &ctx, Some(&before), &req).await?;
     agents::replace_grant(&mut tx, a.id, &after.to_store()).await?;
-    ctx.audit(None, "agent.rights_update")
+    ctx.audit(None, Action::AgentRightsUpdate)
         .target("agent", id)
         .before(GrantBody::of(&before))
         .after(GrantBody::of(&after))
@@ -407,7 +408,7 @@ pub async fn revoke(
         .await?
         .ok_or_else(|| ApiError::not_found("agent"))?;
     agents::revoke(&mut tx, a.id, ctx.now).await?;
-    ctx.audit(None, "agent.revoke")
+    ctx.audit(None, Action::AgentRevoke)
         .target("agent", id)
         .before(serde_json::json!({ "name": a.name, "model": a.model }))
         .write(&mut tx)
@@ -905,7 +906,7 @@ pub async fn approve(
     )
     .await?;
     let code = oauth::issue_code(&mut tx, id.uuid(), &r, ctx.now).await?;
-    ctx.audit(None, "agent.authorize")
+    ctx.audit(None, Action::AgentAuthorize)
         .target("agent", id)
         .after(serde_json::json!({
             "name": name,

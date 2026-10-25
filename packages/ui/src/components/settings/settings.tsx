@@ -21,6 +21,9 @@ export interface SettingsSectionProps {
   className?: string | undefined;
 }
 
+export const KAESO_SETTINGS_SECTION_VARIANTS = {} as const;
+export const KAESO_SETTINGS_SECTION_DEFAULT_VARIANTS = {} as const;
+
 export const SettingsSection = forwardRef<HTMLElement, SettingsSectionProps>(function SettingsSection(
   { title, description, actions, children, className },
   ref,

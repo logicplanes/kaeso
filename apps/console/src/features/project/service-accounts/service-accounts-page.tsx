@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Badge, Button, Empty, Icon, icons, Input, List, StepDialog, Text } from "@logicplanes/kaeso-ui";
+import { AppFrame, Badge, Button, Empty, icons, Input, List, StepDialog, Text } from "@logicplanes/kaeso-ui";
 import { ScopeTabs } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
@@ -61,7 +61,6 @@ export function ServiceAccountsPage({ org, project, search }: { org: string; pro
       id: a.id,
       textValue: a.name,
       title: a.name,
-      glyph: <Icon icon={icons.serviceAccount} size="sm" />,
       subtitle: a.created_by ? t("project.serviceAccounts.createdBy", "Created by {name}", { name: partyName({ kind: "user", id: a.created_by }) }) : undefined,
       meta: (
         <span className="flex items-center gap-8">

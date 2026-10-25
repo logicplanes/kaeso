@@ -105,10 +105,19 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | 文件 | 内容 |
 | --- | --- |
 | `models-dev.json` | [models.dev](https://models.dev) 的快照，筛选为 Kaeso 调用的服务商，使全新实例无需联网即可工作。该目录的 `README.md` 记录了获取时间和 SHA-256 |
-| `supplement.toml` | models.dev 中没有的字段，每项的来源都写在 `README.md` 中：`adaptive_thinking`、`forced_tool_choice: false`、models.dev 未列出时的 `efforts`，以及 `egress_dialect`，即 Kaeso 发给 OpenAI 模型时使用的格式 |
+| `supplement.toml` | models.dev 中没有的字段，每个条目的来源都写在该目录的 `README.md` 中 |
 | `models-dev-providers.txt` | models.dev 上的每个服务商 ID，自定义服务商不能使用这些 ID |
 
-目录条目的值依次取自其覆盖值、models.dev 和补充数据。网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`），并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。
+补充数据包含以下字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `adaptive_thinking` | Anthropic 模型：是否接受 `thinking: {type: "adaptive"}`。为 `false` 时，KPP 会把来自其他格式的推理强度转换为思考预算 |
+| `forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定的工具。缺省表示模型接受强制选择 |
+| `efforts` | 模型支持的推理强度级别，在 models.dev 未列出时使用 |
+| `egress_dialect` | Kaeso 发送的格式：服务商的方言之一，默认是其生成方言（OpenAI 为 `openai_responses`） |
+
+目录条目的值依次取自其覆盖值、models.dev 和补充数据。除非 `KAESO_MODELS_DEV_SYNC` 为 `false`，网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`）。它保留与快照相同的服务商，并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。
 
 发布前刷新快照：
 

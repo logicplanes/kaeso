@@ -39,7 +39,10 @@ export interface PickerPopoverProps {
   children: ReactNode;
 }
 
-export function PickerPopover({ trigger, title, open, onOpenChange, width = "md", align = "start", children }: PickerPopoverProps) {
+export const PickerPopover = forwardRef<HTMLDivElement, PickerPopoverProps>(function PickerPopover(
+  { trigger, title, open, onOpenChange, width = "md", align = "start", children },
+  ref,
+) {
   const t = useUiText();
   const container = usePortalContainer();
   const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
@@ -52,6 +55,7 @@ export function PickerPopover({ trigger, title, open, onOpenChange, width = "md"
         <BaseDialog.Portal container={container}>
           <BaseDialog.Backdrop className="fixed inset-0 z-50 bg-overlay opacity-50 backdrop-motion" />
           <BaseDialog.Popup
+            ref={ref}
             data-side="bottom"
             className="fixed inset-8 z-50 flex flex-col overflow-hidden rounded-sheet bg-raised text-fg shadow-dialog outline-none sheet-motion"
           >
@@ -78,6 +82,7 @@ export function PickerPopover({ trigger, title, open, onOpenChange, width = "md"
           className="z-50 outline-none"
         >
           <BasePopover.Popup
+            ref={ref}
             aria-label={title}
             className={cn(
               "flex max-w-full-bleed-4 flex-col overflow-hidden rounded-popover bg-raised text-fg shadow-raised outline-none popup-motion",
@@ -90,7 +95,7 @@ export function PickerPopover({ trigger, title, open, onOpenChange, width = "md"
       </BasePopover.Portal>
     </BasePopover.Root>
   );
-}
+});
 PickerPopover.displayName = "PickerPopover";
 
 export interface PickerTriggerProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> {

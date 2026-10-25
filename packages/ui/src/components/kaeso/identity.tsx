@@ -181,6 +181,9 @@ function stateLabels(t: UiText): Record<KeyState, string> {
   };
 }
 
+export const KAESO_KEY_DISPLAY_VARIANTS = {} as const;
+export const KAESO_KEY_DISPLAY_DEFAULT_VARIANTS = {} as const;
+
 export const KeyDisplay = forwardRef<HTMLSpanElement, KeyDisplayProps>(function KeyDisplay(
   { redacted, state = "active", stateBadge = true, access, copy = true, className },
   ref,

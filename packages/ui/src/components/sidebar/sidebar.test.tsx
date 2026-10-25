@@ -2,10 +2,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { forwardRef } from "react";
+import { createRef, forwardRef } from "react";
 import { LinkProvider, type LinkComponentProps } from "../../utils/link-provider.js";
 import { Menu } from "../menu/menu.js";
-import { KAESO_SIDEBAR_VARIANTS, Sidebar, useSidebar } from "./sidebar.js";
+import { BrandWordmark, KAESO_SIDEBAR_VARIANTS, Sidebar, useSidebar } from "./sidebar.js";
 
 function State() {
   const { collapsed } = useSidebar();
@@ -240,5 +240,63 @@ describe("Sidebar", () => {
     );
     await waitFor(() => expect(screen.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("data-router", "yes"));
     expect(screen.getByRole("menuitem", { name: /Documentation/ })).not.toHaveAttribute("data-router");
+  });
+});
+
+describe("Sidebar part refs", () => {
+  it("reach the wordmark's link, or the wordmark itself without a link", () => {
+    const ref = createRef<HTMLAnchorElement | SVGSVGElement>();
+    const { unmount } = render(<BrandWordmark ref={ref} href="/" label="Kaeso home" />);
+    expect(ref.current).toBe(screen.getByRole("link", { name: "Kaeso home" }));
+    unmount();
+    render(<BrandWordmark ref={ref} label="Kaeso" />);
+    expect(ref.current).toBe(screen.getByRole("img", { name: "Kaeso" }));
+    expect(ref.current?.tagName.toLowerCase()).toBe("svg");
+  });
+  it("reach the switcher's button, which still opens its menu", async () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar.Switcher ref={ref} avatar={null} label="Northwind Labs">
+          <Menu.Item>Organization settings</Menu.Item>
+        </Sidebar.Switcher>
+      </Sidebar.Provider>,
+    );
+    const button = screen.getByRole("button", { name: "Northwind Labs" });
+    expect(ref.current).toBe(button);
+    fireEvent.click(button);
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Organization settings" })).toBeInTheDocument());
+    expect(ref.current).toBe(button);
+  });
+  it("reach the place's button, link or row", () => {
+    const ref = createRef<HTMLElement>();
+    const place = (props: { href?: string; children?: React.ReactNode }) => (
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar.Place ref={ref} avatar={null} label="Checkout assistant" aria-label="Switch project" {...props} />
+      </Sidebar.Provider>
+    );
+    const { rerender } = render(place({ children: <Menu.Item>Fraud screening</Menu.Item> }));
+    expect(ref.current).toBe(screen.getByRole("button", { name: "Checkout assistant" }));
+    rerender(place({ href: "/projects/checkout" }));
+    expect(ref.current).toBe(screen.getByRole("link", { name: "Checkout assistant" }));
+    rerender(place({}));
+    expect(ref.current?.tagName).toBe("DIV");
+    expect(ref.current).toHaveTextContent("Checkout assistant");
+  });
+  it("reach the loading rows and both toggles", () => {
+    const loading = createRef<HTMLDivElement>();
+    const collapse = createRef<HTMLButtonElement>();
+    const rail = createRef<HTMLButtonElement>();
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <Sidebar.Loading ref={loading} rows={2} />
+        <Sidebar.CollapseToggle ref={collapse} />
+        <Sidebar.RailToggle ref={rail} />
+      </Sidebar.Provider>,
+    );
+    expect(loading.current).toHaveAttribute("aria-busy", "true");
+    expect(loading.current?.children).toHaveLength(2);
+    expect(collapse.current).toBe(screen.getByRole("button", { name: "Collapse sidebar", expanded: true }));
+    expect(rail.current).toBe(screen.getByRole("button", { name: "Collapse sidebar", pressed: false }));
   });
 });

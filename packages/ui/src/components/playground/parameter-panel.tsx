@@ -243,16 +243,10 @@ export interface ParameterPopoverProps extends Omit<ParameterPanelProps, "layout
   align?: "start" | "center" | "end" | undefined;
 }
 
-export function ParameterPopover({
-  trigger,
-  title: titleProp,
-  open,
-  defaultOpen,
-  onOpenChange,
-  side = "bottom",
-  align = "end",
-  ...panel
-}: ParameterPopoverProps) {
+export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps>(function ParameterPopover(
+  { trigger, title: titleProp, open, defaultOpen, onOpenChange, side = "bottom", align = "end", ...panel },
+  ref,
+) {
   const t = useUiText();
   const title = titleProp ?? t("parameterPopover.parameters", "Parameters");
   return (
@@ -263,10 +257,10 @@ export function ParameterPopover({
       {...(onOpenChange ? { onOpenChange } : {})}
     >
       <Popover.Trigger>{trigger ?? <IconButton icon={icons.displayOptions} aria-label={title} size="sm" />}</Popover.Trigger>
-      <Popover.Content title={title} side={side} align={align} className="w-320 max-w-(--available-width)">
+      <Popover.Content ref={ref} title={title} side={side} align={align} className="w-320 max-w-(--available-width)">
         <ParameterPanel {...panel} />
       </Popover.Content>
     </Popover>
   );
-}
+});
 ParameterPopover.displayName = "ParameterPopover";

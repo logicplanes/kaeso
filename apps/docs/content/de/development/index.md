@@ -20,6 +20,8 @@ Diese Seiten richten sich an alle, die Kaeso selbst ändern. Alles liegt in eine
 
 Cargo baut den Rust-Workspace und pnpm den TypeScript-Workspace, beide vom Wurzelverzeichnis des Repositorys aus.
 
+## Nächste Schritte
+
 - [Lokale Einrichtung](local-setup.md): Kommen Sie vom frischen Klon zur Konsole mit Beispieldaten und bestandenen Tests.
 - [Mitwirken](contributing.md): Melden Sie ein Problem, schlagen Sie eine Änderung vor und bringen Sie Ihren Pull Request zum Merge.
 - [Entwicklungs-Stack](stack.md): Ändern Sie Ports, betreiben Sie einen zweiten Stack oder starten Sie das Gateway aus dem Quellcode.

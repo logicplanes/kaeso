@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { variantProblems, variantExport } from "./variant-exports.mjs";
+import { constantName, pagesWithoutVariants, variantProblems, variantExport } from "./variant-exports.mjs";
 
 describe("variantExport", () => {
   it("reads the component of a variants export", () => {
@@ -42,6 +42,51 @@ describe("variantProblems", () => {
     ).toEqual([
       "blocks/pages exports KAESO_PAGES_DEFAULT_VARIANTS without KAESO_PAGES_VARIANTS",
       "components/button exports KAESO_BUTTON_VARIANTS without KAESO_BUTTON_DEFAULT_VARIANTS",
+    ]);
+  });
+});
+
+describe("constantName", () => {
+  it("writes a component's name as its variants constant does", () => {
+    expect(constantName("ContextMenu")).toBe("CONTEXT_MENU");
+    expect(constantName("Menubar")).toBe("MENUBAR");
+    expect(constantName("OTPInput")).toBe("OTP_INPUT");
+    expect(constantName("QRCode")).toBe("QR_CODE");
+  });
+});
+
+describe("pagesWithoutVariants", () => {
+  const components = [
+    { entry: "menu", variants: { MENU: { axes: {}, defaults: {} }, CONTEXT_MENU: { axes: {}, defaults: {} } } },
+    { entry: "kaeso", variants: { CONVERSATION: { axes: { density: {} }, defaults: { density: "default" } } } },
+  ];
+
+  it("accepts a page whose component exports its own pair, or names the shared pair it uses", () => {
+    expect(
+      pagesWithoutVariants(
+        [
+          { file: "src/demos/context-menu.tsx", entry: "menu", component: "ContextMenu" },
+          { file: "src/demos/conversation-view.tsx", entry: "kaeso", component: "ConversationView", variants: "CONVERSATION" },
+        ],
+        components,
+      ),
+    ).toEqual([]);
+  });
+
+  it("names a page whose component has no pair, even when another component of its entry has one", () => {
+    expect(
+      pagesWithoutVariants(
+        [
+          { file: "src/demos/menubar.tsx", entry: "menu", component: "Menubar" },
+          { file: "src/demos/key-display.tsx", entry: "kaeso", component: "KeyDisplay", variants: "IDENTITY" },
+          { file: "src/demos/gone.tsx", entry: "gone", component: "Gone" },
+        ],
+        components,
+      ),
+    ).toEqual([
+      "src/demos/menubar.tsx shows Menubar, but menu exports no KAESO_MENUBAR_VARIANTS and KAESO_MENUBAR_DEFAULT_VARIANTS",
+      "src/demos/key-display.tsx names KAESO_IDENTITY_VARIANTS, but kaeso exports no KAESO_IDENTITY_VARIANTS and KAESO_IDENTITY_DEFAULT_VARIANTS",
+      "src/demos/gone.tsx shows Gone, but gone exports no KAESO_GONE_VARIANTS and KAESO_GONE_DEFAULT_VARIANTS",
     ]);
   });
 });

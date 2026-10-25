@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { createRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -353,5 +353,19 @@ describe("CommandList inline in a dialog step", () => {
   it("draws a picker's trigger like a text input", () => {
     render(<PickerTrigger aria-label="Model" placeholder="Choose a model" />);
     expect(screen.getByRole("button", { name: /Choose a model/ })).toHaveClass("material-selector");
+  });
+});
+
+describe("PickerPopover's ref", () => {
+  it("reaches the open popover", async () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <PickerPopover ref={ref} title="Provider" open trigger={<PickerTrigger aria-label="Provider" placeholder="Choose a provider" />}>
+        <CommandList groups={groups} aria-label="Providers" />
+      </PickerPopover>,
+    );
+    const popover = await screen.findByRole("dialog", { name: "Provider" });
+    expect(ref.current).toBe(popover);
+    expect(popover).toContainElement(screen.getByRole("listbox", { name: "Providers" }));
   });
 });

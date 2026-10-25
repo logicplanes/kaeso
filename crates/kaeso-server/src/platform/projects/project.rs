@@ -10,6 +10,7 @@ use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{check_project, project_to_store};
 use crate::platform::json::Body;
@@ -156,7 +157,7 @@ pub async fn create(
     let row = projects::get(&mut *tx, scope.org.id, id.uuid())
         .await?
         .ok_or_else(|| ApiError::internal("new project vanished"))?;
-    ctx.audit(Some(scope.id()), "project.create")
+    ctx.audit(Some(scope.id()), Action::ProjectCreate)
         .project(id)
         .target("project", id)
         .after(ProjectView::from_row(&row))
@@ -203,7 +204,7 @@ async fn lock_active(tx: &mut PgConnection, ctx: &Ctx) -> ApiResult<projects::Pr
 async fn save(
     tx: &mut PgConnection,
     ctx: &Ctx,
-    action: &'static str,
+    action: Action,
     before: &projects::Project,
     after: &projects::Project,
 ) -> ApiResult<()> {
@@ -219,7 +220,7 @@ async fn save(
 async fn change(
     state: &AppState,
     ctx: &Ctx,
-    action: &'static str,
+    action: Action,
     change: impl FnOnce(&mut projects::Project) -> ApiResult<()>,
 ) -> ApiResult<projects::Project> {
     let mut tx = state.pg.begin().await?;
@@ -246,7 +247,7 @@ pub async fn update(
     Path(_p): Path<(String, String)>,
     Body(req): Body<ProjectUpdate>,
 ) -> ApiResult<Json<ProjectView>> {
-    let after = change(&state, &ctx, "project.update", |p| {
+    let after = change(&state, &ctx, Action::ProjectUpdate, |p| {
         if let Some(name) = &req.name {
             p.name = validate_name("name", name)?;
         }
@@ -281,7 +282,7 @@ pub async fn key_policy(
     Body(req): Body<ProjectKeyPolicy>,
 ) -> ApiResult<Json<ProjectView>> {
     let org_max = ctx.org()?.org.max_key_lifetime_days;
-    let after = change(&state, &ctx, "project.key_policy", |p| {
+    let after = change(&state, &ctx, Action::ProjectKeyPolicy, |p| {
         let days = validate_lifetime(req.max_key_lifetime_days)?;
         if let (Some(d), Some(org_max)) = (days, org_max)
             && d > org_max
@@ -319,7 +320,7 @@ pub async fn set_avatar(
     let mut after = before.clone();
     after.avatar = Some(picture.hash.clone());
     avatars::put(&mut *tx, &picture.hash, picture.content_type, &picture.data).await?;
-    save(&mut tx, &ctx, "project.update", &before, &after).await?;
+    save(&mut tx, &ctx, Action::ProjectUpdate, &before, &after).await?;
     if let Some(old) = before.avatar.as_deref().filter(|old| *old != picture.hash) {
         avatars::delete_if_unused(&mut *tx, old).await?;
     }
@@ -347,7 +348,7 @@ pub async fn remove_avatar(
     };
     let mut after = before.clone();
     after.avatar = None;
-    save(&mut tx, &ctx, "project.update", &before, &after).await?;
+    save(&mut tx, &ctx, Action::ProjectUpdate, &before, &after).await?;
     avatars::delete_if_unused(&mut *tx, &old).await?;
     tx.commit().await?;
     Ok(Json(ProjectView::from_row(&after)))
@@ -381,7 +382,7 @@ pub async fn archive(
     projects::update(&mut *tx, &after).await?;
     let keys = key_lifecycle::archive_project_keys(&mut *tx, before.id, ctx.now).await?;
     let accounts = service_accounts::archive_all_in_project(&mut *tx, before.id, ctx.now).await?;
-    ctx.audit(Some(ctx.org()?.id()), "project.archive")
+    ctx.audit(Some(ctx.org()?.id()), Action::ProjectArchive)
         .target("project", ProjectId::from_uuid(before.id))
         .after(serde_json::json!({ "archived_keys": keys.len(), "archived_service_accounts": accounts }))
         .write(&mut tx)
@@ -489,7 +490,7 @@ pub async fn set_default(
     let after = projects::get(&mut *tx, org, id)
         .await?
         .ok_or_else(|| ApiError::internal("the new default project vanished"))?;
-    ctx.audit(Some(scope.id()), "project.default")
+    ctx.audit(Some(scope.id()), Action::ProjectDefault)
         .project(ProjectId::from_uuid(id))
         .target("project", ProjectId::from_uuid(id))
         .before(serde_json::json!({

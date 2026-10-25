@@ -80,7 +80,7 @@ Every change follows these rules, and CI checks most of them:
 - **Tests assert on what a person or an app sees.** They are deterministic, with injected clocks and no sleeps. Coverage thresholds only ever go up.
 - **Interfaces use only `@logicplanes/kaeso-ui`**, with `className` for layout only, and every word in three languages ([translations](translations.md)).
 - **pnpm only** for JavaScript, and `pnpm dlx` for a one-off tool. Cargo builds the Rust code, and lockfiles change only through their tool.
-- **No secrets or personal data** in the repository. Use placeholders such as `kaeso.example.com`, `sk-kso-…` and `owner@example.com`.
+- **No secrets or personal data** in the repository. Kaeso itself is `kaeso.example.com`, keys are `sk-kso-…` and the reader or owner is `owner@example.com`. Anything else, such as an identity provider or an SMTP server, takes another name under the reserved `example.com` or `.example` domains ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)), never a real host, key or person.
 - **No plans in the repository.** Roadmaps, to-do lists and open questions go into issues.
 
 The gateway adds rules of its own, such as no panics and no floats for money ([gateway rules](architecture/gateway.md#rules)). So does KPP ([design principles](kpp/index.md#design-principles)).

@@ -1,6 +1,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DialogScopeContext, type DialogScopeTracker } from "../../utils/dialog-scope.js";
 
+export const KAESO_DIALOG_SCOPE_VARIANTS = {} as const;
+export const KAESO_DIALOG_SCOPE_DEFAULT_VARIANTS = {} as const;
+
 export interface DialogScopeProps {
   open: boolean;
   children: ReactNode;

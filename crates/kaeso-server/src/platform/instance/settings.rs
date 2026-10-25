@@ -8,6 +8,7 @@ use utoipa::ToSchema;
 
 use crate::config::MailTransport;
 use crate::platform::access::{Ctx, from_sso};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::services::{accounts, admin_sso};
@@ -176,7 +177,7 @@ pub async fn set_admin_sso(
     ctx.require_recent_sign_in()?;
     let mut tx = state.pg.begin().await?;
     let changed = admin_sso::change(&mut tx, req.org).await?;
-    ctx.audit(None, "instance.admin_sso_update")
+    ctx.audit(None, Action::InstanceAdminSsoUpdate)
         .before(admin_sso::audited(changed.before.as_ref()))
         .after(admin_sso::audited(changed.after.as_ref()))
         .write(&mut tx)
@@ -314,7 +315,7 @@ pub async fn update(
     }
     instance::update(&mut *tx, &after).await?;
     let admin_sso = instance::admin_sso(&mut *tx).await?;
-    ctx.audit(None, "instance.settings_update")
+    ctx.audit(None, Action::InstanceSettingsUpdate)
         .before(view(&state, &before, admin_sso.as_ref()))
         .after(view(&state, &after, admin_sso.as_ref()))
         .write(&mut tx)

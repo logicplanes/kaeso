@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import { forwardRef, type ReactElement, type ReactNode } from "react";
 import { AlertDialog } from "../../components/dialog/dialog.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -23,10 +23,14 @@ export interface DeleteResourceProps {
   inline?: boolean | undefined;
 }
 
-export function DeleteResource({ kind, name, consequence, verb, confirm = "typed", onConfirm, trigger, open, onOpenChange, inline }: DeleteResourceProps) {
+export const DeleteResource = forwardRef<HTMLDivElement, DeleteResourceProps>(function DeleteResource(
+  { kind, name, consequence, verb, confirm = "typed", onConfirm, trigger, open, onOpenChange, inline },
+  ref,
+) {
   const t = useUiText();
   return (
     <AlertDialog
+      ref={ref}
       title={
         verb === undefined ? t("deleteResource.deleteTitle", "Delete this {kind}?", { kind }) : t("deleteResource.title", "{verb} this {kind}?", { verb, kind })
       }
@@ -43,5 +47,5 @@ export function DeleteResource({ kind, name, consequence, verb, confirm = "typed
       {...(inline ? { inline } : {})}
     />
   );
-}
+});
 DeleteResource.displayName = "DeleteResource";

@@ -12,6 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::{KEYS_ARCHIVED, ensure_active};
 use crate::platform::access::{Caller, Ctx, denied};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{
@@ -150,7 +151,7 @@ async fn create_key(
     let view = KeyView::from_row(&row, ctx.now);
     match &rotation {
         None => {
-            ctx.audit(Some(ctx.org()?.id()), "key.create")
+            ctx.audit(Some(ctx.org()?.id()), Action::KeyCreate)
                 .target("key", id)
                 .after(&view)
                 .write(&mut tx)
@@ -165,7 +166,7 @@ async fn create_key(
             let retired = keys::get(&mut *tx, r.old.project_id, r.old.id)
                 .await?
                 .ok_or_else(|| ApiError::not_found("key"))?;
-            ctx.audit(Some(ctx.org()?.id()), "key.rotate")
+            ctx.audit(Some(ctx.org()?.id()), Action::KeyRotate)
                 .target("key", ApiKeyId::from_uuid(r.old.id))
                 .before(KeyView::from_row(r.old, ctx.now))
                 .after(KeyView::from_row(&retired, ctx.now))
@@ -387,19 +388,19 @@ pub(crate) async fn change(
     let mut tx = state.pg.begin().await?;
     let (action, done) = match change {
         Change::Disable => (
-            "key.disable",
+            Action::KeyDisable,
             keys::set_disabled(&mut *tx, row.project_id, row.id, Some(ctx.now), actor).await?,
         ),
         Change::Enable => {
             let disabler = keys::disabled_by(&mut *tx, row.project_id, row.id).await?;
             may_enable(ctx, disabler.as_ref(), holder)?;
             (
-                "key.enable",
+                Action::KeyEnable,
                 keys::set_disabled(&mut *tx, row.project_id, row.id, None, actor).await?,
             )
         }
         Change::Archive => (
-            "key.archive",
+            Action::KeyArchive,
             keys::archive(&mut *tx, row.project_id, row.id, ctx.now).await?,
         ),
     };

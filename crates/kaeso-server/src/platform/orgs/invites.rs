@@ -15,6 +15,7 @@ use time::{Duration, OffsetDateTime};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::{Ctx, OrgScope};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     RoleBook, RoleRef, check_org, check_project, org_to_store, project_from_store, project_to_store,
@@ -256,7 +257,7 @@ pub async fn create(
         },
     )
     .await?;
-    ctx.audit(Some(scope.id()), "invite.create")
+    ctx.audit(Some(scope.id()), Action::InviteCreate)
         .target("invite", id)
         .after(serde_json::json!({ "email": email, "role": role, "project_roles": roles_json }))
         .write(&mut tx)
@@ -475,7 +476,7 @@ pub async fn resend(
     {
         return Err(ApiError::not_found("pending invite"));
     }
-    ctx.audit(Some(scope.id()), "invite.resend")
+    ctx.audit(Some(scope.id()), Action::InviteResend)
         .target("invite", id)
         .write(&mut tx)
         .await?;
@@ -511,7 +512,7 @@ pub async fn revoke(
     if !invites::revoke(&mut *tx, Some(scope.org.id), id.uuid(), ctx.now).await? {
         return Err(ApiError::not_found("pending invite"));
     }
-    ctx.audit(Some(scope.id()), "invite.revoke")
+    ctx.audit(Some(scope.id()), Action::InviteRevoke)
         .target("invite", id)
         .write(&mut tx)
         .await?;

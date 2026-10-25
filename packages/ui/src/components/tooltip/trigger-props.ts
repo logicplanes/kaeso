@@ -1,4 +1,5 @@
 import { cloneElement, useMemo, useSyncExternalStore, type HTMLAttributes, type ReactElement, type Ref, type RefCallback } from "react";
+import { mergeRefs, setRef } from "../../utils/merge-refs.js";
 
 export type TriggerProps = HTMLAttributes<Element> & { ref?: Ref<Element> | undefined };
 
@@ -40,18 +41,6 @@ export function triggerPropsStore(): TriggerPropsStore {
   };
 }
 
-export function setRef<T>(ref: Ref<T> | undefined, value: T): (() => void) | undefined {
-  if (typeof ref === "function") {
-    const cleanup = ref(value);
-    return typeof cleanup === "function" ? cleanup : () => void ref(null);
-  }
-  if (ref) {
-    ref.current = value;
-    return () => void (ref.current = null);
-  }
-  return undefined;
-}
-
 export function HandedTrigger({
   store,
   merge,
@@ -69,12 +58,3 @@ export function HandedTrigger({
   return cloneElement(children as ReactElement<{ ref?: Ref<Element> | undefined }>, { ...(given && merge ? merge(given, own) : extra), ref });
 }
 HandedTrigger.displayName = "HandedTrigger";
-
-function mergeRefs<T>(...refs: (Ref<T> | undefined)[]): RefCallback<T> {
-  return (node) => {
-    const cleanups = refs.map((ref) => setRef(ref, node));
-    return () => {
-      for (const cleanup of cleanups) cleanup?.();
-    };
-  };
-}

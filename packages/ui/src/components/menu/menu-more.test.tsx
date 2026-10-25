@@ -110,3 +110,32 @@ describe("Menu parts", () => {
     expect(await screen.findByRole("menuitem", { name: "Export" })).toBeInTheDocument();
   });
 });
+
+describe("Menu part refs", () => {
+  it("reach the separator, the header, the context menu's trigger area and the menubar", () => {
+    const separator = createRef<HTMLDivElement>();
+    const header = createRef<HTMLDivElement>();
+    const area = createRef<HTMLDivElement>();
+    const bar = createRef<HTMLDivElement>();
+    render(
+      <>
+        <Menu.Separator ref={separator} />
+        <Menu.Header ref={header} name="Ada Lovelace" email="owner@example.com" />
+        <ContextMenu>
+          <ContextMenu.Trigger ref={area}>
+            <span>production</span>
+          </ContextMenu.Trigger>
+        </ContextMenu>
+        <Menubar ref={bar} aria-label="Editor">
+          <Menubar.Menu>
+            <Menubar.Trigger>File</Menubar.Trigger>
+          </Menubar.Menu>
+        </Menubar>
+      </>,
+    );
+    expect(separator.current).toBe(screen.getByRole("separator"));
+    expect(header.current).toHaveTextContent("Ada Lovelaceowner@example.com");
+    expect(area.current).toContainElement(screen.getByText("production"));
+    expect(bar.current).toBe(screen.getByRole("menubar", { name: "Editor" }));
+  });
+});

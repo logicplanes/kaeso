@@ -21,6 +21,7 @@ use super::access::{Access, Ctx, Secure};
 use super::audit_log::{self, AuditEventView, AuditFilter};
 use super::error::ApiResult;
 use super::pagination::{List, PageParams};
+use crate::platform::audit::Action;
 use crate::platform::params::{Path, Query};
 use crate::state::AppState;
 
@@ -195,7 +196,7 @@ pub async fn audit_export(
 ) -> ApiResult<Response> {
     audit_log::check_range(&filter)?;
     let org = ctx.org()?.id();
-    ctx.audit(Some(org), "audit_log.export")
+    ctx.audit(Some(org), Action::AuditLogExport)
         .write(&mut *state.pg.acquire().await?)
         .await?;
     audit_log::export(state.pg.clone(), Some(org), filter)

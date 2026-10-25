@@ -12,6 +12,7 @@ use utoipa::ToSchema;
 
 use crate::auth::throttle::{self, EMAILS_PER_ADDRESS, EMAILS_PER_IP, TOKENS_PER_IP};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::auth::setup::{validate_email, validate_name};
 use crate::platform::auth::{EmailSent, refused, throttle_ip};
 use crate::platform::error::{ApiError, ApiResult};
@@ -142,7 +143,7 @@ pub async fn update(
             .and_then(|u| u.name);
         let mut tx = state.pg.begin().await?;
         users::set_name(&mut *tx, user.uuid(), &name).await?;
-        ctx.audit(None, "user.update")
+        ctx.audit(None, Action::UserUpdate)
             .target("user", user)
             .before(serde_json::json!({ "name": before }))
             .after(serde_json::json!({ "name": name }))
@@ -241,7 +242,7 @@ pub async fn change_email(
         },
     )
     .await?;
-    ctx.audit(None, "user.email_change_request")
+    ctx.audit(None, Action::UserEmailChangeRequest)
         .target("user", user)
         .after(serde_json::json!({ "email": email }))
         .write(&mut tx)
@@ -354,7 +355,7 @@ pub async fn confirm_email(
         .or(asked_by);
     let ended = kaeso_store::pg::sessions::revoke_all(&mut *tx, user_id, keep, ctx.now).await?;
     let user_id = UserId::from_uuid(user_id);
-    ctx.audit(None, "user.email_change")
+    ctx.audit(None, Action::UserEmailChange)
         .by(user_id)
         .target("user", user_id)
         .before(serde_json::json!({ "email": user.email }))
@@ -429,7 +430,7 @@ pub async fn cancel_email(
         .map(UserId::from_uuid)
         .ok_or_else(|| ApiError::internal("email change cancel token without user"))?;
     retire_email_changes(&mut tx, user, ctx.now).await?;
-    ctx.audit(None, "user.email_change_cancel")
+    ctx.audit(None, Action::UserEmailChangeCancel)
         .by(user)
         .target("user", user)
         .before(serde_json::json!({ "email": token.email }))
@@ -461,7 +462,7 @@ pub async fn set_avatar(
     if let Some(old) = row.avatar.as_deref().filter(|old| *old != picture.hash) {
         avatars::delete_if_unused(&mut *tx, old).await?;
     }
-    ctx.audit(None, "user.update")
+    ctx.audit(None, Action::UserUpdate)
         .target("user", user)
         .before(serde_json::json!({ "avatar": row.avatar }))
         .after(serde_json::json!({ "avatar": picture.hash }))
@@ -485,7 +486,7 @@ pub async fn remove_avatar(State(state): State<AppState>, ctx: Ctx) -> ApiResult
         let mut tx = state.pg.begin().await?;
         users::set_avatar(&mut *tx, user.uuid(), None).await?;
         avatars::delete_if_unused(&mut *tx, old).await?;
-        ctx.audit(None, "user.update")
+        ctx.audit(None, Action::UserUpdate)
             .target("user", user)
             .before(serde_json::json!({ "avatar": old }))
             .after(serde_json::json!({ "avatar": null }))
