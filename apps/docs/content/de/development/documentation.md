@@ -232,7 +232,7 @@ Formatierung zeigt, was etwas ist, nie, wie wichtig es ist.
 
 | Format | Wofür | Beispiel |
 | --- | --- | --- |
-| **Fett** | Beschriftungen der Konsole, genau so, wie die Konsole sie zeigt, verbunden mit › | **Einstellungen** › **Instanz** |
+| **Fett** | Beschriftungen der Konsole, genau so, wie die Konsole sie zeigt, verbunden mit › | **Instanz** › **Updates** |
 | **Fett** mit Punkt | Der Name am Anfang eines Listeneintrags, wenn die Liste mehrere benannte Dinge erklärt | **Keepalives.** Nach 15 Sekunden … |
 | `Code` | Alles, was die Leser eingeben oder was der Code benennt: Befehle, Pfade, Dateinamen, Einstellungen, Felder, Header, Modell-IDs, Werte, HTTP-Methoden mit ihrem Pfad | `KAESO_DOMAIN`, `POST /v1/messages`, `claude-haiku-4-5` |
 | Anführungszeichen | Eine Meldung der Konsole, genau zitiert | „Einladung widerrufen“ |

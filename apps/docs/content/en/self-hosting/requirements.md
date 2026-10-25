@@ -12,7 +12,7 @@ Kaeso runs on one Linux server with Docker. Size the disk by how many requests y
 | --- | --- |
 | System | Linux with Docker Engine and Docker Compose 2.24 or newer, on `linux/amd64` or `linux/arm64` |
 | CPU | 2 vCPUs |
-| Memory | 4 GB, of which ClickHouse uses about 2 GB |
+| Memory | 4 GB. ClickHouse uses the most, up to its limit `CLICKHOUSE_MEMORY` ([container limits](configuration.md#container-limits)) |
 | Disk | 20 GB, plus room for request logs |
 
 [The updater](upgrades.md#the-updater) also needs Docker Engine 25 or newer.
@@ -47,6 +47,6 @@ Request logs live in ClickHouse. Plan for this much disk per million requests:
 | Metadata only: model, status, tokens, cost and timing | About 0.1 GB |
 | Metadata and content, at about 2.5 KB of text per request | About 0.65 GB |
 
-Content grows with the size of your prompts and replies. Retention caps the total. At a million requests a day, the default retention keeps about 6 GB of metadata (90 days) and 16 GB of content (30 days).
+Content grows with the size of your prompts and replies. Retention caps the total. At a million requests a day, the default retention keeps about 9 GB of metadata (90 days) and 16 GB of content (30 days).
 
 Each organization chooses its retention on its **Logging** page, within the instance's maximums ([request logs](../console/request-logs.md)). The instance's **System** page shows how much the logs take.

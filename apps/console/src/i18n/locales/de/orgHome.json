@@ -123,7 +123,7 @@
   "orgHome.customProviders": "Eigene Anbieter",
   "orgHome.custom.failed": "Die eigenen Anbieter konnten nicht geladen werden",
   "orgHome.custom.empty": "Noch keine eigenen Anbieter",
-  "orgHome.custom.emptyHint": "Einen selbst betriebenen Server oder internen Proxy hinzufügen, der ein API-Format spricht, das Kaeso kennt.",
+  "orgHome.custom.emptyHint": "Einen eigenen Server oder internen Proxy hinzufügen, der ein API-Format spricht, das Kaeso kennt.",
   "orgHome.custom.add": "Eigenen Anbieter hinzufügen",
   "orgHome.custom.about": "Über eigene Anbieter",
   "orgHome.custom.deleteQuestion": "{name} löschen?",

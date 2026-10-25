@@ -232,7 +232,7 @@ Formatting marks what something is, never how important it is.
 
 | Format | Use it for | Example |
 | --- | --- | --- |
-| **Bold** | Console labels, exactly as the console shows them, joined with › | **Settings** › **Instance** |
+| **Bold** | Console labels, exactly as the console shows them, joined with › | **Instance** › **Updates** |
 | **Bold** with a full stop | The name at the start of a list item that defines several named things | **Keepalives.** After 15 seconds… |
 | `Code` | Anything the reader types or the code names: commands, paths, file names, settings, fields, headers, model ids, values, HTTP methods with their paths | `KAESO_DOMAIN`, `POST /v1/messages`, `claude-haiku-4-5` |
 | Quotation marks | A message the console shows, quoted exactly | "Invitation revoked" |

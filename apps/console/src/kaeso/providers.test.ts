@@ -10,14 +10,14 @@ describe("the provider catalog", () => {
   it("names each provider as the gateway does and one it doesn't list by its id", () => {
     expect(catalog.name("xai")).toBe("SpaceX");
     expect(catalog.name("togetherai")).toBe("Together AI");
-    expect(catalog.name("cohere")).toBe("Cohere");
+    expect(catalog.name("cohere")).toBe("cohere");
     expect(catalog.get("cohere")).toBeUndefined();
   });
 
   it("names the product of a provider's accounts, and the provider when it has none", () => {
     expect(catalog.product("openai")).toBe("ChatGPT");
     expect(catalog.product("anthropic")).toBe("Anthropic");
-    expect(catalog.product("cohere")).toBe("Cohere");
+    expect(catalog.product("cohere")).toBe("cohere");
   });
 
   it("offers a provider's own formats, and every format for one it doesn't list", () => {
@@ -35,7 +35,7 @@ describe("the provider catalog", () => {
     const options = providerOptions(catalog, keys);
     expect(options.map((o) => o.id)).toEqual(providers.map((p) => p.id));
     expect(options[0]).toEqual({ id: "openai", name: "OpenAI", connected: true, hint: "2 keys" });
-    expect(providerOptions(catalog, keys, ["cohere"])).toEqual([{ id: "cohere", name: "Cohere", connected: true, hint: "1 key" }]);
+    expect(providerOptions(catalog, keys, ["cohere"])).toEqual([{ id: "cohere", name: "cohere", connected: true, hint: "1 key" }]);
     expect(providerOptions(catalog, keys, ["groq"])).toEqual([{ id: "groq", name: "Groq" }]);
     expect(providerOptions(providerCatalog([]), [])).toEqual([]);
   });

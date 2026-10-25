@@ -22,7 +22,7 @@ export const examples = [
 export function Reveal() {
   return (
     <div className="w-560">
-      <SecretReveal secret={SECRET} name="checkout-web" baseUrl="https://gateway.northwind.example" model="gpt-5-mini" />
+      <SecretReveal secret={SECRET} name="checkout-web" baseUrl="https://kaeso.example.com" model="gpt-5-mini" />
     </div>
   );
 }
@@ -32,12 +32,12 @@ export function Platform() {
       <SecretReveal
         secret={SECRET}
         name="terraform"
-        baseUrl="https://gateway.northwind.example"
+        baseUrl="https://kaeso.example.com"
         snippets={[
           {
             label: "curl",
             lang: "bash",
-            code: `curl https://gateway.northwind.example/platform/v1/orgs/org_01/projects \\\n  -H "Authorization: Bearer ${SECRET}"`,
+            code: `curl https://kaeso.example.com/platform/v1/orgs/org_01/projects \\\n  -H "Authorization: Bearer ${SECRET}"`,
           },
         ]}
       />
@@ -47,14 +47,14 @@ export function Platform() {
 export function Environment() {
   return (
     <div className="w-640">
-      <EnvironmentSnippet baseUrl="https://gateway.northwind.example" />
+      <EnvironmentSnippet baseUrl="https://kaeso.example.com" />
     </div>
   );
 }
 export function InDialog() {
   return (
     <Dialog trigger={<Button variant="primary">Create key</Button>} title="Key created" description="checkout-web can call the gateway now." size="lg">
-      <SecretReveal secret={SECRET} baseUrl="https://gateway.northwind.example" />
+      <SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" />
     </Dialog>
   );
 }

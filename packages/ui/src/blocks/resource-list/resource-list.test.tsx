@@ -10,7 +10,7 @@ const groups: ListGroup[] = [
     id: "active",
     title: "Active",
     items: [
-      { id: "k1", title: "production", displayId: "sk-kaeso-1a2b" },
+      { id: "k1", title: "production", displayId: "sk-kso-1a2b" },
       { id: "k2", title: "staging", textValue: "staging key" },
     ],
   },

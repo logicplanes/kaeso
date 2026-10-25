@@ -64,10 +64,11 @@ cargo run -q -p kaeso -- openapi | diff - openapi.json
 
 `pnpm --filter <package> <script>` 运行某个包的脚本。这些包是 `kaeso-console`、`kaeso-docs`、`kaeso-showcase`、`@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens`。修改某个库之后，在按包过滤运行之前先运行 `pnpm build:packages`。每个包的覆盖率阈值在其 `vitest.config.ts` 中，只升不降。
 
-Playwright 需要 Chromium，只需安装一次：
+Playwright 需要 Chromium，展示站点的测试套件还需要 WebKit，只需安装一次：
 
 ```bash
 pnpm --filter kaeso-console exec playwright install chromium
+pnpm --filter kaeso-showcase exec playwright install webkit
 ```
 
 ### 控制台
@@ -93,7 +94,7 @@ KAESO_E2E_STACK=running pnpm --filter kaeso-console e2e
 
 组件测试在 happy-dom 中使用 Testing Library 运行。展示站点没有单元测试。
 
-展示站点的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它在两种主题下用 axe 检查无障碍，并检查键盘操作和焦点环。它还检查令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。
+展示站点的端到端套件针对生产构建运行 Playwright，所以先运行 `pnpm build`。它在两种主题下用 axe 检查无障碍，并检查键盘操作和焦点环。它还检查令牌的字号阶梯、动效和几何尺寸、手机宽度下的每个组件页面、德语和中文页面，以及站点地图和页面头部。导航面板的测试还会在 WebKit 中运行。
 
 ## Rust
 
@@ -292,7 +293,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | TypeScript libraries | `pnpm build:packages`，为所有需要这些库的作业构建一次 |
 | TypeScript test | `pnpm test`，每个工作区一个作业；控制台分六个分片，其覆盖率由另一个作业合并并检查 |
 | TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check` |
-| End-to-end console、docs 和 showcase | 每个包的 `e2e`；控制台分五部分，展示站点分多个分片，其无障碍检查使用单独的分片 |
+| End-to-end console、docs 和 showcase | 每个包的 `e2e`；控制台分五部分，展示站点分多个分片，其无障碍检查使用单独的分片，其 WebKit 测试在单独的一个作业中运行 |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。

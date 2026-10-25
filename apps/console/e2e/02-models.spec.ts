@@ -84,7 +84,7 @@ test("models are picked from the keyboard: Space selects, Enter opens a model's 
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
     dialog.getByRole("switch", { name: "Include deprecated" }),
-    dialog.getByRole("link", { name: "Open Providers" }),
+    dialog.getByRole("link", { name: "Open providers" }),
     hit(page, "gpt-4.1"),
   ]) {
     await page.keyboard.press("Tab");

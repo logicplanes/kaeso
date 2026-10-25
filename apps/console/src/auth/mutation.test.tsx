@@ -30,8 +30,6 @@ describe("a change that fails", () => {
     on("PUT", "me/notifications", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("switch", { name: "Budget alerts" }));
-    expect(
-      (await (await notifications()).findAllByText("The change wasn't made: the console hit an unexpected error. Reload the page and try again.")).length,
-    ).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("The change wasn't made; reload the page and try again.")).length).toBeGreaterThan(0);
   });
 });
