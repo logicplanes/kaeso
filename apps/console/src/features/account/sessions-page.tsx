@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -20,25 +20,12 @@ const sessionsQuery = {
 export function SessionsPage() {
   const sessions = useQuery(sessionsQuery);
   const [ending, setEnding] = useState<SessionListItem | null>(null);
+  const [endOpen, setEndOpen] = useState(false);
   const [all, setAll] = useState(false);
-  const end = useApiMutation({
-    mutationFn: async (s: SessionListItem) => {
-      await api.DELETE("/platform/v1/me/sessions/{session}", { params: { path: { session: s.id } } });
-    },
-    invalidates: [["me", "sessions"]],
-    onSuccess: () => {
-      setEnding(null);
-      toast(t("account.sessionEnded", "Session ended"));
-    },
-  });
-  const revokeAll = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/me/sessions/revoke-all")),
-    invalidates: [["me", "sessions"]],
-    onSuccess: (r) => {
-      setAll(false);
-      toast(t("account.signedOutOthers", "{count, plural, one {Signed out of # other session} other {Signed out of # other sessions}}", { count: r.revoked }));
-    },
-  });
+  const end = (s: SessionListItem) => {
+    setEnding(s);
+    setEndOpen(true);
+  };
   const list = [...(sessions.data ?? [])].sort(
     (a, b) =>
       Number(b.current) - Number(a.current) ||
@@ -82,7 +69,7 @@ export function SessionsPage() {
                 })}
                 control={
                   s.current ? undefined : (
-                    <Button size="sm" variant="ghost" onClick={() => setEnding(s)}>
+                    <Button size="sm" variant="ghost" onClick={() => end(s)}>
                       {t("account.endSession", "End session")}
                     </Button>
                   )
@@ -92,26 +79,62 @@ export function SessionsPage() {
           </SettingsGroup>
         </SettingsSection>
       )}
-      <AlertDialog
-        open={!!ending}
-        onOpenChange={(o) => !o && setEnding(null)}
-        tone="danger"
-        title={t("account.endSessionConfirm", "End this session?")}
-        description={t("account.endSessionConfirmHint", "{device} is signed out at once.", { device: describeUserAgent(ending?.user_agent) })}
-        confirmLabel={t("account.endSession", "End session")}
-        loading={end.isPending}
-        onConfirm={() => (ending ? end.mutateAsync(ending) : undefined)}
-      />
-      <AlertDialog
-        open={all}
-        onOpenChange={setAll}
-        tone="danger"
-        title={t("account.signOutEverywhereConfirm", "Sign out everywhere else?")}
-        description={t("account.signOutEverywhereConfirmHint", "Every other browser signed in to your account is signed out; this one stays signed in.")}
-        confirmLabel={t("account.signOutEverywhere", "Sign out everywhere")}
-        loading={revokeAll.isPending}
-        onConfirm={() => revokeAll.mutateAsync()}
-      />
+      {ending && (
+        <DialogScope open={endOpen}>
+          <EndSessionDialog session={ending} open={endOpen} onOpenChange={setEndOpen} />
+        </DialogScope>
+      )}
+      <DialogScope open={all}>
+        <SignOutEverywhereDialog open={all} onOpenChange={setAll} />
+      </DialogScope>
     </SettingsPage>
+  );
+}
+
+function EndSessionDialog({ session, open, onOpenChange }: { session: SessionListItem; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const end = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me/sessions/{session}", { params: { path: { session: session.id } } });
+    },
+    invalidates: [["me", "sessions"]],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("account.sessionEnded", "Session ended"));
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("account.endSessionConfirm", "End this session?")}
+      description={t("account.endSessionConfirmHint", "{device} is signed out at once.", { device: describeUserAgent(session.user_agent) })}
+      confirmLabel={t("account.endSession", "End session")}
+      loading={end.isPending}
+      onConfirm={() => end.mutateAsync()}
+    />
+  );
+}
+
+function SignOutEverywhereDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const revokeAll = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/me/sessions/revoke-all")),
+    invalidates: [["me", "sessions"]],
+    onSuccess: (r) => {
+      onOpenChange(false);
+      toast(t("account.signedOutOthers", "{count, plural, one {Signed out of # other session} other {Signed out of # other sessions}}", { count: r.revoked }));
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("account.signOutEverywhereConfirm", "Sign out everywhere else?")}
+      description={t("account.signOutEverywhereConfirmHint", "Every other browser signed in to your account is signed out; this one stays signed in.")}
+      confirmLabel={t("account.signOutEverywhere", "Sign out everywhere")}
+      loading={revokeAll.isPending}
+      onConfirm={() => revokeAll.mutateAsync()}
+    />
   );
 }

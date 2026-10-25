@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
 import { translationProblem } from "./translation-problems.mjs";
+import { pagesWithoutVariants } from "../../../packages/ui/scripts/variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const demosDir = join(root, "src/demos");
@@ -119,6 +120,20 @@ for (const [slug, page] of Object.entries(out)) {
   };
 }
 writeFileSync(join(genDir, "doc-pages.json"), `${JSON.stringify(docPages, null, 2)}\n`);
+
+const withoutVariants = pagesWithoutVariants(
+  Object.values(out).map((page) => ({
+    file: `src/demos/${page.slug}.tsx`,
+    entry: page.entry ?? page.slug,
+    component: (page.import ?? page.title.replace(/\s+/g, "")).split(",")[0].trim(),
+    ...(page.variants ? { variants: page.variants } : {}),
+  })),
+  registryJson.components,
+);
+if (withoutVariants.length) {
+  writeSync(2, `docs: ${withoutVariants.length} pages without variants:\n  ${withoutVariants.join("\n  ")}\n`);
+  process.exit(1);
+}
 
 const wrapDir = join(genDir, "islands");
 rmSync(wrapDir, { recursive: true, force: true });

@@ -442,6 +442,43 @@ describe("LimitsPage", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog", { name: "Remove this limit?" })).not.toBeInTheDocument());
   });
 
+  it("opens the removal fresh after a refused one, for the same limit or another", async () => {
+    signedIn();
+    stubProject();
+    let respond: () => void = () => undefined;
+    on("DELETE", ONE_LIMIT, () => new Promise((resolve) => (respond = () => resolve(apiError(409, "conflict", "The limit is being changed; try again.")))));
+    const { user } = await renderApp(projectPath("limits"));
+
+    await user.click(await screen.findByRole("button", { name: "Actions for the monthly spend budget of 50 USD" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    let confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
+    await user.click(within(confirm).getByRole("button", { name: "Remove limit" }));
+    await waitFor(() => expect(within(confirm).getByRole("button", { name: "Remove limit" })).toHaveAttribute("aria-busy", "true"));
+    respond();
+    expect(await notifications().findByText("The limit is being changed; try again.")).toBeInTheDocument();
+    await waitFor(() => expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled());
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Actions for the monthly spend budget of 50 USD" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
+    expect(within(confirm).getByRole("button", { name: "Remove limit" })).not.toHaveAttribute("aria-busy");
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+
+    on("DELETE", ONE_LIMIT, () => undefined);
+    await user.click(screen.getByRole("button", { name: "Actions for the request rate of 60 requests per minute" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Remove" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Remove this limit?" });
+    expect(within(confirm).getByText(/^The request rate of 60 requests per minute stops applying/)).toBeInTheDocument();
+    expect(within(confirm).getByRole("button", { name: "Remove limit" })).not.toHaveAttribute("aria-busy");
+    await user.click(within(confirm).getByRole("button", { name: "Remove limit" }));
+    expect(await notifications().findByText("Limit removed")).toBeInTheDocument();
+    expect(requests("DELETE", ONE_LIMIT).map((r) => r.params.limit)).toEqual(["lim_month", "lim_rate"]);
+  });
+
   it("removes a limit from its menu and from the edit dialog", async () => {
     signedIn();
     stubProject();

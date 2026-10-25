@@ -6,7 +6,6 @@ import type { CredentialView, ProviderView } from "~/api/generated/types";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { providersQuery } from "~/api/queries/providers";
 import { useOrgRights } from "~/auth/session";
-import { DIALECT_IDS } from "~/format/labels";
 import { t } from "~/i18n";
 
 export interface Providers {
@@ -26,7 +25,7 @@ export function providerCatalog(list: readonly ProviderView[]): Providers {
     get: (id) => byId.get(id),
     name,
     product: (id) => byId.get(id)?.account?.product ?? name(id),
-    dialects: (id) => byId.get(id)?.dialects ?? DIALECT_IDS,
+    dialects: (id) => byId.get(id)?.dialects ?? [],
     byName: (a, b) => name(a).localeCompare(name(b)),
   };
 }

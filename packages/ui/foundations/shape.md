@@ -14,7 +14,7 @@ Pills for everything on one line, concentric corners for everything that holds s
 | `rounded-dialog`                          | Dialogs and the command palette                                                |
 | `rounded-sheet`                           | Sheets, on the side that faces the content                                     |
 | `rounded-group`                           | Settings groups                                                                |
-| `rounded-well`                            | Code wells and preview frames                                                  |
+| `rounded-well`                            | Code wells, preview frames and image thumbnails                                |
 | `rounded-tooltip`                         | Single-line tooltips                                                           |
 | `rounded-palette`, `rounded-palette-item` | The command palette and its rows                                               |
 | `rounded-checkbox`                        | Checkboxes                                                                     |

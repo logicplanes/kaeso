@@ -450,7 +450,10 @@ export const Menu = Object.assign(Root, {
   SubContent,
 });
 
-function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((o: boolean) => void) | undefined }) {
+export const KAESO_CONTEXT_MENU_VARIANTS = {} as const;
+export const KAESO_CONTEXT_MENU_DEFAULT_VARIANTS = {} as const;
+
+function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((open: boolean) => void) | undefined }) {
   return <BaseContextMenu.Root {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}>{children}</BaseContextMenu.Root>;
 }
 ContextRoot.displayName = "ContextMenu";
@@ -496,6 +499,9 @@ export const ContextMenu = Object.assign(ContextRoot, {
   SubTrigger,
   SubContent,
 });
+
+export const KAESO_MENUBAR_VARIANTS = {} as const;
+export const KAESO_MENUBAR_DEFAULT_VARIANTS = {} as const;
 
 const MenubarRoot = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "aria-label"?: string | undefined }>(function Menubar(
   { children, className, "aria-label": ariaLabel },

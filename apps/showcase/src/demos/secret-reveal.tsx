@@ -8,6 +8,7 @@ export const meta = {
   group: "Kaeso",
   entry: "kaeso",
   import: "SecretReveal, EnvironmentSnippet",
+  variants: "MOMENTS",
   a11y: [
     "The secret is a read-only text box; a click selects all of it.",
     "“Copy key” becomes “Copied” without changing size.",

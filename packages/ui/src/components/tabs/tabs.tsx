@@ -10,6 +10,8 @@ export const KAESO_TABS_VARIANTS = {
   },
 } as const;
 export const KAESO_TABS_DEFAULT_VARIANTS = { variant: "underline" } as const;
+export const KAESO_PILL_TABS_VARIANTS = { variant: KAESO_TABS_VARIANTS.variant } as const;
+export const KAESO_PILL_TABS_DEFAULT_VARIANTS = { variant: "pill" } as const;
 type Variant = keyof typeof KAESO_TABS_VARIANTS.variant;
 
 const Ctx = createContext<Variant>("underline");
@@ -128,5 +130,5 @@ const Panel = forwardRef<HTMLDivElement, { value: string; className?: string | u
 );
 Panel.displayName = "Tabs.Panel";
 
-export const Tabs = Object.assign(makeRoot("underline", "Tabs"), { List, Tab, Panel });
-export const PillTabs = Object.assign(makeRoot("pill", "PillTabs"), { List, Tab, Panel });
+export const Tabs = Object.assign(makeRoot(KAESO_TABS_DEFAULT_VARIANTS.variant, "Tabs"), { List, Tab, Panel });
+export const PillTabs = Object.assign(makeRoot(KAESO_PILL_TABS_DEFAULT_VARIANTS.variant, "PillTabs"), { List, Tab, Panel });

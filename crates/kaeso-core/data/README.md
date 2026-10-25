@@ -1,10 +1,10 @@
 # Model data
 
-Data shipped with every gateway release.
+Data shipped with every gateway release, and where it comes from. [Model data](https://docs.kaeso.app/development/architecture/gateway#model-data) explains what each file holds and how the gateway uses it.
 
 ## `models-dev.json`
 
-A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model database, so a fresh install works without network access.
+A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model database, filtered to the providers Kaeso calls.
 
 | | |
 |---|---|
@@ -14,34 +14,13 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 | SHA-256 | `c7b7d7268a2d4c6f512930cc2f625e473f2492a9b8768931f7f147111dfb5a4a` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
-The file keeps models.dev's shape (`{provider: {id, name, models: {id: model}}}`), pretty-printed with sorted keys. Only providers in `crates/kaeso-core/src/provider.rs` are kept; the full file lists over 200 providers Kaeso cannot call. When the gateway syncs (on unless `KAESO_MODELS_DEV_SYNC` is `false`, every 24 hours unless `KAESO_MODELS_DEV_INTERVAL` says otherwise), it applies the same filter and stores the result in PostgreSQL; the newer of the stored and the built-in snapshot wins at startup.
-
-To refresh the snapshot for a release:
+`models-dev-providers.txt` lists every provider id in the same `api.json`. To refresh both for a release:
 
 ```sh
 cargo xtask models-dev
 ```
 
-It downloads `api.json` (`MODELS_DEV_URL` overrides the address), filters it, checks that the gateway can read the result, rewrites this file's table and `EMBEDDED_FETCHED_AT` in `crates/kaeso-core/src/models_dev.rs`, and prints the new hash. Tests check that the snapshot, this table and the constant agree.
-
-## `models-dev-providers.txt`
-
-Every provider id in the same `api.json`, one per line, sorted, unfiltered. An organization can't give a custom provider one of these ids, because a later release may add that provider: it would then be a built-in provider and a custom one under the same id. `cargo xtask models-dev` rewrites the file with the snapshot.
-
-## Prices models.dev doesn't have
-
-models.dev lists one cache-write price, Anthropic's five-minute one (1.25 times the input price). Anthropic charges writes to its one-hour cache twice the input price ([pricing](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-19), and its usage reports them apart (`cache_creation.ephemeral_1h_input_tokens`). `kaeso_core::cost` therefore prices those tokens at twice the input price, or at the cache-write price when the model has no input price, and a hard budget reserves that price for a request that asks for one-hour caching.
-
 ## `supplement.toml`
-
-Fields models.dev does not have. A catalogue entry's effective value is its override, else models.dev, else this file, else empty.
-
-| Field | Meaning |
-|---|---|
-| `adaptive_thinking` | Anthropic models: whether `thinking: {type: "adaptive"}` is accepted. `false` makes kpp turn an effort from another format into a thinking budget. |
-| `forced_tool_choice` | `false` for models that refuse a forced tool choice (Anthropic `tool_choice` `any` or `tool`); the gateway then refuses `required`, `any` or a named tool before calling the provider. Absent means the model takes one. |
-| `efforts` | Supported effort levels, used when models.dev lists none. |
-| `egress_dialect` | The format Kaeso sends: one of the provider's `dialects`, by default its `generation` dialect (`openai_responses` for OpenAI). |
 
 Every entry comes from one of these sources, checked on 2026-10-11:
 
@@ -53,3 +32,5 @@ Every entry comes from one of these sources, checked on 2026-10-11:
 | `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
 | `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |
 | `mistral-embed` | the Embeddings endpoint only | Mistral, [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`); live check on 2026-10-19: `POST /v1/embeddings` answers with 1024 floats, and `GET /v1/models` lists it with `completion_chat: false` |
+
+The one-hour cache write price, which models.dev doesn't list, is Anthropic's: twice the input price ([pricing](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-19).

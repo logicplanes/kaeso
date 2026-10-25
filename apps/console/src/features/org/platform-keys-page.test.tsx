@@ -191,6 +191,22 @@ describe("platform keys", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
+  it("keeps a key that is being disabled from making another key's archive look busy", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey(), platformKey({ id: "opk_ci", name: "CI deploy" })]));
+    on("POST", "orgs/:org/platform-keys/:key/disable", () => new Promise(() => undefined));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    await waitFor(() => expect(requests("POST", "orgs/:org/platform-keys/:key/disable")).toHaveLength(1));
+
+    await user.click(screen.getByRole("button", { name: "Actions for CI deploy" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Archive CI deploy?" });
+    expect(within(confirm).getByRole("button", { name: "Archive key" })).not.toHaveAttribute("aria-busy");
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled();
+  });
+
   it("cancels archiving", async () => {
     signedIn();
     on("GET", "orgs/:org/platform-keys", paged([platformKey()]));

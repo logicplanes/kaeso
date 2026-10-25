@@ -6,12 +6,6 @@ order: 2
 
 这些页面说明 Kaeso 的工作方式，让您在依赖它之前就知道会发生什么。本文档的所有页面都按同一含义使用下面这些术语。
 
-- [服务商](providers.md)：了解 Kaeso 调用哪些服务商、如何使用其中一个，以及它们之间的差异。
-- [支持的服务商](supported-providers.md)：查阅每个服务商的 ID、格式和密钥。
-- [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
-- [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
-- [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。
-
 ## 术语
 
 | 术语 | 含义 |
@@ -35,3 +29,11 @@ order: 2
 | API 格式 | 请求及其回复的形式：OpenAI Chat Completions、Responses 或 Embeddings，或 Anthropic Messages |
 | KPP | Kaeso Provider Protocol，一种统一格式：网关把每种 API 格式转换为它，再从它转换回去（[格式转换](format-translation.md)） |
 | 模型 API、Platform API | 实例的两个 API。应用在 `/v1` 上调用模型，控制台和脚本在 `/platform/v1` 上管理实例（[API](../api/index.md)） |
+
+## 下一步
+
+- [服务商](providers.md)：了解 Kaeso 调用哪些服务商、如何使用其中一个，以及它们之间的差异。
+- [支持的服务商](supported-providers.md)：查阅每个服务商的 ID、格式和密钥。
+- [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
+- [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
+- [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。

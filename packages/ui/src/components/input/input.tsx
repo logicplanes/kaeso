@@ -130,6 +130,16 @@ function InputGroupFromField({
   );
 }
 
+export const KAESO_SEARCH_INPUT_VARIANTS = {
+  size: {
+    sm: { classes: KAESO_INPUT_VARIANTS.size.sm.classes, description: "32px: toolbars (default)" },
+    md: { classes: KAESO_INPUT_VARIANTS.size.md.classes, description: "36px: a search at the top of a page or dialog" },
+    lg: { classes: KAESO_INPUT_VARIANTS.size.lg.classes, description: "40px" },
+    xl: { classes: KAESO_INPUT_VARIANTS.size.xl.classes, description: "48px" },
+  },
+} as const;
+export const KAESO_SEARCH_INPUT_DEFAULT_VARIANTS = { size: "sm" } as const;
+
 export interface SearchInputProps extends Omit<InputProps, "leadingIcon" | "type" | "prefix" | "suffix"> {
   shortcut?: string[] | undefined;
   onClear?: (() => void) | undefined;

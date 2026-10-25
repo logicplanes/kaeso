@@ -247,22 +247,7 @@ function TransferDialog({
 function DeleteOrg({ org, name }: { org: string; name: string }) {
   const session = useSession();
   const [open, setOpen] = useState(false);
-  const [typed, setTyped] = useState("");
   const grace = t("org.days", "{count, plural, one {# day} other {# days}}", { count: session.org_deletion.grace_days });
-  const remove = useApiMutation({
-    mutationFn: async () => data(await api.DELETE("/platform/v1/orgs/{org}", { params: { path: { org } } })),
-    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
-    onSuccess: (o) => {
-      close();
-      toast(t("org.delete.scheduled", "{name} is scheduled for deletion", { name: o.name }));
-    },
-    onError: () => close(),
-  });
-  const close = () => {
-    setOpen(false);
-    setTyped("");
-  };
-  const matches = typed.trim() === name;
   return (
     <SettingsSection title={t("org.delete.title", "Delete organization")}>
       <SettingsGroup>
@@ -277,59 +262,88 @@ function DeleteOrg({ org, name }: { org: string; name: string }) {
           }
         />
       </SettingsGroup>
-      {open && (
-        <StepDialog
-          open
-          onOpenChange={(o) => !o && close()}
-          title={t("org.delete.dialog", "Delete {name}", { name })}
-          tone="danger"
-          submitLabel={t("org.delete.title", "Delete organization")}
-          submitting={remove.isPending}
-          onSubmit={() => matches && remove.mutate()}
-          steps={[
-            {
-              id: "what",
-              title: t("org.delete.what", "What happens"),
-              description: t("org.delete.whatHint", "Members are told by email; it's deleted for good after {grace}.", { grace }),
-              content: (
-                <KeyValue
-                  items={[
-                    {
-                      label: t("org.delete.atOnce", "At once"),
-                      value: t("org.delete.atOnceText", "Every API key of the organization stops working."),
-                      wrap: true,
-                    },
-                    {
-                      label: t("org.delete.during", "For {grace}", { grace }),
-                      value: t("org.delete.duringText", "Members still see everything, read-only; an owner can restore it."),
-                      wrap: true,
-                    },
-                    {
-                      label: t("org.delete.then", "Then"),
-                      value: t("org.delete.thenText", "Projects, keys, provider keys, settings, usage and logs are removed."),
-                      wrap: true,
-                    },
-                  ]}
-                />
-              ),
-            },
-            {
-              id: "confirm",
-              title: t("org.delete.confirm", "Type its name to confirm"),
-              blockedReason: matches ? undefined : t("org.delete.typeName", "Type {name} to confirm", { name }),
-              content: (
-                <Input
-                  aria-label={t("org.general.name", "Organization name")}
-                  placeholder={name}
-                  value={typed}
-                  onChange={(e) => setTyped(e.target.value)}
-                  autoComplete="off"
-                />
-              ),
-            },
-          ]}
-        />
-      )}
+      <DialogScope open={open}>
+        <DeleteOrgDialog org={org} name={name} grace={grace} open={open} onOpenChange={setOpen} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function DeleteOrgDialog({
+  org,
+  name,
+  grace,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  name: string;
+  grace: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const remove = useApiMutation({
+    mutationFn: async () => data(await api.DELETE("/platform/v1/orgs/{org}", { params: { path: { org } } })),
+    invalidates: [orgViewKey(org), ["session"], ["me", "memberships"]],
+    onSuccess: (o) => {
+      onOpenChange(false);
+      toast(t("org.delete.scheduled", "{name} is scheduled for deletion", { name: o.name }));
+    },
+    onError: () => onOpenChange(false),
+  });
+  const matches = typed.trim() === name;
+  return (
+    <StepDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("org.delete.dialog", "Delete {name}", { name })}
+      tone="danger"
+      submitLabel={t("org.delete.title", "Delete organization")}
+      submitting={remove.isPending}
+      onSubmit={() => matches && remove.mutate()}
+      steps={[
+        {
+          id: "what",
+          title: t("org.delete.what", "What happens"),
+          description: t("org.delete.whatHint", "Members are told by email; it's deleted for good after {grace}.", { grace }),
+          content: (
+            <KeyValue
+              items={[
+                {
+                  label: t("org.delete.atOnce", "At once"),
+                  value: t("org.delete.atOnceText", "Every API key of the organization stops working."),
+                  wrap: true,
+                },
+                {
+                  label: t("org.delete.during", "For {grace}", { grace }),
+                  value: t("org.delete.duringText", "Members still see everything, read-only; an owner can restore it."),
+                  wrap: true,
+                },
+                {
+                  label: t("org.delete.then", "Then"),
+                  value: t("org.delete.thenText", "Projects, keys, provider keys, settings, usage and logs are removed."),
+                  wrap: true,
+                },
+              ]}
+            />
+          ),
+        },
+        {
+          id: "confirm",
+          title: t("org.delete.confirm", "Type its name to confirm"),
+          blockedReason: matches ? undefined : t("org.delete.typeName", "Type {name} to confirm", { name }),
+          content: (
+            <Input
+              aria-label={t("org.general.name", "Organization name")}
+              placeholder={name}
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+            />
+          ),
+        },
+      ]}
+    />
   );
 }

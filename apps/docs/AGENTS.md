@@ -47,7 +47,7 @@ pnpm --filter kaeso-docs e2e
 3. **Links work on GitHub and on the site.** Pages link to files (`../console/api-keys.md#create-a-key`), never to site addresses. Heading anchors stay GitHub's.
 4. **A broken page fails the build** with its file: a link, an anchor, an image, a frontmatter field, a page missing in a language. Problems are never only warnings in a build.
 5. **Every page in three languages.** `content/en`, `content/de` and `content/zh-CN` hold the same files with the same `order`; a change to an English page changes both translations in the same commit, following [the translation rules](content/en/development/documentation.md#translating). The site's own words live in `src/i18n/messages`, typed so that a missing translation fails the typecheck.
-6. **Pages describe Kaeso as it is.** Every statement is checked against the code in this repository (the gateway, kpp and the console); never document a feature that doesn't exist. Examples use Kaeso's own placeholders (`kaeso.example.com`, `sk-kso-…`, `owner@example.com`), and the current version is always `{{version}}`, which the build replaces with the root `package.json`'s version.
+6. **Pages describe Kaeso as it is.** Every statement is checked against the code in this repository (the gateway, kpp and the console); never document a feature that doesn't exist. Examples use Kaeso's own placeholders (`kaeso.example.com`, `sk-kso-…`, `owner@example.com`) and other names under `example.com` or `.example` for everything else, and the current version is always `{{version}}`, which the build replaces with the root `package.json`'s version.
 7. **No real content in tests.** The unit tests and the e2e suite use `e2e/fixtures/content`, which reads as Kaeso's own data. `content/` holds only real pages.
 8. **The console's look and house rules**, everywhere:
    - the wordmark alone at the top left, 28px in and 28px down, the sidebar's labels on the same 28px line; the mark only for favicons;
@@ -71,7 +71,7 @@ pnpm --filter kaeso-docs e2e
 - **Lead with a runnable example** on every API page and app guide, within the first screen. Requests are a code group of consecutive fences with `tab="curl"`, `tab="Python"` and `tab="TypeScript"`, in that order, using the official OpenAI and Anthropic SDKs, `kaeso.example.com`, the key from `KAESO_API_KEY` and `claude-haiku-4-5`.
 - **Highlighting:** bold only for console labels and defined names, code for everything the reader types, no emphasis.
 - **Callouts:** `NOTE`, `TIP`, `IMPORTANT` or `WARNING`; at most one per section and three per page, under 50 words. No `CAUTION`.
-- **Next steps:** quick starts, guides and overviews end with `## Next steps`, a list of two to four `[Page title](page.md): One sentence.` items, shown as link cards.
+- **Next steps:** quick starts, guides and overviews end with `## Next steps`, a list of two to four `[Page title](page.md): One sentence.` items, shown as link cards. An overview, a folder's `index.md`, lists every page it leads to.
 - **Length:** title at most 6 words, introduction one to three sentences, quick start at most 10 steps, guide or concept at most 1,500 words, headings `##` and `###` only.
 - Finish with the checklist under [before you merge](content/en/development/documentation.md#before-you-merge).
 
@@ -82,7 +82,6 @@ pnpm --filter kaeso-docs e2e
 | `content/<language>/` | The pages. Folders are sidebar groups; a folder's `index.md` names and places it                                                            |
 | `scripts/content/`    | Frontmatter, slugs, compiling a page, one site per language, the translation checks, the Vite plugin, `pnpm check:content`                  |
 | `diagrams/`           | The drawn diagrams, a light and a dark SVG per Mermaid block, named by a hash of its source; written by `pnpm --filter kaeso-docs diagrams` |
-| `redirects.json`      | Old addresses of moved or merged pages and the page each now lives on; the build sends readers on from every old address                    |
 | `scripts/budget.ts`   | The bundle budgets `pnpm build` ends with                                                                                                   |
 | `src/markdown/`       | The page format (`ast.ts`) and its renderer (`render.tsx`), library components only                                                         |
 | `src/page/`           | A page: title, description, content, previous and next, Edit on GitHub, On this page; not found; load error                                 |

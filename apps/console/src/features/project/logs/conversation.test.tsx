@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Conversation from "./conversation";
 
 describe("Conversation", () => {
@@ -116,10 +116,14 @@ describe("Conversation", () => {
     expect(tool).toHaveTextContent("{not json");
     expect(tool.querySelector("em")).toHaveTextContent("today");
     expect([...tool.querySelectorAll("pre")].map((p) => p.textContent)).toEqual(["[1, 2]"]);
-    const images = [...container.querySelectorAll("img")];
-    expect(images.map((i) => i.getAttribute("src"))).toEqual(["data:image/png;base64,iVBOR", "data:image/jpeg;base64,/9j/"]);
-    expect(images.map((i) => i.getAttribute("alt"))).toEqual(["A receipt", "Image input"]);
-    expect(images[0]?.closest("a")).toBeNull();
+    const receipt = screen.getByRole("img", { name: "A receipt" });
+    const unnamed = screen.getByRole("img", { name: "Image input" });
+    expect(receipt).toHaveAttribute("src", "data:image/png;base64,iVBOR");
+    expect(unnamed).toHaveAttribute("src", "data:image/jpeg;base64,/9j/");
+    expect(container.querySelectorAll("img")).toHaveLength(2);
+    expect(receipt.closest("a")).toBeNull();
+    fireEvent.error(receipt);
+    expect(screen.getByRole("img", { name: "A receipt" })).toHaveTextContent("A receipt");
     expect(screen.getByRole("link", { name: /Image from example\.com/ })).toHaveAttribute("href", "https://example.com/photo.jpg");
     expect(container.querySelectorAll("a[target=_blank]")).toHaveLength(1);
     const user = screen.getByRole("region", { name: "User" });
