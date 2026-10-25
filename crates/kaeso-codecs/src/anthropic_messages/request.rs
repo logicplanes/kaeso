@@ -662,7 +662,8 @@ fn replays_as_thinking(b: &ReasoningBlock, target: &Origin) -> bool {
 }
 
 // Apps in other formats can't replay Anthropic's exact prefix, so a block bound to it is dropped
-// instead of refused (preserved thinking); `block_binding` needs adaptive or enabled thinking.
+// instead of refused (preserved thinking); models that check it take `block_binding` only with
+// adaptive thinking, so `enabled` thinking is left without it.
 fn bind_rebuilt_thinking(
     r: &GenerateRequest,
     w: &mut RequestW,
@@ -679,7 +680,7 @@ fn bind_rebuilt_thinking(
         return Ok(false);
     }
     let thinking = match &mut w.thinking {
-        Some(t) if t.known.ty == "adaptive" || t.known.ty == "enabled" => t,
+        Some(t) if t.known.ty == "adaptive" => t,
         Some(_) => return Ok(false),
         None if forced
             || ctx.adaptive_thinking == Some(false)

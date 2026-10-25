@@ -494,8 +494,8 @@ fn claude_thinking_rebuilt_from_another_format_is_dropped_when_the_conversation_
     let (body, headers) = chat_next_encoded(&effort, &kept, A, Some(false));
     assert_eq!(body["messages"][1]["content"][0]["type"], "thinking");
     assert_eq!(body["thinking"]["type"], "enabled", "{body}");
-    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
-    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), None);
 
     let (body, headers) = chat_next_encoded(&effort, &kept, A, Some(true));
     assert_eq!(body["thinking"]["type"], "adaptive", "{body}");
@@ -526,9 +526,12 @@ fn claude_thinking_rebuilt_from_another_format_is_dropped_when_the_conversation_
         &HeaderList::new(),
     )
     .unwrap();
-    let mut ctx = EgressCtx::new(&req).with_provider("anthropic");
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(true);
     let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
     let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(body["thinking"]["type"], "adaptive", "{body}");
     assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
     assert_eq!(enc.headers.get("anthropic-beta"), Some(BINDING_BETA));
 }
