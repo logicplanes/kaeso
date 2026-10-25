@@ -212,6 +212,7 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | `[mock:steps=NAME]` im Prompt | Sendet das erste Event eines Streams, dann ein weiteres bei jedem Schritt, den der Test das Gate weiterschaltet |
 | `[mock:gen=N]` im Prompt | Erfindet eine Antwort aus N Tokens, gestreamt als ein Text-Delta pro 4 Tokens mit 80 Tokens pro Sekunde oder der Rate, die `[mock:tps=N]` festlegt |
 | `[mock:endless]` mit `[mock:gen=N]` im Prompt | Wiederholt die Text-Deltas des erfundenen Streams ohne Ende und kodiert jedes erst, wenn es gesendet wird. Bei mehr als einem Delta pro Millisekunde gehen die Deltas jeder Millisekunde als ein Chunk hinaus |
+| `[mock:delta=C]` mit `[mock:gen=N]` im Prompt | Macht jedes Text-Delta der erfundenen Antwort mindestens C Zeichen lang statt 16 |
 | `[mock:tag=NAME]` im Prompt | Benennt den Stream, sodass `MockProvider::closed_at(NAME)` angibt, wann er vor seinem Ende geschlossen wurde |
 | Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |

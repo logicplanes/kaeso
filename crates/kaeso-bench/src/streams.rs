@@ -19,6 +19,12 @@ use crate::stats::{Summary, difference};
 pub(crate) const PATH: &str = "/v1/chat/completions";
 // The mock sends a delta per 4 tokens (kaeso-testkit's synth), so `tps` sets the gap.
 const TOKENS_PER_CHUNK: u64 = 4;
+pub(crate) const SLOW_TEXT_CHUNKS: u64 = 16;
+// A slow stream must fill the sockets and Kaeso's queue before Kaeso can see the app stall.
+// Deltas of 4 KiB do that in about a thousand events; the mock's usual 16 characters took tens
+// of thousands, and that work starved CI's runners past the idle timeout.
+pub(crate) const SLOW_GAP: Duration = Duration::from_millis(1);
+const SLOW_DELTA_CHARS: usize = 4 * 1024;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Role {
@@ -41,10 +47,10 @@ impl Spec {
         // A stream that will be cut keeps going at the mock until Kaeso closes it. A finite
         // one could end first while a loaded client lags behind Kaeso's buffers, and then
         // no disconnect could reach the mock.
-        let endless = if self.role == Role::Healthy {
-            ""
-        } else {
-            " [mock:endless]"
+        let endless = match self.role {
+            Role::Healthy => String::new(),
+            Role::Cancel { .. } => " [mock:endless]".to_owned(),
+            Role::Slow => format!(" [mock:endless] [mock:delta={SLOW_DELTA_CHARS}]"),
         };
         let text = format!(
             "bench [mock:gen={}] [mock:tps={tps}] [mock:tag={}]{endless}",
@@ -66,6 +72,7 @@ impl Spec {
 pub(crate) struct Target {
     pub(crate) addr: SocketAddr,
     pub(crate) bearer: String,
+    pub(crate) slow_bearer: String,
     pub(crate) mock: MockProvider,
     pub(crate) opening: Arc<Semaphore>,
     pub(crate) slow_read_every: Option<Duration>,
@@ -180,7 +187,11 @@ async fn stream(target: &Target, spec: &Spec, load: &Load, run: &mut Run) -> cra
         .send(Call {
             method: Method::POST,
             path: PATH,
-            bearer: Some(&target.bearer),
+            bearer: Some(if slow {
+                &target.slow_bearer
+            } else {
+                &target.bearer
+            }),
             origin: None,
             cookie: None,
             body: Some(spec.body()),
@@ -426,7 +437,7 @@ mod tests {
     }
 
     #[test]
-    fn streams_that_will_be_cut_never_end_at_the_mock() {
+    fn streams_that_will_be_cut_never_end_at_the_mock_and_slow_ones_send_large_deltas() {
         let text = |role| {
             let spec = Spec {
                 tag: "s-2".into(),
@@ -441,7 +452,7 @@ mod tests {
                 .to_owned()
         };
         assert!(text(Role::Cancel { after: 3 }).ends_with("[mock:endless]"));
-        assert!(text(Role::Slow).ends_with("[mock:endless]"));
+        assert!(text(Role::Slow).ends_with("[mock:endless] [mock:delta=4096]"));
         assert!(!text(Role::Healthy).contains("endless"));
     }
 

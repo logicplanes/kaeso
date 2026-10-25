@@ -107,7 +107,7 @@ fn pick<T>(smoke: bool, full: T, small: T) -> T {
 impl Options {
     fn plan(self) -> Plan {
         let smoke = self.smoke;
-        let idle_timeout_ms = self.idle_timeout_ms.unwrap_or(pick(smoke, 5000, 1000));
+        let idle_timeout_ms = self.idle_timeout_ms.unwrap_or(pick(smoke, 5000, 2000));
         let stream_sizes = if self.streams.is_empty() {
             pick(smoke, vec![100, 1000, 5000], vec![20])
         } else {

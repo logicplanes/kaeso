@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
@@ -42,6 +43,7 @@ pub(crate) struct Install {
     mock_runtime: tokio::runtime::Runtime,
     pub(crate) mock_addr: SocketAddr,
     pub(crate) key: String,
+    pub(crate) slow_key: String,
     services: TestServices,
     settings: Settings,
     log: PathBuf,
@@ -68,13 +70,14 @@ impl Install {
             .map_err(|_| fail("the mock provider's address"))?;
         let (gateway, token) = Gateway::start(&services, &mock.base_url, settings, log).await?;
         let token = token.ok_or_else(|| fail("the gateway printed no setup link"))?;
-        let key = set_up(gateway.addr, &token).await?;
+        let (key, slow_key) = set_up(gateway.addr, &token).await?;
         Ok(Install {
             gateway,
             mock,
             mock_runtime,
             mock_addr,
             key,
+            slow_key,
             services,
             settings: settings.clone(),
             log: log.to_owned(),
@@ -273,13 +276,30 @@ impl Gateway {
     }
 }
 
-pub(crate) fn counter(metrics: &str, name: &str, labels: &str) -> u64 {
-    let prefix = format!("{name}{{{labels}}} ");
-    metrics
-        .lines()
-        .find_map(|l| l.strip_prefix(&prefix))
-        .and_then(|v| v.trim().parse::<f64>().ok())
-        .map_or(0, |v| v as u64)
+pub(crate) fn by_label(metrics: &str, name: &str, label: &str) -> BTreeMap<String, u64> {
+    let prefix = format!("{name}{{");
+    let key = format!("{label}=\"");
+    let mut out = BTreeMap::new();
+    for line in metrics.lines() {
+        let Some((labels, value)) = line
+            .strip_prefix(&prefix)
+            .and_then(|rest| rest.split_once("} "))
+        else {
+            continue;
+        };
+        let Some(at) = labels.find(&key) else {
+            continue;
+        };
+        let rest = labels.get(at + key.len()..).unwrap_or_default();
+        let Some((name, _)) = rest.split_once('"') else {
+            continue;
+        };
+        let Ok(value) = value.trim().parse::<f64>() else {
+            continue;
+        };
+        *out.entry(name.to_owned()).or_default() += value as u64;
+    }
+    out
 }
 
 struct Platform {
@@ -330,7 +350,7 @@ fn text(v: &Value, pointer: &str) -> Result<String> {
         .ok_or_else(|| fail(&format!("no {pointer} in {v}")))
 }
 
-async fn set_up(addr: SocketAddr, token: &str) -> Result<String> {
+async fn set_up(addr: SocketAddr, token: &str) -> Result<(String, String)> {
     let mut p = Platform {
         addr,
         origin: format!("http://localhost:{}", addr.port()),
@@ -360,6 +380,28 @@ async fn set_up(addr: SocketAddr, token: &str) -> Result<String> {
         Some(json!({ "provider": "openai", "name": "mock", "secret": "sk-bench-openai-credential-0001" })),
     )
     .await?;
+    let key = serving_key(&mut p, &org, &project).await?;
+    let slow = p
+        .call(
+            Method::POST,
+            &format!("orgs/{org}/projects"),
+            Some(json!({ "name": "Stalled apps" })),
+        )
+        .await?;
+    let slow = text(&slow, "/id")?;
+    // Slow streams send large deltas, and a project that logs content keeps every one Kaeso
+    // delivered for the log; the memory check bounds what Kaeso buffers for a stalled app.
+    p.call(
+        Method::PATCH,
+        &format!("orgs/{org}/projects/{slow}/logs/settings"),
+        Some(json!({ "content_logging": false })),
+    )
+    .await?;
+    let slow_key = serving_key(&mut p, &org, &slow).await?;
+    Ok((key, slow_key))
+}
+
+async fn serving_key(p: &mut Platform, org: &str, project: &str) -> Result<String> {
     p.call(
         Method::POST,
         &format!("orgs/{org}/projects/{project}/models"),
@@ -381,12 +423,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn counters_are_read_by_name_and_labels() {
+    fn counters_are_summed_by_one_label() {
         let text = "# TYPE kaeso_stream_failures_total counter\n\
-            kaeso_stream_failures_total{kind=\"client_stalled\",provider=\"openai\"} 7\n\
-            kaeso_stream_failures_total{kind=\"timeout\",provider=\"openai\"} 2\n";
-        let labels = "kind=\"client_stalled\",provider=\"openai\"";
-        assert_eq!(counter(text, "kaeso_stream_failures_total", labels), 7);
-        assert_eq!(counter(text, "kaeso_requests_total", labels), 0);
+            kaeso_stream_failures_total{kind=\"client_stalled\",provider=\"openai\"} 4\n\
+            kaeso_stream_failures_total{kind=\"timeout\",provider=\"openai\"} 1\n\
+            kaeso_stream_failures_total{kind=\"timeout\",provider=\"anthropic\"} 2\n\
+            kaeso_requests_total{kind=\"timeout\"} 9\n";
+        let kinds = by_label(text, "kaeso_stream_failures_total", "kind");
+        assert_eq!(
+            kinds.into_iter().collect::<Vec<_>>(),
+            [("client_stalled".to_owned(), 4), ("timeout".to_owned(), 3)]
+        );
     }
 }

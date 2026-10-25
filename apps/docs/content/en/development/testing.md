@@ -212,6 +212,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | `[mock:steps=NAME]` in the prompt | Sends a stream's first event, then one more each time the test steps the gate |
 | `[mock:gen=N]` in the prompt | Makes up a reply of N tokens, streamed as a text delta per 4 tokens at 80 tokens a second, or the rate `[mock:tps=N]` sets |
 | `[mock:endless]` with `[mock:gen=N]` in the prompt | Repeats the made-up stream's text deltas without end, encoding each only when it is sent. A pace above a delta a millisecond sends each millisecond's deltas as one chunk |
+| `[mock:delta=C]` with `[mock:gen=N]` in the prompt | Makes each text delta of the made-up reply at least C characters long instead of 16 |
 | `[mock:tag=NAME]` in the prompt | Names the stream, so `MockProvider::closed_at(NAME)` returns when it was closed before its end |
 | A model id starting with `unserved-` | The format's model not found |
 | `[mock:gate=NAME]` in the provider key | Holds `GET /v1/models` and `GET /v1/models/{id}` |

@@ -71,7 +71,7 @@ Jedes Szenario beginnt mit einem frischen Gateway:
 | Baseline | Die Clients senden nicht gestreamte Anfragen, so schnell das Gateway sie beantwortet |
 | Gleichzeitige Streams | Die Clients öffnen jede Anzahl Streams, lesen jeden Chunk und schließen. Dieselben Streams laufen auch gegen den Mock-Anbieter allein, ohne Kaeso |
 | Abbrüche | Ein Anteil der Streams trennt die Verbindung an einer Stelle zwischen einem Fünftel und vier Fünfteln des Streams. Ihre Mock-Streams enden nie von selbst, sodass jeder Abbruch eine Anfrage beim Anbieter zu schließen hat. Die anderen lesen bis zum Ende |
-| Langsame Clients | Ein Anteil der Clients liest den ersten Chunk und hört dann auf, mit einem kleinen Empfangspuffer, während der Mock ohne Ende hundert Text-Deltas pro Millisekunde schreibt. Die anderen lesen normal |
+| Langsame Clients | Ein Anteil der Clients liest den ersten Chunk und hört dann auf, mit einem kleinen Empfangspuffer, während der Mock ohne Ende jede Millisekunde ein Text-Delta von 4 KiB schreibt. Sie nutzen ein zweites Projekt, das keine Inhalte protokolliert, sodass der Speicher des Gateways zeigt, was es für sie puffert, und nicht die Antwort, die es für das Protokoll behält. Die anderen lesen normal |
 | Gemischt | Streams, Abbrüche und langsame Clients zugleich, neben nicht gestreamten Anfragen, so schnell das Gateway sie beantwortet |
 
 ## Zahlen lesen
