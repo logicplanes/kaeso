@@ -26,9 +26,7 @@ describe("an organization that requires two-factor authentication", () => {
   it("asks the person to set it up instead of showing the organization", async () => {
     inOrg({ access: "needs_2fa" });
     await renderApp(`/orgs/${ORG}`);
-    expect(
-      await screen.findByText("Northwind Labs requires two-factor authentication. Set it up for your account, then sign in again with a code."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Northwind Labs requires two-factor authentication; set it up, then sign in again.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Set up two-factor authentication" })).toHaveAttribute("href", "/settings/account/security");
   });
 });
@@ -40,7 +38,7 @@ describe("an organization that requires single sign-on", () => {
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByText("Sign in through Northwind Labs's identity provider")).toBeInTheDocument();
-    expect(screen.getByText("Northwind Labs requires single sign-on. Your session works for your other organizations.")).toBeInTheDocument();
+    expect(screen.getByText("Northwind Labs requires single sign-on; you stay signed in to your other organizations.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Continue with SSO" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.northwind.test/authorize"));
     expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: `/orgs/${ORG}` }]);
@@ -59,7 +57,7 @@ describe("an organization that requires single sign-on", () => {
     on("POST", "auth/oidc/start", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp(`/orgs/${ORG}`);
     await user.click(await screen.findByRole("button", { name: "Continue with SSO" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
   });
 });
 
@@ -185,7 +183,7 @@ describe("leaving an organization that's gone", () => {
   it("goes home from an organization the person doesn't belong to", async () => {
     signedIn();
     await renderApp(`/orgs/${CONTOSO}`);
-    expect(await (await notifications()).findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("That organization doesn't exist or you can't access it")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).toMatch(new RegExp(`^/orgs/${ORG}`)));
   });
 
@@ -221,7 +219,7 @@ describe("leaving an organization that's gone", () => {
     await waitFor(() => expect(calls).toBe(2));
     await waitFor(() => expect(queryClient.getQueryData<typeof both>(["session"])?.memberships).toHaveLength(2));
     expect(window.location.pathname).toBe(`/orgs/${CONTOSO}`);
-    expect(screen.queryByText("That organization doesn't exist, or you don't have access to it")).not.toBeInTheDocument();
+    expect(screen.queryByText("That organization doesn't exist or you can't access it")).not.toBeInTheDocument();
   });
 
   it("stays when the session can't be checked again", async () => {
@@ -231,6 +229,6 @@ describe("leaving an organization that's gone", () => {
     await renderApp(`/orgs/${CONTOSO}`);
     expect((await (await notifications()).findAllByText("Too many requests; slow down.")).length).toBeGreaterThan(0);
     expect(window.location.pathname).toBe(`/orgs/${CONTOSO}`);
-    expect(screen.queryByText("That organization doesn't exist, or you don't have access to it")).not.toBeInTheDocument();
+    expect(screen.queryByText("That organization doesn't exist or you can't access it")).not.toBeInTheDocument();
   });
 });

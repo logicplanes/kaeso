@@ -75,7 +75,7 @@ export function startExport({ title: text, done, url, check, file }: { title: Ex
     })
     .catch((e: unknown) => {
       closeToast(TOAST);
-      toastApiError(e, { fallback: t("shell.export.failed", "The export stopped before the end. Try again.") });
+      toastApiError(e, { fallback: t("shell.export.failed", "The export stopped before the end; try again.") });
     })
     .finally(() => {
       window.removeEventListener("beforeunload", warnOnLeave);

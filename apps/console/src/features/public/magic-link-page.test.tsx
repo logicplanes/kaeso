@@ -174,7 +174,7 @@ describe("signing in with an emailed link", () => {
       throw new TypeError("Failed to fetch");
     });
     await renderApp("/auth/magic-link#token=mgl_1");
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(screen.getByText("This link has expired or was already used.")).toBeInTheDocument();
   });
 });

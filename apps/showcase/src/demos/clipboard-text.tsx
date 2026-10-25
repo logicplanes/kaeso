@@ -25,7 +25,7 @@ export const examples = [
 export function Field() {
   return (
     <div className="w-400">
-      <ClipboardText value="https://gateway.northwind.example/v1" label="Copy base URL" />
+      <ClipboardText value="https://kaeso.example.com/v1" label="Copy base URL" />
     </div>
   );
 }
@@ -50,9 +50,9 @@ export function States() {
       <StateSection title="ClipboardText sizes">
         <div className="flex w-400 flex-col gap-12">
           {(["sm", "md", "lg"] as const).map((s) => (
-            <ClipboardText key={s} size={s} value="https://gateway.northwind.example/v1" />
+            <ClipboardText key={s} size={s} value="https://kaeso.example.com/v1" />
           ))}
-          <ClipboardText value="https://gateway.northwind.example/v1/a-very-long-path/that-overflows/and-truncates/with-an-ellipsis" />
+          <ClipboardText value="https://kaeso.example.com/v1/a-very-long-path/that-overflows/and-truncates/with-an-ellipsis" />
         </div>
       </StateSection>
       <Matrix
