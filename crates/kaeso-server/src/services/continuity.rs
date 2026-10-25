@@ -13,13 +13,19 @@ use crate::state::AppState;
 
 const MAX_LOOKUPS: usize = 512;
 
+// Bump the version when the stored `CarriedReasoning` changes shape: entries of an older shape are
+// then never looked up and expire with their TTL instead of failing to open.
+const ENTRY_VERSION: &str = "v2";
+
 fn valkey_key(state: &AppState, key_id: Uuid, tool_call_id: &str) -> String {
     let id = hex(&Sha256::digest(tool_call_id.as_bytes()));
-    state.valkey.key(&format!("reasoning:{key_id}:{id}"))
+    state
+        .valkey
+        .key(&format!("reasoning:{ENTRY_VERSION}:{key_id}:{id}"))
 }
 
 fn aad(key_id: Uuid, tool_call_id: &str) -> Vec<u8> {
-    format!("reasoning:{key_id}:{tool_call_id}").into_bytes()
+    format!("reasoning:{ENTRY_VERSION}:{key_id}:{tool_call_id}").into_bytes()
 }
 
 fn count(outcome: &'static str, n: usize) {
