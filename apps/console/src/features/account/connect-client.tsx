@@ -78,9 +78,9 @@ export function ConnectClients() {
         description={t("account.connectLead", "Your agent signs in through your browser, and you choose what it may do.")}
         footer={
           <>
-            <Button href={docsPage("/api/mcp")}>{t("account.connectDocs", "Documentation")}</Button>
+            <Button href={docsPage("/api/mcp")}>{t("account.connectDocs", "Read the documentation")}</Button>
             <Dialog.Close>
-              <Button variant="primary">{t("common.done", "Done")}</Button>
+              <Button variant="primary">{t("common.finish", "Finish")}</Button>
             </Dialog.Close>
           </>
         }

@@ -23,7 +23,7 @@
   "account.connectClaudeHint": "Wenn das Plugin nach Ihrer Kaeso-Adresse fragt, geben Sie {origin} ein. Melden Sie sich dann mit /mcp an.",
   "account.connectClient": "Zu {client} hinzufügen",
   "account.connectCursorHint": "Oder installieren Sie Kaeso aus dem Cursor Marketplace und geben Sie {origin} als KAESO_URL ein.",
-  "account.connectDocs": "Dokumentation",
+  "account.connectDocs": "Dokumentation lesen",
   "account.connectLead": "Ihr Agent meldet sich über Ihren Browser an, und Sie wählen, was er darf.",
   "account.connectPlugin": "Plugin",
   "account.connectServerOnly": "Nur der Server",

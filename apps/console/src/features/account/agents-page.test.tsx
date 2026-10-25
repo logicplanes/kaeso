@@ -66,7 +66,7 @@ describe("the agents tab", () => {
     await user.click(within(dialog).getByRole("tab", { name: "Server only" }));
     const command = `claude mcp add --transport http --scope user kaeso ${url}`;
     await waitFor(() => expect(dialog).toHaveTextContent(command));
-    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     await user.click(screen.getByRole("button", { name: "Add to Cursor" }));
@@ -75,14 +75,14 @@ describe("the agents tab", () => {
     expect(cursor.protocol).toBe("cursor:");
     expect(cursor.searchParams.get("name")).toBe("kaeso");
     expect(JSON.parse(atob(cursor.searchParams.get("config") ?? ""))).toEqual({ url });
-    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 
     await user.click(screen.getByRole("button", { name: "Add to GitHub Copilot" }));
     dialog = await screen.findByRole("dialog", { name: "Add Kaeso to GitHub Copilot" });
     const vscode = within(dialog).getByRole("link", { name: "Add to VS Code" }).getAttribute("href") ?? "";
     expect(JSON.parse(decodeURIComponent(vscode.slice("vscode:mcp/install?".length)))).toEqual({ name: "kaeso", type: "http", url });
-    expect(within(dialog).getByRole("link", { name: "Documentation" })).toHaveAttribute("href", "https://docs.kaeso.app/api/mcp");
+    expect(within(dialog).getByRole("link", { name: "Read the documentation" })).toHaveAttribute("href", "https://docs.kaeso.app/api/mcp");
   });
 
   it("says how to connect one when there are none", async () => {
@@ -115,7 +115,7 @@ describe("the agents tab", () => {
     expect(await screen.findByText("The agent asks for Manage limits")).toBeInTheDocument();
     const dialog = await screen.findByRole("dialog", { name: "Customize Release helper" });
     expect(within(dialog).getByRole("group", { name: "Rights in Northwind" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await user.click(screen.getByRole("button", { name: "Save rights" }));
     await waitFor(() => expect(requests("PUT", "me/agents/:agent/rights")).toHaveLength(1));
@@ -201,7 +201,7 @@ describe("the agents tab", () => {
     const { user } = await renderApp(`/settings/account/agents/${AGENT}?add=limits.manage&org=${ORG}&project=${OTHER_PROJECT}`);
     expect(await screen.findByText("The agent asks for Manage limits, which you don't hold")).toBeInTheDocument();
     expect(screen.getByText("Ask an admin for it first; an agent never gets more than you hold.")).toBeInTheDocument();
-    await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Done" }));
+    await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("button", { name: "Save rights" })).toBeDisabled();
   });

@@ -56,7 +56,7 @@ describe("connecting an agent", () => {
     await user.clear(within(dialog).getByLabelText("Name"));
     await user.type(within(dialog).getByLabelText("Name"), "Release helper");
     expect(within(dialog).getByRole("heading", { name: "Customize Release helper" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("heading", { name: "Connect Release helper" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Authorize" }));
