@@ -466,7 +466,7 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
     invalidates: [["orgs", org, "custom-providers"], ["orgs", org, "providers"], ["orgs", org, "credentials"], modelCatalogues],
     onSuccess: ({ added, keySaved }) => {
       if (server.key.trim() && draft.auth !== "none" && savesKey && !keySaved)
-        toast.error(t("orgHome.custom.keyNotSaved", "{name} added without its key; add it under Provider keys.", { name: added.name }));
+        toast.error(t("orgHome.custom.keyNotSaved", "{name} added; add its key under Provider keys.", { name: added.name }));
       else toast(t("orgHome.custom.added", "{name} added", { name: added.name }));
       onClose();
     },

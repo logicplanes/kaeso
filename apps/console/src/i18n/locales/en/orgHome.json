@@ -68,7 +68,7 @@
   "orgHome.custom.inUse": "In use",
   "orgHome.custom.key": "API key",
   "orgHome.custom.keyHint": "Leave it empty for a server without one; it's saved as the provider's key.",
-  "orgHome.custom.keyNotSaved": "{name} added without its key; add it under Provider keys.",
+  "orgHome.custom.keyNotSaved": "{name} added; add its key under Provider keys.",
   "orgHome.custom.keyOnlyDetects": "Leave it empty for a server without one; it's used only to detect settings.",
   "orgHome.custom.keysLeft": "Delete its keys under Provider keys first; a provider without a key can't keep any.",
   "orgHome.custom.models": "The server lists {count, plural, one {# model} other {# models}}: {names}.",

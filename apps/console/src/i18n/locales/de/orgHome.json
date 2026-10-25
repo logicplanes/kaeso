@@ -163,6 +163,6 @@
   "orgHome.custom.noModels": "Der Server listet noch keine Modelle.",
   "orgHome.custom.moreModels": "{count} weitere",
   "orgHome.custom.models": "Der Server listet {count, plural, one {# Modell} other {# Modelle}}: {names}.",
-  "orgHome.custom.keyNotSaved": "{name} ohne Schlüssel hinzugefügt; ergänzen Sie ihn unter Anbieter-Schlüssel.",
-  "orgHome.custom.editHint": "Kaeso ruft ihn mit diesen Einstellungen auf; neue Adresse, Schlüsselart oder Format setzt seine Modelle auf ungeprüft."
+  "orgHome.custom.keyNotSaved": "{name} hinzugefügt; fügen Sie den Schlüssel selbst hinzu.",
+  "orgHome.custom.editHint": "Kaeso ruft ihn so auf; eine neue Adresse, Schlüsselart oder ein neues Format setzt seine Modelle auf ungeprüft."
 }

@@ -321,7 +321,7 @@ describe("custom providers", () => {
     await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
     await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
     await user.click(await within(dialog).findByRole("button", { name: "Add custom provider" }));
-    expect(await notifications().findByText("gpus.example.com added without its key; add it under Provider keys.")).toBeInTheDocument();
+    expect(await notifications().findByText("gpus.example.com added; add its key under Provider keys.")).toBeInTheDocument();
     expect(requests("POST", LIST)).toHaveLength(1);
   });
 

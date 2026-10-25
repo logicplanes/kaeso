@@ -163,6 +163,6 @@
   "orgHome.custom.noModels": "该服务器尚未列出任何模型。",
   "orgHome.custom.moreModels": "另外 {count} 个",
   "orgHome.custom.models": "该服务器列出了 {count, plural, other {# 个模型}}：{names}。",
-  "orgHome.custom.keyNotSaved": "已添加 {name}，但未保存其密钥，请在“服务商密钥”中添加。",
+  "orgHome.custom.keyNotSaved": "已添加 {name}，请在“服务商密钥”中添加其密钥。",
   "orgHome.custom.editHint": "Kaeso 按这些设置调用它；更改地址、密钥方式或格式会使其模型变为未检查。"
 }
