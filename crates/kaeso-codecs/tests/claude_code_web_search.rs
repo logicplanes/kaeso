@@ -135,11 +135,11 @@ fn chat_models_get_claude_codes_web_search_without_the_tool() {
         sent.get("tools").is_none() && sent.get("tool_choice").is_none(),
         "{sent}"
     );
-    assert_eq!(left_out, ["tools[0]"]);
+    assert_eq!(left_out, ["tools[0]", "tool_choice"]);
     let mut body = web_search();
     body["tool_choice"] = json!({"type": "any"});
     let e = send_to_chat(&body).unwrap_err();
-    assert_eq!(e.unsupported_feature(), Some("tool_choice `required`"));
+    assert_eq!(e.unsupported_feature(), Some("tool_choice"));
     body["tool_choice"] = json!({"type": "tool", "name": "web_search"});
     let e = send_to_chat(&body).unwrap_err();
     assert_eq!(e.unsupported_feature(), Some("tool_choice `web_search`"));
@@ -216,7 +216,7 @@ fn every_version_of_anthropics_web_search_becomes_the_hosted_search() {
         assert_eq!(sent["max_tool_calls"], 8);
         let (sent, left_out) = send_to_chat(&body).unwrap();
         assert!(sent.get("tools").is_none(), "{version}");
-        assert_eq!(left_out, ["tools[0]"]);
+        assert_eq!(left_out, ["tools[0]", "tool_choice"]);
     }
     for (version, field, value) in [
         (
@@ -552,6 +552,7 @@ fn claudes_own_searches_are_left_out_for_other_formats_and_kept_for_claude() {
         left_out,
         [
             "tools[0]",
+            "tool_choice",
             "server_tool_use srvtoolu_01ABC",
             "web_search_tool_result srvtoolu_01ABC",
             "messages[1].blocks[2].citations"

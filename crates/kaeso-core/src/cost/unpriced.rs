@@ -483,9 +483,30 @@ mod tests {
             &[],
         );
         let search = found("tools", "web_search_20250305");
-        assert_eq!(unpriced(&claude_code, DialectId::AnthropicMessages, ResponsesProfile::OPENAI), search);
-        assert_eq!(unpriced(&claude_code, DialectId::OpenAiResponses, ResponsesProfile::OPENAI), search);
-        assert_eq!(unpriced(&claude_code, DialectId::OpenAiChat, ResponsesProfile::OPENAI), None);
+        assert_eq!(
+            unpriced(
+                &claude_code,
+                DialectId::AnthropicMessages,
+                ResponsesProfile::OPENAI
+            ),
+            search
+        );
+        assert_eq!(
+            unpriced(
+                &claude_code,
+                DialectId::OpenAiResponses,
+                ResponsesProfile::OPENAI
+            ),
+            search
+        );
+        assert_eq!(
+            unpriced(
+                &claude_code,
+                DialectId::OpenAiChat,
+                ResponsesProfile::OPENAI
+            ),
+            None
+        );
     }
 
     #[test]
