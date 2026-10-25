@@ -6,7 +6,7 @@ const SECRET = "sk-kso-test-0123456789abcdef";
 
 describe("SecretReveal", () => {
   it("shows the SDK snippets with the secret by default", () => {
-    render(<SecretReveal secret={SECRET} baseUrl="https://gateway.example.com" />);
+    render(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" />);
     expect(screen.getByRole("textbox", { name: "Secret" })).toHaveTextContent(SECRET);
     expect(screen.getByRole("tab", { name: "Python" })).toBeInTheDocument();
   });
@@ -23,13 +23,13 @@ describe("SecretReveal", () => {
     const { rerender } = render(
       <SecretReveal
         secret={SECRET}
-        baseUrl="https://gateway.example.com"
+        baseUrl="https://kaeso.example.com"
         snippets={[{ label: "curl", lang: "bash", code: `curl -H "Authorization: Bearer ${SECRET}"` }]}
       />,
     );
     expect(screen.queryByRole("tab", { name: "Python" })).not.toBeInTheDocument();
     expect(screen.getByText(/Authorization: Bearer/)).toBeInTheDocument();
-    rerender(<SecretReveal secret={SECRET} baseUrl="https://gateway.example.com" snippets={false} />);
+    rerender(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" snippets={false} />);
     expect(screen.queryByText(/Authorization: Bearer/)).not.toBeInTheDocument();
   });
 });
