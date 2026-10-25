@@ -286,7 +286,9 @@ pub const PROVIDERS: &[Provider] = &[
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
         tool_namespaces: false,
-        chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
+        chat: ChatProfile::compatible("SpaceX")
+            .reasoning_fields(&["reasoning_content"])
+            .with_message_bookkeeping(),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -688,6 +690,22 @@ mod tests {
                 .unwrap()
                 .exceeds_context("Invalid model: m")
         );
+    }
+
+    #[test]
+    fn only_spacex_takes_the_model_ids_grok_cli_replays() {
+        for p in PROVIDERS
+            .iter()
+            .filter(|p| p.dialects.contains(&DialectId::OpenAiChat))
+        {
+            let sent = sent_with_profile(p.id, "requests/grok-cli-model-id").unwrap();
+            let kept = sent["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|m| m.get("model_id").is_some());
+            assert_eq!(kept, p.id == "xai", "{}", p.id);
+        }
     }
 
     #[test]

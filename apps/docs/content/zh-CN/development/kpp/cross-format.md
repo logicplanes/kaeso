@@ -84,6 +84,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `file.filename` | document，来自 `openai_chat` | OpenAI 要求随内联 `file_data` 一起提供的文件名。属于元数据，不是指令。 | `openai_chat/requests/file-pdf-data.json` |
 | `prompt_cache_key` | request，来自 `openai_chat` | 把请求路由到某个提示缓存。属于缓存提示（[缓存提示](#缓存提示)）。 | `openai_chat/requests/all-params-sdk.json` |
 | `prompt_cache_key` | request，来自 `openai_responses` | 同上。 | `openai_responses/requests/sampling-and-ids.json` |
+| `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
 

@@ -1,6 +1,7 @@
 use kaeso_kpp::{
-    Block, DialectId, Extras, GenerateRequest, HEADER_PREFIX, KppError, Opaque, OpaqueKind, Origin,
-    RawJson, ReasoningBlock, ReasoningEffort, Request, Role, Source, ToolChoice, ToolDef,
+    Block, DialectId, Extras, GenerateRequest, HEADER_PREFIX, KppError, Message, Opaque,
+    OpaqueKind, Origin, RawJson, ReasoningBlock, ReasoningEffort, Request, Role, Source,
+    ToolChoice, ToolDef,
 };
 use serde_json::Value;
 
@@ -31,6 +32,14 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
 ];
+
+pub const CHAT_ASSISTANT_BOOKKEEPING: &[&str] = &["model_id"];
+
+pub fn is_chat_bookkeeping(message: &Message, key: &str) -> bool {
+    message.role == Role::Assistant
+        && message.extras.is_from(DialectId::OpenAiChat)
+        && CHAT_ASSISTANT_BOOKKEEPING.contains(&key)
+}
 
 pub mod reasoning_map {
     use kaeso_kpp::{ReasoningConfig, ReasoningEffort, ReasoningMode};
@@ -284,7 +293,8 @@ fn check_generate(r: &GenerateRequest, target: &Origin) -> Result<(), KppError> 
         let path = format!("messages[{mi}]");
         let own_system = m.role == Role::System && m.extras.is_from(DialectId::AnthropicMessages);
         check_extras_with(&m.extras, dialect, &path, "message", |key, value| {
-            own_system && key == "output_config" && repeats_effort(value, effort)
+            (own_system && key == "output_config" && repeats_effort(value, effort))
+                || is_chat_bookkeeping(m, key)
         })?;
         for (bi, b) in m.blocks.iter().enumerate() {
             check_block(b, target, &format!("{path}.blocks[{bi}]"))?;
