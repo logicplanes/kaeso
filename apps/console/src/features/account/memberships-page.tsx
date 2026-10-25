@@ -79,7 +79,7 @@ export function MembershipsPage() {
         onOpenChange={(o) => !o && setLeaving(null)}
         tone="danger"
         title={leaving ? t("account.leaveConfirm", "Leave {org}?", { org: leaving.org_name }) : t("account.leaveConfirmAny", "Leave the organization?")}
-        description={t("account.leaveConfirmHint", "You lose access to its projects, and your keys in them are archived. An owner can invite you again.")}
+        description={t("account.leaveConfirmHint", "You lose access to its projects and your keys in them are archived; an owner can invite you again.")}
         confirmLabel={t("account.leaveOrg", "Leave organization")}
         loading={leave.isPending}
         onConfirm={() => (leaving ? leave.mutateAsync(leaving) : undefined)}

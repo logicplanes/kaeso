@@ -50,6 +50,7 @@ function Invitation({ token }: { token: string }) {
   const lookup = useQuery({
     queryKey: ["invite-lookup", token],
     retry: false,
+    gcTime: 0,
     queryFn: async (): Promise<InviteInfo> => data(await api.POST("/platform/v1/auth/invites/lookup", { body: { token } })),
   });
   const session = useQuery({ ...sessionQuery, retry: false });
@@ -80,10 +81,7 @@ function Invitation({ token }: { token: string }) {
   useEffect(() => {
     if (accepted === undefined) return;
     forget(token);
-    void queryClient
-      .resetQueries()
-      .then(() => navigate({ href: accepted ? `/orgs/${accepted}` : "/", replace: true }))
-      .then(() => queryClient.removeQueries({ queryKey: ["invite-lookup", token], exact: true }));
+    void queryClient.resetQueries().then(() => navigate({ href: accepted ? `/orgs/${accepted}` : "/", replace: true }));
   }, [accepted, navigate, queryClient, token]);
 
   const signInToAccept = () => {
@@ -121,7 +119,7 @@ function Invitation({ token }: { token: string }) {
     return (
       <PublicPage
         title={t("public.invitationNotOpened", "The invitation couldn't be opened")}
-        description={isApiError(lookup.error) ? lookup.error.message : t("common.unreachable", "Can't reach the gateway. Try again.")}
+        description={isApiError(lookup.error) ? lookup.error.message : t("common.unreachable", "Can't reach the gateway; try again.")}
       >
         <Button variant="primary" size="xl" fullWidth loading={lookup.isFetching} onClick={() => void lookup.refetch()}>
           {t("common.tryAgain", "Try again")}

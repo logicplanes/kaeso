@@ -2,7 +2,7 @@ import { createContext, use, useCallback, useState, type ReactNode } from "react
 
 const PortalCtx = createContext<HTMLElement | null>(null);
 
-export function PortalContainer({ children, className }: { children: ReactNode; className?: string }) {
+export function PortalContainer({ children, className }: { children: ReactNode; className?: string | undefined }) {
   const [el] = useState<HTMLDivElement | null>(() => {
     if (typeof document === "undefined") return null;
     const node = document.createElement("div");

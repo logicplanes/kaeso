@@ -30,7 +30,7 @@ The console is a static React app in `apps/console`, served on the gateway's dom
 - **Tokens in links travel in the fragment.** The console reads `location.hash` once, calls the API, and replaces the address without it.
 - **Every visible element comes from `@logicplanes/kaeso-ui`**, and `className` holds layout only: margin, width, grid, flex, gap and position. `pnpm lint` enforces it with the rules in `apps/console/eslint/kaeso.js`.
 - **Every word in three languages**, through `t()` ([translations](../translations.md#the-console)).
-- **Descriptions are one sentence that fits on one line.** The limit depends on the place. A settings row allows 60 characters (50 beside an input), and a section or page 80 (70 beside actions). A dialog allows 100, an empty state 90 and a toast 60. `src/copy.test.ts` checks rows, sections and pages in every language, German and Chinese with 15% slack.
+- **Descriptions are one sentence that fits on one line.** The limit depends on the place. A settings row allows 60 characters (50 beside an input), and a section or page 80 (70 beside actions). A dialog allows 100, an empty state 90 and a toast 60. `src/copy.test.ts` checks rows, sections, pages, dialogs, dialog steps and empty states in every language, German and Chinese with 15% slack, and `src/toast-copy.test.ts` checks toasts the same way.
 
 ## Data
 

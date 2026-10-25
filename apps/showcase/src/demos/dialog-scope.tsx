@@ -37,7 +37,7 @@ function CreateKeyFlow({ open, onClose }: { open: boolean; onClose: () => void }
         description="Copy the key now: it's shown once."
         footer={<Button onClick={onClose}>Done</Button>}
       >
-        <SecretReveal secret={SECRET} name={created} baseUrl="https://gateway.northwind.example" />
+        <SecretReveal secret={SECRET} name={created} baseUrl="https://kaeso.example.com" />
       </Dialog>
     );
   return (

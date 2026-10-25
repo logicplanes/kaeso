@@ -33,7 +33,7 @@ function keyHelp(provider: ProviderView | undefined): ReactNode {
 }
 
 function keyPlaceholder(provider: ProviderView | undefined): string {
-  return `${provider ? (provider.key_prefix ?? "") : "sk-"}…`;
+  return `${provider?.key_prefix ?? ""}…`;
 }
 
 const pending = (answer: CredentialView | AccountPending): answer is AccountPending => "interval" in answer;

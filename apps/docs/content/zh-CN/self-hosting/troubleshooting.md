@@ -78,7 +78,7 @@ docker compose exec gateway kaeso setup-link
 
 网关无法连接 SMTP 服务器，或服务器拒绝了邮件。
 
-1. 在**设置** › **实例** › **设置**中选择**发送测试邮件**。
+1. 在**实例** › **系统**中选择**发送测试邮件**。
 2. 在网关日志中查看 SMTP 服务器的回应。
 3. 检查 `.env` 中的 `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS` 和凭据，并确认服务器允许以 `KAESO_SMTP_FROM` 发信。
 
@@ -128,10 +128,10 @@ docker compose exec gateway kaeso setup-link
 
 ## 有人丢失了双重验证
 
-实例管理员可以在**设置** › **实例** › **用户**中，在该用户的侧滑面板里选择**重置双重验证**。如果没有能登录的实例管理员，就在服务器上重置：
+实例管理员可以在**实例** › **用户**中，在该用户的侧滑面板里选择**重置双重验证**。如果没有能登录的实例管理员，就在服务器上重置：
 
 ```bash
-docker compose exec gateway kaeso user reset-2fa person@example.com
+docker compose exec gateway kaeso user reset-2fa owner@example.com
 ```
 
 无论哪种方式，Kaeso 都会移除该用户的身份验证器应用和恢复码，结束其会话，并向其发送一封邮件。在要求双重验证的地方，用户下次登录时需要重新设置。
@@ -140,7 +140,7 @@ docker compose exec gateway kaeso user reset-2fa person@example.com
 
 Kaeso 将仅在写法上不同的邮箱地址视为同一个地址，包括大小写、带重音的字母写成一个字符或字母加重音符号，以及全角字母。在 Kaeso 采用这种比较方式之前创建的账户可能共用一个地址。
 
-此时 Kaeso 不会通过该地址让其中任何一个账户登录，也不会向任何一个发送链接，并记录 `accounts share one canonical email address; refusing to look either up by it` 及两个用户 ID。实例管理员在**设置** › **实例** › **用户**中找到这两个账户，删除不应存在的那个。之后另一个账户即可像以前一样登录。
+此时 Kaeso 不会通过该地址让其中任何一个账户登录，也不会向任何一个发送链接，并记录 `accounts share one canonical email address; refusing to look either up by it` 及两个用户 ID。实例管理员在**实例** › **用户**中找到这两个账户，删除不应存在的那个。之后另一个账户即可像以前一样登录。
 
 ## 无人能通过单点登录登录
 

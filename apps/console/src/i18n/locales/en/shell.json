@@ -19,7 +19,7 @@
   "shell.deletion.on": "Deletion on {day}",
   "shell.deletion.scheduled": "Scheduled for deletion",
   "shell.export.canceled": "Export canceled",
-  "shell.export.failed": "The export stopped before the end. Try again.",
+  "shell.export.failed": "The export stopped before the end; try again.",
   "shell.export.inBrowser": "Your browser shows its progress.",
   "shell.export.saved": "{size} in {duration}",
   "shell.export.started": "Export started",

@@ -104,7 +104,7 @@ describe("the sidebar in a project", () => {
     const nav = await screen.findByRole("navigation", { name: "Console" });
     expect(await within(nav).findByRole("link", { name: "Organization" })).toHaveAttribute("href", "/orgs/org_other");
     release();
-    expect(await notifications().findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
+    expect(await notifications().findByText("That organization doesn't exist or you can't access it")).toBeInTheDocument();
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
@@ -287,7 +287,7 @@ describe("the organization switcher", () => {
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);
     await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
     await user.click(await screen.findByRole("menuitem", { name: "Sign out" }));
-    expect((await notifications().findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await notifications().findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects`);
   });
 

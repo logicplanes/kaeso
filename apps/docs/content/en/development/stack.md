@@ -36,7 +36,7 @@ The console's development server passes `/platform` and `/v1` on to the gateway,
 | `mail` | Mailpit, which catches every email the gateway sends | `http://127.0.0.1:58025`, SMTP on `127.0.0.1:51025` |
 | `provider` | A mock of the OpenAI, Anthropic, xAI and Together AI APIs, so you need no provider key | Inside the stack only |
 | `idp` | A mock OpenID Connect provider for single sign-on | `http://idp.localhost:18091` |
-| `releases` | Mock Kaeso releases and a mock updater for **Settings** › **Instance** › **Updates** | `http://127.0.0.1:18092` |
+| `releases` | Mock Kaeso releases and a mock updater for **Instance** › **Updates** | `http://127.0.0.1:18092` |
 | `accounts` | A mock of ChatGPT sign-in at `auth.openai.com` and of Grok sign-in and the xAI API at `auth.x.ai` and `api.x.ai` inside the stack, with a test certificate the gateway trusts | `http://127.0.0.1:18093` |
 | `master-key` | Writes the gateway's master key into a volume before the gateway starts | |
 

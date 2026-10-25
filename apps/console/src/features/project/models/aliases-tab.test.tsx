@@ -44,7 +44,7 @@ describe("AliasesTab", () => {
 
     expect(await screen.findByText("No aliases yet")).toBeInTheDocument();
     expect(screen.getByText("fast", { selector: "code" }).parentElement).toHaveTextContent(
-      /^A name like fast that apps send as model; retarget it and every app follows\.$/,
+      /^A name like fast that apps send as model; retarget it and all apps follow\.$/,
     );
     expect(screen.getByText("model", { selector: "code" })).toBeInTheDocument();
     const create = screen.getAllByRole("button", { name: "Create alias" });

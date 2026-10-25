@@ -121,7 +121,7 @@ These are never translated:
 
 ### Which language
 
-- A person chooses under **Settings** › **Account** › **Appearance** › **Language**: Automatic, English, Deutsch or 简体中文. The choice is stored on their account (`PATCH me` with `locale`, read from `auth/session`), so it follows them to every browser.
+- A person chooses under **Account** › **Appearance** › **Language**: Automatic, English, Deutsch or 简体中文. The choice is stored on their account (`PATCH me` with `locale`, read from `auth/session`), so it follows them to every browser.
 - **Automatic**, the default, takes the first of the browser's languages the console has (`navigator.languages`; `de-AT` is German, any Chinese is Simplified Chinese), falls back to English, and follows the browser when its language changes.
 - The browser keeps a copy of the choice (`kaeso:locale`), so the first paint, sign-in included, is already in that language. English loads nothing more; German and Chinese load their catalogs, the console's and the library's, one chunk each, before the first paint.
 - When the session reports a choice made in another browser, `src/i18n/sync.tsx` switches to it. Switching draws the console again in the new language; the page, its data and its place stay.
@@ -231,5 +231,5 @@ root.render(
 - `pnpm i18n --write` writes the console's `src/i18n/locales/en/<area>.json` from the source; that is the translators' list. `pnpm i18n` checks that every key has German and Chinese with the same placeholders and that nothing is left over. It refuses a translation that is still the English, though names, codes, acronyms and a short list of terms such as "Top k" can stay English. It also refuses "du" in German, "你" in Chinese, straight double quotes, and half-width punctuation next to Chinese characters. `pnpm test` runs the same check.
 - The UI library's catalog test, the showcase's `gen` and the documentation site's message test refuse the same: English left in a translation and an informal address. The mail crate's tests fail when a German or Chinese email keeps an English sentence or uses "du" or "Tokens".
 - `pnpm lint` refuses text written straight into the console (the rule `kaeso/no-literal-text`): JSX text, text props (`label`, `title`, `description`, `placeholder`, `aria-label` and others), text fields of objects, and toasts written as literals.
-- `apps/console/src/copy.test.ts` checks German and Chinese descriptions against the same length limits as English, with 15% slack.
+- `apps/console/src/copy.test.ts` and `apps/console/src/toast-copy.test.ts` check German and Chinese descriptions and toasts against the same length limits as English, with 15% slack.
 - Look at every page you changed in German and Chinese, at phone and desktop widths, in both themes. Choose the language under **Appearance**, or set `kaeso:locale` in the browser's storage. In the showcase, open a changed component's `/de/components/<slug>/states` and `/zh-CN/components/<slug>/states`.

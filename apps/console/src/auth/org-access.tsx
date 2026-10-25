@@ -21,7 +21,7 @@ export function NeedsTwoFactor({ orgName }: { orgName: string }) {
         <Empty
           size="lg"
           title={t("auth.twoFactor.setUp", "Set up two-factor authentication")}
-          description={t("auth.twoFactor.required", "{org} requires two-factor authentication. Set it up for your account, then sign in again with a code.", {
+          description={t("auth.twoFactor.required", "{org} requires two-factor authentication; set it up, then sign in again.", {
             org: orgName,
           })}
           actions={
@@ -48,7 +48,7 @@ export function NeedsSso({ org, orgName }: { org: string; orgName: string }) {
         <Empty
           size="lg"
           title={t("auth.sso.title", "Sign in through {org}'s identity provider", { org: orgName })}
-          description={t("auth.sso.required", "{org} requires single sign-on. Your session works for your other organizations.", { org: orgName })}
+          description={t("auth.sso.required", "{org} requires single sign-on; you stay signed in to your other organizations.", { org: orgName })}
           actions={
             <Button variant="primary" loading={start.isPending} onClick={() => start.mutate()}>
               {t("auth.continueWithSso", "Continue with SSO")}

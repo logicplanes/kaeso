@@ -30,7 +30,7 @@ Die Konsole ist eine statische React-App in `apps/console`, ausgeliefert unter d
 - **Tokens in Links stehen im Fragment.** Die Konsole liest `location.hash` einmal, ruft die API auf und ersetzt die Adresse durch eine ohne Fragment.
 - **Jedes sichtbare Element stammt aus `@logicplanes/kaeso-ui`**, und `className` enthält nur Layout: Margin, Breite, Grid, Flex, Gap und Position. `pnpm lint` setzt das mit den Regeln in `apps/console/eslint/kaeso.js` durch.
 - **Jedes Wort in drei Sprachen**, über `t()` ([Übersetzungen](../translations.md#die-konsole)).
-- **Beschreibungen sind ein Satz, der auf eine Zeile passt.** Die Grenze hängt vom Ort ab. Eine Einstellungszeile erlaubt 60 Zeichen (50 neben einem Eingabefeld), ein Abschnitt oder eine Seite 80 (70 neben Aktionen). Ein Dialog erlaubt 100, ein leerer Zustand 90 und ein Toast 60. `src/copy.test.ts` prüft Zeilen, Abschnitte und Seiten in jeder Sprache, Deutsch und Chinesisch mit 15 % Spielraum.
+- **Beschreibungen sind ein Satz, der auf eine Zeile passt.** Die Grenze hängt vom Ort ab. Eine Einstellungszeile erlaubt 60 Zeichen (50 neben einem Eingabefeld), ein Abschnitt oder eine Seite 80 (70 neben Aktionen). Ein Dialog erlaubt 100, ein leerer Zustand 90 und ein Toast 60. `src/copy.test.ts` prüft Zeilen, Abschnitte, Seiten, Dialoge, Dialogschritte und leere Zustände in jeder Sprache, Deutsch und Chinesisch mit 15 % Spielraum, und `src/toast-copy.test.ts` prüft Toasts auf dieselbe Weise.
 
 ## Daten
 

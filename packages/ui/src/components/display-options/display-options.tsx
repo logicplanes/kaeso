@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { forwardRef, type Ref, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { devWarn } from "../../utils/dev.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -122,13 +122,13 @@ function Panel({ view, rows, toggles, properties, footer }: DisplayOptionsProps)
   );
 }
 
-export function DisplayOptions({ trigger = "secondary", inline, ...props }: DisplayOptionsProps) {
+export const DisplayOptions = forwardRef<HTMLElement, DisplayOptionsProps>(function DisplayOptions({ trigger = "secondary", inline, ...props }, ref) {
   const t = useUiText();
   if (!props.view && !props.rows?.length && !props.toggles?.length && !props.properties)
     devWarn("DisplayOptions: pass view, rows, toggles or properties; an empty panel is never useful.");
   if (inline) {
     return (
-      <div className={cn("rounded-popover bg-raised shadow-raised")}>
+      <div ref={ref as Ref<HTMLDivElement>} className={cn("rounded-popover bg-raised shadow-raised")}>
         <Panel {...props} />
       </div>
     );
@@ -136,12 +136,17 @@ export function DisplayOptions({ trigger = "secondary", inline, ...props }: Disp
   return (
     <Popover>
       <Popover.Trigger>
-        <IconButton icon={icons.displayOptions} aria-label={t("displayOptions.displayOptions", "Display options")} variant={trigger} />
+        <IconButton
+          ref={ref as Ref<HTMLButtonElement>}
+          icon={icons.displayOptions}
+          aria-label={t("displayOptions.displayOptions", "Display options")}
+          variant={trigger}
+        />
       </Popover.Trigger>
       <Popover.Content padding="none" align="end" aria-label={t("displayOptions.displayOptions", "Display options")}>
         <Panel {...props} />
       </Popover.Content>
     </Popover>
   );
-}
+});
 DisplayOptions.displayName = "DisplayOptions";

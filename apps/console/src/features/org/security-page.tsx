@@ -236,10 +236,7 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
         title={t("org.sso.disconnectConfirm", "Disconnect the identity provider?")}
         description={
           security.require_sso
-            ? t(
-                "org.sso.disconnectRequiredHint",
-                "Single sign-on is required: it's turned off too, and members sign in with a password or a sign-in link again.",
-              )
+            ? t("org.sso.disconnectRequiredHint", "Required single sign-on turns off too; members sign in with a password or a sign-in link again.")
             : t("org.sso.disconnectHint", "Members sign in with a password or a sign-in link again.")
         }
         confirmLabel={t("org.sso.disconnect", "Disconnect")}
@@ -551,10 +548,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
         onOpenChange={(o) => !o && setConfirming(null)}
         tone="warning"
         title={t("org.twoFactor.requireConfirm", "Require two-factor authentication?")}
-        description={t(
-          "org.twoFactor.requireConfirmHint",
-          "You don't use it yet: the organization closes for you, and for every member without it, until you set it up in your account's security settings.",
-        )}
+        description={t("org.twoFactor.requireConfirmHint", "You don't use it yet; the organization closes to you and members without it until you set it up.")}
         confirmLabel={t("org.twoFactor.require", "Require two-factor authentication")}
         loading={require2fa.isPending}
         onConfirm={() => require2fa.mutateAsync(true)}

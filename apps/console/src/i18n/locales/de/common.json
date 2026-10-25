@@ -45,6 +45,6 @@
   "common.total": "Gesamt",
   "common.tryAgain": "Erneut versuchen",
   "common.unknown": "Unbekannt",
-  "common.unreachable": "Gateway nicht erreichbar. Bitte erneut versuchen.",
+  "common.unreachable": "Gateway nicht erreichbar; bitte erneut versuchen.",
   "common.yes": "Ja"
 }

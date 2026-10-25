@@ -160,7 +160,7 @@ describe("setting up Kaeso", () => {
     const { user } = await renderApp("/setup#token=stp_1");
     await fill(user);
     await user.click(screen.getByRole("button", { name: "Set up Kaeso" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: "Organization name" })).toBeInTheDocument();
   });
 });

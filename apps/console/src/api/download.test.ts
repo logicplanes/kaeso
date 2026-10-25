@@ -90,7 +90,7 @@ describe("saveExport without a save picker", () => {
     on("GET", "orgs/:org/projects/:project/logs", () => {
       throw new TypeError("Failed to fetch");
     });
-    await expect(saveExport(URL_EXPORT, file, options())).rejects.toMatchObject({ type: "network", message: "Can't reach the gateway. Try again." });
+    await expect(saveExport(URL_EXPORT, file, options())).rejects.toMatchObject({ type: "network", message: "Can't reach the gateway; try again." });
   });
 
   it("is canceled when the person cancels during the check", async () => {
@@ -176,7 +176,7 @@ describe("saveExport with a save picker", () => {
   it("removes the half-written file when the stream breaks", async () => {
     const { picked } = installPicker("save");
     on("GET", "orgs/:org/projects/:project/logs/export", () => new Response(streamOf(["id,status\n"], true)));
-    await expect(saveExport(URL_EXPORT, file, options())).rejects.toMatchObject({ type: "network", message: "The export stopped before the end. Try again." });
+    await expect(saveExport(URL_EXPORT, file, options())).rejects.toMatchObject({ type: "network", message: "The export stopped before the end; try again." });
     expect(picked.removed).toBe(true);
   });
 

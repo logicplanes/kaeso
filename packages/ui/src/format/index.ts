@@ -32,7 +32,7 @@ export function formatTimeZone(): string | undefined {
   return zone;
 }
 
-const inZone = (): { timeZone?: string } => (zone ? { timeZone: zone } : {});
+const inZone = (): { timeZone?: string | undefined } => (zone ? { timeZone: zone } : {});
 
 const numberLocale = () => (current === "en" ? "en-US" : current);
 
@@ -87,7 +87,7 @@ function groupThousands(int: string): string {
   return int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function formatUSD(amount: string, options: { significant?: number; decimals?: number } = {}): string {
+export function formatUSD(amount: string, options: { significant?: number | undefined; decimals?: number | undefined } = {}): string {
   const text = writeUSD(amount, options);
   if (options.decimals === undefined || !/^\s*-?\d*\.?\d*[1-9]/.test(amount) || /[1-9]/.test(text)) return localUSD(text);
   const smallest = localUSD(`$${options.decimals ? `0.${"1".padStart(options.decimals, "0")}` : "1"}`);
@@ -114,7 +114,7 @@ function localUSD(text: string): string {
   return before ? `${m[1]}${symbol}${space}${number}` : `${m[1]}${number}${space}${symbol}`;
 }
 
-function writeUSD(amount: string, options: { significant?: number; decimals?: number }): string {
+function writeUSD(amount: string, options: { significant?: number | undefined; decimals?: number | undefined }): string {
   const significant = options.significant ?? 3;
   const match = /^\s*(-)?(\d*)(?:\.(\d*))?\s*$/.exec(amount);
   if (!match) return amount;
@@ -207,7 +207,7 @@ export function dateFormatter(options: Intl.DateTimeFormatOptions, locale: strin
   return (value) => format(toDate(value));
 }
 
-export function formatDate(value: DateInput, options: { time?: boolean; utc?: boolean; seconds?: boolean } = {}): string {
+export function formatDate(value: DateInput, options: { time?: boolean | undefined; utc?: boolean | undefined; seconds?: boolean | undefined } = {}): string {
   const f = dateFormatter({
     day: "numeric",
     month: "short",

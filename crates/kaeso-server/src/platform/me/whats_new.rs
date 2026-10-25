@@ -165,8 +165,6 @@ pub async fn seen(State(state): State<AppState>, ctx: Ctx) -> ApiResult<StatusCo
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
-
     use super::*;
     use kaeso_store::pg::updates::ReleaseRow;
 
