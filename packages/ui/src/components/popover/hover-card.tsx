@@ -4,6 +4,9 @@ import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js"
 import { cn } from "../../utils/cn.js";
 import { POPOVER_POPUP, type PopoverContentProps } from "./popover.js";
 
+export const KAESO_HOVER_CARD_VARIANTS = {} as const;
+export const KAESO_HOVER_CARD_DEFAULT_VARIANTS = {} as const;
+
 export interface HoverCardProps {
   children: ReactNode;
   open?: boolean | undefined;

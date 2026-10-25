@@ -8,6 +8,7 @@ export const meta = {
   group: "Components",
   entry: "layout",
   import: "Grid, Stack, Inline",
+  variants: "LAYOUT",
 };
 const Box = ({ children }: { children: React.ReactNode }) => (
   <div className="flex h-40 items-center justify-center rounded-item bg-fill-1 text-small text-fg-secondary">{children}</div>

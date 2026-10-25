@@ -4,6 +4,19 @@ import { Dialog, KAESO_DIALOG_VARIANTS } from "./dialog.js";
 import { focusDialogSection } from "./focus.js";
 import { useUiText } from "../../i18n/context.js";
 
+export const KAESO_STEP_DIALOG_VARIANTS = {
+  size: {
+    sm: { classes: KAESO_DIALOG_VARIANTS.size.sm.classes, description: "440px: most tasks in a few steps (default)" },
+    md: { classes: KAESO_DIALOG_VARIANTS.size.md.classes, description: "560px: steps with longer forms" },
+    lg: { classes: KAESO_DIALOG_VARIANTS.size.lg.classes, description: "720px: steps with two columns or previews" },
+  },
+  tone: {
+    default: { classes: "", description: "The last step's button is primary (default)" },
+    danger: { classes: "", description: "The last step's button is a danger button, for a task that ends in deletion" },
+  },
+} as const;
+export const KAESO_STEP_DIALOG_DEFAULT_VARIANTS = { size: "sm", tone: "default" } as const;
+
 export interface DialogStep {
   id: string;
   title: ReactNode;
@@ -28,8 +41,8 @@ export interface StepDialogProps {
   submitLabel: string;
   onSubmit: () => void;
   submitting?: boolean | undefined;
-  tone?: "default" | "danger" | undefined;
-  size?: keyof typeof KAESO_DIALOG_VARIANTS.size | undefined;
+  tone?: keyof typeof KAESO_STEP_DIALOG_VARIANTS.tone | undefined;
+  size?: keyof typeof KAESO_STEP_DIALOG_VARIANTS.size | undefined;
   inline?: boolean | undefined;
   defaultStep?: number | undefined;
   result?: StepDialogResult | undefined;
