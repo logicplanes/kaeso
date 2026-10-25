@@ -28,8 +28,8 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 | 设置 | 解码器的行为 | 为何允许 |
 |---|---|---|
-| `thinking_parts()` | 把 `content` 数组中的 `thinking` 部分（`{type: "thinking", thinking: [文本部分], closed}`，不含其他内容）读作 `Block::Reasoning`，其 `text` 包含每个文本部分；流式发送的则读作 `BlockStart(Reasoning)` 和 `BlockDelta(ReasoningText)`。回答、拒绝或工具调用开始时，推理块结束；流中第一个真正的文本片段之前的空文本片段不会打开文本块（形式标记 `et`）。带有其他键或其他内部部分的 `thinking` 部分保持与没有此设置时相同。 | 不丢弃任何内容：Chat 应用收回同样的部分，其他格式以各自的推理形式得到思考内容，原始块保存在[推理数据块](reasoning.md#推理数据块)中。 |
-| `reasoning_fields(fields)` | 把这些消息键中第一个含非空字符串的键（例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`）读作 `Block::Reasoning`，放在回复的其他块之前，并用形式 `reasoning_field` 记下键名。在流中，每个增量的该键变为同一个推理块的 `BlockDelta(ReasoningText)`，数据块上带形式 `rf`。回答、拒绝或工具调用开始时，推理块结束；第一个真正的文本片段之前的空文本片段不会打开文本块（形式 `et`）。空字符串、`null` 或其他类型仍是 extra。 | 不丢弃任何内容：Chat 应用按原样收回该键，增量中的其他键（Groq 的 `channel`）仍是数据块的 extras，其他格式以各自的推理形式得到推理，原始块保存在[推理数据块](reasoning.md#推理数据块)中。没有此设置时，每个流式推理片段都会是一个没有 KPP 事件的数据块，并各自记录为一个未知块。 |
+| `thinking_parts()` | 逐个读取 `content` 数组中的每个部分：文本部分是文本，`thinking` 部分（`{type: "thinking", thinking: [块], ...}`）是 `Block::Reasoning`，其 `text` 包含它的文本块，并带上它的其他键（`closed`、`signature`）；它包含文本以外的内容时，整个 `thinking` 数组放在形式标记 `thinking` 中。其他部分（`reference`）为 `Block::Unknown`。流式的思考内容变为 `BlockStart(Reasoning)` 和 `BlockDelta(ReasoningText)`；回答、拒绝或工具调用开始时，推理块结束；流中第一个真正的文本片段之前的空文本片段不会打开文本块（形式标记 `et`）。 | Chat 客户端把 `content` 当作字符串读取，因此 Chat 应用永远不会收到数组：文本是 `content`，思考是 `reasoning_content`（多个思考部分以空行连接，为空时不发送），与 DeepSeek 相同。Chat 没有字段可承载的其他部分只保留在记录的回复中；不含可读内容的流块（例如 Mistral 用来结束思考的空 `thinking` 部分）到达它们时不带 `content`。文本与思考之间不保留顺序。Chat 应用重放的推理（`reasoning_content`、`reasoning`、`reasoning_details`）以文本之前的 `thinking` 部分发回提供商，其他格式的应用发回的思考块也一样；没有可读文本的推理会被省略。`thinking` 部分的 `closed` 和引用在经过其他格式后不会保留，因为推理数据块不保存形式标记。其他格式以各自的推理形式得到思考内容，原始块保存在[推理数据块](reasoning.md#推理数据块)中。 |
+| `reasoning_fields(fields)` | 把这些消息键中第一个含非空字符串的键（例如 DeepSeek 的 `reasoning_content` 或 Groq 的 `reasoning`）读作 `Block::Reasoning`，放在回复的其他块之前，并用形式 `reasoning_field` 记下键名。在流中，每个增量的该键变为同一个推理块的 `BlockDelta(ReasoningText)`，数据块上带形式 `rf`。回答、拒绝或工具调用开始时，推理块结束；第一个真正的文本片段之前的空文本片段不会打开文本块（形式 `et`）。空字符串、`null` 或其他类型仍是 extra。 | 不丢弃任何内容：Chat 应用按原样收回该键，其他格式的应用发回的推理以这些键中的第一个到达提供商，增量中的其他键（Groq 的 `channel`）仍是数据块的 extras，其他格式以各自的推理形式得到推理，原始块保存在[推理数据块](reasoning.md#推理数据块)中。没有此设置时，每个流式推理片段都会是一个没有 KPP 事件的数据块，并各自记录为一个未知块。 |
 | `error_detail(path)` | 把错误体中该路径上的字符串（例如 OpenRouter 的 `error.metadata.raw`）追加到错误消息之后：`<message>: <detail>`。该值缺失、为空、不是字符串，或已包含在消息中时，不做任何改变。流错误同样处理。 | 错误体保持原样：Chat 应用原样收到服务商的错误，其他格式则在消息中得到原因，而笼统的消息（`Provider returned error`）对它们毫无帮助。网关会从每条服务商错误消息中去掉类似密钥的字符串。 |
 
 `refusing` 和 `refusing_in_messages` 各自接收完整列表；第二次调用会替换第一次。拒绝时按应用写下的方式命名字段。Chat 应用的键用它自己的名称和路径（`logit_bias`、`messages[1].name`），来自其他格式的拒绝块用它的 KPP 路径（`messages[1].blocks[0]`）。
@@ -58,7 +58,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | DeepSeek 字段 | KPP | 说明 |
 |---|---|---|
 | `thinking`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Chat 应用带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项；它们发回时，该推理不会出现在发往 DeepSeek 的请求中（[推理](reasoning.md)），DeepSeek 在没有它的情况下照常回答。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Chat 应用带有该字段的助手轮次会将其发回 DeepSeek。Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项；它们发回时，该推理会以 `reasoning_content` 返回给 DeepSeek（[推理](reasoning.md)），这正是其思考模式在工具调用轮次中所期望的。 |
 | `usage.prompt_cache_hit_tokens`、`prompt_cache_miss_tokens` | 用量的 `raw` | 命中数等于 `prompt_tokens_details.cached_tokens`，后者按缓存读取类型化。 |
 | 服务器繁忙时发送的 `: keep-alive` 行和空行 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
 | HTTP 402 | `Billing` | 余额不足，无论 `code` 为何。 |

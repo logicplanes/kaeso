@@ -1,7 +1,7 @@
 use kaeso_kpp::{
     Block, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec, KppError, Message, Origin,
-    OutputSpec, RawItem, RawJson, ReasoningConfig, ReasoningEffort, Request, RequestKind, Role,
-    StreamMode, ToolChoice, ToolDef, ToolResultBlock,
+    OutputSpec, RawItem, RawJson, ReasoningBlock, ReasoningConfig, ReasoningEffort, Request,
+    RequestKind, Role, StreamMode, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 use serde_json::value::RawValue;
@@ -31,6 +31,9 @@ pub(crate) const FORM_MESSAGE: &str = "message";
 pub(crate) const FORM_ROLE: &str = "role";
 pub(crate) const FORM_CONTENT: &str = "content";
 pub(crate) const FUNCTION_ROLE: &str = "function";
+pub(crate) const FORM_REPLAYED: &str = "replayed";
+pub(crate) const REPLAYED_REASONING: &[&str] =
+    &["reasoning_content", "reasoning", "reasoning_details"];
 
 pub(crate) const KEY_MAX_TOKENS_CONFLICT: &str = "max_tokens (differs from max_completion_tokens)";
 pub(crate) const KEY_USER_CONFLICT: &str = "user (sent alongside safety_identifier)";
@@ -633,6 +636,9 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
     let content_absent = known.content.is_none() && !verbatim.contains_key("content");
     let mut extras = extras_of(origin, extra, verbatim);
     let mut blocks = Vec::new();
+    if let Some(thought) = replayed_reasoning(&mut extras, origin) {
+        blocks.push(Block::Reasoning(thought));
+    }
     match known.content {
         Some(StringOr::String(text)) => {
             blocks.push(text_block(text, origin));
@@ -691,6 +697,55 @@ fn decode_assistant(raw: &RawJson, origin: &Origin) -> Result<Message, KppError>
     let mut message = Message::new(Role::Assistant, blocks);
     message.extras = extras;
     Ok(message)
+}
+
+fn replayed_reasoning(extras: &mut Extras, origin: &Origin) -> Option<ReasoningBlock> {
+    let sent: Vec<(&str, Value)> = REPLAYED_REASONING
+        .iter()
+        .filter_map(|key| Some((*key, extras.fields.shift_remove(*key)?.to_value().ok()?)))
+        .collect();
+    if sent.is_empty() {
+        return None;
+    }
+    let (text, summary) = sent
+        .iter()
+        .find_map(|(key, value)| readable(key, value))
+        .unwrap_or_default();
+    let mut block = ReasoningBlock::new(origin.clone());
+    block.text = text;
+    block.summary = summary;
+    block.extras = Extras::new(origin.clone());
+    let fields: serde_json::Map<String, Value> = sent
+        .into_iter()
+        .map(|(key, value)| (key.to_owned(), value))
+        .collect();
+    block
+        .extras
+        .form
+        .insert(FORM_REPLAYED.to_owned(), Value::Object(fields));
+    Some(block)
+}
+
+// OpenRouter's `reasoning_details` items: `reasoning.text` (`text`), `reasoning.summary`
+// (`summary`) and `reasoning.encrypted` (`data`, not readable).
+fn readable(key: &str, value: &Value) -> Option<(Vec<String>, Vec<String>)> {
+    let read = |items: &[Value], ty: &str, field: &str| -> Vec<String> {
+        items
+            .iter()
+            .filter(|item| item.get("type").and_then(Value::as_str) == Some(ty))
+            .filter_map(|item| item.get(field)?.as_str().map(str::to_owned))
+            .filter(|text| !text.is_empty())
+            .collect()
+    };
+    match (key, value) {
+        ("reasoning_details", Value::Array(items)) => {
+            let text = read(items, "reasoning.text", "text");
+            let summary = read(items, "reasoning.summary", "summary");
+            (!text.is_empty() || !summary.is_empty()).then_some((text, summary))
+        }
+        (_, Value::String(text)) if !text.is_empty() => Some((vec![text.clone()], Vec::new())),
+        _ => None,
+    }
 }
 
 fn decode_tool_message(raw: &RawJson, origin: &Origin) -> Result<Block, KppError> {
