@@ -122,6 +122,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `reasoning.effort` `none` | 不发送 `thinking`，不发送推理强度 | 这是 Anthropic 的默认行为。因此，在没有 `thinking` 时也会思考的模型（Claude Opus 5 和 5.5、Sonnet 5 和 5.5、Haiku 5.5 以及 Fable）仍会以其默认推理强度思考。思考开启时的 `none`、`minimal` 以及未知的推理强度 → `Unsupported`。 |
 | `reasoning.budget_tokens`（没有模式） | `thinking: {type: enabled, budget_tokens}` | |
 | 没有预算的 `reasoning.mode = Enabled`；带 `Adaptive` 或 `Disabled` 的预算 | `Unsupported` | 这里不做推理强度与预算之间的转换。 |
+| 来自其他方言的请求回放已签名或已遮蔽的思考，且思考为 `adaptive` 或 `enabled`，或者没有 `thinking`、模型支持自适应思考（`EgressCtx::adaptive_thinking` 不是 `Some(false)`）且未强制选择工具 | `thinking.block_binding.prefix_mismatch_behavior: "drop_block"`（请求没有 `thinking` 时同时发送 `thinking: {type: adaptive}`）以及 `anthropic-beta: thinking-binding-controls-2026-08-01` 请求头 | Anthropic 把思考块绑定到产生它的对话，而其他格式的应用无法逐字节重放该对话。前缀改变时，Anthropic 会丢弃该块，而不是拒绝请求（[preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)）。没有 `thinking` 也会思考的模型本来就以自适应方式运行。Anthropic Messages 应用和 token 计数保留自己的设置。 |
 | 来自其他方言的 `reasoning.include_encrypted` | 丢弃 | 它只说明要返回哪些推理（Codex 总是发送它）；Anthropic 总是返回已签名的思考。 |
 | `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可回放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](reasoning.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](reasoning.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](reasoning.md#由网关保存的推理)返回，所以该轮次会以可回放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
 | `output = JsonObject` | `Unsupported`（`json_object output`） | [结构化输出](cross-format.md#结构化输出)。 |
@@ -153,7 +154,7 @@ Schema `Message`。
 | 未知的 `stop_reason` 值 | `StopReason::Other(value)` | |
 | `stop_reason: null` 或缺失 | `EndTurn` 加形式标记 `spelling:stop_reason` | |
 | `stop_sequence` | 在 `StopSequence(s)` 中 | 任何其他写法（缺失，或在其他停止原因下有值）→ 形式标记 `spelling:stop_sequence`。 |
-| `stop_details`（`RefusalStopDetails`）、`container`、`diagnostics`、`type`、`role`、未知键 | `extras.fields` | |
+| `stop_details`（`RefusalStopDetails`）、`container`、`diagnostics`、`input_transformations`（Anthropic 丢弃的思考块）、`type`、`role`、未知键 | `extras.fields` | |
 | `usage.input_tokens` | `usage.input_tokens` | 已经不包含缓存读取和写入（[用量](cross-format.md#用量)）。 |
 | `usage.cache_read_input_tokens` | `usage.cache_read_tokens` | `null` → 0。 |
 | `usage.cache_creation_input_tokens` | `usage.cache_write_tokens` | `null` → 0。 |

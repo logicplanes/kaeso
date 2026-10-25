@@ -545,7 +545,8 @@ fn a_streamed_tool_loop_sends_signed_and_redacted_thinking_back_in_order() {
     let body = generate(next, BUDGET);
     assert_eq!(
         body["thinking"],
-        json!({"type": "enabled", "budget_tokens": 8192, "display": "summarized"})
+        json!({"type": "enabled", "budget_tokens": 8192, "display": "summarized",
+            "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
     );
     let original: Value =
         serde_json::from_slice(&fixture(A, "responses", "thinking-redacted.json")).unwrap();

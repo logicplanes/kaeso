@@ -119,4 +119,4 @@ Chat Completions hat kein Feld für Reasoning, und KPP erfindet keines. Die Antw
 2. Das Gateway speichert die Einträge in Valkey, verschlüsselt mit dem Hauptschlüssel und nur mit dem API-Schlüssel lesbar, der die Anfrage gestellt hat, für `KAESO_CONTINUITY_REASONING_TTL` (standardmäßig eine Stunde).
 3. Bei der nächsten Anfrage der App, nach dem Dekodieren und vor `check` und dem Kodieren, listet `continuity::tool_calls_missing_reasoning` die nachzuschlagenden Tool-Aufruf-IDs auf. `continuity::restore_reasoning` setzt das Gefundene dann wieder in die Assistentenrunden ein. Reasoning für den ersten Tool-Aufruf einer Runde kommt an den Anfang der Runde, Reasoning für einen späteren Aufruf direkt hinter den vorherigen Aufruf. Runden, die bereits Reasoning enthalten, bleiben unverändert.
 
-Die Encoder spielen wiederhergestellte Blöcke nur an ihren eigenen Anbieter zurück.
+Die Encoder spielen wiederhergestellte Blöcke nur an ihren eigenen Anbieter zurück. Für Anthropic bittet eine Anfrage, die sie zurückspielt, Anthropic, einen Block zu verwerfen, dessen Unterhaltung sich geändert hat, statt die Anfrage abzulehnen ([Anthropic Messages](anthropic-messages.md)).

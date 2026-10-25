@@ -20,6 +20,7 @@ Exact non-streaming HTTP 200 bodies. `count_tokens/` holds `POST /v1/messages/co
 | `thinking-display-omitted.json` | Omitted display: `thinking: ""` with a non-empty `signature`. | schema: ResponseThinkingBlock (behaviour from https://platform.claude.com/docs/en/build-with-claude/thinking#controlling-thinking-display) |
 | `thinking-disabled.json` | No thinking blocks. | schema: Message |
 | `thinking-redacted.json` | `thinking` + `redacted_thinking` (`data`) + `tool_use`. | schema: ResponseRedactedThinkingBlock |
+| `thinking-dropped-block.json` | Reply to a request sent with `thinking.block_binding.prefix_mismatch_behavior: "drop_block"` and the `thinking-binding-controls-2026-08-01` beta: top-level `input_transformations` with a `thinking_dropped` entry (`path`, `reason: prefix_binding_mismatch`). | doc: https://platform.claude.com/docs/en/build-with-claude/preserved-thinking (`input_transformations`, present on every response to a request with the beta); content as `thinking-display-omitted.json` |
 | `thinking-interleaved-tools.json` | Interleaved: new `thinking` block after a tool result, then a second `tool_use`. | schema: Message |
 | `thinking-adaptive-interleaved-tools.json` | Adaptive interleaved, display omitted: empty `thinking` + signature, then `tool_use`. | schema: Message |
 | `structured-output-json-schema.json` | JSON text matching the request's schema in a single text block. | schema: Message (JSON from https://platform.claude.com/docs/en/build-with-claude/structured-outputs) |

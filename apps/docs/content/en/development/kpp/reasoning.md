@@ -119,4 +119,4 @@ Chat Completions has no field for reasoning, and KPP does not invent one. The re
 2. The gateway stores the entries in Valkey, encrypted under the master key and readable only with the API key that made the request, for `KAESO_CONTINUITY_REASONING_TTL` (an hour by default).
 3. On the app's next request, after decoding and before `check` and encoding, `continuity::tool_calls_missing_reasoning` lists the tool call ids to look up. `continuity::restore_reasoning` then puts what was found back into the assistant turns. Reasoning for a turn's first tool call goes at the start of the turn, and reasoning for a later call right after the call before it. Turns that already hold reasoning are left alone.
 
-The encoders replay restored blocks to their own provider only.
+The encoders replay restored blocks to their own provider only. For Anthropic, a request that replays them asks Anthropic to drop a block whose conversation changed instead of refusing the request ([Anthropic Messages](anthropic-messages.md)).

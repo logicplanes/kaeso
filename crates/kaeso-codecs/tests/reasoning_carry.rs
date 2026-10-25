@@ -334,6 +334,16 @@ fn chat_next_request(
     kept: &[kaeso_codecs::continuity::CarriedReasoning],
     target: DialectId,
 ) -> Value {
+    let adaptive = (target == A).then_some(false);
+    chat_next_encoded(body, kept, target, adaptive).0
+}
+
+fn chat_next_encoded(
+    body: &Value,
+    kept: &[kaeso_codecs::continuity::CarriedReasoning],
+    target: DialectId,
+    adaptive: Option<bool>,
+) -> (Value, HeaderList) {
     use kaeso_codecs::continuity::{restore_reasoning, tool_calls_missing_reasoning};
     let mut req = dispatch::decode_request(
         DialectId::OpenAiChat,
@@ -351,13 +361,16 @@ fn chat_next_request(
         .filter(|k| missing.contains(&k.tool_call_id))
         .cloned()
         .collect();
-    assert!(restore_reasoning(r, &found) > 0, "nothing restored");
-    let mut ctx = EgressCtx::new(&req).with_provider(provider(target));
-    if target == A {
-        ctx = ctx.with_adaptive_thinking(false);
+    if !kept.is_empty() {
+        assert!(restore_reasoning(r, &found) > 0, "nothing restored");
     }
+    let mut ctx = EgressCtx::new(&req).with_provider(provider(target));
+    if let Some(adaptive) = adaptive {
+        ctx = ctx.with_adaptive_thinking(adaptive);
+    }
+    dispatch::check(target, &req, &ctx).unwrap();
     let enc = dispatch::encode_request(target, &req, &mut ctx).unwrap();
-    serde_json::from_slice(&enc.body).unwrap()
+    (serde_json::from_slice(&enc.body).unwrap(), enc.headers)
 }
 
 #[test]
@@ -446,4 +459,114 @@ fn a_chat_app_keeps_openai_reasoning_through_the_gateway() {
         assert_eq!(items[at][key], reasoning[key], "{key}: {next}");
     }
     assert_eq!(items[at + 1]["type"], "function_call", "{next}");
+}
+
+const BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
+
+fn drop_block() -> Value {
+    json!({"prefix_mismatch_behavior": "drop_block"})
+}
+
+fn carried_claude_thinking() -> (Value, Vec<kaeso_codecs::continuity::CarriedReasoning>) {
+    use kaeso_codecs::continuity::reasoning_for_tool_calls;
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let ctx =
+        EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_provider("anthropic");
+    let reply = dispatch::decode_response(A, 200, &HeaderList::new(), &original, &ctx).unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        panic!()
+    };
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off).with_created_at(1);
+    let chat: Value = serde_json::from_slice(
+        &dispatch::encode_response(DialectId::OpenAiChat, &reply, &enc).unwrap(),
+    )
+    .unwrap();
+    (
+        chat["choices"][0]["message"].clone(),
+        reasoning_for_tool_calls(&resp.blocks),
+    )
+}
+
+#[test]
+fn claude_thinking_rebuilt_from_another_format_is_dropped_when_the_conversation_changed() {
+    let (message, kept) = carried_claude_thinking();
+    let effort = chat_next_turn(&message, "claude-haiku-4-5");
+    let (body, headers) = chat_next_encoded(&effort, &kept, A, Some(false));
+    assert_eq!(body["messages"][1]["content"][0]["type"], "thinking");
+    assert_eq!(body["thinking"]["type"], "enabled", "{body}");
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+
+    let (body, headers) = chat_next_encoded(&effort, &kept, A, Some(true));
+    assert_eq!(body["thinking"]["type"], "adaptive", "{body}");
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+
+    let mut unset = chat_next_turn(&message, "claude-sonnet-5-5");
+    unset.as_object_mut().unwrap().remove("reasoning_effort");
+    let (body, headers) = chat_next_encoded(&unset, &kept, A, None);
+    assert_eq!(
+        body["thinking"],
+        json!({"type": "adaptive", "block_binding": drop_block()}),
+        "{body}"
+    );
+    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+
+    let (body, headers) = chat_next_encoded(&unset, &kept, A, Some(false));
+    assert!(body.get("thinking").is_none(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), None);
+
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let response = reply_for_app(A, &original, R);
+    let next = responses_next_turn(&response["output"]);
+    let req = dispatch::decode_request(
+        R,
+        RequestKind::Generate,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req).with_provider("anthropic");
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), Some(BINDING_BETA));
+}
+
+#[test]
+fn anthropic_apps_and_requests_without_claude_thinking_keep_their_thinking_setting() {
+    for name in ["thinking-interleaved-tools", "thinking-redacted-replay"] {
+        let body = fixture(A, "requests", &format!("{name}.json"));
+        let req =
+            dispatch::decode_request(A, RequestKind::Generate, &body, &HeaderList::new()).unwrap();
+        let mut ctx = EgressCtx::new(&req).with_provider("anthropic");
+        let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+        let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(sent["thinking"], original["thinking"], "{name}");
+        assert_eq!(enc.headers.get("anthropic-beta"), None, "{name}");
+    }
+
+    let (message, _) = carried_claude_thinking();
+    let (body, headers) = chat_next_encoded(
+        &chat_next_turn(&message, "claude-sonnet-5-5"),
+        &[],
+        A,
+        Some(true),
+    );
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn a_reply_that_reports_a_dropped_block_reaches_every_app() {
+    let original = fixture(A, "responses", "thinking-dropped-block.json");
+    let chat = reply_for_app(A, &original, DialectId::OpenAiChat);
+    assert_eq!(
+        chat["choices"][0]["message"]["content"],
+        "proof.txt contains OK."
+    );
+    assert!(chat.get("input_transformations").is_none(), "{chat}");
+    let responses = reply_for_app(A, &original, R);
+    assert_eq!(responses["status"], "completed", "{responses}");
 }

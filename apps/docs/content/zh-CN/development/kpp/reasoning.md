@@ -119,4 +119,4 @@ Chat Completions 没有推理字段，KPP 也不会凭空创造一个。回复�
 2. 网关把这些条目存入 Valkey，用主密钥加密，只有发出该请求的 API 密钥才能读取，保存时长为 `KAESO_CONTINUITY_REASONING_TTL`（默认一小时）。
 3. 在应用的下一个请求中，解码之后、`check` 和编码之前，`continuity::tool_calls_missing_reasoning` 列出需要查找的工具调用 ID，`continuity::restore_reasoning` 把找到的内容放回助手轮次：轮次中第一个工具调用的推理放在轮次开头，后续调用的推理紧跟在前一个调用之后。已经含有推理的轮次保持不变。
 
-编码器只把恢复的块回放给它们自己的服务商。
+编码器只把恢复的块回放给它们自己的服务商。对于 Anthropic，回放这些块的请求会让 Anthropic 丢弃对话已改变的块，而不是拒绝请求（[Anthropic Messages](anthropic-messages.md)）。

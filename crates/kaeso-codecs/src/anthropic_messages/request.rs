@@ -24,6 +24,7 @@ use crate::wire::{
 };
 
 const OBJECTS_FORM: &str = "objects";
+const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 const SYSTEM_FORM: &str = "system";
 
 fn invalid_body(detail: impl std::fmt::Display) -> KppError {
@@ -527,14 +528,15 @@ pub(crate) fn encode_request(
         }
     }
 
+    let bound = !own && !is_count && bind_rebuilt_thinking(r, &mut w, ctx, forced)?;
     let body = to_body(&own_ext(w, &r.extras))?;
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
-    Ok(EncodedRequest::post_json(
-        path,
-        request_headers(&r.extras),
-        body,
-    ))
+    let mut headers = request_headers(&r.extras);
+    if bound {
+        headers.push("anthropic-beta", THINKING_BINDING_BETA);
+    }
+    Ok(EncodedRequest::post_json(path, headers, body))
 }
 
 #[derive(Default)]
@@ -645,17 +647,57 @@ fn tool_turn_lacks_thinking(r: &GenerateRequest, target: &Origin) -> bool {
     if !returns_results || !turn.blocks.iter().any(|b| matches!(b, Block::ToolCall(_))) {
         return false;
     }
-    let sendable = |b: &ReasoningBlock| {
-        reasoning_replayable(b, target)
-            && (b.opaque_of(OpaqueKind::AnthropicRedactedThinking).is_some()
-                || b.opaque_of(OpaqueKind::AnthropicThinkingSignature)
-                    .is_some_and(|o| !o.data.is_empty()))
-    };
     let first = turn
         .blocks
         .iter()
-        .find(|b| !matches!(b, Block::Reasoning(rb) if !sendable(rb)));
+        .find(|b| !matches!(b, Block::Reasoning(rb) if !replays_as_thinking(rb, target)));
     !matches!(first, Some(Block::Reasoning(_)))
+}
+
+fn replays_as_thinking(b: &ReasoningBlock, target: &Origin) -> bool {
+    reasoning_replayable(b, target)
+        && (b.opaque_of(OpaqueKind::AnthropicRedactedThinking).is_some()
+            || b.opaque_of(OpaqueKind::AnthropicThinkingSignature)
+                .is_some_and(|o| !o.data.is_empty()))
+}
+
+// Apps in other formats can't replay Anthropic's exact prefix, so a block bound to it is dropped
+// instead of refused (preserved thinking); `block_binding` needs adaptive or enabled thinking.
+fn bind_rebuilt_thinking(
+    r: &GenerateRequest,
+    w: &mut RequestW,
+    ctx: &EgressCtx,
+    forced: bool,
+) -> Result<bool, KppError> {
+    let target = ctx.origin(D);
+    let rebuilt = r
+        .messages
+        .iter()
+        .flat_map(|m| &m.blocks)
+        .any(|b| matches!(b, Block::Reasoning(rb) if replays_as_thinking(rb, &target)));
+    if !rebuilt {
+        return Ok(false);
+    }
+    let thinking = match &mut w.thinking {
+        Some(t) if t.known.ty == "adaptive" || t.known.ty == "enabled" => t,
+        Some(_) => return Ok(false),
+        None if forced
+            || ctx.adaptive_thinking == Some(false)
+            || tool_turn_lacks_thinking(r, &target) =>
+        {
+            return Ok(false);
+        }
+        None => w.thinking.insert(Ext::new(ThinkingConfigW {
+            ty: "adaptive".to_owned(),
+            budget_tokens: None,
+        })),
+    };
+    let binding = RawJson::from_serialize(&serde_json::json!({
+        "prefix_mismatch_behavior": "drop_block"
+    }))
+    .map_err(internal)?;
+    thinking.extra.insert("block_binding".to_owned(), binding);
+    Ok(true)
 }
 
 fn request_headers(extras: &Extras) -> HeaderList {
