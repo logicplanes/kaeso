@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { forwardRef, useMemo, useState, type ReactNode } from "react";
 import { List, SelectionAction, type ListGroup, type ListItemData } from "../../components/list/list.js";
 import { Toolbar } from "../../components/toolbar/toolbar.js";
 import { SearchInput } from "../../components/input/input.js";
@@ -29,16 +29,10 @@ function searchText(i: ListItemData) {
   return `${i.textValue ?? (typeof i.title === "string" ? i.title : "")} ${i.displayId ?? ""}`.toLowerCase();
 }
 
-export function ResourceList({
-  groups,
-  onOpen,
-  bulkActions = [],
-  toolbar,
-  emptyTitle,
-  emptyDescription,
-  emptyAction,
-  "aria-label": ariaLabel,
-}: ResourceListProps) {
+export const ResourceList = forwardRef<HTMLDivElement, ResourceListProps>(function ResourceList(
+  { groups, onOpen, bulkActions = [], toolbar, emptyTitle, emptyDescription, emptyAction, "aria-label": ariaLabel },
+  ref,
+) {
   const t = useUiText();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -52,7 +46,7 @@ export function ResourceList({
     return new Set([...selected].filter((id) => shown.has(id)));
   }, [filtered, selected]);
   return (
-    <div className="flex flex-col">
+    <div ref={ref} className="flex flex-col">
       <Toolbar aria-label={t("resourceList.filters", "Filters")}>
         {toolbar}
         <Toolbar.Spacer />
@@ -91,5 +85,5 @@ export function ResourceList({
       )}
     </div>
   );
-}
+});
 ResourceList.displayName = "ResourceList";

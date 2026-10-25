@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../button/button.js";
 import { Dialog, KAESO_DIALOG_VARIANTS } from "./dialog.js";
 import { focusDialogSection } from "./focus.js";
@@ -41,20 +41,10 @@ function reducedMotion() {
 
 const bodyOf = (el: HTMLElement | null | undefined) => el?.closest<HTMLElement>("[data-dialog-body]") ?? null;
 
-export function StepDialog({
-  open,
-  onOpenChange,
-  title,
-  steps,
-  submitLabel,
-  onSubmit,
-  submitting,
-  tone = "default",
-  size = "sm",
-  inline,
-  defaultStep = 0,
-  result,
-}: StepDialogProps) {
+export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function StepDialog(
+  { open, onOpenChange, title, steps, submitLabel, onSubmit, submitting, tone = "default", size = "sm", inline, defaultStep = 0, result },
+  ref,
+) {
   const [index, setIndex] = useState(defaultStep);
   const uid = useId();
   const t = useUiText();
@@ -139,7 +129,7 @@ export function StepDialog({
   };
   if (result)
     return (
-      <Dialog {...frame} anchor="top" size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
+      <Dialog ref={ref} {...frame} anchor="top" size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
         <p className="sr-only" aria-live="polite">
           {result.title}
         </p>
@@ -152,6 +142,7 @@ export function StepDialog({
     );
   return (
     <Dialog
+      ref={ref}
       {...frame}
       anchor="top"
       busy={!!submitting}
@@ -194,5 +185,5 @@ export function StepDialog({
       {stepList}
     </Dialog>
   );
-}
+});
 StepDialog.displayName = "StepDialog";

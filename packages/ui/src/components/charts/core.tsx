@@ -1,7 +1,8 @@
 import type * as React from "react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
+import { mergeRefs } from "../../utils/merge-refs.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
@@ -151,16 +152,7 @@ export interface TableData {
   rows: (string | number)[][];
 }
 
-export function ChartFrame({
-  label,
-  height,
-  children,
-  table,
-  legend,
-  state = {},
-  className,
-  toggle = true,
-}: {
+export interface ChartFrameProps {
   label: string;
   height: number;
   children: ReactNode;
@@ -169,11 +161,16 @@ export function ChartFrame({
   state?: ChartState | undefined;
   className?: string | undefined;
   toggle?: boolean | undefined;
-}) {
+}
+
+export const ChartFrame = forwardRef<HTMLElement, ChartFrameProps>(function ChartFrame(
+  { label, height, children, table, legend, state = {}, className, toggle = true },
+  ref,
+) {
   const [asTable, setAsTable] = useState(false);
   const t = useUiText();
   return (
-    <figure className={cn("@container flex min-w-0 flex-col gap-12", className)} aria-label={label}>
+    <figure ref={ref} className={cn("@container flex min-w-0 flex-col gap-12", className)} aria-label={label}>
       {state.error ? (
         <div className="flex flex-col items-center justify-center gap-8 text-center" style={{ height }}>
           <p role="alert" className="text-body text-fg-secondary">
@@ -222,7 +219,8 @@ export function ChartFrame({
       )}
     </figure>
   );
-}
+});
+ChartFrame.displayName = "ChartFrame";
 
 function DataTablePlain({ table, caption }: { table: TableData; caption?: string | undefined }) {
   return (
@@ -259,15 +257,22 @@ export interface LegendItem {
   value?: ReactNode | undefined;
 }
 
-export function Swatch({ color, shape = "square", off }: { color: string; shape?: "square" | "line" | undefined; off?: boolean | undefined }) {
+export interface SwatchProps {
+  color: string;
+  shape?: "square" | "line" | undefined;
+  off?: boolean | undefined;
+}
+
+export const Swatch = forwardRef<HTMLSpanElement, SwatchProps>(function Swatch({ color, shape = "square", off }, ref) {
   return (
     <span
+      ref={ref}
       aria-hidden
       className={cn("shrink-0 transition-control", shape === "line" ? "h-2 w-12 rounded-pill" : "size-10 rounded-bar", off && "opacity-30")}
       style={{ background: color }}
     />
   );
-}
+});
 Swatch.displayName = "Swatch";
 
 export const tickLabel = (format: (v: number) => string) => (v: number) => format(v).replace(/[.,]00(?=\D*$)/, "");
@@ -366,22 +371,18 @@ export function axisLabelIndexes(
   return out;
 }
 
-export function Legend({
-  items,
-  hidden,
-  onToggle,
-  onHover,
-  shape = "square",
-}: {
+export interface LegendProps {
   items: LegendItem[];
   hidden?: Set<string> | undefined;
   onToggle?: ((id: string) => void) | undefined;
   onHover?: ((id: string | null) => void) | undefined;
   shape?: "square" | "line" | undefined;
-}) {
+}
+
+export const Legend = forwardRef<HTMLUListElement, LegendProps>(function Legend({ items, hidden, onToggle, onHover, shape = "square" }, ref) {
   const t = useUiText();
   return (
-    <ul className="flex flex-wrap items-center gap-4" aria-label={t("chartLegend.label", "Legend")}>
+    <ul ref={ref} className="flex flex-wrap items-center gap-4" aria-label={t("chartLegend.label", "Legend")}>
       {items.map((it) => {
         const off = hidden?.has(it.id);
         const Comp = onToggle ? "button" : "span";
@@ -408,7 +409,7 @@ export function Legend({
       })}
     </ul>
   );
-}
+});
 Legend.displayName = "Legend";
 
 export interface TooltipRow {
@@ -419,15 +420,7 @@ export interface TooltipRow {
   share?: ReactNode | undefined;
 }
 
-export function ChartTooltip({
-  x,
-  xLeft = x,
-  y,
-  width,
-  heading,
-  rows,
-  visible,
-}: {
+export interface ChartTooltipProps {
   x: number;
   xLeft?: number | undefined;
   y: number;
@@ -435,8 +428,11 @@ export function ChartTooltip({
   heading: ReactNode;
   rows: TooltipRow[];
   visible: boolean;
-}) {
+}
+
+export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(function ChartTooltip({ x, xLeft = x, y, width, heading, rows, visible }, ref) {
   const el = useRef<HTMLDivElement | null>(null);
+  const root = useMemo(() => mergeRefs(el, ref), [ref]);
   const [own, setOwn] = useState(0);
   useLayoutEffect(() => {
     const w = el.current?.offsetWidth ?? 0;
@@ -447,7 +443,7 @@ export function ChartTooltip({
   const left = own ? Math.round(Math.max(0, Math.min(wanted, width - own))) : undefined;
   return (
     <div
-      ref={el}
+      ref={root}
       role="presentation"
       aria-hidden
       className={cn(
@@ -472,7 +468,7 @@ export function ChartTooltip({
       </div>
     </div>
   );
-}
+});
 ChartTooltip.displayName = "ChartTooltip";
 
 export const AXIS = {
@@ -528,13 +524,17 @@ export function useChartKeys(count: number, options: { vertical?: boolean | unde
   return { index: index !== null && index < count ? index : null, props };
 }
 
-export function ChartLive({ children }: { children?: ReactNode | undefined }) {
+export interface ChartLiveProps {
+  children?: ReactNode | undefined;
+}
+
+export const ChartLive = forwardRef<HTMLDivElement, ChartLiveProps>(function ChartLive({ children }, ref) {
   return (
-    <div className="sr-only" aria-live="polite" aria-atomic>
+    <div ref={ref} className="sr-only" aria-live="polite" aria-atomic>
       {children}
     </div>
   );
-}
+});
 ChartLive.displayName = "ChartLive";
 
 export const liveLine = (heading: ReactNode, rows: { label: ReactNode; value: ReactNode }[], t: UiText = englishText) =>
