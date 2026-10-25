@@ -609,6 +609,42 @@ fn rebuilt_thinking_that_cannot_be_bound_is_left_out() {
 }
 
 #[test]
+fn enabled_thinking_goes_with_the_rebuilt_blocks_it_needs_on_a_tool_continuation() {
+    let (message, kept) = carried_claude_thinking();
+    let mut next = chat_next_turn(&message, "claude-sonnet-5-5");
+    next.as_object_mut().unwrap().remove("reasoning_effort");
+    let mut req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let mut budget = kaeso_kpp::ReasoningConfig::default();
+    budget.budget_tokens = Some(2048);
+    budget.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
+    r.reasoning = Some(budget);
+    let missing = kaeso_codecs::continuity::tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    assert!(kaeso_codecs::continuity::restore_reasoning(r, &found) > 0);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert!(!thinking_sent(&body), "{body}");
+    assert!(body.get("thinking").is_none(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}
+
+#[test]
 fn models_that_do_not_check_the_binding_get_rebuilt_thinking_as_before() {
     let (message, kept) = carried_claude_thinking();
     let (body, headers) = chat_next_encoded(

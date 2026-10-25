@@ -652,17 +652,25 @@ fn thinking_plan(
     })
 }
 
+fn continued_tool_turn(r: &GenerateRequest) -> Option<&Message> {
+    let last = r.messages.iter().rev().find(|m| m.role != Role::System)?;
+    let returns_results = last.role == Role::User
+        && last
+            .blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolResult(_)));
+    let turn = r
+        .messages
+        .iter()
+        .rev()
+        .find(|m| m.role == Role::Assistant)?;
+    (returns_results && turn.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))).then_some(turn)
+}
+
 fn tool_turn_lacks_thinking(r: &GenerateRequest, target: &Origin) -> bool {
-    let last = r.messages.iter().rev().find(|m| m.role != Role::System);
-    let returns_results = last.is_some_and(|m| {
-        m.role == Role::User && m.blocks.iter().any(|b| matches!(b, Block::ToolResult(_)))
-    });
-    let Some(turn) = r.messages.iter().rev().find(|m| m.role == Role::Assistant) else {
+    let Some(turn) = continued_tool_turn(r) else {
         return false;
     };
-    if !returns_results || !turn.blocks.iter().any(|b| matches!(b, Block::ToolCall(_))) {
-        return false;
-    }
     let first = turn
         .blocks
         .iter()
@@ -710,6 +718,10 @@ fn rebuilt_thinking(
             ty: "adaptive".to_owned(),
             budget_tokens: None,
         })),
+        Some(t) if t.known.ty == "enabled" && continued_tool_turn(r).is_some() => {
+            *plan = ThinkingPlan::default();
+            return Ok(Rebuilt::Dropped);
+        }
         _ => return Ok(Rebuilt::Dropped),
     };
     let binding = RawJson::from_serialize(&serde_json::json!({
