@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Empty, FilterRow, IconButton, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
+import { AlertDialog, DialogScope, Empty, FilterRow, IconButton, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
@@ -25,12 +25,15 @@ const myKeysQuery = (includeArchived: boolean) => ({
     ),
 });
 
+const keyQueries = (key: KeyView, org: string | undefined) => [["me", "keys"], ...(org ? [["orgs", org, "projects", key.project_id, "keys"]] : [])];
+
 export function AccountKeysPage() {
   const navigate = useNavigate();
   const memberships = useMemberships();
   const [scope, setScope] = useState<Scope>("active");
   const keys = useQuery(myKeysQuery(scope !== "active"));
   const [archiving, setArchiving] = useState<KeyView | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const where = useMemo(() => {
     const map = new Map<string, { org: string; label: string }>();
     for (const m of memberships)
@@ -40,27 +43,19 @@ export function AccountKeysPage() {
   const readOnly = new Set(memberships.filter((m) => m.org_state === "scheduled_for_deletion").map((m) => m.org_id));
 
   const act = useApiMutation({
-    mutationFn: async ({ key, action }: { key: KeyView; action: "disable" | "enable" | "archive" }) => {
+    mutationFn: async ({ key, action }: { key: KeyView; action: "disable" | "enable" }) => {
       const params = { params: { path: { key: key.id } } };
       if (action === "disable") return data(await api.POST("/platform/v1/me/keys/{key}/disable", params));
-      if (action === "enable") return data(await api.POST("/platform/v1/me/keys/{key}/enable", params));
-      return data(await api.POST("/platform/v1/me/keys/{key}/archive", params));
+      return data(await api.POST("/platform/v1/me/keys/{key}/enable", params));
     },
-    invalidates: ({ key }) => {
-      const org = where.get(key.project_id)?.org;
-      return [["me", "keys"], ...(org ? [["orgs", org, "projects", key.project_id, "keys"]] : [])];
-    },
-    onSuccess: (k, { action }) => {
-      if (action === "archive") setArchiving(null);
-      toast(
-        action === "disable"
-          ? t("account.keyDisabled", "{name} disabled", { name: k.name })
-          : action === "enable"
-            ? t("account.keyEnabled", "{name} enabled", { name: k.name })
-            : t("account.keyArchived", "{name} archived", { name: k.name }),
-      );
-    },
+    invalidates: ({ key }) => keyQueries(key, where.get(key.project_id)?.org),
+    onSuccess: (k, { action }) =>
+      toast(action === "disable" ? t("account.keyDisabled", "{name} disabled", { name: k.name }) : t("account.keyEnabled", "{name} enabled", { name: k.name })),
   });
+  const archive = (k: KeyView) => {
+    setArchiving(k);
+    setArchiveOpen(true);
+  };
 
   const fetched = keys.data ?? [];
   const list = scope === "all" ? fetched : fetched.filter((k) => k.state === scope);
@@ -101,7 +96,7 @@ export function AccountKeysPage() {
                       </Menu.Item>
                     )
                   )}
-                  <Menu.Item icon={icons.delete} variant="danger" onClick={() => setArchiving(k)}>
+                  <Menu.Item icon={icons.delete} variant="danger" onClick={() => archive(k)}>
                     {t("common.archive", "Archive")}
                   </Menu.Item>
                 </Menu.Content>
@@ -155,16 +150,34 @@ export function AccountKeysPage() {
           )
         }
       />
-      <AlertDialog
-        open={!!archiving}
-        onOpenChange={(o) => !o && setArchiving(null)}
-        tone="danger"
-        title={archiving ? t("account.archiveKeyConfirm", "Archive {name}?", { name: archiving.name }) : t("account.archiveKeyConfirmAny", "Archive this key?")}
-        description={t("account.archiveKeyConfirmHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
-        confirmLabel={t("account.archiveKey", "Archive key")}
-        loading={act.isPending}
-        onConfirm={() => (archiving ? act.mutateAsync({ key: archiving, action: "archive" }) : undefined)}
-      />
+      {archiving && (
+        <DialogScope open={archiveOpen}>
+          <ArchiveKeyDialog k={archiving} org={where.get(archiving.project_id)?.org} open={archiveOpen} onOpenChange={setArchiveOpen} />
+        </DialogScope>
+      )}
     </SettingsPage>
+  );
+}
+
+function ArchiveKeyDialog({ k, org, open, onOpenChange }: { k: KeyView; org: string | undefined; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const archive = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/me/keys/{key}/archive", { params: { path: { key: k.id } } })),
+    invalidates: keyQueries(k, org),
+    onSuccess: (archived) => {
+      onOpenChange(false);
+      toast(t("account.keyArchived", "{name} archived", { name: archived.name }));
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("account.archiveKeyConfirm", "Archive {name}?", { name: k.name })}
+      description={t("account.archiveKeyConfirmHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
+      confirmLabel={t("account.archiveKey", "Archive key")}
+      loading={archive.isPending}
+      onConfirm={() => archive.mutateAsync()}
+    />
   );
 }

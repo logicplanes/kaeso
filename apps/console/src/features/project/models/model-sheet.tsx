@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, Empty, KeyValue, Menu, IconButton, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Menu, IconButton, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
@@ -72,22 +72,6 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       if (error.status === 412) setEditing(null);
     },
   });
-  const remove = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/models/{model}", {
-        params: { path: { org, project, model: modelId }, header: ifMatch(model.data) },
-      });
-    },
-    invalidates: invalidates(org, project),
-    onSuccess: () => {
-      toast(t("models.removed", "Model removed from the catalogue"));
-      onClose();
-    },
-    onError: (error) => {
-      if (error.status === 412) setRemoving(false);
-    },
-  });
-
   if (model.isPending) return <Skeleton className="w-full" />;
   if (model.isError) {
     return (
@@ -229,17 +213,54 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           })}
         />
       </div>
-      <AlertDialog
-        open={removing}
-        onOpenChange={setRemoving}
-        tone="danger"
-        title={t("models.removeTitle", "Remove {model}?", { model: modelName(m) })}
-        description={t("models.removeHint", "Requests naming it are refused, and aliases and model lists that name it lose it.")}
-        confirmLabel={t("models.removeFromCatalogue", "Remove from catalogue")}
-        loading={remove.isPending}
-        onConfirm={() => remove.mutateAsync()}
-      />
+      <DialogScope open={removing}>
+        <RemoveModelDialog org={org} project={project} model={m} onRemoved={onClose} open={removing} onOpenChange={setRemoving} />
+      </DialogScope>
     </div>
+  );
+}
+
+function RemoveModelDialog({
+  org,
+  project,
+  model,
+  onRemoved,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  model: CatalogueModelView;
+  onRemoved: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/models/{model}", {
+        params: { path: { org, project, model: model.id }, header: ifMatch(model) },
+      });
+    },
+    invalidates: invalidates(org, project),
+    onSuccess: () => {
+      toast(t("models.removed", "Model removed from the catalogue"));
+      onRemoved();
+    },
+    onError: (error) => {
+      if (error.status === 412) onOpenChange(false);
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("models.removeTitle", "Remove {model}?", { model: modelName(model) })}
+      description={t("models.removeHint", "Requests naming it are refused, and aliases and model lists that name it lose it.")}
+      confirmLabel={t("models.removeFromCatalogue", "Remove from catalogue")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }
 

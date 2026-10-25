@@ -6,6 +6,7 @@ import {
   Button,
   Code,
   Combobox,
+  DialogScope,
   Field,
   InlineCopyText,
   Input,
@@ -78,17 +79,6 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
       if (s.sso?.domains.every((d) => d.verified)) toast.success(t("org.sso.domainsVerified", "Domains verified"));
       else toast.warning(t("org.sso.recordMissing", "No TXT record found yet; DNS changes can take a while"));
     },
-  });
-  const disconnect = useApiMutation({
-    mutationFn: async () => {
-      await api.DELETE("/platform/v1/orgs/{org}/security/sso", { params: { path: { org } } });
-    },
-    invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
-    onSuccess: () => {
-      setDisconnecting(false);
-      toast(t("org.sso.disconnected", "Identity provider disconnected"));
-    },
-    onError: () => setDisconnecting(false),
   });
   return (
     <SettingsSection
@@ -229,21 +219,40 @@ function SingleSignOn({ org, security }: { org: string; security: SecurityView }
           onClose={() => setEditing(false)}
         />
       )}
-      <AlertDialog
-        open={disconnecting}
-        onOpenChange={setDisconnecting}
-        tone="danger"
-        title={t("org.sso.disconnectConfirm", "Disconnect the identity provider?")}
-        description={
-          security.require_sso
-            ? t("org.sso.disconnectRequiredHint", "Required single sign-on turns off too; members sign in with a password or a sign-in link again.")
-            : t("org.sso.disconnectHint", "Members sign in with a password or a sign-in link again.")
-        }
-        confirmLabel={t("org.sso.disconnect", "Disconnect")}
-        loading={disconnect.isPending}
-        onConfirm={() => disconnect.mutateAsync()}
-      />
+      <DialogScope open={disconnecting}>
+        <DisconnectDialog org={org} required={security.require_sso} open={disconnecting} onOpenChange={setDisconnecting} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function DisconnectDialog({ org, required, open, onOpenChange }: { org: string; required: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const disconnect = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/security/sso", { params: { path: { org } } });
+    },
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org)],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("org.sso.disconnected", "Identity provider disconnected"));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("org.sso.disconnectConfirm", "Disconnect the identity provider?")}
+      description={
+        required
+          ? t("org.sso.disconnectRequiredHint", "Required single sign-on turns off too; members sign in with a password or a sign-in link again.")
+          : t("org.sso.disconnectHint", "Members sign in with a password or a sign-in link again.")
+      }
+      confirmLabel={t("org.sso.disconnect", "Disconnect")}
+      loading={disconnect.isPending}
+      onConfirm={() => disconnect.mutateAsync()}
+    />
   );
 }
 
@@ -467,30 +476,8 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
   const rights = useOrgRights(org);
   const session = useSession();
   const [confirming, setConfirming] = useState<"sso" | "2fa" | null>(null);
-  const requireSso = useApiMutation({
-    mutationFn: async (on: boolean) =>
-      data(await api.PUT("/platform/v1/orgs/{org}/security/require-sso", { params: { path: { org } }, body: { enabled: on } })),
-    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
-    onSuccess: (s) => {
-      setConfirming(null);
-      toast.success(s.require_sso ? t("org.sso.requiredOn", "Single sign-on is required") : t("org.sso.requiredOff", "Single sign-on is no longer required"));
-    },
-    onError: () => setConfirming(null),
-  });
-  const require2fa = useApiMutation({
-    mutationFn: async (on: boolean) =>
-      data(await api.PUT("/platform/v1/orgs/{org}/security/require-2fa", { params: { path: { org } }, body: { enabled: on } })),
-    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
-    onSuccess: (s) => {
-      setConfirming(null);
-      toast.success(
-        s.require_2fa
-          ? t("org.twoFactor.requiredOn", "Two-factor authentication is required")
-          : t("org.twoFactor.requiredOff", "Two-factor authentication is no longer required"),
-      );
-    },
-    onError: () => setConfirming(null),
-  });
+  const requireSso = useRequireSso(org);
+  const require2fa = useRequire2fa(org);
   const ssoReason = !rights.has("security.sso.require")
     ? needs("security.sso.require")
     : !security.sso
@@ -533,27 +520,75 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
           }
         />
       </SettingsGroup>
-      <AlertDialog
-        open={confirming === "sso"}
-        onOpenChange={(o) => !o && setConfirming(null)}
-        tone="warning"
-        title={t("org.sso.requireConfirm", "Require single sign-on?")}
-        description={t("org.sso.requireConfirmHint", "Accounts at its verified domains then sign in only through SSO, and their other sessions end.")}
-        confirmLabel={t("org.sso.require", "Require single sign-on")}
-        loading={requireSso.isPending}
-        onConfirm={() => requireSso.mutateAsync(true)}
-      />
-      <AlertDialog
-        open={confirming === "2fa"}
-        onOpenChange={(o) => !o && setConfirming(null)}
-        tone="warning"
-        title={t("org.twoFactor.requireConfirm", "Require two-factor authentication?")}
-        description={t("org.twoFactor.requireConfirmHint", "You don't use it yet; the organization closes to you and members without it until you set it up.")}
-        confirmLabel={t("org.twoFactor.require", "Require two-factor authentication")}
-        loading={require2fa.isPending}
-        onConfirm={() => require2fa.mutateAsync(true)}
-      />
+      <DialogScope open={confirming === "sso"}>
+        <RequireSsoDialog org={org} open={confirming === "sso"} onOpenChange={(o) => !o && setConfirming(null)} />
+      </DialogScope>
+      <DialogScope open={confirming === "2fa"}>
+        <Require2faDialog org={org} open={confirming === "2fa"} onOpenChange={(o) => !o && setConfirming(null)} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function useRequireSso(org: string, onDone?: () => void) {
+  return useApiMutation({
+    mutationFn: async (on: boolean) =>
+      data(await api.PUT("/platform/v1/orgs/{org}/security/require-sso", { params: { path: { org } }, body: { enabled: on } })),
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
+    onSuccess: (s) => {
+      onDone?.();
+      toast.success(s.require_sso ? t("org.sso.requiredOn", "Single sign-on is required") : t("org.sso.requiredOff", "Single sign-on is no longer required"));
+    },
+    onError: onDone,
+  });
+}
+
+function useRequire2fa(org: string, onDone?: () => void) {
+  return useApiMutation({
+    mutationFn: async (on: boolean) =>
+      data(await api.PUT("/platform/v1/orgs/{org}/security/require-2fa", { params: { path: { org } }, body: { enabled: on } })),
+    invalidates: [securityQuery(org).queryKey, orgViewKey(org), ["session"]],
+    onSuccess: (s) => {
+      onDone?.();
+      toast.success(
+        s.require_2fa
+          ? t("org.twoFactor.requiredOn", "Two-factor authentication is required")
+          : t("org.twoFactor.requiredOff", "Two-factor authentication is no longer required"),
+      );
+    },
+    onError: onDone,
+  });
+}
+
+function RequireSsoDialog({ org, open, onOpenChange }: { org: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const requireSso = useRequireSso(org, () => onOpenChange(false));
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="warning"
+      title={t("org.sso.requireConfirm", "Require single sign-on?")}
+      description={t("org.sso.requireConfirmHint", "Accounts at its verified domains then sign in only through SSO, and their other sessions end.")}
+      confirmLabel={t("org.sso.require", "Require single sign-on")}
+      loading={requireSso.isPending}
+      onConfirm={() => requireSso.mutateAsync(true)}
+    />
+  );
+}
+
+function Require2faDialog({ org, open, onOpenChange }: { org: string; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const require2fa = useRequire2fa(org, () => onOpenChange(false));
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="warning"
+      title={t("org.twoFactor.requireConfirm", "Require two-factor authentication?")}
+      description={t("org.twoFactor.requireConfirmHint", "You don't use it yet; the organization closes to you and members without it until you set it up.")}
+      confirmLabel={t("org.twoFactor.require", "Require two-factor authentication")}
+      loading={require2fa.isPending}
+      onConfirm={() => require2fa.mutateAsync(true)}
+    />
   );
 }
 

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   Button,
+  DialogScope,
   Empty,
   FilterRow,
   IconButton,
@@ -43,6 +44,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
   const keys = useQuery({ ...platformKeysQuery(org, scope !== "active"), enabled: rights.has("platform_keys.view") });
   const [creating, setCreating] = useState(false);
   const [archiving, setArchiving] = useState<OrgKeyView | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [rotating, setRotating] = useState<OrgKeyView | null>(null);
   const canCreate = rights.has("platform_keys.create");
   const canRevoke = rights.has("platform_keys.revoke");
@@ -53,25 +55,23 @@ export function PlatformKeysPage({ org }: { org: string }) {
   });
 
   const act = useApiMutation({
-    mutationFn: async ({ key, action }: { key: OrgKeyView; action: "disable" | "enable" | "archive" }) => {
+    mutationFn: async ({ key, action }: { key: OrgKeyView; action: "disable" | "enable" }) => {
       const params = { params: { path: { org, key: key.id } } };
       if (action === "disable") return data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/disable", params));
-      if (action === "enable") return data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/enable", params));
-      return data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/archive", params));
+      return data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/enable", params));
     },
     invalidates: [["orgs", org, "platform-keys"]],
-    onSuccess: (k, { action }) => {
-      if (action === "archive") setArchiving(null);
+    onSuccess: (k, { action }) =>
       toast(
         action === "disable"
           ? t("org.platformKeys.disabled", "{name} disabled", { name: k.name })
-          : action === "enable"
-            ? t("org.platformKeys.enabled", "{name} enabled", { name: k.name })
-            : t("org.platformKeys.archived", "{name} archived", { name: k.name }),
-      );
-    },
-    onError: () => setArchiving(null),
+          : t("org.platformKeys.enabled", "{name} enabled", { name: k.name }),
+      ),
   });
+  const archive = (k: OrgKeyView) => {
+    setArchiving(k);
+    setArchiveOpen(true);
+  };
 
   const fetched = keys.data ?? [];
   const items = (scope === "all" ? fetched : fetched.filter((k) => k.state === scope)).map((k) => {
@@ -115,7 +115,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
                   {t("org.platformKeys.rotate", "Rotate")}
                 </Menu.Item>
               )}
-              <Menu.Item icon={icons.delete} variant="danger" onClick={() => setArchiving(k)}>
+              <Menu.Item icon={icons.delete} variant="danger" onClick={() => archive(k)}>
                 {common.archive()}
               </Menu.Item>
             </Menu.Content>
@@ -178,21 +178,36 @@ export function PlatformKeysPage({ org }: { org: string }) {
       />
       {creating && <CreatePlatformKeyDialog org={org} onClose={() => setCreating(false)} />}
       {rotating && <RotatePlatformKeyDialog org={org} k={rotating} onClose={() => setRotating(null)} />}
-      <AlertDialog
-        open={!!archiving}
-        onOpenChange={(o) => !o && setArchiving(null)}
-        tone="danger"
-        title={
-          archiving
-            ? t("org.platformKeys.archiveConfirm", "Archive {name}?", { name: archiving.name })
-            : t("org.platformKeys.archiveConfirmUnnamed", "Archive this key?")
-        }
-        description={t("org.platformKeys.archiveHint", "Scripts using it stop authenticating; archiving can't be undone, and its history stays.")}
-        confirmLabel={t("org.platformKeys.archiveKey", "Archive key")}
-        loading={act.isPending}
-        onConfirm={() => (archiving ? act.mutateAsync({ key: archiving, action: "archive" }) : undefined)}
-      />
+      {archiving && (
+        <DialogScope open={archiveOpen}>
+          <ArchivePlatformKeyDialog org={org} k={archiving} open={archiveOpen} onOpenChange={setArchiveOpen} />
+        </DialogScope>
+      )}
     </OrgPage>
+  );
+}
+
+function ArchivePlatformKeyDialog({ org, k, open, onOpenChange }: { org: string; k: OrgKeyView; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const archive = useApiMutation({
+    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/platform-keys/{key}/archive", { params: { path: { org, key: k.id } } })),
+    invalidates: [["orgs", org, "platform-keys"]],
+    onSuccess: (archived) => {
+      onOpenChange(false);
+      toast(t("org.platformKeys.archived", "{name} archived", { name: archived.name }));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("org.platformKeys.archiveConfirm", "Archive {name}?", { name: k.name })}
+      description={t("org.platformKeys.archiveHint", "Scripts using it stop authenticating; archiving can't be undone, and its history stays.")}
+      confirmLabel={t("org.platformKeys.archiveKey", "Archive key")}
+      loading={archive.isPending}
+      onConfirm={() => archive.mutateAsync()}
+    />
   );
 }
 

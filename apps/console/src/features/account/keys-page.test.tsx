@@ -206,6 +206,45 @@ describe("your API keys", () => {
     expect(requests("POST", "me/keys/:key/archive")).toHaveLength(0);
   });
 
+  it("keeps a key that is being disabled from making another key's archive look busy", async () => {
+    signedIn();
+    keys([key(), key({ id: "key_triage", name: "triage-bot" })]);
+    on("POST", "me/keys/:key/disable", () => new Promise(() => undefined));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    await waitFor(() => expect(requests("POST", "me/keys/:key/disable")).toHaveLength(1));
+
+    await user.click(screen.getByRole("button", { name: "Actions for triage-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Archive triage-bot?" });
+    expect(within(confirm).getByRole("button", { name: "Archive key" })).not.toHaveAttribute("aria-busy");
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled();
+  });
+
+  it("opens the archive confirmation fresh after a refused archive", async () => {
+    signedIn();
+    keys();
+    on("POST", "me/keys/:key/archive", apiError(409, "conflict", "That key is in use by a running export."));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    let confirm = await screen.findByRole("alertdialog", { name: "Archive support-bot?" });
+    await user.click(within(confirm).getByRole("button", { name: "Archive key" }));
+    expect((await (await notifications()).findAllByText("That key is in use by a running export.")).length).toBeGreaterThan(0);
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+
+    act("archive");
+    await user.click(screen.getByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Archive support-bot?" });
+    expect(within(confirm).getByRole("button", { name: "Archive key" })).not.toHaveAttribute("aria-busy");
+    await user.click(within(confirm).getByRole("button", { name: "Archive key" }));
+    expect(await (await notifications()).findByText("support-bot archived")).toBeInTheDocument();
+    expect(requests("POST", "me/keys/:key/archive")).toHaveLength(2);
+  });
+
   it("shows why a change was refused", async () => {
     signedIn();
     keys();

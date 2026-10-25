@@ -479,17 +479,6 @@ function SingleSignOnSection() {
     mutationFn: async (org: string) => data(await api.POST("/platform/v1/me/sso-links", { body: { org, next: LINKED_PAGE } })),
     onSuccess: (r) => window.location.assign(r.authorization_url),
   });
-  const unlink = useApiMutation({
-    mutationFn: async (org: string) => {
-      await api.DELETE("/platform/v1/me/sso-links/{org}", { params: { path: { org } } });
-    },
-    invalidates: [ssoLinksQuery.queryKey],
-    onSuccess: () => {
-      setUnlinking(false);
-      toast(t("account.ssoUnlinked", "Unlinked from single sign-on"));
-    },
-    onError: () => setUnlinking(false),
-  });
   const rows = links.data?.data ?? [];
   if (rows.length === 0) return null;
   return (
@@ -529,16 +518,35 @@ function SingleSignOnSection() {
           />
         ))}
       </SettingsGroup>
-      <AlertDialog
-        open={unlinking}
-        onOpenChange={setUnlinking}
-        tone="warning"
-        title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
-        description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in, and the sessions it signed you in to end.")}
-        confirmLabel={t("account.ssoUnlink", "Unlink")}
-        loading={unlink.isPending}
-        onConfirm={() => unlink.mutateAsync(target.org_id)}
-      />
+      <DialogScope open={unlinking}>
+        <UnlinkDialog target={target} open={unlinking} onOpenChange={setUnlinking} />
+      </DialogScope>
     </SettingsSection>
+  );
+}
+
+function UnlinkDialog({ target, open, onOpenChange }: { target: { org_id: string; org_name: string }; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const unlink = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me/sso-links/{org}", { params: { path: { org: target.org_id } } });
+    },
+    invalidates: [ssoLinksQuery.queryKey],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("account.ssoUnlinked", "Unlinked from single sign-on"));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="warning"
+      title={t("account.ssoUnlinkConfirm", "Unlink from {org}'s single sign-on?", { org: target.org_name })}
+      description={t("account.ssoUnlinkConfirmHint", "Its identity provider stops signing you in, and the sessions it signed you in to end.")}
+      confirmLabel={t("account.ssoUnlink", "Unlink")}
+      loading={unlink.isPending}
+      onConfirm={() => unlink.mutateAsync()}
+    />
   );
 }

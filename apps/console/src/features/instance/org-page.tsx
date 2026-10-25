@@ -391,13 +391,26 @@ function ScheduledRows({ o }: { o: InstanceOrgView }) {
 
 function Rename({ o }: { o: InstanceOrgView }) {
   const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        {t("common.rename", "Rename")}
+      </Button>
+      <DialogScope open={open}>
+        <RenameDialog o={o} open={open} onOpenChange={setOpen} />
+      </DialogScope>
+    </>
+  );
+}
+
+function RenameDialog({ o, open, onOpenChange }: { o: InstanceOrgView; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [name, setName] = useState(o.name);
   const trimmed = name.trim();
   const rename = useApiMutation({
     mutationFn: async () => data(await api.PATCH("/platform/v1/instance/orgs/{org}", { params: { path: { org: o.id } }, body: { name: trimmed } })),
     invalidates: TOUCHED,
     onSuccess: (r) => {
-      setOpen(false);
+      onOpenChange(false);
       toast.success(t("instance.orgRenamed", "Renamed to {name}", { name: r.name }));
     },
   });
@@ -410,38 +423,33 @@ function Rename({ o }: { o: InstanceOrgView }) {
         ? t("instance.enterNewName", "Enter a new name")
         : undefined;
   return (
-    <>
-      <Button size="sm" onClick={() => (setName(o.name), setOpen(true))}>
-        {t("common.rename", "Rename")}
-      </Button>
-      <Dialog
-        busy={rename.isPending}
-        open={open}
-        onOpenChange={setOpen}
-        size="sm"
-        title={t("instance.renameOrg", "Rename the organization")}
-        description={t("instance.renameOrgHint", "Its members see the new name at once.")}
-        onSubmit={() => !reason && rename.mutate()}
-        footer={
-          <>
-            <Dialog.Close>
-              <Button>{t("common.cancel", "Cancel")}</Button>
-            </Dialog.Close>
-            <Button
-              variant="primary"
-              disabled={!!reason}
-              {...(reason ? { disabledReason: reason } : {})}
-              loading={rename.isPending}
-              onClick={() => rename.mutate()}
-            >
-              {t("common.rename", "Rename")}
-            </Button>
-          </>
-        }
-      >
-        <Input aria-label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" autoFocus />
-      </Dialog>
-    </>
+    <Dialog
+      busy={rename.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
+      size="sm"
+      title={t("instance.renameOrg", "Rename the organization")}
+      description={t("instance.renameOrgHint", "Its members see the new name at once.")}
+      onSubmit={() => !reason && rename.mutate()}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button
+            variant="primary"
+            disabled={!!reason}
+            {...(reason ? { disabledReason: reason } : {})}
+            loading={rename.isPending}
+            onClick={() => rename.mutate()}
+          >
+            {t("common.rename", "Rename")}
+          </Button>
+        </>
+      }
+    >
+      <Input aria-label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" autoFocus />
+    </Dialog>
   );
 }
 

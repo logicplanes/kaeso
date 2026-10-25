@@ -7,6 +7,7 @@ import {
   Code,
   DataTable,
   Dialog,
+  DialogScope,
   Empty,
   IconButton,
   Input,
@@ -93,23 +94,10 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
   const list = useQuery(customProvidersQuery(org));
   const [editing, setEditing] = useState<CustomProviderView | null>(null);
   const [deleting, setDeleting] = useState<CustomProviderView | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [hidden, setHidden] = useState<string[]>([]);
   const rows = useMemo(() => list.data ?? [], [list.data]);
   const addReason = canManage ? undefined : needs("providers.custom.manage");
-
-  const remove = useApiMutation({
-    mutationFn: async (p: CustomProviderView) => {
-      await api.DELETE("/platform/v1/orgs/{org}/custom-providers/{provider}", {
-        params: { path: { org, provider: p.id }, header: { "If-Match": `"${p.revision}"` } },
-      });
-    },
-    invalidates: [["orgs", org, "custom-providers"], ["orgs", org, "providers"], ["orgs", org, "credentials"], modelCatalogues],
-    onSuccess: (_r, p) => {
-      setDeleting(null);
-      toast(t("orgHome.custom.deleted", "{name} deleted", { name: p.name }));
-    },
-    onError: () => setDeleting(null),
-  });
 
   const columns = useMemo(() => {
     const menu = (p: CustomProviderView) =>
@@ -122,7 +110,14 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
             <Menu.Item icon={icons.edit} onClick={() => setEditing(p)}>
               {t("common.edit", "Edit")}
             </Menu.Item>
-            <Menu.Item icon={icons.delete} variant="danger" onClick={() => setDeleting(p)}>
+            <Menu.Item
+              icon={icons.delete}
+              variant="danger"
+              onClick={() => {
+                setDeleting(p);
+                setDeleteOpen(true);
+              }}
+            >
               {t("common.delete", "Delete")}
             </Menu.Item>
           </Menu.Content>
@@ -243,19 +238,50 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
       />
       {adding && <CustomProviderDialog org={org} onClose={() => onAddingChange(false)} />}
       {editing && <CustomProviderDialog org={org} editing={editing} onClose={() => setEditing(null)} />}
-      <AlertDialog
-        open={!!deleting}
-        onOpenChange={(o) => !o && setDeleting(null)}
-        tone="danger"
-        title={
-          deleting ? t("orgHome.custom.deleteQuestion", "Delete {name}?", { name: deleting.name }) : t("orgHome.custom.deleteThis", "Delete this provider?")
-        }
-        description={deleting ? deleteConsequence(deleting) : ""}
-        confirmLabel={t("orgHome.custom.delete", "Delete provider")}
-        loading={remove.isPending}
-        onConfirm={() => (deleting ? remove.mutateAsync(deleting) : undefined)}
-      />
+      {deleting && (
+        <DialogScope open={deleteOpen}>
+          <DeleteProviderDialog org={org} provider={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
+        </DialogScope>
+      )}
     </>
+  );
+}
+
+function DeleteProviderDialog({
+  org,
+  provider,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  provider: CustomProviderView;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/custom-providers/{provider}", {
+        params: { path: { org, provider: provider.id }, header: { "If-Match": `"${provider.revision}"` } },
+      });
+    },
+    invalidates: [["orgs", org, "custom-providers"], ["orgs", org, "providers"], ["orgs", org, "credentials"], modelCatalogues],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("orgHome.custom.deleted", "{name} deleted", { name: provider.name }));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("orgHome.custom.deleteQuestion", "Delete {name}?", { name: provider.name })}
+      description={deleteConsequence(provider)}
+      confirmLabel={t("orgHome.custom.delete", "Delete provider")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }
 
