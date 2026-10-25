@@ -16,6 +16,7 @@ describe("forgetting a person's data", () => {
     };
     for (const [key, value] of Object.entries(local)) window.localStorage.setItem(key, value);
     window.sessionStorage.setItem("kaeso:invite", "inv_token");
+    window.sessionStorage.setItem("kaeso:agent-request", "request_token");
     remember([...PLAYGROUND_CONVERSATION, "proj_checkout"], { refs: ["openai/gpt-5-mini"], threads: [] });
     remember(["playground", "recent", "proj_checkout"], ["openai/gpt-5-mini"]);
 

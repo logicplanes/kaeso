@@ -11,6 +11,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 | Profile | Picture, name, email address and account id, the organization that manages the account, and deleting the account |
 | Security | Password, two-factor authentication, recovery codes and links to single sign-on |
 | Sessions | The browsers you are signed in with |
+| Agents | The agents you connected through the [MCP server](../api/mcp.md), with their rights and activity |
 | API keys | Your own keys in every project ([API keys](api-keys.md)) |
 | Memberships | Your organizations and their projects, with your roles, and leaving an organization |
 | Notifications | Which emails you receive |
@@ -59,12 +60,24 @@ An organization's identity provider signs you in only once your account is linke
 
 A session ends after 7 days without use, and after 30 days at most.
 
+## Manage your agents
+
+**Agents** lists every agent you authorized: its name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
+
+- rename it;
+- change its rights in the same editor as the consent page, then choose **Save rights**;
+- **Revoke** it, which signs it out at once;
+- read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
+
+An agent keeps working until you revoke it, or until it goes 90 days unused. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
+
 ## Confirm a sensitive action
 
 Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out. A sign-in through single sign-on dates from when your identity provider last checked you, which can be long before it sent you back to Kaeso.
 
 - In your account: changing your email address, setting a password when you have none, and deleting the account. Setting up or turning off two-factor authentication, regenerating recovery codes, and **Link** and **Unlink** under **Single sign-on** need one too.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
+- For your agents: giving one a right marked ⚠, which is sensitive ([agents](../concepts/rights.md#sensitive-rights)).
 - As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner. Scheduling an organization for deletion, **Delete now**, **Update to …**, choosing **Automatically** for updates, and changing account creation, organization creation or the allowed domains need one too. **Single sign-on for instance admins** needs one with a password or a sign-in link.
 
 The console asks for your password, or sends a sign-in link or a link to set a password. Only when your account has none of these, such as when the organization that manages it requires single sign-on, does it confirm through your identity provider.
@@ -114,4 +127,5 @@ Neither works while you are an organization's last owner. Make someone else an o
 
 - [Organizations and projects](organizations-and-projects.md): Require two-factor authentication or single sign-on for an organization.
 - [API keys](api-keys.md): Create keys for your apps and scripts.
+- [MCP server](../api/mcp.md): Connect a coding agent and choose what it may do.
 - [Sign-in and single sign-on](../self-hosting/sign-in.md): See how the sign-in page works, and how to get back in.

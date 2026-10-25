@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO agent_activity (id, agent_id, tool, org_id, project_id, target, status, result, ip, at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int2",
+        "Text",
+        "Inet",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a608ec8461e49f5cda0603fe3654e6de01573e8a3be71408fa30c3e7ab587e3a"
+}

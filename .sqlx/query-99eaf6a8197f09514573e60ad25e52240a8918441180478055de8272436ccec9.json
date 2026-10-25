@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT agents_allowed AS allowed, agents_max AS max FROM organizations WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "allowed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "agents_allowed"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "max",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "agents_max"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "99eaf6a8197f09514573e60ad25e52240a8918441180478055de8272436ccec9"
+}

@@ -1,12 +1,12 @@
 ---
 title: Rights
-description: Look up every right in an organization and a project, which roles hold it, and the rules for giving it.
+description: Look up every right in organizations, projects, the instance and accounts, who holds it, and the rules for giving it.
 order: 4
 ---
 
 A right allows one kind of action and is written `resource.action`, such as `keys.all.view`. Every Platform API operation under `orgs/{org}` checks exactly one right, on the organization or the project in its path. [Members and roles](../console/members-and-roles.md) shows how to give roles and rights in the console.
 
-Managing your own account needs no right. Instance administration isn't a right either: it is a flag on a user, and it gives no rights in organizations or projects.
+Managing your own account needs no right in a console session. Instance administration is a flag on a user, not a role: it gives every [instance right](#instance-rights) and no rights in organizations or projects. Agents need each instance and [account right](#account-rights) given to them ([agents](#agents)).
 
 ## Notes
 
@@ -245,3 +245,76 @@ Every change of roles and rights follows these rules:
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `project.audit_log.view` | View project audit log | Read the audit log of changes in this project. |  |
+
+## Instance rights
+
+Every route under `instance/*` checks one of these rights. An instance admin's console session holds all of them. An agent needs each one given, by an instance admin, within the instance's agent policy. Every instance right also needs `instance.system.view`.
+
+| Right | Name | What it allows | Notes |
+| --- | --- | --- | --- |
+| `instance.system.view` | View the system | See the system, the instance settings, model sources and the update status. |  |
+| `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |
+| `instance.model_sources.manage` | Manage model sources | Sync the model data from models.dev. |  |
+| `instance.updates.manage` | Manage updates | Check for updates and change the update settings. |  |
+| `instance.updates.apply` | Apply updates | Install a new version of Kaeso. | sensitive; needs `instance.updates.manage` |
+| `instance.users.view` | View users | See every account of the instance and its organizations. |  |
+| `instance.users.manage` | Manage users | Invite, deactivate and reactivate accounts, end their sessions and reset their two-factor. | sensitive; needs `instance.users.view` |
+| `instance.orgs.view` | View organizations | See every organization with its members, projects and usage. |  |
+| `instance.orgs.manage` | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | sensitive; needs `instance.orgs.view` |
+| `instance.audit_log.view` | View instance audit log | Read the instance audit log. |  |
+
+## Account rights
+
+The routes under `me/*` that an agent can use check one of these rights. A console session needs none of them. Every account right also needs `account.view`, which every agent holds.
+
+| Right | Name | What it allows | Notes |
+| --- | --- | --- | --- |
+| `account.view` | View the account | See the profile, organizations, notification settings and what's new. |  |
+| `account.update` | Edit the profile | Change the name, picture, language and appearance. |  |
+| `account.keys.view` | View personal keys | See the account's API keys in every project (metadata). |  |
+| `account.keys.manage` | Manage personal keys | Disable, enable or archive the account's API keys. | sensitive; needs `account.keys.view` |
+| `account.notifications.manage` | Change notifications | Choose which emails the account gets. |  |
+| `account.memberships.leave` | Leave organizations | Leave organizations the account belongs to. | sensitive |
+
+## Agents
+
+An agent connects through the [MCP server](../api/mcp.md) and acts for the user who authorized it. It never holds a right its user lacks, and the user chooses which of their rights it gets.
+
+### Presets
+
+The console offers four presets for an agent. Each is a starting point, and you can add or remove single rights on top of it.
+
+| Preset | Organization rights | Project rights | Account rights | Instance preset |
+| --- | --- | --- | --- | --- |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Read |
+| Builder | The Developer role's | The Developer role's without `logs.content.view`, and `models.manage` | `account.view`, `account.keys.view` | None |
+| Operator | The Admin role's, without the rights never given to agents | All | All but `account.keys.manage` and `account.memberships.leave` | Configure |
+| Full access | All but the rights never given to agents | All | All | Admin |
+
+Builder is the default. The instance preset applies only to instance admins:
+
+| Instance preset | Rights |
+| --- | --- |
+| None | None |
+| Read | `instance.system.view`, `instance.users.view`, `instance.orgs.view`, `instance.audit_log.view` |
+| Configure | Read's, and `instance.settings.manage`, `instance.model_sources.manage`, `instance.updates.manage` |
+| Admin | All instance rights |
+
+### Effective rights
+
+Kaeso works out an agent's rights again on every request, so a change to the user, a role or a policy applies at once:
+
+- **In an organization:** the rights the agent was given there, that its user holds now, within the organization's agent policy. The policy names a preset, and agents get at most the rights of that preset and the presets before it.
+- **In a project:** the project rights the agent was given there, within the same policy, and those that `projects.view.all` or `projects.archive.any` reach. Only those two rights held by the agent itself reach into projects. The user must hold every one of them in the project.
+- **On the instance:** the instance rights the agent was given, while its user is an instance admin, within the instance's agent policy.
+- **In the account:** the account rights the agent was given, and always `account.view`.
+
+An organization that doesn't allow agents is closed to every agent. An instance that doesn't allow agents stops them all.
+
+### Never given to agents
+
+No agent gets `org.ownership.transfer`, `security.sso.manage` or `security.sso.require`. Agents also can't widen their own access, authorize other agents or manage anyone's agents. They never touch account security: the email address, password, two-factor authentication, recovery codes, sessions, links to single sign-on and deleting the account. [Tools](../api/mcp.md#tools) lists every action that needs a console session.
+
+### Sensitive rights
+
+A right that is sensitive or needs a recent sign-in in the tables above is sensitive for agents, and the console marks it with ⚠. Giving it to an agent needs a sign-in within the last 15 minutes and a confirmation. The agent then uses it without a recent sign-in of its own.

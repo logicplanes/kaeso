@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::indexing_slicing)]
 
-use kaeso_core::rights::{OrgRight, ProjectRight};
+use kaeso_core::rights::{AccountRight, InstanceRight, OrgRight, ProjectRight};
 
 fn operations() -> Vec<(String, String, serde_json::Value)> {
     let doc = serde_json::to_value(kaeso_server::platform::openapi()).unwrap();
@@ -34,12 +34,21 @@ fn every_route_declares_exactly_one_access() {
         } else if rest == "me" || rest.starts_with("me/") {
             let public_ok =
                 matches!(rest, "me/email/confirm" | "me/email/cancel") && access == "public";
+            let account_right = access
+                .strip_prefix("right:")
+                .is_some_and(|r| r.parse::<AccountRight>().is_ok());
             assert!(
-                access == "session" || access == "account" || public_ok,
+                access == "session" || access == "account" || public_ok || account_right,
                 "{route}: {access}"
             );
         } else if rest.starts_with("instance/") {
-            assert_eq!(access, "instance_admin", "{route}");
+            let instance_right = access
+                .strip_prefix("right:")
+                .is_some_and(|r| r.parse::<InstanceRight>().is_ok());
+            assert!(
+                access == "instance_admin" || instance_right,
+                "{route}: {access}"
+            );
         } else {
             let right = access
                 .strip_prefix("right:")

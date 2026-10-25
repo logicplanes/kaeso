@@ -80,3 +80,4 @@ Any tool that lets you set an OpenAI or Anthropic base URL works the same way:
 - [API keys](../console/api-keys.md): Limit a tool's key to the models it needs, or give it an expiry date.
 - [Limits and budgets](../console/limits-and-budgets.md): Cap how many tokens or how much money a tool can spend.
 - [Format translation](../concepts/format-translation.md): See what carries across when a tool calls another provider's model.
+- [MCP server](../api/mcp.md): Let a coding tool manage your install, with the rights you choose.

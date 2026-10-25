@@ -80,6 +80,7 @@
   "shell.routeError.title": "This page couldn't load",
   "shell.routeError.unexpected": "This page hit an unexpected error; reload to try again.",
   "shell.searchSettings": "Search settings",
+  "shell.settings.agents": "Agents",
   "shell.settings.appearance": "Appearance",
   "shell.settings.general": "General",
   "shell.settings.logging": "Logging",

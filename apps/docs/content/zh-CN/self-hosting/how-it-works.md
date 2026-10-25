@@ -10,7 +10,7 @@ order: 2
 ```mermaid
 flowchart TD
   accTitle: Kaeso 实例中的服务
-  accDescr: 应用和浏览器只能经由 Caddy 的 80 和 443 端口访问实例。Caddy 把 /v1 和 /platform 转给网关，把其他所有路径转给控制台。PostgreSQL、ClickHouse 和 Valkey 位于只有网关能访问的内部网络中，网关通过 HTTPS 调用模型服务商。
+  accDescr: 应用和浏览器只能经由 Caddy 的 80 和 443 端口访问实例。Caddy 把 /v1、/platform、MCP 服务器及其 OAuth 登录转给网关，把其他所有路径转给控制台。PostgreSQL、ClickHouse 和 Valkey 位于只有网关能访问的内部网络中，网关通过 HTTPS 调用模型服务商。
   clients[应用和浏览器]:::outside
   subgraph server [您的服务器]
     caddy[Caddy<br>端口 80 和 443]
@@ -24,7 +24,7 @@ flowchart TD
   end
   providers[模型服务商]:::outside
   clients -- HTTPS --> caddy
-  caddy -- /v1 和 /platform --> gateway
+  caddy -- /v1、/platform、/mcp 和 OAuth --> gateway
   caddy -- 其他所有路径 --> console
   gateway --> postgres & clickhouse & valkey
   gateway -- HTTPS --> providers
