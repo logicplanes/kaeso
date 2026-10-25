@@ -9,7 +9,7 @@ use super::common::{
 };
 use super::wire::{
     CacheControlW, CitationsConfigW, DataSourceW, DocumentW, FileSourceW, ImageW, Raw,
-    RedactedThinkingW, TextW, ThinkingW, ToolResultW, ToolUseW, UrlSourceW,
+    RedactedThinkingW, TextW, ThinkingW, ToolReferenceW, ToolResultW, ToolUseW, UrlSourceW,
 };
 use crate::codec::EgressCtx;
 use crate::cross::{ReplyPolicy, reasoning_replayable, reasoning_reply_policy};
@@ -275,6 +275,20 @@ pub(crate) fn decode_content(
             list.iter().map(|b| decode_block(b, dec)).collect()
         }
     }
+}
+
+pub(crate) fn tool_reference(item: &RawItem) -> Option<(String, Block)> {
+    if !item.origin.is(D) {
+        return None;
+    }
+    let w: Ext<ToolReferenceW> = Ext::from_raw(item.raw.as_raw()).ok()?;
+    if w.known.ty != "tool_reference" {
+        return None;
+    }
+    let mut b = TextBlock::new(w.known.tool_name.clone());
+    b.cache = w.known.cache_control.map(|c| decode_cache(c, &item.origin));
+    b.extras = extras_from(&item.origin, w.extra, w.verbatim);
+    Some((w.known.tool_name, Block::Text(b)))
 }
 
 fn parse<T: serde::de::DeserializeOwned + serde::Serialize>(

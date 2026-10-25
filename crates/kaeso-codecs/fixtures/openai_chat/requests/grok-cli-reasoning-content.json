@@ -1,0 +1,73 @@
+{
+  "model": "mistral-large-4",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks."
+    },
+    {
+      "role": "user",
+      "content": "<user_query>\nRun echo ok\n</user_query>"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "call_kaeso_1",
+          "type": "function",
+          "function": {
+            "name": "run_terminal_command",
+            "arguments": "{\"command\": \"echo ok\", \"description\": \"Print ok.\"}"
+          }
+        }
+      ],
+      "reasoning_content": "The user wants echo ok."
+    },
+    {
+      "role": "tool",
+      "content": "exit: 0\nok\n",
+      "tool_call_id": "call_kaeso_1"
+    },
+    {
+      "role": "assistant",
+      "content": "ok",
+      "reasoning_content": "Answer briefly."
+    },
+    {
+      "role": "user",
+      "content": "<user_query>\nsay ok\n</user_query>"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "run_terminal_command",
+        "description": "Run a bash command and return its output.",
+        "parameters": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "required": [
+            "command",
+            "description"
+          ],
+          "properties": {
+            "command": {
+              "description": "The bash command to run.",
+              "type": "string"
+            },
+            "description": {
+              "description": "One short sentence that says what this command does and why you run it.",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

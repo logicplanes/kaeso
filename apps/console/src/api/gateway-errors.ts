@@ -449,6 +449,7 @@ const messages = (): Rule[] => [
   rule("errors.priceRange", (v) => t("errors.priceRange", "`{name}` must be 0 to 1,000,000 USD per million tokens, at most 9 decimals.", v)),
   rule("errors.notDialect", (v) => t("errors.notDialect", "`{dialect}` is not a dialect of {provider}; use one of {dialects}.", v)),
   rule("errors.adaptiveThinking", () => t("errors.adaptiveThinking", "Adaptive thinking applies only to Anthropic models.")),
+  rule("errors.thinkingBinding", () => t("errors.thinkingBinding", "Thinking binding applies only to Anthropic models.")),
   rule("errors.timeoutRange", () => t("errors.timeoutRange", "The timeout must be 1 to 3600 seconds.")),
   rule("errors.releaseDate", () => t("errors.releaseDate", "The release date must be a date, YYYY-MM-DD.")),
   rule("errors.customModelNeeds", (v) => t("errors.customModelNeeds", "A custom model needs {fields}.", v)),

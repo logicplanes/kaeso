@@ -515,6 +515,7 @@
   "errors.stale.catalogueModel": "This catalogue model was changed since you loaded it; reload it and try again.",
   "errors.stale.customProvider": "This custom provider was changed since you loaded it; reload it and try again.",
   "errors.stale.limit": "This limit was changed since you loaded it; reload it and try again.",
+  "errors.thinkingBinding": "Thinking binding applies only to Anthropic models.",
   "errors.timeoutRange": "The timeout must be 1 to 3600 seconds.",
   "errors.timeoutStage.connect": "connect",
   "errors.timeoutStage.firstByte": "time to first byte",

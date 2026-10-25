@@ -20792,6 +20792,13 @@
             ],
             "description": "Whether it accepts `temperature`."
           },
+          "thinking_binding": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Anthropic models: whether a replayed thinking block is checked against the\nconversation that produced it (preserved thinking)."
+          },
           "timeout_seconds": {
             "type": [
               "integer",
@@ -20963,6 +20970,13 @@
               "null"
             ],
             "description": "Whether it accepts `temperature`."
+          },
+          "thinking_binding": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Anthropic models: whether a replayed thinking block is checked against the\nconversation that produced it (preserved thinking)."
           },
           "timeout_seconds": {
             "type": [

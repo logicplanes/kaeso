@@ -114,6 +114,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | --- | --- |
 | `adaptive_thinking` | Anthropic 模型：是否接受 `thinking: {type: "adaptive"}`。为 `false` 时，KPP 会把来自其他格式的推理强度转换为思考预算 |
 | `forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定的工具。缺省表示模型接受强制选择 |
+| `thinking_binding` | 对会把重放的思考块与产生它的对话进行核对的 Anthropic 模型（preserved thinking：supplement 中的 Claude Fable 5.1、Opus 5.5、Sonnet 5.5 和 Haiku 5.5）设为 `true`。对这类模型，来自其他格式且重放 Claude 思考的请求会让 Anthropic 丢弃对话已改变的块（[Anthropic Messages](../kpp/anthropic-messages.md)）。它只在自适应思考下生效，因为 `block_binding` 需要自适应思考。缺省表示不核对 |
 | `efforts` | 模型支持的推理强度级别，在 models.dev 未列出时使用 |
 | `egress_dialect` | Kaeso 发送的格式：服务商的方言之一，默认是其生成方言（OpenAI 为 `openai_responses`） |
 

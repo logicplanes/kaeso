@@ -19,6 +19,7 @@ export interface FieldDraft {
   structured_output: boolean;
   temperature: boolean;
   adaptive_thinking: boolean;
+  thinking_binding: boolean;
   forced_tool_choice: boolean;
   efforts: string[];
   timeout_seconds: string;
@@ -49,6 +50,7 @@ export function draftFrom(f: Fields): FieldDraft {
     structured_output: !!f.structured_output,
     temperature: !!f.temperature,
     adaptive_thinking: !!f.adaptive_thinking,
+    thinking_binding: !!f.thinking_binding,
     forced_tool_choice: f.forced_tool_choice !== false,
     efforts: f.efforts ?? [],
     timeout_seconds: num(f.timeout_seconds),
@@ -74,6 +76,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
     structured_output: d.structured_output,
     temperature: d.temperature,
     adaptive_thinking: adaptiveThinking(dialects) ? d.adaptive_thinking : null,
+    thinking_binding: adaptiveThinking(dialects) ? d.thinking_binding : null,
     forced_tool_choice: d.forced_tool_choice,
     efforts: d.efforts,
     timeout_seconds: int(d.timeout_seconds),
@@ -84,7 +87,7 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stri
 const samePrice = (a: string | null | undefined, b: string | null | undefined) => (a && b ? Number(a) === Number(b) : same(a || null, b || null));
 const PRICES = new Set(["input_price", "output_price", "cache_read_price", "cache_write_price"]);
 const asBool = (v: unknown) => !!v;
-const BOOLS = new Set(["tool_call", "reasoning", "structured_output", "temperature", "adaptive_thinking"]);
+const BOOLS = new Set(["tool_call", "reasoning", "structured_output", "temperature", "adaptive_thinking", "thinking_binding"]);
 const accepts = (v: unknown) => v !== false;
 const ACCEPTED_UNLESS_FALSE = new Set(["forced_tool_choice"]);
 const asList = (v: unknown) => (Array.isArray(v) ? [...(v as string[])].sort() : []);
@@ -225,6 +228,14 @@ export function ModelForm({
             label={t("models.field.adaptiveThinking", "Adaptive thinking")}
             checked={value.adaptive_thinking}
             onCheckedChange={(adaptive_thinking) => set({ adaptive_thinking })}
+          />
+        )}
+        {adaptiveThinking(dialects) && (
+          <Switch
+            label={t("models.field.thinkingBinding", "Thinking binding")}
+            description={t("models.thinkingBindingHint", "Replayed thinking must come from the same conversation.")}
+            checked={value.thinking_binding}
+            onCheckedChange={(thinking_binding) => set({ thinking_binding })}
           />
         )}
         <Switch

@@ -114,6 +114,7 @@ The supplement holds these fields:
 | --- | --- |
 | `adaptive_thinking` | Anthropic models: whether the model accepts `thinking: {type: "adaptive"}`. With `false`, KPP turns an effort from another format into a thinking budget |
 | `forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
+| `thinking_binding` | `true` for an Anthropic model that checks a replayed thinking block against the conversation that produced it (preserved thinking: Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5 in the supplement). For such a model, a request from another format that replays Claude's thinking asks Anthropic to drop a block whose conversation changed ([Anthropic Messages](../kpp/anthropic-messages.md)). It takes effect only with adaptive thinking, which `block_binding` needs. Absent means it doesn't check |
 | `efforts` | The effort levels the model supports, used when models.dev lists none |
 | `egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI) |
 

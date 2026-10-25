@@ -1,0 +1,10 @@
+{
+  "model": "mistral-large-4",
+  "temperature": 0,
+  "messages": [
+    {
+      "role": "user",
+      "content": "say ok"
+    }
+  ]
+}

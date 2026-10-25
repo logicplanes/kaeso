@@ -287,5 +287,3 @@ export const width = {
 } as const;
 
 export const breakpoint = { sidebar: 1024 } as const;
-
-export const brandVersion: string = brand.version;
