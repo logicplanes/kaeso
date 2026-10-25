@@ -57,7 +57,7 @@ Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 
 Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein.
 
-Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
+Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. In Ihrem eigenen Sheet heißt das **Projekt verlassen**. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
 
 ## Dienstkonto erstellen
 

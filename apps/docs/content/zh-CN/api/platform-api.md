@@ -103,9 +103,9 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 以下操作要求近期登录：
 
-- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
-- **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
+- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
+- **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码和删除账户。设置或关闭双重验证、生成新的恢复码，以及关联或取消关联单点登录，同样需要近期登录。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
 ## 约定
 
@@ -117,9 +117,9 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
 | 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元。 |
 | 创建 | 对集合发送 `POST`，以 201 和新资源响应。 |
-| 更新 | 发送只含待更改字段的 `PATCH`。 |
+| 更新 | 发送只含待更改字段的 `PATCH`。`PUT` 设置一个完整的值，例如图片、密钥策略或 SSO 连接。 |
 | 操作 | `POST …/archive`、`…/disable`、`…/enable`、`…/replace` 或 `…/restore`。归档会保留记录。 |
-| 删除 | `DELETE`，仅用于确实会删除内容的地方：服务商密钥、别名、目录中的模型、限额、自定义角色、会话、邀请和您的账户。 |
+| 删除 | `DELETE` 用于移除内容，例如服务商密钥、成员、图片或您的账户。`DELETE orgs/{org}` 则只是计划删除组织。 |
 | 审计 | 每项更改都会在同一事务中写入其所在层级的审计日志。 |
 | 请求 ID | 每个响应都带有 `kaeso-request-id`。 |
 
@@ -135,7 +135,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 修订版本
 
-目录中的模型和限额带有 `revision`，每次更改都会递增。读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改您读取的那个修订版本。条目在此期间被更改时，Kaeso 返回 `412 conflict`；不带 `If-Match` 时，更改作用于当前修订版本。
+目录中的模型、限额和自定义服务商带有 `revision`，每次更改都会递增。读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改您读取的那个修订版本。条目在此期间被更改时，Kaeso 返回 `412 conflict`；不带 `If-Match` 时，更改作用于当前修订版本。
 
 ### 已计划删除的组织
 
@@ -191,7 +191,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何有效用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
 
-只有实例管理员能用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
+实例管理员用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证，运维人员也可以在服务器上用 `kaeso user reset-2fa` 重置（[有人丢失了双重验证](../self-hosting/troubleshooting.md#有人丢失了双重验证)）。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
 
 `GET orgs/{org}/providers` 需要 `org.view`，列出 Kaeso 调用的每个服务商，在每个组织中都相同。每个服务商带有：
 

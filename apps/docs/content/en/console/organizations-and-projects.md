@@ -117,6 +117,7 @@ A project's **Settings** page holds these settings:
 | --- | --- |
 | Picture, project name | Shown in the sidebar and in request logs |
 | Project id | The id the Platform API uses |
+| Default project | Shown only on the default project. New organization members join it, and it can't be archived |
 | Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys in this project |
 | Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
 | Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
