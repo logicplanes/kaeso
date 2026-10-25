@@ -15,6 +15,7 @@ use time::{Date, OffsetDateTime};
 use uuid::Uuid;
 
 use crate::model_api::hooks::{Outcome, Sink};
+use crate::platform::audit::Action;
 use crate::services::limits::{self as engine, Charge};
 use crate::state::AppState;
 
@@ -370,7 +371,7 @@ async fn alert(
                 crate::platform::audit::system_event(
                     &mut conn,
                     Some(OrgId::from_uuid(org)),
-                    "limit.threshold_reached",
+                    Action::LimitThresholdReached,
                     Some(("limit", kaeso_core::id::LimitId::from_uuid(limit.id).to_string())),
                     None,
                     Some(serde_json::json!({ "threshold": t, "used": used, "amount": limit.units(), "recipients": to.len() })),

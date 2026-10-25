@@ -7,6 +7,7 @@ pub mod config;
 pub mod health;
 pub mod http;
 pub mod jobs;
+pub mod mcp;
 pub mod metrics;
 pub mod model_api;
 pub mod platform;

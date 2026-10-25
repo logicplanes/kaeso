@@ -98,6 +98,9 @@ Nie übersetzt werden:
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
+| agent (connected through the MCP server) | Agent | 智能体 |
+| model family (of an agent) | Modellfamilie | 模型系列 |
+| preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
 | restore | wiederherstellen | 恢复 |
 | archive | archivieren | 归档 |
@@ -121,7 +124,7 @@ Nie übersetzt werden:
 
 ### Welche Sprache
 
-- Eine Person wählt unter **Einstellungen** › **Konto** › **Darstellung** › **Sprache**: Automatisch, English, Deutsch oder 简体中文. Die Wahl wird an ihrem Konto gespeichert (`PATCH me` mit `locale`, gelesen aus `auth/session`), sodass sie ihr in jeden Browser folgt.
+- Eine Person wählt unter **Konto** › **Darstellung** › **Sprache**: Automatisch, English, Deutsch oder 简体中文. Die Wahl wird an ihrem Konto gespeichert (`PATCH me` mit `locale`, gelesen aus `auth/session`), sodass sie ihr in jeden Browser folgt.
 - **Automatisch**, der Standard, nimmt die erste Sprache des Browsers, die die Konsole hat (`navigator.languages`: `de-AT` ist Deutsch, jedes Chinesisch ist vereinfachtes Chinesisch), fällt auf Englisch zurück und folgt dem Browser, wenn sich dessen Sprache ändert.
 - Der Browser hält eine Kopie der Wahl des Kontos (`kaeso:locale`), sodass schon das erste Zeichnen, die Anmeldung eingeschlossen, in dieser Sprache erscheint. Englisch lädt nichts weiter; Deutsch und Chinesisch laden ihre Kataloge (den der Konsole und den der Bibliothek, je ein Chunk) vor dem ersten Zeichnen.
 - Meldet die Sitzung eine Wahl, die in einem anderen Browser getroffen wurde, wechselt `src/i18n/sync.tsx` zu ihr. Der Wechsel zeichnet die Konsole in der neuen Sprache neu; die Seite, ihre Daten und ihre Position bleiben.

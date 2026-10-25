@@ -11,6 +11,7 @@ import {
   Code,
   DataTable,
   Dialog,
+  DialogScope,
   Empty,
   FilterRow,
   IconButton,
@@ -107,6 +108,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
   const [renaming, setRenaming] = useState<CredentialView | null>(null);
   const [assigning, setAssigning] = useState<CredentialView | null>(null);
   const [deleting, setDeleting] = useState<CredentialView | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [hidden, setHidden] = useState<string[]>([]);
   const keys = useMemo(() => credentials.data ?? [], [credentials.data]);
@@ -153,18 +155,6 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: (k) => toast(t("orgHome.keyMadeDefault", "{name} is the {provider} default", { name: k.name, provider: providers.name(k.provider) })),
   });
-  const remove = useApiMutation({
-    mutationFn: async (k: CredentialView) => {
-      await api.DELETE("/platform/v1/orgs/{org}/credentials/{credential}", { params: { path: { org, credential: k.id } } });
-    },
-    invalidates: [["orgs", org, "credentials"]],
-    onSuccess: (_r, k) => {
-      setDeleting(null);
-      toast(t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(k, providers) }));
-    },
-    onError: () => setDeleting(null),
-  });
-
   const setDefault = makeDefault.mutate;
   const columns = useMemo(() => {
     const menu = (k: CredentialView) => {
@@ -208,7 +198,14 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               </Menu.Item>
             )}
             {canDelete && (
-              <Menu.Item icon={icons.delete} variant="danger" onClick={() => setDeleting(k)}>
+              <Menu.Item
+                icon={icons.delete}
+                variant="danger"
+                onClick={() => {
+                  setDeleting(k);
+                  setDeleteOpen(true);
+                }}
+              >
                 {t("common.delete", "Delete")}
               </Menu.Item>
             )}
@@ -323,11 +320,6 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
     ].map((c) => ({ ...c, enableSorting: false }));
   }, [accounts, canChange, canDelete, hidden, partyName, providers, setDefault]);
 
-  const deletingProvider = deleting ? providers.name(deleting.provider) : "";
-  const successor = deleting?.is_default
-    ? keys.filter((k) => k.provider === deleting.provider && k.id !== deleting.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
-    : undefined;
-
   return (
     <>
       <OrgHeader
@@ -419,7 +411,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                             {addLabel}
                           </Button>
                           <Button variant="ghost" href={docsPage("/console/provider-keys")}>
-                            {t("orgHome.aboutProviderKeys", "About provider keys")}
+                            {t("orgHome.aboutProviderKeys", "Read about provider keys")}
                           </Button>
                         </>
                       }
@@ -435,29 +427,63 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
       {replacing && <ProviderKeyDialog org={org} keys={keys} replace={replacing} onClose={() => setReplacing(null)} />}
       {renaming && <RenameKeyDialog org={org} credential={renaming} onClose={() => setRenaming(null)} />}
       {assigning && <AssignKeyDialog org={org} credential={assigning} keys={keys} onClose={() => setAssigning(null)} />}
-      <AlertDialog
-        open={!!deleting}
-        onOpenChange={(o) => !o && setDeleting(null)}
-        tone="danger"
-        title={
-          deleting
-            ? t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(deleting, providers) })
-            : t("orgHome.deleteThisKey", "Delete this key?")
-        }
-        description={
-          !deleting?.is_default
-            ? deleting?.projects.length
-              ? t("orgHome.deleteKeyProjectsSwitch", "Its projects switch to the {provider} default.", { provider: deletingProvider })
-              : t("orgHome.deleteKeyUnused", "No project uses it; requests are not affected.")
-            : successor
-              ? t("orgHome.deleteKeySuccessor", "{name} becomes the {provider} default.", { name: successor.name, provider: deletingProvider })
-              : t("orgHome.deleteKeyLast", "Requests to {provider} fail until the organization adds another key.", { provider: deletingProvider })
-        }
-        confirmLabel={t("orgHome.deleteKey", "Delete key")}
-        loading={remove.isPending}
-        onConfirm={() => (deleting ? remove.mutateAsync(deleting) : undefined)}
-      />
+      {deleting && (
+        <DialogScope open={deleteOpen}>
+          <DeleteKeyDialog org={org} credential={deleting} keys={keys} open={deleteOpen} onOpenChange={setDeleteOpen} />
+        </DialogScope>
+      )}
     </>
+  );
+}
+
+function DeleteKeyDialog({
+  org,
+  credential,
+  keys,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  credential: CredentialView;
+  keys: CredentialView[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const providers = useProviders(org);
+  const provider = providers.name(credential.provider);
+  const successor = credential.is_default
+    ? keys.filter((k) => k.provider === credential.provider && k.id !== credential.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
+    : undefined;
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/credentials/{credential}", { params: { path: { org, credential: credential.id } } });
+    },
+    invalidates: [["orgs", org, "credentials"]],
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(credential, providers) }));
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(credential, providers) })}
+      description={
+        !credential.is_default
+          ? credential.projects.length
+            ? t("orgHome.deleteKeyProjectsSwitch", "Its projects switch to the {provider} default.", { provider })
+            : t("orgHome.deleteKeyUnused", "No project uses it; requests are not affected.")
+          : successor
+            ? t("orgHome.deleteKeySuccessor", "{name} becomes the {provider} default.", { name: successor.name, provider })
+            : t("orgHome.deleteKeyLast", "Requests to {provider} fail until the organization adds another key.", { provider })
+      }
+      confirmLabel={t("orgHome.deleteKey", "Delete key")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }
 

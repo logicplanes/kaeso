@@ -7,16 +7,6 @@ nav: KPP-Interna
 
 KPP, das Kaeso Provider Protocol, ist das kanonische Format, das jede Modellanfrage durchläuft. Das Gateway dekodiert, was eine App sendet, nach KPP und kodiert KPP für den Anbieter; die Antwort nimmt denselben Weg zurück. [Formatübersetzung](../../concepts/format-translation.md) beschreibt, was Aufrufer davon sehen; diese Seiten richten sich an alle, die KPP ändern.
 
-- [Aufbau der Codecs](codec-design.md): Erfahren Sie, wie Typen, Streams und Wire-Structs jede Übersetzung verlustfrei halten.
-- [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
-- [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
-- [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
-- [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
-- [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
-- [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
-- [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
-- [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
-
 ## Der Weg einer Anfrage
 
 Eine App sendet eine Anfrage im Format Anthropic Messages, und das Modell wird über OpenAI Chat Completions bedient:
@@ -157,7 +147,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
 | Feld | Klasse | Anmerkungen |
 | --- | --- | --- |
-| `role` | semantisch | Eine `System`-Nachricht nach dem Beginn der Unterhaltung ist für Anthropic `Unsupported`, außer die Anfrage kam aus Anthropic Messages ([Systemnachrichten](cross-format.md#systemnachrichten)). |
+| `role` | semantisch | Eine `System`-Nachricht nach dem Beginn der Unterhaltung wird für Anthropic Teil der nächsten Benutzerrunde, außer die Anfrage kam aus Anthropic Messages ([Systemnachrichten](cross-format.md#systemnachrichten)). |
 | `blocks` | semantisch | Die Reihenfolge der Blöcke bleibt erhalten. |
 | `extras` | wie bei der Anfrage | |
 
@@ -239,3 +229,16 @@ OpenAI Responses hält eine abweichende Schreibweise als Form-Override fest, der
 `testing::sse_diff` vergleicht Streams Item für Item. Es vergleicht den Event-Namen, dann die Daten als JSON oder als Text, wenn sie kein JSON sind, dann die Felder `id`, `retry` und die unbekannten Felder in ihrer Reihenfolge. `ComparableItem::Event.data` ist `None` für einen Frame ohne `data:`-Zeile, und Kommentare werden exakt verglichen.
 
 Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.
+
+## Nächste Schritte
+
+- [Aufbau der Codecs](codec-design.md): Erfahren Sie, wie Typen, Streams und Wire-Structs jede Übersetzung verlustfrei halten.
+- [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
+- [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
+- [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
+- [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.
+- [Chat-Completions-Anbieter](openai-chat-providers.md): Sehen Sie, wie sich der Codec an jeden Anbieter anpasst, der Chat Completions spricht.
+- [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
+- [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
+- [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
+- [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

@@ -1,9 +1,10 @@
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Toaster, toast } from "./toast.js";
+import { Toast, Toaster, toast } from "./toast.js";
 
 const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
 const hoverBridges = [...css.matchAll(/([^{}]*\.k-toast[^{}]*)::after\s*\{([^}]*)\}/g)].map(([, selector = "", body = ""]) => ({
@@ -49,5 +50,16 @@ describe("toast", () => {
       toast.error("Couldn't reach the provider.");
     });
     expect((await screen.findAllByText("Couldn't reach the provider.")).length).toBeGreaterThan(0);
+  });
+});
+
+describe("Toaster's ref", () => {
+  it("reaches the notifications region, also through Toast", () => {
+    const ref = createRef<HTMLDivElement>();
+    const { unmount } = render(<Toaster ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole("region", { name: "Notifications" }));
+    unmount();
+    render(<Toast ref={ref} />);
+    expect(ref.current).toBe(screen.getByRole("region", { name: "Notifications" }));
   });
 });

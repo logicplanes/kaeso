@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Banner, Button, Empty, Input, KeyDisplay, KeyValue, List, Section, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Banner,
+  Button,
+  DialogScope,
+  Empty,
+  Input,
+  KeyDisplay,
+  KeyValue,
+  List,
+  Section,
+  Sheet,
+  Skeleton,
+  Text,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -55,6 +70,8 @@ export function ServiceAccountSheet({
   );
 }
 
+const accountsKey = (org: string, project: string) => ["orgs", org, "projects", project, "service-accounts"];
+
 function AccountBody({ org, project, accountId, onClose }: { org: string; project: string; accountId: string; onClose: () => void }) {
   const needs = useNeedsRight(org, project);
   const rights = useProjectRights(org, project);
@@ -73,7 +90,6 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
   const [grant, setGrant] = useState<Grant | null>(null);
   const [creatingKey, setCreatingKey] = useState(false);
   const [archiving, setArchiving] = useState(false);
-  const invalidates = [["orgs", org, "projects", project, "service-accounts"]];
 
   const update = useApiMutation({
     mutationFn: async (body: { name?: string; grant?: Grant }) =>
@@ -83,24 +99,11 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
           body,
         }),
       ),
-    invalidates,
+    invalidates: [accountsKey(org, project)],
     onSuccess: (_a, body) => {
       if (body.name) setName(null);
       if (body.grant) setGrant(null);
       toast.success(body.name ? t("project.serviceAccounts.nameSaved", "Name saved") : t("project.serviceAccounts.rightsSaved", "Rights saved"));
-    },
-  });
-  const archive = useApiMutation({
-    mutationFn: async () =>
-      data(
-        await api.POST("/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/archive", {
-          params: { path: { org, project, account: accountId } },
-        }),
-      ),
-    invalidates: [...invalidates, ["orgs", org, "projects", project, "keys"]],
-    onSuccess: () => {
-      toast(t("project.serviceAccounts.archived", "Service account archived"));
-      onClose();
     },
   });
 
@@ -264,17 +267,52 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
           </div>
         </Section>
       )}
-      <AlertDialog
-        open={archiving}
-        onOpenChange={setArchiving}
-        tone="danger"
-        title={t("project.serviceAccounts.archiveTitle", "Archive {name}?", { name: a.name })}
-        description={t("project.serviceAccounts.archiveConfirmHint", "Its keys are archived with it and stop authenticating; archiving is permanent.")}
-        confirmLabel={t("project.serviceAccounts.archive", "Archive service account")}
-        loading={archive.isPending}
-        onConfirm={() => archive.mutateAsync()}
-      />
+      <DialogScope open={archiving}>
+        <ArchiveAccountDialog org={org} project={project} account={a} onArchived={onClose} open={archiving} onOpenChange={setArchiving} />
+      </DialogScope>
       <CreateKeyDialog org={org} project={project} open={creatingKey} onClose={() => setCreatingKey(false)} fixedServiceAccount={{ id: a.id, name: a.name }} />
     </div>
+  );
+}
+
+function ArchiveAccountDialog({
+  org,
+  project,
+  account,
+  onArchived,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  account: ServiceAccountView;
+  onArchived: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const archive = useApiMutation({
+    mutationFn: async () =>
+      data(
+        await api.POST("/platform/v1/orgs/{org}/projects/{project}/service-accounts/{account}/archive", {
+          params: { path: { org, project, account: account.id } },
+        }),
+      ),
+    invalidates: [accountsKey(org, project), ["orgs", org, "projects", project, "keys"]],
+    onSuccess: () => {
+      toast(t("project.serviceAccounts.archived", "Service account archived"));
+      onArchived();
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("project.serviceAccounts.archiveTitle", "Archive {name}?", { name: account.name })}
+      description={t("project.serviceAccounts.archiveConfirmHint", "Its keys are archived with it and stop authenticating; archiving is permanent.")}
+      confirmLabel={t("project.serviceAccounts.archive", "Archive service account")}
+      loading={archive.isPending}
+      onConfirm={() => archive.mutateAsync()}
+    />
   );
 }

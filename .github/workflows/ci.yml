@@ -83,6 +83,9 @@ jobs:
               - scripts/**
               - apps/**
               - packages/**
+              - plugins/**
+              - .claude-plugin/**
+              - .cursor-plugin/**
             deploy:
               - deploy/**
               - e2e/install/**
@@ -135,7 +138,7 @@ jobs:
           node -e '
             const { execFileSync } = require("node:child_process");
             const { readFileSync } = require("node:fs");
-            const files = execFileSync("git", ["ls-files", "--", "*.md"], { encoding: "utf8" }).split("\n").filter(Boolean);
+            const files = execFileSync("git", ["ls-files", "--", "*.md", "*.mdx"], { encoding: "utf8" }).split("\n").filter(Boolean);
             const hashed = ["bash", "sh", "shell", "console", "yaml", "yml", "toml", "python", "py", "dockerfile", ""];
             let found = 0;
             for (const file of files) {

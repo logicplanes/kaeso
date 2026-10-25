@@ -21,6 +21,10 @@ For one of your organization's [custom providers](custom-providers.md#add-its-mo
 
 The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
 
+## Find a model
+
+The **Catalogue** tab groups models by provider. Narrow it to one provider, to a capability such as **Tool calling** or **Image input**, or with **Only overridden** to models with values changed in this project. On a phone, these filters sit under **Filters**. The sort menu orders each provider's models by **Model id**, **Input price** or **Newest release**.
+
 ## Availability
 
 A model in the catalogue isn't always one the provider serves to the project's provider key. The provider may have retired it, or the key may have no access to it. The list marks such models **Unavailable**, and each model's sheet shows its **Availability**:
@@ -46,14 +50,15 @@ A model's sheet shows the **Values in use**, each with where it comes from: mode
 | Value | What it is |
 | --- | --- |
 | Display name | The name the console shows |
-| Inputs, outputs | Text, images, audio, video, embeddings |
+| Inputs, outputs | Inputs: text, images, PDF, audio and video. Outputs: text, images, audio and embeddings |
 | Context, output limit | The model's token limits |
 | Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one, as models.dev lists it. Writes to Anthropic's one-hour cache cost twice the input price, [Anthropic's rule](https://platform.claude.com/docs/en/about-claude/pricing), or the cache write price when the model has no input price |
 | Sends as | The API format Kaeso calls the model with: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
-| Accepts temperature | Whether the model takes `temperature` |
-| Accepts a forced tool choice | Whether the model takes `tool_choice` set to `required`, `any` or a named tool. Kaeso refuses such requests for a model that doesn't, before it calls the provider |
-| Adaptive thinking, effort levels | How the model's reasoning is turned on, and the efforts it takes |
+| Temperature | Whether the model takes `temperature` |
+| Forced tool choice | Whether the model takes `tool_choice` set to `required`, `any` or a named tool. Kaeso refuses such requests for a model that doesn't, before it calls the provider |
+| Adaptive thinking, efforts | How the model's reasoning is turned on, and the efforts it takes |
+| Thinking binding | Whether an Anthropic model checks that replayed thinking comes from the same conversation. For such a model, Kaeso asks Anthropic to drop thinking that apps in other formats send back changed, instead of failing the request |
 | Timeout | How many seconds a request to this model may take. Empty uses the install's request timeout |
 | Released | The model's release date |
 

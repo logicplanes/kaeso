@@ -15,6 +15,7 @@ use super::{sign_in, throttle_ip};
 use crate::auth::sessions::Method;
 use crate::auth::throttle::TOKENS_PER_IP;
 use crate::platform::access::{Caller, Ctx};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::views::OrgRef;
@@ -206,7 +207,7 @@ pub async fn accept_invite(
             invite.email
         )));
     }
-    ctx.audit(None, "user.create_by_invite")
+    ctx.audit(None, Action::UserCreateByInvite)
         .by(user)
         .target("user", user)
         .after(serde_json::json!({ "email": invite.email }))
@@ -249,7 +250,7 @@ async fn finish(
             revoked_others,
         } => (Some(org), revoked_others),
     };
-    ctx.audit(org, "invite.accept")
+    ctx.audit(org, Action::InviteAccept)
         .by(user)
         .target("invite", kaeso_core::id::InviteId::from_uuid(invite.id))
         .after(serde_json::json!({ "revoked_invites": revoked_others }))

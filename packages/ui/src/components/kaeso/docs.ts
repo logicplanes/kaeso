@@ -1,6 +1,14 @@
 import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
+  ClientButton: {
+    description: "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.",
+    props: {
+      "aria-label": "The client's name; also the tooltip.",
+      client: "Which client's mark it shows.",
+      onClick: "Opens how to connect the client.",
+    },
+  },
   ConversationView: {
     description:
       "A model conversation from a request log: role captions, prose, tool calls and results, reasoning, images, refusals. Inline images show; remote ones are links, so viewing a log never fetches them.",
@@ -19,6 +27,15 @@ export const docs = {
       "aria-label": "The accessible name of the list.",
       groups: "The same groups as RightsMatrix; only `granted`, `label` and `code` are read.",
       sources: "What the access comes from, as chips above the rows: the member's roles.",
+    },
+  },
+  GrantSummary: {
+    description: "What an agent or a key may do, one short line each after a check mark, on a group surface.",
+    props: {
+      action: "A small button after the note, such as Customize.",
+      "aria-label": 'The list\'s accessible name ("What it can do").',
+      footer: "A quiet note under the lines, such as how long it lasts.",
+      items: "The lines, short and without a final period.",
     },
   },
   EnvironmentSnippet: {

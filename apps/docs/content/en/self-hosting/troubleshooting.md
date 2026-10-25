@@ -78,7 +78,7 @@ If Kaeso is already set up, the command says so. The setup page says the same, w
 
 The gateway can't reach the SMTP server, or the server refuses the email.
 
-1. Choose **Send test email** under **Settings** › **Instance** › **Settings**.
+1. Choose **Send test email** under **Instance** › **System**.
 2. Read the SMTP server's answer in the gateway's log.
 3. Check `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS` and the credentials in `.env`, and that the server may send from `KAESO_SMTP_FROM`.
 
@@ -128,10 +128,10 @@ Requests work again as soon as the database is back, without a restart. The Plat
 
 ## Someone lost their second factor
 
-An instance admin resets it under **Settings** › **Instance** › **Users**, in the person's sheet, with **Reset two-factor**. Without an instance admin who can sign in, reset it on the server:
+An instance admin resets it under **Instance** › **Users**, in the person's sheet, with **Reset two-factor**. Without an instance admin who can sign in, reset it on the server:
 
 ```bash
-docker compose exec gateway kaeso user reset-2fa person@example.com
+docker compose exec gateway kaeso user reset-2fa owner@example.com
 ```
 
 Either way, Kaeso removes their authenticator and recovery codes, ends their sessions and sends them an email. Where two-factor authentication is required, they set it up again at their next sign-in.
@@ -140,7 +140,7 @@ Either way, Kaeso removes their authenticator and recovery codes, ends their ses
 
 Kaeso treats email addresses that differ only in how they are written as one address. That covers upper and lower case, an accent typed as part of its letter or after it, and full-width letters. Accounts created before Kaeso compared addresses this way can share one.
 
-Kaeso then signs neither in by that address, sends neither a link, and logs `accounts share one canonical email address; refusing to look either up by it` with both user ids. An instance admin finds both under **Settings** › **Instance** › **Users** and deletes the one that shouldn't exist. The other then signs in as before.
+Kaeso then signs neither in by that address, sends neither a link, and logs `accounts share one canonical email address; refusing to look either up by it` with both user ids. An instance admin finds both under **Instance** › **Users** and deletes the one that shouldn't exist. The other then signs in as before.
 
 ## Nobody can sign in through single sign-on
 

@@ -191,6 +191,22 @@ describe("platform keys", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
+  it("keeps a key that is being disabled from making another key's archive look busy", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey(), platformKey({ id: "opk_ci", name: "CI deploy" })]));
+    on("POST", "orgs/:org/platform-keys/:key/disable", () => new Promise(() => undefined));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    await waitFor(() => expect(requests("POST", "orgs/:org/platform-keys/:key/disable")).toHaveLength(1));
+
+    await user.click(screen.getByRole("button", { name: "Actions for CI deploy" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Archive CI deploy?" });
+    expect(within(confirm).getByRole("button", { name: "Archive key" })).not.toHaveAttribute("aria-busy");
+    expect(within(confirm).getByRole("button", { name: "Cancel" })).toBeEnabled();
+  });
+
   it("cancels archiving", async () => {
     signedIn();
     on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
@@ -279,7 +295,7 @@ describe("creating a platform key", () => {
     expect(reveal).toBe(dialog);
     expect(within(reveal).getByText("Copy the key for Billing sync now; it's shown once and Kaeso stores only a hash.")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/platform-keys").map((r) => r.body)).toEqual([{ name: "Billing sync", expires_in_days: 90 }]);
-    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Did you copy the key?" });
     await user.click(within(confirm).getByRole("button", { name: "Go back" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
@@ -303,7 +319,7 @@ describe("creating a platform key", () => {
     expect(within(reveal).getAllByText(/kso_org_secret_value/).length).toBeGreaterThan(0);
     await user.click(within(reveal).getAllByRole("button", { name: /Copy/ })[0] as HTMLElement);
     expect(cachedText()).toContain("kso_org_secret_value");
-    await user.click(within(reveal).getByRole("button", { name: "Done" }));
+    await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Platform key created" })).not.toBeInTheDocument());
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     await waitFor(() => expect(cachedText()).not.toContain("kso_org_secret_value"));

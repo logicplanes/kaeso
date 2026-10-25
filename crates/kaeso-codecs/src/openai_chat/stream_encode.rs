@@ -9,12 +9,11 @@ use serde_json::{Map, Value};
 use super::DIALECT;
 use super::convert::to_raw;
 use super::error::error_body;
-use super::response::{encode_finish, encode_thinking_part, encode_usage};
+use super::response::{encode_finish, encode_usage};
 use super::stream::{
     CHUNK_OBJECT, ENVELOPE_FIELDS, ENVELOPE_KEYS, FORM_CHUNK, FORM_CONTENT_SLOTS, FORM_EMPTY_TEXT,
     FORM_ENV, FORM_ENV_ABSENT, FORM_IN_CHUNK, FORM_NO_DONE, FORM_REASONING_FIELD,
-    FORM_REASONING_SLOT, FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras,
-    start_envelope, value_obj,
+    FORM_RUNNING_USAGE, FORM_SSE, FORM_TOOL_CALL, Obj, event_extras, start_envelope, value_obj,
 };
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
@@ -695,25 +694,9 @@ fn content_parts(chunk: &Chunk) -> Result<Option<RawJson>, KppError> {
         None => Vec::new().into_iter(),
     };
     let mut text = Pieces::new(chunk.content.as_deref());
-    let mut thoughts = Pieces::new(chunk.reasoning.as_deref());
     let mut parts = Vec::new();
     for slot in slots {
         match slot {
-            Value::Object(slot) => {
-                let Some(Value::Array(lens)) = slot.get(FORM_REASONING_SLOT) else {
-                    return Ok(None);
-                };
-                let Some(pieces) = lens
-                    .iter()
-                    .map(|len| thoughts.next(len))
-                    .collect::<Option<Vec<String>>>()
-                else {
-                    return Ok(None);
-                };
-                let mut rest = slot.clone();
-                rest.remove(FORM_REASONING_SLOT);
-                parts.push(encode_thinking_part(&pieces, &rest)?);
-            }
             Value::Null => match others.next() {
                 Some(raw) => parts.push(raw),
                 None => return Ok(None),
@@ -726,7 +709,7 @@ fn content_parts(chunk: &Chunk) -> Result<Option<RawJson>, KppError> {
             }
         }
     }
-    if !text.done() || !thoughts.done() {
+    if !text.done() {
         return Ok(None);
     }
     Ok(Some(to_raw(&parts)?))

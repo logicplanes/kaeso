@@ -209,6 +209,147 @@ expression: rights_reference()
 | `costs.view` | ✓ | ✓ | ✓ |
 | `project.audit_log.view` | ✓ |  |  |
 
+## Instance rights
+
+| Right | Category | Name | Allows | Needs (beyond `instance.system.view`) | Recent sign-in | Kaeso Cloud only |
+|---|---|---|---|---|:-:|:-:|
+| `instance.system.view` | Instance | View the system | See the system, the instance settings, model sources and the update status. |  |  |  |
+| `instance.settings.manage` | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |  |  |
+| `instance.model_sources.manage` | Instance | Manage model sources | Sync the model data from models.dev. |  |  |  |
+| `instance.updates.manage` | Instance | Manage updates | Check for updates and change the update settings. |  |  |  |
+| `instance.updates.apply` ⚠ | Instance | Apply updates | Install a new version of Kaeso. | `instance.updates.manage` |  |  |
+| `instance.users.view` | Instance | View users | See every account of the instance and its organizations. |  |  |  |
+| `instance.users.manage` ⚠ | Instance | Manage users | Invite, deactivate and reactivate accounts, end their sessions and reset their two-factor. | `instance.users.view` |  |  |
+| `instance.orgs.view` | Instance | View organizations | See every organization with its members, projects and usage. |  |  |  |
+| `instance.orgs.manage` ⚠ | Instance | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | `instance.orgs.view` |  |  |
+| `instance.audit_log.view` | Instance | View instance audit log | Read the instance audit log. |  |  |  |
+
+## Account rights
+
+| Right | Category | Name | Allows | Needs (beyond `account.view`) | Recent sign-in | Kaeso Cloud only |
+|---|---|---|---|---|:-:|:-:|
+| `account.view` | Account | View the account | See the profile, organizations, notification settings and what's new. |  |  |  |
+| `account.update` | Account | Edit the profile | Change the name, picture, language and appearance. |  |  |  |
+| `account.keys.view` | Account | View personal keys | See the account's API keys in every project (metadata). |  |  |  |
+| `account.keys.manage` ⚠ | Account | Manage personal keys | Disable, enable or archive the account's API keys. | `account.keys.view` |  |  |
+| `account.notifications.manage` | Account | Change notifications | Choose which emails the account gets. |  |  |  |
+| `account.memberships.leave` ⚠ | Account | Leave organizations | Leave organizations the account belongs to. |  |  |  |
+
+## Agent presets
+
+| Preset | Id | Description | Instance preset |
+|---|---|---|---|
+| Observer | `observer` | Reads usage, costs, models, limits, log metadata and audit logs; never prompts or outputs. | Read |
+| Builder | `builder` | Works in projects like a developer and manages their models; sees personal keys. | None |
+| Operator | `operator` | Administers organizations and projects, except deleting, ownership and billing. | Configure |
+| Full access | `full` | Everything you can do that an agent may be given. | Admin |
+
+## Organization rights by agent preset
+
+| Right | Observer | Builder | Operator | Full access |
+|---|:-:|:-:|:-:|:-:|
+| `org.view` | ✓ | ✓ | ✓ | ✓ |
+| `org.update` |  |  | ✓ | ✓ |
+| `org.delete` |  |  |  | ✓ |
+| `org.ownership.transfer` |  |  |  |  |
+| `members.view` | ✓ | ✓ | ✓ | ✓ |
+| `members.invite` |  |  | ✓ | ✓ |
+| `members.invites.revoke` |  |  | ✓ | ✓ |
+| `members.remove` |  |  | ✓ | ✓ |
+| `members.rights.update` |  |  | ✓ | ✓ |
+| `roles.manage` |  |  | ✓ | ✓ |
+| `projects.view.all` | ✓ |  | ✓ | ✓ |
+| `projects.create` |  | ✓ | ✓ | ✓ |
+| `projects.archive.any` |  |  | ✓ | ✓ |
+| `provider_credentials.view` |  | ✓ | ✓ | ✓ |
+| `provider_credentials.create` |  |  | ✓ | ✓ |
+| `provider_credentials.replace` |  |  | ✓ | ✓ |
+| `provider_credentials.delete` |  |  | ✓ | ✓ |
+| `providers.custom.view` |  | ✓ | ✓ | ✓ |
+| `providers.custom.manage` |  |  | ✓ | ✓ |
+| `security.sso.manage` |  |  |  |  |
+| `security.sso.require` |  |  |  |  |
+| `security.2fa.require` |  |  | ✓ | ✓ |
+| `security.key_policy.manage` |  |  | ✓ | ✓ |
+| `platform_keys.view` |  |  | ✓ | ✓ |
+| `platform_keys.create` |  |  | ✓ | ✓ |
+| `platform_keys.revoke` |  |  | ✓ | ✓ |
+| `logs.settings.manage` |  |  | ✓ | ✓ |
+| `logs.storage.view` | ✓ | ✓ | ✓ | ✓ |
+| `logs.delete` |  |  | ✓ | ✓ |
+| `usage.org.view` | ✓ | ✓ | ✓ | ✓ |
+| `costs.org.view` | ✓ | ✓ | ✓ | ✓ |
+| `billing.view` |  |  | ✓ | ✓ |
+| `billing.manage` |  |  |  | ✓ |
+| `audit_log.view` | ✓ |  | ✓ | ✓ |
+| `audit_log.export` |  |  | ✓ | ✓ |
+
+## Project rights by agent preset
+
+| Right | Observer | Builder | Operator | Full access |
+|---|:-:|:-:|:-:|:-:|
+| `project.view` | ✓ | ✓ | ✓ | ✓ |
+| `project.update` |  |  | ✓ | ✓ |
+| `project.archive` |  |  | ✓ | ✓ |
+| `project.members.view` |  | ✓ | ✓ | ✓ |
+| `project.members.add` |  |  | ✓ | ✓ |
+| `project.members.remove` |  |  | ✓ | ✓ |
+| `project.members.rights.update` |  |  | ✓ | ✓ |
+| `service_accounts.view` |  | ✓ | ✓ | ✓ |
+| `service_accounts.create` |  |  | ✓ | ✓ |
+| `service_accounts.rights.update` |  |  | ✓ | ✓ |
+| `service_accounts.archive` |  |  | ✓ | ✓ |
+| `api.request` |  | ✓ | ✓ | ✓ |
+| `playground.use` |  | ✓ | ✓ | ✓ |
+| `keys.own.create` |  | ✓ | ✓ | ✓ |
+| `keys.own.manage` |  | ✓ | ✓ | ✓ |
+| `keys.all.view` |  | ✓ | ✓ | ✓ |
+| `keys.all.manage` |  |  | ✓ | ✓ |
+| `service_accounts.keys.create` |  |  | ✓ | ✓ |
+| `keys.platform_access.grant` |  |  | ✓ | ✓ |
+| `security.key_policy.project.manage` |  |  | ✓ | ✓ |
+| `models.view` | ✓ | ✓ | ✓ | ✓ |
+| `models.manage` |  | ✓ | ✓ | ✓ |
+| `limits.view` | ✓ | ✓ | ✓ | ✓ |
+| `limits.manage` |  |  | ✓ | ✓ |
+| `logs.metadata.view` | ✓ | ✓ | ✓ | ✓ |
+| `logs.content.view` |  |  | ✓ | ✓ |
+| `logs.export` |  |  | ✓ | ✓ |
+| `logs.content.manage` |  |  | ✓ | ✓ |
+| `usage.view` | ✓ | ✓ | ✓ | ✓ |
+| `costs.view` | ✓ | ✓ | ✓ | ✓ |
+| `project.audit_log.view` | ✓ |  | ✓ | ✓ |
+
+## Account rights by agent preset
+
+| Right | Observer | Builder | Operator | Full access |
+|---|:-:|:-:|:-:|:-:|
+| `account.view` | ✓ | ✓ | ✓ | ✓ |
+| `account.update` |  |  | ✓ | ✓ |
+| `account.keys.view` |  | ✓ | ✓ | ✓ |
+| `account.keys.manage` |  |  |  | ✓ |
+| `account.notifications.manage` |  |  | ✓ | ✓ |
+| `account.memberships.leave` |  |  |  | ✓ |
+
+## Instance presets for agents
+
+| Right | None | Read | Configure | Admin |
+|---|:-:|:-:|:-:|:-:|
+| `instance.system.view` |  | ✓ | ✓ | ✓ |
+| `instance.settings.manage` |  |  | ✓ | ✓ |
+| `instance.model_sources.manage` |  |  | ✓ | ✓ |
+| `instance.updates.manage` |  |  | ✓ | ✓ |
+| `instance.updates.apply` |  |  |  | ✓ |
+| `instance.users.view` |  | ✓ | ✓ | ✓ |
+| `instance.users.manage` |  |  |  | ✓ |
+| `instance.orgs.view` |  | ✓ | ✓ | ✓ |
+| `instance.orgs.manage` |  |  |  | ✓ |
+| `instance.audit_log.view` |  | ✓ | ✓ | ✓ |
+
+## Never given to agents
+
+`org.ownership.transfer`, `security.sso.manage`, `security.sso.require`
+
 ## Organization rights that reach into every project
 
 | Organization right | Project rights |

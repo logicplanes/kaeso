@@ -1,0 +1,119 @@
+{
+  "model": "claude-sonnet-5-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line."
+        }
+      ]
+    },
+    {
+      "role": "system",
+      "content": [
+        {
+          "type": "text",
+          "text": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch",
+          "cache_control": {
+            "type": "ephemeral"
+          }
+        }
+      ]
+    }
+  ],
+  "system": [
+    {
+      "type": "text",
+      "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;"
+    },
+    {
+      "type": "text",
+      "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    },
+    {
+      "type": "text",
+      "text": "You are an agent working with the user toward their goals.",
+      "cache_control": {
+        "type": "ephemeral"
+      }
+    }
+  ],
+  "tools": [
+    {
+      "name": "Read",
+      "description": "Reads a file from the local filesystem.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "description": "The absolute path to the file to read",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "ToolSearch",
+      "description": "Fetches full schema definitions for deferred tools so they can be called.",
+      "input_schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "query": {
+            "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+            "type": "string"
+          },
+          "max_results": {
+            "description": "Maximum number of results to return (default: 5)",
+            "default": 5,
+            "type": "number"
+          }
+        },
+        "required": [
+          "query",
+          "max_results"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "DeferredToolPlaceholder",
+      "description": "Reserved placeholder that keeps deferred tool loading active; never call this tool.",
+      "input_schema": {
+        "type": "object",
+        "properties": {}
+      },
+      "defer_loading": true
+    }
+  ],
+  "metadata": {
+    "user_id": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}"
+  },
+  "max_tokens": 128000,
+  "thinking": {
+    "type": "adaptive",
+    "display": "omitted"
+  },
+  "context_management": {
+    "edits": [
+      {
+        "type": "clear_thinking_20251015",
+        "keep": "all"
+      }
+    ]
+  },
+  "output_config": {
+    "effort": "medium"
+  },
+  "stream": true
+}

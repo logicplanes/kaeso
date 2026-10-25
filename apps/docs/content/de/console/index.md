@@ -6,6 +6,16 @@ order: 3
 
 Die Konsole läuft unter der Domain Ihrer Installation, etwa `https://kaeso.example.com`. Melden Sie sich mit Ihrer E-Mail-Adresse an; was die Anmeldeseite anbietet, erklärt [Anmeldung und Single Sign-on](../self-hosting/sign-in.md).
 
+## Zurechtfinden
+
+Die Seitenleiste zeigt die Seiten der Organisation, oder die eines Projekts, wenn Sie darin arbeiten. Das Menü an ihrem Fuß wechselt die Organisation und öffnet die **Organisationseinstellungen**, Ihr **Konto** und, für Instanz-Admins, die **Instanz**. Was die Seitenleiste zeigt, hängt von Ihren [Rechten](members-and-roles.md) ab.
+
+Drücken Sie ⌘K oder Strg+K, um Seiten, Schlüssel, Modelle und Mitglieder zu suchen, etwas zu erstellen oder Organisation oder Projekt zu wechseln. Hat kein Feld den Fokus, wirken auch einzelne Tasten, etwa `c` zum Erstellen auf der aktuellen Seite oder `g` `k` für die API-Schlüssel. Drücken Sie `?`, um alle Tastenkürzel zu sehen.
+
+Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp. Wechseln Sie die Zeile mit den Pfeiltasten oder `j` und `k`, und öffnen Sie sie mit Enter.
+
+## Nächste Schritte
+
 - [Organisationen und Projekte](organizations-and-projects.md): Erstellen Sie Organisationen und Projekte, verbinden Sie Single Sign-on und verwalten Sie ihre Einstellungen.
 - [Mitglieder und Rollen](members-and-roles.md): Laden Sie Personen ein, geben Sie ihnen Rollen und Rechte, und erstellen Sie Dienstkonten.
 - [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie Ihre Schlüssel für Modellanbieter und wählen Sie, welche Projekte welchen nutzen.
@@ -17,11 +27,3 @@ Die Konsole läuft unter der Domain Ihrer Installation, etwa `https://kaeso.exam
 - [Playground](playground.md): Vergleichen Sie bis zu vier Modelle nebeneinander.
 - [Konto und Sprache](account.md): Schützen Sie Ihr Konto und wählen Sie Design und Sprache.
 - [Instanzverwaltung](instance-administration.md): Verwalten Sie Benutzer, Organisationen, Einstellungen und Updates der Installation.
-
-## Zurechtfinden
-
-Die Seitenleiste zeigt die Seiten der Organisation, oder die eines Projekts, wenn Sie darin arbeiten. Das Menü an ihrem Fuß wechselt die Organisation und öffnet die **Organisationseinstellungen**, Ihr **Konto** und, für Instanz-Admins, die **Instanz**. Was die Seitenleiste zeigt, hängt von Ihren [Rechten](members-and-roles.md) ab.
-
-Drücken Sie ⌘K oder Strg+K, um Seiten, Schlüssel, Modelle und Mitglieder zu suchen, etwas zu erstellen oder Organisation oder Projekt zu wechseln. Hat kein Feld den Fokus, wirken auch einzelne Tasten, etwa `c` zum Erstellen auf der aktuellen Seite oder `g` `k` für die API-Schlüssel. Drücken Sie `?`, um alle Tastenkürzel zu sehen.
-
-Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp. Wechseln Sie die Zeile mit den Pfeiltasten oder `j` und `k`, und öffnen Sie sie mit Enter.

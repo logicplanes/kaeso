@@ -196,6 +196,96 @@ expression: outcomes
       }
     }
   },
+  "providers/xai/recorded-codex-gpt-history": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc19iY2VkZjQyMS01YTIxLTk1YzUtOTExNC1hYjc0ZWRiMTQyZWQifSx7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX2VuY3J5cHRlZF9yZWFzb25pbmciLCJkYXRhIjoiRjhBc2RWK0RXUjkwSHdZZG5CaEtoamhvT0FmbUN4OExsSm9YTGVQdVBNeDA0eFAvWnNMVjkwcEVqVVc5RVBNUnljV2lXMmpQdlFtM3RYTEI3Z1BORXNmUnlubVhRbWpldEJseW9aVXRzTnFSS1R5WWpjV1lzc0ZiTTRYdkJpekxNNEtvT093ZFp0NU0xYUZwYmtyMnprcXk4MUdXSk1VM1E5ZFV5MG9tQmkrUWplMzNLOG53WXoyVVFXNGt6NHJGYk9QaGV4ZHhHaVAxQVNKaFpZYmRNVEhvV3pvamhVcm1WQSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "OK",
+        "type": "text"
+      }
+    ],
+    "id": "bcedf421-5a21-95c5-9114-ab74edb142ed",
+    "model": "grok-4.7",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 1152,
+      "input_tokens": 1675,
+      "output_tokens": 38,
+      "output_tokens_details": {
+        "thinking_tokens": 37
+      }
+    }
+  },
+  "providers/xai/recorded-codex-turn-one": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc180NTlmYjA0OC1mOTA1LTk5ZTYtYjcyMC1mMjhiNmJlOGMxMGYifSx7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX2VuY3J5cHRlZF9yZWFzb25pbmciLCJkYXRhIjoib0pQY2dtZUVaMEhxZVBWLzVyM2tMUHpnMTQxWjRKYklpOVhsejdYVnhERFBNWTZRcVovL2dLVE1KMzlEaXhvN2ZPMS85aC8xN0txVklrR25rWlJrM1c5dENGT1kzdDVmSlhIYXVuZVFIalk4dWY4OWVqcjQ2MUQzY3pIcXFhWHFETTlob1JXWHNQT0pZN293eU5MNE5yNGU2djdtNTN3SnAxdUt4b0J1dnp5YkJuN0pDUW5MdFlNYUEvU3U1VC8rOWwyaXUvQVZodHl0b3RjUzlNZ3JiUFJ4S2w3VWo1aTFNWnJjUHNpWDF4cjRvR3VLTVN2KzBGR3k0RE1TVUtQTCs1QUppK29KVE9USEJmQmNWaXFBenYzMDg5eTJFV3V4Z1F4YVpBQmhJbkhsNnNlYm50d2dXYWpMTDFUUnFGSi9xVlNMbzhScVUzSHhhQURWRUJmcnVXcDJLZHhHTFhJNFFtRnFwYnpTUnNyYi8rOCtCWlp5Z2dmYmRwWlVLa3Z4U0U2UDlxZmc1TzBqTGlWZ0c2ZVJyaGN4M0RVL2hLd2g5ZmJVRkttODR3ZDVUOWJ2ZlIzOTV5TmlWdXFsZW5Ya3o3VzFGa1E3YVhsQmNMbjFBY0JlWEd6M2JvdEV0VEVkTDlkMWdHZy96OUNjVXZGa3kydFBMNlRvcXpCeURsaytVUllBIn1dfQ",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "ok",
+        "type": "text"
+      }
+    ],
+    "id": "459fb048-f905-99e6-b720-f28b6be8c10f",
+    "model": "grok-4.7",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 1152,
+      "input_tokens": 1394,
+      "output_tokens": 82,
+      "output_tokens_details": {
+        "thinking_tokens": 81
+      }
+    }
+  },
+  "providers/xai/recorded-codex-turn-two": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc181ODQ0OWMyNy04MTQ1LTljNTctYjgyYS05YWEwODgwNTJhYTUifSx7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX2VuY3J5cHRlZF9yZWFzb25pbmciLCJkYXRhIjoidllmM1E2M1piTUhUZE9qdDUvMHhnbHRTODRUNmlnZVZMWHpPSS94alhoWHpnSXhIRWJUQUloQ01yNXRobVBteEt0TFhHVVJqM05sNmtheVcxZ1N2WTg2Z2xlQURoR1ZiUDMxM3VwUDd3dEhTRjh4RXhRay9IR21MaUZubDFFRTNLTW1tOUpqTkdzMmpCdzhjSDJzUDVJdThOSnBGMTAydFlZZ1AzbDYwcjkvOHhpcW5nRXh2Tlg4ekRlM2hXQWNzRFgvSm9LajN4T3ppSHdsWFloWWlDdTJrVFJNWWpDeGE5bENBRUJvS1hzZzBWWEFhRjNLSlpuZVpUQkREdzdBRjNKOHdsQ2FkVmcifV19",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "4817",
+        "type": "text"
+      }
+    ],
+    "id": "58449c27-8145-9c57-b82a-9aa088052aa5",
+    "model": "grok-4.7",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 2432,
+      "input_tokens": 210,
+      "output_tokens": 45,
+      "output_tokens_details": {
+        "thinking_tokens": 43
+      }
+    }
+  },
   "providers/xai/recorded-presence-penalty-ignored": {
     "content": [
       {

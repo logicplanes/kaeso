@@ -7,16 +7,6 @@ nav: KPP internals
 
 KPP, the Kaeso Provider Protocol, is the canonical format every model request passes through. The gateway decodes what an app sends into KPP and encodes KPP for the provider, and the reply takes the same path back. [Format translation](../../concepts/format-translation.md) describes what callers see of it; these pages are for people who change it.
 
-- [Codec design](codec-design.md): Learn how the types, streams and wire structs keep every translation lossless.
-- [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
-- [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
-- [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
-- [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
-- [Chat Completions providers](openai-chat-providers.md): See how the codec adapts to each provider that speaks Chat Completions.
-- [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
-- [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
-- [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
-
 ## The path of a request
 
 An app sends an Anthropic Messages request, and the model is served through OpenAI Chat Completions:
@@ -157,7 +147,7 @@ Every KPP field is either semantic or a hint:
 
 | Field | Class | Notes |
 | --- | --- | --- |
-| `role` | semantic | A `System` message after the start of the conversation is `Unsupported` for Anthropic unless the request came from Anthropic Messages ([system messages](cross-format.md#system-messages)). |
+| `role` | semantic | A `System` message after the start of the conversation joins the next user turn for Anthropic unless the request came from Anthropic Messages ([system messages](cross-format.md#system-messages)). |
 | `blocks` | semantic | Block order is preserved. |
 | `extras` | as for the request | |
 
@@ -239,3 +229,16 @@ OpenAI Responses records a different spelling as a form override, which applies 
 `testing::sse_diff` compares streams item by item. It compares the event name, then the data as JSON, or as text when it isn't JSON, then the `id`, `retry` and unknown fields in order. `ComparableItem::Event.data` is `None` for a frame without a `data:` line, and comments compare exactly.
 
 When a change alters cross-dialect output, review the snapshot diff: run `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`, then read the changed `.snap` files before committing them.
+
+## Next steps
+
+- [Codec design](codec-design.md): Learn how the types, streams and wire structs keep every translation lossless.
+- [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
+- [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
+- [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
+- [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
+- [Chat Completions providers](openai-chat-providers.md): See how the codec adapts to each provider that speaks Chat Completions.
+- [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
+- [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
+- [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
+- [Fixture conventions](fixture-conventions.md): Look up the rules every constructed fixture follows.

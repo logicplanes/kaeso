@@ -157,12 +157,12 @@ describe("turning on two-factor authentication", () => {
     expect(click).toHaveBeenCalledTimes(1);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:codes");
-    const done = within(codes).getByRole("button", { name: "Done" });
+    const done = within(codes).getByRole("button", { name: "Finish" });
     expect(done).toBeDisabled();
     await user.keyboard("{Escape}");
     expect(screen.getByRole("dialog", { name: "Store your recovery codes" })).toBeInTheDocument();
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
-    await user.click(within(codes).getByRole("button", { name: "Done" }));
+    await user.click(within(codes).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
     await waitFor(() => expect(cachedText()).not.toMatch(/aaaa-bbbb|JBSWY3DPEHPK3PXP/));
   });
@@ -489,7 +489,7 @@ describe("with two-factor authentication on", () => {
       if (gone) expect(screen.queryByText(gone, { exact: false })).not.toBeInTheDocument();
       expect(within(codes).getByRole("checkbox", { name: "I stored these codes" })).not.toBeChecked();
       await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
-      await user.click(within(codes).getByRole("button", { name: "Done" }));
+      await user.click(within(codes).getByRole("button", { name: "Finish" }));
       await waitFor(() => expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument());
       expect(screen.queryByText(shown, { exact: false })).not.toBeInTheDocument();
     }

@@ -5,6 +5,7 @@ use kaeso_store::StoreError;
 use kaeso_store::pg::members::{self, Grant};
 use kaeso_store::pg::{instance, orgs, projects};
 
+use crate::platform::audit::Action;
 use crate::services::mail_lang;
 
 pub const DEFAULT_PROJECT_NAME: &str = "Default project";
@@ -174,11 +175,11 @@ pub async fn restore(
     row.state = "active".into();
     row.deletion_due_at = None;
     orgs::update(&mut *tx, &row).await?;
-    ctx.audit(Some(org), "org.restore")
+    ctx.audit(Some(org), Action::OrgRestore)
         .target("org", org)
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.restore")
+    ctx.audit(None, Action::OrgRestore)
         .target("org", org)
         .write(&mut tx)
         .await?;
@@ -257,7 +258,7 @@ pub async fn purge(
     crate::platform::audit::system_change(
         &mut tx,
         None,
-        "org.delete_final",
+        Action::OrgDeleteFinal,
         Some(("org", OrgId::from_uuid(org).to_string())),
         Some(serde_json::json!({ "name": row.name, "deletion_due_at": row.deletion_due_at })),
         None,

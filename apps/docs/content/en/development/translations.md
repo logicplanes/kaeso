@@ -98,6 +98,9 @@ These are never translated:
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
+| agent (connected through the MCP server) | Agent | 智能体 |
+| model family (of an agent) | Modellfamilie | 模型系列 |
+| preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
 | restore | wiederherstellen | 恢复 |
 | archive | archivieren | 归档 |
@@ -121,7 +124,7 @@ These are never translated:
 
 ### Which language
 
-- A person chooses under **Settings** › **Account** › **Appearance** › **Language**: Automatic, English, Deutsch or 简体中文. The choice is stored on their account (`PATCH me` with `locale`, read from `auth/session`), so it follows them to every browser.
+- A person chooses under **Account** › **Appearance** › **Language**: Automatic, English, Deutsch or 简体中文. The choice is stored on their account (`PATCH me` with `locale`, read from `auth/session`), so it follows them to every browser.
 - **Automatic**, the default, takes the first of the browser's languages the console has (`navigator.languages`; `de-AT` is German, any Chinese is Simplified Chinese), falls back to English, and follows the browser when its language changes.
 - The browser keeps a copy of the choice (`kaeso:locale`), so the first paint, sign-in included, is already in that language. English loads nothing more; German and Chinese load their catalogs, the console's and the library's, one chunk each, before the first paint.
 - When the session reports a choice made in another browser, `src/i18n/sync.tsx` switches to it. Switching draws the console again in the new language; the page, its data and its place stay.

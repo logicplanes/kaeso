@@ -166,6 +166,25 @@ describe("ModelSheet", () => {
     expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { forced_tool_choice: true } }]);
   });
 
+  it("shows and changes whether an Anthropic model checks where replayed thinking came from", async () => {
+    const opus = catalogueModel({ effective: { ...catalogueModel().effective, thinking_binding: true } });
+    setUp([opus]);
+    on("PATCH", ONE_MODEL, opus);
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Claude Sonnet 4.5");
+    expect(await within(s).findByText("Values in use")).toBeInTheDocument();
+    expect(s).toHaveTextContent("Thinking bindingYesmodels.dev");
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    const binding = within(s).getByRole("switch", { name: "Thinking binding" });
+    expect(binding).toBeChecked();
+    await user.click(binding);
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { thinking_binding: false } }]);
+  });
+
   it("explains values that can't be saved and cancels the edit", async () => {
     setUp();
     const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
@@ -214,7 +233,7 @@ describe("ModelSheet", () => {
     expect(await notifications().findByText("Input price reset to models.dev")).toBeInTheDocument();
   });
 
-  it("shows a model of another provider by its id, with every format to send it as", async () => {
+  it("shows a model of another provider by its id, with only the format the gateway sends it as", async () => {
     setUp([
       catalogueModel({
         id: "cm_acme",
@@ -231,12 +250,29 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Text, file");
     await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
     await user.click(within(s).getByRole("combobox", { name: "Sends as" }));
-    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual([
-      "Anthropic Messages",
-      "OpenAI Chat Completions",
-      "OpenAI Responses",
-      "OpenAI Embeddings",
-    ]);
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions"]);
+  });
+
+  it("keeps the thinking setting of another provider's model that the gateway sends as Anthropic Messages", async () => {
+    const model = catalogueModel({
+      id: "cm_acme",
+      provider: "acme",
+      model_id: "acme-claude",
+      egress_dialect: "anthropic_messages",
+      effective: { ...catalogueModel().effective, display_name: null, adaptive_thinking: true, egress_dialect: null },
+    });
+    setUp([model]);
+    on("PATCH", ONE_MODEL, model);
+    const { user } = await renderApp(projectPath("models?model=cm_acme"));
+
+    const s = await sheet("acme-claude");
+    await user.click(await within(s).findByRole("button", { name: "Edit overrides" }));
+    expect(within(s).getByRole("switch", { name: "Adaptive thinking" })).toBeChecked();
+    await user.type(within(s).getByRole("textbox", { name: "Display name" }), "Acme Claude");
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { display_name: "Acme Claude" } }]);
   });
 
   it("offers a Mistral model only the formats Mistral speaks", async () => {

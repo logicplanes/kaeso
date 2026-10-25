@@ -57,10 +57,9 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
-Codex sends OpenAI-only parts with every turn. Kaeso translates them for other models: it turns Codex's tool groups and MCP tools into plain tools, and its web search into Claude's web search. Two settings depend on the model:
+Codex sends OpenAI-only parts with every turn. Kaeso translates them for other models: it turns Codex's tool groups and MCP tools into plain tools, and its web search into the model's own web search. A thread can switch models: the history of a GPT model's tools carries over.
 
-- For Claude, set `web_search = "live"` or `"disabled"`. Codex's default, `"cached"`, asks for OpenAI's cache of pages, which Claude doesn't have.
-- For models served through Chat Completions, such as Mistral, set `web_search = "disabled"`. They have no web search.
+Models without web search, such as Mistral, get the request without it. Claude and Grok search only live, while Codex's default, `web_search = "cached"`, asks for OpenAI's cache of pages, so with that default they get no web search either. Set `web_search = "live"` to let them search.
 
 > [!NOTE]
 > Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so.
@@ -79,3 +78,4 @@ Any tool that lets you set an OpenAI or Anthropic base URL works the same way:
 - [API keys](../console/api-keys.md): Limit a tool's key to the models it needs, or give it an expiry date.
 - [Limits and budgets](../console/limits-and-budgets.md): Cap how many tokens or how much money a tool can spend.
 - [Format translation](../concepts/format-translation.md): See what carries across when a tool calls another provider's model.
+- [MCP server](../api/mcp.md): Let a coding tool manage your install, with the rights you choose.

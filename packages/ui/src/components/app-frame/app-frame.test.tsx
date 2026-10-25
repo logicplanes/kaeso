@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { createRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppFrame } from "./app-frame.js";
+import { NavSheet } from "./nav-sheet.js";
 import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
@@ -202,5 +203,32 @@ describe("AppFrame's skip link", () => {
     const [a, b] = screen.getAllByRole("link", { name: "Skip to content" }).map((l) => l.getAttribute("href"));
     expect(a).not.toBe(b);
     expect(document.querySelector(a!)).toBeInstanceOf(HTMLElement);
+  });
+});
+
+describe("AppFrame's refs", () => {
+  it("forwards MenuButton's ref to its button", () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <AppFrame sidebar={<Sidebar aria-label="Console" />}>
+          <PageHeader start={<AppFrame.MenuButton ref={ref} />} title="Request logs" />
+        </AppFrame>
+      </Sidebar.Provider>,
+    );
+    expect(ref.current?.tagName).toBe("BUTTON");
+    expect(ref.current).toHaveAttribute("data-sidebar-expand");
+    expect(ref.current).toHaveAccessibleName("Open navigation");
+  });
+  it("forwards NavSheet's ref to the open sheet", async () => {
+    const ref = createRef<HTMLDivElement>();
+    render(
+      <NavSheet ref={ref} open onOpenChange={() => undefined}>
+        <a href="/logs">Request logs</a>
+      </NavSheet>,
+    );
+    const sheet = await screen.findByRole("dialog", { name: "Navigation" });
+    expect(ref.current).toBe(sheet);
+    expect(sheet).toContainElement(screen.getByRole("link", { name: "Request logs" }));
   });
 });

@@ -166,6 +166,7 @@
   "format.limitUnit.tokens": "Token",
   "format.limitUnit.tokensPerMinute": "Token / Min.",
   "format.listSeparator": ", ",
+  "format.model.unknown": "Unbekannt",
   "format.period.allTime": "Seit Beginn",
   "format.period.last12Months": "Letzte 12 Monate",
   "format.period.last30Days": "Letzte 30 Tage",
@@ -200,5 +201,14 @@
   "format.audit.action.customProviderCreate": "Eigener Anbieter hinzugefügt",
   "format.audit.action.customProviderUpdate": "Eigener Anbieter geändert",
   "format.audit.action.customProviderDelete": "Eigener Anbieter gelöscht",
-  "format.targetKind.customProvider": "Eigener Anbieter"
+  "format.targetKind.customProvider": "Eigener Anbieter",
+  "format.audit.action.agentAuthorize": "Agent autorisiert",
+  "format.audit.action.agentOrgAccessRevoke": "Organisation für einen Agenten geschlossen",
+  "format.audit.action.agentRevoke": "Agent widerrufen",
+  "format.audit.action.agentRightsUpdate": "Rechte eines Agenten geändert",
+  "format.audit.action.agentUpdate": "Agent umbenannt oder verlängert",
+  "format.audit.action.instanceAgentsPolicy": "Agenten-Richtlinie der Instanz geändert",
+  "format.audit.action.securityAgentsPolicy": "Agenten-Richtlinie der Organisation geändert",
+  "format.audit.kind.agent": "Agenten",
+  "format.targetKind.agent": "Agent"
 }

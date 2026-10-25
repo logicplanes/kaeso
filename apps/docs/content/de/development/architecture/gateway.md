@@ -31,20 +31,21 @@ sequenceDiagram
   Gateway->>Stores: Verbuchen, protokollieren
 ```
 
-Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff oder einem Plattform-Schlüssel. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.
+Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff, einem Plattform-Schlüssel oder dem Access-Token eines Agenten. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.
 
 | Code | Wo |
 | --- | --- |
 | Die Modell-API (`/v1`) | `crates/kaeso-server/src/model_api` |
 | Die Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
+| Der MCP-Server und seine OAuth-Anmeldung (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | Die Services, die beide nutzen | `crates/kaeso-server/src/services` |
 
 ## Crates
 
 | Crate | Aufgabe |
 | --- | --- |
-| `kaeso` | Das Binary: seine Befehlszeile (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` nutzen darf |
-| `kaeso-server` | Die Router für `/v1`, `/platform/v1`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
+| `kaeso` | Das Binary: seine Befehlszeile (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` nutzen darf |
+| `kaeso-server` | Die Router für `/v1`, `/platform/v1`, `/mcp`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
 | `kaeso-core` | Fachregeln ohne I/O: IDs, Rechte und Rollen, das Schlüsselformat, die Modellauflösung, der Katalog, Fähigkeiten, Limits, Kosten und der Assembler für Stream-Antworten. `data/` enthält die Modelldaten, die jedes Release mitliefert |
 | `kaeso-store` | PostgreSQL über sqlx, ClickHouse, die Valkey-Verbindungen (eine für Limitprüfungen und Zähler, zwei für Cache-Einträge und aufbewahrtes Reasoning) mit der Cache-Invalidierung und die Migrationen beider Datenbanken |
 | `kaeso-upstream` | Der Transport zu den Anbietern: HTTP-Clients, Auth-Header, Basis-URLs, Timeouts, gestreamte Bodies und Abbruch |
@@ -104,10 +105,20 @@ Ein eigener Anbieter spricht den reinen Dialekt, `ChatProfile::OPENAI` für Chat
 | Datei | Inhalt |
 | --- | --- |
 | `models-dev.json` | Ein Snapshot von [models.dev](https://models.dev), gefiltert auf die Anbieter, die Kaeso aufruft, sodass eine frische Installation ohne Netzwerkzugang funktioniert. Die `README.md` des Ordners hält fest, wann er abgerufen wurde und welchen SHA-256 er hat |
-| `supplement.toml` | Felder, die models.dev nicht hat, jedes mit seiner Quelle in der `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts`, wo models.dev keine nennt, und `egress_dialect`, das Format, das Kaeso an ein OpenAI-Modell sendet |
+| `supplement.toml` | Felder, die models.dev nicht hat, jeder Eintrag mit seiner Quelle in der `README.md` des Ordners |
 | `models-dev-providers.txt` | Jede Anbieter-ID auf models.dev, die ein eigener Anbieter nicht nehmen darf |
 
-Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Das Gateway synchronisiert models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`) und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.
+Das Supplement enthält diese Felder:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `adaptive_thinking` | Anthropic-Modelle: ob das Modell `thinking: {type: "adaptive"}` annimmt. Mit `false` wandelt KPP einen Aufwand aus einem anderen Format in ein Thinking-Budget um |
+| `forced_tool_choice` | `false` für ein Modell, das eine erzwungene Tool-Wahl ablehnt (Anthropics `tool_choice` `any` oder `tool`); das Gateway lehnt dann `required`, `any` oder ein benanntes Tool ab, bevor es den Anbieter aufruft. Fehlt das Feld, nimmt das Modell eine an |
+| `thinking_binding` | `true` für ein Anthropic-Modell, das einen zurückgespielten Thinking-Block gegen die Unterhaltung prüft, die ihn erzeugt hat (Preserved Thinking: Claude Fable 5.1, Opus 5.5, Sonnet 5.5 und Haiku 5.5 im Supplement). Für ein solches Modell bittet eine Anfrage aus einem anderen Format, die Claudes Denken zurückspielt, Anthropic, einen Block zu verwerfen, dessen Unterhaltung sich geändert hat ([Anthropic Messages](../kpp/anthropic-messages.md)). Es wirkt nur mit adaptivem Thinking, das `block_binding` braucht. Fehlt es, prüft das Modell nicht |
+| `efforts` | Die Aufwandsstufen, die das Modell unterstützt, wenn models.dev keine nennt |
+| `egress_dialect` | Das Format, das Kaeso sendet: einer der Dialekte des Anbieters, standardmäßig sein Generierungsdialekt (`openai_responses` für OpenAI) |
+
+Der Wert eines Katalogeintrags ist sein Override, sonst models.dev, sonst das Supplement. Sofern `KAESO_MODELS_DEV_SYNC` nicht `false` ist, synchronisiert das Gateway models.dev standardmäßig alle 24 Stunden (`KAESO_MODELS_DEV_INTERVAL`). Es behält dieselben Anbieter wie der Snapshot und speichert das Ergebnis in PostgreSQL. Beim Start gewinnt der neuere von gespeichertem und eingebautem Snapshot.
 
 Aktualisieren Sie den Snapshot vor einem Release:
 

@@ -8,6 +8,7 @@ use super::DIALECT;
 use super::node::Node;
 use super::parts::function_call_item;
 use super::request::decode_tool;
+use crate::adapt::Draft;
 use crate::cross::foreign;
 use crate::wire::{entries_of, type_tag};
 
@@ -99,12 +100,10 @@ fn needs_flattening(r: &GenerateRequest) -> bool {
         })
 }
 
-pub(crate) fn flatten(
-    r: &GenerateRequest,
-    target: DialectId,
-) -> Result<Option<GenerateRequest>, KppError> {
+pub(crate) fn flatten(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
+    let r = d.get();
     if !needs_flattening(r) {
-        return Ok(None);
+        return Ok(());
     }
     let mut tools = Vec::with_capacity(r.tools.len());
     let mut flattened = HashSet::new();
@@ -138,7 +137,7 @@ pub(crate) fn flatten(
             .with_param(format!("tools[{i}]")));
         }
     }
-    let mut out = r.clone();
+    let out = d.edit();
     out.tools = tools.into_iter().map(|(_, t)| t).collect();
     for m in &mut out.messages {
         for b in &mut m.blocks {
@@ -150,7 +149,7 @@ pub(crate) fn flatten(
             }
         }
     }
-    Ok(Some(out))
+    Ok(())
 }
 
 #[derive(Clone, Debug, Default)]

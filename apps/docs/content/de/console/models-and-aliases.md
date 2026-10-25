@@ -21,6 +21,10 @@ Für einen [eigenen Anbieter](custom-providers.md#seine-modelle-hinzufügen) Ihr
 
 Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
 
+## Ein Modell finden
+
+Der Tab **Katalog** gruppiert die Modelle nach Anbieter. Grenzen Sie ihn auf einen Anbieter ein, auf eine Fähigkeit wie **Tool-Aufrufe** oder **Bildeingabe**, oder mit **Nur angepasste** auf Modelle, deren Werte in diesem Projekt geändert sind. Auf einem Smartphone liegen diese Filter unter **Filter**. Das Sortiermenü ordnet die Modelle jedes Anbieters nach **Modell-ID**, **Eingabepreis** oder **Neueste zuerst**.
+
 ## Verfügbarkeit
 
 Nicht jedes Modell im Katalog stellt der Anbieter dem Anbieter-Schlüssel des Projekts auch bereit. Der Anbieter hat es vielleicht eingestellt, oder dem Schlüssel fehlt der Zugriff. Die Liste markiert solche Modelle als **Nicht verfügbar**, und das Sheet jedes Modells zeigt seine **Verfügbarkeit**:
@@ -46,14 +50,15 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Wert | Bedeutung |
 | --- | --- |
 | Anzeigename | Der Name, den die Konsole zeigt |
-| Eingaben, Ausgaben | Text, Bilder, Audio, Video, Embeddings |
+| Eingaben, Ausgaben | Eingaben: Text, Bilder, PDF, Audio und Video. Ausgaben: Text, Bilder, Audio und Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
 | Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten, wie models.dev ihn führt. Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten das Doppelte des Eingabepreises, [Anthropics Regel](https://platform.claude.com/docs/en/about-claude/pricing), oder den Cache-Schreibpreis, wenn das Modell keinen Eingabepreis hat |
 | Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
-| Unterstützt Temperatur | Ob das Modell `temperature` annimmt |
-| Unterstützt erzwungene Tool-Wahl | Ob das Modell `tool_choice` mit `required`, `any` oder einem benannten Tool annimmt. Für ein Modell ohne diese Fähigkeit lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
+| Temperatur | Ob das Modell `temperature` annimmt |
+| Erzwungene Tool-Wahl | Ob das Modell `tool_choice` mit `required`, `any` oder einem benannten Tool annimmt. Für ein Modell ohne diese Fähigkeit lehnt Kaeso solche Anfragen ab, bevor es den Anbieter aufruft |
 | Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Stufen es annimmt |
+| Thinking-Bindung | Ob ein Anthropic-Modell prüft, dass zurückgespieltes Denken aus derselben Unterhaltung stammt. Bei einem solchen Modell bittet Kaeso Anthropic, Denken zu verwerfen, das Apps in anderen Formaten verändert zurückschicken, statt die Anfrage scheitern zu lassen |
 | Zeitlimit | Wie viele Sekunden eine Anfrage an dieses Modell dauern darf. Ohne Angabe gilt das Anfrage-Zeitlimit der Installation |
 | Veröffentlicht | Das Veröffentlichungsdatum des Modells |
 

@@ -12,20 +12,21 @@ Kaeso, the open-source, self-hosted AI gateway ([kaeso.app](https://kaeso.app)):
 
 ## Layout
 
-| Path            | Holds                                                                                                                                             | Agent file                                           |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `crates/`       | The gateway (`kaeso`, `kaeso-server`, `kaeso-core`, …), the updater (`kaeso-update`, `kaeso-updater`), KPP (`kaeso-kpp`, `kaeso-codecs`), `xtask` | [`crates/AGENTS.md`](crates/AGENTS.md)               |
-| `apps/console`  | The web console                                                                                                                                   | [`apps/console/AGENTS.md`](apps/console/AGENTS.md)   |
-| `apps/docs`     | The documentation site and its pages in `apps/docs/content`                                                                                       | [`apps/docs/AGENTS.md`](apps/docs/AGENTS.md)         |
-| `apps/showcase` | The UI library's showcase at [ui.kaeso.app](https://ui.kaeso.app)                                                                                 | [`apps/showcase/AGENTS.md`](apps/showcase/AGENTS.md) |
-| `packages/`     | `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui`                                                                                           | [`packages/AGENTS.md`](packages/AGENTS.md)           |
-| `packages/ui`   | The rules for interfaces built with the library, shipped in the npm package                                                                       | [`packages/ui/AGENTS.md`](packages/ui/AGENTS.md)     |
-| `deploy/`       | `compose.yaml` (the self-hosting package), `compose.dev.yaml` (the one development stack), the gateway, console and updater Dockerfiles           |                                                      |
-| `e2e/`          | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install                                                        |                                                      |
-| `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                                                          |                                                      |
-| `openapi.json`  | The Platform API document, generated from the gateway's code                                                                                      |                                                      |
-| `scripts/`      | The package, licence and site checks, and the release's steps: version, changelog, release notes and `release.json`                               |                                                      |
-| `.github/`      | The CI, Release and Labels workflows, the labeler's rules, Dependabot, and the issue and pull request templates                                   |                                                      |
+| Path            | Holds                                                                                                                                                            | Agent file                                           |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `crates/`       | The gateway (`kaeso`, `kaeso-server`, `kaeso-core`, …), the updater (`kaeso-update`, `kaeso-updater`), KPP (`kaeso-kpp`, `kaeso-codecs`), `xtask`                | [`crates/AGENTS.md`](crates/AGENTS.md)               |
+| `apps/console`  | The web console                                                                                                                                                  | [`apps/console/AGENTS.md`](apps/console/AGENTS.md)   |
+| `apps/docs`     | The documentation site and its pages in `apps/docs/content`                                                                                                      | [`apps/docs/AGENTS.md`](apps/docs/AGENTS.md)         |
+| `apps/showcase` | The UI library's showcase at [ui.kaeso.app](https://ui.kaeso.app)                                                                                                | [`apps/showcase/AGENTS.md`](apps/showcase/AGENTS.md) |
+| `plugins/`      | The Claude Code and Cursor plugins for the MCP server, listed by `.claude-plugin/marketplace.json` and `.cursor-plugin/marketplace.json` at the root             |                                                      |
+| `packages/`     | `@logicplanes/kaeso-tokens` and `@logicplanes/kaeso-ui`                                                                                                          | [`packages/AGENTS.md`](packages/AGENTS.md)           |
+| `packages/ui`   | The rules for interfaces built with the library, shipped in the npm package                                                                                      | [`packages/ui/AGENTS.md`](packages/ui/AGENTS.md)     |
+| `deploy/`       | `compose.yaml` (the self-hosting package), `compose.dev.yaml` (the one development stack), the gateway, console and updater Dockerfiles                          |                                                      |
+| `e2e/`          | The official OpenAI and Anthropic Python SDKs against KPP, the gateway and a fresh install                                                                       |                                                      |
+| `fuzz/`         | cargo-fuzz targets for every KPP decoder                                                                                                                         |                                                      |
+| `openapi.json`  | The Platform API document, generated from the gateway's code                                                                                                     |                                                      |
+| `scripts/`      | The package, licence and site checks, and the release's steps: version, changelog, release notes and `release.json`                                              |                                                      |
+| `.github/`      | The CI, Release, Labels, Audits, Fuzz and Scorecard workflows, the labeler's rules, Dependabot, CODEOWNERS, and the issue, discussion and pull request templates |                                                      |
 
 ## Setup
 
@@ -34,6 +35,7 @@ Node.js 24 (`.node-version`), pnpm 11 (pinned in `package.json`, `corepack enabl
 ```sh
 pnpm install
 pnpm --filter kaeso-console exec playwright install chromium
+pnpm --filter kaeso-showcase exec playwright install webkit
 cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 docker compose -f deploy/compose.dev.yaml up -d --wait
 python3 -m venv e2e/.venv && e2e/.venv/bin/pip install -r e2e/requirements.txt
@@ -95,7 +97,7 @@ CI runs these checks in parallel jobs, the longest suites split into shards, for
 5. **Change everything a change touches, in the same pull request**: the console with the Platform API and `openapi.json`, `packages/ui` when an app needs a component, the pages in `apps/docs/content` when people will notice. A new dependency needs an MIT-compatible license and a one-line reason in the pull request's description ([add a dependency](https://docs.kaeso.app/development/contributing#add-a-dependency)).
 6. **Documentation lives only in `apps/docs/content`**, in all three languages. No `docs/` folders elsewhere. Every diagram of a system, an architecture, a request or data flow, a sequence, a state or a lifecycle is a Mermaid block that the docs build draws; never ASCII or box-drawing art, never a screenshot or an image of a diagram. The content check fails on a code block that draws one.
 7. **MIT-compatible dependencies only**, checked by `cargo deny` and `pnpm licenses:check`.
-8. **Never commit secrets or personal data.** Placeholders only: `kaeso.example.com`, `sk-kso-…`, `owner@example.com`.
+8. **Never commit secrets or personal data.** Kaeso itself is `kaeso.example.com`, its keys `sk-kso-…` and the reader or owner `owner@example.com`; anything else, such as an identity provider, an SMTP server or the showcase's teams, takes another name under the reserved `example.com` or `.example` domains (RFC 2606), never a real host, key or person.
 9. **No leftovers when something changes.** Rename or remove a name, page, heading, route, setting, field or message everywhere in the same change: code, tests, translations and every page in all three languages. Never keep the old name, an anchor, an alias, a redirect or a compatibility path for it; the docs and the interface always describe Kaeso as it is now.
 
 ## Git and releases

@@ -80,12 +80,12 @@ Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 - **Tests prüfen, was eine Person oder eine App sieht.** Sie sind deterministisch, mit injizierten Uhren und ohne Sleeps. Coverage-Schwellen steigen nur.
 - **Oberflächen nutzen nur `@logicplanes/kaeso-ui`**, mit `className` nur für Layout, und jedes Wort gibt es in drei Sprachen ([Übersetzungen](translations.md)).
 - **Nur pnpm** für JavaScript, und `pnpm dlx` für ein einmaliges Werkzeug. Cargo baut den Rust-Code, und Lockfiles ändern sich nur über ihr Werkzeug.
-- **Keine Geheimnisse und keine personenbezogenen Daten** im Repository. Nutzen Sie Platzhalter wie `kaeso.example.com`, `sk-kso-…` und `owner@example.com`.
+- **Keine Geheimnisse und keine personenbezogenen Daten** im Repository. Kaeso selbst ist `kaeso.example.com`, Schlüssel sind `sk-kso-…`, und die Leser oder Eigentümer sind `owner@example.com`. Alles andere, etwa ein Identitätsanbieter oder ein SMTP-Server, bekommt einen anderen Namen unter den reservierten Domains `example.com` oder `.example` ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)), nie einen echten Host, Schlüssel oder eine echte Person.
 - **Keine Pläne im Repository.** Roadmaps, To-do-Listen und offene Fragen gehören in Issues.
 
 Das Gateway hat eigene Regeln, etwa keine Panics und keine Gleitkommazahlen für Geld ([Regeln des Gateways](architecture/gateway.md#regeln)). KPP ebenso ([Entwurfsprinzipien](kpp/index.md#entwurfsprinzipien)).
 
-Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
+Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen. `packages/ui/AGENTS.md` enthält die Regeln für Apps, die Oberflächen mit der UI-Bibliothek bauen, und wird in deren npm-Paket ausgeliefert.
 
 ## Abhängigkeit hinzufügen
 
@@ -95,7 +95,7 @@ Kaeso steht unter der MIT-Lizenz, und alles, was Kaeso ausliefert, hängt nur vo
 
 | Was ausgeliefert wird | Erlaubte Lizenzen | Geprüft von |
 | --- | --- | --- |
-| Das Gateway und der Updater | Die Liste in `deny.toml`: MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode und Zlib | `cargo deny check` |
+| Das Gateway und der Updater | Die Liste in `deny.toml`: MIT, MIT-0, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-2-Clause, BSD-3-Clause, ISC, Unicode und Zlib | `cargo deny check` |
 | `kaeso-kpp`, `kaeso-codecs` | Dieselbe Liste, ohne Ausnahmen | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | Die UI-Bibliothek, die Konsole und die Dokumentation | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 und 0BSD | `pnpm licenses:check`, nach `pnpm build` |
 

@@ -14,7 +14,7 @@ Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 仓库中的版本号
 
-根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，例如其他 `package.json` 文件、各 crate 的清单、`openapi.json` 和 `deploy/compose.yaml`。`node scripts/version.mjs files` 会列出这些文件。
+根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，即其他 `package.json` 文件、根目录的 `Cargo.toml`、`Cargo.lock`、`fuzz/Cargo.lock`、`openapi.json` 和 `deploy/compose.yaml`。它还会更新 `kaeso-kpp` 和 `kaeso-codecs` 的 README 中的依赖行。`node scripts/version.mjs files` 会列出这些文件。
 
 其他地方都读取版本号，而不是写死它。页面写 `\{{version}}`，网关读取 `env!("CARGO_PKG_VERSION")`，生成的文件读取各自的 `package.json`。`node scripts/version.mjs check` 是 `pnpm test` 的一部分，只要当前版本号出现在其他任何地方就会失败，并指出文件和行号。
 
@@ -182,7 +182,7 @@ pnpm --filter kaeso-docs build
 pnpm --filter kaeso-showcase build
 ```
 
-把 `apps/docs/dist` 和 `apps/showcase/dist` 原样上传。它们包含每种语言的每个页面、`robots.txt`、`sitemap.xml`，以及每种语言一个 `404.html`。托管服务需要用 `console.html` 响应 `/console`，并用对应语言的 `404.html` 响应未知地址。移动过的页面在旧地址上有一个跳转页面，`_redirects` 也为支持该文件的托管服务列出了相同的跳转。
+把 `apps/docs/dist` 和 `apps/showcase/dist` 原样上传。它们包含每种语言的每个页面、`robots.txt`、`sitemap.xml`，以及每种语言一个 `404.html`。托管服务需要用 `console.html` 响应 `/console`，并用对应语言的 `404.html` 响应未知地址。
 
 ### 内容安全策略
 

@@ -4,7 +4,7 @@ description: 运行中实例的健康检查、Prometheus 指标和日志。
 order: 10
 ---
 
-网关通过两个端点报告健康状态，在单独的端口上提供 Prometheus 指标，并输出 JSON 日志。在控制台中，**设置** › **实例** › **系统**显示同样的健康状态，以及正在运行的版本、请求日志缓冲区和存储占用。
+网关通过两个端点报告健康状态，在单独的端口上提供 Prometheus 指标，并输出 JSON 日志。在控制台中，**实例** › **系统**显示同样的健康状态，以及正在运行的版本、请求日志缓冲区和存储占用。
 
 ## 健康检查
 
@@ -15,7 +15,7 @@ order: 10
 
 PostgreSQL 或 Valkey 无法访问时，`/readyz` 返回 503 和 `not_ready`。ClickHouse 停止或尚未迁移时，返回 200 和 `degraded`，因为请求日志从不阻塞请求。
 
-两个端点都在网关的端口 8080 上。Caddy 只把 `/v1/` 和 `/platform/` 转发到这里，所以在您的域名上，这两个路径会到达控制台。网关容器的健康检查调用 `/healthz`，`docker compose ps` 会显示结果。在服务器上读取 `/readyz`：
+两个端点都在网关的端口 8080 上。Caddy 只把 `/v1/`、`/platform/`、`/mcp`、`/oauth/` 和 `/.well-known/oauth-` 转发到这里，所以在您的域名上，这两个路径会到达控制台。网关容器的健康检查调用 `/healthz`，`docker compose ps` 会显示结果。在服务器上读取 `/readyz`：
 
 ```bash
 docker compose exec console wget -qO- http://gateway:8080/readyz
@@ -64,3 +64,9 @@ docker compose logs -f gateway
 ```
 
 请求产生的每一行日志都带有它的 `request_id`，回复也会在 `kaeso-request-id` 响应头中返回该 ID。机密、服务商密钥和 Authorization 请求头从不写入日志。`KAESO_LOG_LEVEL` 设置日志级别或过滤器，例如 `info,kaeso_server=debug`；`KAESO_LOG_FORMAT=text` 为开发输出纯文本行。
+
+## 下一步
+
+- [故障排除](troubleshooting.md)：为健康检查、指标或日志显示的问题找到解决方法。
+- [配置](configuration.md)：更改指标地址、日志级别和其他所有设置。
+- [备份和主密钥](backups.md)：在出问题之前备份数据库和主密钥。

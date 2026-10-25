@@ -22,6 +22,9 @@ pub struct RequestProfile {
     pub seed: SeedField,
     pub end_user: bool,
     pub assistant_prefill: bool,
+    pub verbosity: bool,
+    pub message_bookkeeping: bool,
+    pub greedy_top_p: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -62,6 +65,9 @@ impl RequestProfile {
         seed: SeedField::Seed,
         end_user: true,
         assistant_prefill: true,
+        verbosity: true,
+        message_bookkeeping: false,
+        greedy_top_p: false,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -83,10 +89,18 @@ impl ChatProfile {
     };
 
     pub const fn compatible(provider: &'static str) -> Self {
+        // `verbosity` is OpenAI's; providers that reject unknown fields refuse it.
         ChatProfile {
             provider,
             ..ChatProfile::OPENAI
         }
+        .without_verbosity()
+    }
+
+    #[must_use]
+    pub const fn without_verbosity(mut self) -> Self {
+        self.request.verbosity = false;
+        self
     }
 
     #[must_use]
@@ -116,6 +130,18 @@ impl ChatProfile {
     #[must_use]
     pub const fn without_prefill(mut self) -> Self {
         self.request.assistant_prefill = false;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_message_bookkeeping(mut self) -> Self {
+        self.request.message_bookkeeping = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn greedy_top_p(mut self) -> Self {
+        self.request.greedy_top_p = true;
         self
     }
 
@@ -161,6 +187,14 @@ impl ChatProfile {
             .with_param("seed"));
         }
         Ok(seed)
+    }
+
+    pub(crate) fn sent_top_p(&self, temperature: Option<f64>, top_p: Option<f64>) -> Option<f64> {
+        if self.request.greedy_top_p && temperature == Some(0.0) {
+            Some(1.0)
+        } else {
+            top_p
+        }
     }
 
     pub(crate) fn refuse(

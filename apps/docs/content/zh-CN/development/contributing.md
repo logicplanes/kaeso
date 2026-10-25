@@ -80,12 +80,12 @@ gh stack submit
 - **测试断言的是人或应用看到的内容。** 测试是确定性的：注入时钟，不使用 sleep。覆盖率阈值只升不降。
 - **界面只使用 `@logicplanes/kaeso-ui`**，`className` 只用于布局，每个词都有三种语言（[翻译](translations.md)）。
 - **JavaScript 只用 pnpm**，一次性工具用 `pnpm dlx`。Cargo 构建 Rust 代码，锁文件只通过各自的工具修改。
-- **仓库中不放机密信息或个人数据。** 使用 `kaeso.example.com`、`sk-kso-…` 和 `owner@example.com` 这样的占位符。
+- **仓库中不放机密信息或个人数据。** Kaeso 本身写作 `kaeso.example.com`，密钥写作 `sk-kso-…`，读者或所有者写作 `owner@example.com`。其他一切，例如身份提供商或 SMTP 服务器，使用保留域名 `example.com` 或 `.example` 下的其他名称（[RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)），绝不使用真实的主机、密钥或人员。
 - **仓库中不放计划。** 路线图、待办事项和未决问题都放到 issue 中。
 
 网关有自己的附加规则，例如不允许 panic、金额不使用浮点数（[网关规则](architecture/gateway.md#规则)）。KPP 也是如此（[设计原则](kpp/index.md#设计原则)）。
 
-仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs` 和 `apps/showcase` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。
+仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs` 和 `apps/showcase` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。`packages/ui/AGENTS.md` 收录用 UI 库构建界面的应用须遵守的规则，并随该库的 npm 包一起发布。
 
 ## 添加依赖
 
@@ -95,7 +95,7 @@ Kaeso 采用 MIT 许可证，它发布的所有内容都只依赖宽松许可证
 
 | 发布的内容 | 允许的许可证 | 检查方式 |
 | --- | --- | --- |
-| 网关和更新器 | `deny.toml` 中的列表：MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、Unicode 和 Zlib | `cargo deny check` |
+| 网关和更新器 | `deny.toml` 中的列表：MIT、MIT-0、Apache-2.0、Apache-2.0 WITH LLVM-exception、BSD-2-Clause、BSD-3-Clause、ISC、Unicode 和 Zlib | `cargo deny check` |
 | `kaeso-kpp`、`kaeso-codecs` | 同一列表，没有例外 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | UI 库、控制台和文档 | MIT、ISC、BSD-2-Clause、BSD-3-Clause、Apache-2.0 和 0BSD | `pnpm build` 之后运行 `pnpm licenses:check` |
 

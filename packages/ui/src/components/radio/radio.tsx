@@ -149,7 +149,9 @@ Root.displayName = "Radio";
 
 export const Radio = Object.assign(Root, { Group, Circle: RadioCircle });
 export const RadioGroup = Group;
-export function RadioCards(props: Omit<RadioGroupProps, "variant">) {
-  return <Group variant="cards" {...props} />;
-}
+export type RadioCardsProps = Omit<RadioGroupProps, "variant">;
+
+export const RadioCards = forwardRef<HTMLDivElement, RadioCardsProps>(function RadioCards(props, ref) {
+  return <Group ref={ref} variant="cards" {...props} />;
+});
 RadioCards.displayName = "RadioCards";

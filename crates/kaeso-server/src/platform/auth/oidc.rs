@@ -16,6 +16,7 @@ use crate::auth::oidc::Provider;
 use crate::auth::sessions::{self, ABSOLUTE_LIFETIME, Method, RECENT_SIGN_IN, SignIn};
 use crate::auth::throttle::TOKENS_PER_IP;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
@@ -621,18 +622,8 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     if let Some(user) = flow.link_user {
         return link(state, ctx, flow, &connection, &identity, user).await;
     }
-    if let Some((user, session)) = flow.confirm {
-        return confirm(
-            state,
-            ctx,
-            flow,
-            &connection,
-            &identity,
-            &email,
-            user,
-            session,
-        )
-        .await;
+    if let Some(signed_in) = flow.confirm {
+        return confirm(state, ctx, flow, &connection, &identity, &email, signed_in).await;
     }
     let org_row = orgs::get(&state.pg, org.uuid())
         .await?
@@ -666,7 +657,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
                 {
                     return Err(link_required());
                 }
-                ctx.audit(Some(org), "user.sso_link")
+                ctx.audit(Some(org), Action::UserSsoLink)
                     .by(UserId::from_uuid(u.id))
                     .target("user", UserId::from_uuid(u.id))
                     .after(serde_json::json!({ "issuer": connection.issuer, "email": email }))
@@ -726,7 +717,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             else {
                 return Err(no_access());
             };
-            ctx.audit(Some(org), "invite.accept")
+            ctx.audit(Some(org), Action::InviteAccept)
                 .by(user_id)
                 .target("invite", invite.id)
                 .after(serde_json::json!({ "revoked_invites": revoked_others }))
@@ -739,7 +730,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
                 ..Default::default()
             };
             org_service::add_member(&mut tx, org, user_id, &grant).await?;
-            ctx.audit(Some(org), "member.join_by_sso")
+            ctx.audit(Some(org), Action::MemberJoinBySso)
                 .by(user_id)
                 .target("user", user_id)
                 .after(serde_json::json!({ "preset": grant.preset, "role_id": grant.role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()) }))
@@ -811,7 +802,7 @@ async fn follow_address(
         return Ok(());
     }
     let id = UserId::from_uuid(user.id);
-    ctx.audit(Some(org), "user.email_change")
+    ctx.audit(Some(org), Action::UserEmailChange)
         .by(id)
         .target("user", id)
         .before(serde_json::json!({ "email": stored }))
@@ -848,7 +839,6 @@ fn signed_in_afresh(identity: &crate::auth::oidc::Identity) -> bool {
 
 // A confirmation proves the signed-in person is at the keyboard, so it must come back as the
 // same account and from a fresh sign-in at the provider; it never creates or switches accounts.
-#[allow(clippy::too_many_arguments)]
 async fn confirm(
     state: &AppState,
     ctx: &Ctx,
@@ -856,8 +846,7 @@ async fn confirm(
     connection: &oidc::Connection,
     identity: &crate::auth::oidc::Identity,
     email: &str,
-    user: UserId,
-    session: SessionId,
+    (user, session): (UserId, SessionId),
 ) -> ApiResult<Response> {
     let afresh = signed_in_afresh(identity);
     if connection.confirms_sign_in != Some(afresh) {
@@ -899,7 +888,7 @@ async fn confirm(
             {
                 return Err(link_required());
             }
-            ctx.audit(Some(org), "user.sso_link")
+            ctx.audit(Some(org), Action::UserSsoLink)
                 .by(user)
                 .target("user", user)
                 .after(serde_json::json!({ "issuer": connection.issuer, "email": email }))
@@ -930,7 +919,7 @@ async fn confirm(
         },
     )
     .await?;
-    ctx.audit(Some(org), "user.sign_in_confirm")
+    ctx.audit(Some(org), Action::UserSignInConfirm)
         .by(user)
         .target("user", user)
         .after(serde_json::json!({ "method": "oidc", "issuer": connection.issuer }))
@@ -976,7 +965,7 @@ async fn create_account(
     if !created {
         return Err(link_required());
     }
-    ctx.audit(None, "user.create_by_sso")
+    ctx.audit(None, Action::UserCreateBySso)
         .by(id)
         .target("user", id)
         .after(serde_json::json!({ "email": email, "org": org.to_string() }))
@@ -1023,7 +1012,7 @@ async fn link(
         ctx.now,
     )
     .await?;
-    ctx.audit(Some(org), "user.sso_link")
+    ctx.audit(Some(org), Action::UserSsoLink)
         .by(user)
         .target("user", user)
         .after(serde_json::json!({ "issuer": connection.issuer, "email": identity.email }))

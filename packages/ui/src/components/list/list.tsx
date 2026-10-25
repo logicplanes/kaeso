@@ -622,19 +622,17 @@ export const SelectionBar = forwardRef<HTMLDivElement, SelectionBarProps>(functi
 });
 SelectionBar.displayName = "SelectionBar";
 
-export function SelectionAction({
-  children,
-  onClick,
-  icon,
-  danger,
-}: {
+export interface SelectionActionProps {
   children: ReactNode;
   onClick?: (() => void) | undefined;
   icon?: IconData | undefined;
   danger?: boolean | undefined;
-}) {
+}
+
+export const SelectionAction = forwardRef<HTMLButtonElement, SelectionActionProps>(function SelectionAction({ children, onClick, icon, danger }, ref) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
       className={cn(
@@ -647,5 +645,5 @@ export function SelectionAction({
       {children}
     </button>
   );
-}
+});
 SelectionAction.displayName = "SelectionAction";

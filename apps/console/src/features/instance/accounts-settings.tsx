@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Dialog, Select, SettingsGroup, SettingsRow, SettingsSection, TagInput } from "@logicplanes/kaeso-ui";
+import { Button, Dialog, DialogScope, Select, SettingsGroup, SettingsRow, SettingsSection, TagInput } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { AccountCreation, OrgCreation, SettingsView, SettingsUpdate } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -70,13 +70,12 @@ function domainSummary(domains: string[]): string {
 
 type Pending = { account_creation: AccountCreation } | { org_creation: OrgCreation } | null;
 
-export function AccountsSettings({ settings }: { settings: SettingsView }) {
-  const [editing, setEditing] = useState<{ pending: Pending } | null>(null);
-  const save = useApiMutation({
+function useSaveSettings(onSaved?: () => void) {
+  return useApiMutation({
     mutationFn: async (body: SettingsUpdate) => data(await api.PATCH("/platform/v1/instance/settings", { body })),
     invalidates: [["instance", "settings"], ["session"]],
     onSuccess: (s, body) => {
-      setEditing(null);
+      onSaved?.();
       toast.success(
         body.account_creation
           ? accountSaved(s.account_creation)
@@ -86,9 +85,19 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
       );
     },
   });
+}
+
+export function AccountsSettings({ settings }: { settings: SettingsView }) {
+  const [pending, setPending] = useState<Pending>(null);
+  const [editing, setEditing] = useState(false);
+  const save = useSaveSettings();
+  const edit = (change: Pending) => {
+    setPending(change);
+    setEditing(true);
+  };
   const choose = (change: { account_creation: AccountCreation } | { org_creation: OrgCreation }) => {
     const uses = "account_creation" in change ? change.account_creation === "allowed_domains" : change.org_creation === "allowed_domains";
-    if (uses && settings.allowed_domains.length === 0) setEditing({ pending: change });
+    if (uses && settings.allowed_domains.length === 0) edit(change);
     else save.mutate(change);
   };
   const usesDomains = settings.account_creation === "allowed_domains" || settings.org_creation === "allowed_domains";
@@ -120,7 +129,7 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
             title={t("instance.allowedDomains", "Allowed domains")}
             description={domainSummary(settings.allowed_domains)}
             control={
-              <Button size="sm" onClick={() => setEditing({ pending: null })}>
+              <Button size="sm" onClick={() => edit(null)}>
                 {t("instance.editDomains", "Edit domains")}
               </Button>
             }
@@ -144,16 +153,15 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
           }
         />
       </SettingsGroup>
-      {editing && (
+      <DialogScope open={editing}>
         <DomainsDialog
           current={settings.allowed_domains}
-          required={usesDomains || editing.pending !== null}
-          adding={editing.pending !== null}
-          saving={save.isPending}
-          onClose={() => setEditing(null)}
-          onSave={(allowed_domains) => save.mutate({ ...editing.pending, allowed_domains })}
+          required={usesDomains || pending !== null}
+          pending={pending}
+          open={editing}
+          onOpenChange={setEditing}
         />
-      )}
+      </DialogScope>
     </SettingsSection>
   );
 }
@@ -161,18 +169,19 @@ export function AccountsSettings({ settings }: { settings: SettingsView }) {
 function DomainsDialog({
   current,
   required,
-  adding,
-  saving,
-  onClose,
-  onSave,
+  pending,
+  open,
+  onOpenChange,
 }: {
   current: string[];
   required: boolean;
-  adding: boolean;
-  saving: boolean;
-  onClose: () => void;
-  onSave: (domains: string[]) => void;
+  pending: Pending;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
+  const save = useSaveSettings(() => onOpenChange(false));
+  const adding = pending !== null;
+  const onSave = (allowed_domains: string[]) => save.mutate({ ...pending, allowed_domains });
   const [domains, setDomains] = useState(current);
   const reason = domains.some((d) => !looksLikeDomain(d))
     ? t("instance.removeNonDomains", "Remove the entries that aren't domains")
@@ -183,9 +192,9 @@ function DomainsDialog({
         : undefined;
   return (
     <Dialog
-      busy={saving}
-      open
-      onOpenChange={(o) => !o && onClose()}
+      busy={save.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
       size="sm"
       title={adding ? t("instance.allowDomainsTitle", "Allow email domains") : t("instance.allowedDomains", "Allowed domains")}
       description={t("instance.domainsHint", "People with an address on these domains qualify; *.example.com covers its subdomains.")}
@@ -195,7 +204,13 @@ function DomainsDialog({
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!!reason} {...(reason ? { disabledReason: reason } : {})} loading={saving} onClick={() => onSave(domains)}>
+          <Button
+            variant="primary"
+            disabled={!!reason}
+            {...(reason ? { disabledReason: reason } : {})}
+            loading={save.isPending}
+            onClick={() => onSave(domains)}
+          >
             {adding ? t("instance.allowDomains", "Allow domains") : t("instance.saveDomains", "Save domains")}
           </Button>
         </>

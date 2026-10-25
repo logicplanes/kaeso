@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -372,12 +373,15 @@ impl ProviderRef {
     pub fn chat(&self) -> ChatProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.chat,
-            ProviderRef::Custom(_) => ChatProfile::OPENAI,
+            ProviderRef::Custom(_) => ChatProfile::OPENAI.without_verbosity(),
         }
     }
 
-    pub fn tool_namespaces(&self) -> bool {
-        self.built_in().is_some_and(|p| p.tool_namespaces)
+    pub fn responses(&self) -> ResponsesProfile {
+        match self {
+            ProviderRef::BuiltIn(p) => p.responses,
+            ProviderRef::Custom(_) => ResponsesProfile::compatible("OpenAI"),
+        }
     }
 
     pub fn account(&self) -> Option<AccountSignIn> {
@@ -386,6 +390,10 @@ impl ProviderRef {
 
     pub fn refuses_key(&self, message: &str) -> bool {
         self.built_in().is_some_and(|p| p.refuses_key(message))
+    }
+
+    pub fn exceeds_context(&self, message: &str) -> bool {
+        self.built_in().is_some_and(|p| p.exceeds_context(message))
     }
 
     pub fn reasoning_beyond_output_limit(&self) -> bool {
@@ -575,12 +583,9 @@ mod tests {
         let r = ProviderRef::Custom(Arc::new(p));
         assert_eq!(r.count_tokens(), Some(DialectId::AnthropicMessages));
         assert_eq!(r.auth(), Some(AuthStyle::XApiKey));
-        assert_eq!(r.chat(), ChatProfile::OPENAI);
-        assert!(
-            !r.tool_namespaces()
-                && r.account().is_none()
-                && !r.refuses_key("Incorrect API key provided")
-        );
+        assert_eq!(r.chat(), ChatProfile::OPENAI.without_verbosity());
+        assert_eq!(r.responses(), ResponsesProfile::compatible("OpenAI"));
+        assert!(r.account().is_none() && !r.refuses_key("Incorrect API key provided"));
         assert_eq!(r.metric_label(), "custom");
     }
 

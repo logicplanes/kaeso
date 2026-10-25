@@ -70,15 +70,17 @@ docker compose exec gateway kaeso openapi > openapi.json
 | Platform key | `Authorization: Bearer sk-kso-org-…` | The Admin role's rights, in its organization and all its projects |
 | API key with platform access | `Authorization: Bearer sk-kso-…` | Its member's or service account's rights, in its own project only |
 | Session | The session cookie that the sign-in endpoints under `auth/*` set | Your own rights |
+| Agent | `Authorization: Bearer kso_at_…`, the access token from the [MCP server](mcp.md)'s sign-in | Its user's rights, narrowed to what the agent was given and the agent policies ([rights](mcp.md#rights)) |
 
 Use a platform key to automate a whole organization, and a project key for scripts and CI in one project. Sessions serve the console and people with curl. The session cookie is `__Host-kaeso_session`, or `kaeso_session` on an `http://` install at a loopback address such as localhost.
 
 - **Keys reach only `orgs/{org}/*`.** `me/*`, `instance/*` and the signed-in routes of `auth/*` answer keys with 403. Organization-level routes answer project keys with 403.
+- **Agents reach routes that name a right.** That is every route under `orgs/{org}/*` a platform key can use, `instance/*` routes that name an `instance.*` right, and `me/*` routes that name an `account.*` right. Other routes answer agents with 403 ([tools](mcp.md#tools)).
 - **Keys go in `Authorization`.** The Platform API never reads `x-api-key`.
 - **Platform access is chosen when a key is created**, with `"access": "platform"` or `"both"`. The default is `inference`, and platform access needs the right `keys.platform_access.grant` ([API keys](../console/api-keys.md)).
 - **Platform keys are created only in a session**, by someone who holds every right of the Admin role. They never call models.
 - **Keys rotate in one request.** `POST …/keys/{key}/rotate`, `…/service-accounts/{account}/keys/{key}/rotate` and `orgs/{org}/platform-keys/{key}/rotate` take `grace_hours` (0, 1, 24 or 168) and the new key's expiry. They answer with the new key, which keeps the old key's settings, and need what creating that key needs, plus the right to manage it ([rotate a key](../console/api-keys.md#rotate-a-key)).
-- **Organization policies apply to sessions.** An organization that requires single sign-on answers the sessions of the accounts it manages with 403, unless they came from its provider; guests' sessions pass. An organization that requires two-factor authentication answers sessions without a second factor with 403. The exception is a session from single sign-on that counts there: its own, or that of the organization that manages the account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
+- **Organization policies apply to sessions and agents.** An organization that requires single sign-on answers the sessions of the accounts it manages with 403, unless they came from its provider; guests' sessions pass. An organization that requires two-factor authentication answers sessions without a second factor with 403. The exception is a session from single sign-on that counts there: its own, or that of the organization that manages the account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 - **Unknown keys are throttled.** Too many requests with unknown keys from one address, on both APIs together, get `429 rate_limited` with `Retry-After` ([API key failures](../self-hosting/configuration.md#api-key-failures)).
 
 ### Cross-site requests
@@ -93,7 +95,7 @@ This keeps other sites from acting with your session, or from signing your brows
 
 ### Recent sign-in
 
-In a session, some actions need a sign-in within the last 15 minutes. Otherwise Kaeso answers `403 recent_sign_in_required`, and the console asks you to sign in again. You confirm with your password or a sign-in link, or through single sign-on when the account has no other way. Keys never need one.
+In a session, some actions need a sign-in within the last 15 minutes. Otherwise Kaeso answers `403 recent_sign_in_required`, and the console asks you to sign in again. You confirm with your password or a sign-in link, or through single sign-on when the account has no other way. Keys and agents never need one: giving an agent a sensitive right needs a recent sign-in instead.
 
 `GET me/sign-in-again` lists how the account can confirm: `password`, `magic_link`, and `set_password` when it has no password yet but can set one through `POST auth/password-reset`. Only when all three are `false` does `sso` list the organizations whose identity provider the account is linked to. The one that manages the account comes first. When that organization requires single sign-on, only its provider confirms.
 
@@ -103,23 +105,23 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 
 These actions need a recent sign-in:
 
-- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
-- **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
-- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
+- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `providers.custom.manage`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
+- **In your account:** changing your email, setting a password when the account has none, and deleting the account. Setting up or turning off two-factor authentication, creating new recovery codes, and linking or unlinking single sign-on need one too.
+- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner need one too. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
 
 ## Conventions
 
 | Topic | Rule |
 | --- | --- |
 | Format | REST with JSON: paths in plural kebab case (`service-accounts`), fields in `snake_case`. Send bodies with `content-type: application/json`; Kaeso answers 400 to a field the endpoint doesn't know. |
-| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`. |
+| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`. |
 | Times | RFC 3339, in UTC. Every response names the install's time zone in `Kaeso-Time-Zone`, such as `Europe/Berlin`, the zone the console shows times in. |
 | Money | US dollars as decimal strings, such as `"0.0001"`. Send prices and amounts as decimal strings or whole numbers; a JSON fraction such as `0.5` gets 400. |
 | Limit amounts | At most 10^12 requests or tokens, or 1,000,000,000 USD for a spend budget. |
 | Create | `POST` on the collection, answered with 201 and the new resource. |
-| Update | `PATCH` with only the fields to change. |
+| Update | `PATCH` with only the fields to change. `PUT` sets one whole value, such as a picture, a key policy or the SSO connection. |
 | Actions | `POST …/archive`, `…/disable`, `…/enable`, `…/replace` or `…/restore`. Archiving keeps the record. |
-| Delete | `DELETE`, only where something is really deleted: provider keys, aliases, catalogue models, limits, custom roles, sessions, invitations and your account. |
+| Delete | `DELETE` removes something, such as a provider key, a member, a picture or your account. `DELETE orgs/{org}` schedules the organization for deletion instead. |
 | Audit | Every change is written to the audit log of its level, in the same transaction. |
 | Request ids | Every answer carries `kaeso-request-id`. |
 
@@ -135,7 +137,7 @@ A list takes `limit`, from 1 to 100 with a default of 20, and `after`, the `next
 
 ### Revisions
 
-Catalogue models and limits carry a `revision` that goes up with every change. Reading, creating or changing one answers with `ETag: "<revision>"`. Send that tag back in `If-Match` with `PATCH` or `DELETE` to change only the revision you read. If the entry changed since, Kaeso answers `412 conflict`; without `If-Match`, the change applies to the current revision.
+Catalogue models, limits and custom providers carry a `revision` that goes up with every change. Reading, creating or changing one answers with `ETag: "<revision>"`. Send that tag back in `If-Match` with `PATCH` or `DELETE` to change only the revision you read. If the entry changed since, Kaeso answers `412 conflict`; without `If-Match`, the change applies to the current revision.
 
 ### Organizations scheduled for deletion
 
@@ -162,8 +164,8 @@ The message is one short sentence for people, and the console shows it as it is.
 | Status | `type` | When |
 | --- | --- | --- |
 | 400 | `invalid_request` | The body isn't JSON, or has an unknown field. A parameter has the wrong type or form, or a value is out of range. |
-| 401 | `authentication` | No session or key, or one that is unknown, expired or ended. |
-| 403 | `permission_denied` | A missing right, a key on a route it can't use, a missing `Origin` or an organization policy. |
+| 401 | `authentication` | No session, key or agent token, or one that is unknown, expired or ended. |
+| 403 | `permission_denied` | A missing right, a key or an agent on a route it can't use, a missing `Origin` or an organization policy. Also an install or organization that doesn't allow agents. |
 | 403 | `recent_sign_in_required` | The action needs a [recent sign-in](#recent-sign-in). |
 | 403 | `other_sign_in_required` | The session came from the single sign-on of an organization that doesn't manage the account, and the action is outside that organization; or it came from single sign-on and the action is instance administration, other than from the organization chosen for instance admins. Sign in with a password or a sign-in link. |
 | 404 | `not_found` | The path doesn't exist, or the thing doesn't exist or the caller can't see it. |
@@ -184,14 +186,17 @@ Routes are relative to `/platform/v1`. [`openapi.json`](#openapi-document) lists
 | Paths | Holds |
 | --- | --- |
 | `auth/*` | First-start setup, sign-in methods, password and two-factor sign-in, sign-in links, password reset, single sign-on, sessions, sign-up where the instance allows the address, and invitations. `auth/session` returns the user, their memberships with roles and rights, the organization that manages the account (`managed_by`), and whether they may create organizations (`can_create_orgs`). |
-| `me`, `me/*` | Your profile, picture and language (`locale`: `auto`, `en`, `de` or `zh-CN`), email, password, two-factor authentication and recovery codes. Also your sessions, memberships, keys and notifications, creating an organization and deleting your account. |
+| `me`, `me/*` | Your profile, picture and language (`locale`: `auto`, `en`, `de` or `zh-CN`), email, password, two-factor authentication and recovery codes. Also your sessions, memberships, keys, notifications and agents, creating an organization and deleting your account. |
 | `orgs/{org}/*` | The organization and its picture, members, invitations, roles and rights, and projects. Also the providers Kaeso calls, provider keys, security settings, platform keys, log settings and storage, usage, the audit log, ownership transfer, deletion and restoring. |
 | `orgs/{org}/projects/{project}/*` | The project and its picture, members with their model access, service accounts, keys with their models and limits, and key policy. Also the catalogue and aliases, limits, content logging, request logs and exports, usage, the audit log and the [Playground](#playground). |
-| `instance/*` | For instance admins: users, organizations, instance settings and the organization whose single sign-on may administer the instance (`instance/settings/admin-sso`), the models.dev sync, system health and storage, updates and the instance audit log. |
+| `instance/*` | For instance admins: users, organizations, instance settings and the organization whose single sign-on may administer the instance (`instance/settings/admin-sso`), the agent policy, the models.dev sync, system health and storage, updates and the instance audit log. |
+| `orgs/{org}/agents`, `orgs/{org}/security/agents`, `me/agents/*`, `me/agent-requests/*` | Agents, their rights and the agent policies, tagged `agents` ([routes](mcp.md#platform-api-routes)). |
+
+Most routes under `instance/*` name an `instance.*` right in `openapi.json`. An instance admin's session holds every one, and an instance admin's agent needs each one given ([instance rights](../concepts/rights.md#instance-rights)). Making someone an instance admin, `instance/settings/admin-sso`, setting the agent policy and deleting a user or an organization at once take only a session. In the same way, `me/*` routes that agents can use name an `account.*` right, which a session doesn't need ([account rights](../concepts/rights.md#account-rights)).
 
 Instance admins see every organization's metadata, never its content. They create, rename, schedule for deletion, restore and delete organizations under `instance/orgs`. `POST instance/orgs/{org}/owner` makes any active user an owner, the admin included, which is how an instance admin gets in to manage an organization. The organization's audit log records it.
 
-Only instance admins reset a user's two-factor authentication, with `POST instance/users/{user}/reset-2fa`. There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
+Instance admins reset a user's two-factor authentication with `POST instance/users/{user}/reset-2fa`, and operators on the server with `kaeso user reset-2fa` ([someone lost their second factor](../self-hosting/troubleshooting.md#someone-lost-their-second-factor)). There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
 
 `GET orgs/{org}/providers` needs `org.view` and lists every provider Kaeso calls, the same in every organization. Each provider has:
 

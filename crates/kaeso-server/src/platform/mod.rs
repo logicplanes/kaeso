@@ -48,6 +48,7 @@ pub const PREFIX: &str = "/platform/v1";
     tags(
         (name = "auth", description = "Sign-in and sessions"),
         (name = "me", description = "The signed-in user's own account"),
+        (name = "agents", description = "Agents connected through the MCP server, their rights and policies"),
         (name = "instance", description = "Instance administration (instance admins only)"),
         (name = "orgs", description = "Organizations"),
         (name = "projects", description = "Projects"),
@@ -76,6 +77,17 @@ impl Modify for Components {
                     .scheme(HttpAuthScheme::Bearer)
                     .description(Some(
                         "An API key with platform access (`sk-kso-…`, acting as its principal inside its project) or an org platform key (`sk-kso-org-…`).",
+                    ))
+                    .build(),
+            ),
+        );
+        components.add_security_scheme(
+            "agent",
+            SecurityScheme::Http(
+                HttpBuilder::new()
+                    .scheme(HttpAuthScheme::Bearer)
+                    .description(Some(
+                        "An agent's access token (`kso_at_…`) from the OAuth sign-in of the MCP server at `/mcp`. The agent acts for its user with the rights both hold, within the instance's and each org's agent policies.",
                     ))
                     .build(),
             ),

@@ -14,9 +14,9 @@ expression: outcomes
     "unsupported": "modalities"
   },
   "content-array-all-roles": {
-    "message": "`system message` is not supported by Anthropic Messages. Kaeso sends mid-conversation system messages to Anthropic only from Anthropic Messages requests. Move the instructions into the leading system prompt or into a user message.",
-    "param": "messages[2]",
-    "unsupported": "system message"
+    "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "refusal block"
   },
   "explicit-nulls": {
     "body": {
@@ -108,6 +108,207 @@ expression: outcomes
             "type": "object"
           },
           "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "grok-cli-model-id": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<user_query>\nRun echo ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_kaeso_1",
+              "input": {
+                "command": "echo ok",
+                "description": "Print ok."
+              },
+              "name": "run_terminal_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "ok\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_kaeso_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "<user_query>\nsay ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-haiku-5-5",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "description": "Run a bash command and return its output.",
+          "input_schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "properties": {
+              "block_until_ms": {
+                "description": "How long to wait for the command, in milliseconds, before moving it to the background. The default is 30000 (30 seconds). The maximum is 36000000. 0 starts the command in the background immediately. The wait includes shell startup.",
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "command": {
+                "description": "The bash command to run.",
+                "type": "string"
+              },
+              "description": {
+                "description": "One short sentence that says what this command does and why you run it.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "command",
+              "description"
+            ],
+            "type": "object"
+          },
+          "name": "run_terminal_command"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "grok-cli-reasoning-content": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<user_query>\nRun echo ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_kaeso_1",
+              "input": {
+                "command": "echo ok",
+                "description": "Print ok."
+              },
+              "name": "run_terminal_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "exit: 0\nok\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_kaeso_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "<user_query>\nsay ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-large-4",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "description": "Run a bash command and return its output.",
+          "input_schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "properties": {
+              "command": {
+                "description": "The bash command to run.",
+                "type": "string"
+              },
+              "description": {
+                "description": "One short sentence that says what this command does and why you run it.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "command",
+              "description"
+            ],
+            "type": "object"
+          },
+          "name": "run_terminal_command"
         }
       ]
     },
@@ -648,6 +849,25 @@ expression: outcomes
     "param": null,
     "unsupported": "functions"
   },
+  "providers/mistral/greedy-sampling": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "say ok",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-large-4",
+      "temperature": 0.0
+    },
+    "path": "/v1/messages"
+  },
   "providers/mistral/invalid-api-key": {
     "body": {
       "max_tokens": 10,
@@ -773,6 +993,55 @@ expression: outcomes
       "thinking": {
         "type": "adaptive"
       }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/mistral/reasoning-then-tool-call": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Lisbon right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
     },
     "path": "/v1/messages"
   },
@@ -1287,6 +1556,153 @@ expression: outcomes
       "thinking": {
         "type": "adaptive"
       }
+    },
+    "path": "/v1/messages"
+  },
+  "qwen-code-tool-loop": {
+    "body": {
+      "max_tokens": 64000,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Create proof.txt containing OK with a tool, read it back, and reply with its contents.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "toolu_01L2nFMSBTMgp3v3ZF3Y1t1E",
+              "input": {
+                "content": "OK",
+                "file_path": "/home/user/project/proof.txt",
+                "record_as_artifact": false
+              },
+              "name": "write_file",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Successfully created and wrote to new file: /home/user/project/proof.txt.",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_01L2nFMSBTMgp3v3ZF3Y1t1E",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "toolu_01RVmKP3fRAvjjbjhPBio6BY",
+              "input": {
+                "file_path": "/home/user/project/proof.txt"
+              },
+              "name": "read_file",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "OK",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_01RVmKP3fRAvjjbjhPBio6BY",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Qwen Code, a non-interactive CLI agent developed by Alibaba Group, specializing in software engineering tasks.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "description": "Reads and returns the content of a specified file. The file_path argument MUST be an absolute path. Always construct it by combining the project root with the file's relative path (e.g. project root '/path/to/project/' + relative 'foo/bar.txt' = '/path/to/project/foo/bar.txt'). If the user provides a relative path, resolve it against the project root first. If the file is large, the content will be truncated. For text files, the tool's response will clearly indicate if truncation has occurred and will provide details on how to read more of the file using the 'offset' and 'limit' parameters. Handles text, images (PNG, JPG, GIF, WEBP, SVG, BMP), PDF files, and Jupyter notebooks (.ipynb). For text files, it can read specific line ranges. For PDF files, use the 'pages' parameter to extract specific page ranges as text (e.g. '1-5'). Large PDFs cannot be read all at once when the model does not support native PDF input; retry with narrower page ranges if the tool reports a PDF is too large. With a configured vision bridge, failed PDF text extraction or an irreducibly large single page may be transcribed automatically, at most four pages per call; this transcription is lossy and marked as untrusted. Jupyter notebooks return structured cell content with outputs.",
+          "input_schema": {
+            "properties": {
+              "file_path": {
+                "description": "The absolute path to the file to read (e.g., '/home/user/project/file.txt'). Relative paths are not supported. You must provide an absolute path.",
+                "type": "string"
+              },
+              "limit": {
+                "description": "Optional: For text files, maximum number of lines to read. Use with 'offset' to paginate through large files. If omitted, reads the entire file (if feasible, up to a default limit). Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "offset": {
+                "description": "Optional: For text files, the 0-based line number to start reading from. Requires 'limit' to be set. Use for paginating through large files. Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "pages": {
+                "description": "Optional: For PDF files, the page range to extract as text (e.g., '1-5', '3', '10-20'). Pages are 1-indexed. Max 20 pages per request. Open-ended ranges like '3-' are not supported. Use this for large PDFs or when the model does not support native PDF input. Omit or set to null for Jupyter notebooks (.ipynb); null is treated as omitted.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "file_path"
+            ],
+            "type": "object"
+          },
+          "name": "read_file"
+        },
+        {
+          "description": "Writes content to a specified file in the local filesystem. A request to create or generate a file does not establish that the target path is new. Unless the target's absence or current text contents have already been established in this session, you MUST use the read_file tool first; if the file does not exist, then create it. With prior-read enforcement enabled, blind overwrites are rejected. The file_path argument MUST be an absolute path. Always construct it by combining the project root with the file's relative path (e.g. project root '/path/to/project/' + relative 'foo/bar.txt' = '/path/to/project/foo/bar.txt'). If the user provides a relative path, resolve it against the project root first.",
+          "input_schema": {
+            "properties": {
+              "content": {
+                "description": "The content to write to the file.",
+                "type": "string"
+              },
+              "file_path": {
+                "description": "The absolute path to the file to write to (e.g., '/home/user/project/file.txt'). Relative paths are not supported.",
+                "type": "string"
+              },
+              "record_as_artifact": {
+                "description": "Set false to skip creating a session artifact. An artifact the session already has for this path is still refreshed. Defaults to true for artifact-like extensions.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "file_path",
+              "content"
+            ],
+            "type": "object"
+          },
+          "name": "write_file"
+        }
+      ]
     },
     "path": "/v1/messages"
   },

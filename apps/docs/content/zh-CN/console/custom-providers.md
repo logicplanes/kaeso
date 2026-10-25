@@ -138,7 +138,7 @@ Kaeso 的后续版本可能会内置一个与您组织已用 ID 相同的服务�
 
 所有者和管理员拥有这两项权限，开发者和审计员可以查看。组织中的每个人都能在服务商列表中看到自定义服务商的名称，但看不到其基础 URL。如果实例关闭了自定义服务商，组织仍会保留它们，但对其模型的请求会失败，提示“Custom providers are turned off on this install, so `…` cannot be called.”
 
-## 后续步骤
+## 下一步
 
 - [服务商密钥](provider-keys.md)：添加您的自定义服务商所需的密钥。
 - [模型和别名](models-and-aliases.md)：将它的模型连同价格和限制添加到项目中。

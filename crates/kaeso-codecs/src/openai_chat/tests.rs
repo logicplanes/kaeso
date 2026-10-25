@@ -75,6 +75,18 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::Authentication,
     ),
     (
+        "providers/mistral/greedy-sampling",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/context-window",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/thinking-replay-validation",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-logit-bias",
         ErrorKind::InvalidRequest,
     ),
@@ -161,7 +173,8 @@ fn every_request_fixture_round_trips() {
             continue;
         }
         let req = decode(&body).unwrap_or_else(|e| panic!("{name}: {e:?}"));
-        let mut ctx = EgressCtx::new(&req);
+        let keeps_bookkeeping = super::ChatProfile::OPENAI.with_message_bookkeeping();
+        let mut ctx = EgressCtx::new(&req).with_chat_profile(keeps_bookkeeping);
         let out =
             OpenAiChat::encode_request(&req, &mut ctx).unwrap_or_else(|e| panic!("{name}: {e:?}"));
         assert_json_eq(&name, &body, &out.body);
@@ -225,8 +238,8 @@ fn meta_headers(meta: &Value) -> HeaderList {
 }
 
 #[test]
-fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
-    for (name, kind) in FOREIGN_ERROR_BODIES {
+fn mistral_error_bodies_reach_apps_with_mistrals_message() {
+    let decoded = |name: &str| {
         let (_, body) = fixtures(D, "errors", "json")
             .into_iter()
             .find(|(n, _)| n == name)
@@ -237,20 +250,19 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
                 .unwrap(),
         )
         .unwrap();
-        let err = OpenAiChat::decode_error(status, &HeaderList::new(), &body);
+        (
+            OpenAiChat::decode_error(status, &HeaderList::new(), &body),
+            body,
+            status,
+        )
+    };
+    for (name, kind) in FOREIGN_ERROR_BODIES {
+        let (err, body, status) = decoded(name);
         assert_eq!((&err.kind, err.status), (kind, Some(status)), "{name}");
         let original: Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
-        let quoted: String = String::from_utf8_lossy(&body)
-            .trim()
-            .chars()
-            .take(400)
-            .collect();
-        let prefix = format!(
-            "The provider returned an error (HTTP {status}) that is not in the OpenAI error format: "
-        );
         assert!(
-            err.message.starts_with(&prefix) && err.message.contains(&quoted),
+            !err.message.contains("not in the OpenAI error format") && !err.message.contains('{'),
             "{name}: {}",
             err.message
         );
@@ -259,6 +271,136 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
         let sent: Value = serde_json::from_slice(&out.body).unwrap();
         assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
     }
+    for (name, message) in [
+        (
+            "providers/mistral/greedy-sampling",
+            "top_p must be 1 when using greedy sampling.",
+        ),
+        (
+            "providers/mistral/recorded-model-not-found",
+            "Invalid model: mistral-tiny-nonexistent",
+        ),
+        (
+            "providers/mistral/recorded-invalid-api-key",
+            "The provider returned an error (HTTP 401): Invalid API Key.",
+        ),
+        (
+            "providers/mistral/recorded-store-field",
+            "Extra inputs are not permitted (`store`).",
+        ),
+        (
+            "providers/mistral/recorded-assistant-refusal-field",
+            "Extra inputs are not permitted (`messages[1].refusal`).",
+        ),
+        (
+            "providers/mistral/recorded-reasoning-cached-usage",
+            "Input should be 'auto' or 'standard_only' (`service_tier`); Input tag 'developer' found using 'role' does not match any of the expected tags: <Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'> (`messages[0]`).",
+        ),
+    ] {
+        assert_eq!(decoded(name).0.message, message, "{name}");
+    }
+    assert_eq!(
+        decoded("providers/mistral/recorded-store-field")
+            .0
+            .param
+            .as_deref(),
+        Some("store")
+    );
+    let thinking = decoded("providers/mistral/thinking-replay-validation").0;
+    assert_eq!(
+        (thinking.message.as_str(), thinking.param.as_deref()),
+        (
+            "Input should be a valid boolean (`messages[1].content[0].closed`).",
+            Some("messages[1].content[0].closed")
+        )
+    );
+    assert_eq!(
+        decoded("providers/mistral/recorded-reasoning-cached-usage")
+            .0
+            .param,
+        None
+    );
+}
+
+#[test]
+fn error_bodies_in_other_shapes_keep_their_message_status_and_kind() {
+    let cases = [
+        (
+            429,
+            json!({"message": "Requests rate limit exceeded"}),
+            ErrorKind::RateLimited,
+            "The provider returned an error (HTTP 429): Requests rate limit exceeded.",
+        ),
+        (
+            401,
+            json!({"message": "Unauthorized"}),
+            ErrorKind::Authentication,
+            "The provider returned an error (HTTP 401): Unauthorized.",
+        ),
+        (
+            404,
+            json!({"detail": "Not Found"}),
+            ErrorKind::NotFound,
+            "The provider returned an error (HTTP 404): Not Found.",
+        ),
+    ];
+    for (status, body, kind, message) in cases {
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body.to_string().as_bytes());
+        assert_eq!(
+            (&err.kind, err.message.as_str()),
+            (&kind, message),
+            "{body}"
+        );
+        assert_eq!(err.raw.as_ref(), Some(&body));
+    }
+    for (status, body, message) in [
+        (
+            400,
+            json!({"message": "x", "error": null}),
+            "The provider returned an error (HTTP 400): x.",
+        ),
+        (
+            400,
+            json!({"detail": {"message": "Bad input"}}),
+            "The provider returned an error (HTTP 400): Bad input.",
+        ),
+        (400, json!({"error": "plain", "detail": "other"}), "plain"),
+    ] {
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body.to_string().as_bytes());
+        assert_eq!(err.message, message, "{body}");
+    }
+    let vllm = json!({"object": "error", "message": "Not here.", "type": "NotFoundError",
+        "param": null, "code": 404});
+    let err = super::error::decode_body(None, vllm.to_string().as_bytes());
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (&ErrorKind::NotFound, "Not here."),
+        "a numeric code is the status"
+    );
+}
+
+#[test]
+fn a_mistral_error_frame_in_a_stream_ends_it_with_mistrals_error() {
+    let frame = json!({"object": "error", "message": "Service unavailable.",
+        "type": "internal_server_error", "param": null, "code": "1000", "raw_status_code": 503});
+    let sse = format!(
+        "data: {}\n\ndata: {frame}\n\n",
+        json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+            "choices": [{"index": 0, "delta": {"role": "assistant", "content": "Hi"}, "finish_reason": null}]})
+    );
+    let mut decoder = OpenAiChat::stream_decoder(&EgressCtx::for_kind(
+        RequestKind::Generate,
+        StreamMode::on(true),
+    ));
+    let mut events = decoder.feed(sse.as_bytes());
+    events.extend(decoder.finish());
+    let Some(kaeso_kpp::StreamEvent::Error(err)) = events.last() else {
+        panic!("{events:?}")
+    };
+    assert_eq!(
+        (&err.kind, err.message.as_str(), err.status),
+        (&ErrorKind::Overloaded, "Service unavailable.", Some(503))
+    );
 }
 
 #[test]

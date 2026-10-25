@@ -51,7 +51,7 @@ Like every override, the field applies only while the canonical value at its pat
 | `instructions` | `system[0]` text block typed | From other dialects, a single text block becomes `instructions`; several blocks become one leading `developer` message item with `input_text` parts, which keeps the block boundaries but not the difference between `instructions` and a system message (the API treats both as developer instructions). `null`: form. |
 | `tools[]` `{type: function, name, description, parameters, strict}` (`FunctionTool`) | `ToolDef::Function` typed (`parameters` raw) | Other keys (`defer_loading`, `allowed_callers`, `output_schema`, …) are extras of the tool. Cache hints on tools from other dialects are dropped ([cache hints](cross-format.md#cache-hints)). Names from other dialects outside `^[a-zA-Z0-9_-]{1,64}$` are rewritten deterministically (other characters become `_`, then `_` and a 16-digit hexadecimal FNV-1a hash are appended, at most 64 characters in all), recorded in `EgressCtx::tool_names` and mapped back on decode. |
 | `tools[]` `namespace` | `ToolDef::Unknown` | Same-dialect only; for targets without namespaces, its tools become function tools ([tool namespaces](cross-format.md#tool-namespaces)). |
-| `tools[]` `web_search` | `ToolDef::Unknown` | Same-dialect only; for Anthropic, Anthropic's web search tool ([hosted web search](cross-format.md#hosted-web-search)). |
+| `tools[]` `web_search`, `web_search_2025_08_26`, `web_search_preview`, `web_search_preview_2025_03_11` | `ToolDef::Unknown` | Same-dialect only; for Anthropic, Anthropic's web search tool; for SpaceX, xAI's; left out for Chat Completions and where only a cached search is asked for ([hosted web search](cross-format.md#hosted-web-search)). |
 | `tools[]` other types (`file_search`, `mcp`, `custom`, …) | `ToolDef::Unknown` | Same-dialect only. |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` typed | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` typed | With other keys: `ToolChoice::Unknown`. |
@@ -61,7 +61,7 @@ Like every override, the field applies only while the canonical value at its pat
 | `text.format` `{type: json_object}` | `output = JsonObject` typed | |
 | `text.format` `{type: json_schema, name, description, schema, strict}` | `output = JsonSchema` typed (`schema` raw) | Other keys: extras of the `JsonSchemaSpec`. A schema without a name (Anthropic) is sent as `name: "response"`. |
 | `text.format` other types | extras `text.format` | |
-| `text.verbosity` | `"medium"`, the default that GPT-5 and Codex clients send on every request: form, so such requests can go to other dialects. `low`/`high` change the output: extras `text.verbosity`, refused by other dialects ([extras](cross-format.md#extras)). | `null`: form. |
+| `text.verbosity` | `"medium"`, the default that GPT-5 and Codex clients send on every request: form. `low`/`high`: extras `text.verbosity`, an output length hint: Chat Completions targets that take `verbosity` get it, other dialects leave it out ([conditional entries](cross-format.md#conditional-entries)). | `null`: form. |
 | `reasoning.effort` | `reasoning.effort` typed | From other dialects ([reasoning](reasoning.md)): an explicit effort as is; Anthropic `thinking.disabled` → `none`; a budget → `low` (below 4,096), `medium` (4,096 to 16,383), `high` (16,384 and more), as in [effort and budget](reasoning.md#effort-and-budget). Values `none` to `max`; unknown values are `ReasoningEffort::Other`. |
 | `reasoning.summary` | `reasoning.summary` typed | `auto`/`concise`/`detailed`/other. Anthropic Messages requests with thinking on and a `display` other than `omitted` get `summary: "auto"`, because OpenAI returns readable reasoning only when asked ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). Not for `/v1/responses/input_tokens`. OpenAI requires some organisations to be verified before they get reasoning summaries; for such a provider key, OpenAI's error reaches the app unchanged. |
 | `reasoning.mode` (`standard`/`pro`), `reasoning.context`, `reasoning.generate_summary` (deprecated) | extras of the `ReasoningConfig` | Not the same concept as KPP `ReasoningMode` (Anthropic thinking on or off). |
@@ -104,13 +104,14 @@ A reasoning config from another dialect is sent as its effort: an explicit effor
 
 | Wire | KPP | Notes |
 | --- | --- | --- |
-| leading `system` / `developer` message items holding only text and no item data besides `type`/`role` | `GenerateRequest.system` blocks | Form `system_items` (`[{n, role, type, parts}]`) and `instructions` on the request record the split. A leading item with an `id`, a `status`, an image or an unknown key stays a `Role::System` message. |
-| `message` item, role `user` / `assistant` | `Message { role: User / Assistant }` content blocks | `EasyInputMessage`, `InputMessage` and `OutputMessage` shapes. Item `type`, `id`, `status` and the `role` spelling: form on the message; `phase` and unknown keys: extras of the message. A KPP message holds at most one message item. |
+| leading `system` / `developer` message items holding only text and no item data besides `type`, `role` and `id` | `GenerateRequest.system` blocks | Form `system_items` (`[{n, role, type, parts, id}]`) and `instructions` on the request record the split; an `id` other than Kaeso's own is written back. Codex 0.164 sends its instructions this way. A leading item with a `status`, an image or an unknown key stays a `Role::System` message. |
+| `message` item, role `user` / `assistant` | `Message { role: User / Assistant }` content blocks | `EasyInputMessage`, `InputMessage` and `OutputMessage` shapes. Item `type`, `id`, `status` and the `role` spelling: form on the message; `phase` and unknown keys: extras of the message; `phase` is left out for other formats ([allowlist](cross-format.md#allowlist)). A KPP message holds at most one message item. |
 | `message` item, role `system` / `developer` (not leading) | `Message { role: System }` ([system messages](cross-format.md#system-messages)) | Canonical role `developer`; `system`: form. |
 | `content` string vs parts | form `parts` on the message | The string is canonical for one plain text block. Empty parts list: form `empty_at`. |
 | `function_call` (`FunctionToolCall`) | `Block::ToolCall` in the current assistant message | `call_id` → `id`, `name`, `arguments` (a JSON string) → raw JSON. Arguments that aren't JSON are kept as a JSON string with form `args_string`, the KPP convention; a JSON-string `arguments` value from another dialect is sent as its text. `id`, `status`: form; `namespace`, `caller`, unknown keys: extras of the block. Call ids from other dialects longer than 64 characters are shortened to their first 55 characters, `_` and 8 hexadecimal digits of an FNV-1a hash, recorded in `EgressCtx::tool_ids` and mapped back on decode. |
 | `function_call_output` (`FunctionCallOutputItemParam`) | `Block::ToolResult` in the current user message | `call_id`; an `output` string → one text block, parts → text, image and document blocks (form `parts` when a string would do). `id`, `status`: form; `name`, `namespace`, unknown keys: extras. `is_error` from other dialects is dropped. Empty content from other dialects: `output: ""`. |
 | `reasoning` (`ReasoningItem`) | `Block::Reasoning` (origin `openai_responses`) in the current assistant message | A Kaeso-invented id (`rs_kaeso_…`) is not kept (form `kaeso_id`); such an item without `encrypted_content` is not sent to the provider at all, since it would have neither an `id` nor content OpenAI can use. `id` → opaque `OpenAiReasoningItemId`, `encrypted_content` → opaque `OpenAiEncryptedReasoning`, `summary[].text` → `summary`, `content[].text` → `text`; `status` and part `type`s: form; unknown keys: extras. Replayed only to `openai_responses` with the same provider ([reasoning](reasoning.md)). An item whose `encrypted_content` is a reasoning blob (`kpp:reasoning:v1:…`, another dialect's reasoning Kaeso gave the app, see [reasoning blobs](reasoning.md#reasoning-blobs)) decodes to the original block inside it, origin included (for example Claude's signed thinking), whatever the rest of the item says. In requests Kaeso sends with `store: false` (from other dialects, see [Responses storage and ids](cross-format.md#responses-storage-and-ids)), reasoning without encrypted content is not sent, because OpenAI can't resolve the item id. |
+| `custom_tool_call`, `custom_tool_call_output`, `local_shell_call`, `local_shell_call_output` | as below; for Anthropic and Chat Completions, tool calls and results ([Codex tool history](cross-format.md#codex-tool-history)) | |
 | `item_reference` and every other item type (server-tool calls and outputs, `compaction`, future types) | a message with one `Block::Unknown`, form `raw_item` | Role `Assistant` for types ending in `_call`, `mcp_list_tools`, `mcp_approval_request`; otherwise `User`. The role only matters to KPP validation, because these items never go to another dialect. Same-dialect only. |
 | items that don't parse as their type (for example a `function_call_output` with `call_id: null`) | `Block::Unknown` (as above) | Lossless; the provider judges them. |
 
@@ -284,7 +285,7 @@ Every remaining property of the covered schemas, by name:
 
 The `type` and `code` rows win over the status. Other codes don't decide here; the status does: `rate_limit_exceeded`, `rate_limit_error` and `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` and the image codes (starting with `invalid_image` or `image_`, or ending in `_image`; `InvalidRequest`). They decide only where there is no status: in a stream `error` event and in the `error.code` of a failed response. An error object without a message gets `The provider returned HTTP <status> without a message.`
 
-Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged. An error is unchanged while the kind decoded again from its body equals the error's kind and the message is the same. Other errors get:
+Encoding replays the body and status of errors that came from an OpenAI dialect (Chat, Responses, Embeddings) while they are unchanged. An error is unchanged while the kind decoded again from its body equals the error's kind and the message is the same. A provider error from another dialect gets no `param`: it names a field of the request Kaeso built, not of the app's. Other errors get:
 
 | `ErrorKind` | Status | `type` | `code` |
 | --- | --- | --- | --- |
@@ -334,13 +335,20 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 
 - It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`. This covers the typed fields, the extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
 - It sets `stream: true` and `store: false`.
-- It drops forms `input`, `system_items` and `instructions`, so `input` is an array and leading system text is `instructions`. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
+- It drops form `input`, so `input` is an array. When a leading item has the role `system`, it also drops forms `system_items` and `instructions`, so leading system text is `instructions`; leading `developer` items, as Codex sends them, keep their shape and ids. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
 
 Because the route only streams, the gateway gathers its stream into one reply when the app's request doesn't stream. An item KPP doesn't model, such as `web_search_call`, is then the item that `response.output_item.done` sent (`dispatch::finished_item`). The `response.*` events that report an item's progress by its `item_id`, such as `response.web_search_call.searching`, stay out of the reply, because the finished item carries what they say (`dispatch::reports_item_progress`).
 
 ## Providers that use this format
 
 Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
+
+Each provider in `PROVIDERS` names a `kaeso_codecs::openai_responses::ResponsesProfile` in its `responses` field, and the gateway hands it to the encoder with `EgressCtx::with_responses_profile`. `ResponsesProfile::OPENAI`, the default, sends requests as the app wrote them. `ResponsesProfile::compatible(name)` differs only in `tool_namespaces: false` ([tool namespaces](cross-format.md#tool-namespaces)); custom providers get `compatible`, since only OpenAI documents namespaces.
+
+| Setting | What the encoder does |
+|---|---|
+| `xai_web_search()` | Sends hosted search as xAI's `web_search` tool ([hosted web search](cross-format.md#hosted-web-search)). |
+| `without_null_reasoning_content()` | Leaves out an explicit `content: null` of a reasoning item the app sends back. |
 
 ### SpaceX
 
@@ -350,7 +358,9 @@ Sources: xAI's [Responses reference](https://docs.x.ai/developers/rest-api-refer
 |---|---|---|
 | `reasoning` items with `summary`, and `encrypted_content`, which `grok-4.3` always sends | as OpenAI's | SpaceX refuses an `encrypted_content` that another provider wrote with a 400 `invalid-argument`. |
 | `web_search_call` items, `url_citation` annotations | as OpenAI's | |
-| `namespace` tools (request) | flattened to function tools | SpaceX refuses them with a 422 (`unknown variant namespace`); `Provider::tool_namespaces` is false ([tool namespaces](cross-format.md#tool-namespaces)). |
+| `namespace` tools (request) | flattened to function tools | SpaceX refuses them with a 422 (`unknown variant namespace`); its profile is `compatible` ([tool namespaces](cross-format.md#tool-namespaces)). |
+| `web_search` tool (request) | xAI's tool (`xai_web_search()`) | SpaceX refuses `external_web_access` (`Argument not supported: external_web_access`) and always searches live ([hosted web search](cross-format.md#hosted-web-search)). |
+| `content: null` on a `reasoning` item sent back (request) | left out (`without_null_reasoning_content()`) | Codex sends its earlier reasoning items back this way. With the `null`, SpaceX can't read the item's `encrypted_content` (`Could not decode the compaction blob`). |
 | `usage.num_sources_used`, `num_server_side_tools_used`, `server_side_tool_usage_details`, `cost_in_usd_ticks`, `context_details` | `raw` usage | Responses apps get them back; the token counts are typed as above. |
 | `presence_penalty` (request) | extras | SpaceX ignores it and echoes `0.0`. |
 | `max_output_tokens` (request) | `sampling.max_output_tokens` | SpaceX applies it only to visible output, not to reasoning tokens (Responses reference), as for [Chat Completions](openai-chat-providers.md#spacex). |

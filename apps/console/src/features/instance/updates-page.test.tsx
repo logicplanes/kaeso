@@ -344,12 +344,12 @@ describe("instance updates page", () => {
     on("GET", "instance/updates", updates());
     history();
     const { user } = await renderApp(PATH);
-    await user.click(await screen.findByRole("button", { name: "What's new" }));
+    await user.click(await screen.findByRole("button", { name: "See what's new" }));
     const dialog = await screen.findByRole("dialog", { name: "What's new in Kaeso" });
     expect(within(dialog).getByText("Published 1 Oct 2026")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "What's new in Kaeso" })).not.toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "What's new" }));
+    await user.click(screen.getByRole("button", { name: "See what's new" }));
     expect(await screen.findByRole("dialog", { name: "What's new in Kaeso" })).toBeInTheDocument();
   });
 

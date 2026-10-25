@@ -98,6 +98,9 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 | two-factor authentication | Zwei-Faktor-Authentifizierung | 双重验证 |
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
+| agent (connected through the MCP server) | Agent | 智能体 |
+| model family (of an agent) | Modellfamilie | 模型系列 |
+| preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
 | restore | wiederherstellen | 恢复 |
 | archive | archivieren | 归档 |
@@ -121,7 +124,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 
 ### 使用哪种语言
 
-- 用户在**设置** › **账户** › **外观** › **语言**中选择：自动、English、Deutsch 或简体中文。所做的选择保存在其账户中（通过带 `locale` 的 `PATCH me` 写入，从 `auth/session` 读取），因此在每个浏览器中都会生效。
+- 用户在**账户** › **外观** › **语言**中选择：自动、English、Deutsch 或简体中文。所做的选择保存在其账户中（通过带 `locale` 的 `PATCH me` 写入，从 `auth/session` 读取），因此在每个浏览器中都会生效。
 - **自动**是默认选项，它取浏览器语言中控制台支持的第一个（`navigator.languages`：`de-AT` 是德语，任何中文都是简体中文），否则回退到英语，并在浏览器语言改变时随之改变。
 - 浏览器会保存一份账户选择的副本（`kaeso:locale`），因此首次绘制（包括登录页）就已经使用该语言。英语不需要额外加载任何内容；德语和中文会在首次绘制之前加载各自的文案目录（控制台的和库的，各一个 chunk）。
 - 如果会话报告了在另一个浏览器中做出的选择，`src/i18n/sync.tsx` 会切换到该语言。切换时控制台会以新语言重新绘制；页面、其数据和所在位置都保持不变。

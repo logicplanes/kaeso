@@ -21,7 +21,7 @@ use crate::codec::{
     StreamEncoder,
 };
 
-pub(crate) use blocks::block_form;
+pub(crate) use blocks::{block_form, tool_reference};
 
 pub const ANTHROPIC_VERSION: &str = "2023-06-01";
 
@@ -71,7 +71,9 @@ impl Codec for AnthropicMessages {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        let req = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
+        let crate::adapt::Adapted { req, left_out } =
+            crate::adapt::for_target(req, Self::DIALECT, ctx)?;
+        ctx.left_out = left_out;
         check::check(&req, &ctx.origin(Self::DIALECT))?;
         request::encode_request(&req, ctx)
     }

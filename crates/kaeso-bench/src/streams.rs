@@ -333,7 +333,7 @@ pub(crate) fn healthy(n: usize, chunks: u64, gap: Duration, prefix: &str) -> Vec
         .collect()
 }
 
-// Spreads `share` of `n` evenly over the indices, so a run is the same every time.
+// Spread evenly rather than drawn at random, so a run is the same every time.
 pub(crate) fn picked(n: usize, share: f64) -> Vec<bool> {
     let count = (n as f64 * share).round() as usize;
     (0..n)
@@ -378,8 +378,6 @@ impl Profile {
     }
 }
 
-// What the app waited for its first byte beyond the provider's own time to answer, which
-// Kaeso reports in Server-Timing: Kaeso's work before the call and after the answer.
 pub(crate) fn added_ttfb<'a>(runs: impl Iterator<Item = &'a Run>) -> Summary {
     let added: Vec<f64> = runs
         .filter_map(|r| Some(r.ttfb_ms? - r.timing.upstream_ms?))

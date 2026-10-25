@@ -57,10 +57,9 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
-Codex sendet bei jedem Zug Teile, die nur OpenAI kennt. Kaeso übersetzt sie für andere Modelle: Es macht aus den Tool-Gruppen und MCP-Tools von Codex einfache Tools und aus seiner Websuche die Websuche von Claude. Zwei Einstellungen hängen vom Modell ab:
+Codex sendet bei jedem Zug Teile, die nur OpenAI kennt. Kaeso übersetzt sie für andere Modelle: Es macht aus den Tool-Gruppen und MCP-Tools von Codex einfache Tools und aus seiner Websuche die eigene Websuche des Modells. Ein Thread kann das Modell wechseln: Der Verlauf der Tools eines GPT-Modells bleibt erhalten.
 
-- Für Claude setzen Sie `web_search = "live"` oder `"disabled"`. Der Standard von Codex, `"cached"`, verlangt OpenAIs Cache von Seiten, den Claude nicht hat.
-- Für Modelle, die über Chat Completions laufen, etwa Mistral, setzen Sie `web_search = "disabled"`. Sie haben keine Websuche.
+Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und Grok suchen nur live, während der Standard von Codex, `web_search = "cached"`, OpenAIs Cache von Seiten verlangt. Mit diesem Standard bekommen auch sie keine Websuche. Setzen Sie `web_search = "live"`, damit sie suchen können.
 
 > [!NOTE]
 > Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt.
@@ -79,3 +78,4 @@ Jedes Tool, in dem Sie eine Basis-URL für OpenAI oder Anthropic setzen können,
 - [API-Schlüssel](../console/api-keys.md): Beschränken Sie den Schlüssel eines Tools auf die Modelle, die es braucht, oder geben Sie ihm ein Ablaufdatum.
 - [Limits und Budgets](../console/limits-and-budgets.md): Begrenzen Sie, wie viele Token oder wie viel Geld ein Tool verbrauchen kann.
 - [Formatübersetzung](../concepts/format-translation.md): Sehen Sie, was erhalten bleibt, wenn ein Tool das Modell eines anderen Anbieters aufruft.
+- [MCP-Server](../api/mcp.md): Lassen Sie ein Coding-Tool Ihre Installation verwalten, mit den Rechten, die Sie wählen.

@@ -57,10 +57,9 @@ export KAESO_API_KEY=sk-kso-…
 codex
 ```
 
-Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模型转换它们：把 Codex 的工具分组和 MCP 工具变为普通工具，把它的网页搜索变为 Claude 的网页搜索。有两项设置取决于模型：
+Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模型转换它们：把 Codex 的工具分组和 MCP 工具变为普通工具，把它的网页搜索变为模型自己的网页搜索。线程可以切换模型：GPT 模型的工具历史会一并保留。
 
-- 使用 Claude 时，设置 `web_search = "live"` 或 `"disabled"`。Codex 的默认值 `"cached"` 要求使用 OpenAI 的页面缓存，而 Claude 没有这种缓存。
-- 使用通过 Chat Completions 提供的模型（例如 Mistral）时，设置 `web_search = "disabled"`。这些模型没有网页搜索。
+没有网页搜索的模型（例如 Mistral）收到的请求不含网页搜索。Claude 和 Grok 只做实时搜索，而 Codex 的默认值 `web_search = "cached"` 要求使用 OpenAI 的页面缓存，因此使用该默认值时它们也没有网页搜索。设置 `web_search = "live"` 即可让它们搜索。
 
 > [!NOTE]
 > Kaeso 不会在轮次之间保存响应。如果请求要求服务商保存或延续某个响应（`store: true`、`previous_response_id`），Kaeso 会拒绝它，并在错误中说明原因。
@@ -74,8 +73,9 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 | OpenAI Chat Completions 或 Responses | `https://kaeso.example.com/v1` | API 密钥或 Bearer 令牌 |
 | Anthropic Messages | `https://kaeso.example.com` | API 密钥（`x-api-key`）或 Bearer 令牌 |
 
-## 后续步骤
+## 下一步
 
 - [API 密钥](../console/api-keys.md)：把工具的密钥限制在它需要的模型内，或为它设置过期日期。
 - [限额和预算](../console/limits-and-budgets.md)：限制工具可以消耗的 Token 数量或金额。
 - [格式转换](../concepts/format-translation.md)：了解工具调用其他服务商的模型时，哪些内容能够保留。
+- [MCP 服务器](../api/mcp.md)：让编程工具按您选择的权限管理实例。

@@ -10,6 +10,8 @@ Sources, read 2026-10-19:
 
 Every reply, stream and error below is a live recording made with `cargo xtask record` on 2026-10-19 (see `RECORDED.md` in each folder), with `grok-4.3`. `errors/recorded-invalid-api-key.json` was recorded the same day with a plain `POST` and a placeholder key. The model listing is in `openai_chat/providers/xai/models/`.
 
+The `codex-*` recordings of 2026-10-25 are a Codex 0.164 thread with `grok-4.7`, gateway-relayed, not raw xAI recordings: `cargo xtask record` sent them to Kaeso 0.4.2 at `ai.logicplanes.com` (`XAI_BASE_URL`) on 2026-10-25, which passed them to xAI. That release predates the handling of Codex's developer messages, reasoning replay and web search options, so it sent these requests to xAI unchanged. It re-encodes replies in the same format and errors in the OpenAI shape, so these two errors carry `{"error": {"message", "type"}}` instead of xAI's own `{"error": "<message>"}`.
+
 xAI's errors are `{"error": "<message>"}`, with `"code": "invalid-argument"` on a 400; each error's `.meta.json` has the `encoded` OpenAI-shaped body the codec sends apps instead.
 
 | file | what it covers | provenance |
@@ -29,3 +31,13 @@ xAI's errors are `{"error": "<message>"}`, with `"code": "invalid-argument"` on 
 | `streams/recorded-web-search-stream.sse` | `web_search_call.*` and `output_text.annotation.added` events | live |
 | `errors/recorded-reasoning-encrypted.json` | 400 `invalid-argument` for an `encrypted_content` from another provider | live |
 | `errors/recorded-invalid-api-key.json` | 400 `invalid-argument` for a wrong key | live, plain `POST` |
+| `requests/codex-turn-one.json` | Codex's first turn as Kaeso sends it to SpaceX: two leading `developer` items with `id`s, `exec_command`, `web_search` without `external_web_access`, `include: ["reasoning.encrypted_content"]` | `requests/codex-developer-resume.json` |
+| `requests/codex-turn-two.json` | the second turn as Kaeso sends it: the first reply's reasoning item without `content: null`, its message, a new user turn | built from `recorded-codex-turn-one` the way Codex replays it |
+| `requests/codex-turn-two-null-content.json` | the same turn as Codex writes it, with `content: null` on the reasoning item | as above |
+| `requests/codex-web-search-access.json` | the first turn with `external_web_access: true`, as Codex sends it | Codex 0.164 with `web_search = "live"` |
+| `responses/recorded-codex-turn-one.json` | a reasoning item with SpaceX's `encrypted_content` and the answer `ok` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
+| `responses/recorded-codex-turn-two.json` | the second turn recalls the first: `4817` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
+| `errors/recorded-codex-turn-two-null-content.json` | 400 `Could not decode the compaction blob. Ensure it is unmodified from the compact response.` for `content: null` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
+| `errors/recorded-codex-web-search-access.json` | 400 `Argument not supported: external_web_access` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
+| `requests/codex-gpt-history.json` | `requests/codex-model-switch.json` resumed on `grok-4.7`: GPT-6 history with `phase`, OpenAI's `web_search_call` and a `custom_tool_call`, as Kaeso sends it | `requests/codex-model-switch.json` |
+| `responses/recorded-codex-gpt-history.json` | SpaceX takes that history as sent and answers `OK` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |

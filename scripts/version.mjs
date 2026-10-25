@@ -29,6 +29,13 @@ export const ALLOWED = [
   { path: "apps/docs/content/*/development/architecture/updates.md", version: "0.1.0", why: "the signed release the updater's tests verify" },
   { path: "crates/kaeso-updater/tests/verify.rs", version: "0.1.0", why: "the signed images of the first release the updater's tests verify" },
   { path: "crates/kaeso-updater/tests/fixtures/*", version: "0.1.0", why: "the attestations and image indexes of the first release" },
+  {
+    path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/README.md",
+    version: "0.4.2",
+    why: "the gateway release that relayed the Codex recordings",
+  },
+  { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/*/RECORDED.md", version: "0.4.2", why: "as above" },
+  { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/errors/recorded-codex-*.meta.json", version: "0.4.2", why: "as above" },
 ];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
@@ -82,6 +89,14 @@ const RULES = [
   {
     what: "package version",
     match: (file) => /^((apps|packages)\/[^/]+\/)?package\.json$/.test(file),
+    manifest: true,
+    required: true,
+    read: (text) => matches(text, new RegExp(PACKAGE_VERSION.source, "gm"), 2),
+    write: (text, version) => replaceGroup(text, PACKAGE_VERSION, version),
+  },
+  {
+    what: "plugin version",
+    match: (file) => /^plugins\/[^/]+\/\.(claude|cursor)-plugin\/plugin\.json$/.test(file),
     manifest: true,
     required: true,
     read: (text) => matches(text, new RegExp(PACKAGE_VERSION.source, "gm"), 2),

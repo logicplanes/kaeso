@@ -12,6 +12,7 @@ use utoipa::ToSchema;
 use crate::auth::sessions::{self, Method, SignIn};
 use crate::auth::totp::{Factor, SecondFactorError, aad, check_code, new_recovery_codes};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::auth::password::{Attempts, CODES_BEFORE_LOCK, failed_code};
 use crate::platform::auth::setup::hash_password;
 use crate::platform::auth::start_session_until;
@@ -196,7 +197,7 @@ pub async fn change_password(
     ] {
         tokens::retire_all(&mut *tx, kind, Some(user.id), ctx.now).await?;
     }
-    ctx.audit(None, "user.password_change")
+    ctx.audit(None, Action::UserPasswordChange)
         .target("user", user_id)
         .write(&mut tx)
         .await?;
@@ -325,7 +326,7 @@ pub async fn totp_confirm(
     let (codes, hashes) = new_recovery_codes();
     let mut tx = state.pg.begin().await?;
     totp::replace_recovery_codes(&mut tx, user_id.uuid(), &hashes).await?;
-    ctx.audit(None, "user.totp_enable")
+    ctx.audit(None, Action::UserTotpEnable)
         .target("user", user_id)
         .write(&mut tx)
         .await?;
@@ -383,7 +384,7 @@ pub async fn totp_disable(
     if !totp::remove(&mut tx, user_id.uuid()).await? {
         return Err(ApiError::not_found("TOTP setup"));
     }
-    ctx.audit(None, "user.totp_disable")
+    ctx.audit(None, Action::UserTotpDisable)
         .target("user", user_id)
         .write(&mut tx)
         .await?;
@@ -429,7 +430,7 @@ pub async fn recovery_codes(
     let (codes, hashes) = new_recovery_codes();
     let mut tx = state.pg.begin().await?;
     totp::replace_recovery_codes(&mut tx, user_id.uuid(), &hashes).await?;
-    ctx.audit(None, "user.recovery_codes_regenerate")
+    ctx.audit(None, Action::UserRecoveryCodesRegenerate)
         .target("user", user_id)
         .write(&mut tx)
         .await?;

@@ -1,8 +1,21 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../button/button.js";
 import { Dialog, KAESO_DIALOG_VARIANTS } from "./dialog.js";
 import { focusDialogSection } from "./focus.js";
 import { useUiText } from "../../i18n/context.js";
+
+export const KAESO_STEP_DIALOG_VARIANTS = {
+  size: {
+    sm: { classes: KAESO_DIALOG_VARIANTS.size.sm.classes, description: "440px: most tasks in a few steps (default)" },
+    md: { classes: KAESO_DIALOG_VARIANTS.size.md.classes, description: "560px: steps with longer forms" },
+    lg: { classes: KAESO_DIALOG_VARIANTS.size.lg.classes, description: "720px: steps with two columns or previews" },
+  },
+  tone: {
+    default: { classes: "", description: "The last step's button is primary (default)" },
+    danger: { classes: "", description: "The last step's button is a danger button, for a task that ends in deletion" },
+  },
+} as const;
+export const KAESO_STEP_DIALOG_DEFAULT_VARIANTS = { size: "sm", tone: "default" } as const;
 
 export interface DialogStep {
   id: string;
@@ -30,8 +43,8 @@ export interface StepDialogProps {
   submitLabel: string;
   onSubmit: () => void;
   submitting?: boolean | undefined;
-  tone?: "default" | "danger" | undefined;
-  size?: keyof typeof KAESO_DIALOG_VARIANTS.size | undefined;
+  tone?: keyof typeof KAESO_STEP_DIALOG_VARIANTS.tone | undefined;
+  size?: keyof typeof KAESO_STEP_DIALOG_VARIANTS.size | undefined;
   inline?: boolean | undefined;
   defaultStep?: number | undefined;
   result?: StepDialogResult | undefined;
@@ -43,20 +56,10 @@ function reducedMotion() {
 
 const bodyOf = (el: HTMLElement | null | undefined) => el?.closest<HTMLElement>("[data-dialog-body]") ?? null;
 
-export function StepDialog({
-  open,
-  onOpenChange,
-  title,
-  steps,
-  submitLabel,
-  onSubmit,
-  submitting,
-  tone = "default",
-  size = "sm",
-  inline,
-  defaultStep = 0,
-  result,
-}: StepDialogProps) {
+export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function StepDialog(
+  { open, onOpenChange, title, steps, submitLabel, onSubmit, submitting, tone = "default", size = "sm", inline, defaultStep = 0, result },
+  ref,
+) {
   const [index, setIndex] = useState(defaultStep);
   const uid = useId();
   const t = useUiText();
@@ -153,7 +156,7 @@ export function StepDialog({
   };
   if (result)
     return (
-      <Dialog {...frame} anchor="top" size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
+      <Dialog ref={ref} {...frame} anchor="top" size={result.size ?? size} title={result.title} description={result.description} footer={result.footer}>
         <p className="sr-only" aria-live="polite">
           {result.title}
         </p>
@@ -166,6 +169,7 @@ export function StepDialog({
     );
   return (
     <Dialog
+      ref={ref}
       {...frame}
       anchor="top"
       busy={waiting}
@@ -208,5 +212,5 @@ export function StepDialog({
       {stepList}
     </Dialog>
   );
-}
+});
 StepDialog.displayName = "StepDialog";

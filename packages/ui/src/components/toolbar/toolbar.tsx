@@ -35,9 +35,9 @@ const Root = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar({ size: s
 });
 Root.displayName = "Toolbar";
 
-function Spacer() {
-  return <span aria-hidden className="flex-1" />;
-}
+const Spacer = forwardRef<HTMLSpanElement>(function ToolbarSpacer(_props, ref) {
+  return <span ref={ref} aria-hidden className="flex-1" />;
+});
 Spacer.displayName = "Toolbar.Spacer";
 
 export const Toolbar = Object.assign(Root, { Spacer });

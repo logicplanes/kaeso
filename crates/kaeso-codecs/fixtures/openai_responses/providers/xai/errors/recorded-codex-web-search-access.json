@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": null,
+    "message": "Argument not supported: external_web_access",
+    "param": null,
+    "type": "invalid_request_error"
+  }
+}

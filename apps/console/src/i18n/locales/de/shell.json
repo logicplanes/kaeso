@@ -80,6 +80,7 @@
   "shell.routeError.title": "Diese Seite konnte nicht geladen werden",
   "shell.routeError.unexpected": "Unerwarteter Fehler auf dieser Seite; bitte neu laden.",
   "shell.searchSettings": "Einstellungen suchen",
+  "shell.settings.agents": "Agenten",
   "shell.settings.appearance": "Darstellung",
   "shell.settings.general": "Allgemein",
   "shell.settings.logging": "Protokollierung",

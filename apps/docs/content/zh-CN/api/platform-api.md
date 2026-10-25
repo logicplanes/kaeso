@@ -70,15 +70,17 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 平台密钥 | `Authorization: Bearer sk-kso-org-…` | 管理员角色的权限，适用于其组织及组织内的所有项目 |
 | 具有平台访问权限的 API 密钥 | `Authorization: Bearer sk-kso-…` | 其成员或服务账号的权限，仅限于其所属项目 |
 | 会话 | `auth/*` 下的登录端点设置的会话 Cookie | 您自己的权限 |
+| 智能体 | `Authorization: Bearer kso_at_…`，即 [MCP 服务器](mcp.md)登录得到的访问令牌 | 其用户的权限，并收窄到智能体获得的权限和智能体策略允许的范围（[权限](mcp.md#权限)） |
 
 自动化整个组织时使用平台密钥，单个项目的脚本和 CI 使用项目密钥。会话供控制台和使用 curl 的人员使用。会话 Cookie 是 `__Host-kaeso_session`；在位于 localhost 等回环地址的 `http://` 实例上为 `kaeso_session`。
 
 - **密钥只能访问 `orgs/{org}/*`。** `me/*`、`instance/*` 以及 `auth/*` 中需要登录的路由会对密钥返回 403。组织级路由会对项目密钥返回 403。
+- **智能体可以访问指定了权限的路由。** 即平台密钥可以使用的所有 `orgs/{org}/*` 路由、指定了 `instance.*` 权限的 `instance/*` 路由，以及指定了 `account.*` 权限的 `me/*` 路由。其他路由会对智能体返回 403（[工具](mcp.md#工具)）。
 - **密钥放在 `Authorization` 中。** Platform API 从不读取 `x-api-key`。
 - **平台访问权限在创建密钥时选择**，即 `"access": "platform"` 或 `"both"`。默认为 `inference`，授予平台访问权限需要 `keys.platform_access.grant` 权限（[API 密钥](../console/api-keys.md)）。
 - **平台密钥只能在会话中创建**，且创建者必须拥有管理员角色的全部权限。平台密钥从不调用模型。
 - **密钥通过一个请求轮换。** `POST …/keys/{key}/rotate`、`…/service-accounts/{account}/keys/{key}/rotate` 和 `orgs/{org}/platform-keys/{key}/rotate` 接受 `grace_hours`（0、1、24 或 168）以及新密钥的过期时间。它们返回保留旧密钥设置的新密钥，所需条件与创建该密钥相同，另需管理该密钥的权限（[轮换密钥](../console/api-keys.md#轮换密钥)）。
-- **组织策略作用于会话。** 要求单点登录的组织会对其管理的账户的会话返回 403，除非会话来自其身份提供商；访客的会话可以通过。要求双重验证的组织会对没有第二重验证的会话返回 403。例外是来自在该组织有效的单点登录的会话：即其自己的单点登录，或管理该账户的组织的单点登录（见[受管理的账户](../self-hosting/sign-in.md#受管理的账户)）。
+- **组织策略作用于会话和智能体。** 要求单点登录的组织会对其管理的账户的会话返回 403，除非会话来自其身份提供商；访客的会话可以通过。要求双重验证的组织会对没有第二重验证的会话返回 403。例外是来自在该组织有效的单点登录的会话：即其自己的单点登录，或管理该账户的组织的单点登录（见[受管理的账户](../self-hosting/sign-in.md#受管理的账户)）。
 - **未知密钥会被限流。** 来自同一地址、使用未知密钥的请求过多时（两个 API 合并计算），会收到 `429 rate_limited` 和 `Retry-After`（[API 密钥查找失败](../self-hosting/configuration.md#api-密钥查找失败)）。
 
 ### 跨站请求
@@ -93,7 +95,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 近期登录
 
-在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录。您可以使用密码或登录链接确认；只有账户没有其他方式时，才通过单点登录确认。密钥不受此限制。
+在会话中，部分操作要求在最近 15 分钟内登录过。否则 Kaeso 返回 `403 recent_sign_in_required`，控制台会请您重新登录。您可以使用密码或登录链接确认；只有账户没有其他方式时，才通过单点登录确认。密钥和智能体不受此限制：向智能体授予敏感权限时需要近期登录。
 
 `GET me/sign-in-again` 列出账户可用的确认方式：`password`、`magic_link`，以及 `set_password`：账户尚无密码，但可以通过 `POST auth/password-reset` 设置一个。只有这三项都为 `false` 时，`sso` 才列出账户已关联其身份提供商的组织。管理该账户的组织排在最前。如果该组织要求单点登录，则只有它的身份提供商可以确认。
 
@@ -103,23 +105,23 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 以下操作要求近期登录：
 
-- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
-- **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码、关闭双重验证、生成新的恢复码和删除账户。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
+- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.delete` 和 `keys.platform_access.grant`。
+- **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码和删除账户。设置或关闭双重验证、生成新的恢复码，以及关联或取消关联单点登录，同样需要近期登录。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
 ## 约定
 
 | 主题 | 规则 |
 | --- | --- |
 | 格式 | 基于 JSON 的 REST：路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会得到 400。 |
-| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`。 |
+| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`。 |
 | 时间 | RFC 3339，UTC。每个响应都在 `Kaeso-Time-Zone` 中给出实例的时区，例如 `Europe/Berlin`，即控制台显示时间所用的时区。 |
 | 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
 | 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元。 |
 | 创建 | 对集合发送 `POST`，以 201 和新资源响应。 |
-| 更新 | 发送只含待更改字段的 `PATCH`。 |
+| 更新 | 发送只含待更改字段的 `PATCH`。`PUT` 设置一个完整的值，例如图片、密钥策略或 SSO 连接。 |
 | 操作 | `POST …/archive`、`…/disable`、`…/enable`、`…/replace` 或 `…/restore`。归档会保留记录。 |
-| 删除 | `DELETE`，仅用于确实会删除内容的地方：服务商密钥、别名、目录中的模型、限额、自定义角色、会话、邀请和您的账户。 |
+| 删除 | `DELETE` 用于移除内容，例如服务商密钥、成员、图片或您的账户。`DELETE orgs/{org}` 则只是计划删除组织。 |
 | 审计 | 每项更改都会在同一事务中写入其所在层级的审计日志。 |
 | 请求 ID | 每个响应都带有 `kaeso-request-id`。 |
 
@@ -135,7 +137,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ### 修订版本
 
-目录中的模型和限额带有 `revision`，每次更改都会递增。读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改您读取的那个修订版本。条目在此期间被更改时，Kaeso 返回 `412 conflict`；不带 `If-Match` 时，更改作用于当前修订版本。
+目录中的模型、限额和自定义服务商带有 `revision`，每次更改都会递增。读取、创建或更改时会以 `ETag: "<revision>"` 响应。在 `PATCH` 或 `DELETE` 的 `If-Match` 中带回该标签，就只会更改您读取的那个修订版本。条目在此期间被更改时，Kaeso 返回 `412 conflict`；不带 `If-Match` 时，更改作用于当前修订版本。
 
 ### 已计划删除的组织
 
@@ -162,8 +164,8 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 状态码 | `type` | 何时出现 |
 | --- | --- | --- |
 | 400 | `invalid_request` | 正文不是 JSON，或含有未知字段。参数类型或格式错误，或值超出范围。 |
-| 401 | `authentication` | 没有会话或密钥，或会话、密钥未知、已过期或已结束。 |
-| 403 | `permission_denied` | 缺少权限、密钥用于其不能访问的路由、缺少 `Origin`，或组织策略不允许。 |
+| 401 | `authentication` | 没有会话、密钥或智能体令牌，或它们未知、已过期或已结束。 |
+| 403 | `permission_denied` | 缺少权限、密钥或智能体用于其不能访问的路由、缺少 `Origin`，或组织策略不允许。实例或组织不允许智能体时也是如此。 |
 | 403 | `recent_sign_in_required` | 该操作需要[近期登录](#近期登录)。 |
 | 403 | `other_sign_in_required` | 会话来自不管理该账户的组织的单点登录，而操作不在该组织内；或者会话来自单点登录，而操作属于实例管理，且该单点登录不来自为实例管理员选定的组织。请使用密码或登录链接登录。 |
 | 404 | `not_found` | 路径不存在，或对象不存在或调用方无权查看。 |
@@ -184,14 +186,17 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 路径 | 内容 |
 | --- | --- |
 | `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份、管理该账户的组织（`managed_by`），以及能否创建组织（`can_create_orgs`）。 |
-| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥和通知，以及创建组织和删除账户。 |
+| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥、通知和智能体，以及创建组织和删除账户。 |
 | `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、安全设置、平台密钥、日志设置和存储、用量、审计日志、所有权转让、删除和恢复。 |
 | `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、内容日志、请求日志和导出、用量、审计日志和[试验场](#试验场)。 |
-| `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
+| `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、智能体策略、models.dev 同步、系统健康状况和存储、更新，以及实例审计日志。 |
+| `orgs/{org}/agents`、`orgs/{org}/security/agents`、`me/agents/*`、`me/agent-requests/*` | 智能体、其权限和智能体策略，带有 `agents` 标签（[路由](mcp.md#platform-api-路由)）。 |
+
+`instance/*` 下的大多数路由在 `openapi.json` 中指定了一项 `instance.*` 权限。实例管理员的会话拥有其中每一项，实例管理员的智能体则需要逐项获得（[实例权限](../concepts/rights.md#实例权限)）。将某人设为实例管理员、`instance/settings/admin-sso`、设置智能体策略，以及立即删除用户或组织，都只能通过会话进行。同样，智能体可以使用的 `me/*` 路由指定了一项 `account.*` 权限，会话则不需要（[账户权限](../concepts/rights.md#账户权限)）。
 
 实例管理员能看到每个组织的元数据，但从不能看到其内容。他们在 `instance/orgs` 下创建、重命名、计划删除、恢复和删除组织。`POST instance/orgs/{org}/owner` 可将任何有效用户设为所有者，管理员本人也可以；实例管理员正是借此进入组织进行管理。组织的审计日志会记录此操作。
 
-只有实例管理员能用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
+实例管理员用 `POST instance/users/{user}/reset-2fa` 重置用户的双重验证，运维人员也可以在服务器上用 `kaeso user reset-2fa` 重置（[有人丢失了双重验证](../self-hosting/troubleshooting.md#有人丢失了双重验证)）。没有计费路由：`billing.view` 和 `billing.manage` 权限用于 Kaeso Cloud，在 `orgs/{org}/rights` 中带有 `cloud_only` 标记。
 
 `GET orgs/{org}/providers` 需要 `org.view`，列出 Kaeso 调用的每个服务商，在每个组织中都相同。每个服务商带有：
 

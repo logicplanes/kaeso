@@ -541,6 +541,7 @@ mod tests {
     use super::*;
     use crate::testing::{Reply, TempDir, serve_once};
     use kaeso_codecs::openai_chat::ChatProfile;
+    use kaeso_codecs::openai_responses::ResponsesProfile;
     use kaeso_core::provider::KeyPage;
 
     #[derive(Parser)]
@@ -600,9 +601,10 @@ mod tests {
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("Example Cloud"),
+        responses: ResponsesProfile::compatible("Example Cloud"),
         account: None,
     };
 

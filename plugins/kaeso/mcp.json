@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "kaeso": {
+      "url": "${KAESO_URL}/mcp"
+    }
+  }
+}

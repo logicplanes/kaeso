@@ -66,7 +66,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tool_choice.disable_parallel_tool_use` | `parallel_tool_calls = Some(!value)` | |
 | `type` 缺失、为 `null` 或 `custom` 的 `tools[]`（`Tool`） | `ToolDef::Function` | `type` 的写法 → `verbatim`。 |
 | `tools[].name`、`.description`、`.input_schema`、`.strict`、`.cache_control` | `name`、`description`、`parameters`（原始）、`strict`、`cache` | |
-| `tools[].eager_input_streaming`、`.allowed_callers`、`.defer_loading`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
+| `tools[].defer_loading` | 工具的 `extras.fields` | 其他方言：延迟加载的工具会被省略，直到某个 `tool_reference` 加载它（[工具搜索](cross-format.md#工具搜索)）。 |
+| `tools[].eager_input_streaming`、`.allowed_callers`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
 | 任何其他类型的 `tools[]`（服务器工具，例如 `web_search_20250305` 或 `advisor_20260301`） | `ToolDef::Unknown`（原始） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
 | `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
@@ -94,7 +95,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tool_result`（`tool_use_id`、`content`、`is_error`、`cache_control`） | `Block::ToolResult` | 字符串形式的 `content` → 形式标记 `content: "string"`；`[]` → `"array"`；`is_error: false` → verbatim。`toolset_name` → extras。嵌套在其他 `tool_result` 中超过 4 层的 `tool_result` 会被拒绝：在请求中为 `InvalidRequest`，在回复或流中为 `ProviderError`。 |
 | `thinking`（`thinking`、`signature`） | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""`（省略显示）保持为 `[""]`。`signature: ""` 不是不透明数据，而是变为形式标记 `empty_signature`，因此该块永远不会被视为已签名的思考，并以 `""` 写回；缺失的 `signature` 保持缺失。若 `signature` 是推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，见[推理数据块](reasoning.md#推理数据块)），则解码为其中的原始块，包括来源；此时会忽略 `thinking` 文本。 |
 | `redacted_thinking`（`data`） | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
-| 任何其他类型（`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result`、`code_execution_tool_result`、`search_result`、`container_upload`、`tool_reference`、将来的类型） | `Block::Unknown`（原始） | 仅限同一方言。`tool_reference`（MCP 工具搜索）发往其他方言被拒绝时，错误消息会提示在 Claude Code 中取消设置 `ENABLE_TOOL_SEARCH`；取消设置后，Claude Code 在网关之后默认关闭工具搜索。 |
+| `tool_reference`（`tool_name`、`cache_control`） | `Block::Unknown`（原始） | 位于 `tool_result` 中时，其他方言收到一个包含工具名称的文本块以及被引用的工具（[工具搜索](cross-format.md#工具搜索)）。 |
+| 任何其他类型（`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result`、`code_execution_tool_result`、`search_result`、`container_upload`、将来的类型） | `Block::Unknown`（原始） | 仅限同一方言。 |
 
 ### 来自其他方言的请求
 
@@ -122,6 +124,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `reasoning.effort` `none` | 不发送 `thinking`，不发送推理强度 | 这是 Anthropic 的默认行为。因此，在没有 `thinking` 时也会思考的模型（Claude Opus 5 和 5.5、Sonnet 5 和 5.5、Haiku 5.5 以及 Fable）仍会以其默认推理强度思考。思考开启时的 `none`、`minimal` 以及未知的推理强度 → `Unsupported`。 |
 | `reasoning.budget_tokens`（没有模式） | `thinking: {type: enabled, budget_tokens}` | |
 | 没有预算的 `reasoning.mode = Enabled`；带 `Adaptive` 或 `Disabled` 的预算 | `Unsupported` | 这里不做推理强度与预算之间的转换。 |
+| 来自其他方言的请求向目录条目带有 `thinking_binding` 且支持自适应思考（`EgressCtx::adaptive_thinking` 不是 `Some(false)`）的模型回放已签名或已遮蔽的思考 | 思考为 `adaptive`，或者没有 `thinking` 且 `reasoning.effort` 不是 `none`：`thinking.block_binding.prefix_mismatch_behavior: "drop_block"`（请求没有 `thinking` 时同时发送 `thinking: {type: adaptive}`，并且不发送 `temperature`、`top_p` 和 `top_k`）以及 `anthropic-beta: thinking-binding-controls-2026-08-01` 请求头。思考为 `enabled` 或 `disabled`、effort 为 `none` 或强制选择工具时，省略恢复的思考块；若请求延续一个工具轮次，`enabled` 思考也一并省略，因为缺少开头思考块时 Anthropic 会拒绝该请求 | Anthropic 把思考块绑定到产生它的对话，而其他格式的应用无法逐字节重放该对话。前缀改变时，Anthropic 会丢弃该块，而不是拒绝请求（[preserved thinking](https://platform.claude.com/docs/en/build-with-claude/preserved-thinking)）。会核对的模型只在 `adaptive` 思考下接受 `block_binding`，没有 `thinking` 时本来就以自适应方式运行；无法随请求发送绑定设置时，这些块会被拒绝，因此省略它们。Anthropic Messages 应用、token 计数以及没有 `thinking_binding` 的模型（包括其他使用 Anthropic 格式的提供商）保留自己的设置，也不会收到 beta 请求头。 |
 | 来自其他方言的 `reasoning.include_encrypted` | 丢弃 | 它只说明要返回哪些推理（Codex 总是发送它）；Anthropic 总是返回已签名的思考。 |
 | `thinking` `enabled`，且最后一条消息（不计其后的系统消息）返回工具结果，而最后一个助手轮次发起了工具调用，却没有以可回放的思考块（已签名的 `thinking` 或 `redacted_thinking`）开头（例如该轮次来自另一个服务商） | 请求不带 `thinking` 和 `output_config.effort` 发送 | Anthropic 会拒绝这样的请求（“a final assistant message must start with a thinking block”）；见[没有思考的工具轮次](reasoning.md#没有思考的工具轮次)。`adaptive` 思考会保留：自适应思考的文档说明它不需要开头的思考块。除此之外不做任何记录。这种情况很少见，因为 Claude 产生的思考会从 Responses 和 Anthropic 应用以[推理数据块](reasoning.md#推理数据块)的形式返回，从 Chat 应用则经由[网关的存储](reasoning.md#由网关保存的推理)返回，所以该轮次会以可回放的思考开头。该规则同样适用于来自 Anthropic 应用的请求。 |
 | `output = JsonObject` | `Unsupported`（`json_object output`） | [结构化输出](cross-format.md#结构化输出)。 |
@@ -129,14 +132,16 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](cross-format.md#采样参数)；不适用于 Token 计数，因为计数时会省略采样参数。 |
 | 超出 0 到 1 范围的 `sampling.temperature` | `Unsupported` | Anthropic 的范围是 0 到 1（OpenAI 允许到 2）；不会重新缩放。不适用于 Token 计数。 |
 | `user` | `metadata.user_id` | |
-| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时为 `Unsupported`（`system message`） | [系统消息](cross-format.md#系统消息)。 |
+| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，作为下一个用户轮次的文本，排在其工具结果之后 | [系统消息](cross-format.md#系统消息)。 |
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
 | 不是对象的工具调用参数；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
 | `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、schema 描述、`strict: false`、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
-| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；带 `external_web_access: false` 时省略；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `custom_tool_call`、`local_shell_call` 及其输出 | `tool_use` 和 `tool_result` 块 | [Codex 工具历史](cross-format.md#codex-工具历史)。 |
+| OpenAI Responses 的 `text.verbosity` | 省略 | 没有对应字段；在 `kaeso-left-out` 中注明（参见[条件条目](cross-format.md#条件条目)）。 |
 | OpenAI Responses 的 `namespace` 工具 | 命名空间中的每个工具一个函数工具，名为 `<namespace>__<name>` | [工具命名空间](cross-format.md#工具命名空间)。 |
 | 外来 extras、未知的块、工具和工具选择、引用、外来文件 ID | `Unsupported` | `cross::check_foreign`（[请求](cross-format.md#请求)）。 |
 
@@ -153,7 +158,7 @@ Schema `Message`。
 | 未知的 `stop_reason` 值 | `StopReason::Other(value)` | |
 | `stop_reason: null` 或缺失 | `EndTurn` 加形式标记 `spelling:stop_reason` | |
 | `stop_sequence` | 在 `StopSequence(s)` 中 | 任何其他写法（缺失，或在其他停止原因下有值）→ 形式标记 `spelling:stop_sequence`。 |
-| `stop_details`（`RefusalStopDetails`）、`container`、`diagnostics`、`type`、`role`、未知键 | `extras.fields` | |
+| `stop_details`（`RefusalStopDetails`）、`container`、`diagnostics`、`input_transformations`（Anthropic 丢弃的思考块）、`type`、`role`、未知键 | `extras.fields` | |
 | `usage.input_tokens` | `usage.input_tokens` | 已经不包含缓存读取和写入（[用量](cross-format.md#用量)）。 |
 | `usage.cache_read_input_tokens` | `usage.cache_read_tokens` | `null` → 0。 |
 | `usage.cache_creation_input_tokens` | `usage.cache_write_tokens` | `null` → 0。 |
@@ -229,7 +234,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 
 | HTTP | `error.type` | `ErrorKind`（解码） | 由 `ErrorKind` 编码 |
 |---|---|---|---|
-| 400 | `invalid_request_error` | `InvalidRequest`；消息以 `prompt is too long` 开头时为 `ContextTooLong` | `InvalidRequest`、`ContextTooLong`、`ContentFiltered`、`Unsupported` |
+| 400 | `invalid_request_error` | `InvalidRequest`；消息以 `prompt is too long` 开头时为 `ContextTooLong` | `InvalidRequest`、`ContextTooLong`、`ContentFiltered`、`Unsupported`；不以 `prompt is too long` 开头的 `ContextTooLong` 消息会在前面加上 `prompt is too long: `，Claude Code 据此压缩对话 |
 | 401 | `authentication_error` | `Authentication` | `Authentication` |
 | 402 | `billing_error` | `Billing` | `Billing` |
 | 403 | `permission_error` | `PermissionDenied` | `PermissionDenied` |

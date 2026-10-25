@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::platform::access::{Area, Ctx, require_policy};
+use crate::platform::audit::Action;
 use crate::platform::auth::setup::validate_name;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
@@ -55,12 +56,12 @@ pub async fn create_org(
     let me = ctx.user_id()?;
     let mut tx = state.pg.begin().await?;
     let (org, project) = crate::services::orgs::create(&mut tx, &name, me).await?;
-    ctx.audit(Some(org), "org.create")
+    ctx.audit(Some(org), Action::OrgCreate)
         .target("org", org)
         .after(serde_json::json!({ "name": name, "default_project": project.to_string(), "owner": me.to_string() }))
         .write(&mut tx)
         .await?;
-    ctx.audit(None, "org.create")
+    ctx.audit(None, Action::OrgCreate)
         .target("org", org)
         .write(&mut tx)
         .await?;
@@ -180,7 +181,7 @@ pub async fn leave(
 ) -> ApiResult<StatusCode> {
     let me = ctx.user_id()?;
     let org: OrgId = org.parse().map_err(|_| ApiError::not_found("membership"))?;
-    let session = ctx.session()?;
+    let session = ctx.sign_in()?;
     let leaving = Area::Org {
         id: org.uuid(),
         require_sso: false,
@@ -243,7 +244,7 @@ pub async fn set_notifications(
     let me = ctx.user_id()?;
     let mut tx = state.pg.begin().await?;
     users::set_notifications(&mut *tx, me.uuid(), req.budget_alerts, req.key_expiry).await?;
-    ctx.audit(None, "user.notifications")
+    ctx.audit(None, Action::UserNotifications)
         .target("user", me)
         .after(&req)
         .write(&mut tx)
@@ -265,7 +266,7 @@ pub async fn delete_account(State(state): State<AppState>, ctx: Ctx) -> ApiResul
     let me: UserId = ctx.user_id()?;
     let mut tx = state.pg.begin().await?;
     let keys = lifecycle::delete(&state, &mut tx, me, ctx.now).await?;
-    ctx.audit(None, "user.delete")
+    ctx.audit(None, Action::UserDelete)
         .target("user", me)
         .write(&mut tx)
         .await?;

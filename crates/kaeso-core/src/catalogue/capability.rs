@@ -55,6 +55,7 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
 pub struct Plan {
     pub dialect: DialectId,
     pub adaptive_thinking: Option<bool>,
+    pub thinking_binding: Option<bool>,
     pub reasoning: Option<bool>,
 }
 
@@ -70,6 +71,12 @@ pub fn prepare(
         .contains(&DialectId::AnthropicMessages)
         .then_some(eff.fields.adaptive_thinking)
         .flatten();
+    let thinking_binding = eff
+        .provider
+        .dialects()
+        .contains(&DialectId::AnthropicMessages)
+        .then_some(eff.fields.thinking_binding)
+        .flatten();
     match req {
         Request::Embed(_) => {
             if !eff.is_embeddings() {
@@ -84,6 +91,7 @@ pub fn prepare(
             Ok(Plan {
                 dialect: eff.dialect,
                 adaptive_thinking: None,
+                thinking_binding: None,
                 reasoning: None,
             })
         }
@@ -99,6 +107,7 @@ pub fn prepare(
             Ok(Plan {
                 dialect,
                 adaptive_thinking,
+                thinking_binding,
                 reasoning: eff.fields.reasoning,
             })
         }
@@ -114,6 +123,7 @@ pub fn prepare(
             Ok(Plan {
                 dialect,
                 adaptive_thinking,
+                thinking_binding,
                 reasoning: eff.fields.reasoning,
             })
         }
@@ -180,7 +190,7 @@ fn check_generation(
             "forced tool choice",
             Some("tool_choice"),
             format!(
-                "The model `{name}` does not accept {words}; send `auto` and ask for the tool in the prompt."
+                "The model `{name}` does not accept {words}; send `auto` and name the tool in the prompt."
             ),
         ));
     }
@@ -207,7 +217,7 @@ fn check_generation(
             "adaptive thinking",
             Some("thinking"),
             format!(
-                "The model `{name}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+                "The model `{name}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
             ),
         ));
     }

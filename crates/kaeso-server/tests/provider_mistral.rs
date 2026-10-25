@@ -186,6 +186,94 @@ async fn anthropic_apps_reach_mistral_and_get_its_thinking_and_its_answer() {
 }
 
 #[tokio::test]
+async fn chat_apps_get_mistral_thinking_as_reasoning_content_and_send_it_back() {
+    let env = env().await;
+    let body = chat(
+        SMALL,
+        &format!(
+            "Is 91 prime? {}",
+            fixture("responses", "recorded-reasoning-effort-high")
+        ),
+    );
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let message = r.json()["choices"][0]["message"].clone();
+    assert_eq!(message["content"], ANSWER);
+    let thought = message["reasoning_content"].as_str().unwrap().to_owned();
+    assert!(thought.starts_with("I need to determine if 91 is a prime number."));
+
+    let mut body = chat(
+        SMALL,
+        &format!(
+            "Is 91 prime? {}",
+            fixture("streams", "recorded-reasoning-effort-high-stream")
+        ),
+    );
+    body["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let deltas: Vec<Value> = r
+        .text()
+        .lines()
+        .filter_map(|line| line.strip_prefix("data: "))
+        .filter_map(|data| serde_json::from_str::<Value>(data).ok())
+        .map(|chunk| chunk["choices"][0]["delta"].clone())
+        .collect();
+    let joined = |key: &str| -> String {
+        deltas
+            .iter()
+            .filter_map(|delta| delta[key].as_str())
+            .collect()
+    };
+    assert!(deltas.iter().all(|delta| !delta["content"].is_array()));
+    assert_eq!(joined("content"), ANSWER);
+    assert!(joined("reasoning_content").starts_with("I need to determine if 91 is"));
+
+    let body = json!({
+        "model": SMALL,
+        "messages": [
+            { "role": "user", "content": "Is 91 prime?" },
+            { "role": "assistant", "content": ANSWER, "reasoning_content": thought },
+            { "role": "user", "content": format!("And 97? {}", fixture("responses", "recorded-max-tokens-length")) }
+        ]
+    });
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+    assert_eq!(
+        sent["messages"][1],
+        json!({
+            "role": "assistant",
+            "content": [
+                { "type": "thinking", "thinking": [{ "type": "text", "text": thought }] },
+                { "type": "text", "text": ANSWER }
+            ]
+        })
+    );
+}
+
+#[tokio::test]
 async fn streamed_thinking_reaches_anthropic_apps_before_the_whole_answer() {
     let env = env().await;
     let mut body = messages(
@@ -357,12 +445,9 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
-    assert!(
-        message.starts_with(
-            "The provider returned an error (HTTP 400) that is not in the OpenAI error format:"
-        ) && message.contains("Invalid model: mistral-tiny-nonexistent"),
-        "{message}"
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
 
     let r = call(
@@ -379,13 +464,81 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
         (&body["type"], &body["error"]["type"]),
         (&json!("error"), &json!("invalid_request_error"))
     );
-    assert!(
-        body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid model: mistral-tiny-nonexistent"),
-        "{body}"
+    assert_eq!(
+        body["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
+
+    let mut greedy = messages(SMALL, &format!("Hi {}", error("greedy-sampling")));
+    greedy["temperature"] = json!(0);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(greedy)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "top_p must be 1 when using greedy sampling."
+    );
+}
+
+#[tokio::test]
+async fn a_context_window_error_tells_every_app_to_shorten_its_prompt() {
+    let env = env().await;
+    let text = format!("Hi {}", error("context-window"));
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["code"], "context_length_exceeded");
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
+    assert!(
+        message.starts_with("prompt is too long: Prompt contains 65673 tokens"),
+        "{message}"
+    );
+}
+
+#[tokio::test]
+async fn greedy_sampling_reaches_mistral_with_the_top_p_it_needs() {
+    let env = env().await;
+    for (path, anthropic) in [("/v1/chat/completions", false), ("/v1/messages", true)] {
+        let text = format!(
+            "say ok {}",
+            fixture("responses", "recorded-max-tokens-length")
+        );
+        let mut body = if anthropic {
+            messages(SMALL, &text)
+        } else {
+            chat(SMALL, &text)
+        };
+        body["temperature"] = json!(0);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body.clone())).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(
+            (sent["temperature"].as_f64(), sent["top_p"].as_f64()),
+            (Some(0.0), Some(1.0)),
+            "{path}"
+        );
+
+        body["top_p"] = json!(0.9);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(sent["top_p"].as_f64(), Some(1.0), "{path}");
+    }
 }
 
 #[tokio::test]
@@ -445,4 +598,61 @@ async fn token_counts_for_mistral_models_are_refused_in_the_apps_format() {
         (&json!(expected), &json!("model"))
     );
     assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
+async fn a_codex_request_reaches_mistral_without_web_search_and_says_so() {
+    let env = env().await;
+    let text = format!(
+        "Write a haiku. {}",
+        fixture("responses", "recorded-max-tokens-length")
+    );
+    let body = json!({
+        "model": SMALL,
+        "input": [
+            {"type": "message", "id": "msg_1", "role": "developer", "content": [{"type": "input_text", "text": "You are Codex."}]},
+            {"type": "message", "role": "user", "content": [{"type": "input_text", "text": text}]}
+        ],
+        "tools": [
+            {"type": "function", "name": "exec_command", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}}},
+            {"type": "web_search", "external_web_access": true}
+        ],
+        "text": {"verbosity": "low"},
+        "store": false
+    });
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("tools[1], text.verbosity"));
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+    let tools: Vec<&str> = sent["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["function"]["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(tools, ["exec_command"]);
+    assert!(sent.get("verbosity").is_none(), "{sent}");
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), None);
+
+    let failing = json!({
+        "model": SMALL,
+        "input": format!("Hi {}", error("recorded-model-not-found")),
+        "tools": [
+            {"type": "function", "name": "exec_command", "parameters": {"type": "object", "properties": {}}},
+            {"type": "web_search"}
+        ]
+    });
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(failing)).await;
+    assert_ne!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("tools[1]"));
 }

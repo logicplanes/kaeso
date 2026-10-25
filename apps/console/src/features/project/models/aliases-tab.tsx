@@ -1,6 +1,22 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Banner, Button, Code, Dialog, Empty, IconButton, Input, List, Menu, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Badge,
+  Banner,
+  Button,
+  Code,
+  Dialog,
+  DialogScope,
+  Empty,
+  IconButton,
+  Input,
+  List,
+  Menu,
+  Text,
+  Tooltip,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders } from "~/kaeso/providers";
@@ -45,21 +61,6 @@ export function AliasesTab({
     setDeleting(a);
     setDeleteOpen(true);
   };
-  const invalidates = [
-    ["orgs", org, "projects", project, "aliases"],
-    ["orgs", org, "projects", project, "models"],
-  ];
-  const remove = useApiMutation({
-    mutationFn: async (a: AliasView) => {
-      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias: a.id } } });
-    },
-    invalidates,
-    onSuccess: (_r, a) => {
-      toast(t("models.alias.deleted", "Alias {name} deleted", { name: a.name }));
-      setDeleteOpen(false);
-    },
-  });
-
   const list = aliases.data ?? [];
   return (
     <>
@@ -128,18 +129,53 @@ export function AliasesTab({
       {creating && <AliasDialog org={org} project={project} onClose={() => onCreatingChange(false)} />}
       {editing && <AliasDialog org={org} project={project} alias={editing} onClose={() => setEditing(undefined)} />}
       {deleting && (
-        <AlertDialog
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-          tone="danger"
-          title={t("models.alias.deleteTitle", "Delete the alias {name}?", { name: deleting.name })}
-          description={t("models.alias.deleteHint", "Requests that send this name are refused, unless a model has the same name.")}
-          confirmLabel={t("models.alias.delete", "Delete alias")}
-          loading={remove.isPending}
-          onConfirm={() => remove.mutateAsync(deleting)}
-        />
+        <DialogScope open={deleteOpen}>
+          <DeleteAliasDialog org={org} project={project} alias={deleting} open={deleteOpen} onOpenChange={setDeleteOpen} />
+        </DialogScope>
       )}
     </>
+  );
+}
+
+const aliasInvalidations = (org: string, project: string) => [
+  ["orgs", org, "projects", project, "aliases"],
+  ["orgs", org, "projects", project, "models"],
+];
+
+function DeleteAliasDialog({
+  org,
+  project,
+  alias,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  alias: AliasView;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const remove = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/orgs/{org}/projects/{project}/aliases/{alias}", { params: { path: { org, project, alias: alias.id } } });
+    },
+    invalidates: aliasInvalidations(org, project),
+    onSuccess: () => {
+      toast(t("models.alias.deleted", "Alias {name} deleted", { name: alias.name }));
+      onOpenChange(false);
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("models.alias.deleteTitle", "Delete the alias {name}?", { name: alias.name })}
+      description={t("models.alias.deleteHint", "Requests that send this name are refused, unless a model has the same name.")}
+      confirmLabel={t("models.alias.delete", "Delete alias")}
+      loading={remove.isPending}
+      onConfirm={() => remove.mutateAsync()}
+    />
   );
 }
 
@@ -173,10 +209,7 @@ function AliasDialog({ org, project, alias, onClose }: { org: string; project: s
         }),
       );
     },
-    invalidates: [
-      ["orgs", org, "projects", project, "aliases"],
-      ["orgs", org, "projects", project, "models"],
-    ],
+    invalidates: aliasInvalidations(org, project),
     onSuccess: (a) => {
       toast(alias ? t("models.alias.saved", "Alias {name} saved", { name: a.name }) : t("models.alias.created", "Alias {name} created", { name: a.name }));
       onClose();

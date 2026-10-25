@@ -4,6 +4,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -185,9 +186,10 @@ pub struct Provider {
     pub embeddings: Option<DialectId>,
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
+    pub context_window_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
-    pub tool_namespaces: bool,
     pub chat: ChatProfile,
+    pub responses: ResponsesProfile,
     pub account: Option<AccountSignIn>,
 }
 
@@ -211,9 +213,10 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: true,
         chat: ChatProfile::OPENAI,
+        responses: ResponsesProfile::OPENAI,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -236,9 +239,10 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("Anthropic"),
+        responses: ResponsesProfile::compatible("Anthropic"),
         account: None,
     },
     Provider {
@@ -256,12 +260,13 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
             .system_role()
             .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("DeepSeek"),
         account: None,
     },
     Provider {
@@ -279,9 +284,14 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: true,
-        tool_namespaces: false,
-        chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
+        chat: ChatProfile::compatible("SpaceX")
+            .reasoning_fields(&["reasoning_content"])
+            .with_message_bookkeeping(),
+        responses: ResponsesProfile::compatible("SpaceX")
+            .xai_web_search()
+            .without_null_reasoning_content(),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -304,10 +314,11 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Together AI"),
         account: None,
     },
     Provider {
@@ -325,13 +336,14 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: None,
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
+        responses: ResponsesProfile::compatible("Groq"),
         account: None,
     },
     Provider {
@@ -349,11 +361,12 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("OpenRouter")
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
+        responses: ResponsesProfile::compatible("OpenRouter"),
         account: None,
     },
     Provider {
@@ -371,14 +384,15 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
+        context_window_messages: &["too large for model with"],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
             .system_role()
             .random_seed()
             .without_end_user()
             .without_prefill()
+            .greedy_top_p()
             .thinking_parts()
             .refusing(&[
                 "audio",
@@ -393,6 +407,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ])
             .refusing_in_messages(&["name", "refusal"]),
+        responses: ResponsesProfile::compatible("Mistral"),
         account: None,
     },
 ];
@@ -442,6 +457,12 @@ impl Provider {
             .iter()
             .any(|refusal| message.starts_with(refusal))
     }
+
+    pub fn exceeds_context(&self, message: &str) -> bool {
+        self.context_window_messages
+            .iter()
+            .any(|overflow| message.contains(overflow))
+    }
 }
 
 pub fn known_ids() -> Vec<ProviderId> {
@@ -459,15 +480,32 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaeso_codecs::openai_responses::{ReasoningReplay, WebSearchTool};
 
     #[test]
-    fn only_openai_takes_responses_tool_namespaces() {
-        let taking: Vec<&str> = PROVIDERS
+    fn only_openai_takes_tool_namespaces_and_only_spacex_changes_search_and_reasoning() {
+        let namespaces: Vec<&str> = PROVIDERS
             .iter()
-            .filter(|p| p.tool_namespaces)
+            .filter(|p| p.responses.tool_namespaces)
             .map(|p| p.id)
             .collect();
-        assert_eq!(taking, ["openai"]);
+        assert_eq!(namespaces, ["openai"]);
+        let different: Vec<(&str, WebSearchTool, ReasoningReplay)> = PROVIDERS
+            .iter()
+            .filter(|p| {
+                p.responses.web_search != WebSearchTool::AsSent
+                    || p.responses.reasoning_replay != ReasoningReplay::AsSent
+            })
+            .map(|p| (p.id, p.responses.web_search, p.responses.reasoning_replay))
+            .collect();
+        assert_eq!(
+            different,
+            [(
+                "xai",
+                WebSearchTool::Xai,
+                ReasoningReplay::WithoutNullContent
+            )]
+        );
     }
 
     #[test]
@@ -655,6 +693,39 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
+        let greedy =
+            sent_with_profile("mistral", "providers/mistral/requests/greedy-sampling").unwrap();
+        assert_eq!(greedy["top_p"], 1.0, "{greedy}");
+    }
+
+    #[test]
+    fn only_mistral_reads_its_context_window_message_as_context_too_long() {
+        let message =
+            "Prompt contains 65673 tokens, too large for model with 32768 maximum context length";
+        for p in PROVIDERS {
+            assert_eq!(p.exceeds_context(message), p.id == "mistral", "{}", p.id);
+        }
+        assert!(
+            !provider("mistral")
+                .unwrap()
+                .exceeds_context("Invalid model: m")
+        );
+    }
+
+    #[test]
+    fn only_spacex_takes_the_model_ids_grok_cli_replays() {
+        for p in PROVIDERS
+            .iter()
+            .filter(|p| p.dialects.contains(&DialectId::OpenAiChat))
+        {
+            let sent = sent_with_profile(p.id, "requests/grok-cli-model-id").unwrap();
+            let kept = sent["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|m| m.get("model_id").is_some());
+            assert_eq!(kept, p.id == "xai", "{}", p.id);
+        }
     }
 
     #[test]

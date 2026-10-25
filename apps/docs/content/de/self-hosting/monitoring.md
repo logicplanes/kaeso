@@ -4,7 +4,7 @@ description: Die Health-Checks, Prometheus-Metriken und Protokolle einer laufend
 order: 10
 ---
 
-Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Protokolle. In der Konsole zeigt **Einstellungen** › **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
+Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Protokolle. In der Konsole zeigt **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
 
 ## Health-Checks
 
@@ -15,7 +15,7 @@ Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken
 
 `/readyz` antwortet 503 mit `not_ready`, wenn PostgreSQL oder Valkey nicht erreichbar sind. Ist ClickHouse nicht erreichbar oder noch nicht migriert, antwortet es 200 mit `degraded`, denn Anfrageprotokolle halten nie Anfragen auf.
 
-Beide Endpunkte liegen auf Port 8080 des Gateways. Caddy leitet dorthin nur `/v1/` und `/platform/` weiter, unter Ihrer Domain erreichen diese Pfade also die Konsole. Der Health-Check des Gateway-Containers ruft `/healthz` auf, und `docker compose ps` zeigt das Ergebnis. So lesen Sie `/readyz` auf dem Server:
+Beide Endpunkte liegen auf Port 8080 des Gateways. Caddy leitet dorthin nur `/v1/`, `/platform/`, `/mcp`, `/oauth/` und `/.well-known/oauth-` weiter, unter Ihrer Domain erreichen diese Pfade also die Konsole. Der Health-Check des Gateway-Containers ruft `/healthz` auf, und `docker compose ps` zeigt das Ergebnis. So lesen Sie `/readyz` auf dem Server:
 
 ```bash
 docker compose exec console wget -qO- http://gateway:8080/readyz
@@ -64,3 +64,9 @@ docker compose logs -f gateway
 ```
 
 Jede Zeile, die eine Anfrage auslöst, trägt ihre `request_id`, die die Antwort auch im Header `kaeso-request-id` sendet. Secrets, Anbieter-Schlüssel und Authorization-Header werden nie protokolliert. `KAESO_LOG_LEVEL` setzt das Level oder einen Filter, etwa `info,kaeso_server=debug`, und `KAESO_LOG_FORMAT=text` schreibt für die Entwicklung einfache Zeilen.
+
+## Nächste Schritte
+
+- [Fehlerbehebung](troubleshooting.md): Finden Sie die Lösung für ein Problem, das Health-Checks, Metriken oder Protokolle zeigen.
+- [Konfiguration](configuration.md): Ändern Sie die Adresse der Metriken, das Log-Level und jede andere Einstellung.
+- [Backups und Hauptschlüssel](backups.md): Sichern Sie die Datenbanken und Hauptschlüssel, bevor etwas schiefgeht.

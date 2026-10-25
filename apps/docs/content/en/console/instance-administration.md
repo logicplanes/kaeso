@@ -51,6 +51,17 @@ Changing account creation, organization creation or the allowed domains needs a 
 
 Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
 
+## Let agents in
+
+Agents, such as Claude Code or Codex, act for their user through the [MCP server](../api/mcp.md). Under **General**, **Agents** holds the instance's agent policy:
+
+| Setting | What it does |
+| --- | --- |
+| Allow agents | On by default. Turned off, no agent can sign in, and every agent gets 403 at its next request |
+| Most on the instance | **None**, **Read**, **Configure** or **Admin**, for the instance rights an instance admin can give their agents. **Configure** is the default |
+
+Only an instance admin's console session changes the policy; no agent can. An agent never makes someone an instance admin, changes single sign-on for instance admins, or deletes a user or an organization at once. [Instance rights](../concepts/rights.md#instance-rights) lists what each right allows.
+
 ## Sync model data
 
 **Model sources** shows the install's models.dev data: the data in use, the last sync, and the automatic sync, every 24 hours by default. **Sync now** fetches it at once. If models.dev can't be reached, the current data stays in use.
@@ -64,17 +75,17 @@ Passwords, sign-in links and email are set in the gateway's [configuration](../s
 **Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out. The gateway looks for releases every 5 minutes, and the page says when a check failed.
 
 - **Releases** offers stable releases only, or pre-releases too. Only the gateway's [configuration](../self-hosting/configuration.md) turns the check off, for installs without internet access.
-- With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone.
+- With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone. A new major version, or a release with steps by hand, waits for you.
 - **Update to …** updates the install after you confirm, in either mode, and follows each step until Kaeso is back.
 - Without the updater, or for a release that needs steps by hand, the page shows the commands and the upgrade guide.
 
 The history lists every update, with who started it, or **Automatically**, and how it ended.
 
-After an update, everyone who opens the console sees **What's new in Kaeso** once. It shows the new version on its own artwork, which never changes, with its improvements, and **Next** leads through every release they missed. **Continue**, Escape or a click outside closes it. **What's new** on **Updates** shows the running version's notes again.
+After an update, everyone who opens the console sees **What's new in Kaeso** once. It shows the new version on its own artwork, which never changes, with its improvements, and **Next** leads through every release they missed. **Continue**, Escape or a click outside closes it. **See what's new** on **Updates** shows the running version's notes again.
 
 ## Read the audit log
 
-The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when.
+The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and **Done by agents** shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)).
 
 ## Next steps
 

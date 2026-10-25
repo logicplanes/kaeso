@@ -12,6 +12,7 @@ use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::{Ctx, OrgScope};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{parse_org, parse_project};
 use crate::platform::json::Body;
@@ -465,7 +466,7 @@ pub async fn create(
     )
     .await
     .map_err(name_taken)?;
-    ctx.audit(Some(scope.id()), "role.create")
+    ctx.audit(Some(scope.id()), Action::RoleCreate)
         .target("role", id)
         .after(serde_json::json!({
             "scope": role_scope, "name": name, "description": description,
@@ -558,7 +559,7 @@ pub async fn update(
     .await
     .map_err(name_taken)?;
     let extra = invite_holders(&state, scope.org.id, before.id).await?;
-    ctx.audit(Some(scope.id()), "role.update")
+    ctx.audit(Some(scope.id()), Action::RoleUpdate)
         .target("role", RoleId::from_uuid(before.id))
         .before(serde_json::json!({
             "name": before.name, "description": before.description,
@@ -629,7 +630,7 @@ pub async fn delete(
         ));
     }
     roles::delete(&mut *tx, scope.org.id, before.id).await?;
-    ctx.audit(Some(scope.id()), "role.delete")
+    ctx.audit(Some(scope.id()), Action::RoleDelete)
         .target("role", RoleId::from_uuid(before.id))
         .before(serde_json::json!({
             "scope": before.scope, "name": before.name, "description": before.description,

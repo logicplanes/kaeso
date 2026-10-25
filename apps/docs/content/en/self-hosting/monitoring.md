@@ -4,7 +4,7 @@ description: The health checks, Prometheus metrics and logs of a running install
 order: 10
 ---
 
-The gateway reports its health on two endpoints, serves Prometheus metrics on a port of its own, and writes JSON logs. In the console, **Settings** › **Instance** › **System** shows the same health, the running version, the request log buffer and storage.
+The gateway reports its health on two endpoints, serves Prometheus metrics on a port of its own, and writes JSON logs. In the console, **Instance** › **System** shows the same health, the running version, the request log buffer and storage.
 
 ## Health checks
 
@@ -15,7 +15,7 @@ The gateway reports its health on two endpoints, serves Prometheus metrics on a 
 
 `/readyz` answers 503 with `not_ready` when PostgreSQL or Valkey can't be reached. When ClickHouse is down or not yet migrated, it answers 200 with `degraded`, because request logs never hold requests up.
 
-Both endpoints are on the gateway's port 8080. Caddy routes only `/v1/` and `/platform/` there, so on your domain these paths reach the console. The gateway's container health check calls `/healthz`, and `docker compose ps` shows the result. To read `/readyz` on the server:
+Both endpoints are on the gateway's port 8080. Caddy routes only `/v1/`, `/platform/`, `/mcp`, `/oauth/` and `/.well-known/oauth-` there, so on your domain these paths reach the console. The gateway's container health check calls `/healthz`, and `docker compose ps` shows the result. To read `/readyz` on the server:
 
 ```bash
 docker compose exec console wget -qO- http://gateway:8080/readyz
@@ -64,3 +64,9 @@ docker compose logs -f gateway
 ```
 
 Every line a request causes carries its `request_id`, which the reply also sends in the `kaeso-request-id` header. Secrets, provider keys and authorization headers are never logged. `KAESO_LOG_LEVEL` sets the level or a filter, such as `info,kaeso_server=debug`, and `KAESO_LOG_FORMAT=text` writes plain lines for development.
+
+## Next steps
+
+- [Troubleshooting](troubleshooting.md): Find the fix for a problem the health checks, metrics or logs show.
+- [Configuration](configuration.md): Change the metrics address, the log level and every other setting.
+- [Backups and master keys](backups.md): Back up the databases and master keys before something goes wrong.

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::openai_chat::ChatProfile;
+use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request, RequestKind,
@@ -128,9 +129,12 @@ pub struct EgressCtx {
     pub(crate) tool_ids: IndexMap<String, String>,
     pub(crate) tool_names: IndexMap<String, String>,
     pub adaptive_thinking: Option<bool>,
+    pub thinking_binding: Option<bool>,
     pub reasoning: Option<bool>,
     pub tool_namespaces: Option<bool>,
     pub chat_profile: ChatProfile,
+    pub responses_profile: ResponsesProfile,
+    pub left_out: Vec<String>,
 }
 
 impl EgressCtx {
@@ -146,15 +150,24 @@ impl EgressCtx {
             tool_ids: IndexMap::new(),
             tool_names: IndexMap::new(),
             adaptive_thinking: None,
+            thinking_binding: None,
             reasoning: None,
             tool_namespaces: None,
             chat_profile: ChatProfile::OPENAI,
+            responses_profile: ResponsesProfile::OPENAI,
+            left_out: Vec::new(),
         }
     }
 
     #[must_use]
     pub fn with_adaptive_thinking(mut self, supported: bool) -> Self {
         self.adaptive_thinking = Some(supported);
+        self
+    }
+
+    #[must_use]
+    pub fn with_thinking_binding(mut self, checks: bool) -> Self {
+        self.thinking_binding = Some(checks);
         self
     }
 
@@ -171,12 +184,21 @@ impl EgressCtx {
     }
 
     pub fn takes_tool_namespaces(&self, dialect: DialectId) -> bool {
-        dialect == DialectId::OpenAiResponses && self.tool_namespaces != Some(false)
+        dialect == DialectId::OpenAiResponses
+            && self
+                .tool_namespaces
+                .unwrap_or(self.responses_profile.tool_namespaces)
     }
 
     #[must_use]
     pub fn with_chat_profile(mut self, profile: ChatProfile) -> Self {
         self.chat_profile = profile;
+        self
+    }
+
+    #[must_use]
+    pub fn with_responses_profile(mut self, profile: ResponsesProfile) -> Self {
+        self.responses_profile = profile;
         self
     }
 

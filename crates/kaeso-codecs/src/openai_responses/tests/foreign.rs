@@ -271,9 +271,9 @@ fn foreign_requests_are_not_stored_and_native_ones_keep_their_spelling() {
 }
 
 #[test]
-fn verbosity_medium_is_presentation_other_values_are_semantic() {
+fn verbosity_medium_is_presentation_other_values_are_extras_that_cross_as_a_hint() {
     let anthropic = Origin::new(DialectId::AnthropicMessages);
-    for (value, crosses) in [("medium", true), ("low", false), ("high", false)] {
+    for (value, presentation) in [("medium", true), ("low", false), ("high", false)] {
         let body = format!(r#"{{"model":"m","input":"x","text":{{"verbosity":"{value}"}}}}"#);
         let req = decode_req(RequestKind::Generate, body.as_bytes());
         let (enc, _) = encode_req(&req);
@@ -281,12 +281,11 @@ fn verbosity_medium_is_presentation_other_values_are_semantic() {
         let Request::Generate(r) = &req else { panic!() };
         assert_eq!(
             r.extras.fields.contains_key("text.verbosity"),
-            !crosses,
+            !presentation,
             "{value}"
         );
-        assert_eq!(
+        assert!(
             crate::cross::check_foreign(&req, &anthropic).is_ok(),
-            crosses,
             "{value}"
         );
     }

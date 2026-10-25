@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -59,5 +60,13 @@ describe("ParameterPopover", () => {
     expect(await screen.findByRole("dialog", { name: "Settings" })).toBeInTheDocument();
     render(<ParameterPopover value={{}} onValueChange={vi.fn()} defaultOpen title="Defaults" />);
     expect(await screen.findByRole("dialog", { name: "Defaults" })).toBeInTheDocument();
+  });
+});
+
+describe("ParameterPopover's ref", () => {
+  it("reaches the open popover", async () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<ParameterPopover ref={ref} value={{}} onValueChange={vi.fn()} defaultOpen />);
+    expect(ref.current).toBe(await screen.findByRole("dialog", { name: "Parameters" }));
   });
 });

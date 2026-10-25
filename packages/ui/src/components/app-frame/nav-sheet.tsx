@@ -1,22 +1,18 @@
-import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
+import { forwardRef, useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { SidebarFloatingContext, SidebarSheetContext } from "../sidebar/sidebar.js";
 import { useUiText } from "../../i18n/context.js";
 
-export function NavSheet({
-  open,
-  onOpenChange,
-  peek = false,
-  returnFocus,
-  children,
-}: {
+export interface NavSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   peek?: boolean | undefined;
   returnFocus?: RefObject<HTMLElement | null> | undefined;
   children: ReactNode;
-}) {
+}
+
+export const NavSheet = forwardRef<HTMLDivElement, NavSheetProps>(function NavSheet({ open, onOpenChange, peek = false, returnFocus, children }, ref) {
   const leave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const t = useUiText();
   useEffect(() => () => clearTimeout(leave.current), []);
@@ -34,6 +30,7 @@ export function NavSheet({
       <Dialog.Portal container={usePortalContainer()}>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-overlay opacity-60 backdrop-motion" />
         <Dialog.Popup
+          ref={ref}
           aria-label={t("appFrame.navigation", "Navigation")}
           data-side="left"
           initialFocus={!peek}
@@ -55,5 +52,5 @@ export function NavSheet({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
+});
 NavSheet.displayName = "NavSheet";

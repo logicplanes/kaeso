@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::params::{Path, id_param};
@@ -126,7 +127,7 @@ async fn write(
         None => serde_json::json!({ "all": true }),
         Some(l) => serde_json::json!({ "models": ids(l) }),
     };
-    ctx.audit(Some(ctx.org()?.id()), "model_access.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::ModelAccessUpdate)
         .target(target.0, target.1)
         .before(as_json(before.as_ref()))
         .after(as_json(list))

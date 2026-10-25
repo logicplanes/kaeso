@@ -80,12 +80,12 @@ Every change follows these rules, and CI checks most of them:
 - **Tests assert on what a person or an app sees.** They are deterministic, with injected clocks and no sleeps. Coverage thresholds only ever go up.
 - **Interfaces use only `@logicplanes/kaeso-ui`**, with `className` for layout only, and every word in three languages ([translations](translations.md)).
 - **pnpm only** for JavaScript, and `pnpm dlx` for a one-off tool. Cargo builds the Rust code, and lockfiles change only through their tool.
-- **No secrets or personal data** in the repository. Use placeholders such as `kaeso.example.com`, `sk-kso-…` and `owner@example.com`.
+- **No secrets or personal data** in the repository. Kaeso itself is `kaeso.example.com`, keys are `sk-kso-…` and the reader or owner is `owner@example.com`. Anything else, such as an identity provider or an SMTP server, takes another name under the reserved `example.com` or `.example` domains ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606)), never a real host, key or person.
 - **No plans in the repository.** Roadmaps, to-do lists and open questions go into issues.
 
 The gateway adds rules of its own, such as no panics and no floats for money ([gateway rules](architecture/gateway.md#rules)). So does KPP ([design principles](kpp/index.md#design-principles)).
 
-The root of the repository and each of `crates`, `packages`, `apps/console`, `apps/docs` and `apps/showcase` have an `AGENTS.md`. Each sums up the rules and checks of its part, for coding agents and for people.
+The root of the repository and each of `crates`, `packages`, `apps/console`, `apps/docs` and `apps/showcase` have an `AGENTS.md`. Each sums up the rules and checks of its part, for coding agents and for people. `packages/ui/AGENTS.md` holds the rules for apps that build interfaces with the UI library and ships in its npm package.
 
 ## Add a dependency
 
@@ -95,7 +95,7 @@ Kaeso is MIT licensed, and everything it ships depends only on permissively lice
 
 | What ships | Allowed licenses | Checked by |
 | --- | --- | --- |
-| The gateway and the updater | The list in `deny.toml`: MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode and Zlib | `cargo deny check` |
+| The gateway and the updater | The list in `deny.toml`: MIT, MIT-0, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-2-Clause, BSD-3-Clause, ISC, Unicode and Zlib | `cargo deny check` |
 | `kaeso-kpp`, `kaeso-codecs` | The same list, without exceptions | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | The UI library, the console and the docs | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 and 0BSD | `pnpm licenses:check`, after `pnpm build` |
 

@@ -11,6 +11,9 @@
           - crates/kaeso-upstream/**
           - .sqlx/**
           - openapi.json
+          - plugins/**
+          - .claude-plugin/**
+          - .cursor-plugin/**
 
 "area: kpp":
   - changed-files:

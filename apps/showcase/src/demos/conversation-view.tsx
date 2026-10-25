@@ -8,6 +8,7 @@ export const meta = {
   group: "Kaeso",
   entry: "kaeso",
   import: "ConversationView",
+  variants: "CONVERSATION",
 };
 export const examples = [
   { id: "basic", title: "Checkout conversation", fn: "Basic", minHeight: 640 },

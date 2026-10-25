@@ -38,7 +38,7 @@ Jeder Eintrag trägt außerdem `art`, das Artwork des Releases, das update.kaeso
 
 ## Das Gateway
 
-`services/updates.rs` und der Job `update_check` suchen nach Releases. Alle fünf Minuten fragt der Job, ob die nächste Prüfung fällig ist (`update_settings.next_check_at`).
+`services/updates.rs` und der Job `update_check` suchen nach Releases. Jede Minute fragt der Job, ob die nächste Prüfung fällig ist (`update_settings.next_check_at`).
 
 - **Liste.** Eine Prüfung ruft `releases_url?per_page=50` mit `If-None-Match` ab und folgt den Links auf die nächste Seite, höchstens zehn Seiten, da ein Feed Releases nicht nach Version sortiert. Eine geänderte Liste ersetzt `update_releases` in einer Transaktion.
 - **Manifeste.** Für jedes Release, das neuer als die laufende Version ist, holt und speichert die Prüfung seine `release.json` oder den Grund, warum das nicht ging. Sie holt höchstens zwölf pro Prüfung, vier gleichzeitig, die neuesten zuerst. Ein Manifest kommt nur von `https://github.com/logicplanes/kaeso/releases/download/` oder, bei einem Spiegel, vom Origin von `updates.releases_url`, und der Client folgt nie einer Weiterleitung von HTTPS auf HTTP.

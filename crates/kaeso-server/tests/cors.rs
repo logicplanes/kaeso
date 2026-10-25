@@ -21,7 +21,8 @@ const OTHER: &str = "https://other.example.com";
 const ORIGINS: &str = "https://APP.example.com/, http://localhost:5173";
 const SDK_HEADERS: &str = "authorization, content-type, x-api-key, anthropic-version, anthropic-beta, anthropic-dangerous-direct-browser-access, openai-organization, openai-project, idempotency-key, x-stainless-os, x-stainless-retry-count, cookie, x-forwarded-for";
 const REFLECTED: &str = "anthropic-beta, anthropic-dangerous-direct-browser-access, anthropic-version, authorization, content-type, idempotency-key, openai-organization, openai-project, x-api-key, x-stainless-os, x-stainless-retry-count";
-const EXPOSED: &str = "kaeso-request-id, kaeso-provider, kaeso-model, retry-after, retry-after-ms";
+const EXPOSED: &str =
+    "kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, retry-after, retry-after-ms";
 
 const ROUTES: &[(&str, &str)] = &[
     ("/v1/chat/completions", "POST"),

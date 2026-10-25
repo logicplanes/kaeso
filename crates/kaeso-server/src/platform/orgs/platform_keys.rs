@@ -11,6 +11,7 @@ use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::platform::access::{Caller, Ctx, denied};
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{
@@ -101,7 +102,7 @@ async fn mint(
     let view = OrgKeyView::from_row(&row, ctx.now);
     match rotation {
         None => {
-            ctx.audit(Some(scope.id()), "platform_key.create")
+            ctx.audit(Some(scope.id()), Action::PlatformKeyCreate)
                 .target("platform_key", id)
                 .after(&view)
                 .write(&mut tx)
@@ -116,7 +117,7 @@ async fn mint(
             let retired = keys::get_org(&mut *tx, scope.org.id, old.id)
                 .await?
                 .ok_or_else(|| ApiError::not_found("platform key"))?;
-            ctx.audit(Some(scope.id()), "platform_key.rotate")
+            ctx.audit(Some(scope.id()), Action::PlatformKeyRotate)
                 .target("platform_key", OrgPlatformKeyId::from_uuid(old.id))
                 .before(OrgKeyView::from_row(old, ctx.now))
                 .after(OrgKeyView::from_row(&retired, ctx.now))
@@ -177,12 +178,7 @@ pub async fn list(
     )))
 }
 
-async fn act(
-    state: &AppState,
-    ctx: &Ctx,
-    id: &str,
-    action: &'static str,
-) -> ApiResult<Json<OrgKeyView>> {
+async fn act(state: &AppState, ctx: &Ctx, id: &str, action: Action) -> ApiResult<Json<OrgKeyView>> {
     let scope = ctx.org()?;
     let id: OrgPlatformKeyId = id
         .parse()
@@ -191,10 +187,10 @@ async fn act(
     let actor = keys::Actor { kind, id: by };
     let mut tx = state.pg.begin().await?;
     let done = match action {
-        "platform_key.disable" => {
+        Action::PlatformKeyDisable => {
             keys::set_org_disabled(&mut *tx, scope.org.id, id.uuid(), Some(ctx.now), actor).await?
         }
-        "platform_key.enable" => {
+        Action::PlatformKeyEnable => {
             let by_person = keys::org_disabled_by(&mut *tx, scope.org.id, id.uuid())
                 .await?
                 .is_some_and(|d| d.kind.as_deref() == Some("user"));
@@ -237,7 +233,7 @@ pub async fn disable(
     ctx: Ctx,
     Path((_o, id)): Path<(String, String)>,
 ) -> ApiResult<Json<OrgKeyView>> {
-    act(&state, &ctx, &id, "platform_key.disable").await
+    act(&state, &ctx, &id, Action::PlatformKeyDisable).await
 }
 
 #[utoipa::path(
@@ -253,7 +249,7 @@ pub async fn enable(
     ctx: Ctx,
     Path((_o, id)): Path<(String, String)>,
 ) -> ApiResult<Json<OrgKeyView>> {
-    act(&state, &ctx, &id, "platform_key.enable").await
+    act(&state, &ctx, &id, Action::PlatformKeyEnable).await
 }
 
 #[utoipa::path(
@@ -269,7 +265,7 @@ pub async fn archive(
     ctx: Ctx,
     Path((_o, id)): Path<(String, String)>,
 ) -> ApiResult<Json<OrgKeyView>> {
-    act(&state, &ctx, &id, "platform_key.archive").await
+    act(&state, &ctx, &id, Action::PlatformKeyArchive).await
 }
 
 #[utoipa::path(

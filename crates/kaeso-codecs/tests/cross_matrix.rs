@@ -4,7 +4,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_kpp::{Block, Delta, DialectId, Reply, Request, RequestKind, StreamEvent, StreamMode};
+use kaeso_kpp::{
+    Block, Delta, DialectId, Reply, Request, RequestKind, Role, StreamEvent, StreamMode,
+};
 use serde_json::{Value, json};
 
 const GENERATION: [DialectId; 3] = [
@@ -14,6 +16,30 @@ const GENERATION: [DialectId; 3] = [
 ];
 
 const PROVIDERS: &str = "providers";
+
+// Routes whose conversation changes on purpose, each change asserted in tests/codex.rs.
+const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
+    (
+        "codex-model-switch",
+        DialectId::AnthropicMessages,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "codex-model-switch",
+        DialectId::OpenAiChat,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::AnthropicMessages,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::OpenAiChat,
+        "custom and local shell calls become tool calls",
+    ),
+];
 
 fn fixtures_dir(dialect: DialectId) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -96,6 +122,48 @@ fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
     }
 }
 
+// The cross-format rule for Anthropic: a system or developer message of another format
+// joins the next user turn, after its tool results, or the last user turn.
+fn as_anthropic_reads(req: &Request) -> Request {
+    let mut req = req.clone();
+    let Request::Generate(r) = &mut req else {
+        return req;
+    };
+    if r.extras.is_from(DialectId::AnthropicMessages) {
+        return req;
+    }
+    let mut held = Vec::new();
+    let mut out: Vec<kaeso_kpp::Message> = Vec::new();
+    for mut m in std::mem::take(&mut r.messages) {
+        if m.role == Role::System {
+            held.extend(m.blocks);
+            continue;
+        }
+        if m.role == Role::User && !held.is_empty() {
+            let at = m
+                .blocks
+                .iter()
+                .take_while(|b| matches!(b, Block::ToolResult(_)))
+                .count();
+            m.blocks.splice(at..at, held.drain(..));
+        }
+        out.push(m);
+    }
+    if !held.is_empty() {
+        match out.last_mut() {
+            Some(last) if last.role == Role::User => last.blocks.append(&mut held),
+            _ => out.push(kaeso_kpp::Message::new(Role::User, held)),
+        }
+    }
+    r.messages = out;
+    req
+}
+
+fn referenced_tool(item: &kaeso_kpp::RawItem) -> Option<String> {
+    let v = item.raw.to_value().ok()?;
+    (v["type"] == "tool_reference").then(|| v["tool_name"].as_str().map(str::to_owned))?
+}
+
 fn request_meaning(req: &Request) -> Value {
     let Request::Generate(r) = req else {
         return Value::Null;
@@ -119,6 +187,7 @@ fn request_meaning(req: &Request) -> Value {
                 }
                 Block::ToolResult(t) => json!({"result": t.content.iter().filter_map(|b| match b {
                     Block::Text(t) => Some(t.text.clone()),
+                    Block::Unknown(item) => referenced_tool(item),
                     _ => None,
                 }).collect::<Vec<_>>().join("")}),
                 Block::Image(_) => json!("image"),
@@ -240,11 +309,17 @@ fn requests_cross_every_dialect() {
                         .unwrap_or_else(|e| {
                             panic!("{a}->{b} {name}: target cannot decode its own output: {e}")
                         });
-                        assert_eq!(
-                            request_meaning(&back)["turns"],
-                            request_meaning(&req)["turns"],
-                            "{a}->{b} {name}: conversation meaning changed",
-                        );
+                        if !CHANGED_TURNS.iter().any(|(n, t, _)| n == name && *t == b) {
+                            assert_eq!(
+                                request_meaning(&back)["turns"],
+                                request_meaning(&if b == DialectId::AnthropicMessages {
+                                    as_anthropic_reads(&req)
+                                } else {
+                                    req.clone()
+                                })["turns"],
+                                "{a}->{b} {name}: conversation meaning changed",
+                            );
+                        }
                         json!({"path": enc.path, "body": pretty(&enc.body)})
                     }
                     Err(e) => {
@@ -573,7 +648,7 @@ fn claude_code_pre_release_fields_name_the_client_setting() {
 }
 
 #[test]
-fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
+fn claude_code_server_tools_and_beta_tool_fields_get_actionable_errors() {
     let refused = |req: &Request| {
         [DialectId::OpenAiChat, DialectId::OpenAiResponses].map(|target| {
             let e = dispatch::check(target, req, &EgressCtx::new(req)).unwrap_err();
@@ -582,31 +657,6 @@ fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
     };
     let mut req = anthropic_fixture("tool-search-deferred-tools");
     dispatch::check(DialectId::AnthropicMessages, &req, &EgressCtx::new(&req)).unwrap();
-    for (feature, message) in refused(&req) {
-        assert_eq!(feature, "tool_reference content block");
-        assert!(message.contains("ENABLE_TOOL_SEARCH"), "{message}");
-    }
-    let Request::Generate(r) = &mut req else {
-        panic!()
-    };
-    let Block::ToolResult(result) = &mut r.messages[2].blocks[0] else {
-        panic!()
-    };
-    result.content = vec![Block::text("get_weather")];
-    for (feature, message) in refused(&req) {
-        assert_eq!(feature, "tools[1].defer_loading");
-        assert!(
-            message.contains("CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"),
-            "{message}"
-        );
-    }
-    let Request::Generate(r) = &mut req else {
-        panic!()
-    };
-    let kaeso_kpp::ToolDef::Function(f) = &mut r.tools[1] else {
-        panic!()
-    };
-    f.extras.fields.clear();
     for (feature, message) in refused(&req) {
         assert_eq!(feature, "advisor_20260301 tool");
         assert!(
@@ -621,5 +671,22 @@ fn claude_code_tool_search_and_server_tools_get_actionable_errors() {
     for target in [DialectId::OpenAiChat, DialectId::OpenAiResponses] {
         dispatch::check(target, &req, &EgressCtx::new(&req))
             .unwrap_or_else(|e| panic!("{target}: {e}"));
+    }
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let kaeso_kpp::ToolDef::Function(f) = &mut r.tools[1] else {
+        panic!()
+    };
+    f.extras.fields.insert(
+        "eager_input_streaming".into(),
+        kaeso_kpp::RawJson::from_string("true".into()).unwrap(),
+    );
+    for (feature, message) in refused(&req) {
+        assert_eq!(feature, "tools[1].eager_input_streaming");
+        assert!(
+            message.contains("CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"),
+            "{message}"
+        );
     }
 }

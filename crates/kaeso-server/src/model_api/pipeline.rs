@@ -724,6 +724,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let served = Served {
         model: Some(eff.model_id.clone()),
         provider: Some(eff.provider.id().to_owned()),
+        left_out: Vec::new(),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -827,7 +828,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             kind,
             &eff.model_id,
         )
-        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect)),
+        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
     };
     rec.reservation = state
         .limits
@@ -867,16 +868,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         continuity::restore(state, key_id, g).await;
     }
 
-    let mut ectx = EgressCtx::new(&app_req)
-        .with_provider(eff.provider.id())
-        .with_tool_namespaces(eff.provider.tool_namespaces())
-        .with_chat_profile(eff.provider.chat());
-    if let Some(a) = plan.adaptive_thinking {
-        ectx = ectx.with_adaptive_thinking(a);
-    }
-    if let Some(r) = plan.reasoning {
-        ectx = ectx.with_reasoning(r);
-    }
+    let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
     let dialect = plan.dialect;
     let (req, ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -885,6 +877,25 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    if !ectx.left_out.is_empty() {
+        tracing::info!(
+            left_out = %ectx.left_out.join(", "),
+            "left out of the request what the provider has no equivalent for"
+        );
+    }
+    let served = Served {
+        left_out: ectx.left_out.clone(),
+        ..served.clone()
+    };
+    let fail = |stage: Stage| {
+        let served = served.clone();
+        move |err: KppError| Failure {
+            err,
+            served,
+            stage,
+            provider_said: None,
+        }
+    };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
@@ -988,8 +999,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         provider: eff.provider.clone(),
         dialect: plan.dialect,
         asked: sent_req.map(|req| (app_req, req)),
-        adaptive_thinking: plan.adaptive_thinking,
-        reasoning: plan.reasoning,
+        flags: ModelFlags::of(&plan),
         timeouts,
         sent_bytes,
     };
@@ -1204,6 +1214,8 @@ pub(crate) fn redact_key_fragments(err: &mut KppError) {
 pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) -> KppError {
     if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
         err.kind = ErrorKind::Authentication;
+    } else if err.kind == ErrorKind::InvalidRequest && provider.exceeds_context(&err.message) {
+        err.kind = ErrorKind::ContextTooLong;
     }
     err
 }
@@ -1235,6 +1247,44 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct ModelFlags {
+    pub(super) adaptive_thinking: Option<bool>,
+    pub(super) thinking_binding: Option<bool>,
+    pub(super) reasoning: Option<bool>,
+}
+
+impl ModelFlags {
+    fn of(plan: &kaeso_core::catalogue::capability::Plan) -> Self {
+        ModelFlags {
+            adaptive_thinking: plan.adaptive_thinking,
+            thinking_binding: plan.thinking_binding,
+            reasoning: plan.reasoning,
+        }
+    }
+}
+
+pub(super) fn egress_ctx(
+    app_req: &Request,
+    provider: &ProviderRef,
+    flags: ModelFlags,
+) -> EgressCtx {
+    let mut ctx = EgressCtx::new(app_req)
+        .with_provider(provider.id())
+        .with_chat_profile(provider.chat())
+        .with_responses_profile(provider.responses());
+    if let Some(a) = flags.adaptive_thinking {
+        ctx = ctx.with_adaptive_thinking(a);
+    }
+    if let Some(b) = flags.thinking_binding {
+        ctx = ctx.with_thinking_binding(b);
+    }
+    if let Some(r) = flags.reasoning {
+        ctx = ctx.with_reasoning(r);
+    }
+    ctx
+}
+
 // An account's token is valid only at its own API host; the input count goes to the
 // provider's configured base URL, so no account request may reach it.
 fn counted_at_provider(
@@ -1261,6 +1311,34 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn the_providers_profiles_and_plan_reach_the_egress_context() {
+        let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+        for id in ["openai", "xai", "mistral"] {
+            let p = ProviderRef::from(kaeso_core::provider::provider(id).unwrap());
+            let flags = ModelFlags {
+                adaptive_thinking: Some(true),
+                thinking_binding: Some(false),
+                reasoning: Some(false),
+            };
+            let ctx = egress_ctx(&req, &p, flags);
+            assert_eq!(ctx.provider.as_deref(), Some(id));
+            assert_eq!(ctx.chat_profile, p.chat(), "{id}");
+            assert_eq!(ctx.responses_profile, p.responses(), "{id}");
+            assert_eq!(
+                (ctx.adaptive_thinking, ctx.thinking_binding, ctx.reasoning),
+                (Some(true), Some(false), Some(false))
+            );
+        }
+        let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
+        assert_eq!(
+            egress_ctx(&req, &xai, ModelFlags::default())
+                .responses_profile
+                .web_search,
+            kaeso_codecs::openai_responses::WebSearchTool::Xai
+        );
+    }
 
     #[test]
     fn a_provider_errors_upstream_reason_reaches_its_message_without_key_fragments() {

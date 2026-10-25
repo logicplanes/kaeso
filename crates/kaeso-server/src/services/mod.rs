@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod admin_sso;
+pub mod agents;
 pub mod availability;
 pub mod catalogue;
 pub mod continuity;

@@ -16,6 +16,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{Party, creator, creator_of};
@@ -476,7 +477,7 @@ pub async fn create(
         .await?
         .ok_or_else(|| ApiError::internal("new custom provider vanished"))?;
     let shown = view(&row, InUse::default())?;
-    ctx.audit(Some(ctx.org()?.id()), "custom_provider.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::CustomProviderCreate)
         .target("custom_provider", &id)
         .after(&shown)
         .write(&mut tx)
@@ -556,7 +557,7 @@ pub async fn update(
         .await?
         .ok_or_else(|| ApiError::internal("changed custom provider vanished"))?;
     let after = view(&row, used)?;
-    ctx.audit(Some(ctx.org()?.id()), "custom_provider.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::CustomProviderUpdate)
         .target("custom_provider", &id)
         .before(&before)
         .after(&after)
@@ -608,7 +609,7 @@ pub async fn delete(
     let removed = store::delete(&mut tx, org, &id)
         .await?
         .ok_or_else(|| ApiError::not_found("custom provider"))?;
-    ctx.audit(Some(ctx.org()?.id()), "custom_provider.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::CustomProviderDelete)
         .target("custom_provider", &id)
         .before(&before)
         .after(serde_json::json!({
