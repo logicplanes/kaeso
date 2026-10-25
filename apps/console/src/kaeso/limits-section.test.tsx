@@ -1,11 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { atFixtureTime } from "~/test/clock";
 import { ALL_PROJECT_RIGHTS, signedIn } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, limit, memberRights, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+
+atFixtureTime();
 
 const sonnet = catalogueModel({ effective: { ...catalogueModel().effective, display_name: "Sonnet 4.5" } });
 
