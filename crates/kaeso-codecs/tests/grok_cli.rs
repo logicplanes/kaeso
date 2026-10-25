@@ -115,8 +115,11 @@ fn a_model_id_outside_a_chat_assistant_message_is_still_refused() {
         let req = decode(C, &body);
         for target in [A, R] {
             let err = send_with(target, &req, ChatProfile::OPENAI).unwrap_err();
-            assert_eq!(err.param.as_deref(), Some(param), "{target}: {err}");
-            assert!(err.message.contains("model_id"), "{target}: {err}");
+            assert_eq!(
+                (err.unsupported_feature(), err.param.as_deref()),
+                (Some(format!("{param}.model_id").as_str()), Some(param)),
+                "{target}: {err}"
+            );
         }
     }
 
