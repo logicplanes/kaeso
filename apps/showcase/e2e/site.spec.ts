@@ -41,6 +41,18 @@ test.describe("links to the source", () => {
   });
 });
 
+test.describe("legal pages", () => {
+  const words = { en: ["Privacy", "Imprint"], de: ["Datenschutz", "Impressum"], "zh-CN": ["隐私政策", "法律声明"] } as const;
+  for (const lang of LANGS) {
+    test(`the sidebar links to the privacy policy and the imprint in ${lang}`, async ({ page }) => {
+      await open(page, at(lang, "/"));
+      const [privacy, imprint] = words[lang];
+      await expect(page.getByRole("link", { name: privacy, exact: true })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
+      await expect(page.getByRole("link", { name: imprint, exact: true })).toHaveAttribute("href", "https://kaeso.app/impressum");
+    });
+  }
+});
+
 test.describe("for search engines and link previews", () => {
   test("robots.txt allows everything and names the sitemap", async ({ request }) => {
     expect(await (await request.get("/robots.txt")).text()).toBe(`User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);

@@ -63,6 +63,8 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "All states · light and dark": "Alle Zustände · hell und dunkel",
     "Search pages, components and props": "Seiten, Komponenten und Props suchen",
     "Nothing matches. Try a component or a prop name.": "Keine Treffer. Suchen Sie nach einer Komponente oder einem Prop.",
+    Privacy: "Datenschutz",
+    Imprint: "Impressum",
   },
   "zh-CN": {
     Overview: "概览",
@@ -114,6 +116,8 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "All states · light and dark": "全部状态 · 浅色和深色",
     "Search pages, components and props": "搜索页面、组件和属性",
     "Nothing matches. Try a component or a prop name.": "没有匹配项，请尝试组件名或属性名。",
+    Privacy: "隐私政策",
+    Imprint: "法律声明",
   },
 };
 

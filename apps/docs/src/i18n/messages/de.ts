@@ -7,6 +7,8 @@ export const de: Messages = {
   "nav.introduction": "Einführung",
   "nav.changelog": "Änderungen",
   "nav.overview": "Übersicht",
+  "nav.privacy": "Datenschutz",
+  "nav.imprint": "Impressum",
   "language.label": "Sprache",
   "search.open": "Suchen",
   "search.placeholder": "Dokumentation durchsuchen",

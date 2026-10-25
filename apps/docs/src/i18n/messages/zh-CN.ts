@@ -7,6 +7,8 @@ export const zhCN: Messages = {
   "nav.introduction": "简介",
   "nav.changelog": "更新日志",
   "nav.overview": "概览",
+  "nav.privacy": "隐私政策",
+  "nav.imprint": "法律声明",
   "language.label": "语言",
   "search.open": "搜索",
   "search.placeholder": "搜索文档",

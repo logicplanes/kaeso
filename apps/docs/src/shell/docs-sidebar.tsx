@@ -1,5 +1,5 @@
 import { useLocation } from "@tanstack/react-router";
-import { Icon, IconButton, Sidebar, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
+import { Icon, IconButton, Link, Sidebar, Text, ThemeSelect, icons } from "@logicplanes/kaeso-ui";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
@@ -16,6 +16,9 @@ const CHANGELOG: Record<Locale, string> = {
   de: "https://kaeso.app/de/changelog",
   "zh-CN": "https://kaeso.app/zh-CN/changelog",
 };
+
+const PRIVACY = "https://kaeso.app/datenschutz";
+const IMPRINT = "https://kaeso.app/impressum";
 
 export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
   const t = useText();
@@ -44,9 +47,19 @@ export function DocsSidebar({ nav }: { nav: NavGroup[] }) {
         ))}
       </Sidebar.Content>
       <Sidebar.Footer>
-        <div className="grid w-full grid-cols-2 gap-4">
-          <LanguageSelect />
-          <ThemeSelect fullWidth />
+        <div className="flex w-full flex-col gap-8">
+          <div className="grid w-full grid-cols-2 gap-4">
+            <LanguageSelect />
+            <ThemeSelect fullWidth />
+          </div>
+          <Text as="div" variant="small" className="mx-12 flex gap-12">
+            <Link href={PRIVACY} variant="quiet" external={false}>
+              {t("nav.privacy")}
+            </Link>
+            <Link href={IMPRINT} variant="quiet" external={false}>
+              {t("nav.imprint")}
+            </Link>
+          </Text>
         </div>
       </Sidebar.Footer>
     </Sidebar>

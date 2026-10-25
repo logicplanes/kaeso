@@ -61,6 +61,8 @@ describe("the site", () => {
     expect(within(nav).getByRole("link", { name: "Keys and limits" })).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link", { current: "page" }).map((link) => link.textContent)).toEqual(["Keys and limits"]);
     expect(within(nav).getByRole("link", { name: "Changelog" })).toHaveAttribute("href", "https://kaeso.app/changelog");
+    expect(within(nav).getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
+    expect(within(nav).getByRole("link", { name: "Imprint" })).toHaveAttribute("href", "https://kaeso.app/impressum");
     expect(screen.getByRole("link", { name: /Edit on GitHub/ })).toHaveAttribute(
       "href",
       "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/e2e/fixtures/content/en/guides/keys-and-limits.md",

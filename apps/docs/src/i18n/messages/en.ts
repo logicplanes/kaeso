@@ -5,6 +5,8 @@ export const en = {
   "nav.introduction": "Introduction",
   "nav.changelog": "Changelog",
   "nav.overview": "Overview",
+  "nav.privacy": "Privacy",
+  "nav.imprint": "Imprint",
   "language.label": "Language",
   "search.open": "Search",
   "search.placeholder": "Search the documentation",

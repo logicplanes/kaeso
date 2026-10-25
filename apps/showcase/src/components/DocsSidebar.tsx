@@ -1,10 +1,26 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useSidebar, IconButton, NavSheet, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeSelect, TooltipProvider, icons } from "@logicplanes/kaeso-ui";
+import {
+  useSidebar,
+  IconButton,
+  Link,
+  NavSheet,
+  PortalContainer,
+  Toaster,
+  Sidebar,
+  Text,
+  ThemeProvider,
+  ThemeSelect,
+  TooltipProvider,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
 import { DocsLanguageSelect, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
 import { localizedPath } from "~/lib/languages";
+
+const PRIVACY = "https://kaeso.app/datenschutz";
+const IMPRINT = "https://kaeso.app/impressum";
 
 const clean = (p: string) => p.replace(/\.html$/, "").replace(/\/$/, "") || "/";
 
@@ -55,9 +71,19 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
         ))}
       </Sidebar.Content>
       <Sidebar.Footer>
-        <div className="grid w-full grid-cols-2 gap-4">
-          <DocsLanguageSelect />
-          <ThemeSelect fullWidth />
+        <div className="flex w-full flex-col gap-8">
+          <div className="grid w-full grid-cols-2 gap-4">
+            <DocsLanguageSelect />
+            <ThemeSelect fullWidth />
+          </div>
+          <Text as="div" variant="small" className="mx-12 flex gap-12">
+            <Link href={PRIVACY} variant="quiet" external={false}>
+              {docsText(lang, "Privacy")}
+            </Link>
+            <Link href={IMPRINT} variant="quiet" external={false}>
+              {docsText(lang, "Imprint")}
+            </Link>
+          </Text>
         </div>
       </Sidebar.Footer>
     </Sidebar>
