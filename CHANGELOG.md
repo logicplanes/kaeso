@@ -4,6 +4,75 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-25
+
+Kaeso 0.4.2 lets organization admins add their own providers and rotate keys in one step. Hard budgets and token rates now refuse a single request that could cross them, so operators may see more refusals up front. Streams that finished are no longer logged as client disconnects, and request logs, the console and a Server-Timing header show the time Kaeso adds to each request. Codex and the ChatGPT desktop app can use Claude, Grok and Mistral models, and many documentation and console layouts were reworked for phones.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.4.1...v0.4.2](https://github.com/logicplanes/kaeso/compare/v0.4.1...v0.4.2)
+
+### Added
+
+- Organization admins can add custom providers, such as a self-hosted vLLM, Ollama or an internal proxy, on any API format Kaeso speaks. Managing them needs the new `providers.custom.manage` right, and the `custom_providers.enabled` and `custom_providers.allowed_networks` settings control whether they may be used and which networks they may reach. ([#427](https://github.com/logicplanes/kaeso/pull/427))
+- API keys and platform keys can be rotated in one step, from the console or the Platform API. The new key keeps the old key's name, owner, access, models and key limits, and the old key keeps working for a grace period of 0, 1, 24 or 168 hours that you choose. ([#422](https://github.com/logicplanes/kaeso/pull/422))
+- Request logs, the console and a `Server-Timing` header show the time Kaeso itself spends on each model request, apart from the provider's time. The log gains `overhead_ms` and `stream_processing_ms` columns, and the `kaeso_gateway_overhead_seconds` metric records the same per provider. ([#423](https://github.com/logicplanes/kaeso/pull/423))
+- Codex and the ChatGPT desktop app can use Claude, Grok and Mistral models. Namespaced tools become plain function tools, hosted web search maps to Claude's web search tool, and client metadata stays out of other formats. Claude always searches live, so a Codex setting of cached search is refused for Claude with a hint to set live search or turn search off, and the refusal for Mistral gives the same hint. ([#396](https://github.com/logicplanes/kaeso/pull/396))
+
+#### Documentation
+
+- The new `kaeso-bench` crate measures the time and memory Kaeso adds under thousands of concurrent streams, client disconnects and slow clients, end to end over real sockets. Its report gives the Kaeso version, commit, CPU and every parameter with each run. ([#425](https://github.com/logicplanes/kaeso/pull/425))
+
+### Changed
+
+- Requirements for the end-to-end suites are now installed in CI with hash checking, so every package is pinned with its hashes. Two advisory fixes update `undici` to 8.12.3 and `crypto-bigint` to 0.7.6. ([#384](https://github.com/logicplanes/kaeso/pull/384))
+- Diagrams in the documentation sit centred in a framed well with a caption. Kaeso's own parts are drawn in ink, outside services are dashed, and edge labels no longer have lines running through them, with the frame provided by a new `Figure` component in the UI library. ([#388](https://github.com/logicplanes/kaeso/pull/388))
+- On phones, long lines in code blocks wrap with a hanging indent instead of running off the edge, and Copy still copies the code as written. ([#402](https://github.com/logicplanes/kaeso/pull/402))
+- The documentation search no longer shows a count beside each group, while the console's pickers and palette keep theirs. ([#403](https://github.com/logicplanes/kaeso/pull/403))
+- Table headers can wrap onto several lines with the `wrap` option of `Table.HeaderCell`, and the documentation wraps headers longer than 24 characters, so the sign-in comparison fits its column. ([#405](https://github.com/logicplanes/kaeso/pull/405))
+- The `density` option of `Table` set to compact puts 8px between columns, and the documentation uses it for tables of five or more columns. Wide Configuration and Chinese KPP tables now fit desktop widths, and long type names may break between words. ([#408](https://github.com/logicplanes/kaeso/pull/408))
+- Development dependencies in the console, docs and UI library move `happy-dom` to 21.0.4, which fixes a code injection vulnerability in its ESM compiler. ([#414](https://github.com/logicplanes/kaeso/pull/414))
+- On phones, a wide diagram in the documentation opens on the part it is about, the nodes marked in ink, instead of its middle. The `Figure` component takes a `focus` option for the share of its width to open on. ([#418](https://github.com/logicplanes/kaeso/pull/418))
+- Wrapped code lines keep the indent of the line they continue, so a continued command option sits under its own option. The Platform API error example, the last code block that scrolled on desktop, now wraps at every width. ([#430](https://github.com/logicplanes/kaeso/pull/430))
+
+#### Documentation
+
+- The diagrams on the introduction, concept, self-hosting and development pages are redrawn to show the install's boundary, each check's statuses and the path of a request. The Upgrades page gains a diagram that links each update result to the step where it happens. ([#389](https://github.com/logicplanes/kaeso/pull/389), [#390](https://github.com/logicplanes/kaeso/pull/390), [#391](https://github.com/logicplanes/kaeso/pull/391))
+- On phones, documentation tables of three or more columns show each row as a list with its labels instead of scrolling sideways. ([#394](https://github.com/logicplanes/kaeso/pull/394))
+- Console, guide, API, self-hosting and contributor pages are split into shorter sentences and paragraphs, with lists where they listed things. No fact, setting or command changed. ([#395](https://github.com/logicplanes/kaeso/pull/395), [#397](https://github.com/logicplanes/kaeso/pull/397), [#398](https://github.com/logicplanes/kaeso/pull/398))
+- The KPP reference pages read in shorter sentences, with lists for what each codec refuses and drops. The provider profiles and the Chat Completions providers move to a new page, and links to it are updated. ([#399](https://github.com/logicplanes/kaeso/pull/399))
+- Documentation search shows pages whose title or description match first, then matching sections, then pages that only mention the words. ([#400](https://github.com/logicplanes/kaeso/pull/400))
+- The changelog is no longer built into the documentation. The sidebar's Changelog link goes to the changelog on the Kaeso website, in the page's language, and old changelog addresses redirect there. ([#401](https://github.com/logicplanes/kaeso/pull/401))
+- Long code in documentation tables breaks after separators such as slashes, dots and equals signs, so reference tables such as the Platform API routes fit the desktop column. ([#406](https://github.com/logicplanes/kaeso/pull/406))
+- The two KPP allowlist tables on the cross-format page now fit the desktop width, with scope and origin dialect in one column. ([#407](https://github.com/logicplanes/kaeso/pull/407))
+- Shell commands and code samples are reformatted to fit the page on desktop, with long commands continuing on the next line after a backslash. The upgrade script names the release address once and checks the hash in two steps. ([#409](https://github.com/logicplanes/kaeso/pull/409))
+- Markdown, text and plain-text examples wrap like prose at every width instead of scrolling sideways. ([#410](https://github.com/logicplanes/kaeso/pull/410))
+- On phones, a table column with mostly short values sits beside its labels even when one value is long. ([#411](https://github.com/logicplanes/kaeso/pull/411))
+- The diagram on the benchmark page runs top to bottom and fits a phone without scrolling. The stream counts in its options table are written as 100, 1,000 and 5,000. ([#428](https://github.com/logicplanes/kaeso/pull/428))
+- The key rotation example in the Platform API guide names the key's address once, so its command fits the desktop column. ([#429](https://github.com/logicplanes/kaeso/pull/429))
+- The German and Chinese custom provider examples send the English prompt, so their code matches the other languages. ([#431](https://github.com/logicplanes/kaeso/pull/431))
+- The Configuration settings tables show each variable and TOML key in one column, so most names stay on one line on desktop and phones, and a table cell can now hold a line break. ([#432](https://github.com/logicplanes/kaeso/pull/432))
+
+### Fixed
+
+- A non-streaming Responses request through a ChatGPT plan now returns the reasoning, web search call and message items with their types, as OpenAI does. Before, the items came back without a type. ([#416](https://github.com/logicplanes/kaeso/pull/416))
+- A stream whose last event reached the app is logged as a success, even when the app closes the connection right after it. Before, such requests could be logged as client disconnects with status 499, and a provider that closed its stream after the last event could fail the request. ([#421](https://github.com/logicplanes/kaeso/pull/421))
+- A stream that ends because the app stopped reading it is logged as `client_stalled` instead of `client_disconnected`, and the console and metrics show the new kind. Real disconnects stay `client_disconnected`. ([#424](https://github.com/logicplanes/kaeso/pull/424))
+
+#### UI library
+
+- On this page marks the section you are reading when you scroll back up, and marks the last section at the bottom of a page. ([#393](https://github.com/logicplanes/kaeso/pull/393))
+- Tables no longer scroll sideways by two pixels when a link ends a text column at the table's edge. ([#404](https://github.com/logicplanes/kaeso/pull/404))
+
+#### Documentation
+
+- Long page titles in the documentation sidebar no longer end in an ellipsis, with short navigation labels in English, German and Chinese. ([#392](https://github.com/logicplanes/kaeso/pull/392))
+- A diagram group's title moves along its top edge when an arrow enters the group at its top-left corner, so the arrow is no longer hidden behind the title. ([#415](https://github.com/logicplanes/kaeso/pull/415))
+
+### Security
+
+- Hard spend budgets and token rates refuse a request whose output bound could cross them, even when it is the only request in flight. Password reset is refused where the organization requires SSO, and the Azure wire server address is blocked as a metadata address. ([#385](https://github.com/logicplanes/kaeso/pull/385))
+
 ## [0.4.1] - 2026-10-23
 
 Kaeso 0.4.1 is a patch release with no breaking changes, so existing provider keys, integrations and configuration need no change. It fixes the stop reason that Chat Completions and Messages clients receive when a ChatGPT account calls a tool, and it corrects many console and UI library layouts, most visibly on phones. Dependency updates for the gateway, console, docs and showcase are included.
@@ -736,7 +805,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.2
 [0.4.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.1
 [0.4.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.0
 [0.3.9]: https://github.com/logicplanes/kaeso/releases/tag/v0.3.9
