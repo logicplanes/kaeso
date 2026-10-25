@@ -668,6 +668,20 @@ expression: outcomes
     "param": null,
     "unsupported": "functions"
   },
+  "providers/mistral/greedy-sampling": {
+    "body": {
+      "input": [
+        {
+          "content": "say ok",
+          "role": "user"
+        }
+      ],
+      "model": "mistral-large-4",
+      "store": false,
+      "temperature": 0.0
+    },
+    "path": "/v1/responses"
+  },
   "providers/mistral/invalid-api-key": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

@@ -75,6 +75,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::Authentication,
     ),
     (
+        "providers/mistral/recorded-greedy-sampling",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-logit-bias",
         ErrorKind::InvalidRequest,
     ),
@@ -225,8 +229,8 @@ fn meta_headers(meta: &Value) -> HeaderList {
 }
 
 #[test]
-fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
-    for (name, kind) in FOREIGN_ERROR_BODIES {
+fn mistral_error_bodies_reach_apps_with_mistrals_message() {
+    let decoded = |name: &str| {
         let (_, body) = fixtures(D, "errors", "json")
             .into_iter()
             .find(|(n, _)| n == name)
@@ -237,20 +241,19 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
                 .unwrap(),
         )
         .unwrap();
-        let err = OpenAiChat::decode_error(status, &HeaderList::new(), &body);
+        (
+            OpenAiChat::decode_error(status, &HeaderList::new(), &body),
+            body,
+            status,
+        )
+    };
+    for (name, kind) in FOREIGN_ERROR_BODIES {
+        let (err, body, status) = decoded(name);
         assert_eq!((&err.kind, err.status), (kind, Some(status)), "{name}");
         let original: Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
-        let quoted: String = String::from_utf8_lossy(&body)
-            .trim()
-            .chars()
-            .take(400)
-            .collect();
-        let prefix = format!(
-            "The provider returned an error (HTTP {status}) that is not in the OpenAI error format: "
-        );
         assert!(
-            err.message.starts_with(&prefix) && err.message.contains(&quoted),
+            !err.message.contains("not in the OpenAI error format") && !err.message.contains('{'),
             "{name}: {}",
             err.message
         );
@@ -258,6 +261,34 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
         assert_eq!(out.status, status, "{name}");
         let sent: Value = serde_json::from_slice(&out.body).unwrap();
         assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+    for (name, message) in [
+        (
+            "providers/mistral/recorded-greedy-sampling",
+            "top_p must be 1 when using greedy sampling.",
+        ),
+        (
+            "providers/mistral/recorded-model-not-found",
+            "Invalid model: mistral-tiny-nonexistent",
+        ),
+        (
+            "providers/mistral/recorded-invalid-api-key",
+            "Invalid API Key",
+        ),
+        (
+            "providers/mistral/recorded-store-field",
+            "Extra inputs are not permitted (`store`).",
+        ),
+        (
+            "providers/mistral/recorded-assistant-refusal-field",
+            "Extra inputs are not permitted (`messages[1].assistant.refusal`).",
+        ),
+        (
+            "providers/mistral/recorded-reasoning-cached-usage",
+            "Input should be 'auto' or 'standard_only' (`service_tier`); Input tag 'developer' found using 'role' does not match any of the expected tags: <Roles.system: 'system'>, <Roles.user: 'user'>, <Roles.assistant: 'assistant'>, <Roles.tool: 'tool'> (`messages[0]`).",
+        ),
+    ] {
+        assert_eq!(decoded(name).0.message, message, "{name}");
     }
 }
 

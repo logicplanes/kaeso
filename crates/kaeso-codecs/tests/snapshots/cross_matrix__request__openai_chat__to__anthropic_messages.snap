@@ -648,6 +648,25 @@ expression: outcomes
     "param": null,
     "unsupported": "functions"
   },
+  "providers/mistral/greedy-sampling": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "say ok",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-large-4",
+      "temperature": 0.0
+    },
+    "path": "/v1/messages"
+  },
   "providers/mistral/invalid-api-key": {
     "body": {
       "max_tokens": 10,

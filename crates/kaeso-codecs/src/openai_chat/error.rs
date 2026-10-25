@@ -39,6 +39,19 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
     let raw: Value = serde_json::from_slice(body)
         .unwrap_or_else(|_| Value::String(String::from_utf8_lossy(body).into_owned()));
     let Some(parsed) = parsed else {
+        if let Some(own) = mistral_error(&raw) {
+            let kind = kind_for(status, own.ty.as_deref(), own.code.as_deref());
+            let mut err = KppError::new(kind, own.message)
+                .with_origin(origin)
+                .with_raw(raw);
+            if let Some(status) = status {
+                err = err.with_status(status);
+            }
+            if let Some(param) = own.param {
+                err = err.with_param(param);
+            }
+            return err;
+        }
         let text = String::from_utf8_lossy(body);
         let message = match raw.get("error") {
             Some(Value::String(e)) if !e.trim().is_empty() => e.clone(),
@@ -79,6 +92,71 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
         err = err.with_param(param);
     }
     err
+}
+
+struct MistralError {
+    message: String,
+    ty: Option<String>,
+    code: Option<String>,
+    param: Option<String>,
+}
+
+// Mistral's shapes: `{"object": "error", "message", "type", "param", "code"}` from its
+// gateway, and FastAPI's `HTTPValidationError` (`detail`) in Mistral's OpenAPI document.
+fn mistral_error(raw: &Value) -> Option<MistralError> {
+    let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_owned);
+    let message = match (
+        raw.get("object").and_then(Value::as_str),
+        raw.get("message"),
+    ) {
+        (Some("error"), Some(Value::String(m))) => m.clone(),
+        (Some("error"), Some(nested)) => validation_message(nested.get("detail")?)?,
+        _ => validation_message(raw.get("detail")?)?,
+    };
+    let message = message.trim().to_owned();
+    if message.is_empty() {
+        return None;
+    }
+    Some(MistralError {
+        message,
+        ty: text("type"),
+        code: text("code"),
+        param: text("param"),
+    })
+}
+
+fn validation_message(detail: &Value) -> Option<String> {
+    let items = match detail {
+        Value::String(text) => return Some(text.clone()),
+        Value::Array(items) => items,
+        _ => return None,
+    };
+    let lines = items
+        .iter()
+        .map(|item| {
+            let msg = item.get("msg")?.as_str()?;
+            let mut path = String::new();
+            for part in item.get("loc")?.as_array()?.iter().skip(1) {
+                match part {
+                    Value::Number(n) => path.push_str(&format!("[{n}]")),
+                    Value::String(s) if path.is_empty() => path.push_str(s),
+                    Value::String(s) => path.push_str(&format!(".{s}")),
+                    _ => return None,
+                }
+            }
+            Some(if path.is_empty() {
+                msg.to_owned()
+            } else {
+                format!("{msg} (`{path}`)")
+            })
+        })
+        .collect::<Option<Vec<String>>>()?;
+    let joined = lines.join("; ");
+    Some(if joined.ends_with('.') {
+        joined
+    } else {
+        format!("{joined}.")
+    })
 }
 
 pub(crate) struct ErrorProbe {

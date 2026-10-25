@@ -357,12 +357,9 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
-    assert!(
-        message.starts_with(
-            "The provider returned an error (HTTP 400) that is not in the OpenAI error format:"
-        ) && message.contains("Invalid model: mistral-tiny-nonexistent"),
-        "{message}"
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
 
     let r = call(
@@ -379,13 +376,55 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
         (&body["type"], &body["error"]["type"]),
         (&json!("error"), &json!("invalid_request_error"))
     );
-    assert!(
-        body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid model: mistral-tiny-nonexistent"),
-        "{body}"
+    assert_eq!(
+        body["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
+
+    let mut greedy = messages(SMALL, &format!("Hi {}", error("recorded-greedy-sampling")));
+    greedy["temperature"] = json!(0);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(greedy)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "top_p must be 1 when using greedy sampling."
+    );
+}
+
+#[tokio::test]
+async fn greedy_sampling_reaches_mistral_with_the_top_p_it_needs() {
+    let env = env().await;
+    for (path, anthropic) in [("/v1/chat/completions", false), ("/v1/messages", true)] {
+        let text = format!(
+            "say ok {}",
+            fixture("responses", "recorded-max-tokens-length")
+        );
+        let mut body = if anthropic {
+            messages(SMALL, &text)
+        } else {
+            chat(SMALL, &text)
+        };
+        body["temperature"] = json!(0);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body.clone())).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(
+            (sent["temperature"].as_f64(), sent["top_p"].as_f64()),
+            (Some(0.0), Some(1.0)),
+            "{path}"
+        );
+
+        env.mock.clear();
+        body["top_p"] = json!(0.9);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {}", r.text());
+        assert_eq!(
+            r.json()["error"]["message"],
+            "Mistral needs `top_p` 1 with `temperature` 0; remove `top_p` or raise `temperature`.",
+            "{path}"
+        );
+        assert!(env.mock.received().is_empty(), "{path}");
+    }
 }
 
 #[tokio::test]

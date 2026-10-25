@@ -379,6 +379,7 @@ pub const PROVIDERS: &[Provider] = &[
             .random_seed()
             .without_end_user()
             .without_prefill()
+            .greedy_top_p()
             .thinking_parts()
             .refusing(&[
                 "audio",
@@ -655,6 +656,9 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
+        let greedy =
+            sent_with_profile("mistral", "providers/mistral/requests/greedy-sampling").unwrap();
+        assert_eq!(greedy["top_p"], 1.0, "{greedy}");
     }
 
     #[test]
