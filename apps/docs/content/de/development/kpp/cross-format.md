@@ -84,6 +84,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `file.filename` | document, aus `openai_chat` | Der Dateiname, den OpenAI neben eingebettetem `file_data` verlangt. Metadaten, keine Anweisung. | `openai_chat/requests/file-pdf-data.json` |
 | `prompt_cache_key` | request, aus `openai_chat` | Leitet Anfragen zu einem Prompt-Cache. Ein Cache-Hinweis ([Cache-Hinweise](#cache-hinweise)). | `openai_chat/requests/all-params-sdk.json` |
 | `prompt_cache_key` | request, aus `openai_responses` | Wie oben. | `openai_responses/requests/sampling-and-ids.json` |
+| `model_id` | message, aus `openai_chat` | Das Modell, das eine wiederholte Assistenten-Nachricht geschrieben hat; Grok CLI hält es in seinem eigenen Verlauf fest. Buchführung, die das Modell nie liest; ein protokollierter Anfrage-Body behält sie. | Grok CLI sendet es bei jeder wiederholten Assistenten-Nachricht; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, aus `openai_responses` | Metadaten der Anfrage: Turn- und Thread-IDs, W3C-Trace-Kontext und `x-codex-turn-metadata`. Sie erreichen das Modell nie, und ein protokollierter Anfrage-Body behält sie. | Codex sendet sie bei jedem Zug; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (an `input_image`; `auto` ist bereits eine Form-Markierung) | image, aus `openai_responses` | Hinweis zur Bildauflösung, wie `image_url.detail` bei Chat. `input_file.detail` (PDF-Darstellung) steht **nicht** auf der Allowlist. | `openai_responses/requests/image-base64-file-id.json` |
 

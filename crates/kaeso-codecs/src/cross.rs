@@ -27,6 +27,7 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiChat, "image", "image_url.detail"),
     (DialectId::OpenAiChat, "document", "file.filename"),
     (DialectId::OpenAiChat, "request", "prompt_cache_key"),
+    (DialectId::OpenAiChat, "message", "model_id"),
     (DialectId::OpenAiResponses, "request", "prompt_cache_key"),
     (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
