@@ -181,7 +181,7 @@ A Responses model's searches reach an Anthropic app as Claude's do. Each `web_se
 
 Streams send a search once its item is done: the `server_tool_use` start, one `input_json_delta` with the query, and the result. Items still in progress when the reply ends, items that open or search a page (`open_page`, `find_in_page`) and the answer's `url_citation` annotations are left out, like other data the app's format can't show. `usage.server_tool_use.web_search_requests` counts the completed searches, since a failed search isn't billed.
 
-`server_tool_use` blocks named `web_search` and their `web_search_tool_result` blocks are dropped when an app sends them to another format, with the `web_search_result_location` citations that point into them, as `web_search_call` items are for Anthropic. The answer that used them stays. Claude gets its own blocks back unchanged; blocks with Kaeso's `srvtoolu_kaeso_` ids are dropped for Claude too, because Claude can't replay a result without its encrypted content.
+`server_tool_use` blocks named `web_search` and their `web_search_tool_result` blocks are dropped when an app sends them to another format, with the `web_search_result_location` citations that point into them, as `web_search_call` items are for Anthropic. The answer that used them stays. Claude gets its own blocks back unchanged; blocks with Kaeso's `srvtoolu_kaeso_` ids are dropped for Claude too, because Claude can't replay a result without its encrypted content. Each dropped block is named in `kaeso-left-out` by its type and id, such as `server_tool_use srvtoolu_01…`, and dropped citations by their block, such as `messages[1].blocks[2].citations`.
 
 ## Codex tool history
 

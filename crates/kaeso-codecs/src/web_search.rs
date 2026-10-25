@@ -1016,7 +1016,7 @@ pub(crate) fn asks_for_sources(r: &GenerateRequest) -> bool {
     !r.extras.is_from(RESPONSES) && !hosted_searches(r, RESPONSES).is_empty()
 }
 
-fn claudes_search_id(block: &Block) -> Option<String> {
+fn claudes_search(block: &Block) -> Option<(String, String)> {
     #[derive(Deserialize)]
     struct Ids {
         #[serde(rename = "type")]
@@ -1035,11 +1035,12 @@ fn claudes_search_id(block: &Block) -> Option<String> {
         return None;
     }
     let ids = item.raw.parse::<Ids>().ok()?;
-    match ids.ty.as_str() {
+    let id = match ids.ty.as_str() {
         "server_tool_use" if ids.name.as_deref() == Some(ANTHROPIC_NAME) => ids.id,
         "web_search_tool_result" => ids.tool_use_id,
         _ => None,
-    }
+    }?;
+    Some((ids.ty, id))
 }
 
 fn cites_search(c: &kaeso_kpp::Citation) -> bool {
@@ -1049,23 +1050,33 @@ fn cites_search(c: &kaeso_kpp::Citation) -> bool {
 
 fn without_claudes_searches(d: &mut Draft<'_>, all: bool) {
     let dropped =
-        |b: &Block| claudes_search_id(b).is_some_and(|id| all || id.starts_with(KAESO_SERVER_ID));
-    let found = d
-        .get()
-        .messages
-        .iter()
-        .any(|m| m.blocks.iter().any(dropped));
-    if !found {
+        |b: &Block| claudes_search(b).is_some_and(|(_, id)| all || id.starts_with(KAESO_SERVER_ID));
+    let cited =
+        |b: &Block| all && matches!(b, Block::Text(t) if t.citations.iter().any(cites_search));
+    let mut left_out = Vec::new();
+    for (mi, m) in d.get().messages.iter().enumerate() {
+        for (bi, b) in m.blocks.iter().enumerate() {
+            if let Some((ty, id)) = claudes_search(b).filter(|_| dropped(b)) {
+                left_out.push(format!("{ty} {id}"));
+            } else if cited(b) {
+                left_out.push(format!("messages[{mi}].blocks[{bi}].citations"));
+            }
+        }
+    }
+    if left_out.is_empty() {
         return;
+    }
+    for item in left_out {
+        d.leave_out(item);
     }
     d.edit().messages.retain_mut(|m| {
         let held = m.blocks.len();
         m.blocks.retain(|b| !dropped(b));
-        if all {
-            for b in &mut m.blocks {
-                if let Block::Text(t) = b {
-                    t.citations.retain(|c| !cites_search(c));
-                }
+        for b in &mut m.blocks {
+            if let Block::Text(t) = b
+                && all
+            {
+                t.citations.retain(|c| !cites_search(c));
             }
         }
         m.blocks.len() == held || !m.blocks.is_empty()

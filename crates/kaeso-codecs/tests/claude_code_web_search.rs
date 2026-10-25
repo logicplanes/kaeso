@@ -520,6 +520,13 @@ fn searches_kaeso_reported_are_left_out_when_the_app_sends_them_back() {
         sent["messages"][1]["content"],
         json!([{"type": "text", "text": "Rust 1.99."}])
     );
+    assert_eq!(
+        ctx.left_out,
+        [
+            "server_tool_use srvtoolu_kaeso_ws_1",
+            "web_search_tool_result srvtoolu_kaeso_ws_1"
+        ]
+    );
 }
 
 #[test]
@@ -536,16 +543,26 @@ fn claudes_own_searches_are_left_out_for_other_formats_and_kept_for_claude() {
         sent["input"][2],
         json!({"role": "assistant", "content": "Rust 1.99."})
     );
-    let (sent, _) = send_to_chat(&body).unwrap();
+    let (sent, left_out) = send_to_chat(&body).unwrap();
     assert_eq!(
         sent["messages"][2],
         json!({"role": "assistant", "content": "Rust 1.99."})
+    );
+    assert_eq!(
+        left_out,
+        [
+            "tools[0]",
+            "server_tool_use srvtoolu_01ABC",
+            "web_search_tool_result srvtoolu_01ABC",
+            "messages[1].blocks[2].citations"
+        ]
     );
     let req = decode(RequestKind::Generate, &body);
     let mut ctx = EgressCtx::new(&req);
     let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
     let sent: Value = serde_json::from_slice(&enc.body).unwrap();
     assert_eq!(sent["messages"][1], body["messages"][1]);
+    assert!(ctx.left_out.is_empty());
 }
 
 fn kpp_stream(items: &[(Value, Value)]) -> Vec<Value> {

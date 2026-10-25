@@ -181,7 +181,7 @@ Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。
 
 流会在某次搜索的项完成后发送它：`server_tool_use` 的开始、一个带查询的 `input_json_delta`，然后是结果。回复结束时仍在进行的项、打开页面或在页面内搜索的项（`open_page`、`find_in_page`），以及回答中的 `url_citation` 注释会被省略，与应用格式无法显示的其他数据一样。`usage.server_tool_use.web_search_requests` 统计已完成的搜索，因为失败的搜索不计费。
 
-应用把名为 `web_search` 的 `server_tool_use` 块及其 `web_search_tool_result` 块发往其他格式时，这些块会被丢弃，指向它们的 `web_search_result_location` 引用也一并丢弃，就像发往 Anthropic 时的 `web_search_call` 项一样。使用了它们的回答仍会保留。Claude 原样收回自己的块；带有 Kaeso `srvtoolu_kaeso_` ID 的块对 Claude 也会被丢弃，因为 Claude 无法在没有加密内容的情况下重放结果。
+应用把名为 `web_search` 的 `server_tool_use` 块及其 `web_search_tool_result` 块发往其他格式时，这些块会被丢弃，指向它们的 `web_search_result_location` 引用也一并丢弃，就像发往 Anthropic 时的 `web_search_call` 项一样。使用了它们的回答仍会保留。Claude 原样收回自己的块；带有 Kaeso `srvtoolu_kaeso_` ID 的块对 Claude 也会被丢弃，因为 Claude 无法在没有加密内容的情况下重放结果。每个被丢弃的块都会在 `kaeso-left-out` 中按类型和 ID 注明，例如 `server_tool_use srvtoolu_01…`；被丢弃的引用按所在块注明，例如 `messages[1].blocks[2].citations`。
 
 ## Codex 工具历史
 
