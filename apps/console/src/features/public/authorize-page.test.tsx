@@ -90,6 +90,12 @@ describe("connecting an agent", () => {
     expect(await screen.findByText("This request has ended")).toBeInTheDocument();
   });
 
+  it("treats an error it doesn't know as a missing link", async () => {
+    signedIn();
+    await renderApp("/authorize#error=constructor");
+    expect(await screen.findByText("Start the sign-in from the agent again; it opens this page with its request.")).toBeInTheDocument();
+  });
+
   it("names an agent Kaeso doesn't know", async () => {
     signedIn();
     await renderApp("/authorize#error=invalid_client");

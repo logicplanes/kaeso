@@ -31,10 +31,10 @@ function forget(token: string) {
   forgetFragment(token);
 }
 
-const LINK_ERRORS: Readonly<Record<string, () => string>> = {
-  invalid_client: () => t("public.agentLinkUnknownClient", "Kaeso doesn't know this agent; connect it again from the agent."),
-  invalid_redirect_uri: () => t("public.agentLinkBadReturn", "The agent asked to return to an address it didn't register; connect it again."),
-};
+const LINK_ERRORS: ReadonlyMap<string, () => string> = new Map([
+  ["invalid_client", () => t("public.agentLinkUnknownClient", "Kaeso doesn't know this agent; connect it again from the agent.")],
+  ["invalid_redirect_uri", () => t("public.agentLinkBadReturn", "The agent asked to return to an address it didn't register; connect it again.")],
+]);
 
 export function AuthorizePage() {
   usePageTitle(t("public.connectAgent", "Connect an agent"));
@@ -45,7 +45,7 @@ export function AuthorizePage() {
       <PublicPage
         title={t("public.agentLinkUnusable", "This sign-in link can't be used")}
         description={
-          (error ? LINK_ERRORS[error]?.() : undefined) ??
+          (error ? LINK_ERRORS.get(error)?.() : undefined) ??
           t("public.agentLinkMissing", "Start the sign-in from the agent again; it opens this page with its request.")
         }
       >
