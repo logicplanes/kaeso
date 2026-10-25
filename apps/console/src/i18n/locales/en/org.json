@@ -1,5 +1,5 @@
 {
-  "org.agents.agentDetail": "{harness} · used {used}",
+  "org.agents.agentDetail": "{model} · used {used}",
   "org.agents.agentOf": "{agent} of {person}",
   "org.agents.allow": "Allow members' agents",
   "org.agents.allowHint": "Off stops every agent here at its next call.",

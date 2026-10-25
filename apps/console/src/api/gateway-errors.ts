@@ -60,7 +60,6 @@ const messages = (): Rule[] => [
   rule("errors.agentSignInEnded", () => t("errors.agentSignInEnded", "This agent's sign-in has ended or was revoked; connect the agent again.")),
   rule("errors.agentCallsModels", () => t("errors.agentCallsModels", "An agent needs `api.request` in this project to create keys that call models.")),
   rule("errors.agentLacksRight", (v) => t("errors.agentLacksRight", "This agent doesn't have `{right}`; its user can grant it in the console.", v)),
-  rule("errors.agentUnknownHarness", () => t("errors.agentUnknownHarness", "`harness` isn't a harness Kaeso knows; choose `other` instead.")),
   rule("errors.agentExpiry", () => t("errors.agentExpiry", "`expiry` must be `7d`, `30d`, `90d` or `never`.")),
   rule("errors.agentUnknownRight", (v) => t("errors.agentUnknownRight", "`{name}` is not a right an agent can be given.", v)),
   rule("errors.agentPolicyRefuses", (v) => t("errors.agentPolicyRefuses", "The agent policy here doesn't allow `{right}`; leave it out.", v)),

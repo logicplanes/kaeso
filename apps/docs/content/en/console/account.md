@@ -62,9 +62,9 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Manage your agents
 
-**Agents** lists every agent you authorized: its picture, name and harness, a summary of its rights, the organizations it can reach, and when it was created, last used and expires. Choose an agent to open its page, where you can:
+**Agents** lists every agent you authorized: its picture, name and model family, a summary of its rights, the organizations it can reach, and when it was created, last used and expires. Choose an agent to open its page, where you can:
 
-- rename it, or change its harness;
+- rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;
 - give it a new expiry with **New lifetime from today**;
 - **Revoke** it, which signs it out at once;

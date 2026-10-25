@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1)) AND ($2::uuid IS NULL OR e.id < $2) AND ($4::uuid IS NULL OR e.actor_id = $4) AND ($5::text IS NULL OR e.action LIKE $5) AND ($6::text IS NULL OR e.target_id = $6) AND ($7::timestamptz IS NULL OR e.at >= $7) AND ($8::timestamptz IS NULL OR e.at < $8) AND ($9::uuid IS NULL OR e.project_id = $9) AND (NOT $10 OR e.actor_kind = 'agent') ORDER BY e.id DESC LIMIT $3",
+  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1)) AND ($2::uuid IS NULL OR e.id < $2) AND ($4::uuid IS NULL OR e.actor_id = $4) AND ($5::text IS NULL OR e.action LIKE $5) AND ($6::text IS NULL OR e.target_id = $6) AND ($7::timestamptz IS NULL OR e.at >= $7) AND ($8::timestamptz IS NULL OR e.at < $8) AND ($9::uuid IS NULL OR e.project_id = $9) AND (NOT $10 OR e.actor_kind = 'agent') ORDER BY e.id DESC LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -82,12 +82,12 @@
       },
       {
         "ordinal": 7,
-        "name": "agent_harness?",
+        "name": "agent_model?",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "agents",
-            "name": "harness"
+            "name": "model"
           }
         }
       },
@@ -225,5 +225,5 @@
       false
     ]
   },
-  "hash": "db6e89ee90c84bfb172305344b3cb0044578c321ff1a4655de6c304b4ba65f4a"
+  "hash": "b5ef074c87e8e4c397993d03e6d87789b94b68d41f54b5b559bc3a50b8b428fc"
 }

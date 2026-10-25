@@ -59,7 +59,7 @@ pub struct Event {
     pub actor_id: Option<Uuid>,
     pub agent_id: Option<Uuid>,
     pub agent_name: Option<String>,
-    pub agent_harness: Option<String>,
+    pub agent_model: Option<String>,
     pub action: String,
     pub target_kind: Option<String>,
     pub target_id: Option<String>,
@@ -100,7 +100,7 @@ pub async fn list(
     Ok(sqlx::query_as!(
         Event,
         "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", \
-         a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
+         a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
          e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id \
          WHERE (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1)) \
          AND ($2::uuid IS NULL OR e.id < $2) \
@@ -135,7 +135,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         Event,
         "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", \
-         a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
+         a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
          e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id \
          WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
         org_id,

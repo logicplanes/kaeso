@@ -18,7 +18,7 @@ use super::tools::{self, Tool};
 use crate::auth::agents::{AgentCaller, Refusal};
 use crate::auth::keys::bearer;
 use crate::http::client_ip;
-use crate::services::agents::usable;
+use crate::services::agents::{known_model, usable};
 use crate::state::AppState;
 
 const LATEST_PROTOCOL: &str = "2025-11-25";
@@ -27,8 +27,9 @@ const MAX_RESULT_BYTES: usize = 200 * 1024;
 const INSTRUCTIONS: &str = "Kaeso is a self-hosted AI gateway. These tools read and change it \
     for the user who connected you, with the rights they gave you; tools/list shows only what you \
     can use now. Ids look like `org_…` and `proj_…`; list organizations with `get_me_memberships` \
-    first. A call that fails with `insufficient_rights` names a link where the user can grant the \
-    right; ask them to open it.";
+    first. Every tool takes `agent_model`, the model family you are, or `unknown`. A call that fails \
+    with `insufficient_rights` names a link where the user can grant the right; ask them to open \
+    it.";
 
 #[derive(Clone)]
 pub struct Platform(pub Router);
@@ -206,7 +207,7 @@ pub async fn post(
         token,
     };
     let reply = match method {
-        "initialize" => initialize(&state, &agent, id, &params).await,
+        "initialize" => initialize(id, &params),
         "ping" => rpc(id, json!({})),
         "tools/list" => list(&ctx, id).await,
         "tools/call" => call(&ctx, id, &params).await,
@@ -215,32 +216,11 @@ pub async fn post(
     json_response(StatusCode::OK, &reply)
 }
 
-async fn initialize(
-    state: &AppState,
-    agent: &AgentCaller,
-    id: &Value,
-    params: &Map<String, Value>,
-) -> Value {
+fn initialize(id: &Value, params: &Map<String, Value>) -> Value {
     let asked = params.get("protocolVersion").and_then(Value::as_str);
     let version = asked
         .filter(|v| PROTOCOL_VERSIONS.contains(v))
         .unwrap_or(LATEST_PROTOCOL);
-    let model = params
-        .get("clientInfo")
-        .and_then(|c| c.get("model"))
-        .and_then(Value::as_str)
-        .map(|m| {
-            m.chars()
-                .filter(|c| !c.is_control())
-                .take(100)
-                .collect::<String>()
-        })
-        .filter(|m| !m.is_empty());
-    if let Some(model) = model
-        && let Err(e) = agents::set_model(&state.pg, agent.agent.id, Some(&model)).await
-    {
-        tracing::warn!(error = %e, "an agent's model could not be stored");
-    }
     rpc(
         id,
         json!({
@@ -344,6 +324,12 @@ async fn call(c: &Call<'_>, id: &Value, params: &Map<String, Value>) -> Value {
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_default();
+    if let Some(reported) = args.get(tools::AGENT_MODEL).and_then(Value::as_str) {
+        let model = known_model(reported).unwrap_or("unknown");
+        if let Err(e) = agents::report(&c.state.pg, c.agent.agent.id, model).await {
+            tracing::warn!(error = %e, "an agent's model could not be stored");
+        }
+    }
     let request = match tools::call(tool, &args) {
         Ok(r) => r,
         Err(e) => {

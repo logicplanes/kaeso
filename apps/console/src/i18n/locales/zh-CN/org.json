@@ -1,5 +1,5 @@
 {
-  "org.agents.agentDetail": "{harness} · 使用于 {used}",
+  "org.agents.agentDetail": "{model} · 使用于 {used}",
   "org.agents.agentOf": "{person} 的 {agent}",
   "org.agents.allow": "允许成员的智能体",
   "org.agents.allowHint": "关闭后，每个智能体在下一次调用时停止。",

@@ -41,13 +41,13 @@ function agentApi(view = agentView()) {
 }
 
 describe("the agents tab", () => {
-  it("lists agents with their harness, summary and dates", async () => {
+  it("lists agents with their model, summary and dates", async () => {
     signedIn();
     agentApi();
     await renderApp("/settings/account/agents");
     expect(await screen.findByText("Release helper")).toBeInTheDocument();
-    expect(screen.getByText("Claude Code")).toBeInTheDocument();
-    expect(await screen.findByText(/^Can manage .* in Northwind\.$/)).toBeInTheDocument();
+    expect(screen.getByText("Claude")).toBeInTheDocument();
+    expect(await screen.findByText(/^Manages .* in Northwind\.$/)).toBeInTheDocument();
     expect(screen.getByText(/^Added .* · used .* · ends /)).toBeInTheDocument();
     expect(screen.getByText(/\/mcp$/)).toBeInTheDocument();
   });
@@ -72,7 +72,7 @@ describe("the agents tab", () => {
     await user.type(name, "Ops");
     await user.click(screen.getByRole("radio", { name: "Never" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops", harness: "claude_code", expiry: "never" }]));
+    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops", expiry: "never" }]));
   });
 
   it("adds the right an agent asked for once the person saves", async () => {
@@ -156,7 +156,7 @@ describe("the agents tab", () => {
     await user.clear(name);
     await user.type(name, "Ops");
     await user.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops", harness: "claude_code" }]));
+    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops" }]));
   });
 
   it("says when the person lacks the right an agent asked for", async () => {

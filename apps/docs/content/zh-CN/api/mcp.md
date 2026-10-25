@@ -14,9 +14,9 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 然后在 Claude Code 中运行 `/mcp` 并选择 `kaeso` 进行登录。浏览器会打开控制台，询问智能体可以做什么。选择**授权**后，智能体的工具即可使用。
 
-## 运行环境
+## 客户端
 
-下面每种运行环境都会自行通过 OAuth 登录。它从服务器的第一个响应中找到 Kaeso 的登录方式，完成注册并打开您的浏览器，您无需复制任何密钥。
+下面每种客户端都会自行通过 OAuth 登录。它从服务器的第一个响应中找到 Kaeso 的登录方式，完成注册并打开您的浏览器，您无需复制任何密钥。
 
 ### Claude Code
 
@@ -89,7 +89,7 @@ OpenCode 第一次使用该服务器时会登录。如需提前登录，运行 `
 
 ### 其他客户端
 
-任何支持 Streamable HTTP 以及带动态客户端注册的 OAuth 2.1 的 MCP 客户端，都以同样的方式连接。Kaeso 根据客户端注册的名称识别 Claude Code、Codex、Cursor、Gemini CLI、OpenCode 和 Pi，其他客户端显示为“其他”。您可以在授权页面上以及之后更改运行环境。
+任何支持 Streamable HTTP 以及带动态客户端注册的 OAuth 2.1 的 MCP 客户端，都以同样的方式连接。
 
 ## 登录
 
@@ -120,11 +120,11 @@ sequenceDiagram
 
 授权页面位于 `https://kaeso.example.com/authorize`，如果您尚未登录，控制台会先请您登录。页面显示：
 
-- 智能体的头像及其名称，名称可以更改。
-- 它的**运行环境**，根据其客户端注册的名称识别，同样可以更改。
-- 预设**观察者**、**构建者**、**运维者**和**完全访问**，默认选中**构建者**，并用通俗的话概括所选预设允许的操作。
-- **到期时间**，即智能体的登录何时结束：**7 天**、**30 天**、**90 天**或**永不**。默认是 **90 天**。
-- **自定义**，用于打开每个层级的权限：**实例**、**组织**和**账户**。
+- 智能体的名称，即其客户端注册时使用的名称。
+- 预设**观察者**、**构建者**、**运维者**和**完全访问**，默认选中**构建者**，并用一个简短列表说明所选预设允许的操作。除非您关闭，它也包括您以后加入的组织。
+- 登录的有效期，以及您可以随时撤销它。
+- **自定义**，用于打开智能体的名称、**到期时间**（**7 天**、**30 天**、**90 天**或**永不**，默认 **90 天**）以及每个层级的权限：**实例**、**组织**和**账户**。
+- 您当前登录的账户，以及浏览器将返回的主机。
 
 **授权**会把浏览器带回智能体并附上授权码。**拒绝**则附上 `access_denied` 返回。登录请求有效 15 分钟，授权码有效 5 分钟。
 
@@ -181,6 +181,7 @@ sequenceDiagram
 - **列出。** `tools/list` 只显示智能体当前在其任一组织和项目中可以使用的工具。
 - **参数。** 工具接受操作的路径参数（例如 `org` 和 `project`）、查询参数，以及作为请求体的 `body`。路径参数必填，工具没有的参数会被 Kaeso 拒绝。
 - **结果。** 工具以文本和 `structuredContent` 两种形式返回 Platform API 的 JSON。超过 200 KB 的结果会被截断；请用 `limit` 请求更小的一页。
+- **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的图标和名称；其他值一律视为 `unknown`。在智能体首次调用之前，Kaeso 根据其客户端注册的名称推测模型系列。
 - **提示。** 读取类工具标有 `readOnlyHint`，删除类工具标有 `destructiveHint`。
 - **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织。
 
@@ -261,12 +262,12 @@ Kaeso 自己就是授权服务器。其颁发者是实例的公共 URL，例如 
 
 Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果、时间和 IP 地址。您可以在**账户** › **智能体**下该智能体的页面中查看（[管理您的智能体](../console/account.md#管理您的智能体)）。
 
-智能体所做的更改和其他更改一样写入审计日志，操作者类型为 `agent`。`actor.id` 是它所代表的用户，`actor.agent` 以 `id`、`name` 和 `harness` 标明该智能体。`by_agents=true` 只列出智能体所做的更改，适用于实例、组织和项目的审计日志。
+智能体所做的更改和其他更改一样写入审计日志，操作者类型为 `agent`。`actor.id` 是它所代表的用户，`actor.agent` 以 `id`、`name` 和 `model` 标明该智能体。`by_agents=true` 只列出智能体所做的更改，适用于实例、组织和项目的审计日志。
 
 | 操作 | 记录时机 |
 | --- | --- |
 | `agent.authorize` | 您授权一个智能体 |
-| `agent.update` | 您重命名智能体，或更改其运行环境或到期时间 |
+| `agent.update` | 您重命名智能体，或更改其到期时间 |
 | `agent.rights_update` | 您更改智能体的权限 |
 | `agent.revoke` | 您撤销一个智能体 |
 | `agent.org_access_revoke` | 组织管理员对某个智能体关闭组织 |
@@ -279,12 +280,12 @@ Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果�
 
 | 路由 | 访问 | 作用 |
 | --- | --- | --- |
-| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括运行环境、上报的模型、客户端、权限（`grant`）、创建时间、上次使用时间和到期时间 |
-| `PATCH me/agents/{agent}` | 会话 | 更改 `name`、`harness` 或 `expiry`：`7d`、`30d`、`90d` 或 `never`，从现在起算 |
+| `GET me/agents`、`GET me/agents/{agent}` | 会话 | 您的智能体，最新的在前，包括模型系列、客户端、权限（`grant`）、创建时间、上次使用时间和到期时间 |
+| `PATCH me/agents/{agent}` | 会话 | 更改 `name` 或 `expiry`：`7d`、`30d`、`90d` 或 `never`，从现在起算 |
 | `PUT me/agents/{agent}/rights` | 会话 | 替换智能体的权限。授予它原本没有的敏感权限需要[近期登录](platform-api.md#近期登录) |
 | `DELETE me/agents/{agent}` | 会话 | 撤销智能体。其令牌立即失效 |
 | `GET me/agents/{agent}/activity` | 会话 | 其工具调用，最新的在前 |
-| `GET me/agents/catalogue` | 会话 | 按层级列出可授予智能体的每项权限、各预设及其上限、实例预设、不会授予智能体的权限以及运行环境 |
+| `GET me/agents/catalogue` | 会话 | 按层级列出可授予智能体的每项权限、各预设及其上限、实例预设、不会授予智能体的权限以及模型系列 |
 | `GET me/agents/grantable` | 会话 | 您当前在每个组织和项目中可以授予智能体的权限 |
 | `POST me/agent-requests/view`、`…/approve`、`…/deny` | 会话 | 授权页面。每个都接受页面 `#request=` 中的 `request` |
 | `GET orgs/{org}/agents` | `members.view` | 可以在组织中行事的成员智能体 |

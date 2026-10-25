@@ -8,15 +8,14 @@ import {
   Button,
   Code,
   Empty,
+  Field,
   Input,
   Segmented,
-  Select,
   SettingsGroup,
   SettingsRow,
   SettingsSection,
 } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
-import { harnessLabel } from "~/format/harness";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { fieldError } from "~/api/field-error";
@@ -76,7 +75,6 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
   const [requested] = useState(() => (search.add ? withRequested(cat, grantable, saved, search.add, search.org, search.project) : null));
   const [draft, setDraft] = useState<AgentDraft>(requested?.draft ?? saved);
   const [name, setName] = useState(agent.name);
-  const [harness, setHarness] = useState(agent.harness);
   const [expiry, setExpiry] = useState<Expiry | "">("");
   const [confirming, setConfirming] = useState<string[] | null>(null);
   const [revoking, setRevoking] = useState(false);
@@ -86,7 +84,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
       data(
         await api.PATCH("/platform/v1/me/agents/{agent}", {
           params: { path: { agent: agent.id } },
-          body: { name: name.trim(), harness, ...(expiry ? { expiry } : {}) },
+          body: { name: name.trim(), ...(expiry ? { expiry } : {}) },
         }),
       ),
     invalidates: AGENTS,
@@ -150,7 +148,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
       <SettingsSection title={t("account.agentDetails", "Details")}>
         <div className="flex flex-col gap-16">
           <div className="flex items-center gap-12">
-            <AgentAvatar harness={harness} name={name || agent.name} size={40} />
+            <AgentAvatar model={agent.model} name={name || agent.name} size={40} />
             <Input
               label={t("common.name", "Name")}
               value={name}
@@ -160,25 +158,20 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
               className="flex-1"
             />
           </div>
-          <Select
-            label={t("public.agentHarness", "Harness")}
-            fullWidth
-            options={cat.harnesses.map((h) => ({ value: h, label: harnessLabel(h) }))}
-            value={harness}
-            onValueChange={setHarness}
-          />
-          <Segmented
-            aria-label={t("account.agentRenew", "New lifetime from today")}
-            options={expiryOptions()}
-            value={expiry}
-            onValueChange={(v) => setExpiry(v as Expiry)}
-          />
+          <Field label={t("account.agentRenew", "New lifetime from today")}>
+            <Segmented
+              aria-label={t("account.agentRenew", "New lifetime from today")}
+              options={expiryOptions()}
+              value={expiry}
+              onValueChange={(v) => setExpiry(v as Expiry)}
+            />
+          </Field>
           <div>
             <Button
               variant="primary"
               size="sm"
               loading={details.isPending}
-              disabled={!name.trim() || (name.trim() === agent.name && harness === agent.harness && !expiry)}
+              disabled={!name.trim() || (name.trim() === agent.name && !expiry)}
               onClick={() => void details.mutateAsync()}
             >
               {t("common.save", "Save")}

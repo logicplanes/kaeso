@@ -62,9 +62,9 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Agenten verwalten
 
-**Agenten** listet jeden Agenten, den Sie autorisiert haben: sein Bild, seinen Namen und seine Harness, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt, zuletzt genutzt wurde und abläuft. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
+**Agenten** listet jeden Agenten, den Sie autorisiert haben: sein Bild, seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt, zuletzt genutzt wurde und abläuft. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
 
-- ihn umbenennen oder seine Harness ändern;
+- ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;
 - ihm mit **Neue Laufzeit ab heute** einen neuen Ablauf geben;
 - ihn **Widerrufen**, was ihn sofort abmeldet;

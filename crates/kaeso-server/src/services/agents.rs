@@ -20,54 +20,41 @@ use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::me::agents::{GrantBody, OrgGrantBody};
 use crate::state::AppState;
 
-pub const HARNESSES: &[&str] = &[
-    "claude_code",
-    "codex",
-    "cursor",
-    "gemini_cli",
-    "opencode",
-    "pi",
-    "other",
+pub const MODELS: &[&str] = &[
+    "claude", "gpt", "gemini", "gemma", "grok", "llama", "mistral", "deepseek", "qwen", "kimi",
+    "glm", "minimax", "command", "nova", "phi", "granite", "jamba", "ernie", "hunyuan", "doubao",
+    "yi", "nemotron", "olmo", "sonar", "reka", "unknown",
 ];
 
-pub fn detect_harness(names: &[&str]) -> &'static str {
-    for name in names {
-        let n = name.to_lowercase();
-        let found = if n.contains("claude") {
-            "claude_code"
-        } else if n.contains("codex") {
-            "codex"
-        } else if n.contains("cursor") {
-            "cursor"
-        } else if n.contains("gemini") {
-            "gemini_cli"
-        } else if n.contains("opencode") {
-            "opencode"
-        } else if n == "pi"
-            || n.starts_with("pi ")
-            || n.starts_with("pi-")
-            || n.contains("pi-coding")
-        {
-            "pi"
-        } else {
-            continue;
-        };
-        return found;
-    }
-    "other"
+const CLIENT_MODELS: &[(&str, &str)] = &[
+    ("claude", "claude"),
+    ("codex", "gpt"),
+    ("openai", "gpt"),
+    ("chatgpt", "gpt"),
+    ("gpt", "gpt"),
+    ("gemini", "gemini"),
+    ("grok", "grok"),
+    ("mistral", "mistral"),
+    ("deepseek", "deepseek"),
+    ("qwen", "qwen"),
+    ("kimi", "kimi"),
+];
+
+pub fn guess_model(names: &[&str]) -> &'static str {
+    names
+        .iter()
+        .map(|n| n.to_lowercase())
+        .find_map(|n| {
+            CLIENT_MODELS
+                .iter()
+                .find(|(part, _)| n.contains(part))
+                .map(|(_, model)| *model)
+        })
+        .unwrap_or("unknown")
 }
 
-pub fn check_harness(harness: &str) -> ApiResult<&'static str> {
-    HARNESSES
-        .iter()
-        .copied()
-        .find(|h| *h == harness)
-        .ok_or_else(|| {
-            ApiError::invalid(
-                "harness",
-                "`harness` isn't a harness Kaeso knows; choose `other` instead.",
-            )
-        })
+pub fn known_model(model: &str) -> Option<&'static str> {
+    MODELS.iter().copied().find(|m| *m == model)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -543,23 +530,17 @@ mod tests {
     use kaeso_core::rights::{InstancePreset, OrgPreset, ProjectPreset};
 
     #[test]
-    fn harnesses_are_told_apart_by_the_names_clients_register() {
-        assert_eq!(detect_harness(&["Claude Code"]), "claude_code");
-        assert_eq!(detect_harness(&["codex-mcp-client"]), "codex");
-        assert_eq!(detect_harness(&["Cursor"]), "cursor");
-        assert_eq!(detect_harness(&["gemini-cli-mcp-client"]), "gemini_cli");
-        assert_eq!(detect_harness(&["opencode"]), "opencode");
-        assert_eq!(detect_harness(&["pi"]), "pi");
-        assert_eq!(detect_harness(&["Pipeline runner"]), "other");
-        assert_eq!(
-            detect_harness(&["My tool", "com.anthropic.claude"]),
-            "claude_code"
-        );
-        assert!(detect_harness(&[]) == "other");
-        for h in HARNESSES {
-            assert_eq!(check_harness(h).ok(), Some(*h));
+    fn models_are_guessed_from_the_names_clients_register() {
+        assert_eq!(guess_model(&["Claude Code"]), "claude");
+        assert_eq!(guess_model(&["codex-mcp-client"]), "gpt");
+        assert_eq!(guess_model(&["gemini-cli-mcp-client"]), "gemini");
+        assert_eq!(guess_model(&["Cursor"]), "unknown");
+        assert_eq!(guess_model(&["My tool", "com.anthropic.claude"]), "claude");
+        assert_eq!(guess_model(&[]), "unknown");
+        for m in MODELS {
+            assert_eq!(known_model(m), Some(*m));
         }
-        assert!(check_harness("copilot").is_err());
+        assert_eq!(known_model("claude_code"), None);
     }
 
     #[test]

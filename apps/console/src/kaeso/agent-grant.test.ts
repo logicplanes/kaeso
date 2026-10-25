@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { GrantBody } from "~/api/generated/types";
 import { ORG, OTHER_PROJECT, PROJECT } from "~/test/fixtures";
 import { agents, grantBody, grantable } from "~/test/fixtures/agents";
-import { fromGrant, gainedSensitive, presetDraft, summary, toGrant, withRequested } from "./agent-grant";
+import { fromGrant, gainedSensitive, presetDraft, summary, summaryLines, toGrant, withRequested } from "./agent-grant";
 
 describe("an agent's rights in the console", () => {
   it("start from the preset, narrowed to what the person holds and each org allows", () => {
@@ -48,16 +48,48 @@ describe("an agent's rights in the console", () => {
 
   it("sum up what the agent can do in plain words", () => {
     const g = grantable();
-    expect(summary(agents, g, presetDraft(agents, g, "observer"))).toBe(
-      "Can read settings, members, projects, logs, usage and costs, audit logs, models, and limits in Northwind.",
-    );
-    expect(summary(agents, g, presetDraft(agents, g, "builder"))).toMatch(/^Can manage projects, keys, and models and read .* in Northwind\.$/);
-    const none = { ...presetDraft(agents, g, "builder"), orgs: {} };
-    expect(summary(agents, g, none)).toBe("Can read your profile, nothing in your organizations.");
+    expect(summary(agents, g, presetDraft(agents, g, "observer"))).toBe("Reads settings, members, and 6 more in Northwind.");
+    expect(summary(agents, g, presetDraft(agents, g, "builder"))).toBe("Manages projects, keys, and models and reads the rest in Northwind.");
+    const none = { ...presetDraft(agents, g, "builder"), orgs: {}, future: { on: false, rights: [], projectRights: [] } };
+    expect(summary(agents, g, none)).toBe("Reads your profile, nothing in your organizations.");
     expect(summary(agents, g, { ...none, future: { on: true, rights: [], projectRights: [] } })).toBe("Acts only in organizations you join later.");
     expect(summary(agents, g, { ...presetDraft(agents, g, "observer"), instance: ["instance.system.view", "instance.settings.manage"] })).toMatch(
-      /Also helps administer the instance\.$/,
+      / Also helps run the instance\.$/,
     );
+  });
+
+  it("list what the agent can do, one short line each", () => {
+    const g = grantable();
+    expect(presetDraft(agents, g, "builder").future.on).toBe(true);
+    expect(summaryLines(agents, g, presetDraft(agents, g, "observer"))).toEqual([
+      "Reads all of Northwind except providers, security, and keys",
+      "Also in organizations you join later",
+    ]);
+    expect(summaryLines(agents, g, presetDraft(agents, g, "builder"))).toEqual([
+      "Manages projects, keys, and models in Northwind",
+      "Reads the rest of Northwind",
+      "Also in organizations you join later",
+    ]);
+    expect(summaryLines(agents, g, presetDraft(agents, g, "operator"))[0]).toMatch(/^Manages all of Northwind except /);
+    expect(summaryLines(agents, g, presetDraft(agents, g, "full"))[0]).toBe("Manages all of Northwind");
+    const only = (rights: string[]) => ({
+      ...presetDraft(agents, g, "builder"),
+      future: { on: false, rights: [], projectRights: [] },
+      orgs: { [ORG]: { included: true, rights, all: true, projectRights: [], selected: {} } },
+    });
+    expect(summaryLines(agents, g, only(["org.view", "members.view"]))).toEqual(["Reads settings and members in Northwind"]);
+    expect(summaryLines(agents, g, only(["projects.create"]))).toEqual(["Manages projects in Northwind"]);
+    const views = (scope: "org" | "project") => agents[scope].categories.flatMap((c) => c.rights.map((r) => r.id)).filter((id) => /\.view(\.|$)/.test(id));
+    expect(
+      summaryLines(agents, g, {
+        ...only(views("org")),
+        orgs: { [ORG]: { included: true, rights: views("org"), all: true, projectRights: views("project"), selected: {} } },
+      }),
+    ).toEqual(["Reads all of Northwind except security"]);
+    const none = { ...only([]), orgs: {} };
+    expect(summaryLines(agents, g, none)).toEqual(["Reads your profile, nothing else"]);
+    expect(summaryLines(agents, g, { ...none, instance: ["instance.system.view"] })).toEqual(["Reads the instance"]);
+    expect(summaryLines(agents, g, { ...none, instance: ["instance.settings.manage"] })).toEqual(["Helps run the instance"]);
   });
 
   it("add a right an agent asks for, with what it needs, where the person holds it", () => {
@@ -114,7 +146,7 @@ describe("an agent's rights in the console", () => {
       ...d,
       orgs: { [org.id]: { included: true, rights: ["projects.create", "security.2fa.require", "made.up"], all: false, projectRights: [], selected: {} } },
     };
-    expect(summary(agents, g, managing)).toBe("Can manage projects and security in Northwind.");
+    expect(summary(agents, g, managing)).toBe("Manages projects and security in Northwind.");
   });
 
   it("find where a requested right belongs, or say the person lacks it", () => {

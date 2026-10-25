@@ -24,7 +24,7 @@ import {
   icons,
 } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDate } from "@logicplanes/kaeso-ui/format";
-import { harnessLabel } from "~/format/harness";
+import { modelLabel } from "~/format/model";
 import { isApiError } from "~/api/errors";
 import type { ActorView, AuditEventView } from "~/api/generated/types";
 import { auditEventQuery, auditLogQuery, auditParams, type AuditFilters, type AuditScope, type AuditSearch } from "~/api/queries/audit";
@@ -260,26 +260,26 @@ export function AuditLog({
   );
 }
 
-function agentName(agent: NonNullable<ActorView["agent"]>): { name: string; harness: string } {
-  return { name: agent.name ?? t("kaeso.audit.deletedAgent", "Deleted agent"), harness: agent.harness ?? "other" };
+function agentName(agent: NonNullable<ActorView["agent"]>): { name: string; model: string } {
+  return { name: agent.name ?? t("kaeso.audit.deletedAgent", "Deleted agent"), model: agent.model ?? "unknown" };
 }
 
 function actorText(actor: ActorView, partyLabel: (p: PartyRef) => PartyLabel): string {
   if (!actor.agent) return partyText(partyLabel(actor));
   const agent = agentName(actor.agent);
-  return t("kaeso.audit.viaAgent", "{name} · via {agent} ({harness})", {
+  return t("kaeso.audit.viaAgent", "{name} · via {agent} ({model})", {
     name: partyText(partyLabel({ kind: "user", id: actor.id })),
     agent: agent.name,
-    harness: harnessLabel(agent.harness),
+    model: modelLabel(agent.model),
   });
 }
 
 function AgentActor({ agent, label, phone }: { agent: NonNullable<ActorView["agent"]>; label: PartyLabel; phone: boolean }) {
   const shown = agentName(agent);
-  const text = t("kaeso.audit.viaAgent", "{name} · via {agent} ({harness})", {
+  const text = t("kaeso.audit.viaAgent", "{name} · via {agent} ({model})", {
     name: partyText(label),
     agent: shown.name,
-    harness: harnessLabel(shown.harness),
+    model: modelLabel(shown.model),
   });
   return (
     <Tooltip content={text}>

@@ -90,7 +90,7 @@ Members can connect agents, such as Claude Code or Codex, that act for them thro
 
 Changing the policy needs **Change member roles** and a console session; no agent can change it. [Agents](../concepts/rights.md#presets) lists what each preset holds.
 
-The same page lists the agents that may act in the organization, with their member, harness, and when they were created, last used and expire. Seeing them needs **View members**. **Close access** closes the organization to an agent and needs **Change member roles**. The agent keeps working in its member's other organizations, and its member can open this one to it again.
+The same page lists the agents that may act in the organization, with their member, model family, and when they were created, last used and expire. Seeing them needs **View members**. **Close access** closes the organization to an agent and needs **Change member roles**. The agent keeps working in its member's other organizations, and its member can open this one to it again.
 
 ## Delete an organization
 
@@ -106,7 +106,7 @@ The organization's **Audit log**, in **Organization settings**, records every ch
 
 Each entry shows when it happened, who made the change, the action and its target. Filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after.
 
-An agent's change shows the picture of the member it acts for, with the agent's own small picture at its lower right. Hover over it to see the member, the agent and its harness. **Done by agents** shows only the changes agents made, and the Platform API names the agent in `actor.agent` ([activity and audit](../api/mcp.md#activity-and-audit)).
+An agent's change shows the picture of the member it acts for, with the agent's own small picture at its lower right. Hover over it to see the member, the agent and its model family. **Done by agents** shows only the changes agents made, and the Platform API names the agent in `actor.agent` ([activity and audit](../api/mcp.md#activity-and-audit)).
 
 | To | Right |
 | --- | --- |

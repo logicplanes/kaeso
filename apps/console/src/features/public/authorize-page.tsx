@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AgentAvatar, AlertDialog, Button, Input, Segmented, Select, Spinner, Text } from "@logicplanes/kaeso-ui";
-import { harnessLabel } from "~/format/harness";
+import { AlertDialog, Button, Field, GrantSummary, Input, Segmented, Spinner, Text } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { fieldError } from "~/api/field-error";
@@ -14,8 +13,8 @@ import { RecentSignInHost } from "~/auth/recent-sign-in";
 import { sessionQuery } from "~/auth/session";
 import { AGENT_REQUEST_KEY } from "~/auth/user-data";
 import { t } from "~/i18n";
-import { AgentGrantEditor, PresetLine, PresetPicker } from "~/kaeso/agent-grant-editor";
-import { DEFAULT_PRESET, gainedSensitive, presetDraft, rightLabels, toGrant, type AgentDraft } from "~/kaeso/agent-grant";
+import { AgentGrantEditor, PresetPicker } from "~/kaeso/agent-grant-editor";
+import { DEFAULT_PRESET, gainedSensitive, presetDraft, rightLabels, summaryLines, toGrant, type AgentDraft } from "~/kaeso/agent-grant";
 import { expiryOptions, type Expiry } from "~/kaeso/agent-expiry";
 import { PublicPage } from "~/shell/public-page";
 import { usePageTitle } from "~/shell/title";
@@ -66,7 +65,7 @@ function SignedInFirst({ token }: { token: string }) {
     void navigate({ to: "/sign-in", search: { next: "/authorize" }, replace: true });
   }, [signedOut, navigate, token]);
   if (!session.data?.user) return <Opening />;
-  return <Consent token={token} />;
+  return <Consent token={token} account={session.data.user.email ?? session.data.user.name} />;
 }
 
 function Opening() {
@@ -79,7 +78,7 @@ function Opening() {
   );
 }
 
-function Consent({ token }: { token: string }) {
+function Consent({ token, account }: { token: string; account: string }) {
   const request = useQuery({
     queryKey: ["agent-request", token],
     retry: false,
@@ -116,12 +115,23 @@ function Consent({ token }: { token: string }) {
     );
   }
   if (!request.data || !cat.data || !grantable.data) return <Opening />;
-  return <ConsentForm token={token} request={request.data} cat={cat.data} grantable={grantable.data} />;
+  return <ConsentForm token={token} account={account} request={request.data} cat={cat.data} grantable={grantable.data} />;
 }
 
-function ConsentForm({ token, request, cat, grantable }: { token: string; request: AgentRequestView; cat: AgentCatalogue; grantable: Grantable }) {
+function ConsentForm({
+  token,
+  account,
+  request,
+  cat,
+  grantable,
+}: {
+  token: string;
+  account: string;
+  request: AgentRequestView;
+  cat: AgentCatalogue;
+  grantable: Grantable;
+}) {
   const [name, setName] = useState(request.client);
-  const [harness, setHarness] = useState<string>(request.harness);
   const [expiry, setExpiry] = useState<Expiry>("90d");
   const [draft, setDraft] = useState<AgentDraft>(() => presetDraft(cat, grantable, DEFAULT_PRESET));
   const [confirming, setConfirming] = useState<string[] | null>(null);
@@ -138,7 +148,7 @@ function ConsentForm({ token, request, cat, grantable }: { token: string; reques
       const result = await withSignInAgain(async () =>
         data(
           await api.POST("/platform/v1/me/agent-requests/approve", {
-            body: { request: token, name: name.trim(), harness, expiry, grant: toGrant(draft) },
+            body: { request: token, name: name.trim(), expiry, grant: toGrant(draft) },
           }),
         ),
       );
@@ -164,49 +174,48 @@ function ConsentForm({ token, request, cat, grantable }: { token: string; reques
       </PublicPage>
     );
   }
+  const shownName = name.trim() || request.client;
   return (
     <PublicPage
-      title={t("public.connectNamedAgent", "Connect {client} to Kaeso", { client: request.client })}
-      description={t("public.connectAgentHint", "It acts for you with only the rights you choose and hold yourself.")}
+      title={t("public.connectAgentTitle", "Connect {name}", { name: shownName })}
+      description={t("public.connectAgentLead", "It acts for you in Kaeso, only with the rights you give it.")}
+      footer={
+        <Text variant="small" tone="tertiary" className="text-center">
+          {t("public.agentSignedInAs", "Signed in as {account} · returns to {host}", { account, host: request.redirect_host })}
+        </Text>
+      }
     >
-      <div className="flex justify-center">
-        <AgentAvatar harness={harness} name={name || request.client} size={40} />
-      </div>
-      <Input
-        label={t("common.name", "Name")}
-        size="xl"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        maxLength={100}
-        error={fieldError(error, "name")}
-      />
-      <Select
-        label={t("public.agentHarness", "Harness")}
-        size="xl"
-        fullWidth
-        options={cat.harnesses.map((h) => ({ value: h, label: harnessLabel(h) }))}
-        value={harness}
-        onValueChange={setHarness}
-      />
       <PresetPicker cat={cat} grantable={grantable} value={draft} onChange={setDraft} />
-      <PresetLine cat={cat} grantable={grantable} value={draft} />
-      <AgentGrantEditor cat={cat} grantable={grantable} value={draft} onChange={setDraft} />
-      <Segmented
-        aria-label={t("kaeso.agents.expiry", "Expiry")}
-        fullWidth
-        options={expiryOptions()}
-        value={expiry}
-        onValueChange={(v) => setExpiry(v as Expiry)}
+      <GrantSummary
+        aria-label={t("public.agentCan", "What it can do")}
+        items={summaryLines(cat, grantable, draft)}
+        footer={
+          expiry === "never"
+            ? t("public.agentNoEnd", "Until you revoke it in your account settings.")
+            : t("public.agentEnds", "For {days} days; revoke it any time in your account settings.", { days: expiry.replace("d", "") })
+        }
       />
-      <Text variant="small" tone="secondary" className="text-center">
-        {t("public.agentReturnsTo", "You return to {host} afterwards; the agent stops after 90 days unused.", { host: request.redirect_host })}
-      </Text>
-      <Button variant="primary" size="xl" fullWidth loading={busy} disabled={!name.trim() || busy} onClick={askFirst}>
-        {t("public.authorizeAgent", "Authorize")}
-      </Button>
-      <Button size="xl" fullWidth disabled={busy} onClick={() => void deny()}>
-        {t("public.denyAgent", "Deny")}
-      </Button>
+      <AgentGrantEditor cat={cat} grantable={grantable} value={draft} onChange={setDraft}>
+        <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} error={fieldError(error, "name")} />
+        <Field label={t("kaeso.agents.expiry", "Expiry")}>
+          <Segmented
+            aria-label={t("kaeso.agents.expiry", "Expiry")}
+            fullWidth
+            size="sm"
+            options={expiryOptions()}
+            value={expiry}
+            onValueChange={(v) => setExpiry(v as Expiry)}
+          />
+        </Field>
+      </AgentGrantEditor>
+      <div className="mt-8 flex flex-col gap-8">
+        <Button variant="primary" size="xl" fullWidth loading={busy} disabled={!name.trim() || busy} onClick={askFirst}>
+          {t("public.authorizeAgent", "Authorize")}
+        </Button>
+        <Button variant="ghost" size="xl" fullWidth disabled={busy} onClick={() => void deny()}>
+          {t("public.denyAgent", "Deny")}
+        </Button>
+      </div>
       <RecentSignInHost />
       <AlertDialog
         open={confirming !== null}

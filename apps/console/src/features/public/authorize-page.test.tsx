@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { ORG, signedIn, signedOut } from "~/test/fixtures";
+import { ORG, signedIn, signedOut, user as person, whoAmI } from "~/test/fixtures";
 import { agents, grantable } from "~/test/fixtures/agents";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -8,7 +8,7 @@ import { renderApp } from "~/test/render";
 const PENDING = "kaeso:agent-request";
 
 function request() {
-  on("POST", "me/agent-requests/view", { client: "Claude Code", harness: "claude_code", redirect_host: "127.0.0.1", expires_at: "2026-10-15T12:15:00Z" });
+  on("POST", "me/agent-requests/view", { client: "Claude Code", redirect_host: "127.0.0.1", expires_at: "2026-10-15T12:15:00Z" });
   on("GET", "me/agents/catalogue", agents);
   on("GET", "me/agents/grantable", grantable());
 }
@@ -40,21 +40,36 @@ describe("connecting an agent", () => {
     on("POST", "me/agent-requests/approve", { redirect_to: "http://127.0.0.1:3333/callback?code=c&state=s", agent: "agt_new" });
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp("/authorize#request=req_tok");
-    expect(await screen.findByText("Connect Claude Code to Kaeso")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Connect Claude Code" })).toBeInTheDocument();
     expect(window.location.hash).toBe("");
-    expect(screen.getByRole("img", { name: "Claude Code" })).toBeInTheDocument();
+    expect(screen.getByText("Signed in as owner@example.com · returns to 127.0.0.1")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Builder" })).toBeChecked();
-    expect(screen.getByText(/^Can manage .* in Northwind\.$/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("list", { name: "What it can do" }))
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["Manages projects, keys, and models in Northwind", "Reads the rest of Northwind", "Also in organizations you join later"]);
+    expect(screen.getByText("For 90 days; revoke it any time in your account settings.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Customize" }));
+    await user.click(screen.getByRole("radio", { name: "Never" }));
+    expect(screen.getByText("Until you revoke it in your account settings.")).toBeInTheDocument();
     await user.clear(screen.getByLabelText("Name"));
     await user.type(screen.getByLabelText("Name"), "Release helper");
     await user.click(screen.getByRole("radio", { name: "30 days" }));
     await user.click(screen.getByRole("button", { name: "Authorize" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("http://127.0.0.1:3333/callback?code=c&state=s"));
     const [sent] = requests("POST", "me/agent-requests/approve").map((r) => r.body as Record<string, unknown>);
-    expect(sent).toMatchObject({ request: "req_tok", name: "Release helper", harness: "claude_code", expiry: "30d" });
+    expect(sent).toMatchObject({ request: "req_tok", name: "Release helper", expiry: "30d", grant: { future_orgs: expect.any(Object) } });
     expect((sent?.grant as { orgs: { org: string; included: boolean }[] }).orgs).toEqual(
       expect.arrayContaining([expect.objectContaining({ org: ORG, included: true }), expect.objectContaining({ org: "org_contoso", included: false })]),
     );
+  });
+
+  it("names the account by its name when it has no email address", async () => {
+    signedIn({ session: whoAmI({ user: { ...person(), email: null } }) });
+    request();
+    await renderApp("/authorize#request=req_tok");
+    expect(await screen.findByText(`Signed in as ${person().name} · returns to 127.0.0.1`)).toBeInTheDocument();
   });
 
   it("asks before giving full access", async () => {
@@ -111,7 +126,7 @@ describe("connecting an agent", () => {
     expect(screen.getByText("Can't reach the gateway; try again.")).toBeInTheDocument();
     on("GET", "me/agents/grantable", grantable());
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("Connect Claude Code to Kaeso")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Connect Claude Code" })).toBeInTheDocument();
   });
 
   it("shows the gateway's reason when the request can't be read", async () => {

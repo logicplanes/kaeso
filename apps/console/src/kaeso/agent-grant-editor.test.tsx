@@ -95,15 +95,22 @@ describe("AgentGrantEditor", () => {
     expect(Object.keys(latest()?.orgs[ORG]?.selected ?? {})).toEqual([PROJECT]);
     await user.click(checkbox(document.body, /^Northwind/));
     expect(latest()?.orgs[ORG]?.included).toBe(false);
-    expect(screen.getByText("Can read your profile, nothing in your organizations.")).toBeInTheDocument();
+    expect(screen.getByText("Acts only in organizations you join later.")).toBeInTheDocument();
   });
 
-  it("extends the preset to organizations joined later", async () => {
+  it("extends the preset to organizations joined later unless the person turns it off", async () => {
     const start = presetDraft(agents, grantable(), "builder");
     const { user } = await renderUi(<Editor start={{ ...start, orgs: {} }} />);
-    await user.click(screen.getByRole("switch", { name: /Also orgs I join later/ }));
-    expect(latest()?.future.on).toBe(true);
+    const later = screen.getByRole("switch", { name: /Also orgs I join later/ });
+    expect(later).toBeChecked();
     expect(latest()?.future.rights).toContain("projects.create");
+    await user.click(later);
+    expect(latest()?.future.on).toBe(false);
+    await user.click(screen.getByRole("radio", { name: "Operator" }));
+    expect(latest()?.preset).toBe("operator");
+    expect(latest()?.future.on).toBe(false);
+    await user.click(screen.getByRole("switch", { name: /Also orgs I join later/ }));
+    expect(latest()?.future).toMatchObject({ on: true, rights: expect.arrayContaining(["projects.create"]) });
   });
 
   it("leaves rights agents can't have and the person lacks switched off", async () => {

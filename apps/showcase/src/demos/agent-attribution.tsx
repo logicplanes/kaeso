@@ -1,4 +1,4 @@
-import { AgentAttribution, Text } from "@logicplanes/kaeso-ui";
+import { AGENT_MODELS, AgentAttribution, Text } from "@logicplanes/kaeso-ui";
 import { StateCell, StateMatrix, StateRow } from "~/lib/states";
 
 export const meta = {
@@ -7,7 +7,7 @@ export const meta = {
   group: "Components",
   entry: "agent-avatar",
   import: "AgentAttribution",
-  a11y: ["One role=img named after both, such as “Ada Okafor via Release helper (Claude Code)”, in the page's language."],
+  a11y: ["One role=img named after both, such as “Ada Okafor via Release helper (Claude)”, in the page's language."],
 };
 export const examples = [
   { id: "activity", title: "Activity", fn: "Activity" },
@@ -15,9 +15,9 @@ export const examples = [
 ];
 
 const activity = [
-  { person: "Ada Okafor", agent: { name: "Release helper", harness: "claude_code" }, action: "Created key ci-deploy" },
-  { person: "Lin Park", agent: { name: "Migration reviewer", harness: "codex" }, action: "Changed the gpt-4.1 route" },
-  { person: "Tomás Ruiz", agent: { name: "Nightly triage", harness: "other" }, action: "Revoked key staging-old" },
+  { person: "Ada Okafor", agent: { name: "Release helper", model: "claude" }, action: "Created key ci-deploy" },
+  { person: "Lin Park", agent: { name: "Migration reviewer", model: "gpt" }, action: "Changed the gpt-4.1 route" },
+  { person: "Tomás Ruiz", agent: { name: "Nightly triage", model: "deepseek" }, action: "Revoked key staging-old" },
 ];
 
 export function Activity() {
@@ -36,22 +36,21 @@ export function Sizes() {
   return (
     <div className="flex flex-wrap items-end gap-16">
       {([20, 24, 28, 32, 40] as const).map((s) => (
-        <AgentAttribution key={s} name="Ada Okafor" agent={{ name: "Release helper", harness: "claude_code" }} size={s} />
+        <AgentAttribution key={s} name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={s} />
       ))}
     </div>
   );
 }
 
 const SIZES = [20, 24, 28, 32, 40] as const;
-const HARNESSES = ["claude_code", "codex", "cursor", "gemini_cli", "opencode", "pi", "other"];
 export function States() {
   return (
-    <StateMatrix title="Every harness at every size" columns={SIZES.map((s) => `${s}px`)}>
-      {HARNESSES.map((h) => (
-        <StateRow key={h} label={h}>
+    <StateMatrix title="Every model family at every size" columns={SIZES.map((s) => `${s}px`)}>
+      {AGENT_MODELS.map((m) => (
+        <StateRow key={m} label={m}>
           {SIZES.map((s) => (
-            <StateCell key={s} id={`${h}-${s}`}>
-              <AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", harness: h }} size={s} />
+            <StateCell key={s} id={`${m}-${s}`}>
+              <AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: m }} size={s} />
             </StateCell>
           ))}
         </StateRow>

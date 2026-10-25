@@ -27,11 +27,9 @@ pub struct OrgAgentView {
     #[doc = "The name its user gave it."]
     #[schema(example = "Release helper")]
     pub name: String,
-    #[doc = "The harness it runs in."]
-    #[schema(example = "claude_code")]
-    pub harness: String,
-    #[doc = "The model it reported, if any."]
-    pub model: Option<String>,
+    #[doc = "The model family it reports, or `unknown`."]
+    #[schema(example = "claude")]
+    pub model: String,
     #[doc = "The member it acts for."]
     pub user: MemberUser,
     #[doc = "When it was authorized."]
@@ -67,7 +65,6 @@ pub async fn list(
             .map(|a| OrgAgentView {
                 id: AgentId::from_uuid(a.id),
                 name: a.name,
-                harness: a.harness,
                 model: a.model,
                 user: MemberUser {
                     id: UserId::from_uuid(a.user_id),
@@ -116,7 +113,7 @@ pub async fn revoke(
         .target("agent", id)
         .before(serde_json::json!({
             "name": found.name,
-            "harness": found.harness,
+            "model": found.model,
             "user": UserId::from_uuid(found.user_id).to_string(),
         }))
         .write(&mut tx)

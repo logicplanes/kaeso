@@ -126,7 +126,7 @@ fn builder(org: &str) -> Value {
 async fn approve(app: &App, cookie: &str, request: &str, grant: Value) -> common::Resp {
     app.post(
         "/me/agent-requests/approve",
-        json!({ "request": request, "name": "Release helper", "harness": "claude_code", "expiry": "90d", "grant": grant }),
+        json!({ "request": request, "name": "Release helper", "expiry": "90d", "grant": grant }),
         Some(cookie),
     )
     .await
@@ -294,7 +294,6 @@ async fn an_agent_discovers_signs_in_and_calls_tools_for_its_user() {
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(viewed.body["client"], "Claude Code");
-    assert_eq!(viewed.body["harness"], "claude_code");
     assert_eq!(viewed.body["redirect_host"], "127.0.0.1");
 
     let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
@@ -849,7 +848,7 @@ async fn audit_logs_name_the_agent_and_filter_by_agents() {
         &app,
         &a.access,
         "post_orgs_org_projects",
-        json!({ "org": owner.org_id, "body": { "name": "Agent work" } }),
+        json!({ "org": owner.org_id, "body": { "name": "Agent work" }, "agent_model": "gpt" }),
     )
     .await;
     assert_eq!(made["isError"], false, "{made:?}");
@@ -868,7 +867,7 @@ async fn audit_logs_name_the_agent_and_filter_by_agents() {
     assert_eq!(e["actor"]["id"], owner.user_id);
     assert_eq!(e["actor"]["agent"]["id"], a.agent);
     assert_eq!(e["actor"]["agent"]["name"], "Release helper");
-    assert_eq!(e["actor"]["agent"]["harness"], "claude_code");
+    assert_eq!(e["actor"]["agent"]["model"], "gpt");
     assert!(events.iter().all(|e| e["actor"]["kind"] == "agent"));
     let all = app
         .get(&format!("/orgs/{}/audit-log", owner.org_id), &owner.cookie)
@@ -881,6 +880,20 @@ async fn audit_logs_name_the_agent_and_filter_by_agents() {
         .expect_status(StatusCode::OK);
     assert_eq!(instance.body["data"][0]["action"], "agent.authorize");
     assert_eq!(instance.body["data"][0]["actor"]["kind"], "user");
+
+    let odd = tool(
+        &app,
+        &a.access,
+        "get_orgs_org",
+        json!({ "org": owner.org_id, "agent_model": "parrot" }),
+    )
+    .await;
+    assert_eq!(odd["isError"], false, "{odd:?}");
+    let viewed = app
+        .get(&format!("/me/agents/{}", a.agent), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(viewed.body["model"], "unknown");
 }
 
 #[tokio::test]
@@ -894,6 +907,7 @@ async fn the_agents_tab_lists_renames_regrants_and_revokes() {
     let agent = &listed.body["data"][0];
     assert_eq!(agent["id"], a.agent);
     assert_eq!(agent["client"], "Claude Code");
+    assert_eq!(agent["model"], "claude");
     assert_eq!(agent["grant"]["preset"], "builder");
     assert_eq!(
         agent["grant"]["orgs"][0]["rights"],
@@ -910,13 +924,13 @@ async fn the_agents_tab_lists_renames_regrants_and_revokes() {
         .call(
             Method::PATCH,
             &format!("/me/agents/{}", a.agent),
-            Some(json!({ "name": "Ops", "harness": "codex", "expiry": "never" })),
+            Some(json!({ "name": "Ops", "expiry": "never" })),
             Some(&owner.cookie),
         )
         .await
         .expect_status(StatusCode::OK);
     assert_eq!(renamed.body["name"], "Ops");
-    assert_eq!(renamed.body["harness"], "codex");
+    assert_eq!(renamed.body["model"], "claude");
     assert!(renamed.body["expires_at"].is_null());
 
     let mut more = builder(&owner.org_id);
@@ -1050,7 +1064,7 @@ async fn deny_sends_the_browser_back_with_access_denied() {
 }
 
 #[tokio::test]
-async fn the_catalogue_names_instance_and_account_rights_presets_and_harnesses() {
+async fn the_catalogue_names_instance_and_account_rights_presets_and_models() {
     let (_s, app, owner) = setup().await;
     let c = app
         .get("/me/agents/catalogue", &owner.cookie)
@@ -1070,12 +1084,7 @@ async fn the_catalogue_names_instance_and_account_rights_presets_and_harnesses()
         c.body["instance"]["categories"][0]["rights"][0]["id"],
         "instance.system.view"
     );
-    assert!(
-        c.body["harnesses"]
-            .as_array()
-            .unwrap()
-            .contains(&json!("claude_code"))
-    );
+    assert!(c.body["models"].as_array().unwrap().last() == Some(&json!("unknown")));
     let g = app
         .get("/me/agents/grantable", &owner.cookie)
         .await

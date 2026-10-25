@@ -90,7 +90,7 @@ Mitglieder können Agenten wie Claude Code oder Codex verbinden, die über den [
 
 Die Richtlinie zu ändern, erfordert **Rollen zuweisen** und eine Konsolensitzung; kein Agent kann sie ändern. [Agenten](../concepts/rights.md#vorlagen) listet, was jede Vorlage enthält.
 
-Dieselbe Seite listet die Agenten, die in der Organisation handeln dürfen, mit ihrem Mitglied, ihrer Harness und wann sie erstellt, zuletzt genutzt wurden und ablaufen. Sie zu sehen, erfordert **Mitglieder ansehen**. **Zugriff entziehen** schließt die Organisation für einen Agenten und erfordert **Rollen zuweisen**. Der Agent arbeitet in den anderen Organisationen seines Mitglieds weiter, und sein Mitglied kann ihm diese wieder öffnen.
+Dieselbe Seite listet die Agenten, die in der Organisation handeln dürfen, mit ihrem Mitglied, ihrer Modellfamilie und wann sie erstellt, zuletzt genutzt wurden und ablaufen. Sie zu sehen, erfordert **Mitglieder ansehen**. **Zugriff entziehen** schließt die Organisation für einen Agenten und erfordert **Rollen zuweisen**. Der Agent arbeitet in den anderen Organisationen seines Mitglieds weiter, und sein Mitglied kann ihm diese wieder öffnen.
 
 ## Organisation löschen
 
@@ -106,7 +106,7 @@ Das **Audit-Log** der Organisation unter **Organisationseinstellungen** verzeich
 
 Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Aktion und ihr Ziel. Filtern Sie nach Akteur, Aktion, Ziel-ID und Tagen. Wählen Sie einen Eintrag, um IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher zu sehen.
 
-Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit dem kleinen Bild des Agenten unten rechts. Fahren Sie darüber, um Mitglied, Agent und Harness zu sehen. **Von Agenten ausgeführt** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
+Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit dem kleinen Bild des Agenten unten rechts. Fahren Sie darüber, um Mitglied, Agent und Modellfamilie zu sehen. **Von Agenten ausgeführt** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
 
 | Aktion | Recht |
 | --- | --- |

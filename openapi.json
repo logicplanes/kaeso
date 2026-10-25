@@ -4299,7 +4299,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "The rights, presets and harnesses for agents.",
+        "summary": "The rights, presets and model families for agents.",
         "description": "`sensitive` marks rights whose grant needs a sign-in within the last 15\nminutes and a confirmation in the console.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeAgentsCatalogue",
         "responses": {
@@ -4513,7 +4513,7 @@
         "tags": [
           "agents"
         ],
-        "summary": "Renames an agent, changes its harness or gives it a new lifetime.",
+        "summary": "Renames an agent or gives it a new lifetime.",
         "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "patchMeAgentsAgent",
         "parameters": [
@@ -18801,7 +18801,6 @@
         "required": [
           "request",
           "name",
-          "harness",
           "expiry",
           "grant"
         ],
@@ -18814,11 +18813,6 @@
           "grant": {
             "$ref": "#/components/schemas/GrantBody",
             "description": "Its rights."
-          },
-          "harness": {
-            "type": "string",
-            "description": "Its harness.",
-            "example": "claude_code"
           },
           "name": {
             "type": "string",
@@ -18843,19 +18837,12 @@
           "presets",
           "instance_presets",
           "never_grantable",
-          "harnesses"
+          "models"
         ],
         "properties": {
           "account": {
             "$ref": "#/components/schemas/ScopeCatalogue",
             "description": "Account rights."
-          },
-          "harnesses": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The harnesses agents can run in."
           },
           "instance": {
             "$ref": "#/components/schemas/ScopeCatalogue",
@@ -18867,6 +18854,13 @@
               "$ref": "#/components/schemas/InstancePresetView"
             },
             "description": "The instance presets, in order."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The model families an agent can report, `unknown` last."
           },
           "never_grantable": {
             "type": "array",
@@ -19006,17 +19000,17 @@
           "id"
         ],
         "properties": {
-          "harness": {
+          "id": {
+            "$ref": "#/components/schemas/AgentId",
+            "description": "The agent."
+          },
+          "model": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The harness it runs in, such as `claude_code`, `codex` or `other`;\n`null` once its user is deleted.",
-            "example": "codex"
-          },
-          "id": {
-            "$ref": "#/components/schemas/AgentId",
-            "description": "The agent."
+            "description": "The model family it reported, such as `claude`, `gpt` or `unknown`;\n`null` once its user is deleted.",
+            "example": "claude"
           },
           "name": {
             "type": [
@@ -19047,7 +19041,6 @@
         "description": "An agent asking to sign in.",
         "required": [
           "client",
-          "harness",
           "redirect_host",
           "expires_at"
         ],
@@ -19061,11 +19054,6 @@
             "type": "string",
             "format": "date-time",
             "description": "When the request ends."
-          },
-          "harness": {
-            "type": "string",
-            "description": "The harness Kaeso recognised; the user may change it.",
-            "example": "claude_code"
           },
           "redirect_host": {
             "type": "string",
@@ -19086,13 +19074,6 @@
             "description": "A new lifetime from now: `7d`, `30d`, `90d` or `never`.",
             "example": "90d"
           },
-          "harness": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Its harness."
-          },
           "name": {
             "type": [
               "string",
@@ -19108,7 +19089,7 @@
         "required": [
           "id",
           "name",
-          "harness",
+          "model",
           "grant",
           "created_at"
         ],
@@ -19138,11 +19119,6 @@
             "$ref": "#/components/schemas/GrantBody",
             "description": "Its rights."
           },
-          "harness": {
-            "type": "string",
-            "description": "The harness it runs in: `claude_code`, `codex`, `cursor`, `gemini_cli`,\n`opencode`, `pi` or `other`.",
-            "example": "codex"
-          },
           "id": {
             "$ref": "#/components/schemas/AgentId",
             "description": "The agent."
@@ -19156,12 +19132,9 @@
             "description": "When it last used Kaeso; `null` if never. After 90 days unused it\nstops working."
           },
           "model": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The model it reported, if any.",
-            "example": "gpt-5.4"
+            "type": "string",
+            "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; until its first call, guessed from its client's name, else `unknown`.",
+            "example": "claude"
           },
           "name": {
             "type": "string",
@@ -22591,7 +22564,7 @@
               "required": [
                 "id",
                 "name",
-                "harness",
+                "model",
                 "grant",
                 "created_at"
               ],
@@ -22621,11 +22594,6 @@
                   "$ref": "#/components/schemas/GrantBody",
                   "description": "Its rights."
                 },
-                "harness": {
-                  "type": "string",
-                  "description": "The harness it runs in: `claude_code`, `codex`, `cursor`, `gemini_cli`,\n`opencode`, `pi` or `other`.",
-                  "example": "codex"
-                },
                 "id": {
                   "$ref": "#/components/schemas/AgentId",
                   "description": "The agent."
@@ -22639,12 +22607,9 @@
                   "description": "When it last used Kaeso; `null` if never. After 90 days unused it\nstops working."
                 },
                 "model": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "The model it reported, if any.",
-                  "example": "gpt-5.4"
+                  "type": "string",
+                  "description": "The model family it reports with every tool call, one of the catalogue's\n`models`; until its first call, guessed from its client's name, else `unknown`.",
+                  "example": "claude"
                 },
                 "name": {
                   "type": "string",
@@ -24128,7 +24093,7 @@
               "required": [
                 "id",
                 "name",
-                "harness",
+                "model",
                 "user",
                 "created_at"
               ],
@@ -24146,11 +24111,6 @@
                   "format": "date-time",
                   "description": "When its sign-in ends; `null` for never."
                 },
-                "harness": {
-                  "type": "string",
-                  "description": "The harness it runs in.",
-                  "example": "claude_code"
-                },
                 "id": {
                   "$ref": "#/components/schemas/AgentId",
                   "description": "The agent."
@@ -24164,11 +24124,9 @@
                   "description": "When it last used Kaeso; `null` if never."
                 },
                 "model": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "The model it reported, if any."
+                  "type": "string",
+                  "description": "The model family it reports, or `unknown`.",
+                  "example": "claude"
                 },
                 "name": {
                   "type": "string",
@@ -26108,7 +26066,7 @@
         "required": [
           "id",
           "name",
-          "harness",
+          "model",
           "user",
           "created_at"
         ],
@@ -26126,11 +26084,6 @@
             "format": "date-time",
             "description": "When its sign-in ends; `null` for never."
           },
-          "harness": {
-            "type": "string",
-            "description": "The harness it runs in.",
-            "example": "claude_code"
-          },
           "id": {
             "$ref": "#/components/schemas/AgentId",
             "description": "The agent."
@@ -26144,11 +26097,9 @@
             "description": "When it last used Kaeso; `null` if never."
           },
           "model": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The model it reported, if any."
+            "type": "string",
+            "description": "The model family it reports, or `unknown`.",
+            "example": "claude"
           },
           "name": {
             "type": "string",

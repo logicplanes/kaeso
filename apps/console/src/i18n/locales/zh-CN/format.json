@@ -166,6 +166,7 @@
   "format.limitUnit.tokens": "Token",
   "format.limitUnit.tokensPerMinute": "Token / 分钟",
   "format.listSeparator": "、",
+  "format.model.unknown": "未知",
   "format.period.allTime": "全部时间",
   "format.period.last12Months": "最近 12 个月",
   "format.period.last30Days": "最近 30 天",
@@ -209,6 +210,5 @@
   "format.audit.action.instanceAgentsPolicy": "实例的智能体策略已更改",
   "format.audit.action.securityAgentsPolicy": "组织的智能体策略已更改",
   "format.audit.kind.agent": "智能体",
-  "format.harness.other": "其他",
   "format.targetKind.agent": "智能体"
 }

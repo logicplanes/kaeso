@@ -1,17 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE agents SET name = $2, harness = $3, expires_at = $4 WHERE id = $1",
+  "query": "UPDATE agents SET name = $2, expires_at = $3 WHERE id = $1",
   "describe": {
     "columns": [],
     "parameters": {
       "Left": [
         "Uuid",
         "Text",
-        "Text",
         "Timestamptz"
       ]
     },
     "nullable": []
   },
-  "hash": "1cf2199ad0b4e000a282476036ecc5d2ad685cf03bc2f2f8d7d91cd6b974d842"
+  "hash": "185895283d5d2db1d0661e76e5e86132e5b80785589c1bfa6b0914ca51fdcb21"
 }

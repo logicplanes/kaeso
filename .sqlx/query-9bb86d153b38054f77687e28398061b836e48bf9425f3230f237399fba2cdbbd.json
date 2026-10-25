@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, user_id, client_id, name, harness, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at FROM agents WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id DESC",
+  "query": "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL FOR UPDATE",
   "describe": {
     "columns": [
       {
@@ -49,17 +49,6 @@
       },
       {
         "ordinal": 4,
-        "name": "harness",
-        "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "agents",
-            "name": "harness"
-          }
-        }
-      },
-      {
-        "ordinal": 5,
         "name": "model",
         "type_info": "Text",
         "origin": {
@@ -70,7 +59,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "preset",
         "type_info": "Text",
         "origin": {
@@ -81,7 +70,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "customized",
         "type_info": "Bool",
         "origin": {
@@ -92,7 +81,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "instance_rights",
         "type_info": "TextArray",
         "origin": {
@@ -103,7 +92,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 8,
         "name": "account_rights",
         "type_info": "TextArray",
         "origin": {
@@ -114,7 +103,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 9,
         "name": "future_orgs",
         "type_info": "Bool",
         "origin": {
@@ -125,7 +114,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 10,
         "name": "future_org_rights",
         "type_info": "TextArray",
         "origin": {
@@ -136,7 +125,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 11,
         "name": "future_project_rights",
         "type_info": "TextArray",
         "origin": {
@@ -147,7 +136,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 12,
         "name": "sign_in_method",
         "type_info": "Text",
         "origin": {
@@ -158,7 +147,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 13,
         "name": "second_factor",
         "type_info": "Bool",
         "origin": {
@@ -169,7 +158,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 14,
         "name": "oidc_org_id",
         "type_info": "Uuid",
         "origin": {
@@ -180,7 +169,7 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 15,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -191,7 +180,7 @@
         }
       },
       {
-        "ordinal": 17,
+        "ordinal": 16,
         "name": "last_used_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -202,7 +191,7 @@
         }
       },
       {
-        "ordinal": 18,
+        "ordinal": 17,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -213,7 +202,7 @@
         }
       },
       {
-        "ordinal": 19,
+        "ordinal": 18,
         "name": "revoked_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -226,6 +215,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -235,7 +225,6 @@
       true,
       false,
       false,
-      true,
       false,
       false,
       false,
@@ -252,5 +241,5 @@
       true
     ]
   },
-  "hash": "ddbcef41dcd02d4310a8fe2f1af051583895370b09b810e0ce81c8a81657c61e"
+  "hash": "9bb86d153b38054f77687e28398061b836e48bf9425f3230f237399fba2cdbbd"
 }

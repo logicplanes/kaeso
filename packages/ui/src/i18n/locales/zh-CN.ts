@@ -1,6 +1,6 @@
 const zhCN: Readonly<Record<string, string>> = {
-  "agentAttribution.label": "{name} 通过 {agent}（{harness}）",
-  "agentAvatar.otherHarness": "其他",
+  "agentAttribution.label": "{name} 通过 {agent}（{model}）",
+  "agentAvatar.unknownModel": "未知",
   "alertDialog.cancel": "取消",
   "alertDialog.typeToConfirm": "输入 {text} 以确认",
   "appFrame.expandSidebar": "展开侧边栏",

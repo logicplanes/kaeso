@@ -30,7 +30,6 @@
   "errors.agentProjectTwice": "Each project can be listed only once.",
   "errors.agentRequestEnded": "This sign-in request has ended or was used; connect the agent again.",
   "errors.agentSignInEnded": "This agent's sign-in has ended or was revoked; connect the agent again.",
-  "errors.agentUnknownHarness": "`harness` isn't a harness Kaeso knows; choose `other` instead.",
   "errors.agentUnknownRight": "`{name}` is not a right an agent can be given.",
   "errors.alertThresholds": "Alert thresholds are up to 10 ascending percentages from 1 to 100.",
   "errors.aliasCharacters": "An alias must not contain spaces, control characters or `/`.",

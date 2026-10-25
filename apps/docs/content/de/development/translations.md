@@ -99,7 +99,7 @@ Nie übersetzt werden:
 | single sign-on (SSO) | Single Sign-on (SSO) | 单点登录（SSO） |
 | audit log | Audit-Log | 审计日志 |
 | agent (connected through the MCP server) | Agent | 智能体 |
-| harness (the tool an agent runs in) | Harness | 运行环境 |
+| model family (of an agent) | Modellfamilie | 模型系列 |
 | preset (of an agent's rights) | Vorlage | 预设 |
 | scheduled for deletion | zur Löschung vorgemerkt | 已计划删除 |
 | restore | wiederherstellen | 恢复 |

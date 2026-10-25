@@ -185,7 +185,6 @@
   "account.backToAgents": "Zurück zu den Agenten",
   "account.copyMcpUrl": "Adresse des MCP-Servers kopieren",
   "account.mcpServer": "MCP-Server",
-  "account.mcpServerHint": "Tragen Sie diese Adresse im Agenten ein; er meldet sich hier an.",
   "account.noAgents": "Noch keine Agenten",
   "account.noAgentsHint": "Fügen Sie den MCP-Server in Claude Code, Codex oder einem anderen Agenten hinzu und melden Sie sich an.",
   "account.revokeAgent": "Widerrufen",

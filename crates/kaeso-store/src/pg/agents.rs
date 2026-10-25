@@ -121,8 +121,7 @@ pub struct Agent {
     pub user_id: Uuid,
     pub client_id: Option<Uuid>,
     pub name: String,
-    pub harness: String,
-    pub model: Option<String>,
+    pub model: String,
     pub preset: String,
     pub customized: bool,
     pub instance_rights: Vec<String>,
@@ -174,15 +173,14 @@ pub async fn insert_agent(
     grant: &Grant,
 ) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO agents (id, user_id, client_id, name, harness, model, preset, customized, \
+        "INSERT INTO agents (id, user_id, client_id, name, model, preset, customized, \
          instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, \
          sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)",
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)",
         a.id,
         a.user_id,
         a.client_id,
         a.name,
-        a.harness,
         a.model,
         grant.preset,
         grant.customized,
@@ -268,7 +266,7 @@ pub async fn get(
 ) -> Result<Option<Agent>, StoreError> {
     Ok(sqlx::query_as!(
         Agent,
-        "SELECT id, user_id, client_id, name, harness, model, preset, customized, instance_rights, \
+        "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
          second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
          FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL",
@@ -286,7 +284,7 @@ pub async fn lock(
 ) -> Result<Option<Agent>, StoreError> {
     Ok(sqlx::query_as!(
         Agent,
-        "SELECT id, user_id, client_id, name, harness, model, preset, customized, instance_rights, \
+        "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
          second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
          FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL FOR UPDATE",
@@ -300,7 +298,7 @@ pub async fn lock(
 pub async fn list(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<Vec<Agent>, StoreError> {
     Ok(sqlx::query_as!(
         Agent,
-        "SELECT id, user_id, client_id, name, harness, model, preset, customized, instance_rights, \
+        "SELECT id, user_id, client_id, name, model, preset, customized, instance_rights, \
          account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, \
          second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at \
          FROM agents WHERE user_id = $1 AND revoked_at IS NULL ORDER BY id DESC",
@@ -350,16 +348,14 @@ pub async fn grant_of(db: &mut sqlx::PgConnection, a: &Agent) -> Result<Grant, S
 
 pub struct Details<'a> {
     pub name: &'a str,
-    pub harness: &'a str,
     pub expires_at: Option<OffsetDateTime>,
 }
 
 pub async fn update(db: impl PgExecutor<'_>, id: Uuid, d: &Details<'_>) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE agents SET name = $2, harness = $3, expires_at = $4 WHERE id = $1",
+        "UPDATE agents SET name = $2, expires_at = $3 WHERE id = $1",
         id,
         d.name,
-        d.harness,
         d.expires_at,
     )
     .execute(db)
@@ -367,13 +363,9 @@ pub async fn update(db: impl PgExecutor<'_>, id: Uuid, d: &Details<'_>) -> Resul
     Ok(())
 }
 
-pub async fn set_model(
-    db: impl PgExecutor<'_>,
-    id: Uuid,
-    model: Option<&str>,
-) -> Result<(), StoreError> {
+pub async fn report(db: impl PgExecutor<'_>, id: Uuid, model: &str) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE agents SET model = $2 WHERE id = $1 AND model IS DISTINCT FROM $2",
+        "UPDATE agents SET model = $2 WHERE id = $1 AND model <> $2",
         id,
         model
     )
@@ -581,7 +573,7 @@ pub async fn authenticate(
     now: OffsetDateTime,
 ) -> Result<Option<AgentAuth>, StoreError> {
     let row = sqlx::query!(
-        "SELECT a.id, a.user_id, a.client_id, a.name, a.harness, a.model, a.preset, a.customized, \
+        "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, \
          a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, \
          a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, \
          a.revoked_at, t.expires_at AS token_expires_at, u.state AS user_state, u.is_instance_admin \
@@ -599,7 +591,6 @@ pub async fn authenticate(
             user_id: r.user_id,
             client_id: r.client_id,
             name: r.name,
-            harness: r.harness,
             model: r.model,
             preset: r.preset,
             customized: r.customized,
@@ -627,7 +618,7 @@ pub async fn agent_for_refresh(
     id: Uuid,
 ) -> Result<Option<AgentAuth>, StoreError> {
     let row = sqlx::query!(
-        "SELECT a.id, a.user_id, a.client_id, a.name, a.harness, a.model, a.preset, a.customized, \
+        "SELECT a.id, a.user_id, a.client_id, a.name, a.model, a.preset, a.customized, \
          a.instance_rights, a.account_rights, a.future_orgs, a.future_org_rights, a.future_project_rights, \
          a.sign_in_method, a.second_factor, a.oidc_org_id, a.created_at, a.last_used_at, a.expires_at, \
          a.revoked_at, u.state AS user_state, u.is_instance_admin \
@@ -642,7 +633,6 @@ pub async fn agent_for_refresh(
             user_id: r.user_id,
             client_id: r.client_id,
             name: r.name,
-            harness: r.harness,
             model: r.model,
             preset: r.preset,
             customized: r.customized,
@@ -737,8 +727,7 @@ pub async fn activity(
 pub struct OrgAgent {
     pub id: Uuid,
     pub name: String,
-    pub harness: String,
-    pub model: Option<String>,
+    pub model: String,
     pub user_id: Uuid,
     pub user_name: Option<String>,
     pub user_email: Option<String>,
@@ -755,7 +744,7 @@ pub async fn in_org(
 ) -> Result<Vec<OrgAgent>, StoreError> {
     Ok(sqlx::query_as!(
         OrgAgent,
-        "SELECT a.id, a.name, a.harness, a.model, a.user_id, u.name AS user_name, u.email AS user_email, \
+        "SELECT a.id, a.name, a.model, a.user_id, u.name AS user_name, u.email AS user_email, \
          u.avatar AS user_avatar, a.created_at, a.last_used_at, a.expires_at \
          FROM agents a JOIN org_memberships m ON m.user_id = a.user_id AND m.org_id = $1 \
          JOIN users u ON u.id = a.user_id \

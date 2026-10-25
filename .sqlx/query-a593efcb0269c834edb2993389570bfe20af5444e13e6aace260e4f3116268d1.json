@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
+  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
   "describe": {
     "columns": [
       {
@@ -82,12 +82,12 @@
       },
       {
         "ordinal": 7,
-        "name": "agent_harness?",
+        "name": "agent_model?",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "agents",
-            "name": "harness"
+            "name": "model"
           }
         }
       },
@@ -217,5 +217,5 @@
       false
     ]
   },
-  "hash": "954c00c839abb1dfaa5edb7126db14af0325b745290be08237909206270c90ad"
+  "hash": "a593efcb0269c834edb2993389570bfe20af5444e13e6aace260e4f3116268d1"
 }

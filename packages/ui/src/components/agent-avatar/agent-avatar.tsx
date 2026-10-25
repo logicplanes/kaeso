@@ -2,8 +2,8 @@ import { forwardRef } from "react";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
 import { Avatar } from "../avatar/avatar.js";
-import { agentHarness, HARNESS_GLYPHS } from "./harness-glyphs.js";
-import { harnessName } from "./harness-name.js";
+import { agentModel, MODEL_GLYPHS } from "./model-glyphs.js";
+import { modelName } from "./model-name.js";
 
 export const KAESO_AGENT_AVATAR_VARIANTS = {
   size: {
@@ -29,7 +29,7 @@ export const KAESO_AGENT_ATTRIBUTION_DEFAULT_VARIANTS = { size: 24 } as const;
 
 type AvatarSize = keyof typeof KAESO_AGENT_AVATAR_VARIANTS.size;
 
-function harnessGlyph(harness: string, tile: { glyph: string; stroke: number }) {
+function modelGlyph(model: string, tile: { glyph: string; stroke: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -40,10 +40,10 @@ function harnessGlyph(harness: string, tile: { glyph: string; stroke: number }) 
       strokeLinejoin="round"
       aria-hidden
       focusable="false"
-      data-harness={agentHarness(harness)}
+      data-model={agentModel(model)}
       className={tile.glyph}
     >
-      {HARNESS_GLYPHS[agentHarness(harness)].map((d) => (
+      {MODEL_GLYPHS[agentModel(model)].map((d) => (
         <path key={d} d={d} />
       ))}
     </svg>
@@ -51,14 +51,14 @@ function harnessGlyph(harness: string, tile: { glyph: string; stroke: number }) 
 }
 
 export interface AgentAvatarProps {
-  harness: string;
+  model: string;
   name: string;
   size?: AvatarSize | undefined;
   decorative?: boolean | undefined;
   className?: string | undefined;
 }
 
-export const AgentAvatar = forwardRef<HTMLSpanElement, AgentAvatarProps>(function AgentAvatar({ harness, name, size = 24, decorative, className }, ref) {
+export const AgentAvatar = forwardRef<HTMLSpanElement, AgentAvatarProps>(function AgentAvatar({ model, name, size = 24, decorative, className }, ref) {
   const tile = KAESO_AGENT_AVATAR_VARIANTS.size[size];
   return (
     <span
@@ -66,7 +66,7 @@ export const AgentAvatar = forwardRef<HTMLSpanElement, AgentAvatarProps>(functio
       {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       className={cn("inline-flex shrink-0 items-center justify-center bg-fill-2 text-fg select-none", tile.classes, className)}
     >
-      {harnessGlyph(harness, tile)}
+      {modelGlyph(model, tile)}
     </span>
   );
 });
@@ -75,7 +75,7 @@ AgentAvatar.displayName = "AgentAvatar";
 export interface AgentAttributionProps {
   name: string;
   src?: string | undefined;
-  agent: { name: string; harness: string };
+  agent: { name: string; model: string };
   size?: AvatarSize | undefined;
   className?: string | undefined;
 }
@@ -87,7 +87,7 @@ export const AgentAttribution = forwardRef<HTMLSpanElement, AgentAttributionProp
     <span
       ref={ref}
       role="img"
-      aria-label={t("agentAttribution.label", "{name} via {agent} ({harness})", { name, agent: agent.name, harness: harnessName(agent.harness, t) })}
+      aria-label={t("agentAttribution.label", "{name} via {agent} ({model})", { name, agent: agent.name, model: modelName(agent.model, t) })}
       className={cn("relative inline-flex shrink-0", className)}
     >
       <Avatar name={name} {...(src ? { src } : {})} size={size} decorative />
@@ -96,7 +96,7 @@ export const AgentAttribution = forwardRef<HTMLSpanElement, AgentAttributionProp
         data-agent-badge=""
         className={cn("absolute inline-flex items-center justify-center bg-fill-2 text-fg ring-2 ring-panel", badge.classes)}
       >
-        {harnessGlyph(agent.harness, badge)}
+        {modelGlyph(agent.model, badge)}
       </span>
     </span>
   );

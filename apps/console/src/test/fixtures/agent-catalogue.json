@@ -1436,5 +1436,32 @@
     }
   ],
   "never_grantable": ["org.ownership.transfer", "security.sso.manage", "security.sso.require"],
-  "harnesses": ["claude_code", "codex", "cursor", "gemini_cli", "opencode", "pi", "other"]
+  "models": [
+    "claude",
+    "gpt",
+    "gemini",
+    "gemma",
+    "grok",
+    "llama",
+    "mistral",
+    "deepseek",
+    "qwen",
+    "kimi",
+    "glm",
+    "minimax",
+    "command",
+    "nova",
+    "phi",
+    "granite",
+    "jamba",
+    "ernie",
+    "hunyuan",
+    "doubao",
+    "yi",
+    "nemotron",
+    "olmo",
+    "sonar",
+    "reka",
+    "unknown"
+  ]
 }

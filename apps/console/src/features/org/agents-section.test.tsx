@@ -35,7 +35,7 @@ describe("agents in an organization", () => {
     on("DELETE", "orgs/:org/agents/:agent", noContent);
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("Release helper of Ada Okafor")).toBeInTheDocument();
-    expect(screen.getByText("Codex · used never")).toBeInTheDocument();
+    expect(screen.getByText("GPT · used never")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close access" }));
     expect(await screen.findByText("Close this organization to Release helper?")).toBeInTheDocument();
     await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Close access" }));
@@ -48,6 +48,6 @@ describe("agents in an organization", () => {
     on("GET", "orgs/:org/agents", { data: [orgAgent({ last_used_at: "2026-10-15T11:00:00Z" })], has_more: false, next_cursor: null });
     await renderApp(PATH);
     expect(await screen.findByRole("switch", { name: "Allow members' agents" })).toHaveAttribute("aria-disabled", "true");
-    expect(await screen.findByText(/^Codex · used /)).not.toHaveTextContent("never");
+    expect(await screen.findByText(/^GPT · used /)).not.toHaveTextContent("never");
   });
 });

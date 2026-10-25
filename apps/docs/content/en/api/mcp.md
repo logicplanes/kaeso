@@ -14,9 +14,9 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 Then run `/mcp` in Claude Code and choose `kaeso` to sign in. Your browser opens the console, which asks what the agent may do. After **Authorize**, the agent's tools are ready.
 
-## Harnesses
+## Clients
 
-Each harness below signs in with OAuth on its own. It finds Kaeso's sign-in from the server's first answer, registers itself and opens your browser, so you never copy a key.
+Each client below signs in with OAuth on its own. It finds Kaeso's sign-in from the server's first answer, registers itself and opens your browser, so you never copy a key.
 
 ### Claude Code
 
@@ -89,7 +89,7 @@ OpenCode signs in the first time it uses the server. To sign in ahead of that, r
 
 ### Other clients
 
-Any MCP client that speaks Streamable HTTP and OAuth 2.1 with dynamic client registration connects the same way. Kaeso recognises Claude Code, Codex, Cursor, Gemini CLI, OpenCode and Pi by the name their client registers, and shows every other client as Other. You can change the harness on the consent page and later.
+Any MCP client that speaks Streamable HTTP and OAuth 2.1 with dynamic client registration connects the same way.
 
 ## Sign-in
 
@@ -120,11 +120,11 @@ sequenceDiagram
 
 The consent page is at `https://kaeso.example.com/authorize`, and the console asks you to sign in first if you aren't. It shows:
 
-- The agent's picture, and its name, which you can change.
-- Its **Harness**, recognised from the name its client registered, which you can change too.
-- The presets **Observer**, **Builder**, **Operator** and **Full access**, with **Builder** chosen, and a summary in plain words of what the choice allows.
-- **Expiry**, when the agent's sign-in ends: **7 days**, **30 days**, **90 days** or **Never**. **90 days** is the default.
-- **Customize**, which opens the rights for each level: **Instance**, **Organizations** and **Account**.
+- The agent's name, as its client registered it.
+- The presets **Observer**, **Builder**, **Operator** and **Full access**, with **Builder** chosen, and a short list of what the choice allows. It includes organizations you join later, unless you turn that off.
+- How long the sign-in lasts, and that you can revoke it any time.
+- **Customize**, which opens the agent's name, its **Expiry** (**7 days**, **30 days**, **90 days** or **Never**, with **90 days** as the default) and the rights for each level: **Instance**, **Organizations** and **Account**.
+- The account you are signed in as, and the host your browser returns to.
 
 **Authorize** sends your browser back to the agent with a code. **Deny** sends it back with `access_denied`. A sign-in request lasts 15 minutes, and its code 5 minutes.
 
@@ -181,6 +181,7 @@ Every Platform API operation an agent can use is a tool, named after its operati
 - **Listing.** `tools/list` shows only the tools the agent can use now, in any of its organizations and projects.
 - **Arguments.** A tool takes the operation's path parameters, such as `org` and `project`, its query parameters, and `body` for the request body. Path parameters are required, and Kaeso refuses an argument the tool doesn't have.
 - **Results.** A tool answers with the Platform API's JSON as text and as `structuredContent`. An answer over 200 KB is cut; ask for a smaller page with `limit`.
+- **Model.** Every tool takes `agent_model`, the model family the agent runs on: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` or `unknown`. Kaeso stores it with each call and shows the family's picture and name next to the agent; any other value counts as `unknown`. Until the agent's first call, Kaeso guesses the family from the name its client registered.
 - **Hints.** Tools that read are marked `readOnlyHint`, and tools that delete `destructiveHint`.
 - **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first.
 
@@ -261,12 +262,12 @@ Narrowing a policy applies to every agent at its next request. With agents off f
 
 Kaeso keeps every tool call an agent makes for 90 days: the tool, its target, the result, the time and the IP address. You read it on the agent's page under **Account** › **Agents** ([manage your agents](../console/account.md#manage-your-agents)).
 
-A change an agent makes goes to the audit log like any other, with the actor kind `agent`. `actor.id` is the user it acts for, and `actor.agent` names it with its `id`, `name` and `harness`. `by_agents=true` lists only changes by agents, in the instance's, an organization's and a project's audit log.
+A change an agent makes goes to the audit log like any other, with the actor kind `agent`. `actor.id` is the user it acts for, and `actor.agent` names it with its `id`, `name` and `model`. `by_agents=true` lists only changes by agents, in the instance's, an organization's and a project's audit log.
 
 | Action | Recorded when |
 | --- | --- |
 | `agent.authorize` | You authorize an agent |
-| `agent.update` | You rename an agent, change its harness or its expiry |
+| `agent.update` | You rename an agent or change its expiry |
 | `agent.rights_update` | You change an agent's rights |
 | `agent.revoke` | You revoke an agent |
 | `agent.org_access_revoke` | An organization admin closes the organization to an agent |
@@ -279,12 +280,12 @@ The console manages agents through these routes, tagged `agents` in [`openapi.js
 
 | Route | Access | Does |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their harness, reported model, client, rights (`grant`), creation, last use and expiry |
-| `PATCH me/agents/{agent}` | Session | Changes `name`, `harness` or `expiry`: `7d`, `30d`, `90d` or `never`, counted from now |
+| `GET me/agents`, `GET me/agents/{agent}` | Session | Your agents, newest first, with their model family, client, rights (`grant`), creation, last use and expiry |
+| `PATCH me/agents/{agent}` | Session | Changes `name` or `expiry`: `7d`, `30d`, `90d` or `never`, counted from now |
 | `PUT me/agents/{agent}/rights` | Session | Replaces the agent's rights. Giving a sensitive right it didn't have needs a [recent sign-in](platform-api.md#recent-sign-in) |
 | `DELETE me/agents/{agent}` | Session | Revokes the agent. Its tokens stop working at once |
 | `GET me/agents/{agent}/activity` | Session | Its tool calls, newest first |
-| `GET me/agents/catalogue` | Session | Every right an agent can be given by level, the presets and their ceilings, the instance presets, the rights no agent gets and the harnesses |
+| `GET me/agents/catalogue` | Session | Every right an agent can be given by level, the presets and their ceilings, the instance presets, the rights no agent gets and the model families |
 | `GET me/agents/grantable` | Session | What you could give an agent now, in each organization and project |
 | `POST me/agent-requests/view`, `…/approve`, `…/deny` | Session | The consent page. Each takes the `request` from the page's `#request=` |
 | `GET orgs/{org}/agents` | `members.view` | The members' agents that may act in the organization |

@@ -1,5 +1,5 @@
 {
-  "org.agents.agentDetail": "{harness} · genutzt {used}",
+  "org.agents.agentDetail": "{model} · genutzt {used}",
   "org.agents.agentOf": "{agent} von {person}",
   "org.agents.allow": "Agenten von Mitgliedern zulassen",
   "org.agents.allowHint": "Aus stoppt jeden Agenten hier beim nächsten Aufruf.",

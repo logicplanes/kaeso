@@ -22,7 +22,7 @@ use crate::platform::params::{Path, Query};
 use crate::platform::rights::{RightView, ScopeCatalogue, group};
 use crate::platform::validate::validate_name;
 use crate::platform::views::avatar_url;
-use crate::services::agents::{self as service, Expiry, Granting, HARNESSES};
+use crate::services::agents::{self as service, Expiry, Granting, MODELS};
 use crate::state::AppState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -172,13 +172,10 @@ pub struct AgentView {
     #[doc = "The name its user gave it."]
     #[schema(example = "Release helper")]
     pub name: String,
-    #[doc = "The harness it runs in: `claude_code`, `codex`, `cursor`, `gemini_cli`,\n\
-        `opencode`, `pi` or `other`."]
-    #[schema(example = "codex")]
-    pub harness: String,
-    #[doc = "The model it reported, if any."]
-    #[schema(example = "gpt-5.4")]
-    pub model: Option<String>,
+    #[doc = "The model family it reports with every tool call, one of the catalogue's\n\
+        `models`; until its first call, guessed from its client's name, else `unknown`."]
+    #[schema(example = "claude")]
+    pub model: String,
     #[doc = "The name its client registered with."]
     #[schema(example = "codex-mcp-client")]
     pub client: Option<String>,
@@ -206,7 +203,6 @@ async fn view(state: &AppState, a: &Agent) -> ApiResult<AgentView> {
     Ok(AgentView {
         id: AgentId::from_uuid(a.id),
         name: a.name.clone(),
-        harness: a.harness.clone(),
         model: a.model.clone(),
         client,
         grant: GrantBody::of(&grant),
@@ -261,8 +257,6 @@ pub async fn get(
 pub struct AgentUpdate {
     #[doc = "Its name, 1 to 100 characters."]
     pub name: Option<String>,
-    #[doc = "Its harness."]
-    pub harness: Option<String>,
     #[doc = "A new lifetime from now: `7d`, `30d`, `90d` or `never`."]
     #[schema(example = "90d")]
     pub expiry: Option<String>,
@@ -271,7 +265,7 @@ pub struct AgentUpdate {
 #[utoipa::path(
     patch,
     path = "/me/agents/{agent}",
-    summary = "Renames an agent, changes its harness or gives it a new lifetime.",
+    summary = "Renames an agent or gives it a new lifetime.",
     tag = "agents",
     params(("agent" = AgentId, Path)),
     request_body = AgentUpdate,
@@ -295,12 +289,6 @@ pub async fn update(
         .map(|n| validate_name("name", n))
         .transpose()?
         .unwrap_or_else(|| a.name.clone());
-    let harness = req
-        .harness
-        .as_deref()
-        .map(service::check_harness)
-        .transpose()?
-        .map_or_else(|| a.harness.clone(), str::to_owned);
     let expires_at = match req.expiry.as_deref() {
         Some(e) => Expiry::parse(e)?.from(ctx.now),
         None => a.expires_at,
@@ -310,15 +298,14 @@ pub async fn update(
         a.id,
         &agents::Details {
             name: &name,
-            harness: &harness,
             expires_at,
         },
     )
     .await?;
     ctx.audit(None, "agent.update")
         .target("agent", id)
-        .before(serde_json::json!({ "name": a.name, "harness": a.harness, "expires_at": a.expires_at.map(|t| t.unix_timestamp()) }))
-        .after(serde_json::json!({ "name": name, "harness": harness, "expires_at": expires_at.map(|t| t.unix_timestamp()) }))
+        .before(serde_json::json!({ "name": a.name, "expires_at": a.expires_at.map(|t| t.unix_timestamp()) }))
+        .after(serde_json::json!({ "name": name, "expires_at": expires_at.map(|t| t.unix_timestamp()) }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -422,7 +409,7 @@ pub async fn revoke(
     agents::revoke(&mut tx, a.id, ctx.now).await?;
     ctx.audit(None, "agent.revoke")
         .target("agent", id)
-        .before(serde_json::json!({ "name": a.name, "harness": a.harness }))
+        .before(serde_json::json!({ "name": a.name, "model": a.model }))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -552,8 +539,8 @@ pub struct AgentCatalogue {
     #[doc = "Org rights no agent can be given."]
     #[schema(example = json!(["org.ownership.transfer", "security.sso.manage", "security.sso.require"]))]
     pub never_grantable: Vec<&'static str>,
-    #[doc = "The harnesses agents can run in."]
-    pub harnesses: Vec<&'static str>,
+    #[doc = "The model families an agent can report, `unknown` last."]
+    pub models: Vec<&'static str>,
 }
 
 fn right_view<R: Copy + Into<kaeso_core::rights::Right>>(
@@ -587,7 +574,7 @@ fn right_view<R: Copy + Into<kaeso_core::rights::Right>>(
 #[utoipa::path(
     get,
     path = "/me/agents/catalogue",
-    summary = "The rights, presets and harnesses for agents.",
+    summary = "The rights, presets and model families for agents.",
     description = "`sensitive` marks rights whose grant needs a sign-in within the last 15\n\
     minutes and a confirmation in the console.",
     tag = "agents",
@@ -653,7 +640,7 @@ pub async fn catalogue(_ctx: Ctx) -> Json<AgentCatalogue> {
         never_grantable: kaeso_core::rights::OrgRights::all()
             .minus(grantable_org_rights())
             .names(),
-        harnesses: HARNESSES.to_vec(),
+        models: MODELS.to_vec(),
     })
 }
 
@@ -779,9 +766,6 @@ pub struct AgentRequestView {
     #[doc = "The name its client registered with."]
     #[schema(example = "Claude Code")]
     pub client: String,
-    #[doc = "The harness Kaeso recognised; the user may change it."]
-    #[schema(example = "claude_code")]
-    pub harness: &'static str,
     #[doc = "Where the browser goes back to after the decision."]
     #[schema(example = "localhost")]
     pub redirect_host: String,
@@ -820,14 +804,7 @@ pub async fn request(
 ) -> ApiResult<Json<AgentRequestView>> {
     ctx.session()?;
     let r = pending(&state, &ctx, &req).await?;
-    let client = agents::get_client(&state.pg, r.client_id).await?;
-    let names: Vec<&str> = client
-        .iter()
-        .flat_map(|c| [Some(c.name.as_str()), c.software_id.as_deref()])
-        .flatten()
-        .collect();
     Ok(Json(AgentRequestView {
-        harness: service::detect_harness(&names),
         client: r.client_name,
         redirect_host: oauth::redirect_host(&r.redirect_uri),
         expires_at: r.expires_at,
@@ -843,9 +820,6 @@ pub struct AgentApproval {
     #[doc = "The agent's name, 1 to 100 characters."]
     #[schema(example = "Release helper")]
     pub name: String,
-    #[doc = "Its harness."]
-    #[schema(example = "claude_code")]
-    pub harness: String,
     #[doc = "How long its sign-in lasts: `7d`, `30d`, `90d` or `never`."]
     #[schema(example = "90d")]
     pub expiry: String,
@@ -880,7 +854,6 @@ pub async fn approve(
 ) -> ApiResult<Json<AgentRedirect>> {
     let session = ctx.session()?.clone();
     let name = validate_name("name", &req.name)?;
-    let harness = service::check_harness(&req.harness)?;
     let expires_at = Expiry::parse(&req.expiry)?.from(ctx.now);
     let r = pending(
         &state,
@@ -891,6 +864,13 @@ pub async fn approve(
     )
     .await?;
     let grant = validated(&state, &ctx, None, &req.grant).await?;
+    let client = agents::get_client(&state.pg, r.client_id).await?;
+    let names: Vec<&str> = client
+        .iter()
+        .flat_map(|c| [Some(c.name.as_str()), c.software_id.as_deref()])
+        .flatten()
+        .collect();
+    let model = service::guess_model(&names);
     let id = AgentId::new();
     let mut tx = state.pg.begin().await?;
     if !agents::use_request(&mut *tx, r.id, ctx.now).await? {
@@ -905,8 +885,7 @@ pub async fn approve(
             user_id: session.user_id,
             client_id: Some(r.client_id),
             name: name.clone(),
-            harness: harness.to_owned(),
-            model: None,
+            model: model.to_owned(),
             preset: String::new(),
             customized: false,
             instance_rights: Vec::new(),
@@ -930,7 +909,7 @@ pub async fn approve(
         .target("agent", id)
         .after(serde_json::json!({
             "name": name,
-            "harness": harness,
+            "model": model,
             "client": r.client_name,
             "expires_at": expires_at.map(|t| t.unix_timestamp()),
             "grant": GrantBody::of(&grant),

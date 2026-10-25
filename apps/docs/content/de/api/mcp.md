@@ -14,9 +14,9 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 Führen Sie dann `/mcp` in Claude Code aus und wählen Sie `kaeso`, um sich anzumelden. Ihr Browser öffnet die Konsole, die fragt, was der Agent darf. Nach **Autorisieren** stehen die Tools des Agenten bereit.
 
-## Harnesses
+## Clients
 
-Jede Harness unten meldet sich selbst per OAuth an. Sie findet die Anmeldung von Kaeso in der ersten Antwort des Servers, registriert sich und öffnet Ihren Browser, sodass Sie nie einen Schlüssel kopieren.
+Jeder Client unten meldet sich selbst per OAuth an. Er findet die Anmeldung von Kaeso in der ersten Antwort des Servers, registriert sich und öffnet Ihren Browser, sodass Sie nie einen Schlüssel kopieren.
 
 ### Claude Code
 
@@ -89,7 +89,7 @@ OpenCode meldet sich an, wenn es den Server zum ersten Mal nutzt. Um sich vorher
 
 ### Andere Clients
 
-Jeder MCP-Client, der Streamable HTTP und OAuth 2.1 mit dynamischer Client-Registrierung spricht, verbindet sich auf dieselbe Weise. Kaeso erkennt Claude Code, Codex, Cursor, Gemini CLI, OpenCode und Pi an dem Namen, den ihr Client registriert, und zeigt jeden anderen Client als Andere. Die Harness können Sie auf der Zustimmungsseite und später ändern.
+Jeder MCP-Client, der Streamable HTTP und OAuth 2.1 mit dynamischer Client-Registrierung spricht, verbindet sich auf dieselbe Weise.
 
 ## Anmeldung
 
@@ -120,11 +120,11 @@ sequenceDiagram
 
 Die Zustimmungsseite liegt unter `https://kaeso.example.com/authorize`, und die Konsole bittet Sie zuerst um die Anmeldung, falls Sie nicht angemeldet sind. Sie zeigt:
 
-- Das Bild des Agenten und seinen Namen, den Sie ändern können.
-- Seine **Harness**, erkannt an dem Namen, den sein Client registriert hat, die Sie ebenfalls ändern können.
-- Die Vorlagen **Observer**, **Builder**, **Operator** und **Vollzugriff**, mit **Builder** ausgewählt, und eine Zusammenfassung in einfachen Worten, was die Auswahl erlaubt.
-- **Ablauf**, wann die Anmeldung des Agenten endet: **7 Tage**, **30 Tage**, **90 Tage** oder **Nie**. **90 Tage** ist der Standard.
-- **Anpassen**, das die Rechte jeder Ebene öffnet: **Instanz**, **Organisationen** und **Konto**.
+- Den Namen des Agenten, wie sein Client ihn registriert hat.
+- Die Vorlagen **Observer**, **Builder**, **Operator** und **Vollzugriff**, mit **Builder** ausgewählt, und eine kurze Liste, was die Auswahl erlaubt. Sie umfasst Organisationen, denen Sie später beitreten, sofern Sie das nicht abschalten.
+- Wie lange die Anmeldung gilt, und dass Sie sie jederzeit widerrufen können.
+- **Anpassen**, das den Namen des Agenten, seinen **Ablauf** (**7 Tage**, **30 Tage**, **90 Tage** oder **Nie**, mit **90 Tage** als Standard) und die Rechte jeder Ebene öffnet: **Instanz**, **Organisationen** und **Konto**.
+- Das Konto, mit dem Sie angemeldet sind, und den Host, zu dem Ihr Browser zurückkehrt.
 
 **Autorisieren** schickt Ihren Browser mit einem Code zurück zum Agenten. **Ablehnen** schickt ihn mit `access_denied` zurück. Eine Anmeldeanfrage gilt 15 Minuten, ihr Code 5 Minuten.
 
@@ -181,6 +181,7 @@ Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benann
 - **Auflistung.** `tools/list` zeigt nur die Tools, die der Agent jetzt nutzen kann, in einer seiner Organisationen und Projekte.
 - **Argumente.** Ein Tool nimmt die Pfadparameter der Operation, etwa `org` und `project`, ihre Query-Parameter und `body` für den Anfragekörper. Pfadparameter sind Pflicht, und Kaeso lehnt ein Argument ab, das das Tool nicht hat.
 - **Ergebnisse.** Ein Tool antwortet mit dem JSON der Platform API als Text und als `structuredContent`. Eine Antwort über 200 KB wird gekürzt; fordern Sie mit `limit` eine kleinere Seite an.
+- **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt Bild und Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zum ersten Aufruf des Agenten schätzt Kaeso die Familie aus dem Namen, den sein Client registriert hat.
 - **Hinweise.** Lesende Tools tragen `readOnlyHint`, löschende `destructiveHint`.
 - **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten.
 
@@ -261,12 +262,12 @@ Eine engere Richtlinie gilt für jeden Agenten ab seiner nächsten Anfrage. Sind
 
 Kaeso bewahrt jeden Tool-Aufruf eines Agenten 90 Tage auf: das Tool, sein Ziel, das Ergebnis, die Zeit und die IP-Adresse. Sie lesen ihn auf der Seite des Agenten unter **Konto** › **Agenten** ([Agenten verwalten](../console/account.md#agenten-verwalten)).
 
-Eine Änderung durch einen Agenten landet wie jede andere im Audit-Log, mit der Akteursart `agent`. `actor.id` ist der Benutzer, für den er handelt, und `actor.agent` nennt ihn mit `id`, `name` und `harness`. `by_agents=true` listet nur Änderungen durch Agenten, im Audit-Log der Instanz, einer Organisation und eines Projekts.
+Eine Änderung durch einen Agenten landet wie jede andere im Audit-Log, mit der Akteursart `agent`. `actor.id` ist der Benutzer, für den er handelt, und `actor.agent` nennt ihn mit `id`, `name` und `model`. `by_agents=true` listet nur Änderungen durch Agenten, im Audit-Log der Instanz, einer Organisation und eines Projekts.
 
 | Aktion | Verzeichnet, wenn |
 | --- | --- |
 | `agent.authorize` | Sie einen Agenten autorisieren |
-| `agent.update` | Sie einen Agenten umbenennen oder seine Harness oder seinen Ablauf ändern |
+| `agent.update` | Sie einen Agenten umbenennen oder seinen Ablauf ändern |
 | `agent.rights_update` | Sie die Rechte eines Agenten ändern |
 | `agent.revoke` | Sie einen Agenten widerrufen |
 | `agent.org_access_revoke` | Ein Admin der Organisation sie für einen Agenten schließt |
@@ -279,12 +280,12 @@ Die Konsole verwaltet Agenten über diese Routen, in [`openapi.json`](platform-a
 
 | Route | Zugriff | Tut |
 | --- | --- | --- |
-| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Harness, gemeldetem Modell, Client, Rechten (`grant`), Erstellung, letzter Nutzung und Ablauf |
-| `PATCH me/agents/{agent}` | Sitzung | Ändert `name`, `harness` oder `expiry`: `7d`, `30d`, `90d` oder `never`, ab jetzt gezählt |
+| `GET me/agents`, `GET me/agents/{agent}` | Sitzung | Ihre Agenten, die neuesten zuerst, mit Modellfamilie, Client, Rechten (`grant`), Erstellung, letzter Nutzung und Ablauf |
+| `PATCH me/agents/{agent}` | Sitzung | Ändert `name` oder `expiry`: `7d`, `30d`, `90d` oder `never`, ab jetzt gezählt |
 | `PUT me/agents/{agent}/rights` | Sitzung | Ersetzt die Rechte des Agenten. Ein sensibles Recht zu geben, das er nicht hatte, erfordert eine [kürzliche Anmeldung](platform-api.md#kürzliche-anmeldung) |
 | `DELETE me/agents/{agent}` | Sitzung | Widerruft den Agenten. Seine Tokens hören sofort auf zu funktionieren |
 | `GET me/agents/{agent}/activity` | Sitzung | Seine Tool-Aufrufe, die neuesten zuerst |
-| `GET me/agents/catalogue` | Sitzung | Jedes Recht, das ein Agent erhalten kann, nach Ebene, die Vorlagen und ihre Obergrenzen, die Instanz-Vorlagen, die Rechte, die kein Agent erhält, und die Harnesses |
+| `GET me/agents/catalogue` | Sitzung | Jedes Recht, das ein Agent erhalten kann, nach Ebene, die Vorlagen und ihre Obergrenzen, die Instanz-Vorlagen, die Rechte, die kein Agent erhält, und die Modellfamilien |
 | `GET me/agents/grantable` | Sitzung | Was Sie einem Agenten jetzt geben könnten, in jeder Organisation und jedem Projekt |
 | `POST me/agent-requests/view`, `…/approve`, `…/deny` | Sitzung | Die Zustimmungsseite. Jede nimmt den `request` aus `#request=` der Seite |
 | `GET orgs/{org}/agents` | `members.view` | Die Agenten von Mitgliedern, die in der Organisation handeln dürfen |

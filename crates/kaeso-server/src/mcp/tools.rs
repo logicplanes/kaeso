@@ -6,6 +6,9 @@ use kaeso_core::rights::Right;
 use serde_json::{Map, Value, json};
 
 use crate::platform::PREFIX;
+use crate::services::agents::MODELS;
+
+pub const AGENT_MODEL: &str = "agent_model";
 
 #[derive(Clone, Debug)]
 pub struct Tool {
@@ -177,6 +180,15 @@ fn input_schema(doc: &Value, path: &str, op: &Value) -> (Value, Vec<String>, Vec
         }
     }
     path_params.sort_by_key(|p| path.find(&format!("{{{p}}}")));
+    properties.insert(
+        AGENT_MODEL.to_owned(),
+        json!({
+            "type": "string",
+            "enum": MODELS,
+            "description": "The model family you are; `unknown` if none of these fits. Kaeso shows it next to what you do.",
+        }),
+    );
+    required.push(AGENT_MODEL.to_owned());
     let mut schema = json!({
         "type": "object",
         "properties": properties,
@@ -277,7 +289,8 @@ pub enum ArgumentError {
 
 pub fn call(tool: &Tool, args: &Map<String, Value>) -> Result<Call, ArgumentError> {
     for key in args.keys() {
-        let known = tool.path_params.contains(key)
+        let known = key == AGENT_MODEL
+            || tool.path_params.contains(key)
             || tool.query_params.contains(key)
             || (tool.body && key == "body");
         if !known {
@@ -364,6 +377,19 @@ mod tests {
             );
             assert_eq!(t.input_schema["type"], "object", "{}", t.name);
             assert!(!t.title.is_empty(), "{}", t.name);
+            assert_eq!(
+                t.input_schema["properties"]["agent_model"]["enum"],
+                json!(MODELS),
+                "{}",
+                t.name
+            );
+            assert!(
+                t.input_schema["required"]
+                    .as_array()
+                    .is_some_and(|r| r.contains(&json!("agent_model"))),
+                "{}",
+                t.name
+            );
         }
     }
 
@@ -399,7 +425,13 @@ mod tests {
         assert_eq!(err, ArgumentError::Missing("org".into()));
         let err = call(t, json!({ "org": {} }).as_object().unwrap()).unwrap_err();
         assert_eq!(err, ArgumentError::NotScalar("org".into()));
-        let c = call(t, json!({ "org": "a/b c" }).as_object().unwrap()).unwrap();
+        let c = call(
+            t,
+            json!({ "org": "a/b c", "agent_model": "claude" })
+                .as_object()
+                .unwrap(),
+        )
+        .unwrap();
         assert_eq!(c.uri, "/platform/v1/orgs/a%2Fb%20c/audit-log");
     }
 

@@ -1,0 +1,85 @@
+export const AGENT_MODELS = [
+  "claude",
+  "gpt",
+  "gemini",
+  "gemma",
+  "grok",
+  "llama",
+  "mistral",
+  "deepseek",
+  "qwen",
+  "kimi",
+  "glm",
+  "minimax",
+  "command",
+  "nova",
+  "phi",
+  "granite",
+  "jamba",
+  "ernie",
+  "hunyuan",
+  "doubao",
+  "yi",
+  "nemotron",
+  "olmo",
+  "sonar",
+  "reka",
+  "unknown",
+] as const;
+
+export type AgentModel = (typeof AGENT_MODELS)[number];
+
+/** The model family an API string names, or `unknown` for anything the library doesn't know. */
+export function agentModel(model: string): AgentModel {
+  return (AGENT_MODELS as readonly string[]).includes(model) ? (model as AgentModel) : "unknown";
+}
+
+// One system for every glyph: a 24 grid, a 16-unit live area (4–20), round caps and joins, stroked in currentColor.
+export const MODEL_GLYPHS: Readonly<Record<AgentModel, readonly string[]>> = {
+  claude: ["M17.4 7.5A7 7 0 1 0 17.4 16.5", "M12 12h.01"],
+  gpt: [
+    "M14 5.5a2 2 0 1 1-4 0a2 2 0 1 1 4 0",
+    "M7.5 17a2 2 0 1 1-4 0a2 2 0 1 1 4 0",
+    "M20.5 17a2 2 0 1 1-4 0a2 2 0 1 1 4 0",
+    "M10.5 8.1 7 14.4",
+    "M13.5 8.1 17 14.4",
+    "M8.5 17h7",
+  ],
+  gemini: ["M10.5 16.5a3 3 0 1 1-6 0a3 3 0 1 1 6 0", "M19.5 7.5a3 3 0 1 1-6 0a3 3 0 1 1 6 0", "M9.6 14.4l4.8-4.8"],
+  gemma: ["M8 5h8l4 5-8 10-8-10z", "M4 10h16"],
+  grok: [
+    "M16.5 12a4.5 4.5 0 1 1-9 0a4.5 4.5 0 1 1 9 0",
+    "M7.8 14.7C5 16.7 3.6 18.3 4.2 19.1 5.3 20.6 11 17.8 16.9 13.5S20.9 6.3 19.8 4.9C19.2 4.1 17.4 4.7 15 6.3",
+  ],
+  llama: ["M7 4.5c2 0 3 1 4 3.5l6.5 11.5", "M11.6 11 6.5 19.5"],
+  mistral: ["M4 9h9.5a2.5 2.5 0 1 0-2.5-2.5", "M4 13h13a2.5 2.5 0 1 1-2.5 2.5", "M4 17h5"],
+  deepseek: ["M6 5l6 4 6-4", "M6 10l6 4 6-4", "M6 15l6 4 6-4"],
+  qwen: ["M18 11.5a6.5 6.5 0 1 1-13 0a6.5 6.5 0 1 1 13 0", "M15.5 15.5 19.5 19.5"],
+  kimi: ["M19.5 13.8A7.8 7.8 0 1 1 10.2 4.5a6 6 0 0 0 9.3 9.3z"],
+  glm: ["M12 4.5 20 9l-8 4.5L4 9z", "M4 13.5 12 18l8-4.5"],
+  minimax: ["M12 5v8", "M8 9h8", "M8 18h8"],
+  command: ["M14.5 7v10a2.5 2.5 0 1 0 2.5-2.5H7a2.5 2.5 0 1 0 2.5 2.5V7A2.5 2.5 0 1 0 7 9.5h10A2.5 2.5 0 1 0 14.5 7"],
+  nova: ["M12 12h.01", "M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0", "M12 4v1", "M12 19v1", "M4 12h1", "M19 12h1"],
+  phi: ["M12 4v16", "M17 12a5 5 0 1 1-10 0a5 5 0 1 1 10 0"],
+  granite: ["M6 6h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z", "M4 12h16", "M10 6v6", "M14 12v6"],
+  jamba: ["M5 6h7a6 6 0 0 1 0 12H5z"],
+  ernie: ["M17 5H7v14h10", "M7 12h8"],
+  hunyuan: ["M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0", "M12 4a4 4 0 0 1 0 8 4 4 0 0 0 0 8"],
+  doubao: ["M4.5 15.5a7.5 7.5 0 0 1 15 0z", "M12 8v3", "M8.5 9.5l1 2", "M15.5 9.5l-1 2"],
+  yi: ["M5 7h14", "M5 12h5", "M14 12h5", "M5 17h14"],
+  nemotron: [
+    "M9 7h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z",
+    "M10 4v3",
+    "M14 4v3",
+    "M10 17v3",
+    "M14 17v3",
+    "M4 10h3",
+    "M4 14h3",
+    "M17 10h3",
+    "M17 14h3",
+  ],
+  olmo: ["M8.5 14.5a3.5 3.5 0 0 1-1-6.8 4.5 4.5 0 0 1 9 0 3.5 3.5 0 0 1-1 6.8z", "M12 14.5V20", "M12 17l2-2"],
+  sonar: ["M12 12h.01", "M8.5 8.5a5 5 0 0 0 0 7", "M15.5 8.5a5 5 0 0 1 0 7", "M5.6 5.6a9 9 0 0 0 0 12.8", "M18.4 5.6a9 9 0 0 1 0 12.8"],
+  reka: ["M4 10c2.7-2.7 5.3-2.7 8 0s5.3 2.7 8 0", "M4 15c2.7-2.7 5.3-2.7 8 0s5.3 2.7 8 0"],
+  unknown: ["M8.5 8.5a3.5 3.5 0 1 1 4.9 3.2c-.9.4-1.4 1.2-1.4 2.1V15", "M12 19h.01"],
+};

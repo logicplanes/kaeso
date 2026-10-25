@@ -542,7 +542,6 @@
   "errors.agentProjectTwice": "每个项目只能列出一次。",
   "errors.agentRequestEnded": "此登录请求已结束或已被使用；请重新连接该智能体。",
   "errors.agentSignInEnded": "此智能体的登录已结束或已被撤销；请重新连接该智能体。",
-  "errors.agentUnknownHarness": "Kaeso 不认识此 `harness`；请改选 `other`。",
   "errors.agentUnknownRight": "`{name}` 不是可授予智能体的权限。",
   "errors.instanceAgentMax": "`max` 必须是 `none`、`read`、`configure` 或 `admin`。",
   "errors.instanceRefusesAgents": "此 Kaeso 安装不允许智能体；请询问实例管理员。",

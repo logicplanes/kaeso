@@ -73,7 +73,10 @@ export function PresetPicker({
       size="sm"
       options={cat.presets.map((p) => ({ value: p.id, label: p.name }))}
       value={value.customized ? "" : value.preset}
-      onValueChange={(id) => onChange(presetDraft(cat, grantable, id as PresetId))}
+      onValueChange={(id) => {
+        const next = presetDraft(cat, grantable, id as PresetId);
+        onChange({ ...next, future: { ...next.future, on: value.future.on } });
+      }}
     />
   );
 }
@@ -148,12 +151,14 @@ export function AgentGrantEditor({
   value,
   onChange,
   defaultOpen = false,
+  children,
 }: {
   cat: AgentCatalogue;
   grantable: Grantable;
   value: AgentDraft;
   onChange: (d: AgentDraft) => void;
   defaultOpen?: boolean;
+  children?: ReactNode;
 }) {
   const edit = (d: Partial<AgentDraft>) => onChange({ ...value, ...d, customized: true });
   const editOrg = (id: string, o: OrgDraft) => edit({ orgs: { ...value.orgs, [id]: o } });
@@ -164,6 +169,7 @@ export function AgentGrantEditor({
   return (
     <Collapsible title={t("kaeso.rights.customize", "Customize")} defaultOpen={defaultOpen}>
       <div className="flex flex-col gap-16">
+        {children}
         {grantable.instance.length > 0 && (
           <Section title={t("kaeso.agents.instance", "Instance")} hint={instancePreset?.name ?? t("kaeso.agents.custom", "Custom")}>
             <Segmented

@@ -37,10 +37,10 @@ pub struct AgentRef {
     #[doc = "Its name; `null` once its user is deleted."]
     #[schema(example = "Release helper")]
     pub name: Option<String>,
-    #[doc = "The harness it runs in, such as `claude_code`, `codex` or `other`;\n\
+    #[doc = "The model family it reported, such as `claude`, `gpt` or `unknown`;\n\
         `null` once its user is deleted."]
-    #[schema(example = "codex")]
-    pub harness: Option<String>,
+    #[schema(example = "claude")]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -97,7 +97,7 @@ impl AuditEventView {
                 agent: e.agent_id.map(|id| AgentRef {
                     id: AgentId::from_uuid(id),
                     name: e.agent_name,
-                    harness: e.agent_harness,
+                    model: e.agent_model,
                 }),
             },
             action: e.action,

@@ -542,7 +542,6 @@
   "errors.agentProjectTwice": "Jedes Projekt darf nur einmal aufgeführt werden.",
   "errors.agentRequestEnded": "Diese Anmeldeanfrage ist abgelaufen oder wurde verwendet; verbinden Sie den Agenten neu.",
   "errors.agentSignInEnded": "Die Anmeldung dieses Agenten ist abgelaufen oder wurde widerrufen; verbinden Sie den Agenten neu.",
-  "errors.agentUnknownHarness": "`harness` ist kein Harness, das Kaeso kennt; wählen Sie stattdessen `other`.",
   "errors.agentUnknownRight": "`{name}` ist kein Recht, das ein Agent erhalten kann.",
   "errors.instanceAgentMax": "`max` muss `none`, `read`, `configure` oder `admin` sein.",
   "errors.instanceRefusesAgents": "Diese Kaeso-Installation lässt keine Agenten zu; bitten Sie einen Instanz-Admin darum.",

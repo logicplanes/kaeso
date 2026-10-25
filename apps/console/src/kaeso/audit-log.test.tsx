@@ -211,7 +211,7 @@ describe("AuditLog", () => {
     const byAgent = auditEvent({
       id: "evt_agent",
       action: "project.create",
-      actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_release", name: "Release helper", harness: "codex" } },
+      actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_release", name: "Release helper", model: "gpt" } },
     });
     orgLog([byAgent]);
     on("GET", "orgs/:org/audit-log/:event", byAgent);
@@ -227,13 +227,13 @@ describe("AuditLog", () => {
     await waitFor(() => expect(router.state.location.search).toMatchObject({ by_agents: true }));
     await waitFor(() => expect(logQuery()).toContainEqual(expect.objectContaining({ by_agents: "true" })));
     await user.click(row());
-    expect(await screen.findByText("Grace Hopper · via Release helper (Codex)")).toBeInTheDocument();
+    expect(await screen.findByText("Grace Hopper · via Release helper (GPT)")).toBeInTheDocument();
   });
 
   it("names an agent that is gone and turns the agents filter off again", async () => {
-    orgLog([auditEvent({ id: "evt_gone", actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_gone", name: null, harness: null } } })]);
+    orgLog([auditEvent({ id: "evt_gone", actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_gone", name: null, model: null } } })]);
     const { user, router } = await renderApp(`${PATH}?by_agents=true`);
-    expect(await within(await table()).findByRole("img", { name: /Grace Hopper via Deleted agent \(Other\)/ })).toBeInTheDocument();
+    expect(await within(await table()).findByRole("img", { name: /Grace Hopper via Deleted agent \(Unknown\)/ })).toBeInTheDocument();
     await user.click(screen.getByRole("switch", { name: "Done by agents" }));
     await waitFor(() => expect(router.state.location.search).not.toHaveProperty("by_agents"));
   });

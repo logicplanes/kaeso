@@ -73,7 +73,7 @@ export function presetDraft(cat: AgentCatalogue, g: Grantable, id: PresetId): Ag
     ),
     account: [...new Set([ACCOUNT_VIEW, ...within(presetPart(cat, id, "account"), g.account)])],
     orgs,
-    future: { on: false, rights: presetPart(cat, id, "org"), projectRights: presetPart(cat, id, "project") },
+    future: { on: true, rights: presetPart(cat, id, "org"), projectRights: presetPart(cat, id, "project") },
   };
 }
 
@@ -187,7 +187,7 @@ const changes = (right: string) => !/\.view(\.|$)/.test(right) && right !== "api
 
 export const listOf = (items: string[]): string => new Intl.ListFormat(locale(), { type: "conjunction" }).format(items);
 
-export function summary(cat: AgentCatalogue, g: Grantable, d: AgentDraft): string {
+function scopeWords(cat: AgentCatalogue, g: Grantable, d: AgentDraft) {
   const categoryOf = new Map<string, string>();
   for (const scope of ["org", "project"] as const) for (const c of cat[scope].categories) for (const r of c.rights) categoryOf.set(r.id, c.id);
   const managed = new Set<Topic>();
@@ -206,24 +206,72 @@ export function summary(cat: AgentCatalogue, g: Grantable, d: AgentDraft): strin
   }
   for (const topic of managed) read.delete(topic);
   const order = Object.keys(TOPICS) as Topic[];
-  const words = (s: Set<Topic>) => listOf(order.filter((x) => s.has(x)).map((x) => TOPICS[x]()));
+  const words = (has: (x: Topic) => boolean) => {
+    const [first = "", second = "", ...rest] = order.filter(has).map((x) => TOPICS[x]());
+    return listOf(rest.length > 1 ? [first, second, t("kaeso.agents.more", "{count} more", { count: rest.length })] : [first, second, ...rest].filter(Boolean));
+  };
   const orgs = orgNames.length > 2 ? t("kaeso.agents.orgCount", "{count} organizations", { count: orgNames.length }) : listOf(orgNames);
+  const acts = orgNames.length > 0 && managed.size + read.size > 0;
+  return {
+    managed: words((x) => managed.has(x)),
+    read: words((x) => read.has(x)),
+    unmanaged: words((x) => !managed.has(x)),
+    unread: words((x) => !read.has(x) && !managed.has(x)),
+    manages: managed.size > 0,
+    reads: read.size > 0,
+    managesAll: managed.size === order.length,
+    managesMost: managed.size >= order.length - 3,
+    readsMost: !managed.size && read.size >= order.length - 3,
+    orgs,
+    acts,
+  };
+}
+
+export function summary(cat: AgentCatalogue, g: Grantable, d: AgentDraft): string {
+  const w = scopeWords(cat, g, d);
   const instance = d.instance.length
     ? d.instance.some(changes)
-      ? t("kaeso.agents.summaryInstanceManage", "Also helps administer the instance.")
+      ? t("kaeso.agents.summaryInstanceManage", "Also helps run the instance.")
       : t("kaeso.agents.summaryInstanceRead", "Also reads the instance.")
     : "";
-  const main =
-    !orgNames.length || (!managed.size && !read.size)
-      ? d.future.on
-        ? t("kaeso.agents.summaryFutureOnly", "Acts only in organizations you join later.")
-        : t("kaeso.agents.summaryNothing", "Can read your profile, nothing in your organizations.")
-      : t(
-          "kaeso.agents.summary",
-          "{kind, select, both {Can manage {managed} and read {read} in {orgs}.} manage {Can manage {managed} in {orgs}.} other {Can read {read} in {orgs}.}}",
-          { kind: managed.size && read.size ? "both" : managed.size ? "manage" : "read", managed: words(managed), read: words(read), orgs },
-        );
+  const main = !w.acts
+    ? d.future.on
+      ? t("kaeso.agents.summaryFutureOnly", "Acts only in organizations you join later.")
+      : t("kaeso.agents.summaryNothing", "Reads your profile, nothing in your organizations.")
+    : t(
+        "kaeso.agents.summary",
+        "{kind, select, both {Manages {managed} and reads the rest in {orgs}.} manage {Manages {managed} in {orgs}.} other {Reads {read} in {orgs}.}}",
+        { kind: w.manages && w.reads ? "both" : w.manages ? "manage" : "read", managed: w.managed, read: w.read, orgs: w.orgs },
+      );
   return instance ? `${main} ${instance}` : main;
+}
+
+export function summaryLines(cat: AgentCatalogue, g: Grantable, d: AgentDraft): string[] {
+  const w = scopeWords(cat, g, d);
+  const lines: string[] = [];
+  if (w.acts && w.manages)
+    lines.push(
+      w.managesAll
+        ? t("kaeso.agents.lineManageAll", "Manages all of {orgs}", { orgs: w.orgs })
+        : w.managesMost
+          ? t("kaeso.agents.lineManageMost", "Manages all of {orgs} except {topics}", { orgs: w.orgs, topics: w.unmanaged })
+          : t("kaeso.agents.lineManage", "Manages {topics} in {orgs}", { topics: w.managed, orgs: w.orgs }),
+    );
+  if (w.acts && w.reads)
+    lines.push(
+      w.manages
+        ? t("kaeso.agents.lineReadRest", "Reads the rest of {orgs}", { orgs: w.orgs })
+        : w.readsMost
+          ? t("kaeso.agents.lineReadMost", "Reads all of {orgs} except {topics}", { orgs: w.orgs, topics: w.unread })
+          : t("kaeso.agents.lineRead", "Reads {topics} in {orgs}", { topics: w.read, orgs: w.orgs }),
+    );
+  if (d.future.on) lines.push(t("kaeso.agents.lineFuture", "Also in organizations you join later"));
+  if (d.instance.length)
+    lines.push(
+      d.instance.some(changes) ? t("kaeso.agents.lineInstanceManage", "Helps run the instance") : t("kaeso.agents.lineInstanceRead", "Reads the instance"),
+    );
+  if (!lines.length) lines.push(t("kaeso.agents.lineProfile", "Reads your profile, nothing else"));
+  return lines;
 }
 
 function withNeeds(cat: AgentCatalogue, scope: "instance" | "account" | "org" | "project", rights: Iterable<string>): string[] {

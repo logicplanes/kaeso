@@ -185,7 +185,6 @@
   "account.backToAgents": "返回智能体",
   "account.copyMcpUrl": "复制 MCP 服务器地址",
   "account.mcpServer": "MCP 服务器",
-  "account.mcpServerHint": "将此地址添加到智能体；它会在这里登录。",
   "account.noAgents": "尚无智能体",
   "account.noAgentsHint": "在 Claude Code、Codex 或其他智能体中添加 MCP 服务器，然后从那里登录。",
   "account.revokeAgent": "撤销",

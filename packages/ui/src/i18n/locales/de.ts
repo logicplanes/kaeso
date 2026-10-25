@@ -1,6 +1,6 @@
 const de: Readonly<Record<string, string>> = {
-  "agentAttribution.label": "{name} über {agent} ({harness})",
-  "agentAvatar.otherHarness": "Andere",
+  "agentAttribution.label": "{name} über {agent} ({model})",
+  "agentAvatar.unknownModel": "Unbekannt",
   "alertDialog.cancel": "Abbrechen",
   "alertDialog.typeToConfirm": "Zur Bestätigung {text} eingeben",
   "appFrame.expandSidebar": "Seitenleiste ausklappen",

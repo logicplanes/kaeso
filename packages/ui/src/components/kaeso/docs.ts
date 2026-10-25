@@ -21,6 +21,14 @@ export const docs = {
       sources: "What the access comes from, as chips above the rows: the member's roles.",
     },
   },
+  GrantSummary: {
+    description: "What an agent or a key may do, one short line each after a check mark, on a group surface.",
+    props: {
+      "aria-label": 'The list\'s accessible name ("What it can do").',
+      footer: "A quiet note under the lines, such as how long it lasts.",
+      items: "The lines, short and without a final period.",
+    },
+  },
   EnvironmentSnippet: {
     description: "The gateway's base URL and a key placeholder to copy, with snippets per SDK.",
     props: {

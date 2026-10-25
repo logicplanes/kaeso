@@ -66,8 +66,7 @@ export function agentView(overrides: Partial<AgentView> = {}): AgentView {
   return {
     id: AGENT,
     name: "Release helper",
-    harness: "claude_code",
-    model: null,
+    model: "claude",
     client: "Claude Code",
     grant: grantBody(),
     created_at: "2026-10-01T12:00:00Z",
@@ -81,8 +80,7 @@ export function orgAgent(overrides: Partial<OrgAgentView> = {}): OrgAgentView {
   return {
     id: AGENT,
     name: "Release helper",
-    harness: "codex",
-    model: null,
+    model: "gpt",
     user: { id: USER, name: "Ada Okafor", email: "ada@northwind.test", state: "active", avatar_url: null },
     created_at: "2026-10-01T12:00:00Z",
     last_used_at: null,

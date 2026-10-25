@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { AgentAvatar, Badge, Empty, InlineCopyText, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { AgentAvatar, Badge, Code, CopyButton, Empty, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
-import { harnessLabel } from "~/format/harness";
+import { modelLabel } from "~/format/model";
 import type { AgentView } from "~/api/generated/types";
 import { agentCatalogueQuery, agentsQuery, grantableQuery } from "~/api/queries/agents";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -28,14 +28,18 @@ export function AgentsPage() {
     <SettingsPage
       title={t("account.agents", "Agents")}
       context={t("account.title", "Account")}
-      description={t("account.agentsHint", "Agents act for you through Kaeso's MCP server with the rights you gave them.")}
+      description={t("account.agentsHint", "Add the MCP server to an agent; it acts with the rights you give it.")}
     >
       <SettingsSection>
         <SettingsGroup>
           <SettingsRow
             title={t("account.mcpServer", "MCP server")}
-            description={t("account.mcpServerHint", "Add this address to your agent; it signs in here.")}
-            control={<InlineCopyText value={mcpUrl()} label={t("account.copyMcpUrl", "Copy the MCP server address")} />}
+            description={
+              <span className="flex min-w-0 items-center gap-8">
+                <Code>{mcpUrl()}</Code>
+                <CopyButton value={mcpUrl()} label={t("account.copyMcpUrl", "Copy the MCP server address")} size="xs" />
+              </span>
+            }
           />
         </SettingsGroup>
       </SettingsSection>
@@ -57,9 +61,9 @@ export function AgentsPage() {
                 href={`/settings/account/agents/${a.id}`}
                 title={
                   <span className="flex flex-wrap items-center gap-8">
-                    <AgentAvatar harness={a.harness} name={a.name} size={24} decorative />
+                    <AgentAvatar model={a.model} name={a.name} size={24} decorative />
                     {a.name}
-                    <Badge>{harnessLabel(a.harness)}</Badge>
+                    <Badge>{modelLabel(a.model)}</Badge>
                   </span>
                 }
                 description={
