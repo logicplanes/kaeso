@@ -2,7 +2,7 @@
 
 Mistral, provider id `mistral`, base URL `https://api.mistral.ai`, `POST /v1/chat/completions` and `GET /v1/models` with `Authorization: Bearer`. API reference: https://docs.mistral.ai/api/ and its OpenAPI document https://docs.mistral.ai/openapi.yaml, read on 2026-10-19; SDK types: `mistralai/client-python` at commit `6229ed96cb5b`.
 
-Every file under `responses/`, `streams/` and `errors/` was recorded live with `cargo xtask record` on 2026-10-19 (`RECORDED.md` in each folder names the request and model). The exception is `errors/recorded-greedy-sampling.json`: Mistral's body as Kaeso 0.4.2 quoted it whole when aider sent `requests/greedy-sampling.json` to `mistral-large-4` through it on 2026-10-24. The requests under `requests/` are written for Mistral: they use its own fields or show what it refuses. `recorded-invalid-api-key` was recorded with a placeholder key. The two files under `models/` are live `GET /v1/models` and `GET /v1/models/ministral-3b-latest` replies; the list keeps 6 of 54 models, unchanged otherwise.
+Every file under `responses/`, `streams/` and `errors/` was recorded live with `cargo xtask record` on 2026-10-19 (`RECORDED.md` in each folder names the request and model). The exception is `errors/recorded-greedy-sampling.json`: Mistral's body as the gateway quoted it whole when aider sent `requests/greedy-sampling.json` to `mistral-large-4` through it on 2026-10-24. The requests under `requests/` are written for Mistral: they use its own fields or show what it refuses. `recorded-invalid-api-key` was recorded with a placeholder key. The two files under `models/` are live `GET /v1/models` and `GET /v1/models/ministral-3b-latest` replies; the list keeps 6 of 54 models, unchanged otherwise.
 
 ## Chat profile
 
