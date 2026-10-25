@@ -79,7 +79,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [deprecated, setDeprecated] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [review, setReview] = useState<{ preview: Preview; draft: FieldDraft } | null>(null);
-  const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft }>(emptyCustom());
+  const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft; found?: boolean }>(emptyCustom());
   const search = useDebounced(q.trim(), 250);
   const hits = useQuery({
     ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }),
@@ -88,6 +88,10 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const current = useQuery({ ...currentModelsQuery(org, project, provider), enabled: open && !!provider && !ownProvider });
   const offered = useQuery({ ...offeredModelsQuery(org, project, provider), enabled: open && ownProvider });
   const offeredIds = (offered.data ?? []).filter((m) => !m.catalogue_model_id).map((m) => m.model_id);
+  const detectedFor = (modelId: string) => {
+    const fields = offered.data?.find((m) => m.model_id === modelId)?.detected;
+    return fields && Object.keys(fields).length ? fields : undefined;
+  };
   const addable = current.data?.not_in_catalogue ?? 0;
 
   const invalidates = [["orgs", org, "projects", project, "models"]];
@@ -130,8 +134,12 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     }
   };
 
+  const ownDraft = (modelId: string) => {
+    const detected = detectedFor(modelId);
+    return { draft: { ...draftFrom(detected ?? {}), egress_dialect: dialects[0] ?? "" }, found: !!detected };
+  };
   const typeOwn = (modelId: string) => {
-    setCustom({ modelId, preview: null, checked: !!modelId, draft: { ...draftFrom({}), egress_dialect: dialects[0] ?? "" } });
+    setCustom({ modelId, preview: null, checked: !!modelId, ...ownDraft(modelId) });
     setView("custom");
   };
 
@@ -252,7 +260,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           )}
         </div>
         <Text variant="small" tone="secondary">
-          {t("models.ownValuesHint", "Kaeso can't know the prices, limits or capabilities of {provider}'s models; you enter them next.", {
+          {t("models.ownValuesHint", "Kaeso fills in the limits and capabilities it can find for {provider}'s models; you set their prices next.", {
             provider: name,
           })}
         </Text>
@@ -383,7 +391,9 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
             description={t("models.modelIdHint", "The id {provider} uses, sent as `model`.", { provider: name })}
             suggestions={offeredIds}
             value={custom.modelId}
-            onValueChange={(modelId) => setCustom({ ...custom, modelId, checked: !!modelId.trim() })}
+            onValueChange={(modelId) =>
+              setCustom({ ...custom, modelId, checked: !!modelId.trim(), ...(detectedFor(modelId) ? ownDraft(modelId) : { found: false }) })
+            }
           />
         ) : (
           <Input
@@ -397,7 +407,14 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           />
         )}
         {custom.checked &&
-          (ownProvider ? (
+          (ownProvider && custom.found ? (
+            <Banner tone="info">
+              {t("models.ownFound", "Kaeso filled in what {provider} and models.dev say about {model}; check it and set its prices.", {
+                provider: name,
+                model: custom.modelId,
+              })}
+            </Banner>
+          ) : ownProvider ? (
             <Banner tone="neutral">
               {t(
                 "models.ownUnknown",

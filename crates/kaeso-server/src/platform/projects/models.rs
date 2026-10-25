@@ -8,7 +8,7 @@ use kaeso_core::decimal_input::FieldsInput;
 use kaeso_core::id::{CatalogueModelId, OrgId, ProjectId};
 use kaeso_core::provider::ProviderId;
 use kaeso_core::providers::{OrgProviders, ProviderRef};
-use kaeso_kpp::ErrorKind;
+use kaeso_kpp::{ErrorKind, ModelInfo};
 use kaeso_store::pg::catalogue::{self, EntryRow, NewEntry};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -25,6 +25,7 @@ use crate::platform::precondition::{IfMatch, etag};
 use crate::services::availability::{self, Unlisted};
 use crate::services::catalogue as service;
 use crate::services::credentials::ResolveError;
+use crate::services::provider_detection;
 use crate::state::AppState;
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -492,6 +493,24 @@ pub async fn preview(
     }))
 }
 
+// A custom server's prices are its operator's own, so the same model's price on
+// models.dev would charge budgets at someone else's rate.
+fn detected_fields(snapshot: &kaeso_core::models_dev::Snapshot, m: &ModelInfo) -> Fields {
+    let known = snapshot
+        .same_model(&m.id)
+        .map(Fields::from_models_dev)
+        .unwrap_or_default();
+    Fields {
+        context_limit: provider_detection::context_limit(m).or(known.context_limit),
+        output_limit: m.max_output_tokens.or(known.output_limit),
+        input_price: None,
+        output_price: None,
+        cache_read_price: None,
+        cache_write_price: None,
+        ..known
+    }
+}
+
 #[derive(Debug, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct OfferedParams {
@@ -508,12 +527,16 @@ pub struct OfferedModel {
     pub model_id: String,
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
+    #[doc = "Values to start its entry from: the limits the listing gives, and the\n\
+        inputs, outputs, limits and capabilities of the model models.dev lists\n\
+        under the same name. Never prices."]
+    pub detected: Fields,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(
-    description = "The model ids a custom provider's model listing names; their values, such as\n\
-    prices and limits, are set by hand when one is added."
+    description = "The model ids a custom provider's model listing names, with the values Kaeso\n\
+    could find for them; prices are set by hand when one is added."
 )]
 pub struct OfferedModels {
     #[doc = "The ids, sorted."]
@@ -566,7 +589,7 @@ pub async fn offered(
         message,
         retry_after: None,
     };
-    let ids = availability::model_ids(&state, &credential, &prov)
+    let listed = availability::listed_models(&state, &credential, &prov)
         .await
         .map_err(|e| match e {
             Unlisted::Unreached(e) => unlisted(StatusCode::BAD_GATEWAY, e.message),
@@ -590,15 +613,17 @@ pub async fn offered(
             },
         })?;
     let rows = catalogue::list(&state.pg, project.id).await?;
+    let loaded = state.models_dev.current();
     Ok(Json(OfferedModels {
-        data: ids
+        data: listed
             .into_iter()
-            .map(|model_id| OfferedModel {
+            .map(|m| OfferedModel {
                 catalogue_model_id: rows
                     .iter()
-                    .find(|r| r.provider == id && r.model_id == model_id)
+                    .find(|r| r.provider == id && r.model_id == m.id)
                     .map(|r| CatalogueModelId::from_uuid(r.id)),
-                model_id,
+                detected: detected_fields(&loaded.snapshot, &m),
+                model_id: m.id,
             })
             .collect(),
     }))

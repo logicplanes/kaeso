@@ -244,7 +244,9 @@ test("provider keys: several per provider, one default, assigned to a project, r
   await expect(page.getByText("…0p1c")).toHaveCount(0);
 });
 
-test("custom providers: one is added on its tab, gets a key and a priced model, and goes with both when deleted", async ({ page }) => {
+test("custom providers: one is detected from its base URL and key, added with the key, gets a priced model, and goes with both when deleted", async ({
+  page,
+}) => {
   await openOrgSettings(page, "General");
   const org = /\/settings\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
   await page.goto(`/orgs/${org}/providers?tab=custom`);
@@ -252,27 +254,24 @@ test("custom providers: one is added on its tab, gets a key and a priced model, 
   await expect(page.getByText("No custom providers yet")).toBeVisible();
   await page.getByRole("button", { name: "Add custom provider" }).first().click();
   const add = page.getByRole("dialog", { name: "Add custom provider" });
+  await add.getByRole("textbox", { name: "Base URL" }).fill("http://provider:8080/v1");
+  await add.getByLabel("API key", { exact: true }).fill("lab-mock-key-000000000001");
+  await add.getByRole("button", { name: "Detect settings" }).click();
+  await expect(add.getByRole("heading", { name: "Check what Kaeso found" })).toBeVisible();
+  await expect(add.getByText(/^The server lists 7 models: gpt-5\.4-mini, /)).toBeVisible();
+  await expect(add.getByRole("textbox", { name: "Base URL" })).toHaveValue("http://provider:8080/");
+  await expect(add.getByRole("combobox", { name: "API format" })).toContainText("OpenAI Chat Completions");
+  await expect(add.getByRole("combobox", { name: "Key" })).toContainText("Bearer token");
   await add.getByRole("textbox", { name: "Name" }).fill("Research vLLM");
   await expect(add.getByRole("textbox", { name: "Id" })).toHaveValue("research-vllm");
-  await add.getByRole("textbox", { name: "Base URL" }).fill("http://provider:8080");
   await add.getByRole("button", { name: "Add custom provider" }).click();
   await expect(toastText(page, "Research vLLM added")).toBeVisible();
   const row = page.getByRole("row").filter({ hasText: "research-vllm" });
   await expect(row.getByText("OpenAI Chat Completions")).toBeVisible();
-  await expect(row.getByText("Not used yet")).toBeVisible();
+  await expect(row.getByText("1 key · 0 models")).toBeVisible();
 
   await page.getByRole("tab", { name: /Provider keys/ }).click();
-  await page.getByRole("button", { name: "Add provider key", exact: true }).click();
-  const key = page.getByRole("dialog", { name: "Add provider key" });
-  await key.getByRole("option", { name: /^Research vLLM/ }).click();
-  await key.getByRole("button", { name: "Continue" }).click();
-  await expect(key.getByText("Paste the key that Research vLLM expects.")).toBeVisible();
-  await key.getByRole("textbox", { name: "Research vLLM API key", exact: true }).fill("lab-mock-key-000000000001");
-  await key.getByLabel("Name", { exact: true }).fill("Lab");
-  const submit = key.getByRole("button", { name: "Add key" });
-  if (!(await submit.isVisible())) await key.getByRole("button", { name: "Continue" }).click();
-  await submit.click();
-  await expect(toastText(page, /^(Research vLLM · Lab added|Lab is the Research vLLM default)$/)).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "Research vLLM" }).first()).toBeVisible();
 
   const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as {
     data: { org_id: string; projects: { id: string; is_default: boolean }[] }[];
@@ -286,11 +285,9 @@ test("custom providers: one is added on its tab, gets a key and a priced model, 
   const model = ((await listed.textContent()) ?? "").trim();
   await listed.click();
   const values = page.getByRole("dialog", { name: "Add a Research vLLM model" });
-  await expect(values.getByText(/Kaeso can't know these values for Research vLLM/)).toBeVisible();
-  await values.getByRole("checkbox", { name: "Text" }).first().click();
-  await values.getByRole("checkbox", { name: "Text" }).nth(1).click();
-  await values.getByRole("textbox", { name: "Context" }).fill("32768");
-  await values.getByRole("textbox", { name: "Output limit" }).fill("4096");
+  await expect(values.getByText(`Kaeso filled in what Research vLLM and models.dev say about ${model}; check it and set its prices.`)).toBeVisible();
+  await expect(values.getByRole("textbox", { name: "Context" })).not.toHaveValue("");
+  await expect(values.getByRole("textbox", { name: "Input price" })).toHaveValue("");
   await values.getByRole("textbox", { name: "Input price" }).fill("0.1");
   await values.getByRole("textbox", { name: "Output price" }).fill("0.2");
   await values.getByRole("button", { name: "Add model" }).click();

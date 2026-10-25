@@ -252,12 +252,49 @@ impl<'de> Deserialize<'de> for Draft {
     }
 }
 
-fn base_url(text: &str) -> Result<Url, Problem> {
+const API_PATHS: [&str; 7] = [
+    "/chat/completions",
+    "/responses/input_tokens",
+    "/responses",
+    "/messages/count_tokens",
+    "/messages",
+    "/embeddings",
+    "/models",
+];
+
+// Kaeso appends `/v1/…` to the base URL, so a pasted endpoint or a base URL that already
+// ends in `/v1` would otherwise send requests to `/v1/v1/…`.
+fn without_api_path(path: &str) -> &str {
+    let mut path = path.trim_end_matches('/');
+    if let Some(rest) = API_PATHS
+        .iter()
+        .find_map(|p| path.strip_suffix(p).filter(|rest| rest.ends_with("/v1")))
+    {
+        path = rest;
+    }
+    while let Some(rest) = path.strip_suffix("/v1") {
+        path = rest.trim_end_matches('/');
+    }
+    path
+}
+
+pub fn has_scheme(text: &str) -> bool {
+    text.trim().contains("://")
+}
+
+pub fn base_url(text: &str) -> Result<Url, Problem> {
     let text = text.trim();
     if text.is_empty() || text.len() > MAX_BASE_URL_LEN {
         return Err(Problem::BaseUrlLength);
     }
-    let url = Url::parse(text).map_err(|_| Problem::BaseUrlHost)?;
+    let mut url = if has_scheme(text) {
+        Url::parse(text)
+    } else {
+        Url::parse(&format!("https://{text}"))
+    }
+    .map_err(|_| Problem::BaseUrlHost)?;
+    let path = without_api_path(url.path()).to_owned();
+    url.set_path(&path);
     if !matches!(url.scheme(), "https" | "http") {
         return Err(Problem::BaseUrlScheme);
     }
@@ -545,6 +582,70 @@ mod tests {
                 && !r.refuses_key("Incorrect API key provided")
         );
         assert_eq!(r.metric_label(), "custom");
+    }
+
+    #[test]
+    fn a_base_url_loses_the_api_path_kaeso_adds_itself_and_gets_https_without_a_scheme() {
+        let normalized = |text: &str| base_url(text).unwrap().as_str().to_owned();
+        for (given, kept) in [
+            ("https://vllm.example.com", "https://vllm.example.com/"),
+            ("  https://vllm.example.com/  ", "https://vllm.example.com/"),
+            ("https://vllm.example.com/v1", "https://vllm.example.com/"),
+            ("https://vllm.example.com/v1/", "https://vllm.example.com/"),
+            (
+                "https://vllm.example.com/v1/v1",
+                "https://vllm.example.com/",
+            ),
+            (
+                "https://vllm.example.com//v1//",
+                "https://vllm.example.com/",
+            ),
+            (
+                "https://vllm.example.com/v1/chat/completions",
+                "https://vllm.example.com/",
+            ),
+            (
+                "https://proxy.example.com/llm/v1/messages",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/llm/v1/messages/count_tokens",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/llm/v1/responses/input_tokens",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/llm/v1/models",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/llm/v1/embeddings",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/llm/",
+                "https://proxy.example.com/llm",
+            ),
+            (
+                "https://proxy.example.com/models",
+                "https://proxy.example.com/models",
+            ),
+            (
+                "https://proxy.example.com/v1-proxy",
+                "https://proxy.example.com/v1-proxy",
+            ),
+            ("vllm.example.com", "https://vllm.example.com/"),
+            ("vllm.example.com:8443/v1", "https://vllm.example.com:8443/"),
+            ("http://localhost:11434/v1", "http://localhost:11434/"),
+        ] {
+            assert_eq!(normalized(given), kept, "{given}");
+        }
+        assert!(has_scheme("http://localhost:8000"));
+        assert!(!has_scheme("localhost:8000"));
+        let p = CustomProvider::new(draft("my-vllm", "https://vllm.example.com/v1")).unwrap();
+        assert_eq!(p.base_url().as_str(), "https://vllm.example.com/");
     }
 
     #[test]

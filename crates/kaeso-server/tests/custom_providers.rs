@@ -1382,3 +1382,445 @@ async fn a_custom_providers_model_listing_offers_model_ids_to_add() {
         .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
 }
+
+#[derive(Clone, Copy, PartialEq)]
+enum Shape {
+    OpenAi,
+    Anthropic,
+    Unlisted,
+    Page,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum Takes {
+    Bearer,
+    XApiKey,
+    Either,
+    Nothing,
+}
+
+type Seen = Arc<std::sync::Mutex<Vec<(String, String, Vec<u8>)>>>;
+
+#[derive(Clone)]
+struct Lab {
+    shape: Shape,
+    takes: Takes,
+    routes: &'static [&'static str],
+    seen: Seen,
+}
+
+const OPENAI_MODELS: &str = r#"{"object":"list","data":[
+    {"id":"meta-llama/Llama-3.3-70B-Instruct","object":"model","created":1730000000,"owned_by":"vllm","max_model_len":131072},
+    {"id":"BAAI/bge-m3","object":"model","created":1730000000,"owned_by":"vllm"}]}"#;
+
+const ANTHROPIC_MODELS: &str = r#"{"data":[
+    {"id":"lab-sonnet","type":"model","display_name":"Lab Sonnet","created_at":"2025-05-14T00:00:00Z","max_input_tokens":200000,"max_tokens":64000}],
+    "has_more":false,"first_id":"lab-sonnet","last_id":"lab-sonnet"}"#;
+
+async fn lab_answer(
+    lab: Lab,
+    method: axum::http::Method,
+    uri: axum::http::Uri,
+    headers: axum::http::HeaderMap,
+    body: axum::body::Bytes,
+) -> (StatusCode, [(&'static str, &'static str); 1], String) {
+    use axum::http::Method as M;
+    let path = uri.path().to_owned();
+    lab.seen
+        .lock()
+        .unwrap()
+        .push((method.to_string(), path.clone(), body.to_vec()));
+    let bearer = headers.get("authorization").and_then(|v| v.to_str().ok())
+        == Some(format!("Bearer {LAB_SECRET}").as_str());
+    let x_api_key = headers.get("x-api-key").and_then(|v| v.to_str().ok()) == Some(LAB_SECRET);
+    let allowed = match lab.takes {
+        Takes::Bearer => bearer,
+        Takes::XApiKey => x_api_key,
+        Takes::Either => bearer || x_api_key,
+        Takes::Nothing => true,
+    };
+    let json = [("content-type", "application/json")];
+    if lab.shape == Shape::Page {
+        return (
+            StatusCode::OK,
+            [("content-type", "text/html")],
+            "<html>Welcome</html>".into(),
+        );
+    }
+    if !allowed {
+        return (
+            StatusCode::UNAUTHORIZED,
+            json,
+            r#"{"error":{"message":"Invalid API key","type":"authentication_error"}}"#.into(),
+        );
+    }
+    match (method, path.as_str()) {
+        (M::GET, "/v1/models") => match lab.shape {
+            Shape::OpenAi => (StatusCode::OK, json, OPENAI_MODELS.into()),
+            Shape::Anthropic => (StatusCode::OK, json, ANTHROPIC_MODELS.into()),
+            Shape::Unlisted | Shape::Page => (StatusCode::NOT_FOUND, json, "{}".into()),
+        },
+        (M::POST, p) if lab.routes.contains(&p) => (
+            StatusCode::BAD_REQUEST,
+            json,
+            r#"{"error":{"message":"Field required: model","type":"invalid_request_error"}}"#
+                .into(),
+        ),
+        _ => (
+            StatusCode::NOT_FOUND,
+            json,
+            r#"{"detail":"Not Found"}"#.into(),
+        ),
+    }
+}
+
+async fn lab(shape: Shape, takes: Takes, routes: &'static [&'static str]) -> (String, Lab) {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let state = Lab {
+        shape,
+        takes,
+        routes,
+        seen: Arc::default(),
+    };
+    let served = state.clone();
+    let router = axum::Router::new().fallback(move |method, uri, headers, body| {
+        lab_answer(served.clone(), method, uri, headers, body)
+    });
+    tokio::spawn(async move { axum::serve(listener, router).await });
+    (format!("127.0.0.1:{}", addr.port()), state)
+}
+
+async fn detect(app: &App, owner: &Owner, body: Value) -> common::Resp {
+    app.post(
+        &format!("/orgs/{}/custom-provider-detection", owner.org_id),
+        body,
+        Some(&owner.cookie),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn kaeso_detects_an_openai_compatible_server_from_its_base_url_and_key() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let (host, lab) = lab(
+        Shape::OpenAi,
+        Takes::Bearer,
+        &["/v1/chat/completions", "/v1/embeddings"],
+    )
+    .await;
+
+    let found = detect(
+        &app,
+        &owner,
+        json!({ "base_url": format!("http://{host}/v1/"), "key": LAB_SECRET }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        found.body,
+        json!({
+            "base_url": format!("http://{host}/"),
+            "name": "127.0.0.1",
+            "id": "127-0-0-1",
+            "auth": "bearer",
+            "generation": "openai_chat",
+            "embeddings": "openai_embeddings",
+            "count_tokens": null,
+            "models": [
+                { "model_id": "BAAI/bge-m3", "context_limit": null, "output_limit": null },
+                { "model_id": "meta-llama/Llama-3.3-70B-Instruct", "context_limit": 131072, "output_limit": null },
+            ],
+        })
+    );
+    let seen = lab.seen.lock().unwrap().clone();
+    assert!(
+        seen.iter()
+            .all(|(method, _, body)| method == "GET" || body.as_slice() == b"{}"),
+        "every probe sends an empty body, so nothing is generated: {seen:?}"
+    );
+    assert!(!found.body.to_string().contains(LAB_SECRET));
+
+    add_provider(
+        &app,
+        &owner,
+        json!({
+            "id": found.body["id"], "name": found.body["name"], "base_url": format!("http://{host}/v1"),
+            "auth": found.body["auth"], "generation": found.body["generation"], "embeddings": found.body["embeddings"],
+        }),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let again = detect(
+        &app,
+        &owner,
+        json!({ "base_url": format!("http://{host}"), "key": LAB_SECRET }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        again.body["id"], "127-0-0-1-2",
+        "the id the org already has is skipped"
+    );
+    let listed = app
+        .get(
+            &format!("/orgs/{}/custom-providers", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        listed.body["data"][0]["base_url"],
+        format!("http://{host}/"),
+        "a base URL that ends in `/v1` loses it when the provider is added"
+    );
+}
+
+#[tokio::test]
+async fn kaeso_detects_anthropic_and_responses_servers_and_their_token_counting() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+
+    for takes in [Takes::XApiKey, Takes::Either] {
+        let (host, _) = lab(
+            Shape::Anthropic,
+            takes,
+            &["/v1/messages", "/v1/messages/count_tokens"],
+        )
+        .await;
+        let found = detect(
+            &app,
+            &owner,
+            json!({ "base_url": format!("http://{host}/v1/messages"), "key": LAB_SECRET }),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+        assert_eq!(found.body["base_url"], format!("http://{host}/"));
+        assert_eq!(found.body["auth"], "x_api_key");
+        assert_eq!(found.body["generation"], "anthropic_messages");
+        assert_eq!(found.body["count_tokens"], "anthropic_messages");
+        assert_eq!(found.body["embeddings"], Value::Null);
+        assert_eq!(
+            found.body["models"],
+            json!([{ "model_id": "lab-sonnet", "context_limit": 200000, "output_limit": 64000 }])
+        );
+    }
+
+    let (host, _) = lab(
+        Shape::OpenAi,
+        Takes::Bearer,
+        &["/v1/responses", "/v1/responses/input_tokens"],
+    )
+    .await;
+    let found = detect(
+        &app,
+        &owner,
+        json!({ "base_url": format!("http://{host}"), "key": LAB_SECRET }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(found.body["generation"], "openai_responses");
+    assert_eq!(found.body["count_tokens"], "openai_responses");
+    assert_eq!(found.body["embeddings"], Value::Null);
+}
+
+#[tokio::test]
+async fn a_server_without_a_model_listing_or_a_key_is_found_by_its_routes_over_plain_http() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+
+    let (host, _) = lab(Shape::Unlisted, Takes::Nothing, &["/v1/chat/completions"]).await;
+    let found = detect(&app, &owner, json!({ "base_url": host.clone() }))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        found.body["base_url"],
+        format!("http://{host}/"),
+        "plain http once https fails"
+    );
+    assert_eq!(found.body["auth"], "none");
+    assert_eq!(found.body["generation"], "openai_chat");
+    assert_eq!(found.body["models"], Value::Null);
+
+    let (host, _) = lab(Shape::Unlisted, Takes::XApiKey, &["/v1/messages"]).await;
+    let found = detect(
+        &app,
+        &owner,
+        json!({ "base_url": format!("http://{host}"), "key": LAB_SECRET }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(found.body["auth"], "x_api_key");
+    assert_eq!(found.body["generation"], "anthropic_messages");
+    assert_eq!(found.body["count_tokens"], Value::Null);
+}
+
+#[tokio::test]
+async fn detection_checks_the_settings_it_is_given_and_says_what_to_fix() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let (openai, _) = lab(Shape::OpenAi, Takes::Bearer, &["/v1/chat/completions"]).await;
+    let (page, _) = lab(Shape::Page, Takes::Nothing, &[]).await;
+    let (bare, _) = lab(Shape::Unlisted, Takes::Nothing, &[]).await;
+    let closed = {
+        let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = l.local_addr().unwrap().port();
+        drop(l);
+        format!("http://127.0.0.1:{port}")
+    };
+    let openai = format!("http://{openai}");
+
+    let checked = detect(
+        &app,
+        &owner,
+        json!({ "base_url": openai, "key": LAB_SECRET, "auth": "bearer", "generation": "openai_chat", "embeddings": null }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(checked.body["generation"], "openai_chat");
+    assert_eq!(checked.body["embeddings"], Value::Null);
+
+    for (body, param, message) in [
+        (
+            json!({ "base_url": openai, "key": "sk-wrong-key-0000000000" }),
+            "key",
+            "The server refused the key; check it or choose another way to send it.",
+        ),
+        (
+            json!({ "base_url": openai, "key": LAB_SECRET, "auth": "x_api_key" }),
+            "auth",
+            "The server refused the key; check it or choose another way to send it.",
+        ),
+        (
+            json!({ "base_url": openai }),
+            "key",
+            "The server asks for a key; enter the key it takes.",
+        ),
+        (
+            json!({ "base_url": openai, "auth": "bearer" }),
+            "key",
+            "The server asks for a key; enter the key it takes.",
+        ),
+        (
+            json!({ "base_url": openai, "key": LAB_SECRET, "generation": "anthropic_messages" }),
+            "generation",
+            "The server has no `/v1/messages`; choose another API format.",
+        ),
+        (
+            json!({ "base_url": openai, "key": LAB_SECRET, "embeddings": "openai_embeddings" }),
+            "embeddings",
+            "The server has no `/v1/embeddings`; turn embeddings off.",
+        ),
+        (
+            json!({ "base_url": openai, "key": LAB_SECRET, "generation": "openai_responses", "count_tokens": "openai_responses" }),
+            "generation",
+            "The server has no `/v1/responses`; choose another API format.",
+        ),
+        (
+            json!({ "base_url": openai, "key": LAB_SECRET, "count_tokens": "anthropic_messages" }),
+            "count_tokens",
+            "`count_tokens` must be `null` or the `generation` format, which must count tokens.",
+        ),
+        (
+            json!({ "base_url": format!("http://{page}") }),
+            "base_url",
+            "`base_url` answers, but not in an API format Kaeso speaks; check the address.",
+        ),
+        (
+            json!({ "base_url": format!("http://{bare}") }),
+            "base_url",
+            "Kaeso found no API at `base_url`; give the address that comes before `/v1`.",
+        ),
+        (
+            json!({ "base_url": closed }),
+            "base_url",
+            "Kaeso can't reach `base_url`; check the address and that the server runs.",
+        ),
+        (
+            json!({ "base_url": "ftp://llm.example.com" }),
+            "base_url",
+            "`base_url` must start with `https://`, or `http://` for an allowed network.",
+        ),
+    ] {
+        let r = detect(&app, &owner, body.clone()).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{body}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], param, "{body}");
+        assert_eq!(r.body["error"]["message"], message, "{body}");
+    }
+
+    let other = TestServices::start().await;
+    let strict = App::start(&other).await;
+    let owner = strict.setup().await;
+    let r = detect(
+        &strict,
+        &owner,
+        json!({ "base_url": openai, "key": LAB_SECRET }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`base_url` points to an address this install does not allow."
+    );
+}
+
+#[tokio::test]
+async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_but_no_prices() {
+    let env = env().await;
+    let (host, _) = lab(Shape::OpenAi, Takes::Bearer, &["/v1/chat/completions"]).await;
+    provider(
+        &env.app,
+        &env.owner,
+        "lab",
+        &format!("http://{host}"),
+        "openai_chat",
+        "bearer",
+    )
+    .await;
+    key(&env.app, &env.owner, "lab", LAB_SECRET).await;
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/models/offered?provider=lab",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let llama = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "meta-llama/Llama-3.3-70B-Instruct")
+        .unwrap()
+        .clone();
+    let detected = &llama["detected"];
+    assert_eq!(
+        detected["context_limit"], 131072,
+        "the listing's own limit wins"
+    );
+    assert_eq!(detected["tool_call"], true, "models.dev knows the model");
+    assert_eq!(detected["input_modalities"], json!(["text"]));
+    for price in [
+        "input_price",
+        "output_price",
+        "cache_read_price",
+        "cache_write_price",
+    ] {
+        assert!(detected.get(price).is_none(), "{price}: {detected}");
+    }
+    let unknown = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "BAAI/bge-m3")
+        .unwrap()
+        .clone();
+    assert_eq!(unknown["detected"], json!({}), "{unknown}");
+}

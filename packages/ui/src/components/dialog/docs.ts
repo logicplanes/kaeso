@@ -86,7 +86,8 @@ export const docs = {
       result:
         "What the last step made, shown in the same dialog once it exists: its title, description, content, footer and size. Pass it after `onSubmit` succeeds, such as the created key with SecretReveal.",
       size: "The dialog's width.",
-      steps: "The steps, each with its title, content and whether it can be continued.",
+      steps:
+        'The steps, each with its title, content and whether it can be continued; `onContinue` checks a step before the next opens, such as asking a server, and `continueLabel` names that check: "Detect settings".',
       submitLabel: 'The last step\'s button: "Create key".',
       submitting: "Shows that the submission is underway; until it ends, the dialog stays open and Back and Cancel wait.",
       title: 'What the whole dialog does: "Create key".',

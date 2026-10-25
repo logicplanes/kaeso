@@ -17,7 +17,7 @@ Each model brings its prices, limits and capabilities from [models.dev](https://
 - **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. The dialog says how many models it adds, and warns before you add 50 or more.
 - **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it. An id can't be `.` or `..` or have either between slashes, because a URL would drop that part.
 
-For one of your organization's [custom providers](custom-providers.md#add-its-models), the dialog lists the model ids the provider's own listing names instead, and you enter every value by hand.
+For one of your organization's [custom providers](custom-providers.md#add-its-models), the dialog lists the model ids the provider's own listing names instead. It fills in the limits and capabilities it finds, and you enter the prices.
 
 The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
 

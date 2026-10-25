@@ -231,6 +231,16 @@ impl Snapshot {
     pub fn model_count(&self) -> usize {
         self.providers.values().map(|p| p.models.len()).sum()
     }
+
+    pub fn same_model(&self, id: &str) -> Option<&Model> {
+        let wanted = id.to_lowercase();
+        let tail = |id: &str| id.rsplit('/').next().unwrap_or(id).to_owned();
+        let models = || self.providers.values().flat_map(|p| p.models.iter());
+        models()
+            .find(|(m, _)| m.to_lowercase() == wanted)
+            .or_else(|| models().find(|(m, _)| tail(&m.to_lowercase()) == tail(&wanted)))
+            .map(|(_, model)| model)
+    }
 }
 
 #[cfg(test)]
@@ -270,6 +280,24 @@ mod tests {
                 && model.cost.as_ref().and_then(|c| c.input).is_some()
                 && model.limit.as_ref().and_then(|l| l.context).is_some()
         }));
+    }
+
+    #[test]
+    fn a_model_another_server_names_is_found_by_its_id_or_the_part_after_its_owner() {
+        let snapshot = embedded().unwrap();
+        let sonnet = snapshot.same_model("claude-sonnet-4-5").unwrap();
+        assert_eq!(sonnet.limit.as_ref().unwrap().output, Some(64_000));
+        let llama = snapshot
+            .same_model("meta-llama/Llama-3.3-70B-Instruct")
+            .unwrap();
+        assert_eq!(llama.tool_call, Some(true));
+        assert!(snapshot.same_model("Llama-3.3-70B-Instruct").is_some());
+        assert!(
+            snapshot
+                .same_model("research/llama-3.3-70b-instruct")
+                .is_some()
+        );
+        assert!(snapshot.same_model("my-finetune-v7").is_none());
     }
 
     #[test]

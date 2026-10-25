@@ -218,15 +218,15 @@ impl Asked<'_> {
         Ok(page)
     }
 
-    async fn every_page(&self) -> Result<Option<HashSet<String>>, KppError> {
-        let mut ids = HashSet::new();
+    async fn every_page(&self) -> Result<Option<Vec<ModelInfo>>, KppError> {
+        let mut models = Vec::new();
         let mut query = ModelsQuery::default();
         for _ in 0..MAX_LISTING_PAGES {
             let page = self.page(&query).await?;
             let last = page.models.last().map(|m| m.id.clone());
-            ids.extend(page.models.into_iter().map(|m| m.id));
+            models.extend(page.models);
             if !page.has_more {
-                return Ok(Some(ids));
+                return Ok(Some(models));
             }
             if last.is_none() || last == query.after_id {
                 return Ok(None);
@@ -239,7 +239,7 @@ impl Asked<'_> {
     async fn listing(&self) -> Listing {
         let provider = self.provider.id();
         match self.every_page().await {
-            Ok(Some(ids)) => Listing::Complete(ids),
+            Ok(Some(models)) => Listing::Complete(models.into_iter().map(|m| m.id).collect()),
             Ok(None) => {
                 tracing::info!(
                     provider,
@@ -336,11 +336,11 @@ pub enum Unlisted {
     Answered(KppError),
 }
 
-pub async fn model_ids(
+pub async fn listed_models(
     state: &AppState,
     credential: &Resolved,
     provider: &ProviderRef,
-) -> Result<Vec<String>, Unlisted> {
+) -> Result<Vec<ModelInfo>, Unlisted> {
     let asked = Asked {
         state,
         credential,
@@ -355,12 +355,11 @@ pub async fn model_ids(
             Unlisted::Answered(e)
         }
     })?;
-    let mut ids: Vec<String> = listed
-        .ok_or_else(|| Unlisted::Answered(KppError::provider("the model listing did not end")))?
-        .into_iter()
-        .collect();
-    ids.sort_unstable();
-    Ok(ids)
+    let mut models = listed
+        .ok_or_else(|| Unlisted::Answered(KppError::provider("the model listing did not end")))?;
+    models.sort_by(|a, b| a.id.cmp(&b.id));
+    models.dedup_by(|a, b| a.id == b.id);
+    Ok(models)
 }
 
 pub async fn record(state: &AppState, answer: &Answer<'_>) {
