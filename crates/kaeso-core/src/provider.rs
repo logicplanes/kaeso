@@ -379,6 +379,7 @@ pub const PROVIDERS: &[Provider] = &[
             .random_seed()
             .without_end_user()
             .without_prefill()
+            .without_message_bookkeeping()
             .thinking_parts()
             .refusing(&[
                 "audio",
@@ -655,6 +656,8 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
+        let grok = sent_with_profile("mistral", "requests/grok-cli-model-id").unwrap();
+        assert!(!grok.to_string().contains("model_id"), "{grok}");
     }
 
     #[test]

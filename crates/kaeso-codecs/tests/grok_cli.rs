@@ -2,6 +2,7 @@
 
 use std::path::Path;
 
+use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
 use kaeso_kpp::{DialectId, Request, RequestKind};
 use serde_json::Value;
@@ -25,7 +26,10 @@ fn grok_cli_request() -> (Vec<u8>, Request) {
 }
 
 fn send(target: DialectId, req: &Request) -> Value {
-    let mut ctx = EgressCtx::new(req);
+    send_with(target, req, EgressCtx::new(req))
+}
+
+fn send_with(target: DialectId, req: &Request, mut ctx: EgressCtx) -> Value {
     dispatch::check(target, req, &ctx).unwrap_or_else(|e| panic!("{target}: {e}"));
     let enc = dispatch::encode_request(target, req, &mut ctx).unwrap();
     serde_json::from_slice(&enc.body).unwrap()
@@ -48,4 +52,16 @@ fn replayed_model_ids_reach_a_chat_completions_provider_unchanged() {
     let sent = send(C, &req);
     let original: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(sent["messages"], original["messages"]);
+}
+
+#[test]
+fn a_chat_provider_that_forbids_undeclared_message_fields_gets_them_without_model_ids() {
+    let (body, req) = grok_cli_request();
+    let strict = ChatProfile::compatible("Example Cloud").without_message_bookkeeping();
+    let sent = send_with(C, &req, EgressCtx::new(&req).with_chat_profile(strict));
+    let mut expected: Value = serde_json::from_slice(&body).unwrap();
+    for message in expected["messages"].as_array_mut().unwrap() {
+        message.as_object_mut().unwrap().remove("model_id");
+    }
+    assert_eq!(sent["messages"], expected["messages"]);
 }

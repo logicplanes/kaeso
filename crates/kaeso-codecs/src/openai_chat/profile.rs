@@ -22,6 +22,7 @@ pub struct RequestProfile {
     pub seed: SeedField,
     pub end_user: bool,
     pub assistant_prefill: bool,
+    pub message_bookkeeping: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -62,6 +63,7 @@ impl RequestProfile {
         seed: SeedField::Seed,
         end_user: true,
         assistant_prefill: true,
+        message_bookkeeping: true,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -116,6 +118,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn without_prefill(mut self) -> Self {
         self.request.assistant_prefill = false;
+        self
+    }
+
+    #[must_use]
+    pub const fn without_message_bookkeeping(mut self) -> Self {
+        self.request.message_bookkeeping = false;
         self
     }
 
