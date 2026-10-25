@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, user_agent, request_id, at FROM audit_events WHERE (($1::uuid IS NULL AND scope = 'instance') OR (scope = 'org' AND org_id = $1)) AND ($2::uuid IS NULL OR id < $2) AND ($4::uuid IS NULL OR actor_id = $4) AND ($5::text IS NULL OR action LIKE $5) AND ($6::text IS NULL OR target_id = $6) AND ($7::timestamptz IS NULL OR at >= $7) AND ($8::timestamptz IS NULL OR at < $8) AND ($9::uuid IS NULL OR project_id = $9) ORDER BY id DESC LIMIT $3",
+  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1)) AND ($2::uuid IS NULL OR e.id < $2) AND ($4::uuid IS NULL OR e.actor_id = $4) AND ($5::text IS NULL OR e.action LIKE $5) AND ($6::text IS NULL OR e.target_id = $6) AND ($7::timestamptz IS NULL OR e.at >= $7) AND ($8::timestamptz IS NULL OR e.at < $8) AND ($9::uuid IS NULL OR e.project_id = $9) AND (NOT $10 OR e.actor_kind = 'agent') ORDER BY e.id DESC LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,39 @@
       },
       {
         "ordinal": 5,
+        "name": "agent_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "agent_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "agent_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "agent_model?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "action",
         "type_info": "Text",
         "origin": {
@@ -70,7 +103,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 9,
         "name": "target_kind",
         "type_info": "Text",
         "origin": {
@@ -81,7 +114,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 10,
         "name": "target_id",
         "type_info": "Text",
         "origin": {
@@ -92,7 +125,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 11,
         "name": "before",
         "type_info": "Jsonb",
         "origin": {
@@ -103,7 +136,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 12,
         "name": "after",
         "type_info": "Jsonb",
         "origin": {
@@ -114,7 +147,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 13,
         "name": "ip",
         "type_info": "Inet",
         "origin": {
@@ -125,7 +158,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 14,
         "name": "user_agent",
         "type_info": "Text",
         "origin": {
@@ -136,7 +169,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 15,
         "name": "request_id",
         "type_info": "Uuid",
         "origin": {
@@ -147,7 +180,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 16,
         "name": "at",
         "type_info": "Timestamptz",
         "origin": {
@@ -168,7 +201,8 @@
         "Text",
         "Timestamptz",
         "Timestamptz",
-        "Uuid"
+        "Uuid",
+        "Bool"
       ]
     },
     "nullable": [
@@ -177,6 +211,9 @@
       true,
       false,
       true,
+      true,
+      false,
+      false,
       false,
       true,
       true,
@@ -188,5 +225,5 @@
       false
     ]
   },
-  "hash": "758ffac220267d8c28093359aa4872d5df82b8beb1e867052d57e234aca8df9d"
+  "hash": "b5ef074c87e8e4c397993d03e6d87789b94b68d41f54b5b559bc3a50b8b428fc"
 }

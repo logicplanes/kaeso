@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, user_agent, request_id, at FROM audit_events WHERE id = $2 AND (($1::uuid IS NULL AND scope = 'instance') OR (scope = 'org' AND org_id = $1))",
+  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
   "describe": {
     "columns": [
       {
@@ -60,6 +60,39 @@
       },
       {
         "ordinal": 5,
+        "name": "agent_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "agent_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "agent_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "agent_model?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
         "name": "action",
         "type_info": "Text",
         "origin": {
@@ -70,7 +103,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 9,
         "name": "target_kind",
         "type_info": "Text",
         "origin": {
@@ -81,7 +114,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 10,
         "name": "target_id",
         "type_info": "Text",
         "origin": {
@@ -92,7 +125,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 11,
         "name": "before",
         "type_info": "Jsonb",
         "origin": {
@@ -103,7 +136,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 12,
         "name": "after",
         "type_info": "Jsonb",
         "origin": {
@@ -114,7 +147,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 13,
         "name": "ip",
         "type_info": "Inet",
         "origin": {
@@ -125,7 +158,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 14,
         "name": "user_agent",
         "type_info": "Text",
         "origin": {
@@ -136,7 +169,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 15,
         "name": "request_id",
         "type_info": "Uuid",
         "origin": {
@@ -147,7 +180,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 16,
         "name": "at",
         "type_info": "Timestamptz",
         "origin": {
@@ -170,6 +203,9 @@
       true,
       false,
       true,
+      true,
+      true,
+      true,
       false,
       true,
       true,
@@ -181,5 +217,5 @@
       false
     ]
   },
-  "hash": "6f661079295506c5439c0f55a4065b38bab91b2a0d4741b825e27ca8c7b2db6e"
+  "hash": "a593efcb0269c834edb2993389570bfe20af5444e13e6aace260e4f3116268d1"
 }

@@ -565,6 +565,28 @@ impl From<OrgRight> for Entry {
     }
 }
 
+macro_rules! entry_from {
+    ($right:ty) => {
+        impl From<$right> for Entry {
+            fn from(r: $right) -> Entry {
+                Entry {
+                    name: r.as_str(),
+                    sensitive: r.is_sensitive(),
+                    category: r.category().name(),
+                    label: r.label(),
+                    allows: r.description(),
+                    needs: r.needs_beyond_view().iter().map(|n| n.as_str()).collect(),
+                    recent_sign_in: r.needs_recent_sign_in(),
+                    cloud_only: r.cloud_only(),
+                }
+            }
+        }
+    };
+}
+
+entry_from!(InstanceRight);
+entry_from!(AccountRight);
+
 impl From<ProjectRight> for Entry {
     fn from(r: ProjectRight) -> Entry {
         Entry {
@@ -730,6 +752,70 @@ fn rights_reference() -> String {
         &project_rights,
         &ProjectPreset::ALL.map(|p| (p.name(), p.rights().names())),
     );
+    rights_section(
+        &mut out,
+        "Instance rights",
+        InstanceRight::InstanceSystemView.as_str(),
+        InstanceRight::ALL
+            .iter()
+            .copied()
+            .map(Entry::from)
+            .collect(),
+    );
+    rights_section(
+        &mut out,
+        "Account rights",
+        AccountRight::AccountView.as_str(),
+        AccountRight::ALL.iter().copied().map(Entry::from).collect(),
+    );
+    out.push("## Agent presets".to_owned());
+    out.push(String::new());
+    out.extend(header(
+        &["Preset", "Id", "Description", "Instance preset"],
+        4,
+    ));
+    for p in AgentPreset::ALL {
+        out.push(row(&[
+            cell(p.name()),
+            format!("`{}`", p.as_str()),
+            cell(p.description()),
+            cell(p.instance().name()),
+        ]));
+    }
+    out.push(String::new());
+    matrix_section(
+        &mut out,
+        "Organization rights by agent preset",
+        &org_rights,
+        &AgentPreset::ALL.map(|p| (p.name(), p.org_rights().names())),
+    );
+    matrix_section(
+        &mut out,
+        "Project rights by agent preset",
+        &project_rights,
+        &AgentPreset::ALL.map(|p| (p.name(), p.project_rights().names())),
+    );
+    let account_rights: Vec<&'static str> = AccountRight::ALL.iter().map(|r| r.as_str()).collect();
+    matrix_section(
+        &mut out,
+        "Account rights by agent preset",
+        &account_rights,
+        &AgentPreset::ALL.map(|p| (p.name(), p.account_rights().names())),
+    );
+    let instance_rights: Vec<&'static str> =
+        InstanceRight::ALL.iter().map(|r| r.as_str()).collect();
+    matrix_section(
+        &mut out,
+        "Instance presets for agents",
+        &instance_rights,
+        &InstancePreset::ALL.map(|p| (p.name(), p.rights().names())),
+    );
+    out.push("## Never given to agents".to_owned());
+    out.push(String::new());
+    out.push(code_list(
+        &OrgRights::all().minus(grantable_org_rights()).names(),
+    ));
+    out.push(String::new());
     out.push("## Organization rights that reach into every project".to_owned());
     out.push(String::new());
     out.extend(header(&["Organization right", "Project rights"], 2));
@@ -818,5 +904,134 @@ proptest! {
                 prop_assert!(count >= 1 && count <= stranding);
             }
         }
+    }
+}
+
+#[test]
+fn agent_presets_satisfy_the_needs_and_grow_monotonically() {
+    for p in AgentPreset::ALL {
+        assert!(
+            check_org_needs(OrgRights::EMPTY, p.org_rights()).is_ok(),
+            "{p}"
+        );
+        assert!(
+            check_project_needs(ProjectRights::EMPTY, p.project_rights()).is_ok(),
+            "{p}"
+        );
+        assert_eq!(p.account_rights().with_needs(), p.account_rights(), "{p}");
+        assert!(
+            p.account_rights().contains(AccountRight::AccountView),
+            "{p}"
+        );
+        assert!(p.org_rights().is_subset(grantable_org_rights()), "{p}");
+        assert!(p.org_rights().is_subset(p.org_ceiling()), "{p}");
+        assert!(p.project_rights().is_subset(p.project_ceiling()), "{p}");
+        assert_eq!(p.as_str().parse::<AgentPreset>(), Ok(p));
+    }
+    for w in AgentPreset::ALL.windows(2) {
+        assert!(w[0].org_ceiling().is_subset(w[1].org_ceiling()));
+        assert!(w[0].project_ceiling().is_subset(w[1].project_ceiling()));
+    }
+    for w in InstancePreset::ALL.windows(2) {
+        assert!(w[0].rights().is_subset(w[1].rights()));
+        assert_eq!(w[1].rights().with_needs(), w[1].rights(), "{}", w[1]);
+    }
+    assert_eq!(AgentPreset::Full.org_ceiling(), grantable_org_rights());
+    assert!(
+        !AgentPreset::Builder
+            .project_rights()
+            .contains(ProjectRight::LogsContentView)
+    );
+    assert!(
+        AgentPreset::Builder
+            .project_rights()
+            .contains(ProjectRight::ModelsManage)
+    );
+    assert_eq!("custom".parse::<AgentPreset>().ok(), None);
+}
+
+#[test]
+fn rights_parse_across_scopes_and_sensitive_ones_need_confirmation() {
+    assert_eq!(
+        "org.view".parse::<Right>(),
+        Ok(Right::Org(OrgRight::OrgView))
+    );
+    assert_eq!(
+        "models.manage".parse::<Right>(),
+        Ok(Right::Project(ProjectRight::ModelsManage))
+    );
+    assert_eq!(
+        "instance.updates.apply".parse::<Right>(),
+        Ok(Right::Instance(InstanceRight::InstanceUpdatesApply))
+    );
+    assert_eq!(
+        "account.keys.manage".parse::<Right>(),
+        Ok(Right::Account(AccountRight::AccountKeysManage))
+    );
+    assert!("everything".parse::<Right>().is_err());
+    assert!(needs_confirmation(Right::Instance(
+        InstanceRight::InstanceUpdatesApply
+    )));
+    assert!(needs_confirmation(Right::Org(
+        OrgRight::ProviderCredentialsCreate
+    )));
+    assert!(!needs_confirmation(Right::Project(
+        ProjectRight::ModelsView
+    )));
+    assert!(!Right::Instance(InstanceRight::InstanceUsersManage).needs_recent_sign_in());
+    assert_eq!(
+        Right::Account(AccountRight::AccountView).label(),
+        "View the account"
+    );
+    for d in InstanceRight::ALL
+        .iter()
+        .map(|r| r.description())
+        .chain(AccountRight::ALL.iter().map(|r| r.description()))
+    {
+        assert!(d.ends_with('.') && d.len() <= 120, "{d}");
+    }
+}
+
+#[test]
+fn needs_close_over_every_right_they_bring() {
+    let rights = ProjectRights::EMPTY.with(ProjectRight::LogsContentView);
+    assert_eq!(
+        rights.with_needs(),
+        rights
+            .with(ProjectRight::ProjectView)
+            .with(ProjectRight::LogsMetadataView)
+    );
+    let apply = InstanceRights::EMPTY.with(InstanceRight::InstanceUpdatesApply);
+    assert_eq!(
+        apply.with_needs(),
+        apply
+            .with(InstanceRight::InstanceSystemView)
+            .with(InstanceRight::InstanceUpdatesManage)
+    );
+}
+
+proptest! {
+    #[test]
+    fn an_agent_never_holds_a_right_its_user_or_the_policy_lacks(
+        user in org_rights(),
+        granted in org_rights(),
+        max in prop::sample::select(AgentPreset::ALL.to_vec()),
+        project_user in any::<u64>(),
+        project_granted in any::<u64>(),
+    ) {
+        let org = agent_org_rights(user, granted, max);
+        prop_assert!(org.is_subset(user));
+        prop_assert!(org.is_subset(granted));
+        prop_assert!(org.is_subset(max.org_ceiling()));
+        prop_assert!(org.is_subset(grantable_org_rights()));
+        let pick = |bits: u64| -> ProjectRights {
+            ProjectRight::ALL.iter().copied().enumerate().filter(|(i, _)| bits & (1 << i) != 0).map(|(_, r)| r).collect()
+        };
+        let (pu, pg) = (pick(project_user), pick(project_granted));
+        let project = agent_project_rights(pu, pg, max, org);
+        prop_assert!(project.is_subset(pu));
+        prop_assert!(project.is_subset(pg.intersect(max.project_ceiling()).union(org_reach(org))));
+        prop_assert!(agent_instance_rights(false, InstanceRights::all(), InstancePreset::Admin).is_empty());
+        prop_assert!(agent_instance_rights(true, InstanceRights::all(), InstancePreset::Read) == InstancePreset::Read.rights());
     }
 }

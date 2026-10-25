@@ -7,3 +7,4 @@ export * from "./rights-logic.js";
 export * from "./role-picker.js";
 export * from "./effective-access.js";
 export * from "./provider-picker.js";
+export * from "./grant-summary.js";

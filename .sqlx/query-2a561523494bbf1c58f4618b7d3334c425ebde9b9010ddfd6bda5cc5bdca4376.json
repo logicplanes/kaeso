@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO agent_orgs (agent_id, org_id, included) VALUES ($1, $2, false) ON CONFLICT (agent_id, org_id) DO UPDATE SET included = false, rights = '{}', project_rights = '{}'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2a561523494bbf1c58f4618b7d3334c425ebde9b9010ddfd6bda5cc5bdca4376"
+}

@@ -506,7 +506,7 @@ async fn only_a_console_session_changes_single_sign_on() {
             (r.status, r.body["error"]["message"].as_str()),
             (
                 StatusCode::FORBIDDEN,
-                Some("Only a console session can change SSO; API keys can't.")
+                Some("Only a console session can do this; API keys and agents can't.")
             ),
             "{method} {path}"
         );

@@ -1,3 +1,4 @@
+pub mod agents;
 pub mod key_failures;
 pub mod keys;
 pub mod oidc;

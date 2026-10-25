@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE instance_settings SET agents_allowed = $1, agents_max = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "82a03861fc0f03d2d8999df78a69b86779aeae2a68f3d8c05e7a51f5fa495bda"
+}

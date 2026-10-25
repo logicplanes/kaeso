@@ -46,5 +46,8 @@
   "common.tryAgain": "重试",
   "common.unknown": "未知",
   "common.unreachable": "无法连接网关，请重试。",
-  "common.yes": "是"
+  "common.yes": "是",
+  "common.discard": "放弃",
+  "common.done": "完成",
+  "common.loadMore": "加载更多"
 }

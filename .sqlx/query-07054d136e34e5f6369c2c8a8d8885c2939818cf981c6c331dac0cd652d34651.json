@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, name, redirect_uris, software_id, software_version, created_at FROM agent_clients WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "redirect_uris",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "redirect_uris"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "software_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "software_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "software_version",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "software_version"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agent_clients",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "07054d136e34e5f6369c2c8a8d8885c2939818cf981c6c331dac0cd652d34651"
+}

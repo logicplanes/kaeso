@@ -2,6 +2,7 @@ import { t } from "~/i18n";
 import { joinList } from "./labels";
 
 const KIND_LABELS: Record<string, () => string> = {
+  agent: () => t("format.audit.kind.agent", "Agents"),
   alias: () => t("format.audit.kind.alias", "Aliases"),
   audit_log: () => t("format.audit.kind.auditLog", "Audit log"),
   catalogue_model: () => t("format.audit.kind.catalogueModel", "Models"),
@@ -28,6 +29,11 @@ const ACTION_LABELS: Record<string, () => string> = {
   "alias.create": () => t("format.audit.action.aliasCreate", "Alias created"),
   "alias.update": () => t("format.audit.action.aliasUpdate", "Alias changed"),
   "alias.delete": () => t("format.audit.action.aliasDelete", "Alias deleted"),
+  "agent.authorize": () => t("format.audit.action.agentAuthorize", "Agent authorized"),
+  "agent.update": () => t("format.audit.action.agentUpdate", "Agent renamed or renewed"),
+  "agent.rights_update": () => t("format.audit.action.agentRightsUpdate", "Agent rights changed"),
+  "agent.revoke": () => t("format.audit.action.agentRevoke", "Agent revoked"),
+  "agent.org_access_revoke": () => t("format.audit.action.agentOrgAccessRevoke", "Organization closed to an agent"),
   "audit_log.export": () => t("format.audit.action.auditLogExport", "Audit log exported"),
   "catalogue_model.create": () => t("format.audit.action.catalogueModelCreate", "Model added"),
   "catalogue_model.update": () => t("format.audit.action.catalogueModelUpdate", "Model values changed"),
@@ -51,6 +57,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "instance.update_settings": () => t("format.audit.action.instanceUpdateSettings", "Update settings changed"),
   "instance.update_start": () => t("format.audit.action.instanceUpdateStart", "Update started"),
   "instance.update_finish": () => t("format.audit.action.instanceUpdateFinish", "Update finished"),
+  "instance.agents_policy": () => t("format.audit.action.instanceAgentsPolicy", "Instance agent policy changed"),
   "invite.create": () => t("format.audit.action.inviteCreate", "Invitation sent"),
   "invite.resend": () => t("format.audit.action.inviteResend", "Invitation sent again"),
   "invite.revoke": () => t("format.audit.action.inviteRevoke", "Invitation revoked"),
@@ -106,6 +113,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "security.require_sso": () => t("format.audit.action.securityRequireSso", "Single sign-on requirement changed"),
   "security.require_2fa": () => t("format.audit.action.securityRequire2fa", "Two-factor requirement changed"),
   "security.key_policy": () => t("format.audit.action.securityKeyPolicy", "Key lifetime changed"),
+  "security.agents_policy": () => t("format.audit.action.securityAgentsPolicy", "Organization agent policy changed"),
   "service_account.create": () => t("format.audit.action.serviceAccountCreate", "Service account created"),
   "service_account.update": () => t("format.audit.action.serviceAccountUpdate", "Service account changed"),
   "service_account.archive": () => t("format.audit.action.serviceAccountArchive", "Service account archived"),
@@ -154,6 +162,7 @@ export function auditActionOptions(): { value: string; label: string; descriptio
 }
 
 const TARGET_KINDS: Record<string, () => string> = {
+  agent: () => t("format.targetKind.agent", "Agent"),
   user: () => t("format.targetKind.user", "User"),
   org: () => t("common.organization", "Organization"),
   invite: () => t("format.targetKind.invite", "Invitation"),

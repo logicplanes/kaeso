@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE agents SET preset = $2, customized = $3, instance_rights = $4, account_rights = $5, future_orgs = $6, future_org_rights = $7, future_project_rights = $8 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "TextArray",
+        "TextArray",
+        "Bool",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "33820a22d9240655802ea552f3f481320e7e50998a4d0a924d2f158a0bf283dc"
+}
