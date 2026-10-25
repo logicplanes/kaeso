@@ -1,0 +1,14 @@
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":"The user"}]}]},"finish_reason":null}]}
+
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" wants the weather in Lisbon,"}],"closed":true}]},"finish_reason":null}]}
+
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[{"type":"text","text":" so I call get_weather."}],"closed":true}]},"finish_reason":null}]}
+
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":[{"type":"thinking","thinking":[],"closed":true}]},"finish_reason":null}]}
+
+data: {"id":"5c0a2d7b1e9f4c3a8b6d2e4f1a7c9b03","object":"chat.completion.chunk","created":1792370300,"model":"mistral-small-latest","choices":[{"index":0,"delta":{"tool_calls":[{"id":"Qm4rT8wLz","type":"function","function":{"name":"get_weather","arguments":"{\"city\": \"Lisbon\"}"},"index":0}]},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":118,"total_tokens":151,"completion_tokens":33,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":17},"service_tier":"standard"}}
+
+data: [DONE]
+

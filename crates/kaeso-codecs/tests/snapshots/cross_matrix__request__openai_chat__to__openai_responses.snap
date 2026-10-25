@@ -821,6 +821,47 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/mistral/reasoning-then-tool-call": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Lisbon right now?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "max_output_tokens": 200,
+      "model": "mistral-small-latest",
+      "reasoning": {
+        "effort": "high"
+      },
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "providers/mistral/safe-prompt-random-seed": {
     "message": "`frequency_penalty` is not supported by OpenAI Responses. The Responses API has no `frequency_penalty`. Remove it or use the Chat Completions format.",
     "param": "frequency_penalty",

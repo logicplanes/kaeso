@@ -872,6 +872,55 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/mistral/reasoning-then-tool-call": {
+    "body": {
+      "max_tokens": 200,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "What is the weather in Lisbon right now?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "providers/mistral/safe-prompt-random-seed": {
     "message": "`safe_prompt` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
