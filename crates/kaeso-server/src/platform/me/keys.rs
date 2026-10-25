@@ -1,12 +1,14 @@
 use axum::Json;
 use axum::extract::State;
-use kaeso_core::id::{ApiKeyId, OrgId};
-use kaeso_core::rights::{ProjectRight, effective_project_rights};
+use kaeso_core::id::{ApiKeyId, OrgId, ProjectId};
+use kaeso_core::rights::{ProjectRight, Right, effective_project_rights};
 use kaeso_store::pg::{keys, members};
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use crate::platform::access::{Area, Ctx, managed_by, policy_gap, require_policy};
+use crate::platform::access::{
+    Area, Ctx, agent_scope, managed_by, policy_gap, refused, require_policy,
+};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::keys::KeyView;
@@ -29,7 +31,7 @@ pub struct MyKeyFilter {
     open.",
     description = "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, \
     such as another org's when the session came from the SSO of an org that doesn't manage the \
-    account.",
+    account. An agent sees only the keys in projects it can open, in orgs that allow agents.",
     tag = "me",
     params(PageParams, MyKeyFilter),
     responses((status = 200, body = List<KeyView>))
@@ -56,10 +58,23 @@ pub async fn list(
         })
         .map(|m| m.org_id)
         .collect();
+    let projects = match ctx.agent() {
+        Some(agent) => Some(
+            crate::services::agents::holdings(&state.pg, session.user_id)
+                .await?
+                .iter()
+                .filter(|held| open.contains(&held.id))
+                .filter_map(|held| crate::services::agents::reach(agent, held))
+                .flat_map(|reach| reach.projects.into_iter().map(|(id, _)| id))
+                .collect::<Vec<_>>(),
+        ),
+        None => None,
+    };
     let rows = keys::list_of_user(
         &state.pg,
         session.user_id,
         &open,
+        projects.as_deref(),
         f.include_archived.unwrap_or(false),
         page.after,
         page.fetch(),
@@ -80,6 +95,28 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
     let row = keys::get_of_user(&state.pg, me.uuid(), id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("key"))?;
+    if let Some(agent) = ctx.agent() {
+        let (_, project) = agent_scope(
+            state,
+            agent,
+            OrgId::from_uuid(row.org_id),
+            Some(ProjectId::from_uuid(row.project_id)),
+            true,
+        )
+        .await
+        .map_err(|e| match e {
+            ApiError::NotFound(_) => ApiError::not_found("key"),
+            e => e,
+        })?;
+        if !project.is_some_and(|p| p.rights.contains(ProjectRight::KeysOwnManage)) {
+            return Err(refused(
+                &ctx.caller,
+                Right::Project(ProjectRight::KeysOwnManage),
+                "project",
+            ));
+        }
+        return Ok(row);
+    }
     let mut conn = state.pg.acquire().await?;
     let found =
         members::access_context(&mut conn, row.org_id, Some(me.uuid()), Some(row.project_id))

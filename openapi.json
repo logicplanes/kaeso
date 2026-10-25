@@ -797,7 +797,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "Sets a new password with a reset link and ends every session of the\nuser. The link works once.",
+        "summary": "Sets a new password with a reset link and ends every session and agent of\nthe user. The link works once.",
         "description": "It also unlocks the codes from the authenticator app that 10 wrong codes in a row locked (`auth/totp`). It refuses an account whose managing org requires SSO, even with a link sent before the org turned that on.\n\n**Access:** public; no authentication.",
         "operationId": "postAuthPasswordResetVerify",
         "requestBody": {
@@ -3778,7 +3778,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Resets a user's two-factor authentication. Needs a recent sign-in.",
+        "summary": "Resets a user's two-factor authentication and ends their sessions and agents.\nNeeds a recent sign-in.",
         "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserReset2fa",
         "parameters": [
@@ -3836,7 +3836,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Ends every session of a user and tells them.",
+        "summary": "Ends every session and agent of a user and tells them.",
         "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserSessionsRevoke",
         "parameters": [
@@ -5102,7 +5102,7 @@
           "me"
         ],
         "summary": "The signed-in user's keys, in every project of the orgs this session may\nopen.",
-        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from the SSO of an org that doesn't manage the account.\n\n**Access:** a signed-in console session, or an agent granted `account.keys.view`.",
+        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from the SSO of an org that doesn't manage the account. An agent sees only the keys in projects it can open, in orgs that allow agents.\n\n**Access:** a signed-in console session, or an agent granted `account.keys.view`.",
         "operationId": "getMeKeys",
         "parameters": [
           {
@@ -8472,6 +8472,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
@@ -21318,7 +21321,7 @@
             "items": {
               "$ref": "#/components/schemas/OrgGrantBody"
             },
-            "description": "One entry per organization of the user; one left out is closed to the agent."
+            "description": "One entry per organization of the user; one left out is closed to the agent.\nAnswers list an organization the agent reaches through `future_orgs` as\nincluded, with those rights as far as the user and the org's policy allow."
           },
           "preset": {
             "type": "string",

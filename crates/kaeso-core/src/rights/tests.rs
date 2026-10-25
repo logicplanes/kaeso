@@ -972,6 +972,14 @@ fn rights_parse_across_scopes_and_sensitive_ones_need_confirmation() {
     assert!(needs_confirmation(Right::Instance(
         InstanceRight::InstanceUpdatesApply
     )));
+    for changes_what_sessions_confirm in [
+        InstanceRight::InstanceSettingsManage,
+        InstanceRight::InstanceUpdatesManage,
+    ] {
+        assert!(needs_confirmation(Right::Instance(
+            changes_what_sessions_confirm
+        )));
+    }
     assert!(needs_confirmation(Right::Org(
         OrgRight::ProviderCredentialsCreate
     )));

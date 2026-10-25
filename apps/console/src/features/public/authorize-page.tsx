@@ -29,9 +29,14 @@ function forget(token: string) {
   forgetFragment(token);
 }
 
+const REFUSED_REQUESTS = ["unsupported_response_type", "invalid_request", "invalid_scope", "invalid_target"];
+
 function linkError(error: string | null): string | undefined {
   if (error === "invalid_client") return t("public.agentLinkUnknownClient", "Kaeso doesn't know this agent; connect it again from the agent.");
   if (error === "invalid_redirect_uri") return t("public.agentLinkBadReturn", "The agent asked to return to an address it didn't register; connect it again.");
+  if (error && REFUSED_REQUESTS.includes(error))
+    return t("public.agentLinkRefused", "The agent asked for a sign-in Kaeso doesn't offer; update the agent and connect it again.");
+  if (error === "server_error") return t("public.agentLinkFailed", "Kaeso couldn't start this sign-in; try again from the agent.");
   return undefined;
 }
 

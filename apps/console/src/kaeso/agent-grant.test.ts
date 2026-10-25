@@ -119,6 +119,31 @@ describe("an agent's rights in the console", () => {
     expect(toGrant(closed).orgs).toEqual([{ org: ORG, included: false, rights: [], projects: { all: false, rights: [], selected: [] } }]);
   });
 
+  it("show an organization the agent reaches as one joined later as open, and keep it open", () => {
+    const g = grantable();
+    const body = grantBody({
+      orgs: [{ org: "org_contoso", included: false, rights: [], projects: { all: true, rights: [], selected: [] } }],
+      future_orgs: { rights: ["org.view", "org.update"], project_rights: ["project.view", "made.up"] },
+    });
+    const d = fromGrant(body, g);
+    expect(d.orgs[ORG]).toEqual({ included: true, rights: ["org.view", "org.update"], all: true, projectRights: ["project.view"], selected: {} });
+    expect(d.orgs.org_contoso?.included).toBe(false);
+    expect(toGrant(d).orgs?.find((o) => o.org === ORG)?.included).toBe(true);
+    const refusing = g.orgs.find((o) => o.id === "org_contoso");
+    if (!refusing) throw new Error("no org");
+    expect(fromGrant({ ...body, orgs: [] }, grantable({ orgs: [{ ...refusing, id: ORG }] })).orgs[ORG]?.included).toBe(false);
+  });
+
+  it("open only the project a right was asked for in a closed organization", () => {
+    const g = grantable();
+    const d = fromGrant(grantBody({ orgs: [{ org: ORG, included: false, rights: [], projects: { all: true, rights: [], selected: [] } }] }), g);
+    const asked = withRequested(agents, g, d, "limits.view", ORG, PROJECT).draft.orgs[ORG];
+    expect(asked).toEqual({ included: true, rights: ["org.view"], all: false, projectRights: [], selected: { [PROJECT]: ["project.view", "limits.view"] } });
+    const everywhere = withRequested(agents, g, d, "limits.view", ORG).draft.orgs[ORG];
+    expect(everywhere?.all).toBe(true);
+    expect(everywhere?.projectRights).toEqual(["project.view", "limits.view"]);
+  });
+
   it("count a sensitive right in one project as known when every project had it", () => {
     const g = grantable();
     const every = fromGrant(grantBody(), g);

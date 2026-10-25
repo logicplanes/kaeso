@@ -43,6 +43,19 @@ impl Projects {
             Projects::Selected(_) => ProjectRights::EMPTY,
         }
     }
+
+    pub fn only(&self) -> Option<Vec<Uuid>> {
+        match self {
+            Projects::All(rights) if !rights.is_empty() => None,
+            Projects::All(_) => Some(Vec::new()),
+            Projects::Selected(each) => Some(
+                each.iter()
+                    .filter(|(_, rights)| !rights.is_empty())
+                    .map(|(id, _)| *id)
+                    .collect(),
+            ),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -355,6 +368,16 @@ mod tests {
         assert_eq!(access.projects.granted(*project), *rights);
         assert!(access.projects.granted(Uuid::now_v7()).is_empty());
         assert!(access.projects.every_project().is_empty());
+        assert_eq!(access.projects.only(), Some(vec![*project]));
+    }
+
+    #[test]
+    fn all_projects_list_every_project_only_with_rights_in_them() {
+        let with = Projects::All(ProjectRights::EMPTY.with(ProjectRight::ProjectView));
+        assert_eq!(with.only(), None);
+        assert_eq!(Projects::All(ProjectRights::EMPTY).only(), Some(vec![]));
+        let empty = Projects::Selected(BTreeMap::from([(Uuid::now_v7(), ProjectRights::EMPTY)]));
+        assert_eq!(empty.only(), Some(vec![]));
     }
 
     #[test]

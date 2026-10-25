@@ -115,6 +115,18 @@ describe("connecting an agent", () => {
     expect(await screen.findByText("Start the sign-in from the agent again; it opens this page with its request.")).toBeInTheDocument();
   });
 
+  it("explains a request the gateway refused instead of sending it back to a web address", async () => {
+    signedIn();
+    await renderApp("/authorize#error=unsupported_response_type");
+    expect(await screen.findByText("The agent asked for a sign-in Kaeso doesn't offer; update the agent and connect it again.")).toBeInTheDocument();
+  });
+
+  it("asks to try again when the gateway couldn't start the sign-in", async () => {
+    signedIn();
+    await renderApp("/authorize#error=server_error");
+    expect(await screen.findByText("Kaeso couldn't start this sign-in; try again from the agent.")).toBeInTheDocument();
+  });
+
   it("names an agent Kaeso doesn't know", async () => {
     signedIn();
     await renderApp("/authorize#error=invalid_client");

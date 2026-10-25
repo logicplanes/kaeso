@@ -174,6 +174,9 @@ pub async fn revoke_all(
     for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
         tokens::retire_all(&state.pg, kind, Some(user.uuid()), now).await?;
     }
+    if keep.is_none() {
+        kaeso_store::pg::agents::revoke_of_user(&state.pg, user.uuid(), now).await?;
+    }
     forget(state, &hashes).await;
     Ok(hashes.len())
 }

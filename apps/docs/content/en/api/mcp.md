@@ -257,7 +257,7 @@ An unknown method gets the JSON-RPC error `-32601`, and an unknown tool `-32602`
 
 Using a refresh token or a code a second time ends that whole sign-in, because one of them must have leaked. Every token from it stops working, and the agent has to be connected again.
 
-An agent keeps working until you revoke it, or until it goes 90 days without a request. Deactivating its user stops it too, and so does turning agents off for the install.
+An agent keeps working until you revoke it, or until it goes 90 days without a request. Deactivating its user stops it too, and so does turning agents off for the install. Whatever ends every session of its user revokes it as well: resetting the password or two-factor authentication, or an instance admin ending the sessions.
 
 ## OAuth endpoints
 
@@ -268,7 +268,7 @@ Kaeso is its own authorization server. Its issuer is the install's public URL, s
 | `GET /.well-known/oauth-protected-resource/mcp` | The resource metadata: the `/mcp` address, Kaeso as its authorization server and the scope `kaeso`. Also at `/.well-known/oauth-protected-resource` |
 | `GET /.well-known/oauth-authorization-server` | The authorization server metadata: the endpoints below, `S256` as the only PKCE method, public clients only (`none`), and `iss` in every redirect (RFC 9207) |
 | `POST /oauth/register` | Registers a client (RFC 7591) with 1 to 10 redirect URIs and answers with its `client_id` (`cli_…`). A redirect URI uses HTTPS, a loopback address on any port, or a private-use scheme |
-| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `scope` may only be `kaeso`, and `resource`, when sent, must be the `/mcp` address |
+| `GET /oauth/authorize` | Takes `response_type=code`, `client_id`, `redirect_uri`, `state` and `code_challenge` with `code_challenge_method=S256`. `scope` may only be `kaeso`, and `resource`, when sent, must be the `/mcp` address. A request it refuses goes back with `error` to a loopback or private-use redirect URI; with an HTTPS one, the console shows the error instead |
 | `POST /oauth/token` | Form-encoded. `grant_type=authorization_code` with `code`, `client_id`, `redirect_uri` and `code_verifier`, or `grant_type=refresh_token` with `refresh_token` and `client_id` |
 | `POST /oauth/revoke` | Form-encoded `token`. Ends the sign-in the token belongs to, and answers 200 for a token it doesn't know |
 
@@ -350,5 +350,5 @@ An agent's rights are a `grant`, the same in every route that reads or sets them
 
 - `orgs` has one entry per organization of the user. An organization left out, or with `"included": false`, is closed to the agent.
 - With `"all": false`, `selected` lists projects as `{"project": "proj_…", "rights": […]}`, and other projects stay closed.
-- `future_orgs` is `null`, or `{"rights": […], "project_rights": […]}` for organizations the user joins later.
+- `future_orgs` is `null`, or `{"rights": […], "project_rights": […]}` for organizations the user joins later. Answers list an organization the agent reaches this way as included, with those rights as far as the user and the organization's policy allow, so saving them back keeps it open.
 - `customized` says whether rights changed after choosing the preset. The console then shows the preset it started from.

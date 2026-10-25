@@ -7,7 +7,7 @@ use kaeso_store::pg::{instance, members, users};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::platform::access::{Area, Ctx, require_policy};
+use crate::platform::access::{Area, Ctx, agent_scope, require_policy};
 use crate::platform::audit::Action;
 use crate::platform::auth::setup::validate_name;
 use crate::platform::cookies;
@@ -188,6 +188,14 @@ pub async fn leave(
         require_2fa: false,
     };
     require_policy(&state, session, leaving).await?;
+    if let Some(agent) = ctx.agent() {
+        agent_scope(&state, agent, org, None, true)
+            .await
+            .map_err(|e| match e {
+                ApiError::NotFound(_) => ApiError::not_found("membership"),
+                e => e,
+            })?;
+    }
     let membership = members::get_org(&state.pg, org.uuid(), me.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("membership"))?;

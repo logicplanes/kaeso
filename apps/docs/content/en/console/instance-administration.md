@@ -18,8 +18,8 @@ Instance admins carry an **Instance admin** badge, and **Managed by** names the 
 | --- | --- |
 | Instance admin | Makes the user an instance admin, or no longer one |
 | Deactivate, Reactivate | Blocks sign-in, ends their sessions and disables their keys, or allows them again |
-| End sessions | Signs the user out everywhere |
-| Reset two-factor | Removes their authenticator app and recovery codes, for someone who lost both |
+| End sessions | Signs the user out everywhere and revokes their agents |
+| Reset two-factor | Removes their authenticator app and recovery codes, for someone who lost both; also ends their sessions and agents |
 | Delete user | Removes their name and email address and archives their keys. History shows a deleted user |
 
 Kaeso emails the user when you end their sessions or reset their two-factor authentication.
