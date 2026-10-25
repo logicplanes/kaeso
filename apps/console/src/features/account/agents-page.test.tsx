@@ -49,7 +49,40 @@ describe("the agents tab", () => {
     expect(screen.getByText("Claude")).toBeInTheDocument();
     expect(await screen.findByText(/^Manages .* in Northwind\.$/)).toBeInTheDocument();
     expect(screen.getByText(/^Added .* · used .+$/)).toBeInTheDocument();
-    expect(screen.getByText(/\/mcp$/)).toBeInTheDocument();
+    expect(screen.getByText(`${window.location.origin}/mcp`)).toBeInTheDocument();
+  });
+
+  it("shows how to add this instance's MCP server to Claude Code, Cursor and GitHub Copilot", async () => {
+    signedIn();
+    agentApi();
+    const { user } = await renderApp("/settings/account/agents");
+    const url = `${window.location.origin}/mcp`;
+    await user.click(await screen.findByRole("button", { name: "Add to Claude Code" }));
+    let dialog = await screen.findByRole("dialog", { name: "Add Kaeso to Claude Code" });
+    expect(within(dialog).getByText("/plugin install kaeso --marketplace logicplanes/kaeso")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(`When the plugin asks for your Kaeso address, enter ${window.location.origin}. Then run /mcp to sign in.`),
+    ).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("tab", { name: "Server only" }));
+    const command = `claude mcp add --transport http --scope user kaeso ${url}`;
+    await waitFor(() => expect(dialog).toHaveTextContent(command));
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "Add to Cursor" }));
+    dialog = await screen.findByRole("dialog", { name: "Add Kaeso to Cursor" });
+    const cursor = new URL(within(dialog).getByRole("link", { name: "Add to Cursor" }).getAttribute("href") ?? "");
+    expect(cursor.protocol).toBe("cursor:");
+    expect(cursor.searchParams.get("name")).toBe("kaeso");
+    expect(JSON.parse(atob(cursor.searchParams.get("config") ?? ""))).toEqual({ url });
+    await user.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    await user.click(screen.getByRole("button", { name: "Add to GitHub Copilot" }));
+    dialog = await screen.findByRole("dialog", { name: "Add Kaeso to GitHub Copilot" });
+    const vscode = within(dialog).getByRole("link", { name: "Add to VS Code" }).getAttribute("href") ?? "";
+    expect(JSON.parse(decodeURIComponent(vscode.slice("vscode:mcp/install?".length)))).toEqual({ name: "kaeso", type: "http", url });
+    expect(within(dialog).getByRole("link", { name: "Documentation" })).toHaveAttribute("href", "https://docs.kaeso.app/api/mcp");
   });
 
   it("says how to connect one when there are none", async () => {

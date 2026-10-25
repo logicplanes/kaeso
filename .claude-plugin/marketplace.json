@@ -1,0 +1,18 @@
+{
+  "name": "kaeso",
+  "owner": {
+    "name": "Logicplanes",
+    "url": "https://kaeso.app"
+  },
+  "metadata": {
+    "description": "The Kaeso plugin for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "kaeso",
+      "source": "./plugins/kaeso",
+      "description": "Manage your self-hosted Kaeso AI gateway from your agent: organizations, projects, keys, models, limits, usage and logs, with only the rights you grant.",
+      "category": "development"
+    }
+  ]
+}

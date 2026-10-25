@@ -62,7 +62,7 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Agenten verwalten
 
-**Agenten** listet jeden Agenten, den Sie autorisiert haben: seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
+Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Code, Cursor und GitHub Copilot; jedes zeigt, wie Sie den Server zu diesem Client hinzufügen. Darunter listet es jeden Agenten, den Sie autorisiert haben: seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
 
 - ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;

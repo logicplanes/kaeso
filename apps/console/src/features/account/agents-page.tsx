@@ -4,12 +4,11 @@ import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import type { AgentView } from "~/api/generated/types";
 import { agentCatalogueQuery, agentsQuery, grantableQuery } from "~/api/queries/agents";
+import { ConnectClients, mcpUrl } from "~/features/account/connect-client";
 import { LoadFailed } from "~/features/org/load-failed";
 import { t } from "~/i18n";
 import { fromGrant, summary } from "~/kaeso/agent-grant";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
-
-export const mcpUrl = (): string => `${window.location.origin}/mcp`;
 
 export function agentDates(a: Pick<AgentView, "created_at" | "last_used_at">): string {
   return t("account.agentAddedUsed", "Added {created} · used {used}", {
@@ -39,6 +38,7 @@ export function AgentsPage() {
                 <CopyButton value={mcpUrl()} label={t("account.copyMcpUrl", "Copy the MCP server address")} size="xs" />
               </span>
             }
+            control={<ConnectClients />}
           />
         </SettingsGroup>
       </SettingsSection>

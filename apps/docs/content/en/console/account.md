@@ -62,7 +62,7 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Manage your agents
 
-**Agents** lists every agent you authorized: its name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
+At the top, **Agents** shows the MCP server's address with the marks of Claude Code, Cursor and GitHub Copilot; each opens how to add the server to that client. Below, it lists every agent you authorized: its name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
 
 - rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;

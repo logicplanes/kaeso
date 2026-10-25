@@ -4,7 +4,7 @@ import type { LinkComponentProps } from "@logicplanes/kaeso-ui";
 import { internalPath } from "~/auth/next";
 
 const CURRENT_ONLY = { exact: true } as const;
-const OUTSIDE = /^(?:https?:\/\/|mailto:|otpauth:\/\/|#)/i;
+const OUTSIDE = /^(?:https?:\/\/|mailto:|otpauth:\/\/|cursor:\/\/|vscode:|#)/i;
 
 export const RouterLink = forwardRef<HTMLAnchorElement, LinkComponentProps>(function RouterLink({ href, target, children, ...props }, ref) {
   const outside = OUTSIDE.test(href);
