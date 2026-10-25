@@ -169,6 +169,7 @@
   "account.agentDetails": "详情",
   "account.agentFailed": "无法加载此智能体",
   "account.agentGone": "此智能体已被撤销或不存在。",
+  "account.agentModelAndDates": "{model} · {dates}",
   "account.agentNeverUsed": "从未",
   "account.agentNoActivity": "尚无工具调用",
   "account.agentRevoked": "智能体已撤销",

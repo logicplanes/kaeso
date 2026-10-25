@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AgentAvatar, AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
@@ -10,6 +10,7 @@ import type { AgentCatalogue, AgentView, Grantable } from "~/api/generated/types
 import { agentActivityQuery, agentCatalogueQuery, agentQuery, grantableQuery } from "~/api/queries/agents";
 import { useApiMutation } from "~/auth/mutation";
 import { LoadFailed } from "~/features/org/load-failed";
+import { modelLabel } from "~/format/model";
 import { t } from "~/i18n";
 import { AgentGrantEditor, PresetPicker } from "~/kaeso/agent-grant-editor";
 import { fromGrant, gainedSensitive, rightLabels, summaryLines, toGrant, withRequested, type AgentDraft } from "~/kaeso/agent-grant";
@@ -107,7 +108,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
     <SettingsPage
       title={agent.name}
       context={t("account.agents", "Agents")}
-      description={agentDates(agent)}
+      description={t("account.agentModelAndDates", "{model} · {dates}", { model: modelLabel(agent.model), dates: agentDates(agent) })}
       actions={
         <Button size="sm" variant="danger-secondary" onClick={() => setRevoking(true)}>
           {t("account.revokeAgent", "Revoke")}
@@ -130,17 +131,13 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
       )}
       <SettingsSection title={t("account.agentDetails", "Details")}>
         <div className="flex flex-col gap-16">
-          <div className="flex items-center gap-12">
-            <AgentAvatar model={agent.model} name={name || agent.name} size={40} />
-            <Input
-              label={t("common.name", "Name")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={100}
-              error={fieldError(details.error, "name")}
-              className="flex-1"
-            />
-          </div>
+          <Input
+            label={t("common.name", "Name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            error={fieldError(details.error, "name")}
+          />
           <div>
             <Button
               variant="primary"

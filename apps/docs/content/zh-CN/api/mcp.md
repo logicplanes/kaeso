@@ -181,7 +181,7 @@ sequenceDiagram
 - **列出。** `tools/list` 只显示智能体当前在其任一组织和项目中可以使用的工具。
 - **参数。** 工具接受操作的路径参数（例如 `org` 和 `project`）、查询参数，以及作为请求体的 `body`。路径参数必填，工具没有的参数会被 Kaeso 拒绝。
 - **结果。** 工具以文本和 `structuredContent` 两种形式返回 Platform API 的 JSON。超过 200 KB 的结果会被截断；请用 `limit` 请求更小的一页。
-- **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的图标和名称；其他值一律视为 `unknown`。在首次调用之前，智能体显示为 `unknown`。
+- **模型。** 每个工具都接受 `agent_model`，即智能体所用的模型系列：`claude`、`gpt`、`gemini`、`gemma`、`grok`、`llama`、`mistral`、`deepseek`、`qwen`、`kimi`、`glm`、`minimax`、`command`、`nova`、`phi`、`granite`、`jamba`、`ernie`、`hunyuan`、`doubao`、`yi`、`nemotron`、`olmo`、`sonar`、`reka` 或 `unknown`。Kaeso 在每次调用时保存它，并在智能体旁显示该系列的名称；其他值一律视为 `unknown`。在首次调用之前，智能体显示为 `unknown`。
 - **提示。** 读取类工具标有 `readOnlyHint`，删除类工具标有 `destructiveHint`。
 - **说明。** 服务器提示智能体先用 `get_me_memberships` 列出其组织。
 

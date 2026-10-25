@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AgentAvatar, Badge, Code, CopyButton, Empty, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { Badge, Code, CopyButton, Empty, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import type { AgentView } from "~/api/generated/types";
@@ -60,7 +60,6 @@ export function AgentsPage() {
                 href={`/settings/account/agents/${a.id}`}
                 title={
                   <span className="flex flex-wrap items-center gap-8">
-                    <AgentAvatar model={a.model} name={a.name} size={24} decorative />
                     {a.name}
                     <Badge>{modelLabel(a.model)}</Badge>
                   </span>

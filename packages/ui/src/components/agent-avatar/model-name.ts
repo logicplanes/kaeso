@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
-import { agentModel, type AgentModel } from "./model-glyphs.js";
+import { agentModel, type AgentModel } from "./models.js";
 
 const PRODUCT_NAMES: Readonly<Record<Exclude<AgentModel, "unknown">, string>> = {
   claude: "Claude",

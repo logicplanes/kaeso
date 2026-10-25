@@ -1113,11 +1113,7 @@
   "Activity": "Aktivität",
   "The diameter of the person's avatar in pixels; the agent badge is half of it.": "Der Durchmesser des Avatars der Person in Pixeln; das Abzeichen des Agents ist halb so groß.",
   "The person's picture; without one, or when it fails to load, their initials show.": "Das Bild der Person; ohne Bild oder wenn es nicht lädt, erscheinen ihre Initialen.",
-  "An agent acting for a person, as a rounded square with a monochrome glyph for the model family it reports, from Claude and GPT to DeepSeek and Qwen.": "Ein Agent, der für eine Person handelt, als abgerundetes Quadrat mit einem einfarbigen Zeichen für die Modellfamilie, die er meldet, von Claude und GPT bis DeepSeek und Qwen.",
   "Agents": "Agents",
-  "Model families": "Modellfamilien",
-  "The model family id from the API, such as `claude` or `deepseek`; anything the library doesn't know shows the neutral glyph of `unknown`.": "Die ID der Modellfamilie aus der API, z. B. `claude` oder `deepseek`; alles, was die Bibliothek nicht kennt, zeigt das neutrale Zeichen von `unknown`.",
-  "The agent that acted, with its name and model family id from the API.": "Der Agent, der gehandelt hat, mit seinem Namen und der ID seiner Modellfamilie aus der API.",
   "The name of the person the agent acted for; it starts the accessible name, such as `Ada Okafor via Release helper (Claude)`.": "Der Name der Person, für die der Agent gehandelt hat; mit ihm beginnt der zugängliche Name, z. B. `Ada Okafor via Release helper (Claude)`.",
   "An agent's rights": "Die Rechte eines Agenten",
   "The lines, short and without a final period.": "Die Zeilen, kurz und ohne Schlusspunkt.",
@@ -1126,5 +1122,11 @@
   "The list's accessible name (\"What it can do\").": "Der barrierefreie Name der Liste („Was es darf“).",
   "What an agent may do in a few short lines, each after a check mark, as on its consent page.": "Was ein Agent darf, in wenigen kurzen Zeilen, jede nach einem Häkchen, wie auf seiner Zustimmungsseite.",
   "What an agent or a key may do, one short line each after a check mark, on a group surface.": "Was ein Agent oder ein Schlüssel darf, je eine kurze Zeile nach einem Häkchen, auf einer Gruppenfläche.",
-  "A small button after the note, such as Customize.": "Eine kleine Schaltfläche nach dem Hinweis, etwa Anpassen."
+  "A small button after the note, such as Customize.": "Eine kleine Schaltfläche nach dem Hinweis, etwa Anpassen.",
+  "The agent that acted, with its name and model family id from the API; the family is named in the accessible name only.": "Der Agent, der gehandelt hat, mit seinem Namen und der Modellfamilien-ID aus der API; die Familie steht nur im barrierefreien Namen.",
+  "An agent acting for a person: one bot face on an ink square, the same for every agent.": "Ein Agent, der für eine Person handelt: ein Bot-Gesicht auf einem Tintenquadrat, für jeden Agenten gleich.",
+  "An agent acting for a person: one bot face on an ink square, the same for every agent; write its model family beside it with useModelName where it matters.": "Ein Agent, der für eine Person handelt: ein Bot-Gesicht auf einem Tintenquadrat, für jeden Agenten gleich; schreiben Sie seine Modellfamilie mit useModelName daneben, wo es darauf ankommt.",
+  "Every agent looks the same; write its model family with useModelName where it matters.": "Jeder Agent sieht gleich aus; schreiben Sie seine Modellfamilie mit useModelName dazu, wo es darauf ankommt.",
+  "Every size": "Jede Größe",
+  "Agent": "Agent"
 }

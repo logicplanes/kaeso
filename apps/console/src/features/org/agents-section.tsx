@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AgentAttribution, AlertDialog, Button, Segmented, SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Segmented, SettingsGroup, SettingsRow, SettingsSection, Switch } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import { api, data } from "~/api/client";
@@ -85,12 +85,7 @@ export function OrgAgents({ org }: { org: string }) {
           {agents.data.map((a) => (
             <SettingsRow
               key={a.id}
-              title={
-                <span className="flex items-center gap-8">
-                  <AgentAttribution name={a.user.name} src={a.user.avatar_url ?? undefined} agent={{ name: a.name, model: a.model }} size={24} />
-                  {t("org.agents.agentOf", "{agent} of {person}", { agent: a.name, person: a.user.name })}
-                </span>
-              }
+              title={t("org.agents.agentOf", "{agent} of {person}", { agent: a.name, person: a.user.name })}
               description={t("org.agents.agentDetail", "{model} · used {used}", {
                 model: modelLabel(a.model),
                 used: a.last_used_at ? formatRelative(a.last_used_at) : t("org.agents.neverUsed", "never"),

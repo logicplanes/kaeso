@@ -117,7 +117,7 @@ describe("the agents tab", () => {
     signedIn();
     agentApi(agentView({ last_used_at: null }));
     await renderApp(`/settings/account/agents/${AGENT}`);
-    expect(await screen.findByText(/^Added .* · used never$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Claude · Added .* · used never$/)).toBeInTheDocument();
   });
 
   it("says when an agent is gone", async () => {

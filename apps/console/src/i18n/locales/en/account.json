@@ -16,6 +16,7 @@
   "account.agentDetails": "Details",
   "account.agentFailed": "This agent couldn't load",
   "account.agentGone": "This agent was revoked or doesn't exist.",
+  "account.agentModelAndDates": "{model} · {dates}",
   "account.agentNeverUsed": "never",
   "account.agentNoActivity": "No tool calls yet",
   "account.agentRevoked": "Agent revoked",

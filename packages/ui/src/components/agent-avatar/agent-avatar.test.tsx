@@ -16,37 +16,22 @@ function inLocale(locale: string, messages: Record<string, string>) {
 
 describe("AgentAvatar", () => {
   it("is a picture named after the agent", () => {
-    render(<AgentAvatar model="claude" name="Release helper" />);
+    render(<AgentAvatar name="Release helper" />);
     expect(screen.getByRole("img", { name: "Release helper" }).querySelector("svg")).toBeInTheDocument();
   });
 
-  it("draws a different glyph for every model family", () => {
-    const glyphs = AGENT_MODELS.map((model) => {
-      const { unmount } = render(<AgentAvatar model={model} name={model} />);
-      const glyph = glyphOf(screen.getByRole("img", { name: model }));
-      unmount();
-      return glyph;
-    });
-    expect(new Set(glyphs).size).toBe(AGENT_MODELS.length);
-  });
-
-  it("draws a model family it doesn't know like unknown", () => {
+  it("draws the same face for every agent and every size", () => {
     render(
       <>
-        <AgentAvatar model="falcon" name="Nightly fixer" />
-        <AgentAvatar model="unknown" name="Docs bot" />
-        <AgentAvatar model="Claude" name="Shouting bot" />
-        <AgentAvatar model="constructor" name="Prototype bot" />
+        <AgentAvatar name="Release helper" size={20} />
+        <AgentAvatar name="Docs bot" size={40} />
       </>,
     );
-    const unknown = glyphOf(screen.getByRole("img", { name: "Docs bot" }));
-    expect(glyphOf(screen.getByRole("img", { name: "Nightly fixer" }))).toBe(unknown);
-    expect(glyphOf(screen.getByRole("img", { name: "Shouting bot" }))).toBe(unknown);
-    expect(glyphOf(screen.getByRole("img", { name: "Prototype bot" }))).toBe(unknown);
+    expect(glyphOf(screen.getByRole("img", { name: "Release helper" }))).toBe(glyphOf(screen.getByRole("img", { name: "Docs bot" })));
   });
 
   it("leaves the reading to the text beside it when decorative", () => {
-    const { container } = render(<AgentAvatar model="gpt" name="Release helper" size={40} decorative />);
+    const { container } = render(<AgentAvatar name="Release helper" size={40} decorative />);
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
   });
@@ -57,7 +42,7 @@ describe("AgentAttribution", () => {
     render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} />);
     const picture = screen.getByRole("img", { name: "Ada Okafor via Release helper (Claude)" });
     expect(picture).toHaveTextContent("AO");
-    expect(picture.querySelector("[data-agent-badge] svg")).toBeInTheDocument();
+    expect(glyphOf(picture.querySelector<HTMLElement>("[data-agent-badge]") as HTMLElement)).toBeTruthy();
     expect(screen.getAllByRole("img")).toHaveLength(1);
   });
 

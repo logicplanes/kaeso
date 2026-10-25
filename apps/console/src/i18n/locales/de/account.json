@@ -169,6 +169,7 @@
   "account.agentDetails": "Details",
   "account.agentFailed": "Dieser Agent konnte nicht geladen werden",
   "account.agentGone": "Dieser Agent wurde widerrufen oder existiert nicht.",
+  "account.agentModelAndDates": "{model} · {dates}",
   "account.agentNeverUsed": "nie",
   "account.agentNoActivity": "Noch keine Tool-Aufrufe",
   "account.agentRevoked": "Agent widerrufen",

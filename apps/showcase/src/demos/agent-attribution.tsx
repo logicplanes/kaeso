@@ -1,4 +1,4 @@
-import { AGENT_MODELS, AgentAttribution, Text } from "@logicplanes/kaeso-ui";
+import { AgentAttribution, Text } from "@logicplanes/kaeso-ui";
 import { StateCell, StateMatrix, StateRow } from "~/lib/states";
 
 export const meta = {
@@ -45,16 +45,14 @@ export function Sizes() {
 const SIZES = [20, 24, 28, 32, 40] as const;
 export function States() {
   return (
-    <StateMatrix title="Every model family at every size" columns={SIZES.map((s) => `${s}px`)}>
-      {AGENT_MODELS.map((m) => (
-        <StateRow key={m} label={m}>
-          {SIZES.map((s) => (
-            <StateCell key={s} id={`${m}-${s}`}>
-              <AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: m }} size={s} />
-            </StateCell>
-          ))}
-        </StateRow>
-      ))}
+    <StateMatrix title="Every size" columns={SIZES.map((s) => `${s}px`)}>
+      <StateRow label="Agent">
+        {SIZES.map((s) => (
+          <StateCell key={s} id={`agent-${s}`}>
+            <AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={s} />
+          </StateCell>
+        ))}
+      </StateRow>
     </StateMatrix>
   );
 }

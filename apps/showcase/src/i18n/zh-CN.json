@@ -1113,11 +1113,7 @@
   "Activity": "动态",
   "The diameter of the person's avatar in pixels; the agent badge is half of it.": "人员头像的直径（像素）；智能体徽标为其一半。",
   "The person's picture; without one, or when it fails to load, their initials show.": "人员的图片；没有图片或加载失败时显示其姓名首字母。",
-  "An agent acting for a person, as a rounded square with a monochrome glyph for the model family it reports, from Claude and GPT to DeepSeek and Qwen.": "代表某人执行操作的智能体，显示为圆角方形，内含表示其所报告模型系列的单色图形，从 Claude、GPT 到 DeepSeek 和 Qwen。",
   "Agents": "智能体",
-  "Model families": "模型系列",
-  "The model family id from the API, such as `claude` or `deepseek`; anything the library doesn't know shows the neutral glyph of `unknown`.": "来自 API 的模型系列 ID，例如 `claude` 或 `deepseek`；组件库不认识的值显示 `unknown` 的中性图形。",
-  "The agent that acted, with its name and model family id from the API.": "执行操作的智能体，包含来自 API 的名称和模型系列 ID。",
   "The name of the person the agent acted for; it starts the accessible name, such as `Ada Okafor via Release helper (Claude)`.": "智能体所代表的人员的名称；它位于无障碍名称的开头，例如 `Ada Okafor via Release helper (Claude)`。",
   "An agent's rights": "智能体的权限",
   "The lines, short and without a final period.": "各行内容，简短且不带句末标点。",
@@ -1126,5 +1122,11 @@
   "The list's accessible name (\"What it can do\").": "列表的无障碍名称（“它可以做什么”）。",
   "What an agent may do in a few short lines, each after a check mark, as on its consent page.": "用几行简短文字说明智能体可以做什么，每行前有一个对勾，就像在其授权页面上一样。",
   "What an agent or a key may do, one short line each after a check mark, on a group surface.": "说明智能体或密钥可以做什么，每项一行，前有对勾，显示在分组表面上。",
-  "A small button after the note, such as Customize.": "说明后面的小按钮，例如“自定义”。"
+  "A small button after the note, such as Customize.": "说明后面的小按钮，例如“自定义”。",
+  "The agent that acted, with its name and model family id from the API; the family is named in the accessible name only.": "执行操作的智能体，带有其名称和来自 API 的模型系列 ID；模型系列只出现在无障碍名称中。",
+  "An agent acting for a person: one bot face on an ink square, the same for every agent.": "代表某人操作的智能体：墨色方块上的一张机器人脸，每个智能体都相同。",
+  "An agent acting for a person: one bot face on an ink square, the same for every agent; write its model family beside it with useModelName where it matters.": "代表某人操作的智能体：墨色方块上的一张机器人脸，每个智能体都相同；需要时用 useModelName 在旁边写出其模型系列。",
+  "Every agent looks the same; write its model family with useModelName where it matters.": "每个智能体看起来都一样；需要时用 useModelName 写出其模型系列。",
+  "Every size": "每种尺寸",
+  "Agent": "智能体"
 }
