@@ -39,7 +39,7 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
     },
     onError: async (error, vars) => {
       if (!isApiError(error)) {
-        toast.error(t("auth.unexpectedError", "The change wasn't made: the console hit an unexpected error. Reload the page and try again."));
+        toast.error(t("auth.unexpectedError", "The change wasn't made; reload the page and try again."));
         return;
       }
       if (error.type === "authentication") {

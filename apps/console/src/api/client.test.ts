@@ -79,7 +79,7 @@ describe("the client's errors", () => {
       throw new TypeError("Failed to fetch");
     });
     const error = await failure(api.GET("/platform/v1/orgs/{org}", org));
-    expect(error).toMatchObject({ type: "network", status: 0, message: "Can't reach the gateway. Try again.", unreachable: true });
+    expect(error).toMatchObject({ type: "network", status: 0, message: "Can't reach the gateway; try again.", unreachable: true });
   });
 
   it("say so in Chinese when the network fails there", async () => {
@@ -92,9 +92,9 @@ describe("the client's errors", () => {
 
   it("say a bad gateway or timeout means it can't be reached, and name any other bare status", async () => {
     on("GET", "orgs/:org", new Response("<html>Bad Gateway</html>", { status: 502 }));
-    expect(await failure(api.GET("/platform/v1/orgs/{org}", org))).toMatchObject({ type: "internal", message: "Can't reach the gateway. Try again." });
+    expect(await failure(api.GET("/platform/v1/orgs/{org}", org))).toMatchObject({ type: "internal", message: "Can't reach the gateway; try again." });
     on("GET", "orgs/:org", new Response(null, { status: 504 }));
-    expect((await failure(api.GET("/platform/v1/orgs/{org}", org))).message).toBe("Can't reach the gateway. Try again.");
+    expect((await failure(api.GET("/platform/v1/orgs/{org}", org))).message).toBe("Can't reach the gateway; try again.");
     on("GET", "orgs/:org", new Response("oops", { status: 500 }));
     expect(await failure(api.GET("/platform/v1/orgs/{org}", org))).toMatchObject({ type: "internal", status: 500, message: "The gateway answered 500." });
     on("GET", "orgs/:org", json({ detail: "no" }, { status: 422 }));

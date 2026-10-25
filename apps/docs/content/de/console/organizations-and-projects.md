@@ -117,6 +117,7 @@ Die Seite **Einstellungen** eines Projekts enthält diese Einstellungen:
 | --- | --- |
 | Bild, Projektname | Erscheinen in der Seitenleiste und in den Anfrageprotokollen |
 | Projekt-ID | Die ID, die die Platform API verwendet |
+| Standardprojekt | Nur beim Standardprojekt zu sehen. Neue Organisationsmitglieder treten ihm bei, und es lässt sich nicht archivieren |
 | Maximale Schlüssellaufzeit | **Vorgabe der Organisation verwenden** oder ein kürzeres Maximum für neue Schlüssel dieses Projekts |
 | Inhaltsprotokollierung | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden. Lässt sich nicht einschalten, solange die Organisation sie ausgeschaltet hat |
 | Projekt archivieren | Archiviert das Projekt mit seinen Schlüsseln und Dienstkonten endgültig. Seine Schlüssel hören sofort auf zu funktionieren |

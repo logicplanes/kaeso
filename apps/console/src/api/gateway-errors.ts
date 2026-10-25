@@ -601,13 +601,13 @@ const messages = (): Rule[] => [
   rule("errors.model.noTools", (v) => t("errors.model.noTools", "The model `{model}` does not support tool calling.", v)),
   rule(
     "errors.model.forcedTool",
-    (v) => t("errors.model.forcedTool", "The model `{model}` does not accept {choice}; send `auto` and ask for the tool in the prompt.", v),
+    (v) => t("errors.model.forcedTool", "The model `{model}` does not accept {choice}; send `auto` and name the tool in the prompt.", v),
     { choice: "toolChoice" },
   ),
   rule("errors.model.noStructured", (v) => t("errors.model.noStructured", "The model `{model}` does not support structured output (a JSON schema).", v)),
   rule("errors.model.noReasoning", (v) => t("errors.model.noReasoning", "The model `{model}` does not support reasoning.", v)),
   rule("errors.model.noAdaptive", (v) =>
-    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead.", v),
+    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`.", v),
   ),
   rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
   rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),

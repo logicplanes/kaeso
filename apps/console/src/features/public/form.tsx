@@ -21,7 +21,7 @@ export function useSubmit() {
     } catch (e) {
       const failure = isApiError(e)
         ? { message: e.message, param: e.param, type: e.type }
-        : { message: t("common.unreachable", "Can't reach the gateway. Try again."), param: null, type: null };
+        : { message: t("common.unreachable", "Can't reach the gateway; try again."), param: null, type: null };
       setError(failure);
       toast.error(failure.message);
     } finally {

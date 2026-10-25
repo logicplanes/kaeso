@@ -85,7 +85,7 @@ Jede Änderung folgt diesen Regeln, und CI prüft die meisten davon:
 
 Das Gateway hat eigene Regeln, etwa keine Panics und keine Gleitkommazahlen für Geld ([Regeln des Gateways](architecture/gateway.md#regeln)). KPP ebenso ([Entwurfsprinzipien](kpp/index.md#entwurfsprinzipien)).
 
-Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen.
+Das Wurzelverzeichnis des Repositorys sowie `crates`, `packages`, `apps/console`, `apps/docs` und `apps/showcase` haben je eine `AGENTS.md`. Jede fasst die Regeln und Prüfungen ihres Teils zusammen, für Coding-Agents und für Menschen. `packages/ui/AGENTS.md` enthält die Regeln für Apps, die Oberflächen mit der UI-Bibliothek bauen, und wird in deren npm-Paket ausgeliefert.
 
 ## Abhängigkeit hinzufügen
 
@@ -95,7 +95,7 @@ Kaeso steht unter der MIT-Lizenz, und alles, was Kaeso ausliefert, hängt nur vo
 
 | Was ausgeliefert wird | Erlaubte Lizenzen | Geprüft von |
 | --- | --- | --- |
-| Das Gateway und der Updater | Die Liste in `deny.toml`: MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode und Zlib | `cargo deny check` |
+| Das Gateway und der Updater | Die Liste in `deny.toml`: MIT, MIT-0, Apache-2.0, Apache-2.0 WITH LLVM-exception, BSD-2-Clause, BSD-3-Clause, ISC, Unicode und Zlib | `cargo deny check` |
 | `kaeso-kpp`, `kaeso-codecs` | Dieselbe Liste, ohne Ausnahmen | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | Die UI-Bibliothek, die Konsole und die Dokumentation | MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0 und 0BSD | `pnpm licenses:check`, nach `pnpm build` |
 

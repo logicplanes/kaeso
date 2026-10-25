@@ -16,7 +16,7 @@ flowchart TD
     gateway[网关<br>127.0.0.1:18080]:::accent
     data[(PostgreSQL<br>ClickHouse<br>Valkey)]
     subgraph mock [模拟服务]
-      mocks[OpenAI 和 Anthropic<br>ChatGPT 和 Grok 登录<br>单点登录<br>版本和更新器]
+      mocks[OpenAI、Anthropic、<br>xAI 和 Together AI<br>ChatGPT 和 Grok 登录<br>单点登录<br>版本和更新器]
     end
     mail[Mailpit]
   end
@@ -34,9 +34,9 @@ flowchart TD
 | `gateway` | 从当前检出构建的网关 | `127.0.0.1:18080` |
 | `postgres`、`clickhouse`、`valkey` | 网关的数据库，Rust 测试也会使用 | `127.0.0.1:55432`、`127.0.0.1:58123`、`127.0.0.1:56379` |
 | `mail` | Mailpit，接收网关发出的每一封邮件 | `http://127.0.0.1:58025`，SMTP 在 `127.0.0.1:51025` |
-| `provider` | 模拟的 OpenAI 和 Anthropic API，因此不需要服务商密钥 | 仅在栈内部 |
+| `provider` | 模拟的 OpenAI、Anthropic、xAI 和 Together AI API，因此不需要服务商密钥 | 仅在栈内部 |
 | `idp` | 用于单点登录的模拟 OpenID Connect 身份提供商 | `http://idp.localhost:18091` |
-| `releases` | 模拟的 Kaeso 版本和更新器，供**设置** › **实例** › **更新**使用 | `http://127.0.0.1:18092` |
+| `releases` | 模拟的 Kaeso 版本和更新器，供**实例** › **更新**使用 | `http://127.0.0.1:18092` |
 | `accounts` | 栈内位于 `auth.openai.com` 的模拟 ChatGPT 登录，以及位于 `auth.x.ai` 和 `api.x.ai` 的模拟 Grok 登录和 xAI API，带有网关信任的测试证书 | `http://127.0.0.1:18093` |
 | `master-key` | 在网关启动前把网关的主密钥写入一个卷 | |
 

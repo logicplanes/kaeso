@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { icons } from "../../icons/vocabulary.js";
 import { useTheme, type ThemePreference } from "../../theme/theme-provider.js";
 import { IconButton } from "../icon-button/icon-button.js";
@@ -12,17 +13,25 @@ export const KAESO_THEME_MENU_VARIANTS = {
 } as const;
 export const KAESO_THEME_MENU_DEFAULT_VARIANTS = { variant: "ghost" } as const;
 
-export function ThemeMenu({ variant = "ghost", size = "sm" }: { variant?: "ghost" | "secondary" | undefined; size?: "sm" | "md" | undefined }) {
+export interface ThemeMenuProps {
+  variant?: keyof typeof KAESO_THEME_MENU_VARIANTS.variant | undefined;
+  size?: "sm" | "md" | undefined;
+  "data-force"?: string | undefined;
+}
+
+export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function ThemeMenu({ variant = "ghost", size = "sm", "data-force": force }, ref) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const t = useUiText();
   return (
     <Menu>
       <Menu.Trigger>
         <IconButton
+          ref={ref}
           icon={resolvedTheme === "dark" ? icons.themeDark : icons.themeLight}
           aria-label={t("themeMenu.theme", "Theme")}
           variant={variant}
           size={size}
+          data-force={force}
         />
       </Menu.Trigger>
       <Menu.Content align="end" className="min-w-180">
@@ -40,5 +49,5 @@ export function ThemeMenu({ variant = "ghost", size = "sm" }: { variant?: "ghost
       </Menu.Content>
     </Menu>
   );
-}
+});
 ThemeMenu.displayName = "ThemeMenu";

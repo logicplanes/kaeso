@@ -64,10 +64,11 @@ Die [Continuous Integration](#continuous-integration) führt dieselben Prüfunge
 
 `pnpm --filter <package> <script>` führt das Skript eines Pakets aus. Die Pakete heißen `kaeso-console`, `kaeso-docs`, `kaeso-showcase`, `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens`. Nachdem Sie eine Bibliothek geändert haben, führen Sie vor einem gefilterten Lauf `pnpm build:packages` aus. Die Coverage-Schwellen jedes Pakets stehen in seiner `vitest.config.ts` und steigen nur.
 
-Playwright braucht Chromium, das Sie einmalig installieren:
+Playwright braucht Chromium und für die Suite des Showcases zusätzlich WebKit, die Sie einmalig installieren:
 
 ```bash
 pnpm --filter kaeso-console exec playwright install chromium
+pnpm --filter kaeso-showcase exec playwright install webkit
 ```
 
 ### Die Konsole
@@ -93,7 +94,7 @@ Unit-Tests und End-to-End-Suite nutzen die Fixture-Seiten in `apps/docs/e2e/fixt
 
 Komponententests laufen in happy-dom mit Testing Library. Der Showcase hat keine Unit-Tests.
 
-Die End-to-End-Suite des Showcases führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und `<head>` der Seiten.
+Die End-to-End-Suite des Showcases führt Playwright gegen seinen Produktions-Build aus, führen Sie also zuerst `pnpm build` aus. Sie prüft die Barrierefreiheit mit axe in beiden Themes sowie Tastatur und Fokusringe. Außerdem prüft sie Schriftskala, Bewegung und Geometrie der Tokens, jede Komponentenseite in Telefonbreite, die deutschen und chinesischen Seiten sowie Sitemap und `<head>` der Seiten. Ihr Test des Navigations-Sheets läuft zusätzlich in WebKit.
 
 ## Rust
 
@@ -292,7 +293,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | TypeScript libraries | `pnpm build:packages`, einmal für jeden Job, der die Bibliotheken braucht |
 | TypeScript test | `pnpm test`, ein Job pro Workspace; die Konsole in sechs Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check` |
-| End-to-end console, docs und showcase | Das `e2e` jedes Pakets; die Konsole in fünf Teilen, der Showcase in Shards, seine Barrierefreiheitsprüfungen in eigenen Shards |
+| End-to-end console, docs und showcase | Das `e2e` jedes Pakets; die Konsole in fünf Teilen, der Showcase in Shards, seine Barrierefreiheitsprüfungen in eigenen Shards und sein WebKit-Test in einem eigenen Job |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 Schlägt ein End-to-End-Shard fehl, führt der Job **End-to-end console report** oder **End-to-end showcase report** die Ergebnisse der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-console` oder `playwright-showcase`.

@@ -36,7 +36,7 @@ export function useLeaveGoneOrg(org: string): boolean {
       const was = seen.current;
       toast(
         !was
-          ? t("auth.gone.notMember", "That organization doesn't exist, or you don't have access to it")
+          ? t("auth.gone.notMember", "That organization doesn't exist or you can't access it")
           : was.scheduled
             ? t("auth.gone.deleted", "{org} was deleted", { org: was.name })
             : t("auth.gone.left", "You no longer belong to {org}", { org: was.name }),

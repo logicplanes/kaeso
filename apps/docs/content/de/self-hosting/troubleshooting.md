@@ -78,7 +78,7 @@ Ist Kaeso schon eingerichtet, sagt der Befehl das. Die Einrichtungsseite meldet 
 
 Das Gateway erreicht den SMTP-Server nicht, oder der Server lehnt die E-Mail ab.
 
-1. Wählen Sie **Test-E-Mail senden** unter **Einstellungen** › **Instanz** › **Einstellungen**.
+1. Wählen Sie **Test-E-Mail senden** unter **Instanz** › **System**.
 2. Lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways.
 3. Prüfen Sie `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS` und die Zugangsdaten in der `.env`, und ob der Server von `KAESO_SMTP_FROM` senden darf.
 
@@ -128,10 +128,10 @@ Anfragen funktionieren wieder, sobald die Datenbank zurück ist, ohne Neustart. 
 
 ## Jemand hat seinen zweiten Faktor verloren
 
-Ein Instanz-Admin setzt ihn unter **Einstellungen** › **Instanz** › **Benutzer** zurück, im Sheet der Person, mit **Zwei-Faktor zurücksetzen**. Ohne einen Instanz-Admin, der sich anmelden kann, setzen Sie ihn auf dem Server zurück:
+Ein Instanz-Admin setzt ihn unter **Instanz** › **Benutzer** zurück, im Sheet der Person, mit **Zwei-Faktor zurücksetzen**. Ohne einen Instanz-Admin, der sich anmelden kann, setzen Sie ihn auf dem Server zurück:
 
 ```bash
-docker compose exec gateway kaeso user reset-2fa person@example.com
+docker compose exec gateway kaeso user reset-2fa owner@example.com
 ```
 
 In beiden Fällen entfernt Kaeso Authenticator und Wiederherstellungscodes, beendet die Sitzungen der Person und sendet ihr eine E-Mail. Wo Zwei-Faktor-Authentifizierung verlangt ist, richtet sie sie bei der nächsten Anmeldung neu ein.
@@ -140,7 +140,7 @@ In beiden Fällen entfernt Kaeso Authenticator und Wiederherstellungscodes, been
 
 Kaeso behandelt E-Mail-Adressen, die sich nur in der Schreibweise unterscheiden, als eine Adresse. Dazu gehören Groß- und Kleinschreibung, ein Akzent als Teil seines Buchstabens oder dahinter getippt sowie Buchstaben in voller Breite. Konten, die angelegt wurden, bevor Kaeso Adressen so verglich, können sich eine Adresse teilen.
 
-Kaeso meldet dann keines der beiden über diese Adresse an, schickt keinem einen Link und protokolliert `accounts share one canonical email address; refusing to look either up by it` mit beiden Benutzer-IDs. Ein Instanz-Admin findet beide unter **Einstellungen** › **Instanz** › **Benutzer** und löscht das Konto, das es nicht geben sollte. Das andere meldet sich danach wieder an wie zuvor.
+Kaeso meldet dann keines der beiden über diese Adresse an, schickt keinem einen Link und protokolliert `accounts share one canonical email address; refusing to look either up by it` mit beiden Benutzer-IDs. Ein Instanz-Admin findet beide unter **Instanz** › **Benutzer** und löscht das Konto, das es nicht geben sollte. Das andere meldet sich danach wieder an wie zuvor.
 
 ## Niemand kann sich über Single Sign-on anmelden
 

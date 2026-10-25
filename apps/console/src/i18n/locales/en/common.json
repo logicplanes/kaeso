@@ -45,6 +45,6 @@
   "common.total": "Total",
   "common.tryAgain": "Try again",
   "common.unknown": "Unknown",
-  "common.unreachable": "Can't reach the gateway. Try again.",
+  "common.unreachable": "Can't reach the gateway; try again.",
   "common.yes": "Yes"
 }

@@ -38,7 +38,7 @@ flowchart TD
 
 ## 网关
 
-`services/updates.rs` 和 `update_check` 任务负责查找新版本。该任务每五分钟询问一次下一次检查是否到期（`update_settings.next_check_at`）。
+`services/updates.rs` 和 `update_check` 任务负责查找新版本。该任务每分钟询问一次下一次检查是否到期（`update_settings.next_check_at`）。
 
 - **列表。** 一次检查带着 `If-None-Match` 获取 `releases_url?per_page=50`，并沿着下一页链接继续，最多十页，因为版本源不按版本顺序列出版本。列表有变化时，在一个事务中替换 `update_releases`。
 - **清单。** 对每个比当前运行版本更新的版本，检查会获取并保存它的 `release.json`，或者保存无法获取的原因。每次检查最多获取十二份，同时获取四份，从最新的开始。清单只从 `https://github.com/logicplanes/kaeso/releases/download/` 获取，使用镜像时则从 `updates.releases_url` 的源获取，而且客户端从不跟随从 HTTPS 到 HTTP 的重定向。

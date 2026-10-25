@@ -63,9 +63,9 @@ A session ends after 7 days without use, and after 30 days at most.
 
 Some actions need a sign-in from the last 15 minutes. If yours is older, the console asks you to sign in again before it carries them out. A sign-in through single sign-on dates from when your identity provider last checked you, which can be long before it sent you back to Kaeso.
 
-- In your account: changing your email address, setting a password when you have none, turning off two-factor authentication, regenerating recovery codes and deleting the account.
+- In your account: changing your email address, setting a password when you have none, and deleting the account. Setting up or turning off two-factor authentication, regenerating recovery codes, and **Link** and **Unlink** under **Single sign-on** need one too.
 - In an organization: the actions whose right needs a recent sign-in in [rights](../concepts/rights.md), such as adding provider keys, creating platform keys or deleting logs.
-- As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner.
+- As an instance admin: making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner. Scheduling an organization for deletion, **Delete now**, **Update to …**, choosing **Automatically** for updates, and changing account creation, organization creation or the allowed domains need one too. **Single sign-on for instance admins** needs one with a password or a sign-in link.
 
 The console asks for your password, or sends a sign-in link or a link to set a password. Only when your account has none of these, such as when the organization that manages it requires single sign-on, does it confirm through your identity provider.
 
