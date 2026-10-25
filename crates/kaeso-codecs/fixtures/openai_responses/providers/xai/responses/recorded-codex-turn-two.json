@@ -1,0 +1,110 @@
+{
+  "id": "58449c27-8145-9c57-b82a-9aa088052aa5",
+  "object": "response",
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "model": "grok-4.7",
+  "output": [
+    {
+      "id": "rs_58449c27-8145-9c57-b82a-9aa088052aa5",
+      "type": "reasoning",
+      "summary": [],
+      "encrypted_content": "vYf3Q63ZbMHTdOjt5/0xgltS84T6igeVLXzOI/xjXhXzgIxHEbTAIhCMr5thmPmxKtLXGURj3Nl6kayW1gSvY86gleADhGVbP313upP7wtHSF8xExQk/HGmLiFnl1EE3KMmm9JjNGs2jBw8cH2sP5Iu8NJpF102tYYgP3l60r9/8xiqngExvNX8zDe3hWAcsDX/JoKj3xOziHwlXYhYiCu2kTRMYjCxa9lCAEBoKXsg0VXAaF3KJZneZTBDDw7AF3J8wlCadVg",
+      "status": "completed"
+    },
+    {
+      "id": "msg_58449c27-8145-9c57-b82a-9aa088052aa5",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "4817"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "usage": {
+    "input_tokens": 2642,
+    "input_tokens_details": {
+      "cached_tokens": 2432
+    },
+    "output_tokens": 45,
+    "output_tokens_details": {
+      "reasoning_tokens": 43
+    },
+    "total_tokens": 2687,
+    "context_details": {
+      "input_tokens": 2642,
+      "output_tokens": 54
+    },
+    "cost_in_usd_ticks": 6480400,
+    "num_server_side_tools_used": 0,
+    "num_sources_used": 0
+  },
+  "created_at": 1792925710,
+  "completed_at": 1792925710,
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "low",
+    "summary": "detailed"
+  },
+  "temperature": 0.7,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "name": "exec_command",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      },
+      "strict": false
+    },
+    {
+      "type": "web_search",
+      "search_context_size": "medium"
+    }
+  ],
+  "top_p": 0.95,
+  "metadata": {
+    "system_fingerprint": "fp_c60958d81f66f847"
+  },
+  "service_tier": "default",
+  "top_logprobs": 0,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "background": false,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "safety_identifier": null,
+  "store": false,
+  "truncation": "disabled",
+  "user": null
+}

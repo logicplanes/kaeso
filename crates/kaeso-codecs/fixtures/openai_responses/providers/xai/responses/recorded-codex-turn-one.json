@@ -1,0 +1,110 @@
+{
+  "id": "459fb048-f905-99e6-b720-f28b6be8c10f",
+  "object": "response",
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "model": "grok-4.7",
+  "output": [
+    {
+      "id": "rs_459fb048-f905-99e6-b720-f28b6be8c10f",
+      "type": "reasoning",
+      "summary": [],
+      "encrypted_content": "oJPcgmeEZ0HqePV/5r3kLPzg141Z4JbIi9Xlz7XVxDDPMY6QqZ//gKTMJ39Dixo7fO1/9h/17KqVIkGnkZRk3W9tCFOY3t5fJXHauneQHjY8uf89ejr461D3czHqqaXqDM9hoRWXsPOJY7owyNL4Nr4e6v7m53wJp1uKxoBuvzybBn7JCQnLtYMaA/Su5T/+9l2iu/AVhtytotcS9MgrbPRxKl7Uj5i1MZrcPsiX1xr4oGuKMSv+0FGy4DMSUKPL+5AJi+oJTOTHBfBcViqAzv3089y2EWuxgQxaZABhInHl6sebntwgWajLL1TRqFJ/qVSLo8RqU3HxaADVEBfruWp2KdxGLXI4QmFqpbzSRsrb/+8+BZZyggfbdpZUKkvxSE6P9qfg5O0jLiVgG6eRrhcx3DU/hKwh9fbUFKm84wd5T9bvfR395yNiVuqlenXkz7W1FkQ7aXlBcLn1AcBeXGz3botEtTEdL9d1gGg/z9CcUvFky2tPL6ToqzByDlk+URYA",
+      "status": "completed"
+    },
+    {
+      "id": "msg_459fb048-f905-99e6-b720-f28b6be8c10f",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "ok"
+        }
+      ],
+      "role": "assistant"
+    }
+  ],
+  "usage": {
+    "input_tokens": 2546,
+    "input_tokens_details": {
+      "cached_tokens": 1152
+    },
+    "output_tokens": 82,
+    "output_tokens_details": {
+      "reasoning_tokens": 81
+    },
+    "total_tokens": 2628,
+    "context_details": {
+      "input_tokens": 2546,
+      "output_tokens": 89
+    },
+    "cost_in_usd_ticks": 13110400,
+    "num_server_side_tools_used": 0,
+    "num_sources_used": 0
+  },
+  "created_at": 1792925688,
+  "completed_at": 1792925690,
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "low",
+    "summary": "detailed"
+  },
+  "temperature": 0.7,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "name": "exec_command",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      },
+      "strict": false
+    },
+    {
+      "type": "web_search",
+      "search_context_size": "medium"
+    }
+  ],
+  "top_p": 0.95,
+  "metadata": {
+    "system_fingerprint": "fp_c60958d81f66f847"
+  },
+  "service_tier": "default",
+  "top_logprobs": 0,
+  "presence_penalty": 0.0,
+  "frequency_penalty": 0.0,
+  "background": false,
+  "instructions": null,
+  "max_output_tokens": null,
+  "max_tool_calls": null,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "safety_identifier": null,
+  "store": false,
+  "truncation": "disabled",
+  "user": null
+}

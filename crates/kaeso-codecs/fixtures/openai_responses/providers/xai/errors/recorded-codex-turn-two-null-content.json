@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": null,
+    "message": "Could not decode the compaction blob. Ensure it is unmodified from the compact response.",
+    "param": null,
+    "type": "invalid_request_error"
+  }
+}

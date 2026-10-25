@@ -132,14 +132,16 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | `sampling.seed`, `.frequency_penalty`, `.presence_penalty` | `Unsupported` | [Sampling](cross-format.md#sampling); nicht bei der Token-Zählung, bei der Sampling entfällt. |
 | `sampling.temperature` außerhalb von 0 bis 1 | `Unsupported` | Der Bereich von Anthropic ist 0 bis 1 (OpenAI erlaubt bis 2); der Wert wird nicht umskaliert. Nicht bei der Token-Zählung. |
 | `user` | `metadata.user_id` | |
-| `Role::System` | eine `role: "system"`-Nachricht für Anfragen, die aus Anthropic Messages dekodiert wurden; aus anderen Dialekten `Unsupported` (`system message`) | [Systemnachrichten](cross-format.md#systemnachrichten). |
+| `Role::System` | eine `role: "system"`-Nachricht für Anfragen, die aus Anthropic Messages dekodiert wurden; aus anderen Dialekten Text der nächsten Benutzerrunde, nach ihren Tool-Ergebnissen | [Systemnachrichten](cross-format.md#systemnachrichten). |
 | base64-Bilder außer JPEG, PNG, GIF oder WebP; Bildquellen aus Text | `Unsupported` | `Base64ImageSource`. |
 | base64-Dokumente außer `application/pdf`; Textdokumente außer `text/plain` | `Unsupported` | `Base64PDFSource`, `PlainTextSource`. |
 | Argumente eines Tool-Aufrufs, die kein Objekt sind; Tool-Parameter, die kein Objekt sind | `Unsupported` | `input` und `input_schema` sind Objekte. |
 | `Request::CountTokens` aus einem anderen Dialekt | `/v1/messages/count_tokens` ohne `max_tokens`, Sampling, `metadata` und `stream` | Sie ändern die Zahl der Eingabe-Token nicht, und der Endpunkt lehnt sie ab. Die eigene Zählanfrage einer Anthropic-App wird so gesendet, wie sie ankam. |
 | Ausgabe- und Reasoning-Einstellungen eines `Request::CountTokens`, die `check()` für die Generierung ablehnen würde (JSON-Modus, eine Schemabeschreibung, `strict: false`, Aufwand `minimal`, …) | weggelassen, nicht abgelehnt | Abgelehnt wird nur, was die gezählte Eingabe ändert. |
 | `Request::Embed` | `Unsupported` | |
-| `web_search`-Tool von OpenAI Responses | `{type: web_search_20250305, name: web_search}` | Mit `allowed_domains` und `user_location`, wo gesetzt; `web_search_call`-Items von Responses im Gespräch werden verworfen ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
+| `web_search`-Tool von OpenAI Responses | `{type: web_search_20250305, name: web_search}` | Mit `allowed_domains` und `user_location`, wo gesetzt; mit `external_web_access: false` weggelassen; `web_search_call`-Items von Responses im Gespräch werden verworfen ([gehostete Websuche](cross-format.md#gehostete-websuche)). |
+| `custom_tool_call`, `local_shell_call` von OpenAI Responses und ihre Ausgaben | `tool_use`- und `tool_result`-Blöcke | [Tool-Verlauf von Codex](cross-format.md#tool-verlauf-von-codex). |
+| `text.verbosity` von OpenAI Responses | weggelassen | Keine Entsprechung; in `kaeso-left-out` genannt ([bedingte Einträge](cross-format.md#bedingte-einträge)). |
 | `namespace`-Tools von OpenAI Responses | ein Funktions-Tool je Tool im Namespace, namens `<namespace>__<name>` | [Tool-Namespaces](cross-format.md#tool-namespaces). |
 | fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, Zitate, fremde Datei-IDs | `Unsupported` | `cross::check_foreign` ([Anfragen](cross-format.md#anfragen)). |
 

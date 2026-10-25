@@ -111,3 +111,15 @@ fn system_text_anywhere_goes_as_instructions_or_developer_messages() {
     assert_eq!(from_chat["store"], false);
     assert_eq!(from_chat["stream"], true);
 }
+
+#[test]
+fn leading_developer_items_reach_the_plan_route_as_the_app_wrote_them() {
+    let input = json!([
+        { "type": "message", "id": "msg_1", "role": "developer", "content": [{ "type": "input_text", "text": "You are Codex." }] },
+        { "type": "message", "id": "msg_2", "role": "developer", "content": [{ "type": "input_text", "text": "<skills_instructions/>" }] },
+        { "type": "message", "role": "user", "content": [{ "type": "input_text", "text": "Hi" }] },
+    ]);
+    let sent = for_plan(json!({ "model": "gpt-5", "input": input }), R);
+    assert_eq!(sent["input"], input);
+    assert!(sent.get("instructions").is_none(), "{sent}");
+}
