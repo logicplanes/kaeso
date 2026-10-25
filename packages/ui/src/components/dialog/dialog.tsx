@@ -50,6 +50,7 @@ const DIALOG_VIEWPORT = "fixed inset-0 z-50 flex justify-center p-16";
 const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden rounded-dialog bg-raised text-fg shadow-dialog outline-none dialog-motion";
 
 const DialogBusy = createContext(false);
+const LayerSlots = createContext({ toolbar: true, footerStart: true });
 
 function useScrolledUnder<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -143,6 +144,7 @@ function DialogFrame({
   rootRef,
 }: DialogProps & { rootRef?: Ref<HTMLDivElement> | undefined }) {
   const { ref, under, scrolled, check } = useScrolledUnder<HTMLDivElement>();
+  const slots = use(LayerSlots);
   const [box, boxRef] = useBox(inline);
   const frameRef = useMemo(() => mergeRefs(boxRef, rootRef), [boxRef, rootRef]);
   useResizeMotion(box, check);
@@ -181,6 +183,7 @@ function DialogFrame({
         {toolbar && (
           <div
             data-dialog-toolbar=""
+            hidden={!slots.toolbar}
             className={cn("flex shrink-0 flex-wrap items-center gap-8 px-24 pt-16 pb-12 transition-control", scrolled && "hairline-b")}
           >
             {toolbar}
@@ -190,19 +193,23 @@ function DialogFrame({
           <div
             ref={ref}
             data-dialog-body=""
-            className={cn("min-h-0 flex-1 overflow-y-auto px-24 scrollbar-quiet", toolbar ? "pt-0" : "pt-16", footer ? "pb-8" : "pb-24")}
+            className={cn("min-h-0 flex-1 overflow-y-auto px-24 scrollbar-quiet", toolbar ? "pt-0" : "pt-16", footer || footerStart ? "pb-8" : "pb-24")}
           >
             <GutterContent>
               <RaisedContent>{children}</RaisedContent>
             </GutterContent>
           </div>
         )}
-        {footer && (
+        {(footer || footerStart) && (
           <div
             data-dialog-footer=""
             className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-20 transition-control", under && "hairline-t")}
           >
-            {footerStart && <div className="mr-auto flex min-w-0 items-center gap-8">{footerStart}</div>}
+            {footerStart && (
+              <div hidden={!slots.footerStart} className="mr-auto flex min-w-0 items-center gap-8">
+                {footerStart}
+              </div>
+            )}
             {footer}
           </div>
         )}
@@ -460,51 +467,73 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
     if (e.target instanceof HTMLElement) focused.current[i] = e.target;
   };
   return (
-    <Dialog
-      ref={ref}
-      {...props}
-      title={current.title}
-      description={current.description}
-      toolbar={current.toolbar}
-      footerStart={current.footerStart}
-      footer={
-        current.footer
-          ? stack.map((l, i) =>
-              l.footer ? (
-                <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
-                  {l.footer}
-                </div>
-              ) : null,
-            )
-          : undefined
-      }
-      headerStart={
-        index > 0 ? (
-          <IconButton
-            key="back"
-            icon={icons.chevronLeft}
-            aria-label={t("dialog.back", "Back")}
-            onClick={() => go(index - 1)}
-            disabled={!!props.busy}
+    <LayerSlots value={{ toolbar: !!current.toolbar, footerStart: !!current.footerStart }}>
+      <Dialog
+        ref={ref}
+        {...props}
+        title={current.title}
+        description={current.description}
+        toolbar={
+          stack.some((l) => l.toolbar)
+            ? stack.map((l, i) =>
+                l.toolbar ? (
+                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                    {l.toolbar}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        footerStart={
+          stack.some((l) => l.footerStart)
+            ? stack.map((l, i) =>
+                l.footerStart ? (
+                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                    {l.footerStart}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        footer={
+          current.footer
+            ? stack.map((l, i) =>
+                l.footer ? (
+                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                    {l.footer}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        headerStart={
+          index > 0 ? (
+            <IconButton
+              key="back"
+              icon={icons.chevronLeft}
+              aria-label={t("dialog.back", "Back")}
+              onClick={() => go(index - 1)}
+              disabled={!!props.busy}
+              className="animate-layer-in"
+            />
+          ) : null
+        }
+      >
+        {stack.map((l, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              sections.current[i] = el;
+            }}
+            hidden={i !== index}
             className="animate-layer-in"
-          />
-        ) : null
-      }
-    >
-      {stack.map((l, i) => (
-        <div
-          key={i}
-          ref={(el) => {
-            sections.current[i] = el;
-          }}
-          hidden={i !== index}
-          className="animate-layer-in"
-          onFocus={remember(i)}
-        >
-          {l.content}
-        </div>
-      ))}
-    </Dialog>
+            onFocus={remember(i)}
+          >
+            {l.content}
+          </div>
+        ))}
+      </Dialog>
+    </LayerSlots>
   );
 });
 LayerDialog.displayName = "LayerDialog";

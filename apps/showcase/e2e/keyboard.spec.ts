@@ -65,6 +65,9 @@ test("LayerDialog keeps the focus in the layer it shows, so ⌘Enter submits fro
   const dialog = page.getByRole("dialog").filter({ has: page.locator("[data-dialog-frame]") });
   const back = dialog.getByRole("button", { name: "Back" });
   await expect(dialog).toHaveAccessibleName("Add model");
+  const search = dialog.getByRole("searchbox", { name: "Search models" });
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(dialog.getByRole("gridcell").first()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   const row = dialog.getByRole("gridcell", { name: /gpt-5-mini/ });
@@ -95,6 +98,8 @@ test("LayerDialog keeps the focus in the layer it shows, so ⌘Enter submits fro
   await expect(trigger).toBeFocused();
 
   await page.keyboard.press("Enter");
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(dialog.getByRole("gridcell").first()).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(dialog.getByRole("button", { name: "Add model" })).toBeFocused();

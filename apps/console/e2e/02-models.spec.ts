@@ -8,7 +8,11 @@ const row = (page: Page, text: string, grid = "Models") =>
     .getByRole("grid", { name: grid, exact: true })
     .getByRole("gridcell")
     .filter({ has: page.getByText(text, { exact: true }) });
-const hit = (page: Page, model: string) => row(page, model, "Models on models.dev");
+const hit = (page: Page, model: string) =>
+  page
+    .getByRole("table", { name: "Models on models.dev" })
+    .getByRole("row")
+    .filter({ has: page.getByText(model, { exact: true }) });
 
 async function pick(page: Page, model: string) {
   await expect(async () => {
@@ -46,7 +50,8 @@ test("every current model of a provider is added at once, and models already the
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("searchbox", { name: "Search models" }).fill("gpt-5.6");
-  await expect(hit(page, "gpt-5.6").getByText("Already in catalogue")).toBeVisible();
+  await expect(hit(page, "gpt-5.6").getByText("In catalogue")).toBeVisible();
+  await expect(hit(page, "gpt-5.6").getByRole("checkbox", { name: "Select gpt-5.6" })).toHaveAttribute("aria-disabled", "true");
   await dialog.getByRole("button", { description: "Provider" }).click();
   await page.getByRole("option", { name: /^Anthropic/ }).click();
   await expect(dialog.getByRole("button", { description: "Provider" })).toHaveText(/Anthropic/);
@@ -71,25 +76,31 @@ test("one model's values are reviewed before adding; a changed value becomes an 
   await expect(row(page, "gpt-5.4-nano").getByText("Overridden 1")).toBeVisible();
 });
 
-test("models are picked from the keyboard: Space selects, Enter opens a model's values, ⌘Enter adds", async ({ page }) => {
+test("models are picked from the keyboard: Space selects, a row's review button opens its values, ⌘Enter adds", async ({ page }) => {
   await openModels(page);
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Add models" });
   const search = dialog.getByRole("searchbox", { name: "Search models" });
   await expect(search).toBeFocused();
   await page.keyboard.type("gpt-4.1");
-  const hits = dialog.getByRole("grid", { name: "Models on models.dev" }).getByRole("gridcell");
+  const hits = dialog.getByRole("table", { name: "Models on models.dev" }).getByRole("rowgroup").last().getByRole("row");
   await expect(hits).toHaveCount(2);
   await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
     dialog.getByRole("switch", { name: "Include deprecated" }),
     dialog.getByRole("link", { name: "Open providers" }),
-    hit(page, "gpt-4.1"),
+    dialog.getByRole("checkbox", { name: "Select all rows" }),
   ]) {
     await page.keyboard.press("Tab");
     await expect(control).toBeFocused();
   }
+  for (const column of ["Model", "Context", "Per 1M in / out", "Released"]) {
+    await page.keyboard.press("Tab");
+    await expect(dialog.getByRole("columnheader", { name: column }).getByRole("button")).toBeFocused();
+  }
+  await page.keyboard.press("Tab");
+  await expect(hit(page, "gpt-4.1")).toBeFocused();
   await page.keyboard.press("Space");
   await expect(dialog.getByRole("button", { name: "Add 1 model" })).toBeVisible();
   await page.keyboard.press("ArrowDown");
@@ -107,8 +118,18 @@ test("models are picked from the keyboard: Space selects, Enter opens a model's 
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("gpt-4.1-mini");
   await expect(hits).toHaveCount(1);
-  for (let i = 0; i < 4; i++) await page.keyboard.press("Tab");
-  await expect(hit(page, "gpt-4.1-mini")).toBeFocused();
+  const review = hit(page, "gpt-4.1-mini").getByRole("button", { name: "Review gpt-4.1-mini" });
+  for (let i = 0; i < 16; i++) {
+    const focused = await expect(review)
+      .toBeFocused({ timeout: 200 })
+      .then(
+        () => true,
+        () => false,
+      );
+    if (focused) break;
+    await page.keyboard.press("Tab");
+  }
+  await expect(review).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Review gpt-4.1-mini" })).toBeVisible();
   await page.keyboard.press("ControlOrMeta+Enter");

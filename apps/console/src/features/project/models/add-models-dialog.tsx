@@ -524,59 +524,72 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
 }
 
 function hitColumns(providerName: (id: string) => string, review: (modelId: string) => void) {
+  const fixed = <T extends object>(column: T) => ({ ...column, enableResizing: false });
   return [
-    col.custom(
-      { id: "model", header: t("common.model", "Model"), size: 320, minWidth: 220, priority: 1, grow: true },
-      (h: SearchHit) => h.model_id,
-      (_id: string, h: SearchHit) => (
-        <span className="flex min-w-0 items-center gap-8">
-          <ModelLabel
-            provider={h.provider}
-            providerName={providerName(h.provider)}
-            model={h.model_id}
-            mark={false}
-            {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
-          />
-          {h.catalogue_model_id ? (
-            <Badge>{t("models.inCatalogue", "In catalogue")}</Badge>
-          ) : (
-            h.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
-          )}
-        </span>
+    fixed(
+      col.custom(
+        { id: "model", header: t("common.model", "Model"), size: 224, minWidth: 200, priority: 1, grow: true },
+        (h: SearchHit) => h.model_id,
+        (_id: string, h: SearchHit) => (
+          <span className="flex min-w-0 items-center gap-8">
+            <ModelLabel
+              provider={h.provider}
+              providerName={providerName(h.provider)}
+              model={h.model_id}
+              mark={false}
+              {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
+            />
+            {h.catalogue_model_id ? (
+              <Badge>{t("models.inCatalogue", "In catalogue")}</Badge>
+            ) : (
+              h.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+            )}
+          </span>
+        ),
       ),
     ),
-    col.custom(
-      { id: "context", header: t("models.field.context", "Context"), size: 88, priority: 3 },
-      (h: SearchHit) => h.context_limit ?? -1,
-      (_v: number, h: SearchHit) => contextLabel(h.context_limit),
-      { align: "end" },
+    fixed(
+      col.custom(
+        { id: "context", header: t("models.field.context", "Context"), size: 88, priority: 3 },
+        (h: SearchHit) => h.context_limit ?? -1,
+        (_v: number, h: SearchHit) => contextLabel(h.context_limit),
+        { align: "end" },
+      ),
     ),
-    col.custom(
-      { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 136, priority: 2 },
-      (h: SearchHit) => Number(h.input_price ?? -1),
-      (_v: number, h: SearchHit) => priceLabel(h),
-      { align: "end" },
+    fixed(
+      col.custom(
+        { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 128, priority: 2 },
+        (h: SearchHit) => Number(h.input_price ?? -1),
+        (_v: number, h: SearchHit) => priceLabel(h),
+        { align: "end" },
+      ),
     ),
-    col.custom(
-      { id: "released", header: t("models.field.released", "Released"), size: 104, priority: 4 },
-      (h: SearchHit) => h.release_date ?? "",
-      (_v: string, h: SearchHit) => (h.release_date ? monthLabel(h.release_date) : ""),
-      { align: "end" },
+    fixed(
+      col.custom(
+        { id: "released", header: t("models.field.released", "Released"), size: 96, priority: 4 },
+        (h: SearchHit) => h.release_date ?? "",
+        (_v: string, h: SearchHit) => (h.release_date ? monthLabel(h.release_date) : ""),
+        { align: "end" },
+      ),
     ),
-    col.custom(
-      { id: "review", header: "", size: 48, priority: 1 },
-      (h: SearchHit) => h.model_id,
-      (_id: string, h: SearchHit) =>
-        h.catalogue_model_id ? null : (
-          <IconButton
-            size="sm"
-            icon={icons.chevronRight}
-            aria-label={t("models.reviewModel", "Review {model}", { model: h.model_id })}
-            onClick={() => review(h.model_id)}
-          />
-        ),
-      { align: "end" },
-    ),
+    {
+      ...col.custom(
+        { id: "review", header: "", size: 48, priority: 1 },
+        (h: SearchHit) => h.model_id,
+        (_id: string, h: SearchHit) =>
+          h.catalogue_model_id ? null : (
+            <IconButton
+              size="sm"
+              icon={icons.chevronRight}
+              aria-label={t("models.reviewModel", "Review {model}", { model: h.model_id })}
+              onClick={() => review(h.model_id)}
+            />
+          ),
+        { align: "end" },
+      ),
+      enableSorting: false,
+      enableResizing: false,
+    },
   ];
 }
 
