@@ -153,6 +153,7 @@ pub async fn list(
     db: impl PgExecutor<'_>,
     org_id: Uuid,
     member: Option<Uuid>,
+    only: Option<&[Uuid]>,
     include_archived: bool,
     after: Option<Uuid>,
     limit: i64,
@@ -162,13 +163,15 @@ pub async fn list(
         "SELECT p.id, p.org_id, p.name, p.is_default, p.content_logging, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
          FROM projects p WHERE p.org_id = $1 \
          AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) \
+         AND ($6::uuid[] IS NULL OR p.id = ANY($6)) \
          AND ($3 OR p.archived_at IS NULL) AND ($4::uuid IS NULL OR p.id > $4) \
          ORDER BY p.id LIMIT $5",
         org_id,
         member,
         include_archived,
         after,
-        limit
+        limit,
+        only
     )
     .fetch_all(db)
     .await?)

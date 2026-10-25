@@ -471,9 +471,16 @@ pub async fn projects_list(
 ) -> ApiResult<Json<List<crate::platform::projects::project::ProjectView>>> {
     let o = org(&state, &id).await?;
     let page = page.page()?;
-    let rows =
-        kaeso_store::pg::projects::list(&state.pg, o.id, None, true, page.after, page.fetch())
-            .await?;
+    let rows = kaeso_store::pg::projects::list(
+        &state.pg,
+        o.id,
+        None,
+        None,
+        true,
+        page.after,
+        page.fetch(),
+    )
+    .await?;
     Ok(Json(List::from_rows(
         &page,
         rows,

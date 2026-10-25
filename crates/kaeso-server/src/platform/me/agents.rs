@@ -47,7 +47,9 @@ pub struct GrantBody {
     #[serde(default)]
     #[schema(example = json!(["account.view", "account.keys.view"]))]
     pub account: Vec<String>,
-    #[doc = "One entry per organization of the user; one left out is closed to the agent."]
+    #[doc = "One entry per organization of the user; one left out is closed to the agent.\n\
+        Answers list an organization the agent reaches through `future_orgs` as\n\
+        included, with those rights as far as the user and the org's policy allow."]
     #[serde(default)]
     pub orgs: Vec<OrgGrantBody>,
     #[doc = "The rights in organizations the user joins later; `null`: none."]
@@ -191,9 +193,12 @@ pub struct AgentView {
     pub last_used_at: Option<OffsetDateTime>,
 }
 
-async fn view(state: &AppState, a: &Agent) -> ApiResult<AgentView> {
+async fn view(state: &AppState, a: &Agent, held: &[service::HeldOrg]) -> ApiResult<AgentView> {
     let mut conn = state.pg.acquire().await?;
-    let grant = AgentGrant::from_store(&agents::grant_of(&mut conn, a).await?);
+    let grant = service::as_seen(
+        &AgentGrant::from_store(&agents::grant_of(&mut conn, a).await?),
+        held,
+    );
     let client = match a.client_id {
         Some(id) => agents::get_client(&mut *conn, id).await?.map(|c| c.name),
         None => None,
@@ -224,10 +229,12 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<Agent> {
     responses((status = 200, body = List<AgentView>))
 )]
 pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<List<AgentView>>> {
-    let rows = agents::list(&state.pg, ctx.user_id()?.uuid()).await?;
+    let user = ctx.user_id()?.uuid();
+    let rows = agents::list(&state.pg, user).await?;
+    let held = service::holdings(&state.pg, user).await?;
     let mut out = Vec::with_capacity(rows.len());
     for a in &rows {
-        out.push(view(&state, a).await?);
+        out.push(view(&state, a, &held).await?);
     }
     Ok(Json(List::complete(out)))
 }
@@ -246,7 +253,9 @@ pub async fn get(
     Path(id): Path<String>,
 ) -> ApiResult<Json<AgentView>> {
     let a = own(&state, &ctx, &id).await?;
-    Ok(Json(view(&state, &a).await?))
+    Ok(Json(
+        view(&state, &a, &service::holdings(&state.pg, a.user_id).await?).await?,
+    ))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -288,7 +297,9 @@ pub async fn update(
         .await?;
     tx.commit().await?;
     let a = own(&state, &ctx, &id.to_string()).await?;
-    Ok(Json(view(&state, &a).await?))
+    Ok(Json(
+        view(&state, &a, &service::holdings(&state.pg, a.user_id).await?).await?,
+    ))
 }
 
 async fn granting_for(
@@ -354,15 +365,16 @@ pub async fn set_rights(
     let before = AgentGrant::from_store(&agents::grant_of(&mut tx, &a).await?);
     let after = validated(&state, &ctx, Some(&before), &req).await?;
     agents::replace_grant(&mut tx, a.id, &after.to_store()).await?;
+    let held = service::holdings(&state.pg, a.user_id).await?;
     ctx.audit(None, Action::AgentRightsUpdate)
         .target("agent", id)
-        .before(GrantBody::of(&before))
+        .before(GrantBody::of(&service::as_seen(&before, &held)))
         .after(GrantBody::of(&after))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
     let a = own(&state, &ctx, &id.to_string()).await?;
-    Ok(Json(view(&state, &a).await?))
+    Ok(Json(view(&state, &a, &held).await?))
 }
 
 #[utoipa::path(

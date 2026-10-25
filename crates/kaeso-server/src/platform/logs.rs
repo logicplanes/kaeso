@@ -90,7 +90,7 @@ pub struct OrgLogSettingsUpdate {
 async fn forget_org(state: &AppState, org: Uuid) -> ApiResult<()> {
     let mut after = None;
     loop {
-        let page = projects::list(&state.pg, org, None, true, after, 500).await?;
+        let page = projects::list(&state.pg, org, None, None, true, after, 500).await?;
         for p in &page {
             forget(state, p.id).await;
         }

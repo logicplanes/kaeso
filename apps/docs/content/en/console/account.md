@@ -69,7 +69,7 @@ At the top, **Agents** shows the MCP server's address with the marks of Claude C
 - **Revoke** it, which signs it out at once;
 - read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
 
-An agent keeps working until you revoke it, or until it goes 90 days unused. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
+An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 
 ## Confirm a sensitive action
 

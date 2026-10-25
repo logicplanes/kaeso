@@ -245,9 +245,9 @@ rights!(
 rights!(
     InstanceRight, view = InstanceSystemView {
         InstanceSystemView = "instance.system.view", Instance, "View the system", false, false, false, [], "See the system, the instance settings, model sources and the update status.";
-        InstanceSettingsManage = "instance.settings.manage", Instance, "Change instance settings", false, false, false, [], "Change general, mail, logging, time zone and account settings, and send a test email.";
+        InstanceSettingsManage = "instance.settings.manage", Instance, "Change instance settings", true, false, false, [], "Change general, mail, logging, time zone and account settings, and send a test email.";
         InstanceModelSourcesManage = "instance.model_sources.manage", Instance, "Manage model sources", false, false, false, [], "Sync the model data from models.dev.";
-        InstanceUpdatesManage = "instance.updates.manage", Instance, "Manage updates", false, false, false, [], "Check for updates and change the update settings.";
+        InstanceUpdatesManage = "instance.updates.manage", Instance, "Manage updates", true, false, false, [], "Check for updates and change the update settings.";
         InstanceUpdatesApply = "instance.updates.apply", Instance, "Apply updates", true, false, false, [InstanceUpdatesManage], "Install a new version of Kaeso.";
         InstanceUsersView = "instance.users.view", Instance, "View users", false, false, false, [], "See every account of the instance and its organizations.";
         InstanceUsersManage = "instance.users.manage", Instance, "Manage users", true, false, false, [InstanceUsersView], "Invite, deactivate and reactivate accounts, end their sessions and reset their two-factor.";

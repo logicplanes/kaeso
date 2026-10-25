@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
+  "query": "SELECT id, org_id, project_id, user_id, service_account_id, name, secret_prefix, secret_last4, inference, platform, expires_at, disabled_at, archived_at, last_used_at, created_by_kind, created_by_id, created_at, rotated_from, replaced_by FROM api_keys WHERE user_id = $1 AND org_id = ANY($5) AND ($6::uuid[] IS NULL OR project_id = ANY($6)) AND ($2 OR archived_at IS NULL) AND ($3::uuid IS NULL OR id > $3) ORDER BY id LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -219,6 +219,7 @@
         "Bool",
         "Uuid",
         "Int8",
+        "UuidArray",
         "UuidArray"
       ]
     },
@@ -244,5 +245,5 @@
       true
     ]
   },
-  "hash": "b9e611b10b398f44299dd909dbe5a51b483b7c3d55201c1e1464ff8e35e7913c"
+  "hash": "42e49ebfead22518feaee42345f0400117f534e2836904d758759306c5eb33d2"
 }

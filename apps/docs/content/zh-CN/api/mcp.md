@@ -257,7 +257,7 @@ sequenceDiagram
 
 刷新令牌或授权码被第二次使用时，整个登录随之结束，因为其中之一必定已经泄露。由此登录得到的所有令牌都会失效，智能体必须重新连接。
 
-智能体会一直工作，直到您撤销它，或它 90 天没有请求。停用其用户也会使它停止，为实例关闭智能体同样如此。
+智能体会一直工作，直到您撤销它，或它 90 天没有请求。停用其用户也会使它停止，为实例关闭智能体同样如此。凡是结束其用户所有会话的操作也会撤销它：重置密码或双重身份验证，或由实例管理员结束会话。
 
 ## OAuth 端点
 
@@ -268,7 +268,7 @@ Kaeso 自己就是授权服务器。其颁发者是实例的公共 URL，例如 
 | `GET /.well-known/oauth-protected-resource/mcp` | 资源元数据：`/mcp` 的地址、作为其授权服务器的 Kaeso，以及 scope `kaeso`。也可通过 `/.well-known/oauth-protected-resource` 获取 |
 | `GET /.well-known/oauth-authorization-server` | 授权服务器元数据：下列端点、唯一的 PKCE 方法 `S256`、仅限公共客户端（`none`），以及每次重定向中的 `iss`（RFC 9207） |
 | `POST /oauth/register` | 注册客户端（RFC 7591），带 1 到 10 个重定向 URI，并返回其 `client_id`（`cli_…`）。重定向 URI 使用 HTTPS、任意端口的回环地址或私有 scheme |
-| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。`scope` 只能是 `kaeso`；如果发送 `resource`，它必须是 `/mcp` 的地址 |
+| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。`scope` 只能是 `kaeso`；如果发送 `resource`，它必须是 `/mcp` 的地址。被拒绝的请求会带着 `error` 返回环回地址或私有方案的重定向 URI；若是 HTTPS 地址，则改由控制台显示错误 |
 | `POST /oauth/token` | 表单编码。`grant_type=authorization_code` 带 `code`、`client_id`、`redirect_uri` 和 `code_verifier`，或 `grant_type=refresh_token` 带 `refresh_token` 和 `client_id` |
 | `POST /oauth/revoke` | 表单编码的 `token`。结束该令牌所属的登录；对未知令牌也返回 200 |
 
@@ -350,5 +350,5 @@ Kaeso 将智能体的每次工具调用保留 90 天：工具、目标、结果�
 
 - `orgs` 为用户的每个组织各有一项。未列出的组织，或带 `"included": false` 的组织，对智能体关闭。
 - 当 `"all": false` 时，`selected` 以 `{"project": "proj_…", "rights": […]}` 列出项目，其他项目保持关闭。
-- `future_orgs` 为 `null`，或为用户以后加入的组织设置 `{"rights": […], "project_rights": […]}`。
+- `future_orgs` 为 `null`，或为用户以后加入的组织设置 `{"rights": […], "project_rights": […]}`。响应会把智能体由此进入的组织列为已包含，并在用户和该组织策略允许的范围内带上这些权限，因此原样保存后它仍保持开放。
 - `customized` 表示选择预设后权限是否改动过。改动过时，控制台会显示它最初基于的预设。

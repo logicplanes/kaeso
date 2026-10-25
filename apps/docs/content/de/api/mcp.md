@@ -257,7 +257,7 @@ Eine unbekannte Methode erhält den JSON-RPC-Fehler `-32601`, ein unbekanntes To
 
 Wird ein Refresh-Token oder ein Code ein zweites Mal genutzt, endet diese ganze Anmeldung, denn eines davon muss abgeflossen sein. Jedes Token daraus hört auf zu funktionieren, und der Agent muss neu verbunden werden.
 
-Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ohne Anfrage bleibt. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation.
+Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ohne Anfrage bleibt. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation. Alles, was jede Sitzung seines Benutzers beendet, widerruft ihn ebenfalls: das Zurücksetzen des Passworts oder der Zwei-Faktor-Authentifizierung und das Beenden der Sitzungen durch einen Instanzadmin.
 
 ## OAuth-Endpunkte
 
@@ -268,7 +268,7 @@ Kaeso ist sein eigener Autorisierungsserver. Sein Issuer ist die öffentliche UR
 | `GET /.well-known/oauth-protected-resource/mcp` | Die Ressourcen-Metadaten: die Adresse von `/mcp`, Kaeso als Autorisierungsserver und der Scope `kaeso`. Auch unter `/.well-known/oauth-protected-resource` |
 | `GET /.well-known/oauth-authorization-server` | Die Metadaten des Autorisierungsservers: die Endpunkte unten, `S256` als einzige PKCE-Methode, nur öffentliche Clients (`none`) und `iss` in jeder Weiterleitung (RFC 9207) |
 | `POST /oauth/register` | Registriert einen Client (RFC 7591) mit 1 bis 10 Weiterleitungs-URIs und antwortet mit seiner `client_id` (`cli_…`). Eine Weiterleitungs-URI nutzt HTTPS, eine Loopback-Adresse mit beliebigem Port oder ein privates Schema |
-| `GET /oauth/authorize` | Nimmt `response_type=code`, `client_id`, `redirect_uri`, `state` und `code_challenge` mit `code_challenge_method=S256`. `scope` darf nur `kaeso` sein, und `resource` muss, wenn gesendet, die Adresse von `/mcp` sein |
+| `GET /oauth/authorize` | Nimmt `response_type=code`, `client_id`, `redirect_uri`, `state` und `code_challenge` mit `code_challenge_method=S256`. `scope` darf nur `kaeso` sein, und `resource` muss, wenn gesendet, die Adresse von `/mcp` sein. Eine abgelehnte Anfrage geht mit `error` an eine Loopback-Weiterleitungs-URI oder eine mit privatem Schema zurück; bei einer HTTPS-URI zeigt stattdessen die Konsole den Fehler |
 | `POST /oauth/token` | Formularkodiert. `grant_type=authorization_code` mit `code`, `client_id`, `redirect_uri` und `code_verifier`, oder `grant_type=refresh_token` mit `refresh_token` und `client_id` |
 | `POST /oauth/revoke` | Formularkodiertes `token`. Beendet die Anmeldung, zu der das Token gehört, und antwortet 200 auch für ein unbekanntes Token |
 
@@ -350,5 +350,5 @@ Die Rechte eines Agenten sind ein `grant`, in jeder Route gleich, die sie liest 
 
 - `orgs` hat einen Eintrag pro Organisation des Benutzers. Eine ausgelassene Organisation oder eine mit `"included": false` ist dem Agenten verschlossen.
 - Mit `"all": false` listet `selected` Projekte als `{"project": "proj_…", "rights": […]}`, und andere Projekte bleiben verschlossen.
-- `future_orgs` ist `null` oder `{"rights": […], "project_rights": […]}` für Organisationen, denen der Benutzer später beitritt.
+- `future_orgs` ist `null` oder `{"rights": […], "project_rights": […]}` für Organisationen, denen der Benutzer später beitritt. Antworten führen eine so erreichte Organisation als eingeschlossen, mit diesen Rechten, soweit der Benutzer und die Richtlinie der Organisation sie erlauben; wer sie so zurückspeichert, lässt sie offen.
 - `customized` sagt, ob Rechte nach der Wahl der Vorlage geändert wurden. Die Konsole zeigt dann die Vorlage, von der sie ausgingen.

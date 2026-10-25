@@ -143,6 +143,14 @@ pub fn redirect_uri_allowed(uri: &str) -> bool {
     }
 }
 
+fn receives_errors(uri: &str) -> bool {
+    Url::parse(uri).is_ok_and(|u| match u.scheme() {
+        "https" => false,
+        "http" => is_loopback(&u),
+        _ => true,
+    })
+}
+
 fn redirect_matches(registered: &str, presented: &str) -> bool {
     if registered == presented {
         return true;
@@ -376,7 +384,11 @@ pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery)
         _ => return console_error(&state, "invalid_redirect_uri"),
     };
     let client_state = get("state");
+    let native = receives_errors(&redirect_uri);
     let refuse = |error: &str| {
+        if !native {
+            return console_error(&state, error);
+        }
         Redirect::to(&redirect_with_error(
             &state,
             &redirect_uri,
@@ -617,12 +629,7 @@ async fn exchange(
         tx.commit().await?;
         return Ok(Err(refused));
     }
-    let family = if kind == TokenKind::Code {
-        Uuid::now_v7()
-    } else {
-        spent.family
-    };
-    let tokens = issue_tokens(&mut tx, spent.agent_id, family, now).await?;
+    let tokens = issue_tokens(&mut tx, spent.agent_id, spent.family, now).await?;
     agents::touch(&mut *tx, spent.agent_id, now, time::Duration::ZERO).await?;
     tx.commit().await?;
     Ok(Ok(tokens))
@@ -724,6 +731,25 @@ mod tests {
             "https://a.example/{}",
             "x".repeat(2000)
         )));
+    }
+
+    #[test]
+    fn only_addresses_on_the_users_machine_receive_errors_directly() {
+        for native in [
+            "http://127.0.0.1:33418/callback",
+            "http://localhost/cb",
+            "cursor://anysphere.cursor-retrieval/oauth/callback",
+            "com.example.agent:/oauth",
+        ] {
+            assert!(receives_errors(native), "{native}");
+        }
+        for web in [
+            "https://agent.example/cb",
+            "http://agent.example/cb",
+            "not a url",
+        ] {
+            assert!(!receives_errors(web), "{web}");
+        }
     }
 
     #[test]

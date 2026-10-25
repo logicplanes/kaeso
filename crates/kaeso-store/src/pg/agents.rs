@@ -403,6 +403,23 @@ pub async fn revoke(
     Ok(done.rows_affected() == 1)
 }
 
+pub async fn revoke_of_user(
+    db: impl PgExecutor<'_>,
+    user_id: Uuid,
+    now: OffsetDateTime,
+) -> Result<i64, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "WITH ended AS (UPDATE agents SET revoked_at = $2 WHERE user_id = $1 AND revoked_at IS NULL RETURNING id), \
+         tokens AS (UPDATE agent_tokens t SET revoked_at = $2 FROM agents a \
+         WHERE a.id = t.agent_id AND a.user_id = $1 AND t.revoked_at IS NULL) \
+         SELECT count(*) AS \"ended!\" FROM ended",
+        user_id,
+        now
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 pub async fn touch(
     db: impl PgExecutor<'_>,
     id: Uuid,

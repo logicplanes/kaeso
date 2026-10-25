@@ -360,6 +360,64 @@ pub fn validate(g: &Granting<'_>, body: &GrantBody) -> ApiResult<AgentGrant> {
     })
 }
 
+pub fn as_seen(grant: &AgentGrant, holdings: &[HeldOrg]) -> AgentGrant {
+    let mut seen = grant.clone();
+    let Some(future) = &grant.future else {
+        return seen;
+    };
+    for held in holdings {
+        if grant.orgs.contains_key(&held.id) || !held.policy.allowed {
+            continue;
+        }
+        let rights = future
+            .rights
+            .intersect(held.org_rights())
+            .intersect(held.policy.max.org_ceiling())
+            .intersect(grantable_org_rights());
+        let every = future
+            .projects
+            .every_project()
+            .intersect(held.project_rights())
+            .intersect(held.policy.max.project_ceiling());
+        seen.orgs.insert(
+            held.id,
+            Some(OrgAccess {
+                rights,
+                projects: Projects::All(every),
+            }),
+        );
+    }
+    seen
+}
+
+pub struct Reach {
+    pub org: OrgRights,
+    pub projects: Vec<(Uuid, ProjectRights)>,
+}
+
+pub fn reach(agent: &AgentCaller, held: &HeldOrg) -> Option<Reach> {
+    let access = agent.grant.org(held.id)?;
+    if !held.policy.allowed {
+        return None;
+    }
+    let org = agent_org_rights(held.org_rights(), access.rights, held.policy.max);
+    let projects = held
+        .projects
+        .iter()
+        .map(|p| {
+            let rights = agent_project_rights(
+                p.rights,
+                access.projects.granted(p.id),
+                held.policy.max,
+                org,
+            );
+            (p.id, rights)
+        })
+        .filter(|(_, r)| !r.is_empty())
+        .collect();
+    Some(Reach { org, projects })
+}
+
 fn added<I: Iterator<Item = Right>>(rights: I) -> bool {
     rights.into_iter().any(needs_confirmation)
 }
@@ -444,21 +502,15 @@ pub async fn usable(state: &AppState, agent: &AgentCaller) -> ApiResult<Usable> 
         }
     }
     for org in &held {
-        let Some(access) = agent.grant.org(org.id) else {
-            continue;
-        };
-        if !org.policy.allowed || policy_gap(&agent.sign_in, managed, org.area).is_some() {
+        if policy_gap(&agent.sign_in, managed, org.area).is_some() {
             continue;
         }
-        let rights = agent_org_rights(org.org_rights(), access.rights, org.policy.max);
-        out.org = out.org.union(rights);
-        for p in &org.projects {
-            out.project = out.project.union(agent_project_rights(
-                p.rights,
-                access.projects.granted(p.id),
-                org.policy.max,
-                rights,
-            ));
+        let Some(reach) = reach(agent, org) else {
+            continue;
+        };
+        out.org = out.org.union(reach.org);
+        for (_, rights) in reach.projects {
+            out.project = out.project.union(rights);
         }
     }
     Ok(out)
@@ -646,6 +698,52 @@ mod tests {
         assert!(g.org(h[0].id).is_some());
         assert!(g.org(h[1].id).is_none());
         assert!(g.org(Uuid::now_v7()).is_some());
+    }
+
+    #[test]
+    fn orgs_reached_through_future_orgs_show_with_what_the_user_and_policy_allow() {
+        let listed = held(OrgPreset::Developer, open());
+        let joined = held(OrgPreset::Member, open());
+        let closed = held(
+            OrgPreset::Owner,
+            OrgPolicy {
+                allowed: false,
+                max: AgentPreset::Full,
+            },
+        );
+        let h = [listed, joined, closed];
+        let mut b = body(&h[0], &["org.view"], &[]);
+        b.future_orgs = Some(
+            serde_json::from_value(serde_json::json!({
+                "rights": ["org.view", "members.view", "usage.org.view"],
+                "project_rights": ["project.view", "models.view", "limits.manage", "limits.view"]
+            }))
+            .unwrap(),
+        );
+        let mut g = validate(&granting(&h, false), &b).unwrap();
+        g.orgs.retain(|id, _| *id == h[0].id);
+        let seen = as_seen(&g, &h);
+        assert_eq!(seen.orgs.get(&h[0].id), g.orgs.get(&h[0].id));
+        let opened = seen.orgs[&h[1].id].as_ref().unwrap();
+        assert_eq!(
+            opened.rights,
+            OrgRights::EMPTY
+                .with(OrgRight::OrgView)
+                .with(OrgRight::MembersView)
+                .with(OrgRight::UsageOrgView)
+                .intersect(h[1].org_rights())
+        );
+        let Projects::All(every) = opened.projects else {
+            panic!("all projects");
+        };
+        assert!(every.contains(ProjectRight::ProjectView));
+        assert!(every.minus(h[1].project_rights()).is_empty());
+        assert!(
+            !seen.orgs.contains_key(&h[2].id),
+            "its policy refuses agents"
+        );
+        g.future = None;
+        assert_eq!(as_seen(&g, &h), g);
     }
 
     #[test]

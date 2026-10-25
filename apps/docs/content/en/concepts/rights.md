@@ -253,9 +253,9 @@ Every route under `instance/*` checks one of these rights. An instance admin's c
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `instance.system.view` | View the system | See the system, the instance settings, model sources and the update status. |  |
-| `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |
+| `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. | sensitive |
 | `instance.model_sources.manage` | Manage model sources | Sync the model data from models.dev. |  |
-| `instance.updates.manage` | Manage updates | Check for updates and change the update settings. |  |
+| `instance.updates.manage` | Manage updates | Check for updates and change the update settings. | sensitive |
 | `instance.updates.apply` | Apply updates | Install a new version of Kaeso. | sensitive; needs `instance.updates.manage` |
 | `instance.users.view` | View users | See every account of the instance and its organizations. |  |
 | `instance.users.manage` | Manage users | Invite, deactivate and reactivate accounts, end their sessions and reset their two-factor. | sensitive; needs `instance.users.view` |
