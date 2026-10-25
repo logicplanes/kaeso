@@ -167,6 +167,69 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "grok-cli-reasoning-content": {
+    "body": {
+      "input": [
+        {
+          "content": "<user_query>\nRun echo ok\n</user_query>",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"command\": \"echo ok\", \"description\": \"Print ok.\"}",
+          "call_id": "call_kaeso_1",
+          "name": "run_terminal_command",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_kaeso_1",
+          "output": "exit: 0\nok\n",
+          "type": "function_call_output"
+        },
+        {
+          "content": "ok",
+          "role": "assistant"
+        },
+        {
+          "content": "<user_query>\nsay ok\n</user_query>",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
+      "model": "mistral-large-4",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Run a bash command and return its output.",
+          "name": "run_terminal_command",
+          "parameters": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "properties": {
+              "command": {
+                "description": "The bash command to run.",
+                "type": "string"
+              },
+              "description": {
+                "description": "One short sentence that says what this command does and why you run it.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "command",
+              "description"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "identifiers-metadata-store": {
     "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,
@@ -769,6 +832,47 @@ expression: outcomes
       },
       "store": false,
       "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/mistral/reasoning-then-tool-call": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Lisbon right now?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "max_output_tokens": 200,
+      "model": "mistral-small-latest",
+      "reasoning": {
+        "effort": "high"
+      },
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City name, such as Lisbon",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
     },
     "path": "/v1/responses"
   },
