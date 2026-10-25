@@ -357,3 +357,52 @@ fn streamed_reasoning_before_a_tool_call_ends_when_the_call_starts() {
     assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
     assert_eq!(got.order[2], "tool call 1");
 }
+
+#[test]
+fn reasoning_an_app_in_another_format_sends_back_returns_in_the_providers_field() {
+    let body = serde_json::json!({
+        "id": "x", "object": "chat.completion", "created": 1, "model": "deepseek-reasoner",
+        "choices": [{"index": 0, "finish_reason": "tool_calls", "message": {
+            "role": "assistant", "content": "", "reasoning_content": "R1",
+            "tool_calls": [{"id": "call_1", "type": "function",
+                "function": {"name": "f", "arguments": "{}"}}]}}]
+    })
+    .to_string();
+    let ctx = ctx("deepseek", false).with_provider("deepseek");
+    let resp = OpenAiChat::decode_response(200, &HeaderList::new(), body.as_bytes(), &ctx).unwrap();
+    let anthropic = encode_reply(
+        DialectId::AnthropicMessages,
+        match &resp {
+            Reply::Generate(r) => r,
+            _ => panic!(),
+        },
+    );
+    let next = serde_json::json!({"model": "m", "max_tokens": 64, "messages": [
+        {"role": "user", "content": "go"},
+        {"role": "assistant", "content": anthropic["content"]},
+        {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "call_1", "content": "done"}]}
+    ]});
+    let req = dispatch::decode_request(
+        DialectId::AnthropicMessages,
+        kaeso_kpp::RequestKind::Generate,
+        next.to_string().as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let sent = |profile: ChatProfile| -> Value {
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider("deepseek")
+            .with_chat_profile(profile);
+        let enc = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+        serde_json::from_slice(&enc.body).unwrap()
+    };
+    assert_eq!(
+        sent(profile("deepseek"))["messages"][1]["reasoning_content"],
+        "R1"
+    );
+    assert!(
+        sent(ChatProfile::OPENAI)["messages"][1]
+            .get("reasoning_content")
+            .is_none()
+    );
+}

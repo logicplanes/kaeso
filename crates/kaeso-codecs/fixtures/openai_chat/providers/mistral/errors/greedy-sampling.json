@@ -1,0 +1,8 @@
+{
+  "object": "error",
+  "message": "top_p must be 1 when using greedy sampling.",
+  "type": "invalid_request_greedy_sampling",
+  "param": null,
+  "code": "3054",
+  "raw_status_code": 400
+}

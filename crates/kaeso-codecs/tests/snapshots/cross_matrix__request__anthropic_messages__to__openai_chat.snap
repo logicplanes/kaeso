@@ -87,6 +87,269 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "claude-code-tool-search": {
+    "body": {
+      "max_completion_tokens": 128000,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;",
+              "type": "text"
+            },
+            {
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+              "type": "text"
+            },
+            {
+              "text": "You are an agent working with the user toward their goals.",
+              "type": "text"
+            }
+          ],
+          "role": "system"
+        },
+        {
+          "content": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line.",
+          "role": "user"
+        },
+        {
+          "content": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch",
+          "role": "system"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "reasoning_effort": "medium",
+      "safety_identifier": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tools": [
+        {
+          "function": {
+            "description": "Reads a file from the local filesystem.",
+            "name": "Read",
+            "parameters": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "file_path": {
+                  "description": "The absolute path to the file to read",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "file_path"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Fetches full schema definitions for deferred tools so they can be called.",
+            "name": "ToolSearch",
+            "parameters": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "max_results": {
+                  "default": 5,
+                  "description": "Maximum number of results to return (default: 5)",
+                  "type": "number"
+                },
+                "query": {
+                  "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query",
+                "max_results"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "claude-code-tool-search-loaded": {
+    "body": {
+      "max_completion_tokens": 128000,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "x-anthropic-billing-header: cc_version=2.1.310.8c4; cc_entrypoint=sdk-cli;",
+              "type": "text"
+            },
+            {
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+              "type": "text"
+            },
+            {
+              "text": "You are an agent working with the user toward their goals.",
+              "type": "text"
+            }
+          ],
+          "role": "system"
+        },
+        {
+          "content": "Load the WebFetch tool with ToolSearch, then fetch https://example.com with it and tell me the page's title in one line.",
+          "role": "user"
+        },
+        {
+          "content": "# Environment\nPrimary working directory: /home/user/project\n\nThe following deferred tools are now available via ToolSearch:\nWebFetch\nWebSearch",
+          "role": "system"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n            \"query\": \"select:WebFetch\",\n            \"max_results\": 1\n          }",
+                "name": "ToolSearch"
+              },
+              "id": "toolu_0199pumA6DiQ6ow67Ujnv8bf",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "WebFetch",
+          "role": "tool",
+          "tool_call_id": "toolu_0199pumA6DiQ6ow67Ujnv8bf"
+        },
+        {
+          "content": "Tool loaded.",
+          "role": "user"
+        },
+        {
+          "content": "<total_tokens>14983472 tokens left</total_tokens>",
+          "role": "system"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n            \"url\": \"https://example.com\",\n            \"prompt\": \"What is the page's title?\"\n          }",
+                "name": "WebFetch"
+              },
+              "id": "toolu_01BWErusvWjXNyWi91GMgoJn",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "The page's title is \"Example Domain.\"",
+          "role": "tool",
+          "tool_call_id": "toolu_01BWErusvWjXNyWi91GMgoJn"
+        },
+        {
+          "content": "<total_tokens>14982930 tokens left</total_tokens>",
+          "role": "system"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "reasoning_effort": "medium",
+      "safety_identifier": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tools": [
+        {
+          "function": {
+            "description": "Reads a file from the local filesystem.",
+            "name": "Read",
+            "parameters": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "file_path": {
+                  "description": "The absolute path to the file to read",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "file_path"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Fetches full schema definitions for deferred tools so they can be called.",
+            "name": "ToolSearch",
+            "parameters": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "max_results": {
+                  "default": 5,
+                  "description": "Maximum number of results to return (default: 5)",
+                  "type": "number"
+                },
+                "query": {
+                  "description": "Query to find deferred tools. Use \"select:<tool_name>\" for direct selection, or keywords to search.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query",
+                "max_results"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Fetches a URL, converts the page to markdown, and answers `prompt` against it using a small fast model.",
+            "name": "WebFetch",
+            "parameters": {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "additionalProperties": false,
+              "properties": {
+                "offset": {
+                  "description": "Character position in the page text to start reading from. Use it to read on through a page too long for one call, with the value the previous result gave.",
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "prompt": {
+                  "description": "The prompt to run on the fetched content",
+                  "type": "string"
+                },
+                "url": {
+                  "description": "The URL to fetch content from",
+                  "format": "uri",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "prompt"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
   "claude-code-web-search": {
     "body": {
       "max_completion_tokens": 128000,
@@ -1046,9 +1309,9 @@ expression: outcomes
     "unsupported": "image in system, developer and tool messages"
   },
   "tool-search-deferred-tools": {
-    "message": "`tool_reference content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format. From Claude Code, unset `ENABLE_TOOL_SEARCH` or set it to `false`.",
-    "param": "messages[2].blocks[0].content[0]",
-    "unsupported": "tool_reference content block"
+    "message": "`advisor_20260301 tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Input tag 'advisor_20260301' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
+    "param": "tools[2]",
+    "unsupported": "advisor_20260301 tool"
   },
   "tools-parallel": {
     "body": {

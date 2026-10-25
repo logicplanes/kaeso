@@ -18,8 +18,7 @@ pub(super) struct InputCounter {
     pub(super) provider: ProviderRef,
     pub(super) dialect: DialectId,
     pub(super) asked: Option<(Arc<Request>, Request)>,
-    pub(super) adaptive_thinking: Option<bool>,
-    pub(super) reasoning: Option<bool>,
+    pub(super) flags: super::pipeline::ModelFlags,
     pub(super) timeouts: Timeouts,
     pub(super) sent_bytes: usize,
 }
@@ -74,12 +73,7 @@ impl InputCounter {
         };
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
-        let mut ctx = super::pipeline::egress_ctx(
-            &app_req,
-            &self.provider,
-            self.adaptive_thinking,
-            self.reasoning,
-        );
+        let mut ctx = super::pipeline::egress_ctx(&app_req, &self.provider, self.flags);
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
         let base = base_url(&self.state, &self.provider).ok_or_else(|| {
             KppError::provider(format!("no base URL for `{}`", self.provider.id()))

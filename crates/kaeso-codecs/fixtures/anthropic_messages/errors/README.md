@@ -14,6 +14,10 @@
 | `billing.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, BillingError |
 | `permission.json` | 403 `permission_error`. | schema: ErrorResponse, PermissionError |
 | `permission.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, PermissionError |
+| `tool-search-all-deferred.json` | 400 `invalid_request_error` for a request whose tools all have `defer_loading: true`. Kaeso refuses such a request with the same message for other formats. | live: `claude-sonnet-5-5` through Kaeso (same format) on 2026-10-25; same message as https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool#http-errors-400-status |
+| `tool-search-all-deferred.meta.json` | HTTP status for the body above. | live, as above |
+| `tool-search-unknown-reference.json` | 400 `invalid_request_error` for a `tool_reference` that names a tool the request doesn't send. Kaeso refuses such a request with the same message for other formats. | live: `claude-sonnet-5-5` through Kaeso (same format) on 2026-10-25; same message as https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool#http-errors-400-status |
+| `tool-search-unknown-reference.meta.json` | HTTP status for the body above. | live, as above |
 | `web-search-both-domain-lists.json` | 400 `invalid_request_error` for a `web_search_20250305` tool with both `allowed_domains` and `blocked_domains`. Kaeso refuses it with the same message for other formats. | live: `claude-haiku-5-5` through Kaeso (same format) on 2026-10-25 |
 | `web-search-both-domain-lists.meta.json` | HTTP status for the body above. | live, as above |
 | `not-found.json` | 404 `not_found_error`. | doc: https://platform.claude.com/docs/en/api/errors#error-shapes |

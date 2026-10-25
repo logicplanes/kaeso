@@ -5,7 +5,7 @@ use kaeso_kpp::{Block, DialectId, GenerateRequest, KppError, Message, Request, R
 use crate::codec::EgressCtx;
 use crate::cross::check_extras;
 use crate::openai_responses::{ReasoningReplay, history, namespaces, replay};
-use crate::{verbosity, web_search};
+use crate::{tool_search, verbosity, web_search};
 
 pub(crate) struct Draft<'a> {
     base: &'a GenerateRequest,
@@ -30,6 +30,10 @@ impl<'a> Draft<'a> {
 
     pub(crate) fn edit(&mut self) -> &mut GenerateRequest {
         self.edited.get_or_insert_with(|| self.base.clone())
+    }
+
+    pub(crate) fn replace(&mut self, edited: GenerateRequest) {
+        self.edited = Some(edited);
     }
 
     pub(crate) fn leave_out(&mut self, path: String) {
@@ -89,6 +93,9 @@ pub(crate) fn for_target<'a>(
         }
         _ => {}
     }
+    if let Some(loaded) = tool_search::for_foreign(draft.get(), target)? {
+        draft.replace(loaded);
+    }
     if !ctx.takes_tool_namespaces(target) {
         namespaces::flatten(&mut draft, target)?;
     }
@@ -111,10 +118,6 @@ pub(crate) fn for_target<'a>(
     })
 }
 
-// Anthropic takes a system message only right after a user turn and right before an
-// assistant turn, and not on every model (Claude Sonnet 5 refuses them), while OpenAI apps
-// place developer messages anywhere, typically before the user turn they introduce.
-// https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages
 fn foreign_system(d: &Draft<'_>, target: DialectId) -> Result<bool, KppError> {
     if d.get().extras.is_from(target) {
         return Ok(false);
@@ -136,6 +139,10 @@ fn leading_results(m: &Message) -> usize {
         .count()
 }
 
+// Anthropic takes a system message only right after a user turn and right before an
+// assistant turn, and not on every model (Claude Sonnet 5 refuses them), while OpenAI apps
+// place developer messages anywhere, typically before the user turn they introduce.
+// https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages
 fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
     if !foreign_system(d, target)? {
         return Ok(());

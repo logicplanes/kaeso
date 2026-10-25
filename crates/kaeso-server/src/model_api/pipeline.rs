@@ -868,12 +868,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         continuity::restore(state, key_id, g).await;
     }
 
-    let mut ectx = egress_ctx(
-        &app_req,
-        &eff.provider,
-        plan.adaptive_thinking,
-        plan.reasoning,
-    );
+    let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
     let dialect = plan.dialect;
     let (req, ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -1004,8 +999,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         provider: eff.provider.clone(),
         dialect: plan.dialect,
         asked: sent_req.map(|req| (app_req, req)),
-        adaptive_thinking: plan.adaptive_thinking,
-        reasoning: plan.reasoning,
+        flags: ModelFlags::of(&plan),
         timeouts,
         sent_bytes,
     };
@@ -1220,6 +1214,8 @@ pub(crate) fn redact_key_fragments(err: &mut KppError) {
 pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) -> KppError {
     if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
         err.kind = ErrorKind::Authentication;
+    } else if err.kind == ErrorKind::InvalidRequest && provider.exceeds_context(&err.message) {
+        err.kind = ErrorKind::ContextTooLong;
     }
     err
 }
@@ -1251,20 +1247,39 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct ModelFlags {
+    pub(super) adaptive_thinking: Option<bool>,
+    pub(super) thinking_binding: Option<bool>,
+    pub(super) reasoning: Option<bool>,
+}
+
+impl ModelFlags {
+    fn of(plan: &kaeso_core::catalogue::capability::Plan) -> Self {
+        ModelFlags {
+            adaptive_thinking: plan.adaptive_thinking,
+            thinking_binding: plan.thinking_binding,
+            reasoning: plan.reasoning,
+        }
+    }
+}
+
 pub(super) fn egress_ctx(
     app_req: &Request,
     provider: &ProviderRef,
-    adaptive_thinking: Option<bool>,
-    reasoning: Option<bool>,
+    flags: ModelFlags,
 ) -> EgressCtx {
     let mut ctx = EgressCtx::new(app_req)
         .with_provider(provider.id())
         .with_chat_profile(provider.chat())
         .with_responses_profile(provider.responses());
-    if let Some(a) = adaptive_thinking {
+    if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);
     }
-    if let Some(r) = reasoning {
+    if let Some(b) = flags.thinking_binding {
+        ctx = ctx.with_thinking_binding(b);
+    }
+    if let Some(r) = flags.reasoning {
         ctx = ctx.with_reasoning(r);
     }
     ctx
@@ -1302,18 +1317,23 @@ mod tests {
         let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
         for id in ["openai", "xai", "mistral"] {
             let p = ProviderRef::from(kaeso_core::provider::provider(id).unwrap());
-            let ctx = egress_ctx(&req, &p, Some(true), Some(false));
+            let flags = ModelFlags {
+                adaptive_thinking: Some(true),
+                thinking_binding: Some(false),
+                reasoning: Some(false),
+            };
+            let ctx = egress_ctx(&req, &p, flags);
             assert_eq!(ctx.provider.as_deref(), Some(id));
             assert_eq!(ctx.chat_profile, p.chat(), "{id}");
             assert_eq!(ctx.responses_profile, p.responses(), "{id}");
             assert_eq!(
-                (ctx.adaptive_thinking, ctx.reasoning),
-                (Some(true), Some(false))
+                (ctx.adaptive_thinking, ctx.thinking_binding, ctx.reasoning),
+                (Some(true), Some(false), Some(false))
             );
         }
         let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
         assert_eq!(
-            egress_ctx(&req, &xai, None, None)
+            egress_ctx(&req, &xai, ModelFlags::default())
                 .responses_profile
                 .web_search,
             kaeso_codecs::openai_responses::WebSearchTool::Xai

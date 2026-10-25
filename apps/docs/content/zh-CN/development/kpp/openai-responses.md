@@ -286,7 +286,7 @@ order: 7
 
 含 `type` 和 `code` 的行优先于状态码。其他错误码在这里不起决定作用，由状态码决定：`rate_limit_exceeded`、`rate_limit_error` 和 `slow_down`（`RateLimited`），`server_error`（`ProviderError`），`invalid_prompt`、`invalid_request_error` 和图像相关错误码（以 `invalid_image` 或 `image_` 开头，或以 `_image` 结尾；`InvalidRequest`）。它们只在没有状态码的地方起决定作用：流中的 `error` 事件，以及失败回复的 `error.code`。没有消息的错误对象得到 `The provider returned HTTP <status> without a message.`
 
-对于来自 OpenAI 方言（Chat、Responses、Embeddings）的错误，只要它们未被改动，编码时就回放其响应体和状态码。所谓未改动，是指从其响应体重新解码出的错误类型与该错误的类型相同，且消息一致。其他错误得到：
+对于来自 OpenAI 方言（Chat、Responses、Embeddings）的错误，只要它们未被改动，编码时就回放其响应体和状态码。所谓未改动，是指从其响应体重新解码出的错误类型与该错误的类型相同，且消息一致。来自其他方言的服务商错误不带 `param`：它指向 Kaeso 构建的请求中的字段，而不是应用请求中的字段。其他错误得到：
 
 | `ErrorKind` | 状态码 | `type` | `code` |
 | --- | --- | --- | --- |
