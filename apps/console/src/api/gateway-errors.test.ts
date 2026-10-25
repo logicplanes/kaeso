@@ -182,3 +182,24 @@ describe("the model API's messages, as request logs show them", () => {
     );
   });
 });
+
+describe("a refusal to create an account or an organization", () => {
+  const refused = (message: string) => new Response(JSON.stringify({ error: { type: "permission_denied", message } }), { status: 403 });
+
+  it("tells the person in German and Chinese whom to ask", async () => {
+    await speak("de");
+    expect((await errorFromResponse(refused("Accounts on this install are by invitation only; ask an administrator to invite you."))).message).toBe(
+      "Konten gibt es in dieser Installation nur auf Einladung; bitten Sie einen Administrator um eine Einladung.",
+    );
+    expect((await errorFromResponse(refused("Only instance admins can create organizations on this install."))).message).toBe(
+      "In dieser Installation können nur Instanz-Admins Organisationen erstellen.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refused("This email address can't create an account here; ask an administrator to invite you."))).message).toBe(
+      "此邮箱地址无法在此创建账户，请让管理员邀请您。",
+    );
+    expect((await errorFromResponse(refused("Your email address can't create organizations here; ask an instance admin."))).message).toBe(
+      "您的邮箱地址无法在此创建组织，请联系实例管理员。",
+    );
+  });
+});
