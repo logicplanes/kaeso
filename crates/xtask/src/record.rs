@@ -600,6 +600,7 @@ mod tests {
         embeddings: None,
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
+        context_window_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
         chat: ChatProfile::compatible("Example Cloud"),
