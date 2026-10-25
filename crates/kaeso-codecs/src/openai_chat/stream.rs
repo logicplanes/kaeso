@@ -11,8 +11,8 @@ use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::{decode_body, with_detail};
 use super::profile::ReplyReasoning;
 use super::response::{
-    ChatPart, REASONING_CONTENT, decode_finish, decode_usage, plain_text_part, read_part,
-    take_reasoning_field,
+    ChatPart, FORM_THINKING, REASONING_CONTENT, decode_finish, decode_usage, plain_text_part,
+    read_part, take_reasoning_field,
 };
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
@@ -22,8 +22,9 @@ use crate::wire::StringOr;
 
 pub(crate) const FORM_CHUNK: &str = "chunk";
 pub(crate) const FORM_CONTENT_SLOTS: &str = "cs";
-pub(crate) const FORM_THINKING_REST: &str = "th";
-pub(crate) const FORM_OMITTED_PARTS: &str = "op";
+pub(crate) const FORM_PART: &str = "part";
+pub(crate) const PART_CONTENT: &str = "content";
+pub(crate) const PART_THINKING: &str = "thinking";
 pub(crate) const FORM_REASONING_FIELD: &str = "rf";
 pub(crate) const FORM_EMPTY_TEXT: &str = "et";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
@@ -585,40 +586,50 @@ impl ChatStreamDecoder {
         if let Some(role) = delta.role {
             form.insert("role".to_owned(), Value::String(role));
         }
-        let mut thoughts: Vec<String> = Vec::new();
+        let mut thoughts: Vec<(String, Option<Map<String, Value>>)> = Vec::new();
+        let mut kept: Vec<(RawJson, &'static str)> = Vec::new();
         let text = match delta.content {
             Some(StringOr::String(text)) => Some(text),
             Some(StringOr::List(parts)) if self.thinking_parts => {
                 let mut text: Option<String> = None;
-                let mut kept = Vec::new();
-                let mut omitted = Vec::new();
                 for part in parts {
                     match read_part(&part) {
                         ChatPart::Text(t) => text.get_or_insert_with(String::new).push_str(&t),
-                        ChatPart::Thinking(thought) => {
-                            let said = thoughts.iter().any(|t| !t.is_empty());
-                            if said && thought.text.iter().any(|t| !t.is_empty()) {
-                                thoughts.push("\n\n".to_owned());
+                        ChatPart::Thinking(mut thought) => {
+                            let readable = thought.text.iter().any(|t| !t.is_empty());
+                            if !readable {
+                                if !thought.rest.is_empty() {
+                                    kept.push((part, PART_THINKING));
+                                }
+                                thoughts.extend(thought.text.into_iter().map(|t| (t, None)));
+                                continue;
                             }
-                            thoughts.extend(thought.text);
-                            if !thought.rest.is_empty() {
-                                kept.push(Value::Object(thought.rest));
+                            if thoughts.iter().any(|(t, _)| !t.is_empty()) {
+                                thoughts.push(("\n\n".to_owned(), None));
+                            }
+                            if let Some(Value::Array(inner)) = thought.rest.remove("thinking") {
+                                for item in inner {
+                                    let item = to_raw(&item)?;
+                                    if plain_text_part(&item).is_none() {
+                                        kept.push((item, PART_THINKING));
+                                    }
+                                }
+                            }
+                            let last = thought.text.iter().rposition(|t| !t.is_empty());
+                            let mut rest = Some(thought.rest).filter(|r| !r.is_empty());
+                            for (i, t) in thought.text.into_iter().enumerate() {
+                                let form = if Some(i) == last { rest.take() } else { None };
+                                thoughts.push((t, form));
                             }
                         }
-                        ChatPart::Other => omitted.push(part.to_value().unwrap_or(Value::Null)),
+                        ChatPart::Other => kept.push((part, PART_CONTENT)),
                     }
                 }
-                if thoughts.iter().any(|t| !t.is_empty()) {
+                if thoughts.iter().any(|(t, _)| !t.is_empty()) {
                     form.insert(
                         FORM_REASONING_FIELD.to_owned(),
                         Value::from(REASONING_CONTENT),
                     );
-                }
-                if !kept.is_empty() {
-                    form.insert(FORM_THINKING_REST.to_owned(), Value::Array(kept));
-                }
-                if !omitted.is_empty() {
-                    form.insert(FORM_OMITTED_PARTS.to_owned(), Value::Array(omitted));
                 }
                 text
             }
@@ -648,12 +659,12 @@ impl ChatStreamDecoder {
                 take_reasoning_field(self.reasoning_fields, &mut d_extra)
         {
             form.insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
-            thoughts.push(thought);
+            thoughts.push((thought, None));
         }
         for (key, value) in d_extra {
             fields.insert(format!("delta.{key}"), value);
         }
-        for thought in thoughts.into_iter().filter(|t| !t.is_empty()) {
+        for (thought, rest) in thoughts.into_iter().filter(|(t, _)| !t.is_empty()) {
             let index = match self.reasoning {
                 Some(index) => index,
                 None => {
@@ -670,6 +681,11 @@ impl ChatStreamDecoder {
             };
             let mut d = BlockDelta::new(index, Delta::ReasoningText(thought));
             d.extras = self.extras();
+            if let Some(rest) = rest {
+                d.extras
+                    .form
+                    .insert(FORM_THINKING.to_owned(), Value::Object(rest));
+            }
             events.push(StreamEvent::BlockDelta(d));
         }
         let text = match text {
@@ -714,10 +730,30 @@ impl ChatStreamDecoder {
             d.extras = self.extras();
             events.push(StreamEvent::BlockDelta(d));
         }
+        for (part, place) in kept {
+            self.kept_part(part, place, events);
+        }
         for entry in &delta.tool_calls {
             self.tool_entry(entry, events)?;
         }
         Ok(finish_reason)
+    }
+
+    fn kept_part(&mut self, part: RawJson, place: &'static str, events: &mut Vec<StreamEvent>) {
+        let index = self.new_block();
+        let mut start = BlockStart::new(
+            index,
+            BlockHeader::Unknown(RawItem::new(self.origin.clone(), part)),
+        );
+        start.extras = self.extras();
+        start
+            .extras
+            .form
+            .insert(FORM_PART.to_owned(), Value::from(place));
+        events.push(StreamEvent::BlockStart(start));
+        let mut stop = BlockStop::new(index);
+        stop.extras = self.extras();
+        events.push(StreamEvent::BlockStop(stop));
     }
 
     fn tool_entry(&mut self, raw: &RawJson, events: &mut Vec<StreamEvent>) -> Result<(), KppError> {
