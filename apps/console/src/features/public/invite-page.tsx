@@ -121,7 +121,7 @@ function Invitation({ token }: { token: string }) {
     return (
       <PublicPage
         title={t("public.invitationNotOpened", "The invitation couldn't be opened")}
-        description={isApiError(lookup.error) ? lookup.error.message : t("common.unreachable", "Can't reach the gateway. Try again.")}
+        description={isApiError(lookup.error) ? lookup.error.message : t("common.unreachable", "Can't reach the gateway; try again.")}
       >
         <Button variant="primary" size="xl" fullWidth loading={lookup.isFetching} onClick={() => void lookup.refetch()}>
           {t("common.tryAgain", "Try again")}

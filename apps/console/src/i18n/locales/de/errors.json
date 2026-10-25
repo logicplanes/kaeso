@@ -74,7 +74,7 @@
   "errors.expiryPast": "Das Ablaufdatum muss in der Zukunft liegen.",
   "errors.exportContentRight": "Zum Exportieren von Inhalten ist das Recht `logs.content.view` nötig.",
   "errors.exportFormat": "`jsonl` oder `csv` verwenden.",
-  "errors.exportStopped": "Der Export brach vor dem Ende ab. Bitte erneut versuchen.",
+  "errors.exportStopped": "Der Export brach vor dem Ende ab; bitte erneut versuchen.",
   "errors.fieldDate": "`{name}` muss ein Datum im Format JJJJ-MM-TT sein.",
   "errors.fieldGivenTwice": "`{name}` ist mehrfach angegeben.",
   "errors.fieldIdPrefix": "`{name}` muss eine ID sein, die mit `{prefix}` beginnt.",

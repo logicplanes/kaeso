@@ -162,7 +162,7 @@ describe("accepting while signed in", () => {
     });
     const { user } = await renderApp("/invite#token=inv_tok");
     await user.click(await screen.findByRole("button", { name: "Sign out to accept" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
   });
 
   it("asks to try again when the answer to signing out can't be read", async () => {
@@ -171,7 +171,7 @@ describe("accepting while signed in", () => {
     on("POST", "auth/logout", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp("/invite#token=inv_tok");
     await user.click(await screen.findByRole("button", { name: "Sign out to accept" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Sign out to accept" })).toBeInTheDocument();
   });
 });
