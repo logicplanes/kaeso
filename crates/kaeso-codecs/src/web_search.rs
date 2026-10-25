@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use kaeso_kpp::{
-    Block, DialectId, GenerateRequest, KppError, RawItem, RawJson, ToolChoice, ToolDef,
+    Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, DialectId, GenerateRequest,
+    KppError, RawItem, RawJson, StreamEvent, ToolChoice, ToolDef,
 };
 use serde::Deserialize;
 use serde_json::{Map, Value};
@@ -26,11 +29,15 @@ const LOCATION_FIELDS: &[&str] = &["type", "city", "country", "region", "timezon
 const XAI_MAX_DOMAINS: usize = 5;
 
 fn refuse(feature: &str, path: &str, target: &str, hint: &str) -> KppError {
+    refuse_from(RESPONSES, feature, path, target, hint)
+}
+
+fn refuse_from(origin: DialectId, feature: &str, path: &str, target: &str, hint: &str) -> KppError {
     KppError::unsupported(
         feature,
         format!(
             "`{feature}` comes from an {} request and has no equivalent in {target}. {hint}",
-            RESPONSES.display_name(),
+            origin.display_name(),
         ),
     )
     .with_param(path)
@@ -331,21 +338,31 @@ fn without_search_calls(d: &mut Draft<'_>, drop: impl Fn(Option<&str>) -> bool) 
     });
 }
 
-fn hosted_searches(r: &GenerateRequest) -> Vec<usize> {
+fn is_anthropic_search(item: &RawItem) -> bool {
+    item.origin.is(ANTHROPIC)
+        && type_tag(item.raw.as_raw()).ok().flatten().as_deref() == Some(ANTHROPIC_TOOL)
+}
+
+fn hosted_searches(r: &GenerateRequest, origin: DialectId) -> Vec<usize> {
+    let found = |item: &RawItem| match origin {
+        RESPONSES => is_hosted_search(item),
+        _ => is_anthropic_search(item),
+    };
     r.tools
         .iter()
         .enumerate()
-        .filter(|(_, t)| matches!(t, ToolDef::Unknown(item) if is_hosted_search(item)))
+        .filter(|(_, t)| matches!(t, ToolDef::Unknown(item) if found(item)))
         .map(|(i, _)| i)
         .collect()
 }
 
 fn map_searches(
     d: &mut Draft<'_>,
+    origin: DialectId,
     target: DialectId,
     mut map: impl FnMut(&Map<String, Value>, &str, &mut Vec<String>) -> Result<Mapped, KppError>,
 ) -> Result<(), KppError> {
-    let found = hosted_searches(d.get());
+    let found = hosted_searches(d.get(), origin);
     if found.is_empty() {
         return Ok(());
     }
@@ -357,8 +374,11 @@ fn map_searches(
             continue;
         };
         let fields = fields_of(item, &path)?;
-        let cached = cached_only(&fields, &path)?;
-        let out = if leaves_out_tool(RESPONSES, TOOL, target, cached) {
+        let (tool, cached) = match origin {
+            RESPONSES => (TOOL, cached_only(&fields, &path)?),
+            _ => (ANTHROPIC_TOOL, false),
+        };
+        let out = if leaves_out_tool(origin, tool, target, cached) {
             left_out.push(path);
             Mapped::LeftOut
         } else {
@@ -438,7 +458,7 @@ fn forces_search(choice: &ToolChoice) -> bool {
 }
 
 pub(crate) fn for_anthropic(d: &mut Draft<'_>) -> Result<(), KppError> {
-    map_searches(d, ANTHROPIC, |fields, path, left_out| {
+    map_searches(d, RESPONSES, ANTHROPIC, |fields, path, left_out| {
         anthropic_tool(fields, path, left_out).map(Mapped::Tool)
     })?;
     without_search_calls(d, |_| true);
@@ -446,19 +466,34 @@ pub(crate) fn for_anthropic(d: &mut Draft<'_>) -> Result<(), KppError> {
 }
 
 pub(crate) fn for_chat(d: &mut Draft<'_>) -> Result<(), KppError> {
-    map_searches(d, CHAT, |_, _, _| Ok(Mapped::LeftOut))?;
+    map_searches(d, RESPONSES, CHAT, |_, _, _| Ok(Mapped::LeftOut))?;
     without_search_calls(d, |_| true);
+    anthropic_searches(d, CHAT, |_, _| Ok(Mapped::LeftOut))?;
+    without_reported_searches(d);
     Ok(())
 }
 
 pub(crate) fn for_responses(d: &mut Draft<'_>, profile: ResponsesProfile) -> Result<(), KppError> {
     if profile.web_search == WebSearchTool::Xai {
-        map_searches(d, RESPONSES, |fields, path, _| {
+        map_searches(d, RESPONSES, RESPONSES, |fields, path, _| {
             xai_tool(fields, path, profile.provider).map(Mapped::Tool)
         })?;
     }
     without_search_calls(d, |id| id.is_some_and(|id| id.starts_with(KAESO_SEARCH_ID)));
+    anthropic_searches(d, RESPONSES, |fields, path| {
+        let (fields, _) = responses_fields(fields, path, profile.web_search)?;
+        match profile.web_search {
+            WebSearchTool::Xai => xai_tool(&fields, path, profile.provider),
+            _ => raw_tool(RESPONSES, fields),
+        }
+        .map(Mapped::Tool)
+    })?;
+    without_reported_searches(d);
     Ok(())
+}
+
+pub(crate) fn for_claude(d: &mut Draft<'_>) {
+    without_reported_searches(d);
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -518,4 +553,422 @@ pub(crate) fn anthropic_input_delta(item: &RawItem) -> Option<String> {
     }
     let delta: InputJsonDelta = item.raw.parse().ok()?;
     (delta.ty == "input_json_delta").then_some(delta.partial_json)
+}
+
+const KAESO_SERVER_ID: &str = "srvtoolu_kaeso_";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ResponsesSearch {
+    id: String,
+    status: String,
+    query: Option<String>,
+    sources: Vec<String>,
+}
+
+pub(crate) fn responses_search(item: &RawItem) -> Option<ResponsesSearch> {
+    #[derive(Deserialize)]
+    struct Call {
+        #[serde(rename = "type")]
+        ty: String,
+        id: String,
+        #[serde(default)]
+        status: Option<String>,
+        #[serde(default)]
+        action: Option<Action>,
+    }
+    #[derive(Deserialize)]
+    struct Action {
+        #[serde(rename = "type")]
+        ty: String,
+        #[serde(default)]
+        query: Option<String>,
+        #[serde(default)]
+        sources: Option<Vec<Source>>,
+    }
+    #[derive(Deserialize)]
+    struct Source {
+        #[serde(default)]
+        url: Option<String>,
+    }
+    if !item.origin.is(RESPONSES) {
+        return None;
+    }
+    let call: Call = item.raw.parse().ok()?;
+    let action = call.action.unwrap_or(Action {
+        ty: "search".into(),
+        query: None,
+        sources: None,
+    });
+    (call.ty == SEARCH_CALL && action.ty == "search").then(|| ResponsesSearch {
+        id: call.id,
+        status: call.status.unwrap_or_default(),
+        query: action.query,
+        sources: action
+            .sources
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|s| s.url)
+            .collect(),
+    })
+}
+
+fn anthropic_item(value: Value) -> Option<RawItem> {
+    RawJson::from_serialize(&value)
+        .ok()
+        .map(|raw| RawItem::new(kaeso_kpp::Origin::new(ANTHROPIC), raw))
+}
+
+fn server_tool_id(search: &ResponsesSearch) -> String {
+    let id: String = search
+        .id
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+        .collect();
+    format!("{KAESO_SERVER_ID}{id}")
+}
+
+pub(crate) fn server_tool_use(search: &ResponsesSearch, input: Value) -> Option<RawItem> {
+    anthropic_item(serde_json::json!({
+        "type": "server_tool_use",
+        "id": server_tool_id(search),
+        "name": ANTHROPIC_NAME,
+        "input": input,
+    }))
+}
+
+pub(crate) fn search_input(search: &ResponsesSearch) -> Value {
+    match &search.query {
+        Some(q) => serde_json::json!({ "query": q }),
+        None => serde_json::json!({}),
+    }
+}
+
+pub(crate) fn search_result(search: &ResponsesSearch) -> Option<RawItem> {
+    let content = match search.status.as_str() {
+        "completed" => Value::Array(
+            search
+                .sources
+                .iter()
+                .map(|url| {
+                    serde_json::json!({
+                        "type": "web_search_result",
+                        "url": url,
+                        "title": "",
+                        "encrypted_content": "",
+                        "page_age": null,
+                    })
+                })
+                .collect(),
+        ),
+        "failed" => serde_json::json!({
+            "type": "web_search_tool_result_error",
+            "error_code": "unavailable",
+        }),
+        _ => return None,
+    };
+    anthropic_item(serde_json::json!({
+        "type": "web_search_tool_result",
+        "tool_use_id": server_tool_id(search),
+        "content": content,
+    }))
+}
+
+pub(crate) fn for_anthropic_reply(blocks: &[Block]) -> Option<Vec<Block>> {
+    let found = |b: &Block| matches!(b, Block::Unknown(item) if responses_search(item).is_some());
+    if !blocks.iter().any(found) {
+        return None;
+    }
+    let mut out = Vec::with_capacity(blocks.len() + 1);
+    for b in blocks {
+        let search = match b {
+            Block::Unknown(item) => responses_search(item),
+            _ => None,
+        };
+        let Some(search) = search else {
+            out.push(b.clone());
+            continue;
+        };
+        out.extend(server_tool_use(&search, search_input(&search)).map(Block::Unknown));
+        out.extend(search_result(&search).map(Block::Unknown));
+    }
+    Some(out)
+}
+
+#[derive(Default)]
+pub(crate) struct ReplySearches {
+    index: HashMap<u32, u32>,
+    next: u32,
+    held: HashMap<u32, RawItem>,
+}
+
+impl ReplySearches {
+    fn index(&mut self, upstream: u32) -> u32 {
+        if let Some(i) = self.index.get(&upstream) {
+            return *i;
+        }
+        let i = self.fresh();
+        self.index.insert(upstream, i);
+        i
+    }
+
+    fn fresh(&mut self) -> u32 {
+        let i = self.next;
+        self.next = self.next.saturating_add(1);
+        i
+    }
+
+    fn found(&mut self, item: &RawItem) -> Vec<StreamEvent> {
+        let Some(search) = responses_search(item) else {
+            return Vec::new();
+        };
+        let mut out = Vec::new();
+        if let Some(start) = server_tool_use(&search, Value::Object(Map::new())) {
+            let at = self.fresh();
+            out.push(StreamEvent::BlockStart(BlockStart::new(
+                at,
+                BlockHeader::Unknown(start),
+            )));
+            let input = search_input(&search);
+            if let Some(delta) = (input != Value::Object(Map::new()))
+                .then(|| {
+                    anthropic_item(serde_json::json!({
+                        "type": "input_json_delta",
+                        "partial_json": input.to_string(),
+                    }))
+                })
+                .flatten()
+            {
+                out.push(StreamEvent::BlockDelta(BlockDelta::new(
+                    at,
+                    Delta::Unknown(delta),
+                )));
+            }
+            out.push(StreamEvent::BlockStop(BlockStop::new(at)));
+        }
+        if let Some(result) = search_result(&search) {
+            let at = self.fresh();
+            out.push(StreamEvent::BlockStart(BlockStart::new(
+                at,
+                BlockHeader::Unknown(result),
+            )));
+            out.push(StreamEvent::BlockStop(BlockStop::new(at)));
+        }
+        out
+    }
+
+    pub(crate) fn map(&mut self, event: &StreamEvent) -> Option<Vec<StreamEvent>> {
+        let upstream = match event {
+            StreamEvent::BlockStart(s) => {
+                if let BlockHeader::Unknown(item) = &s.block
+                    && responses_search(item).is_some()
+                {
+                    self.held.insert(s.index, item.clone());
+                    return Some(Vec::new());
+                }
+                s.index
+            }
+            StreamEvent::BlockDelta(d) => {
+                if let Some(held) = self.held.get_mut(&d.index) {
+                    if let Delta::Unknown(item) = &d.delta
+                        && responses_search(item).is_some()
+                    {
+                        *held = item.clone();
+                    }
+                    return Some(Vec::new());
+                }
+                d.index
+            }
+            StreamEvent::BlockStop(s) => {
+                if let Some(item) = self.held.remove(&s.index) {
+                    return Some(self.found(&item));
+                }
+                s.index
+            }
+            _ => return None,
+        };
+        let at = self.index(upstream);
+        if at == upstream {
+            return None;
+        }
+        Some(vec![match event.clone() {
+            StreamEvent::BlockStart(mut s) => {
+                s.index = at;
+                StreamEvent::BlockStart(s)
+            }
+            StreamEvent::BlockDelta(mut d) => {
+                d.index = at;
+                StreamEvent::BlockDelta(d)
+            }
+            StreamEvent::BlockStop(mut s) => {
+                s.index = at;
+                StreamEvent::BlockStop(s)
+            }
+            other => other,
+        }])
+    }
+}
+
+// Anthropic's `web_search_20250305` server tool, as Claude Code's `WebSearch` sends it.
+// https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+fn anthropic_searches(
+    d: &mut Draft<'_>,
+    target: DialectId,
+    mut map: impl FnMut(&Map<String, Value>, &str) -> Result<Mapped, KppError>,
+) -> Result<(), KppError> {
+    let r = d.get();
+    if hosted_searches(r, ANTHROPIC).is_empty() {
+        return Ok(());
+    }
+    let named_tool = r
+        .tools
+        .iter()
+        .any(|t| matches!(t, ToolDef::Function(f) if f.name == ANTHROPIC_NAME));
+    if !named_tool && matches!(&r.tool_choice, Some(ToolChoice::Tool(n)) if n == ANTHROPIC_NAME) {
+        return Err(refuse_from(
+            ANTHROPIC,
+            "tool_choice `web_search`",
+            "tool_choice",
+            target.display_name(),
+            "Use `auto` or `any` instead, so the model decides when to search.",
+        ));
+    }
+    map_searches(d, ANTHROPIC, target, |fields, path, _| map(fields, path))
+}
+
+fn responses_fields(
+    fields: &Map<String, Value>,
+    path: &str,
+    shape: WebSearchTool,
+) -> Result<(Map<String, Value>, Option<u64>), KppError> {
+    let target = RESPONSES.display_name();
+    let mut tool = Map::new();
+    tool.insert("type".into(), TOOL.into());
+    let mut filters = Map::new();
+    let mut limit = None;
+    for (key, value) in fields {
+        let at = format!("{path}.{key}");
+        match (key.as_str(), value) {
+            ("type" | "cache_control", _) | (_, Value::Null) => {}
+            ("name", Value::String(n)) if n == ANTHROPIC_NAME => {}
+            ("allowed_domains", Value::Array(_)) => {
+                filters.insert(key.clone(), value.clone());
+            }
+            ("blocked_domains", Value::Array(_)) => {
+                let name = match shape {
+                    WebSearchTool::Xai => "excluded_domains",
+                    _ => "blocked_domains",
+                };
+                filters.insert(name.into(), value.clone());
+            }
+            ("max_uses", Value::Number(n)) if n.as_u64().is_some_and(|n| n > 0) => {
+                limit = n.as_u64();
+            }
+            ("user_location", Value::Object(location)) => {
+                let mut out = Map::new();
+                for (k, v) in location {
+                    if v.is_null() {
+                        continue;
+                    }
+                    let approximate = k != "type" || v.as_str() == Some("approximate");
+                    if !LOCATION_FIELDS.contains(&k.as_str()) || !approximate {
+                        return Err(refuse_from(
+                            ANTHROPIC,
+                            &format!("web_search.user_location.{k}"),
+                            &format!("{at}.{k}"),
+                            target,
+                            "Remove it.",
+                        ));
+                    }
+                    out.insert(k.clone(), v.clone());
+                }
+                if !out.is_empty() {
+                    out.insert("type".into(), "approximate".into());
+                    tool.insert("user_location".into(), Value::Object(out));
+                }
+            }
+            _ => {
+                return Err(refuse_from(
+                    ANTHROPIC,
+                    &format!("web_search.{key}"),
+                    &at,
+                    target,
+                    "Remove it, or send the request to a model served through its original format.",
+                ));
+            }
+        }
+    }
+    filters.retain(|_, v| v.as_array().is_some_and(|a| !a.is_empty()));
+    if !filters.is_empty() {
+        tool.insert("filters".into(), Value::Object(filters));
+    }
+    Ok((tool, limit))
+}
+
+pub(crate) const SOURCES: &str = "web_search_call.action.sources";
+
+pub(crate) fn search_limit(
+    r: &GenerateRequest,
+    shape: WebSearchTool,
+) -> Result<Option<(&'static str, u64)>, KppError> {
+    let key = match shape {
+        WebSearchTool::Xai => "max_turns",
+        _ => "max_tool_calls",
+    };
+    for i in hosted_searches(r, ANTHROPIC) {
+        let path = format!("tools[{i}]");
+        let Some(ToolDef::Unknown(item)) = r.tools.get(i) else {
+            continue;
+        };
+        if let (_, Some(limit)) = responses_fields(&fields_of(item, &path)?, &path, shape)? {
+            return Ok(Some((key, limit)));
+        }
+    }
+    Ok(None)
+}
+
+pub(crate) fn asks_for_sources(r: &GenerateRequest) -> bool {
+    !r.extras.is_from(RESPONSES) && !hosted_searches(r, RESPONSES).is_empty()
+}
+
+fn reported_by_kaeso(block: &Block) -> bool {
+    #[derive(Deserialize)]
+    struct Ids {
+        #[serde(rename = "type")]
+        ty: String,
+        #[serde(default)]
+        id: Option<String>,
+        #[serde(default)]
+        tool_use_id: Option<String>,
+    }
+    let Block::Unknown(item) = block else {
+        return false;
+    };
+    if !item.origin.is(ANTHROPIC) {
+        return false;
+    }
+    let Ok(ids) = item.raw.parse::<Ids>() else {
+        return false;
+    };
+    let id = match ids.ty.as_str() {
+        "server_tool_use" => ids.id,
+        "web_search_tool_result" => ids.tool_use_id,
+        _ => None,
+    };
+    id.is_some_and(|id| id.starts_with(KAESO_SERVER_ID))
+}
+
+fn without_reported_searches(d: &mut Draft<'_>) {
+    let reported = d
+        .get()
+        .messages
+        .iter()
+        .any(|m| m.blocks.iter().any(reported_by_kaeso));
+    if !reported {
+        return;
+    }
+    d.edit().messages.retain_mut(|m| {
+        let held = m.blocks.len();
+        m.blocks.retain(|b| !reported_by_kaeso(b));
+        m.blocks.len() == held || !m.blocks.is_empty()
+    });
 }

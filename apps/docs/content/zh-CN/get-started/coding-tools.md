@@ -32,6 +32,8 @@ Claude Code 使用 Anthropic Messages。在 `~/.claude/settings.json` 中把它�
 
 背后是 OpenAI 模型时，Claude Code 可能会发送 Kaeso 无法转换的 Anthropic 预发布字段。Kaeso 会返回一个指出这些字段的错误。在 `env` 中加入 `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"` 即可不发送它们。
 
+Claude Code 的 `WebSearch` 会使用 GPT 和 Grok 模型自带的网页搜索。通过 Chat Completions 提供的模型（例如 Mistral）没有网页搜索，因此它们会在不搜索的情况下回答 `WebSearch`。
+
 > [!WARNING]
 > 请把密钥放在用户设置或 shell 配置文件中。项目的设置文件会被提交，能读取该仓库的任何人都可能使用这个密钥。
 

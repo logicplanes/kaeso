@@ -220,7 +220,8 @@ pub(crate) fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>
 fn encode_message(r: &Response) -> Result<Ext<MessageRespW>, KppError> {
     let own = r.extras.is_from(D);
     let mut enc = BlockEncoder::new(Origin::new(D), Side::Reply);
-    let content = enc.blocks(&r.blocks)?;
+    let searches = crate::web_search::for_anthropic_reply(&r.blocks);
+    let content = enc.blocks(searches.as_deref().unwrap_or(&r.blocks))?;
     let (stop_reason, stop_sequence) = encode_stop(Some(&r.stop), &r.extras, "");
     let usage = to_raw(&encode_usage(&r.usage, UsageShape::Full))?;
     let mut extra = extra_for(&r.extras, D);

@@ -8,7 +8,7 @@ Sources, read 2026-10-19:
 - Migrating from Chat Completions: https://docs.x.ai/developers/model-capabilities/text/comparison
 - Models and pricing: https://docs.x.ai/developers/models
 
-Every reply, stream and error below is a live recording made with `cargo xtask record` on 2026-10-19 (see `RECORDED.md` in each folder), with `grok-4.3`. `errors/recorded-invalid-api-key.json` was recorded the same day with a plain `POST` and a placeholder key. The model listing is in `openai_chat/providers/xai/models/`.
+Every reply, stream and error below is a live recording made with `cargo xtask record` on 2026-10-19 (see `RECORDED.md` in each folder), with `grok-4.3`. `streams/recorded-claude-code-web-search-stream.sse` was recorded through Kaeso instead, with `grok-4.7`, because it answers the request Kaeso writes for an Anthropic app. `errors/recorded-invalid-api-key.json` was recorded the same day with a plain `POST` and a placeholder key. The model listing is in `openai_chat/providers/xai/models/`.
 
 The `codex-*` recordings of 2026-10-25 are a Codex 0.164 thread with `grok-4.7`, gateway-relayed, not raw xAI recordings: `cargo xtask record` sent them to Kaeso 0.4.2 at `ai.logicplanes.com` (`XAI_BASE_URL`) on 2026-10-25, which passed them to xAI. That release predates the handling of Codex's developer messages, reasoning replay and web search options, so it sent these requests to xAI unchanged. It re-encodes replies in the same format and errors in the OpenAI shape, so these two errors carry `{"error": {"message", "type"}}` instead of xAI's own `{"error": "<message>"}`.
 
@@ -29,6 +29,7 @@ xAI's errors are `{"error": "<message>"}`, with `"code": "invalid-argument"` on 
 | `streams/recorded-reasoning-summary-stream.sse` | `reasoning.summary: "auto"` with `include: ["reasoning.encrypted_content"]` | live |
 | `streams/recorded-function-call-stream.sse` | function call arguments in one delta | live |
 | `streams/recorded-web-search-stream.sse` | `web_search_call.*` and `output_text.annotation.added` events | live |
+| `streams/recorded-claude-code-web-search-stream.sse` | `grok-4.7` answering the request Kaeso writes for Claude Code's `WebSearch` (`filters.allowed_domains`, `max_turns: 8`, `include: ["web_search_call.action.sources"]`): `web_search_call` items added with `action: {type: search, query: "", sources: []}` and done with the query and its sources, reasoning items between them | live, recorded through Kaeso (same format) on 2026-10-25 |
 | `errors/recorded-reasoning-encrypted.json` | 400 `invalid-argument` for an `encrypted_content` from another provider | live |
 | `errors/recorded-invalid-api-key.json` | 400 `invalid-argument` for a wrong key | live, plain `POST` |
 | `requests/codex-turn-one.json` | Codex's first turn as Kaeso sends it to SpaceX: two leading `developer` items with `id`s, `exec_command`, `web_search` without `external_web_access`, `include: ["reasoning.encrypted_content"]` | `requests/codex-developer-resume.json` |

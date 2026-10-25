@@ -32,6 +32,8 @@ Claude Code spricht Anthropic Messages. Richten Sie es in `~/.claude/settings.js
 
 Mit einem OpenAI-Modell dahinter sendet Claude Code mitunter Vorabversions-Felder von Anthropic, die Kaeso nicht übersetzen kann. Kaeso antwortet dann mit einem Fehler, der sie nennt. Fügen Sie `"CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"` zu `env` hinzu, um sie wegzulassen.
 
+`WebSearch` in Claude Code nutzt die Websuche von GPT- und Grok-Modellen. Modelle, die über Chat Completions bereitgestellt werden, etwa Mistral, haben keine Websuche und beantworten `WebSearch` daher ohne zu suchen.
+
 > [!WARNING]
 > Legen Sie den Schlüssel in Ihren Benutzereinstellungen oder Ihrem Shell-Profil ab. Die Einstellungsdatei eines Projekts wird committet, und jeder, der das Repository lesen kann, könnte den Schlüssel nutzen.
 

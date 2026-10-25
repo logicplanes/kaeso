@@ -77,9 +77,9 @@ fn foreign_extras_are_refused_via_cross() {
     let mut r = base();
     r.tools.push(ToolDef::Unknown(RawItem::new(
         anthropic(),
-        raw(r#"{"type":"web_search_20250305","name":"web_search"}"#),
+        raw(r#"{"type":"web_fetch_20250910","name":"web_fetch"}"#),
     )));
-    assert_eq!(feature(r), "web_search_20250305 tool");
+    assert_eq!(feature(r), "web_fetch_20250910 tool");
 }
 
 #[test]

@@ -95,7 +95,10 @@ fn provider_tool(
     {
         return None;
     }
-    let mapped_search = hosted_search && egress == DialectId::AnthropicMessages;
+    let mapped_search = (hosted_search && egress == DialectId::AnthropicMessages)
+        || (item.origin.is(DialectId::AnthropicMessages)
+            && egress == DialectId::OpenAiResponses
+            && ty.starts_with("web_search_"));
     if !item.origin.is(egress) && !mapped_search {
         return None;
     }
@@ -473,6 +476,19 @@ mod tests {
     }
 
     #[test]
+    fn anthropics_web_search_is_unpriced_where_responses_runs_it() {
+        let claude_code = decoded(
+            DialectId::AnthropicMessages,
+            &fixture("anthropic_messages/requests/claude-code-web-search.json"),
+            &[],
+        );
+        let search = found("tools", "web_search_20250305");
+        assert_eq!(unpriced(&claude_code, DialectId::AnthropicMessages, ResponsesProfile::OPENAI), search);
+        assert_eq!(unpriced(&claude_code, DialectId::OpenAiResponses, ResponsesProfile::OPENAI), search);
+        assert_eq!(unpriced(&claude_code, DialectId::OpenAiChat, ResponsesProfile::OPENAI), None);
+    }
+
+    #[test]
     fn features_bound_to_another_dialect_or_outside_generation_are_not_judged() {
         let web = decoded(
             DialectId::AnthropicMessages,
@@ -482,6 +498,10 @@ mod tests {
         assert_eq!(
             unpriced(&web, DialectId::OpenAiChat, ResponsesProfile::OPENAI),
             None
+        );
+        assert_eq!(
+            unpriced(&web, DialectId::OpenAiResponses, ResponsesProfile::OPENAI),
+            found("tools", "web_search_20250305")
         );
         let Request::Generate(g) = web else {
             unreachable!()

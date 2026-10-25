@@ -52,6 +52,7 @@ order: 7
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](cross-format.md#托管网页搜索)）。SpaceX 改为收到 `max_turns`。 |
 | `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |

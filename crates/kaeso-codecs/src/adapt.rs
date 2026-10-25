@@ -64,6 +64,7 @@ pub(crate) fn for_target<'a>(
     match target {
         DialectId::AnthropicMessages => {
             web_search::for_anthropic(&mut draft)?;
+            web_search::for_claude(&mut draft);
             history::as_function_calls(&mut draft)?;
             fold_later_system(&mut draft, target)?;
         }

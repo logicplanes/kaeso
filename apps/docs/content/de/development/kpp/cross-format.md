@@ -137,6 +137,19 @@ Für die Responses-API von SpaceX (`WebSearchTool::Xai`) behält das Tool die Fe
 
 `external_web_access: false` bittet OpenAI, nur seinen Cache von Seiten zu lesen. Das sendet Codex bei seinem Standard `web_search = "cached"`. Claude und SpaceX suchen immer live. Eine Live-Suche würde Seiten lesen, die Kaeso laut der App nicht abrufen soll, daher wird die Suche stattdessen weggelassen. Chat Completions hat keine gehostete Suche, daher wird das Tool auch dort weggelassen. OpenAI bekommt das Tool wie gesendet.
 
+Anthropics Server-Tool `web_search_20250305`, das `WebSearch` in Claude Code sendet, geht den umgekehrten Weg. Ein Responses-Ziel bekommt das gehostete `web_search`-Tool, und die Grenze für Suchen wird zu einem Feld der Anfrage ([Websuche-Tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)):
+
+| Anthropic | OpenAI | SpaceX |
+| --- | --- | --- |
+| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
+| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
+| `user_location` (`approximate`, mit `city`, `region`, `country`, `timezone`) | `user_location` | `Unsupported` |
+| `max_uses` | `max_tool_calls` | `max_turns` |
+| `cache_control` | nichts; Responses cacht selbst ([Cache-Hinweise](#cache-hinweise)) | nichts |
+| ein Standort, der nicht `approximate` ist, jedes andere Feld | `Unsupported` | `Unsupported` |
+
+Die Grenzen von SpaceX oben gelten auch hier: höchstens fünf Domains und nicht beide Listen. Die Anfrage fordert außerdem `include: ["web_search_call.action.sources"]` an, weil OpenAI die gefundenen Seiten einer Suche nur auf Anfrage auflistet. SpaceX ignoriert `max_tool_calls` und verwirft `blocked_domains` ohne Fehler, daher bekommt es eigene Namen; `max_turns` begrenzt die Runden von Tool-Aufrufen, und eine Runde kann mehr als einmal suchen. Ein `tool_choice`, das `web_search` erzwingt, ist `Unsupported`; mit `auto` und `any` entscheidet das Modell. Chat Completions hat keine gehostete Suche, daher wird das Tool dort weggelassen.
+
 ## Weggelassene Tools
 
 Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_LEFT_OUT`). Jedes bietet dem Modell nur etwas an, das es nutzen kann, und eine App wie Codex fügt es jeder Anfrage hinzu, ohne Schalter pro Modell: Eine Ablehnung würde jedes Modell ohne das Tool aus dieser App unbrauchbar machen. Das Modell antwortet, wie es ohne das Tool antworten würde. Jedes weggelassene Tool wird im Header `kaeso-left-out` der Antwort ([Antwort-Header](../../api/model-api.md#antwort-header)) und im Log des Gateways genannt, und ein protokollierter Anfrage-Body behält die Tools der App.
@@ -146,12 +159,17 @@ Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_
 | `web_search` | `openai_responses` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`: Claude sucht immer live |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`, für einen Anbieter, dessen Profil `WebSearchTool::Xai` hat: SpaceX sucht immer live |
+| `web_search_20250305` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 
 Eine `tool_choice`, die ein weggelassenes Tool verlangt, selbst oder in `allowed_tools`, ist `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls` und werden in `kaeso-left-out` genannt, weil Anbieter sie ohne Tools ablehnen. `tool_choice: "required"` oder ein benanntes Tool ist `Unsupported`, da kein Tool zum Aufrufen bliebe.
 
 Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
 
 `web_search_call`-Items, die eine App zurücksendet, werden für Anthropic und Chat Completions verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und Chat Completions hat kein solches Item. Die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für jedes Responses-Ziel verworfen, weil kein Responses-Anbieter sie ausgegeben hat. Jedes verworfene Item wird in `kaeso-left-out` mit Typ und ID genannt, etwa `web_search_call ws_67c9…`.
+
+Die Suchen eines Responses-Modells erreichen eine Anthropic-App wie die von Claude. Jedes `web_search_call`-Item, das gesucht hat, wird zu einem `server_tool_use`-Block namens `web_search` mit der ID `srvtoolu_kaeso_…` und `input: {query}`, gefolgt von einem `web_search_tool_result`. Eine abgeschlossene Suche listet ihre Quellen als `web_search_result`-Einträge mit ihrer `url`; `title` und `encrypted_content` sind leer und `page_age` ist `null`, weil Responses nur die Adresse meldet. Eine fehlgeschlagene Suche wird zum Fehler `unavailable`, und eine Suche, vor der die Antwort endet, bekommt kein Ergebnis. Streams senden eine Suche, sobald ihr Item fertig ist: den Start von `server_tool_use`, ein `input_json_delta` mit der Anfrage und das Ergebnis. Items, die eine Seite öffnen oder in ihr suchen (`open_page`, `find_in_page`), und die `url_citation`-Anmerkungen der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
+
+`server_tool_use`- und `web_search_tool_result`-Blöcke mit Kaesos `srvtoolu_kaeso_`-IDs werden für jedes Modell verworfen, wenn eine App sie zurücksendet: Kein Anbieter hat sie ausgegeben, und Claude kann ein Ergebnis ohne seinen verschlüsselten Inhalt nicht erneut abspielen. Die Antwort, die sie nutzte, bleibt. Claudes eigene Suchblöcke gehen weiterhin nur an Anthropic.
 
 ## Tool-Verlauf von Codex
 

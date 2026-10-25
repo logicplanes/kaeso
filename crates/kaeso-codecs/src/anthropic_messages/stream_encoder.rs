@@ -22,6 +22,7 @@ use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::cross::{ReplyPolicy, reasoning_reply_policy, reply_opaque_visible};
 use crate::keepalive::{self, Pacer};
 use crate::sse::{SseEvent, SseItem, write_item};
+use crate::web_search::ReplySearches;
 use crate::wire::{Ext, nested_extra_for, verbatim_from_form};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -64,6 +65,7 @@ pub(crate) struct Encoder {
     delta_sent: bool,
     last_usage: Option<Usage>,
     pacer: Pacer,
+    searches: ReplySearches,
 }
 
 impl Encoder {
@@ -84,6 +86,7 @@ impl Encoder {
             delta_sent: false,
             last_usage: None,
             pacer: Pacer::default(),
+            searches: ReplySearches::default(),
         }
     }
 
@@ -310,7 +313,16 @@ impl Encoder {
 
 impl StreamEncoder for Encoder {
     fn encode(&mut self, event: &StreamEvent) -> Result<Vec<u8>, KppError> {
-        let mut out = self.encode_event(event)?;
+        let mut out = match self.searches.map(event) {
+            None => self.encode_event(event)?,
+            Some(mapped) => {
+                let mut out = Vec::new();
+                for e in &mapped {
+                    out.extend(self.encode_event(e)?);
+                }
+                out
+            }
+        };
         if !self.done {
             self.pacer.pace(event, D, &mut out, keepalive::PING_FRAME);
         }

@@ -712,7 +712,11 @@ fn check_block(block: &Block, path: &str) -> Result<(), KppError> {
     }
 }
 
-pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+pub(super) fn encode(
+    req: &Request,
+    ctx: &mut EgressCtx,
+    search_limit: Option<(&str, u64)>,
+) -> Result<EncodedRequest, KppError> {
     let target = ctx.origin(DIALECT);
     check(req, &target)?;
     let (r, path) = match req {
@@ -720,7 +724,10 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         Request::CountTokens(r) => (r, super::INPUT_TOKENS_PATH),
         _ => return Err(KppError::unsupported_by("request kind", DIALECT, "")),
     };
-    let body = body_node(r, req.kind(), &target, &mut Names::new(ctx));
+    let mut body = body_node(r, req.kind(), &target, &mut Names::new(ctx));
+    if req.kind() == RequestKind::Generate {
+        hosted_search_fields(r, search_limit, &mut body);
+    }
     let mut headers = HeaderList::new().with("content-type", "application/json");
     if r.extras.is_from(DIALECT) {
         for (name, value) in r.extras.headers() {
@@ -730,6 +737,21 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         }
     }
     Ok(EncodedRequest::post_json(path, headers, to_body(&body)?))
+}
+
+fn hosted_search_fields(r: &GenerateRequest, limit: Option<(&str, u64)>, body: &mut Node) {
+    if !crate::web_search::asks_for_sources(r) {
+        return;
+    }
+    let mut include = body
+        .get("include")
+        .map(|i| i.elements())
+        .unwrap_or_default();
+    include.push(Node::str(crate::web_search::SOURCES));
+    body.insert("include", Node::Arr(include));
+    if let Some((key, n)) = limit {
+        body.insert(key, Node::int(n));
+    }
 }
 
 pub(super) fn echo_body(req: &Request) -> Option<Node> {
