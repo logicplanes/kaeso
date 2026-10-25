@@ -8400,6 +8400,83 @@
         "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
+    "/platform/v1/orgs/{org}/custom-provider-detection": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Detects how a server should be added as a custom provider: its base URL,\nkey style, formats and models.",
+        "description": "Kaeso asks the server's model listing with each key style, then sends an\nempty body to each format's path, which a server refuses before it\ngenerates or bills anything. Settings sent along are checked the same way\ninstead of detected. The key goes only to this server, through the same\naddress checks as requests, and is stored nowhere.\n\n**Right:** `providers.custom.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCustomProviderDetection",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomProviderDetect"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomProviderDetection"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "x-kaeso-access": "right:providers.custom.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/custom-providers": {
       "get": {
         "tags": [
@@ -20238,6 +20315,139 @@
         },
         "additionalProperties": false
       },
+      "CustomProviderDetect": {
+        "type": "object",
+        "description": "A server to detect a custom provider's settings for. Settings sent along are\nchecked instead of detected.",
+        "required": [
+          "base_url"
+        ],
+        "properties": {
+          "auth": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CustomAuthView",
+                "description": "How to send the key; absent to detect it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_url": {
+            "type": "string",
+            "description": "The server's address as typed. Kaeso adds `https://` when it has no scheme\nand drops a trailing `/v1` or a pasted endpoint path, such as\n`/v1/chat/completions`.",
+            "example": "https://vllm.example.com/v1"
+          },
+          "count_tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "The `generation` format to count tokens in, `null` for none; absent to\ndetect it. Needs `generation`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embeddings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingsDialect",
+                "description": "The embeddings format, `null` for none; absent to detect it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "The generation format; absent to detect it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The key the server takes; absent or `null` for a server that takes none.\nKaeso sends it only to this server and stores it nowhere."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CustomProviderDetection": {
+        "type": "object",
+        "description": "The settings Kaeso detected for a server, ready to add it as a custom\nprovider; nothing is saved.",
+        "required": [
+          "base_url",
+          "name",
+          "id",
+          "auth",
+          "generation"
+        ],
+        "properties": {
+          "auth": {
+            "$ref": "#/components/schemas/CustomAuthView",
+            "description": "How the server takes its key."
+          },
+          "base_url": {
+            "type": "string",
+            "description": "The base URL Kaeso reached the server at, normalized.",
+            "example": "https://vllm.example.com/"
+          },
+          "count_tokens": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GenerationDialect",
+                "description": "The format the server counts tokens in; `null` when it counts none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "embeddings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingsDialect",
+                "description": "The embeddings format the server answers; `null` when it answers none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generation": {
+            "$ref": "#/components/schemas/GenerationDialect",
+            "description": "The format the server generates in."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "An id to start from that the organization can still take."
+          },
+          "models": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/DetectedModelView"
+            },
+            "description": "The models the server lists, sorted by id; `null` when it has no model\nlisting."
+          },
+          "name": {
+            "type": "string",
+            "description": "A name to start from: the server's host.",
+            "example": "vllm.example.com"
+          }
+        }
+      },
       "CustomProviderUpdate": {
         "type": "object",
         "description": "Changes to a custom provider; absent fields stay as they are.",
@@ -20468,6 +20678,40 @@
           }
         },
         "additionalProperties": false
+      },
+      "DetectedModelView": {
+        "type": "object",
+        "description": "A model a server's model listing names.",
+        "required": [
+          "model_id"
+        ],
+        "properties": {
+          "context_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The context window, when the listing gives it.",
+            "example": 131072,
+            "minimum": 0
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The server's model id.",
+            "example": "meta-llama/Llama-3.3-70B-Instruct"
+          },
+          "output_limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "The output limit, when the listing gives it.",
+            "example": null,
+            "minimum": 0
+          }
+        }
       },
       "DeviceSignIn": {
         "type": "object",
@@ -25981,7 +26225,8 @@
         "type": "object",
         "description": "A model id a custom provider lists.",
         "required": [
-          "model_id"
+          "model_id",
+          "detected"
         ],
         "properties": {
           "catalogue_model_id": {
@@ -25995,6 +26240,10 @@
               }
             ]
           },
+          "detected": {
+            "$ref": "#/components/schemas/Fields",
+            "description": "Values to start its entry from: the limits the listing gives, and the\ninputs, outputs, limits and capabilities of the model models.dev lists\nunder the same name. Never prices."
+          },
           "model_id": {
             "type": "string",
             "description": "The provider's model id.",
@@ -26004,7 +26253,7 @@
       },
       "OfferedModels": {
         "type": "object",
-        "description": "The model ids a custom provider's model listing names; their values, such as\nprices and limits, are set by hand when one is added.",
+        "description": "The model ids a custom provider's model listing names, with the values Kaeso\ncould find for them; prices are set by hand when one is added.",
         "required": [
           "data"
         ],

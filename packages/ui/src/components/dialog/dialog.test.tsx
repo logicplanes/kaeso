@@ -674,6 +674,36 @@ describe("StepDialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Create key" }));
     expect(onSubmit).toHaveBeenCalledOnce();
   });
+  it("waits for a step's check before it continues, and stays when the check fails", async () => {
+    let answer: (ok: boolean) => void = () => {};
+    const onContinue = vi.fn(() => new Promise<boolean>((resolve) => (answer = resolve)));
+    render(
+      <StepDialog
+        open
+        title="Add custom provider"
+        submitLabel="Add custom provider"
+        onSubmit={() => {}}
+        steps={[
+          { id: "connect", title: "Where is it?", content: <input aria-label="Base URL" />, continueLabel: "Detect settings", onContinue },
+          { id: "review", title: "Check what Kaeso found", content: <p>OpenAI Chat Completions</p> },
+        ]}
+      />,
+    );
+    await frames();
+    const dialog = screen.getByRole("dialog");
+    await userEvent.click(screen.getByRole("button", { name: "Detect settings" }));
+    expect(onContinue).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Detect settings" }));
+    expect(onContinue).toHaveBeenCalledOnce();
+    await act(async () => answer(false));
+    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
+    await userEvent.click(screen.getByRole("button", { name: "Detect settings" }));
+    await act(async () => answer(true));
+    expect(dialog).toHaveAccessibleDescription("Step 2 of 2");
+    expect(screen.getByRole("heading", { name: "Check what Kaeso found" })).toBeVisible();
+  });
   it("leaves Enter to a field that takes it, such as one that adds what was typed as a tag", async () => {
     render(
       <StepDialog

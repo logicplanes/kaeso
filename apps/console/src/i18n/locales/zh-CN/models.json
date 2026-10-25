@@ -171,8 +171,9 @@
   "models.ownNoListing": "{provider} 未列出其模型",
   "models.ownNoneMatch": "{provider} 没有列出该名称的模型，请输入其 ID。",
   "models.ownAllAdded": "{provider} 列出的模型都已在目录中。",
-  "models.ownValuesHint": "Kaeso 无法得知 {provider} 模型的价格、限制和能力，您将在下一步填写。",
+  "models.ownValuesHint": "Kaeso 会填入它能为 {provider} 的模型找到的限制和能力，价格由您在下一步设置。",
   "models.addOwn": "添加 {provider} 的模型",
   "models.addOwnModelHint": "填写 {provider} 使用的模型 ID，然后填写输入、限制、价格和格式。",
-  "models.ownUnknown": "Kaeso 无法得知 {provider} 的这些值；输入、输出、限制、输入和输出价格以及格式均为必填。"
+  "models.ownUnknown": "Kaeso 无法得知 {provider} 的这些值；输入、输出、限制、输入和输出价格以及格式均为必填。",
+  "models.ownFound": "Kaeso 已填入 {provider} 和 models.dev 关于 {model} 的信息，请检查并设置其价格。"
 }

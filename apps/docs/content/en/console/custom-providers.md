@@ -9,20 +9,34 @@ A custom provider is a server your organization adds itself, such as a self-host
 ## Add a custom provider
 
 1. On **Providers**, open **Custom providers** and choose **Add custom provider**.
-2. Give it a **Name**, such as `Research vLLM`. The **Id** follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes.
-3. Enter the **Base URL**, such as `https://vllm.example.com`.
-4. Choose the **API format**, and whether it **Also serves embeddings** or **Counts tokens** ([pick the format](#pick-the-format)).
-5. Choose how it takes its **Key**: **Bearer token**, **x-api-key header** or **No key** for a server on your own network.
+2. Enter the server's **Base URL**, such as `https://vllm.example.com/v1`, and its **API key**. Leave the key empty for a server that takes none.
+3. Choose **Detect settings**. Kaeso asks the server how to call it ([what Kaeso detects](#what-kaeso-detects)).
+4. Check what Kaeso found: the **Name**, the **Id**, the **Base URL**, the **API format**, whether it **Also serves embeddings** or **Counts tokens**, and how it takes its **Key**. Change anything that's wrong.
+5. Choose **Add custom provider**. Kaeso checks the settings you changed with the server, then adds the provider and saves the key as its provider key.
 
-Then add a key for it under **Provider keys**, as for any provider, unless it takes none ([provider keys](provider-keys.md)). Last, add its models to a project ([add its models](#add-its-models)).
+Without the right **Add provider keys**, Kaeso uses the key only to detect the settings; someone with the right adds it under **Provider keys** ([provider keys](provider-keys.md)). Last, add the provider's models to a project ([add its models](#add-its-models)).
 
-An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed on [models.dev](https://models.dev), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
+The **Id** starts from the server's host and follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes. An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed on [models.dev](https://models.dev), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
 
-Kaeso appends the format's path to the base URL, such as `/v1/chat/completions`, as it does for every provider. A path in the base URL stays: `https://proxy.example.com/llm` gets requests at `https://proxy.example.com/llm/v1/chat/completions`. A server whose API doesn't live under `/v1` can't be added yet.
+Kaeso appends the format's path to the base URL, such as `/v1/chat/completions`, as it does for every provider. So it drops a trailing `/v1` or a pasted endpoint, such as `/v1/chat/completions`, and adds `https://` to an address without a scheme. A path before `/v1` stays: `https://proxy.example.com/llm/v1` gets requests at `https://proxy.example.com/llm/v1/chat/completions`. A server whose API doesn't live under `/v1` can't be added yet.
+
+## What Kaeso detects
+
+Kaeso finds the settings with requests that cost nothing. It asks the server's model listing, `GET /v1/models`, with the key as `Authorization: Bearer` and as `x-api-key`. Then it sends an empty body to each format's path, which a server refuses before it generates or bills anything.
+
+| Setting | How Kaeso finds it |
+| --- | --- |
+| Key | The style the model listing accepts; a listing in Anthropic's form prefers `x-api-key`. Without a key, **No key**. |
+| API format | The listing's form and the path that answers: `/v1/chat/completions`, `/v1/responses` or `/v1/messages`. A server with Chat Completions gets it, even when it also has Responses. |
+| Also serves embeddings | Whether `/v1/embeddings` answers. |
+| Counts tokens | Whether `/v1/responses/input_tokens` or `/v1/messages/count_tokens` answers, for Responses and Messages. |
+| Models | The ids the listing names, with the context window and output limit it gives. |
+
+A server without a model listing is found by the path that answers. When Kaeso can't reach the server, the server refuses the key, or it answers in no format Kaeso speaks, the dialog says so beside the field to fix, and nothing is added.
 
 ## Pick the format
 
-Choose the format your server answers in:
+Kaeso picks the format it detects. When you change it, choose the format your server answers in:
 
 | Your server | API format |
 | --- | --- |
@@ -30,18 +44,18 @@ Choose the format your server answers in:
 | A server or proxy with OpenAI's `POST /v1/responses` | OpenAI Responses |
 | A server or proxy with Anthropic's `POST /v1/messages` | Anthropic Messages |
 
-- **Also serves embeddings:** turn it on when the server answers `POST /v1/embeddings` in OpenAI's format. Its embeddings models then serve `/v1/embeddings`.
-- **Counts tokens:** only Responses and Messages have an endpoint for token counts, `/v1/responses/input_tokens` and `/v1/messages/count_tokens`. Turn it on only when your server answers it. Otherwise Kaeso answers count requests for its models with 400: "The model `…` cannot count tokens."
+- **Also serves embeddings:** on when the server answers `POST /v1/embeddings` in OpenAI's format. Its embeddings models then serve `/v1/embeddings`.
+- **Counts tokens:** only Responses and Messages have an endpoint for token counts, `/v1/responses/input_tokens` and `/v1/messages/count_tokens`. Keep it on only when your server answers it. Otherwise Kaeso answers count requests for its models with 400: "The model `…` cannot count tokens."
 
 Kaeso speaks the plain format to a custom provider. It knows how each built-in provider differs from its format, such as fields Mistral refuses, but it can't know that of your server. A field your server doesn't take comes back as your server's own error. A field the format can't carry is refused as for any provider ([what Kaeso refuses](../concepts/format-translation.md#what-kaeso-refuses)).
 
 ## What Kaeso can't know
 
-models.dev knows nothing about your server's models, so Kaeso doesn't either. When you add a model, you give everything it needs:
+models.dev knows nothing about your server, and a model listing names few of a model's values. When you add a model, Kaeso fills in what it can find, and you give the rest:
 
-- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. Kaeso charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
-- **Limits.** The context window and the output limit. Kaeso uses them for budgets and to fill in the output limit that Messages requires.
-- **Capabilities.** Inputs, outputs, tool calling, reasoning, structured output, temperature and effort levels. Kaeso refuses a request that needs a capability the model doesn't have before it calls your server.
+- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. Kaeso never fills them in, because a price on models.dev is another provider's. It charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
+- **Limits.** The context window and the output limit, from the model listing or else from the model of the same name on models.dev. Kaeso uses them for budgets and to fill in the output limit that Messages requires.
+- **Capabilities.** Inputs, outputs, tool calling, reasoning, structured output, temperature and effort levels, from the model of the same name on models.dev. Kaeso refuses a request that needs a capability the model doesn't have before it calls your server.
 
 These values stay as you set them. Nothing updates them later.
 
@@ -49,7 +63,7 @@ These values stay as you set them. Nothing updates them later.
 
 On a project's **Models** page, choose **Add models**. Custom providers are in the provider list next to the built-in ones. Choose yours, and the dialog asks the server's model listing, `GET /v1/models`, with the project's key. It lists the ids the server names that the catalogue doesn't have yet.
 
-Choose an id, or **Type a model id**, then enter the model's values. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
+Choose an id, or **Type a model id**, then check the model's values. Kaeso fills in the limits the listing gives, and the values of the model models.dev lists under the same name, ignoring case and an owner before the `/`: `meta-llama/Llama-3.3-70B-Instruct` takes those of `meta-llama/llama-3.3-70b-instruct`. You always enter the prices. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
 
 Apps then call the model by its name, with the provider's id in front:
 

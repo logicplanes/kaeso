@@ -9,20 +9,34 @@ order: 4
 ## 添加自定义服务商
 
 1. 在**服务商**页面上打开**自定义服务商**，选择**添加自定义服务商**。
-2. 填写**名称**，例如 `Research vLLM`。在您修改之前，**ID** 会跟随名称生成。模型名称以它开头，例如 `research-vllm/llama-3.3-70b`，且它不可更改。
-3. 填写**基础 URL**，例如 `https://vllm.example.com`。
-4. 选择 **API 格式**，以及它是否**同时提供嵌入**或**支持 Token 计数**（[选择格式](#选择格式)）。
-5. 选择它接收**密钥**的方式：**Bearer 令牌**、**x-api-key 请求头**，或用于您自己网络中服务器的**不使用密钥**。
+2. 填写服务器的**基础 URL**，例如 `https://vllm.example.com/v1`，以及它的 **API 密钥**。服务器不使用密钥时，请将密钥留空。
+3. 选择**检测设置**。Kaeso 会向服务器询问如何调用它（[Kaeso 检测的内容](#kaeso-检测的内容)）。
+4. 检查 Kaeso 检测到的内容：**名称**、**ID**、**基础 URL**、**API 格式**、它是否**同时提供嵌入**或**支持 Token 计数**，以及它接收**密钥**的方式。修改不正确的内容。
+5. 选择**添加自定义服务商**。Kaeso 会先向服务器核实您修改过的设置，然后添加该服务商，并将密钥保存为它的服务商密钥。
 
-然后像对任何服务商一样，在**服务商密钥**中为它添加密钥，除非它不使用密钥（[服务商密钥](provider-keys.md)）。最后将它的模型添加到项目中（[添加其模型](#添加其模型)）。
+如果没有**添加服务商密钥**权限，Kaeso 只用该密钥检测设置；拥有该权限的人可以在**服务商密钥**中添加它（[服务商密钥](provider-keys.md)）。最后将该服务商的模型添加到项目中（[添加其模型](#添加其模型)）。
 
-ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 个字符。它不能是内置服务商的 ID，也不能是 [models.dev](https://models.dev) 上列出的服务商的 ID，因为 Kaeso 将来可能内置该服务商。每个组织的 ID 相互独立，因此两个组织都可以有 `research-vllm`。
+**ID** 以服务器的主机名为起点，并在您修改之前跟随名称生成。模型名称以它开头，例如 `research-vllm/llama-3.3-70b`，且它不可更改。ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 个字符。它不能是内置服务商的 ID，也不能是 [models.dev](https://models.dev) 上列出的服务商的 ID，因为 Kaeso 将来可能内置该服务商。每个组织的 ID 相互独立，因此两个组织都可以有 `research-vllm`。
 
-与所有服务商一样，Kaeso 会在基础 URL 后加上格式的路径，例如 `/v1/chat/completions`。基础 URL 中的路径会保留：`https://proxy.example.com/llm` 接收的请求地址为 `https://proxy.example.com/llm/v1/chat/completions`。API 不在 `/v1` 之下的服务器暂时无法添加。
+与所有服务商一样，Kaeso 会在基础 URL 后加上格式的路径，例如 `/v1/chat/completions`。因此它会去掉末尾的 `/v1` 或粘贴进来的端点，例如 `/v1/chat/completions`，并为没有协议的地址补上 `https://`。`/v1` 之前的路径会保留：`https://proxy.example.com/llm/v1` 接收的请求地址为 `https://proxy.example.com/llm/v1/chat/completions`。API 不在 `/v1` 之下的服务器暂时无法添加。
+
+## Kaeso 检测的内容
+
+Kaeso 使用不产生费用的请求来查找设置。它查询服务器的模型列表 `GET /v1/models`，分别以 `Authorization: Bearer` 和 `x-api-key` 发送密钥。然后它向每种格式的路径发送空的请求体，服务器会在生成或计费之前拒绝这类请求。
+
+| 设置 | Kaeso 如何检测 |
+| --- | --- |
+| 密钥 | 模型列表接受的方式；Anthropic 形式的列表优先使用 `x-api-key`。没有密钥时为**不使用密钥**。 |
+| API 格式 | 列表的形式以及有响应的路径：`/v1/chat/completions`、`/v1/responses` 或 `/v1/messages`。提供 Chat Completions 的服务器会使用它，即使它也提供 Responses。 |
+| 同时提供嵌入 | `/v1/embeddings` 是否有响应。 |
+| 支持 Token 计数 | 对于 Responses 和 Messages，`/v1/responses/input_tokens` 或 `/v1/messages/count_tokens` 是否有响应。 |
+| 模型 | 列表给出的 ID，以及列表提供的上下文窗口和输出上限。 |
+
+没有模型列表的服务器，Kaeso 会通过有响应的路径来识别。如果 Kaeso 无法连接服务器、服务器拒绝了密钥，或它的响应不属于 Kaeso 支持的任何格式，对话框会在需要修改的字段旁说明原因，且不会添加任何内容。
 
 ## 选择格式
 
-请选择您的服务器所使用的格式：
+Kaeso 会选择它检测到的格式。如需修改，请选择您的服务器所使用的格式：
 
 | 您的服务器 | API 格式 |
 | --- | --- |
@@ -31,17 +45,17 @@ ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 �
 | 提供 Anthropic `POST /v1/messages` 的服务器或代理 | Anthropic Messages |
 
 - **同时提供嵌入：**当服务器以 OpenAI 的格式响应 `POST /v1/embeddings` 时开启。它的嵌入模型随后为 `/v1/embeddings` 提供服务。
-- **支持 Token 计数：**只有 Responses 和 Messages 提供 Token 计数端点，即 `/v1/responses/input_tokens` 和 `/v1/messages/count_tokens`。仅当您的服务器能响应该端点时才开启。否则 Kaeso 会对其模型的计数请求返回 400：“The model `…` cannot count tokens.”
+- **支持 Token 计数：**只有 Responses 和 Messages 提供 Token 计数端点，即 `/v1/responses/input_tokens` 和 `/v1/messages/count_tokens`。仅当您的服务器能响应该端点时才保持开启。否则 Kaeso 会对其模型的计数请求返回 400：“The model `…` cannot count tokens.”
 
 Kaeso 与自定义服务商使用原样的格式通信。它知道每个内置服务商与其格式的差异，例如 Mistral 拒绝哪些字段，但无法得知您的服务器的差异。您的服务器不接受的字段，会以您的服务器自己的错误返回。格式无法承载的字段，Kaeso 会像对任何服务商一样拒绝（[Kaeso 拒绝的内容](../concepts/format-translation.md#kaeso-拒绝的内容)）。
 
 ## Kaeso 无法得知的内容
 
-models.dev 不了解您的服务器上的模型，Kaeso 也同样不了解。添加模型时，请提供它所需的全部信息：
+models.dev 不了解您的服务器，而模型列表只给出模型的少数几项值。添加模型时，Kaeso 会填入它能找到的内容，其余由您提供：
 
-- **价格。**输入和输出价格；如果服务器会报告缓存的 Token，还需填写缓存价格。Kaeso 按这些价格对每个请求计费，并据此执行预算（[限额和预算](limits-and-budgets.md)）。对于不按 Token 付费的服务器，请填写 `0`。
-- **限制。**上下文窗口和输出上限。Kaeso 将其用于预算，并用于补全 Messages 所要求的输出上限。
-- **能力。**输入、输出、工具调用、推理、结构化输出、温度和推理强度等级。请求需要模型不具备的能力时，Kaeso 会在调用您的服务器之前拒绝它。
+- **价格。**输入和输出价格；如果服务器会报告缓存的 Token，还需填写缓存价格。Kaeso 从不自动填入价格，因为 models.dev 上的价格属于其他服务商。Kaeso 按这些价格对每个请求计费，并据此执行预算（[限额和预算](limits-and-budgets.md)）。对于不按 Token 付费的服务器，请填写 `0`。
+- **限制。**上下文窗口和输出上限，取自模型列表，否则取自 models.dev 上的同名模型。Kaeso 将其用于预算，并用于补全 Messages 所要求的输出上限。
+- **能力。**输入、输出、工具调用、推理、结构化输出、温度和推理强度等级，取自 models.dev 上的同名模型。请求需要模型不具备的能力时，Kaeso 会在调用您的服务器之前拒绝它。
 
 这些值会保持您设置的样子，之后不会自动更新。
 
@@ -49,7 +63,7 @@ models.dev 不了解您的服务器上的模型，Kaeso 也同样不了解。添
 
 在项目的**模型**页面上选择**添加模型**。自定义服务商与内置服务商一起出现在服务商列表中。选择您的服务商后，对话框会使用项目的密钥查询服务器的模型列表 `GET /v1/models`，并列出服务器给出但目录中尚未包含的 ID。
 
-选择一个 ID，或选择**输入模型 ID**，然后填写模型的各项值。如果列表查询失败，对话框会说明原因，由您手动输入 ID。添加模型需要项目中的**管理模型**权限（[模型和别名](models-and-aliases.md)）。
+选择一个 ID，或选择**输入模型 ID**，然后检查模型的各项值。Kaeso 会填入列表给出的限制，以及 models.dev 以相同名称收录的模型的各项值，比较时忽略大小写和 `/` 前的所有者：`meta-llama/Llama-3.3-70B-Instruct` 会采用 `meta-llama/llama-3.3-70b-instruct` 的值。价格始终由您填写。如果列表查询失败，对话框会说明原因，由您手动输入 ID。添加模型需要项目中的**管理模型**权限（[模型和别名](models-and-aliases.md)）。
 
 之后，应用以模型名称调用该模型，名称前加上服务商的 ID：
 

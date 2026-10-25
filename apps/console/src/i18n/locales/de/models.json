@@ -171,8 +171,9 @@
   "models.ownNoListing": "{provider} hat seine Modelle nicht gelistet",
   "models.ownNoneMatch": "{provider} listet kein Modell mit diesem Namen; geben Sie die ID ein.",
   "models.ownAllAdded": "Jedes Modell, das {provider} listet, ist schon im Katalog.",
-  "models.ownValuesHint": "Kaeso kennt Preise, Limits und Fähigkeiten der Modelle von {provider} nicht; Sie geben sie als Nächstes ein.",
+  "models.ownValuesHint": "Kaeso trägt die Limits und Fähigkeiten ein, die es für die Modelle von {provider} findet; die Preise legen Sie als Nächstes fest.",
   "models.addOwn": "Ein Modell von {provider} hinzufügen",
   "models.addOwnModelHint": "Die ID des Modells angeben, wie {provider} sie kennt, dann Eingaben, Limits, Preise und Format.",
-  "models.ownUnknown": "Kaeso kennt diese Werte für {provider} nicht; Eingaben, Ausgaben, Limits, Ein- und Ausgabepreis und das Format sind Pflicht."
+  "models.ownUnknown": "Kaeso kennt diese Werte für {provider} nicht; Eingaben, Ausgaben, Limits, Ein- und Ausgabepreis und das Format sind Pflicht.",
+  "models.ownFound": "Kaeso hat eingetragen, was {provider} und models.dev über {model} sagen; prüfen Sie es und legen Sie die Preise fest."
 }

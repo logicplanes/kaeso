@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   Badge,
+  Banner,
   Button,
   Code,
   DataTable,
@@ -14,6 +15,8 @@ import {
   Menu,
   ProviderBadge,
   Select,
+  SensitiveInput,
+  StepDialog,
   Switch,
   Text,
   Tooltip,
@@ -23,7 +26,15 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { fieldError } from "~/api/field-error";
-import type { CustomAuthView, CustomProviderView, EmbeddingsDialect, GenerationDialect } from "~/api/generated/types";
+import type { ApiError } from "~/api/errors";
+import type {
+  CustomAuthView,
+  CustomProviderDetect,
+  CustomProviderDetection,
+  CustomProviderView,
+  EmbeddingsDialect,
+  GenerationDialect,
+} from "~/api/generated/types";
 import { customProvidersQuery } from "~/api/queries/custom-providers";
 import { modelCatalogues } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
@@ -32,7 +43,7 @@ import { useOrgRights } from "~/auth/session";
 import { docsPage } from "~/format/docs";
 import { dialectLabel } from "~/format/labels";
 import { toast } from "~/shell/toast";
-import { t } from "~/i18n";
+import { locale, t } from "~/i18n";
 
 const GENERATIONS: GenerationDialect[] = ["openai_chat", "openai_responses", "anthropic_messages"];
 const COUNTING = new Set<GenerationDialect>(["openai_responses", "anthropic_messages"]);
@@ -236,7 +247,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
           />
         }
       />
-      {adding && <CustomProviderDialog org={org} onClose={() => onAddingChange(false)} />}
+      {adding && <AddCustomProviderDialog org={org} onClose={() => onAddingChange(false)} />}
       {editing && <CustomProviderDialog org={org} editing={editing} onClose={() => setEditing(null)} />}
       {deleting && (
         <DialogScope open={deleteOpen}>
@@ -296,16 +307,16 @@ interface Draft {
   count_tokens: boolean;
 }
 
-function draftOf(p: CustomProviderView | undefined): Draft {
+function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boolean): Draft {
   return {
-    name: p?.name ?? "",
-    id: p?.id ?? "",
-    idTouched: !!p,
-    base_url: p?.base_url ?? "",
-    auth: p?.auth ?? "bearer",
-    generation: p?.generation ?? "openai_chat",
-    embeddings: !!p?.embeddings,
-    count_tokens: !!p?.count_tokens,
+    name: p.name,
+    id: p.id,
+    idTouched,
+    base_url: p.base_url,
+    auth: p.auth,
+    generation: p.generation,
+    embeddings: !!p.embeddings,
+    count_tokens: !!p.count_tokens,
   };
 }
 
@@ -316,63 +327,288 @@ function draftProblem(d: Draft): string | undefined {
   return undefined;
 }
 
-export function CustomProviderDialog({ org, editing, onClose }: { org: string; editing?: CustomProviderView | undefined; onClose: () => void }) {
-  const [draft, setDraft] = useState<Draft>(() => draftOf(editing));
+function settingsOf(d: Draft) {
+  const embeddings: EmbeddingsDialect | null = d.embeddings ? "openai_embeddings" : null;
+  const count_tokens: GenerationDialect | null = d.count_tokens && COUNTING.has(d.generation) ? d.generation : null;
+  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens };
+}
+
+function SettingsFields({
+  draft,
+  set,
+  error,
+  editing,
+  autoFocus,
+}: {
+  draft: Draft;
+  set: (patch: Partial<Draft>) => void;
+  error: ApiError | null;
+  editing?: CustomProviderView | undefined;
+  autoFocus?: boolean | undefined;
+}) {
+  const counts = COUNTING.has(draft.generation);
+  const keysLeft = editing && draft.auth === "none" && editing.auth !== "none" && editing.in_use.keys > 0;
+  return (
+    <div className="flex flex-col gap-20">
+      <Input
+        label={t("common.name", "Name")}
+        value={draft.name}
+        onChange={(e) => set({ name: e.target.value, ...(draft.idTouched ? {} : { id: idFromName(e.target.value) }) })}
+        error={fieldError(error, "name")}
+        placeholder={t("orgHome.custom.namePlaceholder", "Research vLLM")}
+        maxLength={100}
+        autoFocus={autoFocus}
+      />
+      <Input
+        label={t("orgHome.custom.id", "Id")}
+        description={
+          editing
+            ? t("orgHome.custom.idFixed", "The id never changes; model names start with it.")
+            : t("orgHome.custom.idHint", "Model names start with it, such as {id}/llama-3.3-70b.", { id: draft.id || "research-vllm" })
+        }
+        value={draft.id}
+        disabled={!!editing}
+        onChange={(e) => set({ id: e.target.value.toLowerCase(), idTouched: true })}
+        error={fieldError(error, "id")}
+        maxLength={40}
+      />
+      <Input
+        label={t("orgHome.custom.baseUrl", "Base URL")}
+        description={t("orgHome.custom.baseUrlHint", "Kaeso adds the format's path, such as /v1/chat/completions, to it.")}
+        value={draft.base_url}
+        onChange={(e) => set({ base_url: e.target.value })}
+        error={fieldError(error, "base_url")}
+        placeholder={t("orgHome.custom.baseUrlPlaceholder", "https://llm.example.com")}
+        maxLength={2048}
+        inputMode="url"
+      />
+      <Select
+        label={t("orgHome.custom.format", "API format")}
+        description={t("orgHome.custom.formatHint", "vLLM, Ollama, LM Studio, TGI and SGLang speak OpenAI Chat Completions.")}
+        fullWidth
+        value={draft.generation}
+        onValueChange={(v) => set({ generation: v as GenerationDialect })}
+        options={GENERATIONS.map((g) => ({ value: g, label: dialectLabel(g) }))}
+        error={fieldError(error, "generation")}
+      />
+      <div className="flex flex-col gap-12">
+        <Switch
+          label={t("orgHome.custom.embeddings", "Also serves embeddings")}
+          description={fieldError(error, "embeddings") ?? t("orgHome.custom.embeddingsHint", "In the OpenAI Embeddings format, at /v1/embeddings.")}
+          checked={draft.embeddings}
+          onCheckedChange={(v) => set({ embeddings: v })}
+        />
+        {counts && (
+          <Switch
+            label={t("orgHome.custom.countTokens", "Counts tokens")}
+            description={fieldError(error, "count_tokens") ?? t("orgHome.custom.countTokensHint", "Apps can ask it to count a request's input tokens.")}
+            checked={draft.count_tokens}
+            onCheckedChange={(v) => set({ count_tokens: v })}
+          />
+        )}
+      </div>
+      <Select
+        label={t("orgHome.custom.auth", "Key")}
+        description={authHint(draft.auth)}
+        fullWidth
+        value={draft.auth}
+        onValueChange={(v) => set({ auth: v as CustomAuthView })}
+        options={AUTHS.map((a) => ({ value: a, label: authLabel(a) }))}
+        error={fieldError(error, "auth")}
+      />
+      {keysLeft && (
+        <Text variant="small" tone="secondary">
+          {t("orgHome.custom.keysLeft", "Delete its keys under Provider keys first; a provider without a key can't keep any.")}
+        </Text>
+      )}
+    </div>
+  );
+}
+
+const SHOWN_MODELS = 4;
+
+function modelsFound(found: CustomProviderDetection): string {
+  if (!found.models) return t("orgHome.custom.noListing", "The server has no model listing; type each model's id when you add it to a project.");
+  const count = found.models.length;
+  if (!count) return t("orgHome.custom.noModels", "The server lists no models yet.");
+  const shown = found.models.slice(0, SHOWN_MODELS).map((m) => m.model_id);
+  const names = new Intl.ListFormat(locale(), { type: "unit" }).format(
+    count > SHOWN_MODELS ? [...shown, t("orgHome.custom.moreModels", "{count} more", { count: count - SHOWN_MODELS })] : shown,
+  );
+  return t("orgHome.custom.models", "The server lists {count, plural, one {# model} other {# models}}: {names}.", { count, names });
+}
+
+const NOTHING_FOUND: CustomProviderDetection = {
+  base_url: "",
+  name: "",
+  id: "",
+  auth: "bearer",
+  generation: "openai_chat",
+  embeddings: null,
+  count_tokens: null,
+  models: null,
+};
+
+function changedFrom(found: CustomProviderDetection, d: Draft): boolean {
+  const s = settingsOf(d);
+  return (
+    s.base_url !== found.base_url ||
+    s.auth !== found.auth ||
+    s.generation !== found.generation ||
+    s.embeddings !== found.embeddings ||
+    s.count_tokens !== found.count_tokens
+  );
+}
+
+export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose: () => void }) {
+  const rights = useOrgRights(org);
+  const savesKey = rights.has("provider_credentials.create");
+  const [server, setServer] = useState({ base_url: "", key: "" });
+  const [found, setFound] = useState<CustomProviderDetection>(NOTHING_FOUND);
+  const [draft, setDraft] = useState<Draft>(() => draftOf(NOTHING_FOUND, false));
+  const detect = async (body: CustomProviderDetect) =>
+    data(await api.POST("/platform/v1/orgs/{org}/custom-provider-detection", { params: { path: { org } }, body }));
+  const detection = useApiMutation({ mutationFn: detect });
+  const save = useApiMutation({
+    mutationFn: async (): Promise<{ added: CustomProviderView; keySaved: boolean }> => {
+      const key = server.key.trim();
+      const settings = settingsOf(draft);
+      if (changedFrom(found, draft)) await detect({ ...settings, key: key || null });
+      const added = data(
+        await api.POST("/platform/v1/orgs/{org}/custom-providers", {
+          params: { path: { org } },
+          body: { id: draft.id, name: draft.name.trim(), ...settings },
+        }),
+      );
+      if (!key || draft.auth === "none" || !savesKey) return { added, keySaved: false };
+      const keySaved = await api
+        .POST("/platform/v1/orgs/{org}/credentials", { params: { path: { org } }, body: { provider: added.id, name: added.name, secret: key } })
+        .then(
+          () => true,
+          () => false,
+        );
+      return { added, keySaved };
+    },
+    invalidates: [["orgs", org, "custom-providers"], ["orgs", org, "providers"], ["orgs", org, "credentials"], modelCatalogues],
+    onSuccess: ({ added, keySaved }) => {
+      if (server.key.trim() && draft.auth !== "none" && savesKey && !keySaved)
+        toast.error(t("orgHome.custom.keyNotSaved", "{name} added; add its key under Provider keys.", { name: added.name }));
+      else toast(t("orgHome.custom.added", "{name} added", { name: added.name }));
+      onClose();
+    },
+  });
+  const changeServer = (patch: Partial<typeof server>) => {
+    setServer((s) => ({ ...s, ...patch }));
+    if (detection.isError) detection.reset();
+  };
   const set = (patch: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...patch }));
     if (save.isError) save.reset();
   };
-  const counts = COUNTING.has(draft.generation);
-  const embeddings: EmbeddingsDialect | null = draft.embeddings ? "openai_embeddings" : null;
-  const countTokens: GenerationDialect | null = draft.count_tokens && counts ? draft.generation : null;
+  const runDetection = async () => {
+    try {
+      const d = await detection.mutateAsync({ base_url: server.base_url.trim(), key: server.key.trim() || null });
+      setFound(d);
+      setDraft(draftOf(d, false));
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  return (
+    <StepDialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      size="md"
+      title={t("orgHome.custom.add", "Add custom provider")}
+      submitLabel={t("orgHome.custom.add", "Add custom provider")}
+      submitting={save.isPending}
+      onSubmit={() => !draftProblem(draft) && save.mutate()}
+      steps={[
+        {
+          id: "server",
+          title: t("orgHome.custom.serverTitle", "Where is the server?"),
+          description: t("orgHome.custom.serverHint", "Kaeso asks it for its format, key style and models; nothing is saved yet."),
+          blockedReason: server.base_url.trim() ? undefined : t("orgHome.custom.serverNeeded", "Give the server's base URL"),
+          continueLabel: t("orgHome.custom.detect", "Detect settings"),
+          onContinue: runDetection,
+          content: (
+            <div className="flex flex-col gap-20">
+              <Input
+                label={t("orgHome.custom.baseUrl", "Base URL")}
+                description={t("orgHome.custom.serverUrlHint", "The address you'd give an SDK; Kaeso drops /v1 and endpoint paths.")}
+                value={server.base_url}
+                onChange={(e) => changeServer({ base_url: e.target.value })}
+                error={fieldError(detection.error, "base_url")}
+                placeholder={t("orgHome.custom.serverUrlPlaceholder", "https://llm.example.com/v1")}
+                maxLength={2048}
+                inputMode="url"
+                autoFocus
+              />
+              <SensitiveInput
+                label={t("orgHome.custom.key", "API key")}
+                description={
+                  savesKey
+                    ? t("orgHome.custom.keyHint", "Leave it empty for a server without one; it's saved as the provider's key.")
+                    : t("orgHome.custom.keyOnlyDetects", "Leave it empty for a server without one; it's used only to detect settings.")
+                }
+                value={server.key}
+                onChange={(e) => changeServer({ key: e.target.value })}
+                error={fieldError(detection.error, "key")}
+                autoComplete="off"
+              />
+            </div>
+          ),
+        },
+        {
+          id: "settings",
+          title: t("orgHome.custom.foundTitle", "Check what Kaeso found"),
+          description: t("orgHome.custom.foundHint", "Change anything that's wrong; Kaeso checks your changes with the server before adding it."),
+          blockedReason: draftProblem(draft),
+          content: (
+            <div className="flex flex-col gap-20">
+              <Banner tone="info">{modelsFound(found)}</Banner>
+              <SettingsFields draft={draft} set={set} error={save.error} />
+            </div>
+          ),
+        },
+      ]}
+    />
+  );
+}
+
+export function CustomProviderDialog({ org, editing, onClose }: { org: string; editing: CustomProviderView; onClose: () => void }) {
+  const [draft, setDraft] = useState<Draft>(() => draftOf(editing, true));
+  const set = (patch: Partial<Draft>) => {
+    setDraft((d) => ({ ...d, ...patch }));
+    if (save.isError) save.reset();
+  };
   const save = useApiMutation({
     mutationFn: async () => {
-      if (editing)
-        return data(
-          await api.PATCH("/platform/v1/orgs/{org}/custom-providers/{provider}", {
-            params: { path: { org, provider: editing.id }, header: { "If-Match": `"${editing.revision}"` } },
-            body: {
-              name: draft.name.trim(),
-              base_url: draft.base_url.trim(),
-              auth: draft.auth,
-              generation: draft.generation,
-              embeddings,
-              count_tokens: countTokens,
-            },
-          }),
-        );
+      const { base_url, auth, generation, embeddings, count_tokens } = settingsOf(draft);
       return data(
-        await api.POST("/platform/v1/orgs/{org}/custom-providers", {
-          params: { path: { org } },
-          body: {
-            id: draft.id,
-            name: draft.name.trim(),
-            base_url: draft.base_url.trim(),
-            auth: draft.auth,
-            generation: draft.generation,
-            embeddings,
-            count_tokens: countTokens,
-          },
+        await api.PATCH("/platform/v1/orgs/{org}/custom-providers/{provider}", {
+          params: { path: { org, provider: editing.id }, header: { "If-Match": `"${editing.revision}"` } },
+          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens },
         }),
       );
     },
     invalidates: [["orgs", org, "custom-providers"], ["orgs", org, "providers"], modelCatalogues],
     onSuccess: (p) => {
-      toast(editing ? t("orgHome.custom.saved", "{name} saved", { name: p.name }) : t("orgHome.custom.added", "{name} added", { name: p.name }));
+      toast(t("orgHome.custom.saved", "{name} saved", { name: p.name }));
       onClose();
     },
   });
   const blocked = draftProblem(draft);
   const submit = () => !blocked && save.mutate();
-  const keysLeft = editing && draft.auth === "none" && editing.auth !== "none" && editing.in_use.keys > 0;
   return (
     <Dialog
       busy={save.isPending}
       open
       onOpenChange={(o) => !o && onClose()}
       size="md"
-      title={editing ? t("orgHome.custom.editTitle", "Edit {name}", { name: editing.name }) : t("orgHome.custom.add", "Add custom provider")}
-      description={t("orgHome.custom.dialogHint", "Kaeso calls it in the API format you choose; set each model's prices and limits by hand.")}
+      title={t("orgHome.custom.editTitle", "Edit {name}", { name: editing.name })}
+      description={t("orgHome.custom.editHint", "Kaeso calls it with these settings; a new address, key style or format marks its models unchecked.")}
       onSubmit={submit}
       footer={
         <>
@@ -380,84 +616,12 @@ export function CustomProviderDialog({ org, editing, onClose }: { org: string; e
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
           <Button variant="primary" disabled={!!blocked} {...(blocked ? { disabledReason: blocked } : {})} loading={save.isPending} onClick={submit}>
-            {editing ? t("common.save", "Save") : t("orgHome.custom.add", "Add custom provider")}
+            {t("common.save", "Save")}
           </Button>
         </>
       }
     >
-      <div className="flex flex-col gap-20">
-        <Input
-          label={t("common.name", "Name")}
-          value={draft.name}
-          onChange={(e) => set({ name: e.target.value, ...(draft.idTouched ? {} : { id: idFromName(e.target.value) }) })}
-          error={fieldError(save.error, "name")}
-          placeholder={t("orgHome.custom.namePlaceholder", "Research vLLM")}
-          maxLength={100}
-          autoFocus
-        />
-        <Input
-          label={t("orgHome.custom.id", "Id")}
-          description={
-            editing
-              ? t("orgHome.custom.idFixed", "The id never changes; model names start with it.")
-              : t("orgHome.custom.idHint", "Model names start with it, such as {id}/llama-3.3-70b.", { id: draft.id || "research-vllm" })
-          }
-          value={draft.id}
-          disabled={!!editing}
-          onChange={(e) => set({ id: e.target.value.toLowerCase(), idTouched: true })}
-          error={fieldError(save.error, "id")}
-          maxLength={40}
-        />
-        <Input
-          label={t("orgHome.custom.baseUrl", "Base URL")}
-          description={t("orgHome.custom.baseUrlHint", "Kaeso adds the format's path, such as /v1/chat/completions, to it.")}
-          value={draft.base_url}
-          onChange={(e) => set({ base_url: e.target.value })}
-          error={fieldError(save.error, "base_url")}
-          placeholder={t("orgHome.custom.baseUrlPlaceholder", "https://llm.example.com")}
-          maxLength={2048}
-          inputMode="url"
-        />
-        <Select
-          label={t("orgHome.custom.format", "API format")}
-          description={t("orgHome.custom.formatHint", "vLLM, Ollama, LM Studio, TGI and SGLang speak OpenAI Chat Completions.")}
-          fullWidth
-          value={draft.generation}
-          onValueChange={(v) => set({ generation: v as GenerationDialect })}
-          options={GENERATIONS.map((g) => ({ value: g, label: dialectLabel(g) }))}
-          error={fieldError(save.error, "generation")}
-        />
-        <div className="flex flex-col gap-12">
-          <Switch
-            label={t("orgHome.custom.embeddings", "Also serves embeddings")}
-            description={t("orgHome.custom.embeddingsHint", "In the OpenAI Embeddings format, at /v1/embeddings.")}
-            checked={draft.embeddings}
-            onCheckedChange={(v) => set({ embeddings: v })}
-          />
-          {counts && (
-            <Switch
-              label={t("orgHome.custom.countTokens", "Counts tokens")}
-              description={t("orgHome.custom.countTokensHint", "Apps can ask it to count a request's input tokens.")}
-              checked={draft.count_tokens}
-              onCheckedChange={(v) => set({ count_tokens: v })}
-            />
-          )}
-        </div>
-        <Select
-          label={t("orgHome.custom.auth", "Key")}
-          description={authHint(draft.auth)}
-          fullWidth
-          value={draft.auth}
-          onValueChange={(v) => set({ auth: v as CustomAuthView })}
-          options={AUTHS.map((a) => ({ value: a, label: authLabel(a) }))}
-          error={fieldError(save.error, "auth")}
-        />
-        {keysLeft && (
-          <Text variant="small" tone="secondary">
-            {t("orgHome.custom.keysLeft", "Delete its keys under Provider keys first; a provider without a key can't keep any.")}
-          </Text>
-        )}
-      </div>
+      <SettingsFields draft={draft} set={set} error={save.error} editing={editing} autoFocus />
     </Dialog>
   );
 }

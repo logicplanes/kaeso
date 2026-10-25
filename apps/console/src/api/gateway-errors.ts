@@ -404,6 +404,23 @@ const messages = (): Rule[] => [
   rule("errors.customProvider.listingFailed", (v) =>
     t("errors.customProvider.listingFailed", "The custom provider `{provider}` did not list its models; type the model id instead.", v),
   ),
+  rule("errors.customProvider.unreachable", () =>
+    t("errors.customProvider.unreachable", "Kaeso can't reach `base_url`; check the address and that the server runs."),
+  ),
+  rule("errors.customProvider.asksForKey", () => t("errors.customProvider.asksForKey", "The server asks for a key; enter the key it takes.")),
+  rule("errors.customProvider.keyRefused", () =>
+    t("errors.customProvider.keyRefused", "The server refused the key; check it or choose another way to send it."),
+  ),
+  rule("errors.customProvider.unreadable", () =>
+    t("errors.customProvider.unreadable", "`base_url` answers, but not in an API format Kaeso speaks; check the address."),
+  ),
+  rule("errors.customProvider.noApi", () => t("errors.customProvider.noApi", "Kaeso found no API at `base_url`; give the address that comes before `/v1`.")),
+  rule("errors.customProvider.answered", (v) =>
+    t("errors.customProvider.answered", "The server answered with status {status}; check that it runs and try again.", v),
+  ),
+  rule("errors.customProvider.noRoute", (v) => t("errors.customProvider.noRoute", "The server has no `{path}`; choose another API format.", v)),
+  rule("errors.customProvider.noEmbeddings", () => t("errors.customProvider.noEmbeddings", "The server has no `/v1/embeddings`; turn embeddings off.")),
+  rule("errors.customProvider.noCounting", (v) => t("errors.customProvider.noCounting", "The server has no `{path}`; turn token counting off.", v)),
   rule("errors.accountSignedOut", (v) => t("errors.accountSignedOut", "The {product} account of this project's provider key is signed out; sign in again.", v)),
   rule("errors.replaceAccount", () => t("errors.replaceAccount", "This key signs in with an account; sign in again instead of replacing it.")),
   rule("errors.accountSignInExpired", () => t("errors.accountSignInExpired", "This sign-in expired or was already used; start again.")),

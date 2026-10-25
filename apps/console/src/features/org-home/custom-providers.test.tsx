@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { CustomProviderView, ProviderView } from "~/api/generated/types";
+import type { CustomProviderDetection, CustomProviderView, ProviderView } from "~/api/generated/types";
 import { ADMIN_ORG_RIGHTS, ORG, providers, signedIn, withRights } from "~/test/fixtures";
 import { fill, hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
@@ -11,6 +11,23 @@ import { deleteConsequence, idFromName } from "./custom-providers";
 const PATH = `/orgs/${ORG}/providers?tab=custom`;
 const LIST = "orgs/:org/custom-providers";
 const ONE = "orgs/:org/custom-providers/:provider";
+const DETECT = "orgs/:org/custom-provider-detection";
+const KEYS = "orgs/:org/credentials";
+const LAB_KEY = "lab-test-key-0000000001";
+
+function detected(overrides: Partial<CustomProviderDetection> = {}): CustomProviderDetection {
+  return {
+    base_url: "https://gpus.example.com/",
+    name: "gpus.example.com",
+    id: "gpus-example-com",
+    auth: "x_api_key",
+    generation: "anthropic_messages",
+    embeddings: null,
+    count_tokens: "anthropic_messages",
+    models: [{ model_id: "lab-sonnet", context_limit: 200000, output_limit: 64000 }],
+    ...overrides,
+  };
+}
 
 function customProvider(overrides: Partial<CustomProviderView> = {}): CustomProviderView {
   return {
@@ -75,57 +92,237 @@ describe("custom providers", () => {
     expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
   });
 
-  it("adds a provider, deriving its id from the name and sending only the formats it serves", async () => {
+  it("detects a server's settings from its base URL and key, then adds it with its key", async () => {
     signedIn();
     withCustom([]);
-    on("POST", LIST, customProvider({ id: "lab-gpus", name: "Lab GPUs", in_use: { keys: 0, models: 0, projects: 0 } }));
+    on("POST", DETECT, detected());
+    on("POST", LIST, customProvider({ id: "gpus-example-com", name: "gpus.example.com", in_use: { keys: 0, models: 0, projects: 0 } }));
+    on("POST", KEYS, {});
     const { user } = await renderApp(PATH);
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
-    const add = () => within(dialog).getByRole("button", { name: "Add custom provider" });
-    await hoverReason(user, add(), "Give the provider a name");
-    await fill(user, within(dialog).getByRole("textbox", { name: "Name" }), "Lab GPUs");
-    expect(within(dialog).getByRole("textbox", { name: "Id" })).toHaveValue("lab-gpus");
-    await hoverReason(user, add(), "Give the base URL, starting with https://");
-    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
-    await user.click(within(dialog).getByRole("combobox", { name: "API format" }));
-    await user.click(await screen.findByRole("option", { name: "Anthropic Messages" }));
-    await user.click(within(dialog).getByRole("switch", { name: "Counts tokens" }));
-    await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
-    await user.click(await screen.findByRole("option", { name: "x-api-key header" }));
-    expect(within(dialog).getByText("Sent as x-api-key, as Anthropic-compatible servers expect.")).toBeInTheDocument();
-    await user.click(add());
+    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Detect settings" }), "Give the server's base URL");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com/v1");
+    expect(within(dialog).getByLabelText("API key")).toHaveAccessibleDescription(/saved as the provider's key/);
+    await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
 
-    expect(await notifications().findByText("Lab GPUs added")).toBeInTheDocument();
+    expect(await within(dialog).findByRole("heading", { name: "Check what Kaeso found" })).toBeVisible();
+    expect(within(dialog).getByText("The server lists 1 model: lab-sonnet.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: "Name" })).toHaveValue("gpus.example.com");
+    expect(within(dialog).getByRole("textbox", { name: "Id" })).toHaveValue("gpus-example-com");
+    expect(within(dialog).getByRole("textbox", { name: "Base URL" })).toHaveValue("https://gpus.example.com/");
+    expect(within(dialog).getByRole("combobox", { name: "API format" })).toHaveTextContent("Anthropic Messages");
+    expect(within(dialog).getByRole("switch", { name: "Counts tokens" })).toBeChecked();
+    expect(within(dialog).getByRole("combobox", { name: "Key" })).toHaveTextContent("x-api-key header");
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+
+    expect(await notifications().findByText("gpus.example.com added")).toBeInTheDocument();
+    expect(requests("POST", DETECT).map((r) => r.body)).toEqual([{ base_url: "https://gpus.example.com/v1", key: LAB_KEY }]);
     expect(requests("POST", LIST).map((r) => r.body)).toEqual([
       {
-        id: "lab-gpus",
-        name: "Lab GPUs",
-        base_url: "https://gpus.example.com",
+        id: "gpus-example-com",
+        name: "gpus.example.com",
+        base_url: "https://gpus.example.com/",
         auth: "x_api_key",
         generation: "anthropic_messages",
         embeddings: null,
         count_tokens: "anthropic_messages",
       },
     ]);
+    expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ provider: "gpus-example-com", name: "gpus.example.com", secret: LAB_KEY }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add custom provider" })).not.toBeInTheDocument());
   });
 
-  it("shows the gateway's refusal of an address beside the base URL", async () => {
+  it("checks changed settings with the server before adding and shows its refusal beside the field", async () => {
     signedIn();
     withCustom([]);
-    on("POST", LIST, apiError(400, "invalid_request", "`base_url` points to an address this install does not allow.", { param: "base_url" }));
+    const found = detected({ auth: "bearer", generation: "openai_chat", count_tokens: null, embeddings: "openai_embeddings", models: null });
+    on("POST", DETECT, (r: { body: unknown }) =>
+      (r.body as { generation?: string }).generation === "openai_responses"
+        ? apiError(400, "invalid_request", "The server has no `/v1/responses`; choose another API format.", { param: "generation" })
+        : found,
+    );
+    on("POST", LIST, customProvider({ id: "gpus-example-com", name: "gpus.example.com" }));
+    on("POST", KEYS, {});
     const { user } = await renderApp(PATH);
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
     const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
-    await fill(user, within(dialog).getByRole("textbox", { name: "Name" }), "Metadata");
-    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://169.254.169.254");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "gpus.example.com");
+    await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
+    await user.keyboard("{Enter}");
+    expect(await within(dialog).findByText("The server has no model listing; type each model's id when you add it to a project.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("switch", { name: "Also serves embeddings" })).toBeChecked();
+    await user.click(within(dialog).getByRole("combobox", { name: "API format" }));
+    await user.click(await screen.findByRole("option", { name: "OpenAI Responses" }));
     await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+
+    const format = within(dialog).getByRole("combobox", { name: "API format" });
+    await waitFor(() => expect(format).toHaveAccessibleDescription(/has no `\/v1\/responses`/));
+    expect(requests("POST", LIST)).toEqual([]);
+    expect(requests("POST", DETECT).at(-1)?.body).toEqual({
+      base_url: "https://gpus.example.com/",
+      key: LAB_KEY,
+      auth: "bearer",
+      generation: "openai_responses",
+      embeddings: "openai_embeddings",
+      count_tokens: null,
+    });
+
+    await user.click(format);
+    await user.click(await screen.findByRole("option", { name: "OpenAI Chat Completions" }));
+    await waitFor(() => expect(format).not.toHaveAccessibleDescription(/has no/));
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+    expect(await notifications().findByText("gpus.example.com added")).toBeInTheDocument();
+    expect(requests("POST", DETECT)).toHaveLength(2);
+    expect(requests("POST", LIST)[0]?.body).toMatchObject({ auth: "bearer", generation: "openai_chat", embeddings: "openai_embeddings" });
+  });
+
+  it("lists the first models it found and takes a corrected address and token counting before adding", async () => {
+    signedIn();
+    withCustom([]);
+    const models = ["lab-a", "lab-b", "lab-c", "lab-d", "lab-e", "lab-f"].map((model_id) => ({ model_id, context_limit: null, output_limit: null }));
+    on("POST", DETECT, detected({ models }));
+    on("POST", LIST, customProvider({ id: "gpus-example-com", name: "gpus.example.com" }));
+    on("POST", KEYS, {});
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
+    await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    expect(await within(dialog).findByText("The server lists 6 models: lab-a, lab-b, lab-c, lab-d, 2 more.")).toBeInTheDocument();
+
+    const url = within(dialog).getByRole("textbox", { name: "Base URL" });
+    await user.clear(url);
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add custom provider" }), "Give the base URL, starting with https://");
+    await user.type(url, "https://gpus-2.example.com/");
+    await user.click(within(dialog).getByRole("switch", { name: "Counts tokens" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+
+    expect(await notifications().findByText("gpus.example.com added")).toBeInTheDocument();
+    expect(requests("POST", DETECT).at(-1)?.body).toEqual({
+      base_url: "https://gpus-2.example.com/",
+      key: LAB_KEY,
+      auth: "x_api_key",
+      generation: "anthropic_messages",
+      embeddings: null,
+      count_tokens: null,
+    });
+    expect(requests("POST", LIST)[0]?.body).toMatchObject({ base_url: "https://gpus-2.example.com/", count_tokens: null });
+  });
+
+  it("shows the gateway's refusal of an address beside the base URL and stays on the first step", async () => {
+    signedIn();
+    withCustom([]);
+    on("POST", DETECT, apiError(400, "invalid_request", "`base_url` points to an address this install does not allow.", { param: "base_url" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://169.254.169.254");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
 
     const url = within(dialog).getByRole("textbox", { name: "Base URL" });
     await waitFor(() => expect(url).toHaveAccessibleDescription(/points to an address this install does not allow/));
+    expect(dialog).toHaveAccessibleDescription("Step 1 of 2");
+    await user.type(url, "1");
+    await waitFor(() => expect(url).not.toHaveAccessibleDescription(/points to an address/));
+    expect(requests("POST", LIST)).toEqual([]);
+  });
+
+  it("takes an id typed by hand, explains each key style and clears a refusal once the field changes", async () => {
+    signedIn();
+    withCustom([]);
+    on(
+      "POST",
+      DETECT,
+      detected({
+        base_url: "http://10.0.0.8:1234/",
+        name: "10.0.0.8",
+        id: "10-0-0-8",
+        auth: "none",
+        generation: "openai_chat",
+        count_tokens: null,
+        models: [],
+      }),
+    );
+    on("POST", LIST, apiError(400, "invalid_request", "`lmstudio` is a provider listed on models.dev that Kaeso may add; choose another id.", { param: "id" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://10.0.0.8:1234");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    expect(await within(dialog).findByText("The server lists no models yet.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Requests go out without a key, for a server on your own network.")).toBeInTheDocument();
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await user.type(name, "LM Studio");
+    const id = within(dialog).getByRole("textbox", { name: "Id" });
+    expect(id).toHaveValue("lm-studio");
+    await user.clear(id);
+    await user.type(id, "My Lab");
+    await hoverReason(
+      user,
+      within(dialog).getByRole("button", { name: "Add custom provider" }),
+      "Give the provider an id of lowercase letters, digits and hyphens",
+    );
+    await user.clear(id);
+    await user.type(id, "LMSTUDIO");
+    expect(id).toHaveValue("lmstudio");
+    await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
+    await user.click(await screen.findByRole("option", { name: "Bearer token" }));
+    expect(within(dialog).getByText("Sent as Authorization: Bearer, as OpenAI-compatible servers expect.")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
+    await user.click(await screen.findByRole("option", { name: "No key" }));
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+    await waitFor(() => expect(id).toHaveAccessibleDescription(/listed on models.dev/));
+    await user.type(id, "-local");
+    await waitFor(() => expect(id).not.toHaveAccessibleDescription(/listed on models.dev/));
+    expect(requests("POST", DETECT)).toHaveLength(1);
+    expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "lmstudio", name: "LM Studio", auth: "none", base_url: "http://10.0.0.8:1234/" });
+    expect(requests("POST", KEYS)).toEqual([]);
+  });
+
+  it("uses the key only to detect settings for someone who can't add provider keys, and says when a key wasn't saved", async () => {
+    withRights(ADMIN_ORG_RIGHTS.filter((r) => r !== "provider_credentials.create"));
+    withCustom([]);
+    on("POST", DETECT, detected());
+    on("POST", LIST, customProvider({ id: "gpus-example-com", name: "gpus.example.com" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    expect(within(dialog).getByLabelText("API key")).toHaveAccessibleDescription(/used only to detect settings/);
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
+    await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Add custom provider" }));
+    expect(await notifications().findByText("gpus.example.com added")).toBeInTheDocument();
+    expect(requests("POST", KEYS)).toEqual([]);
+  });
+
+  it("adds the provider even when its key is refused, and says to add the key by hand", async () => {
+    signedIn();
+    withCustom([]);
+    on("POST", DETECT, detected());
+    on("POST", LIST, customProvider({ id: "gpus-example-com", name: "gpus.example.com" }));
+    on("POST", KEYS, apiError(400, "invalid_request", "The secret must be 8 to 4096 characters.", { param: "secret" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "https://gpus.example.com");
+    await fill(user, within(dialog).getByLabelText("API key"), LAB_KEY);
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    await user.click(await within(dialog).findByRole("button", { name: "Add custom provider" }));
+    expect(await notifications().findByText("gpus.example.com added; add its key under Provider keys.")).toBeInTheDocument();
+    expect(requests("POST", LIST)).toHaveLength(1);
   });
 
   it("changes a provider under its revision and never its id", async () => {
@@ -156,6 +353,25 @@ describe("custom providers", () => {
       embeddings: "openai_embeddings",
       count_tokens: null,
     });
+  });
+
+  it("keeps an edit's refusal beside its field until the field changes, and closes on Cancel", async () => {
+    signedIn();
+    withCustom([customProvider()]);
+    on("PATCH", ONE, apiError(400, "invalid_request", "The name must be 1 to 100 characters, without control characters.", { param: "name" }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Research vLLM" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    expect(dialog).toHaveAccessibleDescription("Kaeso calls it with these settings; a new address, key style or format marks its models unchecked.");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await waitFor(() => expect(name).toHaveAccessibleDescription(/1 to 100 characters/));
+    await user.type(name, "s");
+    await waitFor(() => expect(name).not.toHaveAccessibleDescription(/1 to 100 characters/));
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit Research vLLM" })).not.toBeInTheDocument());
   });
 
   it("says what deleting removes before it deletes", async () => {
@@ -207,37 +423,6 @@ describe("custom providers", () => {
 
     await user.keyboard("c");
     expect(await screen.findByRole("dialog", { name: "Add custom provider" })).toBeInTheDocument();
-  });
-
-  it("takes an id typed by hand, explains each key style and clears a refusal once the field changes", async () => {
-    signedIn();
-    withCustom([]);
-    on("POST", LIST, apiError(400, "invalid_request", "`lmstudio` is a provider listed on models.dev that Kaeso may add; choose another id.", { param: "id" }));
-    const { user } = await renderApp(PATH);
-
-    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
-    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
-    await fill(user, within(dialog).getByRole("textbox", { name: "Name" }), "LM Studio");
-    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://10.0.0.8:1234");
-    const id = within(dialog).getByRole("textbox", { name: "Id" });
-    await user.clear(id);
-    await user.type(id, "My Lab");
-    await hoverReason(
-      user,
-      within(dialog).getByRole("button", { name: "Add custom provider" }),
-      "Give the provider an id of lowercase letters, digits and hyphens",
-    );
-    await user.clear(id);
-    await user.type(id, "LMSTUDIO");
-    expect(id).toHaveValue("lmstudio");
-    await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
-    await user.click(await screen.findByRole("option", { name: "No key" }));
-    expect(within(dialog).getByText("Requests go out without a key, for a server on your own network.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
-    await waitFor(() => expect(id).toHaveAccessibleDescription(/listed on models.dev/));
-    await user.type(id, "-local");
-    await waitFor(() => expect(id).not.toHaveAccessibleDescription(/listed on models.dev/));
-    expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "lmstudio", auth: "none", base_url: "http://10.0.0.8:1234" });
   });
 
   it("says a provider's keys go first before it takes no key", async () => {
@@ -336,8 +521,8 @@ describe("a custom provider's models", () => {
     on("GET", "orgs/:org/providers", page([...providers, listed(research)]));
     on("GET", "orgs/:org/projects/:project/models/offered", {
       data: [
-        { model_id: "meta-llama/Llama-3.3-70B", catalogue_model_id: null },
-        { model_id: "qwen/qwen3-32b", catalogue_model_id: "cm_qwen" },
+        { model_id: "meta-llama/Llama-3.3-70B", catalogue_model_id: null, detected: {} },
+        { model_id: "qwen/qwen3-32b", catalogue_model_id: "cm_qwen", detected: {} },
       ],
     });
     on(
@@ -390,6 +575,83 @@ describe("a custom provider's models", () => {
     ]);
   });
 
+  it("fills in the limits and capabilities Kaeso found and leaves the prices to the person", async () => {
+    signedIn();
+    projectData();
+    modelsApi({ models: [] });
+    const research = customProvider();
+    on("GET", "orgs/:org/providers", page([...providers, listed(research)]));
+    on("GET", "orgs/:org/projects/:project/models/offered", {
+      data: [
+        {
+          model_id: "meta-llama/Llama-3.3-70B-Instruct",
+          catalogue_model_id: null,
+          detected: {
+            display_name: "Llama 3.3 70B Instruct",
+            input_modalities: ["text"],
+            output_modalities: ["text"],
+            context_limit: 131072,
+            output_limit: 16384,
+            tool_call: true,
+            structured_output: true,
+          },
+        },
+        { model_id: "qwen/qwen3-32b", catalogue_model_id: null, detected: { context_limit: 40960 } },
+      ],
+    });
+    on(
+      "POST",
+      "orgs/:org/projects/:project/models",
+      catalogueModel({ id: "cm_llama", provider: "research-vllm", model_id: "meta-llama/Llama-3.3-70B-Instruct", custom: true }),
+    );
+    const { user } = await renderApp(projectPath("models?add=true"));
+    const dialog = await screen.findByRole("dialog", { name: /Add models/ });
+    await user.click(within(dialog).getByRole("button", { description: "Provider" }));
+    await user.click(await screen.findByRole("option", { name: /^Research vLLM/ }));
+    expect(
+      await within(dialog).findByText("Kaeso fills in the limits and capabilities it can find for Research vLLM's models; you set their prices next."),
+    ).toBeInTheDocument();
+    await user.click(await within(dialog).findByRole("gridcell", { name: /Llama-3.3-70B-Instruct/ }));
+
+    const custom = await screen.findByRole("dialog", { name: /Add a Research vLLM model/ });
+    expect(
+      within(custom).getByText("Kaeso filled in what Research vLLM and models.dev say about meta-llama/Llama-3.3-70B-Instruct; check it and set its prices."),
+    ).toBeInTheDocument();
+    expect(within(custom).getByRole("textbox", { name: "Context" })).toHaveValue("131,072");
+    expect(within(custom).getByRole("textbox", { name: "Output limit" })).toHaveValue("16,384");
+    expect(within(custom).getByRole("textbox", { name: "Input price" })).toHaveValue("");
+    const modelId = within(custom).getByRole("combobox", { name: "Model id" });
+    await user.clear(modelId);
+    await user.type(modelId, "qwen/qwen3-32b");
+    expect(within(custom).getByLabelText("Context")).toHaveValue("40,960");
+    await user.clear(modelId);
+    await user.type(modelId, "meta-llama/Llama-3.3-70B-Instruct");
+    expect(within(custom).getByLabelText("Context")).toHaveValue("131,072");
+    await user.click(within(custom).getByLabelText("Context"));
+    await hoverReason(user, within(custom).getByRole("button", { name: "Add model" }), "A custom model needs its input and output prices.");
+    await fill(user, within(custom).getByRole("textbox", { name: "Input price" }), "0");
+    await fill(user, within(custom).getByRole("textbox", { name: "Output price" }), "0");
+    await user.click(within(custom).getByRole("button", { name: "Add model" }));
+
+    expect(await notifications().findByText("Added meta-llama/Llama-3.3-70B-Instruct")).toBeInTheDocument();
+    expect(requests("POST", "orgs/:org/projects/:project/models")[0]?.body).toMatchObject({
+      provider: "research-vllm",
+      model_id: "meta-llama/Llama-3.3-70B-Instruct",
+      custom: true,
+      overrides: {
+        display_name: "Llama 3.3 70B Instruct",
+        input_modalities: ["text"],
+        output_modalities: ["text"],
+        context_limit: 131072,
+        output_limit: 16384,
+        input_price: "0",
+        output_price: "0",
+        egress_dialect: "openai_chat",
+        structured_output: true,
+      },
+    });
+  });
+
   it("falls back to typing an id when the provider lists nothing", async () => {
     signedIn();
     projectData();
@@ -418,7 +680,7 @@ describe("a custom provider's models", () => {
     modelsApi({ models: [] });
     const research = customProvider();
     on("GET", "orgs/:org/providers", page([...providers, listed(research)]));
-    on("GET", "orgs/:org/projects/:project/models/offered", { data: [{ model_id: "meta-llama/Llama-3.3-70B", catalogue_model_id: null }] });
+    on("GET", "orgs/:org/projects/:project/models/offered", { data: [{ model_id: "meta-llama/Llama-3.3-70B", catalogue_model_id: null, detected: {} }] });
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));
@@ -441,7 +703,7 @@ describe("a custom provider's models", () => {
     modelsApi({ models: [] });
     const research = customProvider();
     on("GET", "orgs/:org/providers", page([...providers, listed(research)]));
-    on("GET", "orgs/:org/projects/:project/models/offered", { data: [{ model_id: "qwen/qwen3-32b", catalogue_model_id: "cm_qwen" }] });
+    on("GET", "orgs/:org/projects/:project/models/offered", { data: [{ model_id: "qwen/qwen3-32b", catalogue_model_id: "cm_qwen", detected: {} }] });
     const { user } = await renderApp(projectPath("models?add=true"));
     const dialog = await screen.findByRole("dialog", { name: /Add models/ });
     await user.click(within(dialog).getByRole("button", { description: "Provider" }));

@@ -23,6 +23,8 @@ export interface DialogStep {
   description?: ReactNode | undefined;
   content: ReactNode;
   blockedReason?: string | undefined;
+  continueLabel?: string | undefined;
+  onContinue?: (() => Promise<boolean> | boolean) | undefined;
 }
 
 export interface StepDialogResult {
@@ -62,6 +64,7 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
   const uid = useId();
   const t = useUiText();
   const [announced, setAnnounced] = useState(false);
+  const [continuing, setContinuing] = useState(false);
   const [enter, setEnter] = useState<"forward" | "back" | null>(null);
   const [opened, setOpened] = useState({ open, defaultStep });
   if (opened.open !== open || opened.defaultStep !== defaultStep) {
@@ -104,10 +107,21 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
   const last = index >= steps.length - 1;
   const blocked = step?.blockedReason;
   const next = () => {
-    if (blocked || submitting) return;
-    if (last) onSubmit();
-    else go(index + 1);
+    if (blocked || submitting || continuing) return;
+    if (last) return onSubmit();
+    const check = step?.onContinue;
+    if (!check) return go(index + 1);
+    const to = index + 1;
+    setContinuing(true);
+    void Promise.resolve()
+      .then(check)
+      .then(
+        (ok) => ok && go(to),
+        () => {},
+      )
+      .finally(() => setContinuing(false));
   };
+  const waiting = !!submitting || continuing;
   const progress = { current: index + 1, total: steps.length };
   const continueLabel = t("stepDialog.continue", "Continue");
   const [heardBefore, heardAfter = ""] = t("stepDialog.stepAnnouncement", "Step {current} of {total}: {title}", progress).split("{title}");
@@ -158,7 +172,7 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
       ref={ref}
       {...frame}
       anchor="top"
-      busy={!!submitting}
+      busy={waiting}
       size={size}
       title={title}
       description={steps.length > 1 ? t("stepDialog.stepOf", "Step {current} of {total}", progress) : undefined}
@@ -166,22 +180,22 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
       footer={
         <>
           {index > 0 ? (
-            <Button onClick={() => go(index - 1)} disabled={!!submitting}>
+            <Button onClick={() => go(index - 1)} disabled={waiting}>
               {t("stepDialog.back", "Back")}
             </Button>
           ) : (
-            <Button onClick={() => onOpenChange?.(false)} disabled={!!submitting}>
+            <Button onClick={() => onOpenChange?.(false)} disabled={waiting}>
               {t("stepDialog.cancel", "Cancel")}
             </Button>
           )}
           <Button
             variant={last && tone === "danger" ? "danger" : "primary"}
-            loading={last && submitting}
+            loading={last ? submitting : continuing}
             disabled={!!blocked}
             {...(blocked ? { disabledReason: blocked } : {})}
             onClick={next}
           >
-            {last ? submitLabel : continueLabel}
+            {last ? submitLabel : (step?.continueLabel ?? continueLabel)}
           </Button>
         </>
       }

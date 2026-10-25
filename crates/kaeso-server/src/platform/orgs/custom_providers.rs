@@ -8,8 +8,10 @@ use kaeso_core::provider::{self, ProviderId};
 use kaeso_core::providers::{self as custom, CustomAuth, CustomProvider, Draft, Problem};
 use kaeso_kpp::DialectId;
 use kaeso_store::pg::custom_providers::{self as store, CustomProviderRow, Fields, InUse};
+use secrecy::SecretString;
 use serde::{Deserialize, Deserializer, Serialize};
 use time::OffsetDateTime;
+use url::Url;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -22,6 +24,7 @@ use crate::platform::pagination::List;
 use crate::platform::params::Path;
 use crate::platform::precondition::{IfMatch, etag};
 use crate::services::custom_providers::{self as service, Reachability};
+use crate::services::provider_detection::{self as detection, Detected, Failure, Fixed, Missing};
 use crate::state::AppState;
 
 type Tagged = [(axum::http::HeaderName, axum::http::HeaderValue); 1];
@@ -328,8 +331,7 @@ fn problem(p: Problem) -> ApiError {
     ApiError::invalid(field, message)
 }
 
-async fn check_reach(state: &AppState, p: &CustomProvider) -> ApiResult<()> {
-    let url = p.base_url();
+async fn check_reach(state: &AppState, url: &Url) -> ApiResult<()> {
     match service::reachability(state, url).await {
         Reachability::Allowed | Reachability::Unknown => Ok(()),
         Reachability::Refused if url.scheme() == "http" => {
@@ -451,7 +453,7 @@ pub async fn create(
         count_tokens: req.count_tokens.map(Into::into),
     })
     .map_err(problem)?;
-    check_reach(&state, &p).await?;
+    check_reach(&state, p.base_url()).await?;
     let (kind, by) = creator_of(&ctx);
     let mut tx = state.pg.begin().await?;
     let added = store::insert(
@@ -545,7 +547,7 @@ pub async fn update(
         ));
     }
     if after_provider.base_url() != before_provider.base_url() {
-        check_reach(&state, &after_provider).await?;
+        check_reach(&state, after_provider.base_url()).await?;
     }
     let before = view(&row, used)?;
     if !store::update(&mut *tx, org, &id, &Fields::of(&after_provider)).await? {
@@ -620,4 +622,319 @@ pub async fn delete(
     tx.commit().await?;
     forget(&state, org, removed.projects).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(
+    description = "A server to detect a custom provider's settings for. Settings sent along are\n\
+    checked instead of detected."
+)]
+pub struct CustomProviderDetect {
+    #[doc = "The server's address as typed. Kaeso adds `https://` when it has no scheme\n\
+        and drops a trailing `/v1` or a pasted endpoint path, such as\n\
+        `/v1/chat/completions`."]
+    #[schema(example = "https://vllm.example.com/v1")]
+    pub base_url: String,
+    #[doc = "The key the server takes; absent or `null` for a server that takes none.\n\
+        Kaeso sends it only to this server and stores it nowhere."]
+    #[serde(default)]
+    pub key: Option<String>,
+    #[doc = "How to send the key; absent to detect it."]
+    #[serde(default)]
+    pub auth: Option<CustomAuthView>,
+    #[doc = "The generation format; absent to detect it."]
+    #[serde(default)]
+    pub generation: Option<GenerationDialect>,
+    #[doc = "The embeddings format, `null` for none; absent to detect it."]
+    #[serde(default, deserialize_with = "present")]
+    #[schema(value_type = Option<EmbeddingsDialect>, nullable)]
+    pub embeddings: Option<Option<EmbeddingsDialect>>,
+    #[doc = "The `generation` format to count tokens in, `null` for none; absent to\n\
+        detect it. Needs `generation`."]
+    #[serde(default, deserialize_with = "present")]
+    #[schema(value_type = Option<GenerationDialect>, nullable)]
+    pub count_tokens: Option<Option<GenerationDialect>>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "A model a server's model listing names.")]
+pub struct DetectedModelView {
+    #[doc = "The server's model id."]
+    #[schema(example = "meta-llama/Llama-3.3-70B-Instruct")]
+    pub model_id: String,
+    #[doc = "The context window, when the listing gives it."]
+    #[schema(example = 131072)]
+    pub context_limit: Option<u64>,
+    #[doc = "The output limit, when the listing gives it."]
+    #[schema(example = json!(null))]
+    pub output_limit: Option<u64>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(
+    description = "The settings Kaeso detected for a server, ready to add it as a custom\n\
+    provider; nothing is saved."
+)]
+pub struct CustomProviderDetection {
+    #[doc = "The base URL Kaeso reached the server at, normalized."]
+    #[schema(example = "https://vllm.example.com/")]
+    pub base_url: String,
+    #[doc = "A name to start from: the server's host."]
+    #[schema(example = "vllm.example.com")]
+    pub name: String,
+    #[doc = "An id to start from that the organization can still take."]
+    #[schema(value_type = ProviderId, example = "vllm-example-com")]
+    pub id: String,
+    #[doc = "How the server takes its key."]
+    pub auth: CustomAuthView,
+    #[doc = "The format the server generates in."]
+    pub generation: GenerationDialect,
+    #[doc = "The embeddings format the server answers; `null` when it answers none."]
+    pub embeddings: Option<EmbeddingsDialect>,
+    #[doc = "The format the server counts tokens in; `null` when it counts none."]
+    pub count_tokens: Option<GenerationDialect>,
+    #[doc = "The models the server lists, sorted by id; `null` when it has no model\n\
+        listing."]
+    pub models: Option<Vec<DetectedModelView>>,
+}
+
+fn fixed_of(req: &CustomProviderDetect) -> ApiResult<Fixed> {
+    let generation = req.generation.map(DialectId::from);
+    let count_tokens = match req.count_tokens {
+        None => None,
+        Some(None) => Some(false),
+        Some(Some(c))
+            if generation == Some(c.into()) && custom::COUNTING_DIALECTS.contains(&c.into()) =>
+        {
+            Some(true)
+        }
+        Some(Some(_)) => return Err(problem(Problem::CountTokens)),
+    };
+    Ok(Fixed {
+        auth: req.auth.map(Into::into),
+        generation,
+        embeddings: req.embeddings.map(|e| e.is_some()),
+        count_tokens,
+    })
+}
+
+fn failure(f: Failure, fixed: &Fixed) -> ApiError {
+    let key = if fixed.auth.is_some() { "auth" } else { "key" };
+    match f {
+        Failure::Unreachable => ApiError::invalid(
+            "base_url",
+            "Kaeso can't reach `base_url`; check the address and that the server runs.",
+        ),
+        Failure::AddressRefused => ApiError::invalid(
+            "base_url",
+            "`base_url` points to an address this install does not allow.",
+        ),
+        Failure::KeyNeeded => {
+            ApiError::invalid("key", "The server asks for a key; enter the key it takes.")
+        }
+        Failure::KeyRefused => ApiError::invalid(
+            key,
+            "The server refused the key; check it or choose another way to send it.",
+        ),
+        Failure::Unreadable => ApiError::invalid(
+            "base_url",
+            "`base_url` answers, but not in an API format Kaeso speaks; check the address.",
+        ),
+        Failure::NoApi => ApiError::invalid(
+            "base_url",
+            "Kaeso found no API at `base_url`; give the address that comes before `/v1`.",
+        ),
+        Failure::Answered(status) => ApiError::invalid(
+            "base_url",
+            format!("The server answered with status {status}; check that it runs and try again."),
+        ),
+        Failure::Missing(Missing::Generation(path)) => ApiError::invalid(
+            "generation",
+            format!("The server has no `{path}`; choose another API format."),
+        ),
+        Failure::Missing(Missing::Embeddings) => ApiError::invalid(
+            "embeddings",
+            "The server has no `/v1/embeddings`; turn embeddings off.",
+        ),
+        Failure::Missing(Missing::CountTokens(path)) => ApiError::invalid(
+            "count_tokens",
+            format!("The server has no `{path}`; turn token counting off."),
+        ),
+    }
+}
+
+const GENERIC_HOST_LABELS: [&str; 2] = ["www.", "api."];
+
+fn suggested_id(name: &str, taken: &[String]) -> String {
+    let mut slug = String::new();
+    for c in name.chars() {
+        if c.is_ascii_alphanumeric() {
+            slug.push(c.to_ascii_lowercase());
+        } else if !slug.is_empty() && !slug.ends_with('-') {
+            slug.push('-');
+        }
+    }
+    let slug = slug.trim_end_matches('-');
+    let slug = if slug.is_empty() { "custom" } else { slug };
+    let free = |id: &str| {
+        ProviderId::parse(id).is_ok() && !custom::is_reserved(id) && !taken.iter().any(|t| t == id)
+    };
+    (1..)
+        .map(|n| {
+            let suffix = if n == 1 {
+                String::new()
+            } else {
+                format!("-{n}")
+            };
+            let room = custom::MAX_ID_LEN - suffix.len();
+            let stem = slug
+                .get(..room.min(slug.len()))
+                .unwrap_or(slug)
+                .trim_end_matches('-');
+            format!("{stem}{suffix}")
+        })
+        .find(|id| free(id))
+        .unwrap_or_else(|| "custom".to_owned())
+}
+
+fn suggested_name(url: &Url) -> String {
+    let host = url.host_str().unwrap_or_default();
+    let host = GENERIC_HOST_LABELS
+        .iter()
+        .find_map(|l| host.strip_prefix(l))
+        .unwrap_or(host);
+    host.chars().take(custom::MAX_NAME_LEN).collect()
+}
+
+async fn detect_at(
+    state: &AppState,
+    url: &Url,
+    key: Option<&SecretString>,
+    fixed: Fixed,
+) -> Result<Detected, Failure> {
+    match service::reachability(state, url).await {
+        Reachability::Refused => Err(Failure::AddressRefused),
+        Reachability::Allowed | Reachability::Unknown => {
+            detection::detect(state, url, key, fixed).await
+        }
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/custom-provider-detection",
+    summary = "Detects how a server should be added as a custom provider: its base URL,\n\
+    key style, formats and models.",
+    description = "Kaeso asks the server's model listing with each key style, then sends an\n\
+    empty body to each format's path, which a server refuses before it\n\
+    generates or bills anything. Settings sent along are checked the same way\n\
+    instead of detected. The key goes only to this server, through the same\n\
+    address checks as requests, and is stored nowhere.",
+    tag = "orgs",
+    params(("org" = OrgId, Path)),
+    request_body = CustomProviderDetect,
+    responses((status = 200, body = CustomProviderDetection))
+)]
+pub async fn detect(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_org): Path<String>,
+    Body(req): Body<CustomProviderDetect>,
+) -> ApiResult<Json<CustomProviderDetection>> {
+    turned_off(&state)?;
+    let org = ctx.org()?.org.id;
+    let fixed = fixed_of(&req)?;
+    let key = req
+        .key
+        .as_deref()
+        .map(str::trim)
+        .filter(|k| !k.is_empty())
+        .map(|k| SecretString::from(k.to_owned()));
+    let typed = req.base_url.trim();
+    let url = custom::base_url(typed).map_err(problem)?;
+    if url.scheme() == "http" {
+        check_reach(&state, &url).await?;
+    }
+    let (url, found) = match detect_at(&state, &url, key.as_ref(), fixed).await {
+        Err(Failure::Unreachable) if !custom::has_scheme(typed) => {
+            let mut plain = url.clone();
+            if plain.set_scheme("http").is_err() {
+                return Err(failure(Failure::Unreachable, &fixed));
+            }
+            match detect_at(&state, &plain, key.as_ref(), fixed).await {
+                Ok(found) => (plain, found),
+                Err(Failure::AddressRefused | Failure::Unreachable) => {
+                    return Err(failure(Failure::Unreachable, &fixed));
+                }
+                Err(e) => return Err(failure(e, &fixed)),
+            }
+        }
+        Err(Failure::AddressRefused) => {
+            return Err(check_reach(&state, &url)
+                .await
+                .err()
+                .unwrap_or_else(|| failure(Failure::AddressRefused, &fixed)));
+        }
+        Err(e) => return Err(failure(e, &fixed)),
+        Ok(found) => (url, found),
+    };
+    let taken: Vec<String> = store::list(&state.pg, org)
+        .await?
+        .into_iter()
+        .map(|r| r.provider)
+        .collect();
+    let name = suggested_name(&url);
+    let s = found.settings;
+    Ok(Json(CustomProviderDetection {
+        base_url: url.as_str().to_owned(),
+        id: suggested_id(&name, &taken),
+        name,
+        auth: s.auth.into(),
+        generation: generation_view(s.generation),
+        embeddings: s.embeddings.then_some(EmbeddingsDialect::OpenaiEmbeddings),
+        count_tokens: s.count_tokens.then(|| generation_view(s.generation)),
+        models: found.models.map(|models| {
+            models
+                .into_iter()
+                .map(|m| DetectedModelView {
+                    model_id: m.id,
+                    context_limit: m.context_limit,
+                    output_limit: m.output_limit,
+                })
+                .collect()
+        }),
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_suggested_id_comes_from_the_host_and_avoids_reserved_and_taken_ids() {
+        assert_eq!(suggested_id("vllm.example.com", &[]), "vllm-example-com");
+        assert_eq!(
+            suggested_id("vllm.example.com", &["vllm-example-com".into()]),
+            "vllm-example-com-2"
+        );
+        assert_eq!(suggested_id("groq", &[]), "groq-2");
+        assert_eq!(suggested_id("10.0.0.5", &[]), "10-0-0-5");
+        assert_eq!(suggested_id("..", &[]), "custom");
+        let long = "a".repeat(60);
+        assert_eq!(suggested_id(&long, &[]).len(), custom::MAX_ID_LEN);
+        assert_eq!(
+            suggested_id(&long, &["a".repeat(40)]),
+            format!("{}-2", "a".repeat(38))
+        );
+    }
+
+    #[test]
+    fn a_suggested_name_is_the_host_without_a_generic_first_label() {
+        let name = |u: &str| suggested_name(&Url::parse(u).unwrap());
+        assert_eq!(name("https://api.together.example/"), "together.example");
+        assert_eq!(name("https://www.llm.example.com/x"), "llm.example.com");
+        assert_eq!(name("http://localhost:11434/"), "localhost");
+        assert_eq!(name("http://10.0.0.5:8000/"), "10.0.0.5");
+    }
 }

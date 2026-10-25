@@ -137,6 +137,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::create)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::update)))
         .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::delete)))
+        .routes(s.route(Access::Org(R::ProvidersCustomManage), routes!(custom_providers::detect)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

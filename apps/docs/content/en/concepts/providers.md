@@ -108,7 +108,7 @@ Kaeso sends each request to the one provider its model name leads to, and doesn'
 
 ## Providers of your own
 
-An organization can add a server Kaeso doesn't ship, such as a self-hosted vLLM or an internal proxy, as a custom provider. Kaeso calls it in the plain format it speaks, and you set its models' prices, limits and capabilities by hand ([custom providers](../console/custom-providers.md)).
+An organization can add a server Kaeso doesn't ship, such as a self-hosted vLLM or an internal proxy, as a custom provider. Kaeso detects how to call it from its base URL and key, and calls it in the plain format it speaks. You set its models' prices; their limits and capabilities fill in where Kaeso finds them ([custom providers](../console/custom-providers.md)).
 
 ## Outbound connections
 

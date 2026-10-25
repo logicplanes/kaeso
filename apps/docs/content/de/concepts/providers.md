@@ -108,7 +108,7 @@ Kaeso sendet jede Anfrage an den einen Anbieter, zu dem ihr Modellname führt, u
 
 ## Eigene Anbieter
 
-Eine Organisation kann einen Server hinzufügen, den Kaeso nicht mitbringt, etwa ein selbst betriebenes vLLM oder einen internen Proxy, als eigenen Anbieter. Kaeso ruft ihn im reinen Format auf, das er spricht, und Preise, Limits und Fähigkeiten seiner Modelle legen Sie selbst fest ([Eigene Anbieter](../console/custom-providers.md)).
+Eine Organisation kann einen Server hinzufügen, den Kaeso nicht mitbringt, etwa ein selbst betriebenes vLLM oder einen internen Proxy, als eigenen Anbieter. Kaeso erkennt aus seiner Basis-URL und seinem Schlüssel, wie es ihn aufruft, und ruft ihn im reinen Format auf, das er spricht. Die Preise seiner Modelle legen Sie fest; Limits und Fähigkeiten trägt Kaeso ein, wo es sie findet ([Eigene Anbieter](../console/custom-providers.md)).
 
 ## Ausgehende Verbindungen
 
