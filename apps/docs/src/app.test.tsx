@@ -200,6 +200,15 @@ describe("search", () => {
     expect(await screen.findByRole("option", { name: /^Aliases/ })).toBeInTheDocument();
   });
 
+  it("links the privacy policy and the imprint in the page's language", async () => {
+    const user = userEvent.setup();
+    app("/de/guides");
+    await screen.findByRole("heading", { level: 1, name: "Anleitungen" });
+    await user.click(within(screen.getByRole("navigation", { name: "Dokumentation" })).getByRole("button", { name: "Rechtliches" }));
+    expect(await screen.findByRole("menuitem", { name: "Datenschutz" })).toHaveAttribute("href", "https://kaeso.app/de/datenschutz");
+    expect(screen.getByRole("menuitem", { name: "Impressum" })).toHaveAttribute("href", "https://kaeso.app/de/impressum");
+  });
+
   it("opens from the phone bar, beside the navigation toggle, in the page's language", async () => {
     const user = userEvent.setup();
     app("/de/guides");
