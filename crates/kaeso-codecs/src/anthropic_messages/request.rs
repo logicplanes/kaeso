@@ -706,7 +706,11 @@ fn rebuilt_thinking(
         .iter()
         .flat_map(|m| &m.blocks)
         .any(|b| matches!(b, Block::Reasoning(rb) if replays_as_thinking(rb, &target)));
-    if own_or_count || !replays || ctx.thinking_binding != Some(true) {
+    if own_or_count
+        || !replays
+        || ctx.thinking_binding != Some(true)
+        || ctx.adaptive_thinking == Some(false)
+    {
         return Ok(Rebuilt::None);
     }
     let off = reasoning.is_some_and(|c| {

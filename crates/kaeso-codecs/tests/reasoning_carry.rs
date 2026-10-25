@@ -763,3 +763,67 @@ fn qwen_code_turns_get_claude_thinking_back_only_where_claude_wrote_it() {
     let (n, _) = restored(&merged);
     assert_eq!(n, 0, "a turn the app merged gets no thinking back");
 }
+
+#[test]
+fn a_model_without_adaptive_thinking_gets_no_binding_whatever_its_catalogue_says() {
+    let (message, kept) = carried_claude_thinking();
+    let effort = chat_next_turn(&message, "claude-sonnet-5-5");
+    let mut req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &serde_json::to_vec(&effort).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let missing = kaeso_codecs::continuity::tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    kaeso_codecs::continuity::restore_reasoning(r, &found);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(false)
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert!(thinking_sent(&body), "{body}");
+    assert_eq!(body["thinking"]["type"], "enabled", "{body}");
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn token_counts_that_replay_claude_thinking_go_out_unbound() {
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let response = reply_for_app(A, &original, R);
+    let mut next = responses_next_turn(&response["output"]);
+    next.as_object_mut().unwrap().remove("max_output_tokens");
+    let req = dispatch::decode_request(
+        R,
+        RequestKind::CountTokens,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(true)
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        body["messages"][1]["content"][0]["type"], "thinking",
+        "{body}"
+    );
+    assert!(
+        body.get("thinking")
+            .is_none_or(|t| t.get("block_binding").is_none()),
+        "{body}"
+    );
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}
