@@ -142,6 +142,10 @@ async fn a_chat_app_on_claude_keeps_its_thinking_through_a_tool_loop() {
         .await
         .unwrap();
     assert!(!keys.is_empty());
+    assert!(
+        keys.iter().all(|k| k.contains("reasoning:v2:")),
+        "entries carry the version of their shape: {keys:?}"
+    );
     for k in keys {
         let ttl: i64 = redis::cmd("PTTL")
             .arg(&k)

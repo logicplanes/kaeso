@@ -258,9 +258,9 @@ Responses 和 Embeddings 编解码器使用同一张错误码表（`openai_respo
 
 Kaeso 无法作为 `ErrorResponse` 读取的错误体只按 HTTP 状态码确定类别（见上表），并保留原始错误体。没有状态码时（例如在流中），类别为 `ProviderError`。这类错误体包括代理返回的 HTML 429、纯文本 503、`{"error": "rate limited"}`，以及带有 Kaeso 无法承载的键的错误体。
 
-字符串形式的 `error` 成为错误消息。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``。错误体在 500 字节后截断，在流中消息没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
+字符串形式的 `error` 成为错误消息。另外三种形式也会被读取：`{"object": "error", "message", "type", "param", "code"}`（Mistral、vLLM），其字符串 `message` 即消息，`type` 和 `code`（数字视为状态码）参与确定类别，`param` 变为 `KppError.param`，流中没有状态码时以 `raw_status_code` 作为状态码；`detail` 下的校验错误，即位于顶层或 `message` 中的 `{loc, msg}` 列表（Mistral 的 `HTTPValidationError`），合成一条消息，每项为 `<msg> (`<path>`)`，以 `; ` 连接，路径按请求的写法给出（去掉 FastAPI 写出的联合成员：`str`、`list[…]`，以及索引后的角色或块类型），只有一项时也放入 `param`；以及字符串 `detail`、`detail` 对象中的 `message` 或单独的字符串 `message`（也包括与 `error: null` 并存时），引用为 `` The provider returned an error (HTTP 404): Not Found. ``。在流中，带有 `object: "error"` 的帧以该错误结束流。否则消息为 `` The provider returned an error (HTTP 503) that is not in the OpenAI error format: <body> ``。错误体在 500 字节后截断，在流中消息没有 HTTP 部分。可读但没有消息的错误体得到 `The provider returned an error without a message.`
 
-编解码器不从文本推断含义。若服务商对错误密钥的回复没有认证状态码，就在 `crates/kaeso-core/src/provider.rs` 的 `refused_key_messages` 中列出该消息。网关随后会把这类错误报告为 `Authentication`（例如 SpaceX 以 HTTP 400 返回的 `Incorrect API key provided`）。
+编解码器不从文本推断含义。若服务商对错误密钥的回复没有认证状态码，就在 `crates/kaeso-core/src/provider.rs` 的 `refused_key_messages` 中列出该消息。网关随后会把这类错误报告为 `Authentication`（例如 SpaceX 以 HTTP 400 返回的 `Incorrect API key provided`）。同样，若服务商的上下文窗口错误没有自己的错误码，就在 `context_window_messages` 中列出其消息的一部分，网关会把它报告为 `ContextTooLong`（例如 Mistral 的 `too large for model with`）。
 
 ## 模型
 

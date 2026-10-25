@@ -9,7 +9,7 @@ Eine App kann ein API-Format sprechen, während der Anbieter ein anderes spricht
 | Daten aus einem anderen Format | In einer Anfrage | In einer Antwort |
 | --- | --- | --- |
 | Extras-Felder | `Unsupported`, außer sie stehen auf der [Allowlist](#extras) | Weggelassen |
-| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces) und [gehosteter Websuche](#gehostete-websuche) | Unbekannte Blöcke weggelassen, außer Websuchen |
+| Unbekannte Blöcke, Tools und Tool-Auswahlen | `Unsupported`, außer [Tool-Namespaces](#tool-namespaces), [Tool-Suche](#tool-suche) und [gehosteter Websuche](#gehostete-websuche) | Unbekannte Blöcke weggelassen, außer Websuchen |
 | Zitate | `Unsupported` | Weggelassen |
 | Datei-IDs eines Anbieters | `Unsupported`, außer der Zielanbieter hat sie ausgegeben | — |
 | Lesbares Reasoning | Weggelassen; der [Reasoning-Blob](reasoning.md#reasoning-blobs) stellt es beim Ursprung wieder her | In der Reasoning-Form der App gezeigt, wo sie eine hat |
@@ -107,6 +107,17 @@ Ein `namespace`-Tool von OpenAI Responses fasst Funktions-Tools unter einem Name
 - **Abgelehnt.** Ein Namespace mit anderen Schlüsseln als `type`, `name`, `description` und `tools`, ein Tool darin, das keine Funktion ist, ein Feld an einem solchen Tool, das nur Responses kennt, etwa `defer_loading`, und ein umbenannter Name, den schon ein anderes Tool trägt.
 
 `EgressCtx::tool_namespaces` sagt, ob ein Responses-Ziel Namespaces annimmt. Das Gateway setzt es aus `Provider::tool_namespaces`, das nur für OpenAI wahr ist.
+
+## Tool-Suche
+
+Anthropics Tool-Suche lädt Tools bei Bedarf. Ein Tool mit `defer_loading: true` bleibt aus dem Kontext des Modells, bis eine Suche einen `tool_reference`-Block mit seinem Namen liefert; ab dann sieht das Modell seine Definition in jedem Zug ([Tool-Suche](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)). Claude Code sucht mit seinem eigenen Tool `ToolSearch`: Jede Sitzung beginnt mit einem zurückgestellten `DeferredToolPlaceholder`, und sobald `ToolSearch` ein Tool findet, sendet jede spätere Anfrage dieses Tool zurückgestellt und ein `tool_result` mit seiner `tool_reference`. Andere Formate kennen keine zurückgestellten Tools, daher tut Kaeso für sie, was Anthropic tut:
+
+- **Tools.** Ein Tool mit `defer_loading: true` wird weggelassen, bis eine `tool_reference` im Gespräch es nennt, und dann als gewöhnliches Funktions-Tool gesendet. Ein zurückgestelltes Tool, das `tool_choice` erzwingt, wird ebenfalls gesendet: Claude nimmt das vor einer Suche an, und andere Formate können nur ein Tool erzwingen, das sie bekommen haben. `defer_loading: false`, der Standard, wird weggelassen.
+- **Referenzen.** Ein `tool_reference`-Block in einem `tool_result` wird zu einem Textblock mit dem Namen des Tools, sodass das Modell liest, welches Tool die Suche geladen hat.
+- **Abgelehnt wie bei Anthropic**, mit `InvalidRequest` und Anthropics Meldung: eine Referenz auf ein Tool, das die Anfrage nicht sendet, und eine Anfrage, deren Tools alle zurückgestellt sind.
+- **Abgelehnt** mit `Unsupported`: ein `defer_loading`, das kein Boolean ist, und eine `tool_reference` außerhalb eines `tool_result` oder mit einem Feld, das Kaeso nicht kennt.
+
+Anthropic-Modelle bekommen zurückgestellte Tools und Referenzen wie gesendet. Die Beta `advanced-tool-use-2025-11-20`, die die Tool-Suche einschaltet, steht im Header `anthropic-beta`, den andere Formate nicht bekommen ([Allowlist](#allowlist)).
 
 ## Gehostete Websuche
 

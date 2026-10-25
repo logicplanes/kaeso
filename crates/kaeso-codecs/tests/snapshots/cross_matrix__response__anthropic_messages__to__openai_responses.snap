@@ -3493,6 +3493,77 @@ expression: outcomes
     },
     "user": null
   },
+  "thinking-dropped-block": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "msg_01Kd7DropBlockBindingWx9Q",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "claude-sonnet-5-5",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIiJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0IjoiYW50aHJvcGljX21lc3NhZ2VzIn0sImtpbmQiOiJhbnRocm9waWNfdGhpbmtpbmdfc2lnbmF0dXJlIiwiZGF0YSI6IkVxR2NpWEFYYWd0WEtOeWl3R3R3am5kc1FqbExkaU5JNG8wYkd5S1ZSb3NQQ0MrOWx6MjNVanRCM05VNjNkWUxFdzlPcmg5cDZ6dVhmUXFTS0l3WjV4cUVQeXQva0h4dEhIQ1pKaWZXRTI1MUxvZytIQzdFcHhIODJGeXBsVzI2NmdQMmt1OFVNQkV4aUV6TWdWVTdqd0FXSmJWdGpodnNTcFRodnpVaml4QkwvRWE0RjViUDVHcHgxRXY4RW9YRHBDNlRRM25GbVhkaGc3SWUxWllIc0g1dHBBdEE1ZmNnc0NuV1FHQ0FKcGk4UU1PblhuVTR5bXoxeXVGbldzL0ZyemFqUVdYR3U2NnJLWXUrdVFoQ3paS3JWbzVUdyt4Q2Y2b1JqcVhKRVZ6YU04MnhRRnU0V21GMVRnQ3YxUjdMIn1dfQ",
+        "id": "rs_kaeso_msg01Kd7DropBlockBindingWx9Q_0",
+        "summary": [],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "proof.txt contains OK.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_msg01Kd7DropBlockBindingWx9Q_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 412,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 58,
+      "output_tokens_details": {
+        "reasoning_tokens": 41
+      },
+      "total_tokens": 470
+    },
+    "user": null
+  },
   "thinking-enabled-budget": {
     "background": false,
     "completed_at": 1760000000,

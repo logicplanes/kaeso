@@ -1003,8 +1003,14 @@ fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {
     struct Probe {
         #[serde(default)]
         error: Option<serde::de::IgnoredAny>,
+        #[serde(default)]
+        object: Option<String>,
+        #[serde(default)]
+        choices: Option<serde::de::IgnoredAny>,
     }
-    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| p.error.is_some())
+    serde_json::from_str::<Probe>(raw.get()).is_ok_and(|p| {
+        p.error.is_some() || (p.object.as_deref() == Some("error") && p.choices.is_none())
+    })
 }
 
 pub(crate) fn event_extras_mut(event: &mut StreamEvent) -> Option<&mut Extras> {

@@ -47,7 +47,8 @@ pub(crate) fn encode_generate(
         crate::wire::spelled_number(value, key, &req.extras, DIALECT)
     };
     w.temperature = number(s.temperature, "temperature");
-    w.top_p = number(s.top_p, "top_p");
+    let top_p = profile.sent_top_p(s.temperature, s.top_p);
+    w.top_p = number(top_p, "top_p");
     let seed = s.seed.map(|seed| profile.checked_seed(seed)).transpose()?;
     if rules.seed == SeedField::Seed {
         w.seed = seed;
@@ -161,6 +162,9 @@ fn apply_profile(
     extras: &Extras,
     out: &mut Ext<ChatRequest>,
 ) -> Result<(), KppError> {
+    if profile.request.greedy_top_p && out.known.top_p.is_some() {
+        out.verbatim.shift_remove("top_p");
+    }
     if profile.request.output_limit == OutputLimit::MaxTokens {
         if extras
             .fields_for(DIALECT)

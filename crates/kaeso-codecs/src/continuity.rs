@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -72,6 +72,8 @@ pub fn unwrap_reasoning(data: &str) -> Option<ReasoningBlock> {
 pub struct CarriedReasoning {
     pub tool_call_id: String,
     pub blocks: Vec<ReasoningBlock>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub turn_calls: Vec<String>,
 }
 
 impl CarriedReasoning {
@@ -79,7 +81,14 @@ impl CarriedReasoning {
         CarriedReasoning {
             tool_call_id: tool_call_id.into(),
             blocks,
+            turn_calls: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub fn with_turn_calls(mut self, calls: Vec<String>) -> Self {
+        self.turn_calls = calls;
+        self
     }
 }
 
@@ -96,16 +105,23 @@ fn replayable(block: &ReasoningBlock) -> bool {
 }
 
 pub fn reasoning_for_tool_calls(blocks: &[Block]) -> Vec<CarriedReasoning> {
+    let calls: Vec<String> = blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::ToolCall(call) => Some(call.id.clone()),
+            _ => None,
+        })
+        .collect();
     let mut kept = Vec::new();
     let mut run: Vec<ReasoningBlock> = Vec::new();
     for block in blocks {
         match block {
             Block::Reasoning(r) if replayable(r) => run.push(r.clone()),
             Block::ToolCall(call) if !run.is_empty() => {
-                kept.push(CarriedReasoning::new(
-                    call.id.clone(),
-                    std::mem::take(&mut run),
-                ));
+                kept.push(
+                    CarriedReasoning::new(call.id.clone(), std::mem::take(&mut run))
+                        .with_turn_calls(calls.clone()),
+                );
             }
             _ => {}
         }
@@ -202,24 +218,50 @@ pub fn restore_reasoning(req: &mut GenerateRequest, kept: &[CarriedReasoning]) -
     if kept.is_empty() {
         return 0;
     }
-    let mut by_call: HashMap<&str, &[ReasoningBlock]> = HashMap::with_capacity(kept.len());
+    let mut by_call: HashMap<&str, &CarriedReasoning> = HashMap::with_capacity(kept.len());
     for entry in kept {
-        by_call
-            .entry(entry.tool_call_id.as_str())
-            .or_insert(&entry.blocks);
+        by_call.entry(entry.tool_call_id.as_str()).or_insert(entry);
     }
     let mut inserted = 0;
     for message in &mut req.messages {
         if message.role != Role::Assistant || carries_reasoning(message) {
             continue;
         }
+        let turn: HashSet<&str> = message
+            .blocks
+            .iter()
+            .filter_map(|b| match b {
+                Block::ToolCall(call) => Some(call.id.as_str()),
+                _ => None,
+            })
+            .collect();
+        let same_turn = |entry: &CarriedReasoning| {
+            entry.turn_calls.is_empty()
+                || (entry.turn_calls.len() == turn.len()
+                    && entry.turn_calls.iter().all(|c| turn.contains(c.as_str())))
+        };
+        let restored: Vec<(String, Vec<ReasoningBlock>)> = message
+            .blocks
+            .iter()
+            .filter_map(|b| match b {
+                Block::ToolCall(call) => by_call
+                    .get(call.id.as_str())
+                    .filter(|entry| same_turn(entry))
+                    .map(|entry| (call.id.clone(), entry.blocks.clone())),
+                _ => None,
+            })
+            .collect();
+        if restored.is_empty() {
+            continue;
+        }
+        let mut restored: HashMap<String, Vec<ReasoningBlock>> = restored.into_iter().collect();
         let mut blocks = Vec::with_capacity(message.blocks.len());
         let mut since_call = Vec::new();
         for block in std::mem::take(&mut message.blocks) {
             if let Block::ToolCall(call) = &block {
-                if let Some(restored) = by_call.get(call.id.as_str()) {
-                    blocks.extend(restored.iter().cloned().map(Block::Reasoning));
-                    inserted += restored.len();
+                if let Some(found) = restored.remove(call.id.as_str()) {
+                    inserted += found.len();
+                    blocks.extend(found.into_iter().map(Block::Reasoning));
                 }
                 blocks.append(&mut since_call);
                 blocks.push(block);
@@ -305,11 +347,12 @@ mod tests {
             call("c3"),
             Block::Reasoning(signed("after the last call")),
         ]);
+        let turn: Vec<String> = ["c1", "c2", "c3"].map(String::from).to_vec();
         assert_eq!(
             kept,
             [
-                CarriedReasoning::new("c1", vec![signed("a")]),
-                CarriedReasoning::new("c2", vec![signed("b")]),
+                CarriedReasoning::new("c1", vec![signed("a")]).with_turn_calls(turn.clone()),
+                CarriedReasoning::new("c2", vec![signed("b")]).with_turn_calls(turn),
             ]
         );
         let json = serde_json::to_string(&kept).unwrap();
@@ -425,6 +468,34 @@ mod tests {
     }
 
     #[test]
+    fn reasoning_is_restored_only_into_the_turn_it_came_from() {
+        let turn = |calls: &[&str]| calls.iter().map(|c| (*c).to_owned()).collect::<Vec<_>>();
+        let kept = [
+            CarriedReasoning::new("c1", vec![signed("a")]).with_turn_calls(turn(&["c1"])),
+            CarriedReasoning::new("c2", vec![signed("b")]).with_turn_calls(turn(&["c2", "c3"])),
+        ];
+        let mut merged = GenerateRequest::new("m");
+        merged.messages = vec![Message::new(
+            Role::Assistant,
+            vec![call("c1"), call("c2"), call("c3")],
+        )];
+        assert_eq!(restore_reasoning(&mut merged, &kept), 0);
+        assert_eq!(merged.messages[0].blocks.len(), 3);
+
+        let mut split = GenerateRequest::new("m");
+        split.messages = vec![
+            Message::new(Role::Assistant, vec![call("c1")]),
+            Message::new(Role::User, vec![Block::tool_result("c1", vec![], false)]),
+            Message::new(Role::Assistant, vec![call("c3"), call("c2")]),
+        ];
+        assert_eq!(restore_reasoning(&mut split, &kept), 2);
+        assert_eq!(
+            split.messages[2].blocks,
+            [call("c3"), Block::Reasoning(signed("b")), call("c2")]
+        );
+    }
+
+    #[test]
     fn restoring_many_tool_calls_keeps_every_one_in_place() {
         let n = 2000;
         let kept: Vec<_> = (0..n)
@@ -496,7 +567,10 @@ mod tests {
             Opaque::new(r, OpaqueKind::OpenAiReasoningItemId, "rs_1"),
             Opaque::new(r, OpaqueKind::OpenAiEncryptedReasoning, "gAAA"),
         ];
-        assert_eq!(kept, [CarriedReasoning::new("call_1", vec![want])]);
+        assert_eq!(
+            kept,
+            [CarriedReasoning::new("call_1", vec![want]).with_turn_calls(vec!["call_1".into()])]
+        );
         assert!(c.finish().is_empty());
     }
 }

@@ -366,6 +366,7 @@
   "errors.ssoOnly": "Ihre Organisation verlangt Single Sign-on; fahren Sie bei ihrem Identitätsanbieter fort.",
   "errors.stale.catalogueModel": "Dieses Katalogmodell wurde inzwischen geändert; neu laden und erneut versuchen.",
   "errors.stale.limit": "Dieses Limit wurde inzwischen geändert; neu laden und erneut versuchen.",
+  "errors.thinkingBinding": "Thinking-Bindung gilt nur für Anthropic-Modelle.",
   "errors.timeoutRange": "Das Zeitlimit muss 1 bis 3600 Sekunden betragen.",
   "errors.toAfterFrom": "`to` muss nach `from` liegen.",
   "errors.tooManyAttempts": "Zu viele Versuche von Ihrer Adresse; in {minutes} Min. erneut versuchen.",

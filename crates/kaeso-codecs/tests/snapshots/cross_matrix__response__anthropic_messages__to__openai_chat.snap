@@ -1522,6 +1522,36 @@ expression: outcomes
       "total_tokens": 113
     }
   },
+  "thinking-dropped-block": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "proof.txt contains OK.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "msg_01Kd7DropBlockBindingWx9Q",
+    "model": "claude-sonnet-5-5",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 58,
+      "completion_tokens_details": {
+        "reasoning_tokens": 41
+      },
+      "prompt_tokens": 412,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 470
+    }
+  },
   "thinking-enabled-budget": {
     "choices": [
       {
