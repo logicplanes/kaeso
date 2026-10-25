@@ -4,7 +4,7 @@ description: Die Health-Checks, Prometheus-Metriken und Protokolle einer laufend
 order: 10
 ---
 
-Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Protokolle. In der Konsole zeigt **Einstellungen** › **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
+Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken auf einem eigenen Port bereit und schreibt JSON-Protokolle. In der Konsole zeigt **Instanz** › **System** denselben Zustand, die laufende Version, den Puffer der Anfrageprotokolle und den Speicher.
 
 ## Health-Checks
 

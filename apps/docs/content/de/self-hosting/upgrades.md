@@ -8,7 +8,7 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 
 ## Von Hand aktualisieren
 
-1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Einstellungen** › **Instanz** › **Updates**.
+1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Instanz** › **Updates**.
 2. [Sichern](backups.md) Sie PostgreSQL und ClickHouse, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
 3. Setzen Sie im Ordner der Installation `version` auf das Release, auf das Sie aktualisieren, und laden, prüfen und starten Sie es dann. Die Befehle laden `compose.yaml` und `release.json` in einen temporären Ordner und prüfen sie, mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq`:
    - die Signatur des Release-Workflows von Kaeso auf `release.json`;
@@ -48,13 +48,13 @@ Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole diese Be
 
 Das Gateway sucht alle 5 Minuten unter `update.kaeso.app` nach neuen Releases, nach einem Fehler 15 Minuten später. Bittet der Feed, länger zu warten, wartet es höchstens eine Stunde. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways, und eine unveränderte Liste kostet nur eine kurze Antwort `304`.
 
-Instanz-Admins sehen das Ergebnis unter **Einstellungen** › **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat.
+Instanz-Admins sehen das Ergebnis unter **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat.
 
 `instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist oder der Feed das Gateway warten lässt. Den Feed fragt sie höchstens einmal pro Minute. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |
-| **Releases** | **Stabile Releases** | **Stabile Releases und Vorabversionen** bietet auch Release Candidates an. Eine Installation, die eine Vorabversion ausführt, erhält das stabile Release angeboten, das darauf folgt. |
+| **Releases** | **Stabile Releases** | **Stabile und Vorabversionen** bietet auch Release Candidates an. Eine Installation, die eine Vorabversion ausführt, erhält das stabile Release angeboten, das darauf folgt. |
 | **Wie Updates installiert werden** | **Von Hand** | **Automatisch** installiert neue Releases über den Updater im [Update-Fenster](#automatisch-aktualisieren). |
 
 Auf einer neuen Installation beginnen diese Einstellungen mit `KAESO_UPDATES_CHANNEL` und `KAESO_UPDATES_MODE` ([Konfiguration](configuration.md#updates)). Danach ändern Instanz-Admins sie auf der Seite, und das Audit-Log der Instanz hält jede Änderung fest. Nur `KAESO_UPDATES_CHECK` hält das Gateway von der Suche ab, für Installationen ohne Internetzugang.
@@ -90,7 +90,7 @@ echo "KAESO_DIR=$PWD" >> .env
 docker compose up -d --wait
 ```
 
-2. Unter **Einstellungen** › **Instanz** › **Updates** aktualisiert **Auf … aktualisieren** die Installation jetzt, und **Automatisch** lässt sie in einem Fenster aktualisieren. Beides verlangt eine Anmeldung innerhalb der letzten 15 Minuten.
+2. Unter **Instanz** › **Updates** aktualisiert **Auf … aktualisieren** die Installation jetzt, und **Automatisch** lässt sie in einem Fenster aktualisieren. Beides verlangt eine Anmeldung innerhalb der letzten 15 Minuten.
 
 Die Seite sagt, wenn der Updater nicht installiert ist, nicht antwortet oder für ein Release zu alt ist. Liegt der Docker-Socket nicht unter `/var/run/docker.sock`, etwa bei rootless Docker, setzen Sie `DOCKER_SOCKET` in der `.env`. Startet `docker-proxy` nicht und verlangt sein Log `KAESO_DIR`, ergänzen Sie es wie in Schritt 1.
 
@@ -123,10 +123,10 @@ Der Updater installiert ein Release, wenn alles hier zutrifft. Sonst zeigt die K
 
 Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt das Update Schritt für Schritt, und es dauert etwa eine Minute:
 
-1. **Signaturen prüfen.** Der Updater prüft, dass das Release und jedes Image vom Release-Workflow von Kaeso gebaut wurden. Scheitert eine Prüfung, wird nichts eingespielt, und Kaeso läuft weiter.
-2. **Herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater.
-3. **Umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
-4. **Migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
+1. **Signaturen des Release prüfen.** Der Updater prüft, dass das Release und jedes Image vom Release-Workflow von Kaeso gebaut wurden. Scheitert eine Prüfung, wird nichts eingespielt, und Kaeso läuft weiter.
+2. **Images herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater.
+3. **Auf die neue Version umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
+4. **Datenbank migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
 5. **Wieder erreichbar.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.
 
 Der Updater ersetzt weder sich selbst noch Caddy, während er läuft. Das nächste `docker compose up -d --wait` im Ordner der Installation startet ihre neuen Versionen. Es läuft immer nur ein Update, und das Audit-Log der Instanz hält jedes fest.
@@ -202,7 +202,7 @@ Während der Updater die Version umstellt oder wann immer Gateway oder Konsole n
 | --- | --- |
 | Eine Konsolenseite | 503 mit einer Seite in der Sprache des Browsers, die sagt, was gerade passiert, alle 5 Sekunden prüft und zurückkehrt, sobald Kaeso wieder da ist |
 | `/platform/v1/*` | 503 mit dem Fehler der Platform API, Typ `unavailable` |
-| `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header | 529 mit Anthropics `overloaded_error` |
+| `/v1/messages` und andere `/v1/*` mit einem `anthropic-version`-Header, außer `/v1/chat/completions`, `/v1/responses` und `/v1/embeddings` | 529 mit Anthropics `overloaded_error` |
 | Andere `/v1/*` | 503 mit OpenAIs `service_unavailable_error` |
 
 Jede Antwort trägt `Retry-After: 30`, das die SDKs von OpenAI und Anthropic bei Wiederholungen beachten.

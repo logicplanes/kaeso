@@ -8,7 +8,7 @@ Every release gives all parts of Kaeso one version number and follows semantic v
 
 ## Update by hand
 
-1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Settings** › **Instance** › **Updates**.
+1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Instance** › **Updates**.
 2. [Back up](backups.md) PostgreSQL and ClickHouse, so you can [go back](#downgrade) if you need to.
 3. In the install's folder, set `version` to the release you update to, then download, check and start it. The commands download `compose.yaml` and `release.json` into a temporary folder and check them, with the [GitHub CLI](https://cli.github.com) signed in and `jq`:
    - the signature of Kaeso's Release workflow on `release.json`;
@@ -48,13 +48,13 @@ When the updater can't install a release, the console shows these commands with 
 
 The gateway looks for new releases at `update.kaeso.app` every 5 minutes, and 15 minutes later after a failure. When the feed asks it to wait longer, it waits an hour at most. The request carries nothing about your install but the gateway's version, and an unchanged list costs only a short `304` answer.
 
-Instance admins see the result under **Settings** › **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked.
+Instance admins see the result under **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked.
 
 The Platform API's `instance/updates/check` looks at once, even when checks are off or the feed asked the gateway to wait. It asks the feed at most once a minute. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| **Releases** | **Stable releases** | **Stable releases and pre-releases** also offers release candidates. An install that runs a pre-release is offered the stable release that follows it. |
+| **Releases** | **Stable releases** | **Stable and pre-releases** also offers release candidates. An install that runs a pre-release is offered the stable release that follows it. |
 | **How updates install** | **Manually** | **Automatically** installs new releases through the updater in the [update window](#update-automatically). |
 
 On a new install, these settings start from `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_MODE` ([configuration](configuration.md#updates)). After that, instance admins change them on the page, and the instance audit log records each change. Only `KAESO_UPDATES_CHECK` stops the gateway from looking, for installs without internet access.
@@ -90,7 +90,7 @@ echo "KAESO_DIR=$PWD" >> .env
 docker compose up -d --wait
 ```
 
-2. Under **Settings** › **Instance** › **Updates**, **Update to …** now updates the install, and **Automatically** lets it update in a window. Both need a sign-in within the last 15 minutes.
+2. Under **Instance** › **Updates**, **Update to …** now updates the install, and **Automatically** lets it update in a window. Both need a sign-in within the last 15 minutes.
 
 The page says when the updater isn't installed, doesn't answer, or is too old for a release. When Docker's socket isn't at `/var/run/docker.sock`, as with rootless Docker, set `DOCKER_SOCKET` in `.env`. When `docker-proxy` doesn't start and its log asks you to set `KAESO_DIR`, add it as in step 1.
 
@@ -123,10 +123,10 @@ The updater installs a release when all of these hold. Otherwise, the console sh
 
 Choose **Update to …** and confirm. The console follows the update step by step, and it takes about a minute:
 
-1. **Check the signatures.** The updater checks that the release and every image were built by Kaeso's Release workflow. When any check fails, nothing is installed and Kaeso keeps running.
-2. **Download.** It pulls the new gateway, console and updater images.
-3. **Switch.** It replaces the console, then the gateway, with containers from the new images, keeping their settings. Meanwhile, Caddy answers in their place ([while Kaeso updates](#while-kaeso-updates)).
-4. **Migrate.** The new gateway migrates the databases as it starts. The updater gives it up to 10 minutes to become healthy.
+1. **Check the release's signatures.** The updater checks that the release and every image were built by Kaeso's Release workflow. When any check fails, nothing is installed and Kaeso keeps running.
+2. **Download the images.** It pulls the new gateway, console and updater images.
+3. **Switch to the new version.** It replaces the console, then the gateway, with containers from the new images, keeping their settings. Meanwhile, Caddy answers in their place ([while Kaeso updates](#while-kaeso-updates)).
+4. **Migrate the database.** The new gateway migrates the databases as it starts. The updater gives it up to 10 minutes to become healthy.
 5. **Back online.** The updater writes the new versions into `compose.yaml`, so a later `docker compose up -d --wait` starts the same images.
 
 The updater doesn't replace itself or Caddy while it runs. The next `docker compose up -d --wait` in the install's folder starts their new versions. Only one update runs at a time, and the instance audit log records each one.
@@ -202,7 +202,7 @@ While the updater switches versions, or whenever the gateway or the console does
 | --- | --- |
 | A console page | 503 with a page in the browser's language that says what is happening, checks every 5 seconds and returns when Kaeso is back |
 | `/platform/v1/*` | 503 with the Platform API's error, type `unavailable` |
-| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header | 529 with Anthropic's `overloaded_error` |
+| `/v1/messages`, and other `/v1/*` with an `anthropic-version` header, except `/v1/chat/completions`, `/v1/responses` and `/v1/embeddings` | 529 with Anthropic's `overloaded_error` |
 | Other `/v1/*` | 503 with OpenAI's `service_unavailable_error` |
 
 Every answer carries `Retry-After: 30`, which the OpenAI and Anthropic SDKs honour when they retry.
