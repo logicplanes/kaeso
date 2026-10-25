@@ -18,14 +18,20 @@ fn deferral(t: &ToolDef) -> Option<bool> {
     f.extras.fields.get(DEFER)?.parse::<bool>().ok()
 }
 
+fn holds_reference(b: &Block) -> bool {
+    let Block::ToolResult(res) = b else {
+        return false;
+    };
+    res.content
+        .iter()
+        .any(|c| matches!(c, Block::Unknown(item) if tool_reference(item).is_some()))
+}
+
 fn has_tool_search(r: &GenerateRequest) -> bool {
     r.tools.iter().any(|t| deferral(t).is_some())
-        || r.messages.iter().any(|m| {
-            m.blocks.iter().any(|b| {
-                matches!(b, Block::ToolResult(res)
-                    if res.content.iter().any(|c| matches!(c, Block::Unknown(item) if tool_reference(item).is_some())))
-            })
-        })
+        || r.messages
+            .iter()
+            .any(|m| m.blocks.iter().any(holds_reference))
 }
 
 fn loaded_by_references(r: &mut GenerateRequest) -> Vec<(String, String)> {
