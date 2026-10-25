@@ -1,4 +1,6 @@
-use kaeso_kpp::{Block, DialectId, GenerateRequest, KppError, RawItem, RawJson, ToolDef};
+use kaeso_kpp::{
+    Block, DialectId, GenerateRequest, KppError, RawItem, RawJson, ToolChoice, ToolDef,
+};
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
@@ -11,6 +13,7 @@ const SEARCH_CALL: &str = "web_search_call";
 const KAESO_SEARCH_ID: &str = "ws_kaeso_";
 const ANTHROPIC_TOOL: &str = "web_search_20250305";
 const ANTHROPIC_NAME: &str = "web_search";
+const ACCESS: &str = "external_web_access";
 const LOCATION_FIELDS: &[&str] = &["type", "city", "country", "region", "timezone"];
 const CODEX_HINT: &str = "From Codex, set `web_search = \"live\"` or turn web search off.";
 
@@ -134,16 +137,20 @@ fn without_search_calls(r: &mut GenerateRequest, drop: impl Fn(Option<&str>) -> 
     dropped
 }
 
+fn has_hosted_search(r: &GenerateRequest) -> bool {
+    r.tools
+        .iter()
+        .any(|t| matches!(t, ToolDef::Unknown(item) if is_hosted_search(item)))
+}
+
+fn has_search_calls(r: &GenerateRequest) -> bool {
+    r.messages
+        .iter()
+        .any(|m| m.blocks.iter().any(|b| search_call_id(b).is_some()))
+}
+
 pub(crate) fn for_anthropic(r: &GenerateRequest) -> Result<Option<GenerateRequest>, KppError> {
-    let searches = r
-        .tools
-        .iter()
-        .any(|t| matches!(t, ToolDef::Unknown(item) if is_hosted_search(item)));
-    let calls = r
-        .messages
-        .iter()
-        .any(|m| m.blocks.iter().any(|b| search_call_id(b).is_some()));
-    if !searches && !calls {
+    if !has_hosted_search(r) && !has_search_calls(r) {
         return Ok(None);
     }
     let mut out = r.clone();
@@ -158,18 +165,81 @@ pub(crate) fn for_anthropic(r: &GenerateRequest) -> Result<Option<GenerateReques
     Ok(Some(out))
 }
 
-pub(crate) fn for_responses(r: &GenerateRequest) -> Option<GenerateRequest> {
+fn without_access(item: &RawItem, path: &str) -> Result<Option<ToolDef>, KppError> {
+    let Ok(Value::Object(mut fields)) = item.raw.to_value() else {
+        return Ok(None);
+    };
+    match fields.get(ACCESS) {
+        None => return Ok(None),
+        Some(Value::Bool(true) | Value::Null) => {}
+        Some(_) => {
+            return Err(KppError::unsupported(
+                "web_search.external_web_access",
+                format!(
+                    "`external_web_access: false` asks for cached pages only, and this model's web search always reads live results. {CODEX_HINT}"
+                ),
+            )
+            .with_param(format!("{path}.{ACCESS}")));
+        }
+    }
+    fields.remove(ACCESS);
+    let raw = RawJson::from_serialize(&Value::Object(fields))
+        .map_err(|e| KppError::invalid_request(format!("`web_search` cannot be sent: {e}.")))?;
+    Ok(Some(ToolDef::Unknown(RawItem::new(
+        item.origin.clone(),
+        raw,
+    ))))
+}
+
+pub(crate) fn for_responses(
+    r: &GenerateRequest,
+    takes_access: bool,
+) -> Result<Option<GenerateRequest>, KppError> {
     let ours = |id: Option<&str>| id.is_some_and(|id| id.starts_with(KAESO_SEARCH_ID));
+    let mut out = (!takes_access && has_hosted_search(r)).then(|| r.clone());
+    for (i, t) in out.iter_mut().flat_map(|o| o.tools.iter_mut()).enumerate() {
+        if let ToolDef::Unknown(item) = t
+            && is_hosted_search(item)
+            && let Some(tool) = without_access(item, &format!("tools[{i}]"))?
+        {
+            *t = tool;
+        }
+    }
     let any = r.messages.iter().any(|m| {
         m.blocks
             .iter()
             .any(|b| search_call_id(b).is_some_and(|id| ours(id.as_deref())))
     });
-    if !any {
-        return None;
+    if any {
+        without_search_calls(out.get_or_insert_with(|| r.clone()), ours);
+    }
+    Ok(out)
+}
+
+pub(crate) fn for_chat(r: &GenerateRequest) -> Result<Option<GenerateRequest>, KppError> {
+    if !has_hosted_search(r) && !has_search_calls(r) {
+        return Ok(None);
     }
     let mut out = r.clone();
-    without_search_calls(&mut out, ours).then_some(out)
+    out.tools
+        .retain(|t| !matches!(t, ToolDef::Unknown(item) if is_hosted_search(item)));
+    if out.tools.is_empty() && !r.tools.is_empty() {
+        match out.tool_choice {
+            Some(ToolChoice::Required) => {
+                return Err(KppError::unsupported_by(
+                    "tool_choice `required`",
+                    DialectId::OpenAiChat,
+                    "This model has no hosted web search, and `web_search` is the only tool. Remove `tool_choice`.",
+                )
+                .with_param("tool_choice"));
+            }
+            Some(ToolChoice::Auto | ToolChoice::None) => out.tool_choice = None,
+            _ => {}
+        }
+        out.parallel_tool_calls = None;
+    }
+    without_search_calls(&mut out, |_| true);
+    Ok(Some(out))
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -343,6 +343,14 @@ impl ProviderRef {
         self.built_in().is_some_and(|p| p.tool_namespaces)
     }
 
+    pub fn web_search_access(&self) -> bool {
+        self.built_in().is_some_and(|p| p.web_search_access)
+    }
+
+    pub fn null_reasoning_content(&self) -> bool {
+        self.built_in().is_some_and(|p| p.null_reasoning_content)
+    }
+
     pub fn account(&self) -> Option<AccountSignIn> {
         self.built_in().and_then(|p| p.account)
     }
@@ -541,6 +549,8 @@ mod tests {
         assert_eq!(r.chat(), ChatProfile::OPENAI);
         assert!(
             !r.tool_namespaces()
+                && !r.web_search_access()
+                && !r.null_reasoning_content()
                 && r.account().is_none()
                 && !r.refuses_key("Incorrect API key provided")
         );

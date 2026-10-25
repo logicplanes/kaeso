@@ -63,7 +63,7 @@ Stop reasons the app's format doesn't have are mapped to the closest one it has;
 
 ## Extras
 
-Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field. A field on the allowlist below is dropped instead. The allowlist holds only fields known not to change what the model writes, such as beta headers and resolution hints.
+Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field. A field on the allowlist below is dropped instead. The allowlist holds only fields known not to change what the model writes, such as beta headers and resolution hints, and the hosted `web_search` tool for targets that have no hosted search.
 
 An entry is allowed only when the field is known to have no effect on the model's output. Every entry needs a one-line reason and the fixture that shows a real client sending it.
 
@@ -86,6 +86,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `prompt_cache_key` | request, from `openai_responses` | As above. | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `web_search` tool | tool, from `openai_responses`, to `openai_chat` | The tool only offers the model a search it may use, and Chat Completions has no hosted search ([hosted web search](#hosted-web-search)). A `tool_choice` that forces it stays `Unsupported`. | Codex 0.164 sends it on every turn while web search is on, with no switch per model; `openai_responses/requests/codex-developer-resume.json` |
 
 ### Conditional entries
 
@@ -119,11 +120,15 @@ An OpenAI Responses `web_search` tool going to Anthropic becomes Anthropic's `we
 | `external_web_access: true`, `search_context_size: "medium"` (the default) | nothing; both describe what Anthropic's search does |
 | `external_web_access: false`, another `search_context_size`, any other field | `Unsupported` |
 
-`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude always searches live, so the refusal says to set `web_search = "live"` or turn web search off. Other targets refuse `web_search` like any tool of another format; for a Chat Completions model, the refusal says how to turn web search off in Codex.
+`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude always searches live, so the refusal says to set `web_search = "live"` or turn web search off.
+
+SpaceX's Responses API takes `web_search` but refuses `external_web_access`. Kaeso leaves out `external_web_access: true`, because SpaceX searches live anyway, and refuses `false` with the same hint as for Claude. `EgressCtx::web_search_access` says whether a Responses target takes the field. The gateway sets it from `Provider::web_search_access`, which is true only for OpenAI.
+
+Chat Completions has no hosted web search, so a `web_search` tool is left out for it, an exception on the [allowlist](#allowlist). Codex adds the tool to every request while web search is on and can't turn it off for one model; refusing it would make every model without hosted search unusable from Codex. The model answers as it would without the tool. A `tool_choice` that forces the search is still refused, and a logged request body keeps the app's tools.
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
-`web_search_call` items an app sends back are dropped for Anthropic. Anthropic replays a search only with its encrypted results, which these items don't carry, and the answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for OpenAI as well, which never issued them.
+`web_search_call` items an app sends back are dropped for Anthropic and Chat Completions. Anthropic replays a search only with its encrypted results, which these items don't carry, and Chat Completions has no such item. The answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for every Responses target as well, because no Responses provider issued them.
 
 ## Usage
 
@@ -134,7 +139,7 @@ Claude's searches reach a Responses app as `web_search_call` items. A `server_to
 A system message after the start of a conversation is kept as a `Role::System` message.
 
 - **To Anthropic, from Anthropic Messages:** sent unchanged; the API judges their placement and which models support them. Claude Code sends such messages on every request.
-- **To Anthropic, from other dialects:** `Unsupported`. Anthropic allows them only for some models and only after a user turn, while OpenAI system and developer messages may sit anywhere.
+- **To Anthropic, from other dialects:** system and developer messages before the first user or assistant message join the system prompt in order, after any `instructions`. Codex sends its instructions this way. Later ones are `Unsupported`: Anthropic allows them only for some models and only after a user turn, while OpenAI system and developer messages may sit anywhere.
 - **To OpenAI:** later `system` or `developer` messages.
 
 ## Keepalives

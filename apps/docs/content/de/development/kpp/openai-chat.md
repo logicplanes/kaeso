@@ -108,7 +108,8 @@ Budgets und `disabled` werden umgerechnet ([Aufwand und Budget](reasoning.md#auf
 - Reasoning-Blöcke ([Reasoning](reasoning.md));
 - Cache-Hinweise anderer Dialekte ([Cache-Hinweise](cross-format.md#cache-hinweise));
 - `ToolResult::is_error`, dessen Information der Fehlerinhalt trägt ([Tool-Fehler](cross-format.md#tool-fehler));
-- `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)).
+- `reasoning.summary` und `reasoning.include_encrypted` anderer Dialekte, weil Chat kein Feld hat, das sie anfordert ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen));
+- ein `web_search`-Tool und `web_search_call`-Items von OpenAI Responses, weil Chat keine gehostete Websuche hat ([gehostete Websuche](cross-format.md#gehostete-websuche)).
 
 Ein Body, den der Codec nicht lesen kann, ist `InvalidRequest` und nennt das Feld und was es sein muss, mit gesetztem `param`, nie eine Parserposition: `` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 

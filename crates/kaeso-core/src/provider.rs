@@ -187,6 +187,8 @@ pub struct Provider {
     pub refused_key_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
     pub tool_namespaces: bool,
+    pub web_search_access: bool,
+    pub null_reasoning_content: bool,
     pub chat: ChatProfile,
     pub account: Option<AccountSignIn>,
 }
@@ -213,6 +215,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: true,
+        web_search_access: true,
+        null_reasoning_content: true,
         chat: ChatProfile::OPENAI,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
@@ -238,6 +242,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("Anthropic"),
         account: None,
     },
@@ -258,6 +264,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
             .system_role()
@@ -281,6 +289,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
@@ -306,6 +316,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
         account: None,
@@ -327,6 +339,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .reasoning_fields(&["reasoning"])
@@ -351,6 +365,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("OpenRouter")
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
@@ -373,6 +389,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
             .system_role()
@@ -468,6 +486,16 @@ mod tests {
             .map(|p| p.id)
             .collect();
         assert_eq!(taking, ["openai"]);
+    }
+
+    #[test]
+    fn only_openai_takes_web_search_access_and_null_reasoning_content() {
+        let taking: Vec<(&str, bool, bool)> = PROVIDERS
+            .iter()
+            .filter(|p| p.web_search_access || p.null_reasoning_content)
+            .map(|p| (p.id, p.web_search_access, p.null_reasoning_content))
+            .collect();
+        assert_eq!(taking, [("openai", true, true)]);
     }
 
     #[test]

@@ -63,7 +63,7 @@ Stoppgründe, die das Format der App nicht kennt, werden auf den nächstliegende
 
 ## Extras
 
-Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. `check()` eines anderen Dialekts lehnt sie mit `Unsupported` ab und nennt das Feld. Ein Feld auf der Allowlist unten wird stattdessen weggelassen. Die Allowlist enthält nur Felder, die bekanntermaßen nicht ändern, was das Modell schreibt, etwa Beta-Header und Hinweise zur Auflösung.
+Extras aus Dialekt A werden nur in Dialekt A zurückgeschrieben. `check()` eines anderen Dialekts lehnt sie mit `Unsupported` ab und nennt das Feld. Ein Feld auf der Allowlist unten wird stattdessen weggelassen. Die Allowlist enthält nur Felder, die bekanntermaßen nicht ändern, was das Modell schreibt, etwa Beta-Header und Hinweise zur Auflösung, und das gehostete `web_search`-Tool für Ziele ohne gehostete Suche.
 
 Ein Eintrag ist nur erlaubt, wenn bekannt ist, dass das Feld keinen Einfluss auf die Ausgabe des Modells hat. Jeder Eintrag braucht eine Begründung in einer Zeile und die Fixture, die zeigt, dass ein echter Client das Feld sendet.
 
@@ -86,6 +86,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `prompt_cache_key` | request, aus `openai_responses` | Wie oben. | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request, aus `openai_responses` | Metadaten der Anfrage: Turn- und Thread-IDs, W3C-Trace-Kontext und `x-codex-turn-metadata`. Sie erreichen das Modell nie, und ein protokollierter Anfrage-Body behält sie. | Codex sendet sie bei jedem Zug; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (an `input_image`; `auto` ist bereits eine Form-Markierung) | image, aus `openai_responses` | Hinweis zur Bildauflösung, wie `image_url.detail` bei Chat. `input_file.detail` (PDF-Darstellung) steht **nicht** auf der Allowlist. | `openai_responses/requests/image-base64-file-id.json` |
+| `web_search`-Tool | tool, aus `openai_responses`, nach `openai_chat` | Das Tool bietet dem Modell nur eine Suche an, die es nutzen kann, und Chat Completions hat keine gehostete Suche ([gehostete Websuche](#gehostete-websuche)). Eine `tool_choice`, die es erzwingt, bleibt `Unsupported`. | Codex 0.164 sendet es bei jedem Zug, solange die Websuche an ist, ohne Schalter pro Modell; `openai_responses/requests/codex-developer-resume.json` |
 
 ### Bedingte Einträge
 
@@ -119,11 +120,15 @@ Ein `web_search`-Tool von OpenAI Responses wird für Anthropic zu Anthropics Ser
 | `external_web_access: true`, `search_context_size: "medium"` (der Standard) | nichts; beide beschreiben, was Anthropics Suche tut |
 | `external_web_access: false`, eine andere `search_context_size`, jedes andere Feld | `Unsupported` |
 
-`external_web_access: false` bittet OpenAI, nur seinen Cache von Seiten zu lesen. Das sendet Codex bei seinem Standard `web_search = "cached"`. Claude sucht immer live, daher nennt die Ablehnung `web_search = "live"` oder das Abschalten der Websuche. Andere Ziele lehnen `web_search` ab wie jedes Tool eines anderen Formats; für ein Chat-Completions-Modell sagt die Ablehnung, wie man die Websuche in Codex abschaltet.
+`external_web_access: false` bittet OpenAI, nur seinen Cache von Seiten zu lesen. Das sendet Codex bei seinem Standard `web_search = "cached"`. Claude sucht immer live, daher nennt die Ablehnung `web_search = "live"` oder das Abschalten der Websuche.
+
+Die Responses-API von SpaceX nimmt `web_search` an, lehnt aber `external_web_access` ab. Kaeso lässt `external_web_access: true` weg, weil SpaceX ohnehin live sucht, und lehnt `false` mit demselben Hinweis wie für Claude ab. `EgressCtx::web_search_access` sagt, ob ein Responses-Ziel das Feld annimmt. Das Gateway setzt es aus `Provider::web_search_access`, das nur für OpenAI wahr ist.
+
+Chat Completions hat keine gehostete Websuche, daher wird ein `web_search`-Tool dafür weggelassen, eine Ausnahme auf der [Allowlist](#allowlist). Codex fügt das Tool jeder Anfrage hinzu, solange die Websuche an ist, und kann es nicht für ein einzelnes Modell abschalten; eine Ablehnung würde jedes Modell ohne gehostete Suche aus Codex unbrauchbar machen. Das Modell antwortet, wie es ohne das Tool antworten würde. Eine `tool_choice`, die die Suche erzwingt, wird weiterhin abgelehnt, und ein protokollierter Anfrage-Body behält die Tools der App.
 
 Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
 
-`web_search_call`-Items, die eine App zurücksendet, werden für Anthropic verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für OpenAI verworfen, das sie nie ausgegeben hat.
+`web_search_call`-Items, die eine App zurücksendet, werden für Anthropic und Chat Completions verworfen. Anthropic spielt eine Suche nur mit ihren verschlüsselten Ergebnissen erneut ab, die diese Items nicht tragen, und Chat Completions hat kein solches Item. Die Antwort, die sie nutzte, bleibt im Gespräch. Items mit Kaesos `ws_kaeso_`-IDs werden auch für jedes Responses-Ziel verworfen, weil kein Responses-Anbieter sie ausgegeben hat.
 
 ## Nutzung
 
@@ -134,7 +139,7 @@ Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `se
 Eine Systemnachricht nach dem Beginn einer Unterhaltung bleibt als `Role::System`-Nachricht erhalten.
 
 - **An Anthropic, aus Anthropic Messages:** unverändert gesendet; die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
-- **An Anthropic, aus anderen Dialekten:** `Unsupported`. Anthropic erlaubt sie nur für einige Modelle und nur nach einer Benutzerrunde, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
+- **An Anthropic, aus anderen Dialekten:** System- und Developer-Nachrichten vor der ersten Benutzer- oder Assistentennachricht werden der Reihe nach Teil des System-Prompts, nach etwaigen `instructions`. Codex sendet seine Anweisungen so. Spätere sind `Unsupported`: Anthropic erlaubt sie nur für einige Modelle und nur nach einer Benutzerrunde, während System- und Developer-Nachrichten von OpenAI an beliebiger Stelle stehen dürfen.
 - **An OpenAI:** spätere `system`- oder `developer`-Nachrichten.
 
 ## Keepalives

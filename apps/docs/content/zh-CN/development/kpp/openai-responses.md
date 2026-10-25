@@ -51,7 +51,7 @@ order: 7
 | `instructions` | `system[0]` 文本块，类型化 | 来自其他方言时，单个文本块变为 `instructions`；多个文本块变为一个开头的 `developer` 消息 item，其中包含 `input_text` 部分。这样保留了块的边界，但不再区分 `instructions` 和系统消息（API 把两者都视为开发者指令）。`null`：形式标记。 |
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
-| `tools[]` `web_search` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `tools[]` `web_search` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 Chat Completions 时省略（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
@@ -351,6 +351,8 @@ order: 7
 | 带 `summary` 的 `reasoning` 项，以及 `grok-4.3` 总会发送的 `encrypted_content` | 与 OpenAI 相同 | 对其他服务商生成的 `encrypted_content`，SpaceX 返回 400 `invalid-argument`。 |
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
 | `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；`Provider::tool_namespaces` 为假（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
+| `web_search` 工具上的 `external_web_access`（请求） | 为 `true` 时省略；`false` → `Unsupported` | SpaceX 拒绝该字段（`Argument not supported: external_web_access`），并且总是实时搜索；`Provider::web_search_access` 为假（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| 发回的 `reasoning` 项上的 `content: null`（请求） | 省略 | Codex 以这种方式发回之前的推理项。带着这个 `null` 时，SpaceX 无法读取该项的 `encrypted_content`（`Could not decode the compaction blob`）。`Provider::null_reasoning_content` 为假，因此 `EgressCtx::null_reasoning_content` 会省略它；OpenAI 收到的与发送的一致。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
 | `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |

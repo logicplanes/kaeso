@@ -3,6 +3,109 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "codex-developer-resume": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Remember 4817. Reply ok.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "What number?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "codex-namespace-tools": {
     "body": {
       "max_tokens": 4096,

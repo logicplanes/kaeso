@@ -130,6 +130,8 @@ pub struct EgressCtx {
     pub adaptive_thinking: Option<bool>,
     pub reasoning: Option<bool>,
     pub tool_namespaces: Option<bool>,
+    pub web_search_access: Option<bool>,
+    pub null_reasoning_content: Option<bool>,
     pub chat_profile: ChatProfile,
 }
 
@@ -148,6 +150,8 @@ impl EgressCtx {
             adaptive_thinking: None,
             reasoning: None,
             tool_namespaces: None,
+            web_search_access: None,
+            null_reasoning_content: None,
             chat_profile: ChatProfile::OPENAI,
         }
     }
@@ -172,6 +176,26 @@ impl EgressCtx {
 
     pub fn takes_tool_namespaces(&self, dialect: DialectId) -> bool {
         dialect == DialectId::OpenAiResponses && self.tool_namespaces != Some(false)
+    }
+
+    #[must_use]
+    pub fn with_web_search_access(mut self, supported: bool) -> Self {
+        self.web_search_access = Some(supported);
+        self
+    }
+
+    pub fn takes_web_search_access(&self, dialect: DialectId) -> bool {
+        dialect == DialectId::OpenAiResponses && self.web_search_access != Some(false)
+    }
+
+    #[must_use]
+    pub fn with_null_reasoning_content(mut self, supported: bool) -> Self {
+        self.null_reasoning_content = Some(supported);
+        self
+    }
+
+    pub fn takes_null_reasoning_content(&self, dialect: DialectId) -> bool {
+        dialect == DialectId::OpenAiResponses && self.null_reasoning_content != Some(false)
     }
 
     #[must_use]

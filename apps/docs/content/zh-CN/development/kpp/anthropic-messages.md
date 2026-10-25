@@ -129,7 +129,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](cross-format.md#采样参数)；不适用于 Token 计数，因为计数时会省略采样参数。 |
 | 超出 0 到 1 范围的 `sampling.temperature` | `Unsupported` | Anthropic 的范围是 0 到 1（OpenAI 允许到 2）；不会重新缩放。不适用于 Token 计数。 |
 | `user` | `metadata.user_id` | |
-| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时为 `Unsupported`（`system message`） | [系统消息](cross-format.md#系统消息)。 |
+| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，第一条用户或助手消息之前的消息并入 `system`，之后的为 `Unsupported`（`system message`） | [系统消息](cross-format.md#系统消息)。 |
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
 | 不是对象的工具调用参数；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |

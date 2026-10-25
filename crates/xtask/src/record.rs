@@ -602,6 +602,8 @@ mod tests {
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
         tool_namespaces: false,
+        web_search_access: false,
+        null_reasoning_content: false,
         chat: ChatProfile::compatible("Example Cloud"),
         account: None,
     };

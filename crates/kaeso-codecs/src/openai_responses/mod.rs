@@ -6,6 +6,7 @@ mod node;
 mod overrides;
 mod parts;
 mod plan;
+pub(crate) mod replay;
 mod request;
 mod response;
 pub(crate) mod stream;

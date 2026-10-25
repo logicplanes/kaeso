@@ -4,7 +4,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_kpp::{Block, Delta, DialectId, Reply, Request, RequestKind, StreamEvent, StreamMode};
+use kaeso_kpp::{
+    Block, Delta, DialectId, Reply, Request, RequestKind, Role, StreamEvent, StreamMode,
+};
 use serde_json::{Value, json};
 
 const GENERATION: [DialectId; 3] = [
@@ -100,9 +102,15 @@ fn request_meaning(req: &Request) -> Value {
     let Request::Generate(r) = req else {
         return Value::Null;
     };
+    let leading = r
+        .messages
+        .iter()
+        .take_while(|m| m.role == Role::System)
+        .count();
     let system: String = r
         .system
         .iter()
+        .chain(r.messages.iter().take(leading).flat_map(|m| &m.blocks))
         .filter_map(|b| match b {
             Block::Text(t) => Some(t.text.clone()),
             _ => None,
@@ -110,7 +118,7 @@ fn request_meaning(req: &Request) -> Value {
         .collect::<Vec<_>>()
         .join("");
     let mut turns = Vec::new();
-    for m in &r.messages {
+    for m in r.messages.iter().skip(leading) {
         for b in &m.blocks {
             let item = match b {
                 Block::Text(t) if !t.text.is_empty() => json!({"text": t.text}),

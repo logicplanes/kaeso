@@ -129,7 +129,7 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | `sampling.seed`, `.frequency_penalty`, `.presence_penalty` | `Unsupported` | [Sampling](cross-format.md#sampling); nicht bei der Token-Zählung, bei der Sampling entfällt. |
 | `sampling.temperature` außerhalb von 0 bis 1 | `Unsupported` | Der Bereich von Anthropic ist 0 bis 1 (OpenAI erlaubt bis 2); der Wert wird nicht umskaliert. Nicht bei der Token-Zählung. |
 | `user` | `metadata.user_id` | |
-| `Role::System` | eine `role: "system"`-Nachricht für Anfragen, die aus Anthropic Messages dekodiert wurden; aus anderen Dialekten `Unsupported` (`system message`) | [Systemnachrichten](cross-format.md#systemnachrichten). |
+| `Role::System` | eine `role: "system"`-Nachricht für Anfragen, die aus Anthropic Messages dekodiert wurden; aus anderen Dialekten werden Nachrichten vor der ersten Benutzer- oder Assistentennachricht Teil von `system`, spätere sind `Unsupported` (`system message`) | [Systemnachrichten](cross-format.md#systemnachrichten). |
 | base64-Bilder außer JPEG, PNG, GIF oder WebP; Bildquellen aus Text | `Unsupported` | `Base64ImageSource`. |
 | base64-Dokumente außer `application/pdf`; Textdokumente außer `text/plain` | `Unsupported` | `Base64PDFSource`, `PlainTextSource`. |
 | Argumente eines Tool-Aufrufs, die kein Objekt sind; Tool-Parameter, die kein Objekt sind | `Unsupported` | `input` und `input_schema` sind Objekte. |

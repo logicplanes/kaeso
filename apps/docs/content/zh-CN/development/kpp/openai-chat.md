@@ -108,7 +108,8 @@ nav: OpenAI Chat
 - 推理块（[推理](reasoning.md)）；
 - 其他方言的缓存提示（[缓存提示](cross-format.md#缓存提示)）；
 - `ToolResult::is_error`，其信息由错误内容承载（[工具错误](cross-format.md#工具错误)）；
-- 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）。
+- 其他方言的 `reasoning.summary` 和 `reasoning.include_encrypted`，因为 Chat 没有请求它们的字段（[可读推理与摘要](reasoning.md#可读推理与摘要)）；
+- OpenAI Responses 的 `web_search` 工具和 `web_search_call` 项，因为 Chat 没有托管网页搜索（[托管网页搜索](cross-format.md#托管网页搜索)）。
 
 编解码器无法读取的请求体为 `InvalidRequest`，错误会指明字段及其应有的形式并设置 `param`，而不会给出解析器位置：`` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
