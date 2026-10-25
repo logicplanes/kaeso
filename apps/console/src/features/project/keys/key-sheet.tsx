@@ -111,18 +111,6 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
         action: { label: t("keys.undo", "Undo"), onClick: () => toggle.mutate(action === "disable" ? "enable" : "disable") },
       }),
   });
-  const archive = useApiMutation({
-    mutationFn: () => act("archive"),
-    invalidates: [
-      ["orgs", org, "projects", project, "keys"],
-      ["me", "keys"],
-    ],
-    onSuccess: () => {
-      toast(t("keys.archived", "Key archived"));
-      onClose();
-    },
-  });
-
   if (key.isPending) return <Skeleton className="w-full" />;
   if (key.isError) {
     return (
@@ -225,20 +213,55 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
           empty={t("keys.noLimits", "No limits on this key; its owner's and the project's limits apply.")}
         />
       )}
-      <AlertDialog
-        open={archiving}
-        onOpenChange={setArchiving}
-        tone="danger"
-        title={t("keys.archiveTitle", "Archive {name}?", { name: k.name })}
-        description={t("keys.archiveHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
-        confirmLabel={t("keys.archiveKey", "Archive key")}
-        loading={archive.isPending}
-        onConfirm={() => archive.mutateAsync()}
-      />
+      <DialogScope open={archiving}>
+        <ArchiveKeyDialog org={org} project={project} k={k} archive={() => act("archive")} onArchived={onClose} open={archiving} onOpenChange={setArchiving} />
+      </DialogScope>
       <DialogScope open={rotating}>
         <RotateKeyFlow org={org} project={project} k={k} open={rotating} onClose={() => setRotating(false)} />
       </DialogScope>
     </div>
+  );
+}
+
+function ArchiveKeyDialog({
+  org,
+  project,
+  k,
+  archive: run,
+  onArchived,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  k: KeyView;
+  archive: () => Promise<KeyView>;
+  onArchived: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const archive = useApiMutation({
+    mutationFn: run,
+    invalidates: [
+      ["orgs", org, "projects", project, "keys"],
+      ["me", "keys"],
+    ],
+    onSuccess: () => {
+      toast(t("keys.archived", "Key archived"));
+      onArchived();
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("keys.archiveTitle", "Archive {name}?", { name: k.name })}
+      description={t("keys.archiveHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
+      confirmLabel={t("keys.archiveKey", "Archive key")}
+      loading={archive.isPending}
+      onConfirm={() => archive.mutateAsync()}
+    />
   );
 }
 

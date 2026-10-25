@@ -6,12 +6,6 @@ order: 2
 
 These pages explain how Kaeso works, so you know what to expect before you rely on it. Every page of this documentation uses the terms below in the same sense.
 
-- [Providers](providers.md): See which providers Kaeso calls, how to use one and what differs between them.
-- [Supported providers](supported-providers.md): Look up every provider's id, formats and keys.
-- [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
-- [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
-- [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.
-
 ## Terms
 
 | Term | Meaning |
@@ -35,3 +29,11 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | API format | The shape of a request and its reply: OpenAI Chat Completions, Responses or Embeddings, or Anthropic Messages |
 | KPP | The Kaeso Provider Protocol, the one format the gateway translates every API format into and out of ([format translation](format-translation.md)) |
 | Model API, Platform API | The two APIs of an install. Apps call models on `/v1`, and the console and scripts manage the install on `/platform/v1` ([API](../api/index.md)) |
+
+## Next steps
+
+- [Providers](providers.md): See which providers Kaeso calls, how to use one and what differs between them.
+- [Supported providers](supported-providers.md): Look up every provider's id, formats and keys.
+- [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
+- [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
+- [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.

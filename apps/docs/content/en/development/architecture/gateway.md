@@ -104,10 +104,19 @@ A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Compl
 | File | Holds |
 | --- | --- |
 | `models-dev.json` | A snapshot of [models.dev](https://models.dev), filtered to the providers Kaeso calls, so a fresh install works without network access. The folder's `README.md` records when it was fetched and its SHA-256 |
-| `supplement.toml` | Fields models.dev doesn't have, each with its source in the `README.md`: `adaptive_thinking`, `forced_tool_choice: false`, `efforts` where models.dev lists none, and `egress_dialect`, the format Kaeso sends to an OpenAI model |
+| `supplement.toml` | Fields models.dev doesn't have, each entry with its source in the folder's `README.md` |
 | `models-dev-providers.txt` | Every provider id on models.dev, which a custom provider can't take |
 
-A catalogue entry's value is its override, else models.dev, else the supplement. The gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`) and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins.
+The supplement holds these fields:
+
+| Field | Meaning |
+| --- | --- |
+| `adaptive_thinking` | Anthropic models: whether the model accepts `thinking: {type: "adaptive"}`. With `false`, KPP turns an effort from another format into a thinking budget |
+| `forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
+| `efforts` | The effort levels the model supports, used when models.dev lists none |
+| `egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI) |
+
+A catalogue entry's value is its override, else models.dev, else the supplement. Unless `KAESO_MODELS_DEV_SYNC` is `false`, the gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`). It keeps the same providers as the snapshot and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins.
 
 Refresh the snapshot before a release:
 

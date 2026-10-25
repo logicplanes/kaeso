@@ -3,14 +3,12 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { DEFAULT_LOCALE, LANGUAGE_NAMES, LOCALES, localeOfPath, localePrefix, type Locale } from "../../src/i18n/locales.ts";
 import { MESSAGES } from "../../src/i18n/messages/index.ts";
 import { DIAGRAM_COMMAND, DIAGRAM_THEMES, diagramFile, diagramFiles, type DiagramJob } from "./diagram.ts";
-import { buildRedirects, noRedirects, redirectsFileOf, type Redirect } from "./redirects.ts";
 import { buildSite, type Site, type SitePage } from "./site.ts";
 
 export interface Docs {
   contentDir: string;
   diagramDir: string;
   sites: Record<Locale, Site>;
-  redirects: Record<Locale, Redirect[]>;
   diagrams: DiagramJob[];
   problems: string[];
 }
@@ -74,7 +72,7 @@ export function buildDocs(contentDir: string, repoRoot: string, version: string,
   if (!existsSync(contentDir)) {
     const empty = buildSite(join(contentDir, DEFAULT_LOCALE), repoRoot, siteOptions(DEFAULT_LOCALE, version, diagramDir));
     const sites = Object.fromEntries(LOCALES.map((l) => [l, empty])) as Record<Locale, Site>;
-    return { contentDir, diagramDir, sites, redirects: noRedirects(), diagrams: [], problems: [`${rel} does not exist`] };
+    return { contentDir, diagramDir, sites, diagrams: [], problems: [`${rel} does not exist`] };
   }
   const sites = Object.fromEntries(
     LOCALES.map((locale) => [locale, buildSite(join(contentDir, locale), repoRoot, siteOptions(locale, version, diagramDir))]),
@@ -83,15 +81,12 @@ export function buildDocs(contentDir: string, repoRoot: string, version: string,
   const stale = staleDiagrams(diagramDir, diagrams).map(
     (f) => `${posix(relative(repoRoot, join(diagramDir, f)))}: no page draws this diagram any more; run \`${DIAGRAM_COMMAND}\` to remove it`,
   );
-  const redirectsFile = redirectsFileOf(contentDir);
-  const { byLocale: redirects, problems: redirectProblems } = buildRedirects(redirectsFile, posix(relative(repoRoot, redirectsFile)), sites);
   const problems = [
     ...strayEntries(contentDir, repoRoot),
     ...LOCALES.flatMap((l) => sites[l].problems),
     ...stale,
     ...reservedAddresses(sites[DEFAULT_LOCALE]),
     ...translationProblems(sites, repoRoot),
-    ...redirectProblems,
   ];
-  return { contentDir, diagramDir, sites, redirects, diagrams, problems };
+  return { contentDir, diagramDir, sites, diagrams, problems };
 }

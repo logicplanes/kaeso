@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Avatar, Badge, Button, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Avatar, Badge, Button, DialogScope, SettingsGroup, SettingsRow, SettingsSection, Text } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { api } from "~/api/client";
 import type { MyMembership } from "~/api/generated/types";
@@ -13,20 +13,12 @@ import { t } from "~/i18n";
 
 export function MembershipsPage() {
   const memberships = useMemberships();
-  const queryClient = useQueryClient();
   const [leaving, setLeaving] = useState<MyMembership | null>(null);
-  const leave = useApiMutation({
-    mutationFn: async (m: MyMembership) => {
-      await api.DELETE("/platform/v1/me/memberships/{org}", { params: { path: { org: m.org_id } } });
-    },
-    onSuccess: (_r, m) => {
-      setLeaving(null);
-      toast(t("account.leftOrg", "You left {org}", { org: m.org_name }));
-      void queryClient.invalidateQueries({ queryKey: ["session"] });
-      void queryClient.invalidateQueries({ queryKey: ["me"] });
-    },
-    onError: () => setLeaving(null),
-  });
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const leave = (m: MyMembership) => {
+    setLeaving(m);
+    setLeaveOpen(true);
+  };
   return (
     <SettingsPage
       title={t("account.memberships", "Memberships")}
@@ -39,7 +31,7 @@ export function MembershipsPage() {
           key={m.org_id}
           title={m.org_name}
           description={t("account.orgRole", "{role} of the organization", { role: m.role.name })}
-          actions={m.org_state === "scheduled_for_deletion" ? undefined : <LeaveButton membership={m} onLeave={() => setLeaving(m)} />}
+          actions={m.org_state === "scheduled_for_deletion" ? undefined : <LeaveButton membership={m} onLeave={() => leave(m)} />}
         >
           <SettingsGroup aria-label={t("account.projectsIn", "Projects in {org}", { org: m.org_name })}>
             {m.org_state === "scheduled_for_deletion" && (
@@ -74,17 +66,40 @@ export function MembershipsPage() {
           </SettingsGroup>
         </SettingsSection>
       ))}
-      <AlertDialog
-        open={!!leaving}
-        onOpenChange={(o) => !o && setLeaving(null)}
-        tone="danger"
-        title={leaving ? t("account.leaveConfirm", "Leave {org}?", { org: leaving.org_name }) : t("account.leaveConfirmAny", "Leave the organization?")}
-        description={t("account.leaveConfirmHint", "You lose access to its projects and your keys in them are archived; an owner can invite you again.")}
-        confirmLabel={t("account.leaveOrg", "Leave organization")}
-        loading={leave.isPending}
-        onConfirm={() => (leaving ? leave.mutateAsync(leaving) : undefined)}
-      />
+      {leaving && (
+        <DialogScope open={leaveOpen}>
+          <LeaveDialog membership={leaving} open={leaveOpen} onOpenChange={setLeaveOpen} />
+        </DialogScope>
+      )}
     </SettingsPage>
+  );
+}
+
+function LeaveDialog({ membership, open, onOpenChange }: { membership: MyMembership; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const queryClient = useQueryClient();
+  const leave = useApiMutation({
+    mutationFn: async () => {
+      await api.DELETE("/platform/v1/me/memberships/{org}", { params: { path: { org: membership.org_id } } });
+    },
+    onSuccess: () => {
+      onOpenChange(false);
+      toast(t("account.leftOrg", "You left {org}", { org: membership.org_name }));
+      void queryClient.invalidateQueries({ queryKey: ["session"] });
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+    onError: () => onOpenChange(false),
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("account.leaveConfirm", "Leave {org}?", { org: membership.org_name })}
+      description={t("account.leaveConfirmHint", "You lose access to its projects and your keys in them are archived; an owner can invite you again.")}
+      confirmLabel={t("account.leaveOrg", "Leave organization")}
+      loading={leave.isPending}
+      onConfirm={() => leave.mutateAsync()}
+    />
   );
 }
 

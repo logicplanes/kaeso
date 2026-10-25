@@ -46,7 +46,7 @@ Jeder Dialektordner und seine Ordner `requests/`, `responses/`, `streams/`, `err
 | `schema:` | Ein Body, der aus den festgelegten OpenAPI-Schemas gebaut wurde |
 | `RECORDED.md` | Eine Live-Aufzeichnung mit `cargo xtask record`, mit Modell und Zeitpunkt |
 
-Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen. Sie nennt auch die Konventionen, die diese Fixtures teilen, etwa IDs und Token-Zahlen, die zwischen einem Stream und seiner Antwort übereinstimmen. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
+Die `README.md` eines Dialektordners nennt außerdem die festgelegten Spezifikationen und SDK-Versionen, denen seine Fixtures folgen. Seine Fixtures folgen den [Konventionen](#konventionen) unten. Ergänzen Sie dort mit jeder neuen Fixture eine Zeile.
 
 Ein Anbieterordner hat eine eigene `README.md`. Sie enthält:
 
@@ -56,6 +56,10 @@ Ein Anbieterordner hat eine eigene `README.md`. Sie enthält:
 - eine Zeile für jede Datei in seinen Unterordnern.
 
 Die `RECORDED.md` jedes Unterordners nennt den Anbieter in ihren ersten Zeilen.
+
+## Konventionen
+
+Konstruierte Fixtures folgen den [Fixture-Konventionen](fixture-conventions.md), damit die Tests sie exakt vergleichen können.
 
 ## Live-Antworten aufzeichnen
 

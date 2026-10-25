@@ -6,7 +6,7 @@ order: 1
 
 这些页面带您从一台空服务器开始，直到应用和编程工具都通过 Kaeso 调用模型。先完成快速开始，再接入您要构建的内容。
 
-## 后续步骤
+## 下一步
 
 - [快速开始](quick-start.md)：用 Docker Compose 安装 Kaeso，连接服务商并发送第一个请求。
 - [调用模型](calling-models.md)：在应用中通过 OpenAI 和 Anthropic SDK 或 curl 调用模型。

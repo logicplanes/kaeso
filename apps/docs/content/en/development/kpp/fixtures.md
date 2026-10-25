@@ -46,7 +46,7 @@ Every dialect folder and its `requests/`, `responses/`, `streams/`, `errors/` an
 | `schema:` | A body built from the pinned OpenAPI schemas |
 | `RECORDED.md` | A live recording made with `cargo xtask record`, with the model and the time |
 
-A dialect folder's `README.md` also names the pinned specifications and SDK versions its fixtures follow. It names the conventions they share as well, such as ids and token counts that agree between a stream and its response. Add a row there with every new fixture.
+A dialect folder's `README.md` also names the pinned specifications and SDK versions its fixtures follow. Its fixtures follow the [conventions](#conventions) below. Add a row there with every new fixture.
 
 A provider folder has one `README.md` of its own. It holds:
 
@@ -56,6 +56,10 @@ A provider folder has one `README.md` of its own. It holds:
 - a row for every file in its subfolders.
 
 Each subfolder's `RECORDED.md` names the provider in its first lines.
+
+## Conventions
+
+Constructed fixtures follow the [fixture conventions](fixture-conventions.md), so that the tests can compare them exactly.
 
 ## Recording live responses
 
