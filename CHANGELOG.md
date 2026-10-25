@@ -4,6 +4,71 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-25
+
+Kaeso 0.4.3 lets agents such as Claude Code and Codex connect to an instance's remote MCP server, sign in with OAuth and act under rights that the user and the instance and organization policies allow. A new custom provider now needs only a base URL and a key, because Kaeso detects its format, key style, embeddings, token counting and models. Codex, Claude Code and Grok CLI work with Claude, GPT, Grok and Mistral models in more cases, and Mistral's answers reach Chat Completions apps as plain text. The design tokens package no longer exports `brandVersion`, the one change that asks integrators to act, and a fresh install starts from the model catalogue's data as of 25 October 2026.
+
+- **Breaking:** The design tokens package no longer exports `brandVersion`, so code that imports it must drop that import. ([#467](https://github.com/logicplanes/kaeso/pull/467))
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.4.2...v0.4.3](https://github.com/logicplanes/kaeso/compare/v0.4.2...v0.4.3)
+
+### Added
+
+- Adding a custom provider takes only its base URL and key. Kaeso detects the API format, key style, embeddings, token counting and the models the server offers, and the review step lets you change any of it before saving. A trailing or doubled `/v1` and a pasted endpoint path are dropped from the base URL when it is saved. ([#449](https://github.com/logicplanes/kaeso/pull/449))
+- Agents such as Claude Code, Codex, Cursor, Gemini CLI and OpenCode can connect to an instance's remote MCP server at `/mcp`. They sign in with OAuth 2.1 and PKCE through the console and act with rights the user grants, capped by the instance's and each organization's agent policies. Every tool call is kept for 90 days as the agent's activity, and the console lists each account's agents so they can be renamed or revoked. ([#450](https://github.com/logicplanes/kaeso/pull/450))
+- The documentation site and the UI library's showcase end their sidebars with a legal menu linking to Kaeso's privacy policy and imprint, a theme menu and a language menu. The menus replace the language and theme selects, and the UI library's `ThemeMenu` can open upward with its `side` and `align` props. ([#474](https://github.com/logicplanes/kaeso/pull/474))
+- Kaeso now has Claude Code and Cursor plugins that connect to an instance's `/mcp` address and include a skill on using its tools. The console's Agents page also offers one-click connection steps for Claude Code, Cursor and GitHub Copilot, filled in with the instance's own address. ([#475](https://github.com/logicplanes/kaeso/pull/475))
+
+### Changed
+
+- The Add models dialog shows models in a table with a checkbox on each row, and models already in the catalogue stay locked. Adding a provider key starts with provider tiles, with connected providers first, and a press on a tile continues to the key step. ([#487](https://github.com/logicplanes/kaeso/pull/487))
+
+#### Gateway
+
+- A fresh install starts with the model catalogue snapshot as of 25 October 2026, which holds 555 models and their prices for the providers Kaeso supports. The providers list adds `munito` and `munito-eu`. ([#489](https://github.com/logicplanes/kaeso/pull/489))
+
+### Removed
+
+#### UI library
+
+- The design tokens package no longer exports `brandVersion`, a second version number in its brand file that could disagree with Kaeso's own. Nothing in the repository read it, and a test now keeps a version field out of the brand file. ([#467](https://github.com/logicplanes/kaeso/pull/467))
+
+### Fixed
+
+- Refusals to sign up or create an organization, shown on installs that are invitation-only or limit email domains, are now translated in German and Chinese in the console. The check that finds untranslated Platform API messages now covers more of the gateway's services. ([#435](https://github.com/logicplanes/kaeso/pull/435))
+- Toasts, empty states and confirmations in the console are shorter, each says one thing, and they are checked for length in English, German and Chinese. Several German dialog texts are shortened to fit as well. ([#440](https://github.com/logicplanes/kaeso/pull/440))
+- Two refusals about a model's tool choice and thinking settings fit on one line: `auto` with the tool named in the prompt, and `enabled` thinking with `budget_tokens`. Their German and Chinese wording follows the new text. ([#443](https://github.com/logicplanes/kaeso/pull/443))
+- The development pages and agent guides now match the code. The update job runs every 60 seconds with a five-minute gap between checks, and the development stack's mock serves xAI and Together AI as well. ([#446](https://github.com/logicplanes/kaeso/pull/446))
+- Buttons in the console start with a verb: the last step after creating a key reads Finish, and the updates page button reads See what's new. The new wording is in English, German and Chinese, and the docs follow it. ([#448](https://github.com/logicplanes/kaeso/pull/448))
+- Overview pages end with a Next steps list. The docs site no longer keeps redirects, and documentation kept in the repository's READMEs, such as the model catalogue sync details, now lives on the docs site. Fixture conventions have their own reference page. ([#453](https://github.com/logicplanes/kaeso/pull/453))
+- The console shows images people sent with a new Thumbnail component from the UI library, which crops them to a square and shows the text alternative when an image cannot load. Every UI library component now exports its variant lists, and the showcase checks that each page declares them. ([#455](https://github.com/logicplanes/kaeso/pull/455))
+- Grok CLI over Chat Completions works with models served in other formats, because the `model_id` field it replays on assistant messages is left out when a request crosses to another format. Chat providers receive that field only in profiles that keep it, which is SpaceX's. ([#462](https://github.com/logicplanes/kaeso/pull/462))
+- Mistral answers over Chat Completions now arrive as plain text, with its thinking in `reasoning_content`, so Grok CLI and other Chat apps no longer fail or print raw thinking JSON. Empty stream chunks no longer crash tool-call turns, and reasoning that Chat apps replay reaches the providers that accept it. ([#463](https://github.com/logicplanes/kaeso/pull/463))
+- Codex works with Claude, Grok and Mistral models, and a thread that started on a GPT model can switch to any of them. System and developer messages reach Anthropic in the next user turn, and hosted web search goes to providers with a matching tool and is left out elsewhere. What a provider cannot take is named in the `kaeso-left-out` header of the reply. ([#464](https://github.com/logicplanes/kaeso/pull/464))
+- Mistral accepts requests from apps that send `temperature: 0`, such as aider's default, because the Mistral profile sends `top_p: 1` with greedy sampling, which changes nothing at that temperature. Error bodies in Mistral's and vLLM's shapes now reach apps with their message, and context window errors are reported as context too long. ([#465](https://github.com/logicplanes/kaeso/pull/465))
+- Claude models work in Chat Completions and Responses apps that replay history. Claude's signed thinking is restored only into the turn it came from, and for the models that check the binding, a block whose conversation changed is dropped instead of failing the request. Carried reasoning is stored under new keys, so a conversation in flight during the upgrade continues without its earlier thinking. ([#466](https://github.com/logicplanes/kaeso/pull/466))
+- Claude Code's tool search works with GPT, Grok and Mistral models. Tools marked for deferred loading stay out of the upstream request until a tool search loads them, then they are sent as ordinary function tools, instead of the first request of each session being refused. ([#472](https://github.com/logicplanes/kaeso/pull/472))
+- Claude Code's WebSearch works with GPT and Grok models, and Mistral answers it without searching instead of failing. Anthropic's web search tool becomes hosted web search on OpenAI Responses and xAI's search on SpaceX, with its domain filters, and search results return to Anthropic apps as search blocks. ([#473](https://github.com/logicplanes/kaeso/pull/473))
+
+#### Console
+
+- The invitation page drops an invitation's token from its cache as soon as the person leaves the page, including when the invitation has expired, been revoked or already been used. Before, the token could stay in the cache after the page was left. ([#437](https://github.com/logicplanes/kaeso/pull/437))
+- The console no longer invents a name, key prefix or format list for a provider that the gateway does not list, such as one an old key still points at. It shows the provider's id as the gateway sent it, a plain ellipsis for the prefix, and only the format the model is sent as. ([#439](https://github.com/logicplanes/kaeso/pull/439), [#452](https://github.com/logicplanes/kaeso/pull/452))
+- Confirmation dialogs in the console open fresh every time, so a removal in progress for one limit or key no longer shows as busy for another item. About twenty dialogs for sessions, organizations, users, providers, keys, members and roles now keep their requests in their own component. ([#457](https://github.com/logicplanes/kaeso/pull/457))
+
+#### UI library
+
+- The UI library's showcase examples and tests use Kaeso's placeholder key prefix and gateway address, so the code people copy from the showcase matches the repository's placeholders. ([#436](https://github.com/logicplanes/kaeso/pull/436))
+- Calendar, ToastCapsule, DisplayOptions, ThemeMenu, SelectionBar and CommandPalette now forward a ref to their root element, where before the ref was dropped. ThemeMenu takes `data-force` for its states page, and SwapText and ThemeMenu gain showcase pages. ([#441](https://github.com/logicplanes/kaeso/pull/441))
+- Every UI library component that renders an element forwards its ref, and the lint check now fails for an exported component that renders without one. Props and behavior are unchanged, and the few components with no root element are listed with their reasons. ([#451](https://github.com/logicplanes/kaeso/pull/451))
+
+#### Documentation
+
+- The self-hosting pages name the console's real pages and labels, add `KAESO_TRUSTED_PROXIES` to the `.env` table, and describe the notice sent when someone changes their email address. The requirements and the 529 response are corrected to match the code. ([#444](https://github.com/logicplanes/kaeso/pull/444))
+- The Platform API, concept and console pages now match the code, including which operations need a recent sign-in, the `PUT` and `DELETE` conventions, the model inputs and outputs, and that Mistral receives developer messages as system messages. ([#447](https://github.com/logicplanes/kaeso/pull/447))
+
 ## [0.4.2] - 2026-10-25
 
 Kaeso 0.4.2 lets organization admins add their own providers and rotate keys in one step. Hard budgets and token rates now refuse a single request that could cross them, so operators may see more refusals up front. Streams that finished are no longer logged as client disconnects, and request logs, the console and a Server-Timing header show the time Kaeso adds to each request. Codex and the ChatGPT desktop app can use Claude, Grok and Mistral models, and many documentation and console layouts were reworked for phones.
@@ -805,7 +870,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.3
 [0.4.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.2
 [0.4.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.1
 [0.4.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.0

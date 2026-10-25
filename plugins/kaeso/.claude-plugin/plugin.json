@@ -1,7 +1,7 @@
 {
   "name": "kaeso",
   "displayName": "Kaeso",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Manage your self-hosted Kaeso AI gateway from your agent: organizations, projects, keys, models, limits, usage and logs, with only the rights you grant.",
   "author": {
     "name": "Logicplanes",
