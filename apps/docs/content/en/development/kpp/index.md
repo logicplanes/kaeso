@@ -147,7 +147,7 @@ Every KPP field is either semantic or a hint:
 
 | Field | Class | Notes |
 | --- | --- | --- |
-| `role` | semantic | A `System` message after the start of the conversation is `Unsupported` for Anthropic unless the request came from Anthropic Messages ([system messages](cross-format.md#system-messages)). |
+| `role` | semantic | A `System` message after the start of the conversation joins the next user turn for Anthropic unless the request came from Anthropic Messages ([system messages](cross-format.md#system-messages)). |
 | `blocks` | semantic | Block order is preserved. |
 | `extras` | as for the request | |
 

@@ -56,11 +56,20 @@ fn check_requires_max_tokens_for_generation_only() {
 }
 
 #[test]
-fn check_refuses_foreign_system_messages() {
+fn foreign_system_messages_join_a_user_turn() {
     let mut r = chat_request();
     r.messages
         .push(Message::new(Role::System, vec![Block::text("late rule")]));
-    assert_eq!(feature(r), "system message");
+    let req = Request::Generate(r);
+    let enc = AnthropicMessages::encode_request(&req, &mut crate::test_support::egress()).unwrap();
+    let body: serde_json::Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        body["messages"],
+        json!([{"role": "user", "content": [
+            {"type": "text", "text": "hi"},
+            {"type": "text", "text": "late rule"}
+        ]}])
+    );
 }
 
 #[test]

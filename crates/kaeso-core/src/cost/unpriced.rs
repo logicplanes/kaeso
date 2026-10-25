@@ -1,3 +1,5 @@
+use kaeso_codecs::cross::{HOSTED_SEARCH_TYPES, leaves_out_tool};
+use kaeso_codecs::openai_responses::{ResponsesProfile, WebSearchTool};
 use kaeso_kpp::{DialectId, Extras, Request, ToolDef};
 use serde_json::Value;
 
@@ -35,13 +37,17 @@ const UNPRICED_BETAS: &[&str] = &["context-1m-"];
 
 const SHOWN: usize = 40;
 
-pub fn unpriced(request: &Request, egress: DialectId) -> Option<Unpriced> {
+pub fn unpriced(
+    request: &Request,
+    egress: DialectId,
+    responses: ResponsesProfile,
+) -> Option<Unpriced> {
     let Request::Generate(g) = request else {
         return None;
     };
     g.tools
         .iter()
-        .find_map(|t| provider_tool(t, egress))
+        .find_map(|t| provider_tool(t, egress, responses))
         .or_else(|| request_field(&g.extras, egress))
 }
 
@@ -58,7 +64,11 @@ fn client_tool(ty: &str) -> bool {
     CLIENT_TOOLS.contains(&ty) || CLIENT_TOOL_VERSIONS.iter().any(|v| ty.starts_with(v))
 }
 
-fn provider_tool(tool: &ToolDef, egress: DialectId) -> Option<Unpriced> {
+fn provider_tool(
+    tool: &ToolDef,
+    egress: DialectId,
+    responses: ResponsesProfile,
+) -> Option<Unpriced> {
     let ToolDef::Unknown(item) = tool else {
         return None;
     };
@@ -68,9 +78,24 @@ fn provider_tool(tool: &ToolDef, egress: DialectId) -> Option<Unpriced> {
         .and_then(|v| v.get("type"))
         .and_then(Value::as_str)
         .unwrap_or_default();
-    let mapped_search = ty == "web_search"
-        && item.origin.is(DialectId::OpenAiResponses)
-        && egress == DialectId::AnthropicMessages;
+    let cached_only =
+        raw.as_ref().and_then(|v| v.get("external_web_access")) == Some(&Value::Bool(false));
+    let hosted_search =
+        HOSTED_SEARCH_TYPES.contains(&ty) && item.origin.is(DialectId::OpenAiResponses);
+    let can_leave_out =
+        egress != DialectId::OpenAiResponses || responses.web_search == WebSearchTool::Xai;
+    if hosted_search
+        && can_leave_out
+        && leaves_out_tool(
+            DialectId::OpenAiResponses,
+            "web_search",
+            egress,
+            cached_only,
+        )
+    {
+        return None;
+    }
+    let mapped_search = hosted_search && egress == DialectId::AnthropicMessages;
     if !item.origin.is(egress) && !mapped_search {
         return None;
     }
@@ -163,7 +188,11 @@ mod tests {
     }
 
     fn of(dialect: DialectId, body: Value) -> Option<Unpriced> {
-        unpriced(&decoded(dialect, &body, &[]), dialect)
+        unpriced(
+            &decoded(dialect, &body, &[]),
+            dialect,
+            ResponsesProfile::OPENAI,
+        )
     }
 
     fn found(param: &'static str, feature: &str) -> Option<Unpriced> {
@@ -291,9 +320,22 @@ mod tests {
             &[],
         );
         let search = found("tools", "web_search");
-        assert_eq!(unpriced(&codex, DialectId::OpenAiResponses), search);
-        assert_eq!(unpriced(&codex, DialectId::AnthropicMessages), search);
-        assert_eq!(unpriced(&codex, DialectId::OpenAiChat), None);
+        assert_eq!(
+            unpriced(&codex, DialectId::OpenAiResponses, ResponsesProfile::OPENAI),
+            search
+        );
+        assert_eq!(
+            unpriced(
+                &codex,
+                DialectId::AnthropicMessages,
+                ResponsesProfile::OPENAI
+            ),
+            search
+        );
+        assert_eq!(
+            unpriced(&codex, DialectId::OpenAiChat, ResponsesProfile::OPENAI),
+            None
+        );
         let Request::Generate(mut g) = codex else {
             unreachable!()
         };
@@ -301,8 +343,55 @@ mod tests {
             .retain(|t| !matches!(t, ToolDef::Unknown(i) if i.raw.get().contains("web_search")));
         let without_search = Request::Generate(g);
         for egress in [DialectId::OpenAiResponses, DialectId::AnthropicMessages] {
-            assert_eq!(unpriced(&without_search, egress), None, "{egress}");
+            assert_eq!(
+                unpriced(&without_search, egress, ResponsesProfile::OPENAI),
+                None,
+                "{egress}"
+            );
         }
+    }
+
+    #[test]
+    fn every_hosted_search_type_sent_to_claude_is_unpriced_unless_it_is_left_out() {
+        let with_tool = |tool: Value| {
+            decoded(
+                DialectId::OpenAiResponses,
+                &serde_json::json!({"model": "m", "input": "Hi", "tools": [tool]}),
+                &[],
+            )
+        };
+        for ty in HOSTED_SEARCH_TYPES {
+            let live = with_tool(serde_json::json!({"type": ty}));
+            assert_eq!(
+                unpriced(
+                    &live,
+                    DialectId::AnthropicMessages,
+                    ResponsesProfile::OPENAI
+                ),
+                found("tools", ty),
+                "{ty}"
+            );
+        }
+        let cached =
+            with_tool(serde_json::json!({"type": "web_search", "external_web_access": false}));
+        assert_eq!(
+            unpriced(
+                &cached,
+                DialectId::AnthropicMessages,
+                ResponsesProfile::OPENAI
+            ),
+            None
+        );
+        let xai = ResponsesProfile::compatible("SpaceX").xai_web_search();
+        assert_eq!(unpriced(&cached, DialectId::OpenAiResponses, xai), None);
+        assert_eq!(
+            unpriced(
+                &cached,
+                DialectId::OpenAiResponses,
+                ResponsesProfile::OPENAI
+            ),
+            found("tools", "web_search")
+        );
     }
 
     #[test]
@@ -366,7 +455,13 @@ mod tests {
             "max_tokens": 64,
             "messages": [{ "role": "user", "content": "Hi" }],
         });
-        let beta = |value: &str| unpriced(&decoded(a, &body, &[("anthropic-beta", value)]), a);
+        let beta = |value: &str| {
+            unpriced(
+                &decoded(a, &body, &[("anthropic-beta", value)]),
+                a,
+                ResponsesProfile::OPENAI,
+            )
+        };
         assert_eq!(
             beta("claude-code-20250219, context-1m-2025-08-07"),
             found("anthropic-beta", "anthropic-beta: context-1m-2025-08-07")
@@ -384,12 +479,19 @@ mod tests {
             &fixture("anthropic_messages/requests/web-search-server-tool.json"),
             &[],
         );
-        assert_eq!(unpriced(&web, DialectId::OpenAiChat), None);
+        assert_eq!(
+            unpriced(&web, DialectId::OpenAiChat, ResponsesProfile::OPENAI),
+            None
+        );
         let Request::Generate(g) = web else {
             unreachable!()
         };
         assert_eq!(
-            unpriced(&Request::CountTokens(g), DialectId::AnthropicMessages),
+            unpriced(
+                &Request::CountTokens(g),
+                DialectId::AnthropicMessages,
+                ResponsesProfile::OPENAI
+            ),
             None
         );
         let long = format!("web_search_{}", "9".repeat(60));

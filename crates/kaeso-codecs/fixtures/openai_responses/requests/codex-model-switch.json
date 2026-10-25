@@ -1,0 +1,234 @@
+{
+  "model": "claude-sonnet-5-5",
+  "stream": true,
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d01-7000-8000-000000000001",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are Codex, an agent based on GPT-6. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d02-7000-8000-000000000002",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d03-7000-8000-000000000003",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<multi_agent_role>You are `/root`, the primary agent in a team of agents collaborating to fulfill the user's goals.</multi_agent_role>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d04-7000-8000-000000000004",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents.</multi_agent_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d05-7000-8000-000000000005",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d06-7000-8000-000000000006",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Search the web for what the Kaeso AI gateway is, in one sentence. Then create proof.txt containing OK using the shell and reply with its contents."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf902c42887d2a71aba8282778fe7",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "I’ll look up the Kaeso AI gateway, then write `proof.txt` in the workspace and report its contents.",
+          "annotations": [],
+          "logprobs": []
+        }
+      ],
+      "phase": "commentary"
+    },
+    {
+      "type": "web_search_call",
+      "id": "ws_0992021c1dd245b3016addf903774487d298ad27921d40a410",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "Kaeso AI gateway",
+        "queries": [
+          "Kaeso AI gateway"
+        ]
+      }
+    },
+    {
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf905ef7887d28288e0a9ccf10291",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "The search result describes Kaeso as a self-hosted gateway with a single compatible API and controls for keys, routing, limits, and logs. I’m writing `OK` to `proof.txt` now.",
+          "annotations": [],
+          "logprobs": []
+        }
+      ],
+      "phase": "commentary"
+    },
+    {
+      "type": "custom_tool_call",
+      "id": "ctc_0992021c1dd245b3016addf907047887d2b589ae84d5e2e8a9",
+      "status": "completed",
+      "call_id": "call_8T8RbkBlHo4KilFkd28euzyo",
+      "name": "exec",
+      "input": "const r = await tools.exec_command({cmd:\"printf 'OK' > proof.txt && cat proof.txt\",yield_time_ms:10000,max_output_tokens:1000});\ntext(r.output);\n"
+    },
+    {
+      "type": "custom_tool_call_output",
+      "id": "ctco_019a0e5c-7d07-7000-8000-000000000007",
+      "call_id": "call_8T8RbkBlHo4KilFkd28euzyo",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "Script completed\nWall time 0.1 seconds\nOutput:\n"
+        },
+        {
+          "type": "input_text",
+          "text": "OK"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf90a5b9887d28d1c19db6bb00c75",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Kaeso is a self-hosted AI gateway that provides a unified API for managing keys, routing, limits, and logs. `proof.txt` contains: `OK`.",
+          "annotations": [],
+          "logprobs": []
+        }
+      ],
+      "phase": "final_answer"
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d08-7000-8000-000000000008",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<model_switch>\nThe user was previously using a different model. Please continue the conversation according to the following instructions:\n\nYou are Codex, an agent based on Claude Sonnet 5.5.\n</model_switch>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d09-7000-8000-000000000009",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d10-7000-8000-000000000010",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "What did you write? Reply with only it."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "type": "web_search",
+      "external_web_access": true
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "medium",
+    "summary": "auto"
+  },
+  "store": false,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "prompt_cache_key": "019a0e5c-7d11-7000-8000-000000000011",
+  "client_metadata": {
+    "root_turn_id": "019a0e5c-7d12-7000-8000-000000000012",
+    "session_id": "019a0e5c-7d11-7000-8000-000000000011",
+    "x-codex-installation-id": "00000000-0000-4000-8000-000000000000",
+    "x-codex-window-id": "019a0e5c-7d11-7000-8000-000000000011:0",
+    "turn_id": "019a0e5c-7d12-7000-8000-000000000012",
+    "thread_id": "019a0e5c-7d11-7000-8000-000000000011",
+    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"019a0e5c-7d11-7000-8000-000000000011\",\"thread_id\":\"019a0e5c-7d11-7000-8000-000000000011\",\"agent_name\":\"/root\",\"turn_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"window_id\":\"019a0e5c-7d11-7000-8000-000000000011:0\",\"window_number\":0,\"context_window_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"request_kind\":\"turn\",\"history_initialization\":\"cold_resume\",\"root_turn_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"workspace-write\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792932117926,\"analytics_enabled\":true,\"model\":\"claude-sonnet-5-5\",\"reasoning_effort\":\"medium\"}"
+  }
+}

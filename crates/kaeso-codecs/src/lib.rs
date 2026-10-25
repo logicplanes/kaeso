@@ -14,6 +14,7 @@ pub mod sse;
 mod struct_fields;
 pub mod testing;
 mod tool_search;
+mod verbosity;
 mod web_search;
 mod wire;
 

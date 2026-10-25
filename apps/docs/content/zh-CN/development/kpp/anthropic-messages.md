@@ -132,14 +132,16 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `sampling.seed`、`.frequency_penalty`、`.presence_penalty` | `Unsupported` | [采样参数](cross-format.md#采样参数)；不适用于 Token 计数，因为计数时会省略采样参数。 |
 | 超出 0 到 1 范围的 `sampling.temperature` | `Unsupported` | Anthropic 的范围是 0 到 1（OpenAI 允许到 2）；不会重新缩放。不适用于 Token 计数。 |
 | `user` | `metadata.user_id` | |
-| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时为 `Unsupported`（`system message`） | [系统消息](cross-format.md#系统消息)。 |
+| `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，作为下一个用户轮次的文本，排在其工具结果之后 | [系统消息](cross-format.md#系统消息)。 |
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
 | 不是对象的工具调用参数；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
 | `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、schema 描述、`strict: false`、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
-| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `web_search` 工具 | `{type: web_search_20250305, name: web_search}` | 设置了 `allowed_domains` 和 `user_location` 时一并写入；带 `external_web_access: false` 时省略；对话中 Responses 的 `web_search_call` 项会被丢弃（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| OpenAI Responses 的 `custom_tool_call`、`local_shell_call` 及其输出 | `tool_use` 和 `tool_result` 块 | [Codex 工具历史](cross-format.md#codex-工具历史)。 |
+| OpenAI Responses 的 `text.verbosity` | 省略 | 没有对应字段；在 `kaeso-left-out` 中注明（参见[条件条目](cross-format.md#条件条目)）。 |
 | OpenAI Responses 的 `namespace` 工具 | 命名空间中的每个工具一个函数工具，名为 `<namespace>__<name>` | [工具命名空间](cross-format.md#工具命名空间)。 |
 | 外来 extras、未知的块、工具和工具选择、引用、外来文件 ID | `Unsupported` | `cross::check_foreign`（[请求](cross-format.md#请求)）。 |
 
