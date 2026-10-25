@@ -1,3 +1,4 @@
 {
-  "status": 400
+  "status": 400,
+  "provenance": "gateway-relayed, not raw xAI: Kaeso 0.4.2 at ai.logicplanes.com, 2026-10-25; the body is the gateway's OpenAI-shaped encoding of xAI's error"
 }

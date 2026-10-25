@@ -13,4 +13,4 @@ Written by `cargo xtask record`. Provenance: live API of xAI (`xai`).
 | `recorded-codex-turn-one.json` | `openai_responses/providers/xai/requests/codex-turn-one.json` | `grok-4.7` | 2026-10-25 10:54 |
 | `recorded-codex-turn-two.json` | `openai_responses/providers/xai/requests/codex-turn-two.json` | `grok-4.7` | 2026-10-25 10:55 |
 
-The `recorded-codex-*` files went through a Kaeso gateway; see `../README.md`.
+The `recorded-codex-*` files are gateway-relayed, not raw xAI: recorded through Kaeso 0.4.2 at `ai.logicplanes.com` on 2026-10-25; see `../README.md`.
