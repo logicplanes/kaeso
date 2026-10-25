@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -7,11 +7,11 @@ use serde::Serialize;
 use tokio::sync::{Semaphore, watch};
 
 use crate::baseline::{self, Baseline, Until};
-use crate::harness::{Install, counter};
+use crate::harness::{Install, by_label};
 use crate::stats::Summary;
 use crate::streams::{
-    self, Memory, Pair, Profile, Role, Run, Spec, Target, added_ttfb, cancel_point, healthy,
-    picked, upstream_left_open,
+    self, Memory, Pair, Profile, Role, Run, SLOW_GAP, SLOW_TEXT_CHUNKS, Spec, Target, added_ttfb,
+    cancel_point, healthy, picked, upstream_left_open,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, ValueEnum)]
@@ -140,11 +140,7 @@ struct Bench<'a> {
 
 const LEAK_WAIT: Duration = Duration::from_secs(30);
 const CANCEL_WAIT: Duration = Duration::from_secs(10);
-const STALLED: &str = "kind=\"client_stalled\",provider=\"openai\"";
-const SLOW_TEXT_CHUNKS: u64 = 16;
-// A hundred deltas a millisecond fill the sockets and Kaeso's queue in well under a second,
-// so a stalled stream ends close to the idle timeout after the app's last read.
-const SLOW_GAP: Duration = Duration::from_micros(10);
+const STALLED: &str = "client_stalled";
 // A stream costs the gateway well under this. One that kept what a stalled app doesn't read
 // would hold the mock's chunk a millisecond until Kaeso gave up on the app, many times it.
 const MEMORY_PER_STREAM: u64 = 1024 * 1024;
@@ -199,14 +195,20 @@ pub(crate) async fn run(plan: &Plan, install: &mut Install) -> Results {
 
 impl Bench<'_> {
     fn target(&self, direct: bool) -> Target {
-        let (addr, bearer) = if direct {
-            (self.install.mock_addr, "sk-bench-direct".to_owned())
+        let (addr, bearer, slow_bearer) = if direct {
+            let bearer = "sk-bench-direct".to_owned();
+            (self.install.mock_addr, bearer.clone(), bearer)
         } else {
-            (self.install.gateway.addr, self.install.key.clone())
+            (
+                self.install.gateway.addr,
+                self.install.key.clone(),
+                self.install.slow_key.clone(),
+            )
         };
         Target {
             addr,
             bearer,
+            slow_bearer,
             mock: self.install.mock.clone(),
             opening: self.opening.clone(),
             slow_read_every: self.plan.slow_read_every_ms.map(Duration::from_millis),
@@ -243,6 +245,7 @@ impl Bench<'_> {
         say("warming up a fresh gateway");
         let gw = self.install.gateway.addr;
         let _ = baseline::run(gw, &self.install.key, 4, Until::Count(50)).await;
+        let _ = baseline::run(gw, &self.install.slow_key, 1, Until::Count(5)).await;
         let specs = healthy(8, 8, Duration::from_millis(5), "warm");
         let _ = streams::run_all(&self.target(false), specs, None).await;
         let _ = upstream_left_open(&self.install.mock, LEAK_WAIT).await;
@@ -265,7 +268,7 @@ impl Bench<'_> {
             "baseline",
             "every request succeeded",
             b.failed == 0,
-            format!("{} of {} failed", b.failed, b.requests),
+            format!("{} of {} failed{}", b.failed, b.requests, b.why()),
         );
         self.results.baseline = Some(b);
     }
@@ -445,10 +448,10 @@ impl Bench<'_> {
             .collect()
     }
 
-    async fn stalled_count(&self) -> u64 {
+    async fn stream_failures(&self) -> BTreeMap<String, u64> {
         match self.install.gateway.metrics().await {
-            Ok(text) => counter(&text, "kaeso_stream_failures_total", STALLED),
-            Err(_) => 0,
+            Ok(text) => by_label(&text, "kaeso_stream_failures_total", "kind"),
+            Err(_) => BTreeMap::new(),
         }
     }
 
@@ -458,7 +461,7 @@ impl Bench<'_> {
         n: usize,
         runs: &[Run],
         memory: Memory,
-        counted_before: u64,
+        before: &BTreeMap<String, u64>,
         only_streams: bool,
     ) -> SlowResult {
         let slow: Vec<&Run> = runs.iter().filter(|r| r.role == Role::Slow).collect();
@@ -471,15 +474,21 @@ impl Bench<'_> {
             })
             .collect();
         let left = upstream_left_open(&self.install.mock, LEAK_WAIT).await;
-        let mut counted = 0;
+        let mut failures = BTreeMap::new();
         let until = Instant::now() + LEAK_WAIT;
         while Instant::now() < until {
-            counted = self.stalled_count().await.saturating_sub(counted_before);
-            if counted >= slow.len() as u64 {
+            failures = self.stream_failures().await;
+            for (kind, n) in &mut failures {
+                *n = n.saturating_sub(before.get(kind).copied().unwrap_or_default());
+            }
+            failures.retain(|_, n| *n > 0);
+            if failures.get(STALLED).copied().unwrap_or_default() >= slow.len() as u64 {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
+        let counted = failures.remove(STALLED).unwrap_or_default();
+        let others: Vec<String> = failures.iter().map(|(k, n)| format!("{n} × {k}")).collect();
         let growth = match (memory.peak_bytes, memory.before_bytes) {
             (Some(p), Some(b)) => Some(p as i64 - b as i64),
             _ => None,
@@ -505,7 +514,15 @@ impl Bench<'_> {
             scenario,
             "Kaeso logged every stalled stream as client_stalled",
             counted == slow.len() as u64,
-            format!("{counted} counted for {} stalled streams", slow.len()),
+            format!(
+                "{counted} counted for {} stalled streams{}",
+                slow.len(),
+                if others.is_empty() {
+                    String::new()
+                } else {
+                    format!("; other stream failures: {}", others.join(", "))
+                }
+            ),
         );
         // Beside non-streamed requests, the gateway's memory also holds their log rows,
         // so the bound is only checked when streams are all it serves.
@@ -558,7 +575,7 @@ impl Bench<'_> {
     }
 
     async fn slow_clients(&mut self, n: usize, share: f64, scenario: &str) -> SlowResult {
-        let before = self.stalled_count().await;
+        let before = self.stream_failures().await;
         say(&format!(
             "{n} streams, {:.0}% reading slowly",
             share * 100.0
@@ -566,7 +583,7 @@ impl Bench<'_> {
         let specs = self.slow_specs(n, share, scenario);
         let (runs, memory) =
             streams::run_all(&self.target(false), specs, Some(self.install.gateway.pid)).await;
-        self.slow_result(scenario, n, &runs, memory, before, true)
+        self.slow_result(scenario, n, &runs, memory, &before, true)
             .await
     }
 
@@ -579,7 +596,7 @@ impl Bench<'_> {
             p.mixed_slow_share * 100.0,
             p.mixed_baseline_concurrency
         ));
-        let stalled_before = self.stalled_count().await;
+        let stalled_before = self.stream_failures().await;
         let cancel = picked(n, p.mixed_cancel_share);
         let slow_share = p.mixed_slow_share / (1.0 - p.mixed_cancel_share).max(f64::EPSILON);
         let others = cancel.iter().filter(|c| !**c).count();
@@ -614,11 +631,11 @@ impl Bench<'_> {
             "mixed",
             "every non-streamed request succeeded",
             b.failed == 0,
-            format!("{} of {} failed", b.failed, b.requests),
+            format!("{} of {} failed{}", b.failed, b.requests, b.why()),
         );
         let cancellation = self.cancel_result("mixed", n, &runs).await;
         let slow_clients = self
-            .slow_result("mixed", n, &runs, memory, stalled_before, false)
+            .slow_result("mixed", n, &runs, memory, &stalled_before, false)
             .await;
         self.results.mixed = Some(MixedResult {
             streams: n,

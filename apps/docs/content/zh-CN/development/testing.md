@@ -212,6 +212,7 @@ e2e/.venv/bin/pytest -q e2e/sdk
 | 提示中的 `[mock:steps=NAME]` | 先发送流的第一个事件，测试每推进一次闸门再发送一个 |
 | 提示中的 `[mock:gen=N]` | 编造一个含 N 个 token 的回复，以每 4 个 token 一个文本增量的方式流式发送，速率为每秒 80 个 token，或 `[mock:tps=N]` 设定的速率 |
 | 提示中的 `[mock:endless]` 与 `[mock:gen=N]` | 无限重复编造的流中的文本增量，每个增量在发送时才编码。速率超过每毫秒一个增量时，每毫秒的增量合为一个数据块发送 |
+| 提示中的 `[mock:delta=C]` 与 `[mock:gen=N]` | 让编造的回复中每个文本增量至少有 C 个字符，而不是 16 个 |
 | 提示中的 `[mock:tag=NAME]` | 为流命名，使 `MockProvider::closed_at(NAME)` 返回它在结束前被关闭的时间 |
 | 以 `unserved-` 开头的模型 ID | 该格式的“模型不存在”错误 |
 | 服务商密钥中的 `[mock:gate=NAME]` | 挂起 `GET /v1/models` 和 `GET /v1/models/{id}` |

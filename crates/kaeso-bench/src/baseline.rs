@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -25,6 +26,21 @@ pub(crate) struct Baseline {
     pub(crate) upstream_ms: Summary,
     pub(crate) latency_ms: Summary,
     pub(crate) failed: usize,
+    pub(crate) failures: BTreeMap<String, usize>,
+}
+
+impl Baseline {
+    pub(crate) fn why(&self) -> String {
+        if self.failures.is_empty() {
+            return String::new();
+        }
+        let listed: Vec<String> = self
+            .failures
+            .iter()
+            .map(|(w, n)| format!("{n} × {w}"))
+            .collect();
+        format!("; {}", listed.join(", "))
+    }
 }
 
 #[derive(Default)]
@@ -32,7 +48,13 @@ struct Sample {
     overhead_ms: Vec<f64>,
     upstream_ms: Vec<f64>,
     latency_ms: Vec<f64>,
-    failed: usize,
+    failures: BTreeMap<String, usize>,
+}
+
+impl Sample {
+    fn failed(&self) -> usize {
+        self.failures.values().sum()
+    }
 }
 
 fn body() -> Bytes {
@@ -70,11 +92,14 @@ pub(crate) async fn run(addr: SocketAddr, key: &str, concurrency: usize, until: 
             all.overhead_ms.extend(s.overhead_ms);
             all.upstream_ms.extend(s.upstream_ms);
             all.latency_ms.extend(s.latency_ms);
-            all.failed += s.failed;
+            for (why, n) in s.failures {
+                *all.failures.entry(why).or_default() += n;
+            }
         }
     }
     let seconds = started.elapsed().as_secs_f64();
-    let requests = all.latency_ms.len() + all.failed;
+    let failed = all.failed();
+    let requests = all.latency_ms.len() + failed;
     Baseline {
         requests,
         concurrency,
@@ -83,7 +108,8 @@ pub(crate) async fn run(addr: SocketAddr, key: &str, concurrency: usize, until: 
         overhead_ms: Summary::of(&all.overhead_ms),
         upstream_ms: Summary::of(&all.upstream_ms),
         latency_ms: Summary::of(&all.latency_ms),
-        failed: all.failed,
+        failed,
+        failures: all.failures,
     }
 }
 
@@ -104,28 +130,42 @@ async fn worker(
             return sample;
         }
         let started = Instant::now();
-        match call(addr, key, &mut conn).await {
-            Ok((200, timing)) => {
+        let failure = match call(addr, key, &mut conn).await {
+            Ok((200, timing, _)) => {
                 sample
                     .latency_ms
                     .push(started.elapsed().as_secs_f64() * 1000.0);
                 sample.overhead_ms.extend(timing.kaeso_ms);
                 sample.upstream_ms.extend(timing.upstream_ms);
+                None
             }
-            _ => {
-                sample.failed += 1;
-                conn = None;
-                tokio::time::sleep(Duration::from_millis(10)).await;
-            }
+            Ok((status, _, body)) => Some(format!("status {status}{}", message(&body))),
+            Err(e) => Some(e.to_string()),
+        };
+        if let Some(why) = failure {
+            *sample.failures.entry(why).or_default() += 1;
+            conn = None;
+            tokio::time::sleep(Duration::from_millis(10)).await;
         }
     }
+}
+
+fn message(body: &[u8]) -> String {
+    serde_json::from_slice::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| {
+            v.pointer("/error/message")
+                .and_then(serde_json::Value::as_str)
+                .map(|m| format!(": {m}"))
+        })
+        .unwrap_or_default()
 }
 
 async fn call(
     addr: SocketAddr,
     key: &str,
     conn: &mut Option<Conn>,
-) -> crate::Result<(u16, crate::client::Timing)> {
+) -> crate::Result<(u16, crate::client::Timing, Bytes)> {
     if conn.is_none() {
         *conn = Some(connect(addr, None).await?);
     }
@@ -141,6 +181,6 @@ async fn call(
         })
         .await?;
     let timing = server_timing(resp.headers());
-    let (status, _, _) = read_all(resp).await?;
-    Ok((status, timing))
+    let (status, _, body) = read_all(resp).await?;
+    Ok((status, timing, body))
 }

@@ -21,11 +21,20 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
         serde_json::from_slice(&std::fs::read(out.join("report.json")).expect("a JSON report"))
             .unwrap();
     let table = std::fs::read_to_string(out.join("report.md")).unwrap();
+    let log = std::fs::read_to_string(out.join("gateway.log")).unwrap_or_default();
     let _ = std::fs::remove_dir_all(&out);
 
     let checks = report["results"]["checks"].as_array().unwrap();
     let failed: Vec<&Value> = checks.iter().filter(|c| c["passed"] != true).collect();
-    assert!(failed.is_empty(), "{failed:#?}");
+    let warnings: Vec<&str> = log
+        .lines()
+        .filter(|l| l.contains("\"level\":\"WARN\"") || l.contains("\"level\":\"ERROR\""))
+        .collect();
+    assert!(
+        failed.is_empty(),
+        "{failed:#?}\nthe gateway's warnings and errors:\n{}",
+        warnings.join("\n")
+    );
     assert!(status.success());
     for scenario in [
         "baseline",

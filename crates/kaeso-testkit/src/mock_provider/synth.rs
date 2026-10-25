@@ -9,6 +9,7 @@ use serde_json::json;
 use super::marker;
 
 const TOKENS_PER_DELTA: u64 = 4;
+const DELTA_CHARS: usize = (TOKENS_PER_DELTA * 4) as usize;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Shape {
@@ -17,6 +18,7 @@ pub(super) struct Shape {
     pub(super) cached: u64,
     pub(super) reasoning: u64,
     pub(super) tps: f64,
+    pub(super) delta: usize,
 }
 
 impl Shape {
@@ -33,6 +35,10 @@ impl Shape {
                 .and_then(|v| v.parse::<f64>().ok())
                 .filter(|t| *t > 0.0)
                 .unwrap_or(80.0),
+            delta: num("delta")
+                .and_then(|n| usize::try_from(n).ok())
+                .unwrap_or(DELTA_CHARS)
+                .max(1),
         })
     }
 
@@ -88,7 +94,7 @@ const WORDS: &[&str] = &[
     "soon",
 ];
 
-fn pieces(tokens: u64, seed: u64) -> Vec<String> {
+fn pieces(tokens: u64, chars: usize, seed: u64) -> Vec<String> {
     let mut state = seed | 1;
     let mut next = || {
         state ^= state << 13;
@@ -100,7 +106,7 @@ fn pieces(tokens: u64, seed: u64) -> Vec<String> {
     (0..n)
         .map(|_| {
             let mut piece = String::new();
-            while piece.len() < (TOKENS_PER_DELTA * 4) as usize {
+            while piece.len() < chars {
                 let i = usize::try_from(next() % WORDS.len() as u64).unwrap_or(0);
                 piece.push_str(WORDS.get(i).copied().unwrap_or("the"));
                 piece.push(' ');
@@ -143,7 +149,7 @@ pub(super) fn complete(
     seed: u64,
 ) -> Option<Vec<u8>> {
     let req = decode(dialect, body, headers)?;
-    let text: String = pieces(shape.out, seed).concat();
+    let text: String = pieces(shape.out, shape.delta, seed).concat();
     let reply: Reply = serde_json::from_value(json!({
         "generate": {
             "id": id_for(dialect, seed),
@@ -215,7 +221,7 @@ pub(super) fn endless(
     }
     let endless = Endless {
         encoder,
-        pieces: pieces(shape.out, seed),
+        pieces: pieces(shape.out, shape.delta, seed),
         gap: Duration::from_secs_f64(TOKENS_PER_DELTA as f64 / shape.tps),
         next: 0,
     };
@@ -233,7 +239,7 @@ pub(super) fn stream(
     let mut encoder =
         dispatch::stream_encoder(dialect, &EncodeCtx::for_request(req.clone())).ok()?;
     let event = |v: serde_json::Value| serde_json::from_value::<StreamEvent>(v).ok();
-    let pieces = pieces(shape.out, seed);
+    let pieces = pieces(shape.out, shape.delta, seed);
     let per_delta = Duration::from_secs_f64(TOKENS_PER_DELTA as f64 / shape.tps);
     let thinking = Duration::from_secs_f64(shape.reasoning as f64 / shape.tps);
     let mut events: Vec<(Duration, StreamEvent)> = vec![
@@ -323,6 +329,13 @@ mod tests {
         let s = Shape::of("x [mock:gen=50] [mock:tps=20]", 400).unwrap();
         assert_eq!((s.out, s.input, s.cached, s.reasoning), (50, 100, 0, 0));
         assert!((s.tps - 20.0).abs() < f64::EPSILON);
+        assert_eq!(s.delta, 16);
+        assert_eq!(
+            Shape::of("[mock:gen=1] [mock:delta=4096]", 0)
+                .unwrap()
+                .delta,
+            4096
+        );
         assert_eq!(Shape::of("no markers", 400), None);
         let capped = Shape::of("[mock:gen=5] [mock:in=10] [mock:cached=99]", 0).unwrap();
         assert_eq!(capped.cached, 10);
@@ -434,6 +447,42 @@ mod tests {
                 deltas, 100,
                 "{dialect:?}: a millisecond's deltas in one chunk"
             );
+        }
+    }
+
+    #[test]
+    fn an_endless_stream_sends_deltas_as_long_as_asked() {
+        for dialect in DIALECTS {
+            let body = request(dialect, true);
+            let shape =
+                Shape::of("[mock:gen=8] [mock:tps=4000] [mock:delta=4096]", body.len()).unwrap();
+            let (head, mut rest) =
+                endless(dialect, &body, &HeaderMap::new(), shape, 7).expect("encoded");
+            let req = decode(dialect, &body, &HeaderMap::new()).unwrap();
+            let mut decoder = dispatch::stream_decoder(dialect, &EgressCtx::new(&req)).unwrap();
+            for (_, c) in &head {
+                decoder.feed(c);
+            }
+            for _ in 0..3 {
+                let (gap, chunk) = rest.chunk().unwrap();
+                assert_eq!(gap, Duration::from_millis(1), "{dialect:?}");
+                let texts: Vec<usize> = decoder
+                    .feed(&chunk)
+                    .iter()
+                    .filter_map(|e| match e {
+                        StreamEvent::BlockDelta(d) => match &d.delta {
+                            kaeso_kpp::Delta::Text(t) if !t.is_empty() => Some(t.len()),
+                            _ => None,
+                        },
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(texts.len(), 1, "{dialect:?}: {texts:?}");
+                assert!(
+                    texts.iter().all(|n| (4096..4096 + 16).contains(n)),
+                    "{dialect:?}: {texts:?}"
+                );
+            }
         }
     }
 
