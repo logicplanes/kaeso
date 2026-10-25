@@ -843,7 +843,7 @@ fn forced_tool_choice_is_refused_in_the_apps_words_where_the_model_rejects_it() 
             assert_eq!(
                 u.message,
                 format!(
-                    "The model `{model}` does not accept {words}; send `auto` and ask for the tool in the prompt."
+                    "The model `{model}` does not accept {words}; send `auto` and name the tool in the prompt."
                 )
             );
             let mut count = Request::CountTokens(with_choice(choice));
@@ -939,7 +939,7 @@ fn adaptive_thinking_is_refused_before_sending_where_the_model_has_none() {
         assert_eq!(
             u.message,
             format!(
-                "The model `{model}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+                "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
             )
         );
     }

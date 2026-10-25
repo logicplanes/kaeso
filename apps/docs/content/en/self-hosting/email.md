@@ -23,7 +23,7 @@ Apply it with `docker compose up -d --wait`. Without `KAESO_SMTP_FROM`, Kaeso se
 
 ## Send a test email
 
-1. In the console, open **Settings** › **Instance** › **Settings**. The **Mail** section shows the transport, the SMTP host and the sender.
+1. In the console, open **Instance** › **System**. The **Mail** section shows the transport, the SMTP host and the sender.
 2. Choose **Send test email**. It goes to you, or to the address you enter.
 3. If it fails or doesn't arrive, read the SMTP server's answer in the gateway's log with `docker compose logs gateway`.
 
@@ -44,6 +44,7 @@ Password sign-in still works, and `kaeso setup-link` prints the setup link eithe
 | Sign-in link | Someone asks for a sign-in link |
 | Password reset | Someone asks to reset their password |
 | Email change | Someone changes their email address; sent to the new address |
+| Email change request | Someone changes their email address; sent to the current address, with a link that cancels the change |
 | Sign-up | Someone signs up where the instance allows it |
 | Password changed | A password changes |
 | Two-factor on | Someone turns on two-factor authentication |
@@ -59,7 +60,7 @@ Password sign-in still works, and `kaeso setup-link` prints the setup link eithe
 | Budget alert | A budget reaches one of its alert thresholds |
 | Test | An instance admin sends a test email |
 
-Security and organization notices are always sent. Each person chooses which alerts they get under **Settings** › **Account** › **Notifications**, and every alert says in its footer how to turn it off.
+Security and organization notices are always sent. Each person chooses which alerts they get under **Account** › **Notifications**, and every alert says in its footer how to turn it off.
 
 Every email has an HTML and a plain-text part, in light and dark. Its images travel inside the email, so it loads nothing from your install and carries no tracking pixels.
 
@@ -69,7 +70,7 @@ Every email exists in English, German and Simplified Chinese. Kaeso picks the la
 
 | Recipient | Language |
 | --- | --- |
-| A person with an account | Their choice under **Settings** › **Account** › **Appearance**. On Automatic, the language of the browser that caused the email, otherwise English |
+| A person with an account | Their choice under **Account** › **Appearance**. On Automatic, the language of the browser that caused the email, otherwise English |
 | Someone without an account, for an invitation or a sign-up link | The language of the person who invited them or asked, otherwise English |
 | Recipients of key expiry warnings, budget alerts and deletion notices | Each recipient's choice, otherwise English |
 

@@ -412,7 +412,7 @@
   "errors.model.noImages": "模型 `{model}` 不接受图片。",
   "errors.model.noPdf": "模型 `{model}` 不接受 PDF 文档。",
   "errors.model.noTools": "模型 `{model}` 不支持工具调用。",
-  "errors.model.forcedTool": "模型 `{model}` 不接受 {choice}，请发送 `auto`，并在提示词中要求使用该工具。",
+  "errors.model.forcedTool": "模型 `{model}` 不接受 {choice}，请发送 `auto`，并在提示词中指明该工具。",
   "errors.model.noStructured": "模型 `{model}` 不支持结构化输出（JSON Schema）。",
   "errors.model.noReasoning": "模型 `{model}` 不支持推理。",
   "errors.model.noAdaptive": "模型 `{model}` 不支持自适应思考，请改为发送带 `budget_tokens` 的 `thinking` `enabled`。",

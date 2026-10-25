@@ -36,7 +36,7 @@ Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway w
 | `mail` | Mailpit, das jede E-Mail des Gateways abfängt | `http://127.0.0.1:58025`, SMTP auf `127.0.0.1:51025` |
 | `provider` | Eine Mock-API für OpenAI und Anthropic, sodass Sie keinen Anbieter-Schlüssel brauchen | Nur im Stack |
 | `idp` | Ein Mock-Identitätsanbieter (OpenID Connect) für Single Sign-on | `http://idp.localhost:18091` |
-| `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Einstellungen** › **Instanz** › **Updates** | `http://127.0.0.1:18092` |
+| `releases` | Mock-Releases von Kaeso und ein Mock-Updater für **Instanz** › **Updates** | `http://127.0.0.1:18092` |
 | `accounts` | Ein Mock der ChatGPT-Anmeldung unter `auth.openai.com` sowie der Grok-Anmeldung und der xAI-API unter `auth.x.ai` und `api.x.ai` im Stack, mit einem Testzertifikat, dem das Gateway vertraut | `http://127.0.0.1:18093` |
 | `master-key` | Schreibt den Hauptschlüssel des Gateways in ein Volume, bevor das Gateway startet | |
 

@@ -412,7 +412,7 @@
   "errors.model.noImages": "Das Modell `{model}` nimmt keine Bilder an.",
   "errors.model.noPdf": "Das Modell `{model}` nimmt keine PDF-Dokumente an.",
   "errors.model.noTools": "Das Modell `{model}` unterstützt keine Tool-Aufrufe.",
-  "errors.model.forcedTool": "Das Modell `{model}` nimmt {choice} nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+  "errors.model.forcedTool": "Das Modell `{model}` nimmt {choice} nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
   "errors.model.noStructured": "Das Modell `{model}` unterstützt keine strukturierte Ausgabe (JSON-Schema).",
   "errors.model.noReasoning": "Das Modell `{model}` unterstützt kein Reasoning.",
   "errors.model.noAdaptive": "Das Modell `{model}` hat kein adaptives Denken; senden Sie stattdessen `thinking` `enabled` mit `budget_tokens`.",
