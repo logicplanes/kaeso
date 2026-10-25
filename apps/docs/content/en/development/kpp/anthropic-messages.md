@@ -66,7 +66,8 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `tool_choice.disable_parallel_tool_use` | `parallel_tool_calls = Some(!value)` | |
 | `tools[]` with `type` absent, `null` or `custom` (`Tool`) | `ToolDef::Function` | The `type` spelling → `verbatim`. |
 | `tools[].name`, `.description`, `.input_schema`, `.strict`, `.cache_control` | `name`, `description`, `parameters` (raw), `strict`, `cache` | |
-| `tools[].eager_input_streaming`, `.allowed_callers`, `.defer_loading`, `.input_examples` | tool `extras.fields` | Other dialects → `Unsupported`; the message tells Claude Code users to set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, which stops these beta tool fields. |
+| `tools[].defer_loading` | tool `extras.fields` | Other dialects: a deferred tool is left out until a `tool_reference` loads it ([tool search](cross-format.md#tool-search)). |
+| `tools[].eager_input_streaming`, `.allowed_callers`, `.input_examples` | tool `extras.fields` | Other dialects → `Unsupported`; the message tells Claude Code users to set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, which stops these beta tool fields. |
 | `tools[]` of any other type (server tools such as `web_search_20250305` or `advisor_20260301`) | `ToolDef::Unknown` (raw) | Same dialect only. For other dialects the `Unsupported` message names the type after `Input tag` (`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`), the API's own wording, so Claude Code retries without the advisor tool ([gateway protocol](https://code.claude.com/docs/en/llm-gateway-protocol), "Automatic retry and error forwarding"). |
 | `cache_control` (top level, automatic caching) | fields `cache_control` | Only a hint; KPP has no request-level cache hint. On the [allowlist](cross-format.md#extras), so it is dropped for other dialects. |
 | `container`, `inference_geo`, `service_tier`, SDK `diagnostics`, `user_profile_id`, `workspace_id`, unknown keys | `extras.fields` | |
@@ -94,7 +95,8 @@ These apply to requests and replies alike.
 | `tool_result` (`tool_use_id`, `content`, `is_error`, `cache_control`) | `Block::ToolResult` | `content` string → form `content: "string"`; `[]` → `"array"`; `is_error: false` → verbatim. `toolset_name` → fields. A `tool_result` nested more than 4 levels deep in another one is refused: `InvalidRequest` in a request, `ProviderError` in a reply or stream. |
 | `thinking` (`thinking`, `signature`) | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""` (display omitted) stays `[""]`. `signature: ""` is not opaque data: it becomes form `empty_signature`, so the block never counts as signed thinking, and is written back as `""`; an absent `signature` stays absent. A `signature` that is a reasoning blob (`kpp:reasoning:v1:…`, another dialect's reasoning Kaeso gave the app, see [reasoning blobs](reasoning.md#reasoning-blobs)) decodes to the original block inside it, origin included; the `thinking` text is then ignored. |
 | `redacted_thinking` (`data`) | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
-| any other type (`server_tool_use`, `web_search_tool_result`, `web_fetch_tool_result`, `code_execution_tool_result`, `search_result`, `container_upload`, `tool_reference`, future types) | `Block::Unknown` (raw) | Same dialect only. A `tool_reference` (MCP tool search) refused for another dialect says to unset `ENABLE_TOOL_SEARCH` in Claude Code, which turns tool search off behind a gateway by default. |
+| `tool_reference` (`tool_name`, `cache_control`) | `Block::Unknown` (raw) | In a `tool_result`, other dialects get a text block with the tool's name and the referenced tool ([tool search](cross-format.md#tool-search)). |
+| any other type (`server_tool_use`, `web_search_tool_result`, `web_fetch_tool_result`, `code_execution_tool_result`, `search_result`, `container_upload`, future types) | `Block::Unknown` (raw) | Same dialect only. |
 
 ### Requests from other dialects
 
