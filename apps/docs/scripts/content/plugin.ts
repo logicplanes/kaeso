@@ -85,33 +85,6 @@ export function pageHtml(template: string, head: PageHead): string {
     .replace("</head>", () => `    ${links.join("\n    ")}\n  </head>`);
 }
 
-export function redirectHtml(lang: Locale, title: string, siteUrl: string, to: string): string {
-  const href = escapeHtml(to);
-  return [
-    "<!doctype html>",
-    `<html lang="${lang}">`,
-    "  <head>",
-    '    <meta charset="utf-8" />',
-    '    <meta name="robots" content="noindex" />',
-    '    <meta name="color-scheme" content="light dark" />',
-    `    <meta http-equiv="refresh" content="0; url=${href}" />`,
-    `    <link rel="canonical" href="${escapeHtml(to.startsWith("https://") ? to : absoluteUrl(siteUrl, to.split("#")[0] ?? to))}" />`,
-    `    <title>${escapeHtml(title)}</title>`,
-    "  </head>",
-    "  <body>",
-    `    <a href="${href}">${escapeHtml(title)}</a>`,
-    "  </body>",
-    "</html>",
-    "",
-  ].join("\n");
-}
-
-export function redirectRules(redirects: Docs["redirects"]): string {
-  return LOCALES.flatMap((l) => redirects[l].flatMap((r) => [`${r.from} ${r.to} 301`, ...(r.below ? [`${r.from}/* ${r.to} 301`] : [])]))
-    .map((line) => `${line}\n`)
-    .join("");
-}
-
 export function structuredData(siteUrl: string, siteName: string, locale: Locale, page: Pick<PageMeta, "path" | "title" | "description">): object {
   const website = { "@type": "WebSite", name: siteName, url: absoluteUrl(siteUrl, homePath(locale)), inLanguage: locale };
   if (pathWithinLocale(page.path) === "/") return { "@context": "https://schema.org", ...website, description: page.description };
@@ -384,11 +357,6 @@ export function kaesoDocs(options: DocsOptions): Plugin {
           pageHtml(template, head(null, MESSAGES[locale]["notFound.title"], MESSAGES[locale]["notFound.description"], [])),
         );
       }
-      for (const locale of LOCALES)
-        for (const r of d.redirects[locale])
-          writeHtml(outDir, `${r.from.slice(1)}.html`, redirectHtml(locale, documentTitle(r.title, MESSAGES[locale]["site.name"]), options.siteUrl, r.to));
-      const rules = redirectRules(d.redirects);
-      if (rules) writeFileSync(join(outDir, "_redirects"), rules);
       writeFileSync(join(outDir, "sitemap.xml"), sitemap(d, options.siteUrl));
     },
   };

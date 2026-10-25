@@ -175,7 +175,7 @@ for await (const event of stream) {
 
 条目会显示状态、模型、Token、费用和耗时。失败的请求还会显示错误，也就是应用以其 SDK 的格式收到的那个错误。
 
-## 后续步骤
+## 下一步
 
 - [编程工具](coding-tools.md)：让 Claude Code、Codex 和其他工具使用您的实例。
 - [模型 API](../api/model-api.md)：查阅每个端点、请求头和模型名称。

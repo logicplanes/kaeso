@@ -30,7 +30,6 @@ flowchart TD
 | `site.ts` | Eine Sprache: Adressen, die Seitenleiste, vorherige und nächste Seite, relative Links so aufgelöst wie auf GitHub, Bilder und ihre Größen |
 | `docs.ts` | Alle Sprachen und die Prüfung, dass sie dieselben Seiten in derselben Reihenfolge enthalten |
 | `diagram.ts`, `mermaid.ts`, `diagrams.ts` | Die Diagramme: ihre Mermaid-Konfiguration aus den Tokens von Kaeso, ihr Zeichnen in Headless-Chromium und `pnpm --filter kaeso-docs diagrams` |
-| `redirects.ts` | Die Seiten unter alten Adressen aus `redirects.json` |
 | `plugin.ts` | Das Vite-Plugin: virtuelle Module, Neuladen in der Entwicklung, eine HTML-Datei pro Seite und Sprache, die `404.html`-Dateien und die Sitemap |
 | `check.ts` | `pnpm --filter kaeso-docs check:content`: dieselben Prüfungen, ohne die App zu bauen |
 
@@ -67,6 +66,6 @@ Der erste Besuch einer englischen Adresse folgt den Sprachen des Browsers und we
 
 ## Ausgabe
 
-`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`: eine HTML-Datei für jede Seite in jeder Sprache, mit ihrem `<head>` für Suchmaschinen und Linkvorschauen. Daneben liegen eine `404.html` pro Sprache, `sitemap.xml`, `robots.txt`, eine Seite unter jeder alten Adresse aus `redirects.json` und die [Content Security Policy](../releasing.md#content-security-policy) der Website in `csp.txt` und `_headers`.
+`pnpm --filter kaeso-docs build` schreibt `apps/docs/dist`: eine HTML-Datei für jede Seite in jeder Sprache, mit ihrem `<head>` für Suchmaschinen und Linkvorschauen. Daneben liegen eine `404.html` pro Sprache, `sitemap.xml`, `robots.txt` und die [Content Security Policy](../releasing.md#content-security-policy) der Website in `csp.txt` und `_headers`.
 
 Der Build endet mit zwei Prüfungen. `scripts/budget.ts` prüft den Rahmen und jede Seite gegen ihre Bundle-Budgets, und `scripts/check-site.mjs` prüft die Sitemap und den `<head>` jeder Seite. `pnpm --filter kaeso-docs licenses:check` prüft danach die Lizenz jedes Pakets im Build.

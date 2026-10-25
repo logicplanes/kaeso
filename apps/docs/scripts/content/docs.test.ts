@@ -74,65 +74,6 @@ describe("buildDocs", () => {
     ]);
   });
 
-  it("sends an old address to the page it moved to, at the same heading in every language", () => {
-    repo({
-      ...everyLanguage({ "index.md": page("Start") }),
-      "en/keys.md": `---\ntitle: Keys\ndescription: About keys.\n---\n\n## Create a key\n\n## Rate limits\n`,
-      "de/keys.md": `---\ntitle: Schlüssel\ndescription: Über Schlüssel.\n---\n\n## Schlüssel erstellen\n\n## Ratenlimits\n`,
-      "zh-CN/keys.md": `---\ntitle: 密钥\ndescription: 关于密钥。\n---\n\n## 创建密钥\n\n## 速率限制\n`,
-    });
-    writeFileSync(join(root, "redirects.json"), JSON.stringify({ "guides/limits": "keys.md#rate-limits", "old-keys": "keys.md" }));
-    const docs = buildDocs(join(root, "content"), root, "1.4.0");
-    expect(docs.problems).toEqual([]);
-    expect(docs.redirects.en).toEqual([
-      { from: "/guides/limits", to: "/keys#rate-limits", title: "Keys" },
-      { from: "/old-keys", to: "/keys", title: "Keys" },
-    ]);
-    expect(docs.redirects.de[0]).toEqual({ from: "/de/guides/limits", to: "/de/keys#ratenlimits", title: "Schlüssel" });
-    expect(docs.redirects["zh-CN"][0]).toEqual({ from: "/zh-CN/guides/limits", to: "/zh-CN/keys#速率限制", title: "密钥" });
-  });
-
-  it("sends an old address and everything below it to the same language of a site outside the docs", () => {
-    repo(everyLanguage({ "index.md": page("Start") }));
-    writeFileSync(join(root, "redirects.json"), JSON.stringify({ changelog: "https://kaeso.app/changelog", news: "https://kaeso app" }));
-    const docs = buildDocs(join(root, "content"), root, "1.4.0");
-    expect(docs.problems).toEqual(["redirects.json: news points to https://kaeso app, which is not an address"]);
-    expect(docs.redirects.en).toEqual([{ from: "/changelog", to: "https://kaeso.app/changelog", title: "kaeso.app/changelog", below: true }]);
-    expect(docs.redirects.de).toEqual([{ from: "/de/changelog", to: "https://kaeso.app/de/changelog", title: "kaeso.app/de/changelog", below: true }]);
-    expect(docs.redirects["zh-CN"][0]?.to).toBe("https://kaeso.app/zh-CN/changelog");
-  });
-
-  it("refuses a redirect outside the docs from a page that still exists", () => {
-    repo(everyLanguage({ "index.md": page("Start"), "changelog.md": page("Changelog") }));
-    writeFileSync(join(root, "redirects.json"), JSON.stringify({ changelog: "https://kaeso.app/changelog" }));
-    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toContain(
-      "redirects.json: changelog is the address of content/en/changelog.md; remove the page or the redirect",
-    );
-  });
-
-  it("refuses a redirect from a page that still exists, to a missing page or heading, or in another form", () => {
-    repo(everyLanguage({ "index.md": page("Start"), "keys.md": page("Keys") }));
-    writeFileSync(
-      join(root, "redirects.json"),
-      JSON.stringify({ keys: "index.md", "Old Keys": "keys.md", "old-limits": "limits.md", "old-rates": "keys.md#rates", "old-start": 1 }),
-    );
-    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual([
-      'redirects.json: old-start must point to a page as a string, such as "guides/keys.md"',
-      "redirects.json: keys is the address of content/en/keys.md; remove the page or the redirect",
-      "redirects.json: keys is the address of content/de/keys.md; remove the page or the redirect",
-      "redirects.json: keys is the address of content/zh-CN/keys.md; remove the page or the redirect",
-      'redirects.json: "Old Keys" is not an address within a language, such as guides/old-keys',
-      "redirects.json: old-limits points to limits.md, which is not an English page",
-      "redirects.json: old-rates points to keys.md#rates, but content/en/keys.md has no heading with that anchor",
-    ]);
-    writeFileSync(join(root, "redirects.json"), "{");
-    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual(["redirects.json: is not JSON"]);
-    writeFileSync(join(root, "redirects.json"), "[]");
-    expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual([
-      "redirects.json: must be an object of old addresses and the pages they moved to",
-    ]);
-  });
-
   it("names a missing content folder", () => {
     root = mkdtempSync(join(tmpdir(), "kaeso-docs-"));
     expect(buildDocs(join(root, "content"), root, "1.4.0").problems).toEqual(["content does not exist"]);
