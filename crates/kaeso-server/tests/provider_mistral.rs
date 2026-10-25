@@ -381,7 +381,7 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
         "Invalid model: mistral-tiny-nonexistent"
     );
 
-    let mut greedy = messages(SMALL, &format!("Hi {}", error("recorded-greedy-sampling")));
+    let mut greedy = messages(SMALL, &format!("Hi {}", error("greedy-sampling")));
     greedy["temperature"] = json!(0);
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(greedy)).await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());

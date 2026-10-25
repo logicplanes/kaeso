@@ -75,7 +75,7 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::Authentication,
     ),
     (
-        "providers/mistral/recorded-greedy-sampling",
+        "providers/mistral/greedy-sampling",
         ErrorKind::InvalidRequest,
     ),
     (
@@ -264,7 +264,7 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
     }
     for (name, message) in [
         (
-            "providers/mistral/recorded-greedy-sampling",
+            "providers/mistral/greedy-sampling",
             "top_p must be 1 when using greedy sampling.",
         ),
         (
