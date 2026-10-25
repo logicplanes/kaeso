@@ -3,7 +3,6 @@ import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { apply, load, type Locale } from "~/i18n";
 import {
   accessLabel,
-  DIALECT_IDS,
   dialectLabel,
   ERROR_KIND_IDS,
   errorKindLabel,
@@ -109,7 +108,12 @@ describe("labels", () => {
 
   it("keep product names as they are in every language", async () => {
     await speak("zh-CN");
-    expect(DIALECT_IDS.map(dialectLabel)).toEqual(["Anthropic Messages", "OpenAI Chat Completions", "OpenAI Responses", "OpenAI Embeddings"]);
+    expect(["anthropic_messages", "openai_chat", "openai_responses", "openai_embeddings"].map(dialectLabel)).toEqual([
+      "Anthropic Messages",
+      "OpenAI Chat Completions",
+      "OpenAI Responses",
+      "OpenAI Embeddings",
+    ]);
     expect(sessionMethodLabel("oidc")).toBe("SSO");
     expect(limitUnit("spend_budget")).toBe("USD");
   });
