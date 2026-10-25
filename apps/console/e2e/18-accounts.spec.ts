@@ -86,7 +86,7 @@ test("organization creation follows the allowed domains, which are edited in pla
   await dialog.getByRole("button", { name: /Remove \*\.example\.net/ }).click();
   await dialog.getByRole("button", { name: "Save domains" }).click();
   await expect(toastText(page, "Allowed domains saved")).toBeVisible();
-  await expect(page.getByText("example.org", { exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("example.org", { exact: true })).toBeVisible();
   const after = (await (await adaPage.request.get("/platform/v1/auth/session")).json()) as { can_create_orgs: boolean };
   expect(after.can_create_orgs).toBe(false);
   await ada.close();
