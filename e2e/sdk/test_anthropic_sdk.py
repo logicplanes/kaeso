@@ -68,6 +68,42 @@ def test_tools(an, mock):
     assert mock.last()["body"]["tools"][0]["type"] == "function"
 
 
+def test_tool_search_on_an_openai_model(an, mock):
+    schema = {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}
+    tools = [
+        {"name": "ToolSearch", "description": "Load deferred tools", "input_schema": schema},
+        {"name": "get_weather", "description": "Weather for a place", "input_schema": schema, "defer_loading": True},
+    ]
+    an.beta.messages.create(
+        model="gpt-4o",
+        max_tokens=200,
+        betas=["advanced-tool-use-2025-11-20"],
+        tools=tools,
+        messages=user("Weather? [mock:fixture=tools-function]"),
+    )
+    assert [t["name"] for t in mock.last()["body"]["tools"]] == ["ToolSearch"]
+    r = an.beta.messages.create(
+        model="gpt-4o",
+        max_tokens=200,
+        betas=["advanced-tool-use-2025-11-20"],
+        tools=tools,
+        messages=[
+            {"role": "user", "content": "Weather?"},
+            {"role": "assistant", "content": [{"type": "tool_use", "id": "toolu_1", "name": "ToolSearch", "input": {"query": "weather"}}]},
+            {"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": "toolu_1", "content": [{"type": "tool_reference", "tool_name": "get_weather"}]},
+                {"type": "text", "text": "Go on. [mock:fixture=tools-function]"},
+            ]},
+        ],
+    )
+    assert any(b.type == "tool_use" for b in r.content)
+    sent = mock.last()["body"]
+    assert [t["name"] for t in sent["tools"]] == ["ToolSearch", "get_weather"]
+    assert "defer_loading" not in sent["tools"][1]
+    output = next(i for i in sent["input"] if i.get("type") == "function_call_output")
+    assert output["output"] == "get_weather"
+
+
 def test_images_and_pdfs(an, mock):
     content = [
         {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": TINY_PNG}},

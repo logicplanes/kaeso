@@ -111,6 +111,15 @@ pub(crate) struct CacheControlW {
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub(crate) struct ToolReferenceW {
+    #[serde(rename = "type")]
+    pub(crate) ty: String,
+    pub(crate) tool_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) cache_control: Option<Ext<CacheControlW>>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub(crate) struct TextW {
     #[serde(rename = "type")]
     pub(crate) ty: String,

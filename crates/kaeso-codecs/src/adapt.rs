@@ -4,7 +4,7 @@ use kaeso_kpp::{DialectId, GenerateRequest, KppError, Request};
 
 use crate::codec::EgressCtx;
 use crate::openai_responses::namespaces;
-use crate::web_search;
+use crate::{tool_search, web_search};
 
 pub(crate) fn for_target<'a>(
     req: &'a Request,
@@ -19,6 +19,9 @@ pub(crate) fn for_target<'a>(
         DialectId::OpenAiResponses => web_search::for_responses(r),
         _ => None,
     };
+    if let Some(loaded) = tool_search::for_foreign(changed.as_ref().unwrap_or(r), target)? {
+        changed = Some(loaded);
+    }
     if !ctx.takes_tool_namespaces(target)
         && let Some(flat) = namespaces::flatten(changed.as_ref().unwrap_or(r), target)?
     {
