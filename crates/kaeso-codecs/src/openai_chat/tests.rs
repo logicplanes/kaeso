@@ -161,7 +161,10 @@ fn every_request_fixture_round_trips() {
             continue;
         }
         let req = decode(&body).unwrap_or_else(|e| panic!("{name}: {e:?}"));
-        let mut ctx = EgressCtx::new(&req);
+        // Profiles leave out bookkeeping such as Grok CLI's `model_id` unless they take it;
+        // `tests/grok_cli.rs` covers that.
+        let keeps = super::ChatProfile::OPENAI.with_message_bookkeeping();
+        let mut ctx = EgressCtx::new(&req).with_chat_profile(keeps);
         let out =
             OpenAiChat::encode_request(&req, &mut ctx).unwrap_or_else(|e| panic!("{name}: {e:?}"));
         assert_json_eq(&name, &body, &out.body);

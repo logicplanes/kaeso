@@ -63,7 +63,7 @@ impl RequestProfile {
         seed: SeedField::Seed,
         end_user: true,
         assistant_prefill: true,
-        message_bookkeeping: true,
+        message_bookkeeping: false,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -122,8 +122,8 @@ impl ChatProfile {
     }
 
     #[must_use]
-    pub const fn without_message_bookkeeping(mut self) -> Self {
-        self.request.message_bookkeeping = false;
+    pub const fn with_message_bookkeeping(mut self) -> Self {
+        self.request.message_bookkeeping = true;
         self
     }
 

@@ -281,7 +281,9 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
         tool_namespaces: false,
-        chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
+        chat: ChatProfile::compatible("SpaceX")
+            .reasoning_fields(&["reasoning_content"])
+            .with_message_bookkeeping(),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -379,7 +381,6 @@ pub const PROVIDERS: &[Provider] = &[
             .random_seed()
             .without_end_user()
             .without_prefill()
-            .without_message_bookkeeping()
             .thinking_parts()
             .refusing(&[
                 "audio",
@@ -656,8 +657,22 @@ mod tests {
         assert!(user.get("user").is_none(), "{user}");
         let developer = sent_with_profile("mistral", "requests/plain-developer-string").unwrap();
         assert_eq!(developer["messages"][0]["role"], "system");
-        let grok = sent_with_profile("mistral", "requests/grok-cli-model-id").unwrap();
-        assert!(!grok.to_string().contains("model_id"), "{grok}");
+    }
+
+    #[test]
+    fn only_spacex_takes_the_model_ids_grok_cli_replays() {
+        for p in PROVIDERS
+            .iter()
+            .filter(|p| p.dialects.contains(&DialectId::OpenAiChat))
+        {
+            let sent = sent_with_profile(p.id, "requests/grok-cli-model-id").unwrap();
+            let kept = sent["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|m| m.get("model_id").is_some());
+            assert_eq!(kept, p.id == "xai", "{}", p.id);
+        }
     }
 
     #[test]

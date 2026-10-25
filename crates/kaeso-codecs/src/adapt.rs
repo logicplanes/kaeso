@@ -1,11 +1,13 @@
 use std::borrow::Cow;
 
-use kaeso_kpp::{DialectId, GenerateRequest, KppError, Request};
+use kaeso_kpp::{DialectId, GenerateRequest, KppError, Message, Request, Role};
+use serde_json::Value;
 
 use crate::codec::EgressCtx;
-use crate::cross::is_allowlisted;
+use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, is_chat_bookkeeping};
 use crate::openai_responses::namespaces;
 use crate::web_search;
+use crate::wire::VERBATIM_FORM_KEY;
 
 pub(crate) fn for_target<'a>(
     req: &'a Request,
@@ -27,8 +29,10 @@ pub(crate) fn for_target<'a>(
     }
     if target == DialectId::OpenAiChat
         && !ctx.chat_profile.request.message_bookkeeping
-        && let Some(stripped) = without_bookkeeping(changed.as_ref().unwrap_or(r))
+        && has_bookkeeping(changed.as_ref().unwrap_or(r))
     {
+        let mut stripped = changed.take().unwrap_or_else(|| r.clone());
+        strip_bookkeeping(&mut stripped);
         changed = Some(stripped);
     }
     Ok(match changed {
@@ -38,19 +42,38 @@ pub(crate) fn for_target<'a>(
     })
 }
 
-fn without_bookkeeping(r: &GenerateRequest) -> Option<GenerateRequest> {
-    let bookkeeping = |key: &String| is_allowlisted(DialectId::OpenAiChat, "message", key);
-    let own = |m: &kaeso_kpp::Message| m.extras.is_from(DialectId::OpenAiChat);
-    if !r
-        .messages
-        .iter()
-        .any(|m| own(m) && m.extras.fields.keys().any(bookkeeping))
-    {
-        return None;
+fn null_bookkeeping(message: &Message) -> bool {
+    message
+        .extras
+        .form_value(DialectId::OpenAiChat, VERBATIM_FORM_KEY)
+        .and_then(Value::as_object)
+        .is_some_and(|nulls| nulls.keys().any(|key| is_chat_bookkeeping(message, key)))
+}
+
+fn has_bookkeeping(r: &GenerateRequest) -> bool {
+    r.messages.iter().any(|m| {
+        m.extras
+            .fields
+            .keys()
+            .any(|key| is_chat_bookkeeping(m, key))
+            || null_bookkeeping(m)
+    })
+}
+
+fn strip_bookkeeping(r: &mut GenerateRequest) {
+    for message in &mut r.messages {
+        if message.role != Role::Assistant || !message.extras.is_from(DialectId::OpenAiChat) {
+            continue;
+        }
+        let extras = &mut message.extras;
+        extras
+            .fields
+            .retain(|key, _| !CHAT_ASSISTANT_BOOKKEEPING.contains(&key.as_str()));
+        if let Some(Value::Object(nulls)) = extras.form.get_mut(VERBATIM_FORM_KEY) {
+            nulls.retain(|key, _| !CHAT_ASSISTANT_BOOKKEEPING.contains(&key.as_str()));
+            if nulls.is_empty() {
+                extras.form.shift_remove(VERBATIM_FORM_KEY);
+            }
+        }
     }
-    let mut stripped = r.clone();
-    for message in stripped.messages.iter_mut().filter(|m| own(m)) {
-        message.extras.fields.retain(|key, _| !bookkeeping(key));
-    }
-    Some(stripped)
 }
