@@ -64,13 +64,13 @@ A project can turn content logging off for itself in its **Settings**, with the 
 
 ## Delete logs
 
-The **Storage** tab, under **Logging**, shows how many entries the organization keeps and the space they take, per project.
+The **Storage** tab, under **Logging**, shows how many entries the organization keeps and the space they take, per project. It and the **Deletions** tab need the right **View log storage**.
 
 1. On the **Deletions** tab, choose **Delete logs**.
 2. Choose whole UTC days, and every project or one.
 3. Type `delete` to confirm.
 
-Kaeso deletes the logs of those days for good, and keeps the usage and costs. The list shows each deletion as **Queued** or **Done**, and at most 10 deletions wait at a time. Deleting needs the right **Delete logs** and a recent sign-in.
+Kaeso deletes the logs of those days for good, and keeps the usage and costs. The list shows each deletion as **Queued** or **Done**, and at most 10 deletions wait at a time. It also lists the deletions a shorter retention starts, as **Shorter metadata retention** or **Shorter content retention**. A deletion that failed and waits to run again shows "Retrying:" and the error. Deleting needs the right **Delete logs** and a recent sign-in.
 
 ## Next steps
 
