@@ -33,6 +33,18 @@ const messages = (): Rule[] => [
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
   rule("errors.consoleSessionOnly", () => t("errors.consoleSessionOnly", "This needs a console session; API keys cannot manage accounts or the instance.")),
   rule("errors.instanceAdminsOnly", () => t("errors.instanceAdminsOnly", "Only instance admins can do this.")),
+  rule("errors.signUpInvitationOnly", () =>
+    t("errors.signUpInvitationOnly", "Accounts on this install are by invitation only; ask an administrator to invite you."),
+  ),
+  rule("errors.signUpDomainNotAllowed", () =>
+    t("errors.signUpDomainNotAllowed", "This email address can't create an account here; ask an administrator to invite you."),
+  ),
+  rule("errors.orgCreationDomainNotAllowed", () =>
+    t("errors.orgCreationDomainNotAllowed", "Your email address can't create organizations here; ask an instance admin."),
+  ),
+  rule("errors.orgCreationInstanceAdminsOnly", () =>
+    t("errors.orgCreationInstanceAdminsOnly", "Only instance admins can create organizations on this install."),
+  ),
   rule("errors.missingRightOrg", (v) => t("errors.missingRightOrg", "You need the right `{right}` in this organization; ask one of its admins for it.", v)),
   rule("errors.missingRightProject", (v) => t("errors.missingRightProject", "You need the right `{right}` in this project; ask one of its admins for it.", v)),
   rule("errors.bearerKey", () => t("errors.bearerKey", "Send the key as `Authorization: Bearer <key>`.")),
