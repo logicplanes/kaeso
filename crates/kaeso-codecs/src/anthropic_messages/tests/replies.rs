@@ -374,9 +374,13 @@ fn errors_from_elsewhere_get_anthropic_shapes_and_statuses() {
         let enc = AnthropicMessages::encode_error(&err);
         assert_eq!(enc.status, status, "{ty}");
         let body: Value = serde_json::from_slice(&enc.body).unwrap();
+        let message = match err.kind {
+            K::ContextTooLong => format!("prompt is too long: {}", err.message),
+            _ => err.message.clone(),
+        };
         assert_eq!(
             body,
-            json!({"type": "error", "error": {"type": ty, "message": err.message}, "request_id": null})
+            json!({"type": "error", "error": {"type": ty, "message": message}, "request_id": null})
         );
         assert_eq!(enc.headers.get("content-type"), Some("application/json"));
     }

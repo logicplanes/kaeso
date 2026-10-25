@@ -1207,6 +1207,8 @@ pub(crate) fn redact_key_fragments(err: &mut KppError) {
 pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) -> KppError {
     if err.kind != ErrorKind::Authentication && provider.refuses_key(&err.message) {
         err.kind = ErrorKind::Authentication;
+    } else if err.kind == ErrorKind::InvalidRequest && provider.exceeds_context(&err.message) {
+        err.kind = ErrorKind::ContextTooLong;
     }
     err
 }

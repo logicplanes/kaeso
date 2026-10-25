@@ -357,12 +357,9 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
-    assert!(
-        message.starts_with(
-            "The provider returned an error (HTTP 400) that is not in the OpenAI error format:"
-        ) && message.contains("Invalid model: mistral-tiny-nonexistent"),
-        "{message}"
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
 
     let r = call(
@@ -379,13 +376,81 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
         (&body["type"], &body["error"]["type"]),
         (&json!("error"), &json!("invalid_request_error"))
     );
-    assert!(
-        body["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("Invalid model: mistral-tiny-nonexistent"),
-        "{body}"
+    assert_eq!(
+        body["error"]["message"],
+        "Invalid model: mistral-tiny-nonexistent"
     );
+
+    let mut greedy = messages(SMALL, &format!("Hi {}", error("greedy-sampling")));
+    greedy["temperature"] = json!(0);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(greedy)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "top_p must be 1 when using greedy sampling."
+    );
+}
+
+#[tokio::test]
+async fn a_context_window_error_tells_every_app_to_shorten_its_prompt() {
+    let env = env().await;
+    let text = format!("Hi {}", error("context-window"));
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["code"], "context_length_exceeded");
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
+    assert!(
+        message.starts_with("prompt is too long: Prompt contains 65673 tokens"),
+        "{message}"
+    );
+}
+
+#[tokio::test]
+async fn greedy_sampling_reaches_mistral_with_the_top_p_it_needs() {
+    let env = env().await;
+    for (path, anthropic) in [("/v1/chat/completions", false), ("/v1/messages", true)] {
+        let text = format!(
+            "say ok {}",
+            fixture("responses", "recorded-max-tokens-length")
+        );
+        let mut body = if anthropic {
+            messages(SMALL, &text)
+        } else {
+            chat(SMALL, &text)
+        };
+        body["temperature"] = json!(0);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body.clone())).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(
+            (sent["temperature"].as_f64(), sent["top_p"].as_f64()),
+            (Some(0.0), Some(1.0)),
+            "{path}"
+        );
+
+        body["top_p"] = json!(0.9);
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(sent["top_p"].as_f64(), Some(1.0), "{path}");
+    }
 }
 
 #[tokio::test]
