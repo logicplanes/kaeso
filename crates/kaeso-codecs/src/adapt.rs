@@ -70,6 +70,7 @@ pub(crate) fn for_target<'a>(
         DialectId::OpenAiChat => {
             web_search::for_chat(&mut draft)?;
             history::as_function_calls(&mut draft)?;
+            place_system_for_chat(&mut draft, target);
         }
         DialectId::OpenAiResponses => {
             web_search::for_responses(&mut draft, profile)?;
@@ -98,9 +99,9 @@ pub(crate) fn for_target<'a>(
 // assistant turn, and not on every model (Claude Sonnet 5 refuses them), while OpenAI apps
 // place developer messages anywhere, typically before the user turn they introduce.
 // https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages
-fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
+fn foreign_system(d: &Draft<'_>, target: DialectId) -> Result<bool, KppError> {
     if d.get().extras.is_from(target) {
-        return Ok(());
+        return Ok(false);
     }
     let mut any = false;
     for (i, m) in d.get().messages.iter().enumerate() {
@@ -109,24 +110,47 @@ fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppErro
             any = true;
         }
     }
-    if !any {
+    Ok(any)
+}
+
+fn leading_results(m: &Message) -> usize {
+    m.blocks
+        .iter()
+        .take_while(|b| matches!(b, Block::ToolResult(_)))
+        .count()
+}
+
+fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
+    if !foreign_system(d, target)? {
         return Ok(());
     }
     let r = d.edit();
+    let leading = r
+        .messages
+        .iter()
+        .take_while(|m| m.role == Role::System)
+        .count();
+    for m in r.messages.drain(..leading) {
+        r.system.extend(m.blocks);
+    }
+    let last = r.messages.len().saturating_sub(1);
     let mut held: Vec<Block> = Vec::new();
     let mut out: Vec<Message> = Vec::with_capacity(r.messages.len());
-    for mut m in std::mem::take(&mut r.messages) {
+    for (i, mut m) in std::mem::take(&mut r.messages).into_iter().enumerate() {
         if m.role == Role::System {
             held.extend(m.blocks);
             continue;
         }
         if !held.is_empty() && m.role == Role::User {
-            let at = m
-                .blocks
-                .iter()
-                .take_while(|b| matches!(b, Block::ToolResult(_)))
-                .count();
+            let at = leading_results(&m);
             m.blocks.splice(at..at, held.drain(..));
+        } else if !held.is_empty() && m.role == Role::Assistant && i == last {
+            // A final assistant message is a prefill that Anthropic continues; text after it
+            // would turn it into a finished turn.
+            match out.iter_mut().rev().find(|m| m.role == Role::User) {
+                Some(user) => user.blocks.append(&mut held),
+                None => out.push(Message::new(Role::User, std::mem::take(&mut held))),
+            }
         }
         out.push(m);
     }
@@ -138,4 +162,50 @@ fn fold_later_system(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppErro
     }
     r.messages = out;
     Ok(())
+}
+
+fn calls_tools(m: &Message) -> bool {
+    m.role == Role::Assistant && m.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))
+}
+
+// Chat Completions wants a call's `tool` messages right after the assistant message that
+// made it: Mistral answers a system message between them with a 400
+// `invalid_request_message_order` ("Unexpected role 'tool' after role 'system'").
+fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
+    let r = d.get();
+    if r.extras.is_from(target) || !r.messages.iter().any(|m| m.role == Role::System) {
+        return;
+    }
+    let r = d.edit();
+    let mut out: Vec<Message> = Vec::with_capacity(r.messages.len());
+    let mut deferred: Vec<Message> = Vec::new();
+    let mut awaiting_results = false;
+    for mut m in std::mem::take(&mut r.messages) {
+        match m.role {
+            Role::System if awaiting_results => deferred.push(m),
+            Role::User if awaiting_results && !deferred.is_empty() => {
+                let at = leading_results(&m);
+                if at == m.blocks.len() {
+                    out.push(m);
+                    continue;
+                }
+                if at > 0 {
+                    let rest = m.blocks.split_off(at);
+                    out.push(m.clone());
+                    m.blocks = rest;
+                }
+                out.append(&mut deferred);
+                out.push(m);
+                awaiting_results = false;
+            }
+            Role::System => out.push(m),
+            _ => {
+                out.append(&mut deferred);
+                awaiting_results = calls_tools(&m);
+                out.push(m);
+            }
+        }
+    }
+    out.append(&mut deferred);
+    r.messages = out;
 }

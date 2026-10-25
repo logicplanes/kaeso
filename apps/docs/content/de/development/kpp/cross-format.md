@@ -86,6 +86,7 @@ Die Fixture-Pfade in diesen Tabellen sind relativ zu `crates/kaeso-codecs/fixtur
 | `prompt_cache_key` | request, aus `openai_responses` | Wie oben. | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request, aus `openai_responses` | Metadaten der Anfrage: Turn- und Thread-IDs, W3C-Trace-Kontext und `x-codex-turn-metadata`. Sie erreichen das Modell nie, und ein protokollierter Anfrage-Body behält sie. | Codex sendet sie bei jedem Zug; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (an `input_image`; `auto` ist bereits eine Form-Markierung) | image, aus `openai_responses` | Hinweis zur Bildauflösung, wie `image_url.detail` bei Chat. `input_file.detail` (PDF-Darstellung) steht **nicht** auf der Allowlist. | `openai_responses/requests/image-base64-file-id.json` |
+| `phase` (an Assistentennachrichten: `commentary`, `final_answer`) | message, aus `openai_responses` | Kennzeichnet eine Assistentennachricht als Vorrede oder als endgültige Antwort, damit OpenAI sie beim erneuten Abspielen des Zugs unterscheiden kann. Der Text ist in beiden Fällen derselbe, und andere Formate haben keine solche Kennzeichnung. | Codex sendet die Nachrichten von GPT-6 damit zurück; ein Thread, der zu einem anderen Modell wechselt, trägt sie mit; `openai_responses/requests/codex-model-switch.json` |
 
 ### Bedingte Einträge
 
@@ -115,7 +116,8 @@ OpenAI Responses nennt sein gehostetes Suchtool `web_search`, früher auch `web_
 
 | Responses | Anthropic |
 | --- | --- |
-| `filters.allowed_domains` | `allowed_domains` |
+| `filters.allowed_domains`, `filters.excluded_domains` (eines davon; eine leere Liste zählt als keine) | `allowed_domains`, `blocked_domains` |
+| `enable_image_understanding`, `enable_image_search` (von xAI) | weggelassen, bei `true` in `kaeso-left-out` genannt |
 | `user_location` (`approximate`, mit `city`, `region`, `country`, `timezone`) | `user_location` |
 | `external_web_access: true`, `search_context_size: "medium"` (der Standard), `search_content_types: ["text"]` | nichts; sie beschreiben, was Anthropics Suche tut |
 | `search_content_types` mit `image` | weggelassen und in `kaeso-left-out` genannt; Anthropics Suche liefert nur Textergebnisse |
@@ -145,7 +147,7 @@ Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`: Claude sucht immer live |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`, für einen Anbieter, dessen Profil `WebSearchTool::Xai` hat: SpaceX sucht immer live |
 
-Eine `tool_choice`, die ein weggelassenes Tool erzwingt, bleibt `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls`, weil Chat Completions sie ohne Tools ablehnt. `tool_choice: "required"` ist `Unsupported`, da kein Tool zum Aufrufen bliebe.
+Eine `tool_choice`, die ein weggelassenes Tool verlangt, selbst oder in `allowed_tools`, ist `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls` und werden in `kaeso-left-out` genannt, weil Anbieter sie ohne Tools ablehnen. `tool_choice: "required"` oder ein benanntes Tool ist `Unsupported`, da kein Tool zum Aufrufen bliebe.
 
 Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
 
@@ -162,7 +164,7 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 | `local_shell_call` | `Block::ToolCall` namens `local_shell`, sein `action`-Objekt als Argumente |
 | `local_shell_call_output` | `Block::ToolResult` für den Aufruf, den seine `id` nennt; Codex sendet stattdessen ein `function_call_output` |
 
-OpenAI bekommt die Items wie gesendet. Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+OpenAI und SpaceX bekommen die Items wie gesendet: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
 
 ## Nutzung
 
@@ -173,8 +175,8 @@ OpenAI bekommt die Items wie gesendet. Ein Item, das nicht die Form oben hat, bl
 Eine Systemnachricht nach dem Beginn einer Unterhaltung bleibt als `Role::System`-Nachricht erhalten.
 
 - **An Anthropic, aus Anthropic Messages:** unverändert gesendet; die API beurteilt ihre Position und welche Modelle sie unterstützen. Claude Code sendet solche Nachrichten bei jeder Anfrage.
-- **An Anthropic, aus anderen Dialekten:** Der Text wird Teil der nächsten Benutzerrunde, nach ihren Tool-Ergebnissen, oder der letzten Benutzerrunde, wenn keine folgt. Codex sendet solche Nachrichten, wenn ein Thread das Modell (`<model_switch>`) oder den Modus (`<collaboration_mode>`) wechselt. Anthropic nimmt eine Systemnachricht nur direkt nach einer Benutzerrunde und direkt vor einer Assistentenrunde an, und nicht bei jedem Modell ([Systemnachrichten mitten in der Unterhaltung](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)). OpenAI-Apps setzen sie dagegen an beliebige Stellen, meist vor die Runde, die sie einleiten. Die Felder der Nachricht durchlaufen dieselbe Prüfung wie die jeder anderen Nachricht. Führende System- und Developer-Nachrichten sind nicht betroffen: Die Decoder machen sie zum System-Prompt.
-- **An OpenAI:** spätere `system`- oder `developer`-Nachrichten.
+- **An Anthropic, aus anderen Dialekten:** Der Text wird Teil der nächsten Benutzerrunde, nach ihren Tool-Ergebnissen, oder der letzten Benutzerrunde, wenn keine folgt. Codex sendet solche Nachrichten, wenn ein Thread das Modell (`<model_switch>`) oder den Modus (`<collaboration_mode>`) wechselt. Anthropic nimmt eine Systemnachricht nur direkt nach einer Benutzerrunde und direkt vor einer Assistentenrunde an, und nicht bei jedem Modell ([Systemnachrichten mitten in der Unterhaltung](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)). OpenAI-Apps setzen sie dagegen an beliebige Stellen, meist vor die Runde, die sie einleiten. Die Felder der Nachricht durchlaufen dieselbe Prüfung wie die jeder anderen Nachricht. Führende, vor jeder Benutzer- oder Assistentennachricht, werden Teil des System-Prompts; die meisten machen schon die Decoder dazu. Vor einer letzten Assistentennachricht, die Anthropic als Prefill fortsetzt, wird der Text stattdessen Teil der letzten Benutzerrunde.
+- **An OpenAI:** spätere `system`- oder `developer`-Nachrichten. Bei Chat Completions rückt eine solche Nachricht zwischen den Tool-Aufrufen einer Assistentennachricht und ihren Ergebnissen hinter die Ergebnisse, weil Mistral dort eine Systemnachricht ablehnt (`Unexpected role 'tool' after role 'system'`).
 
 ## Keepalives
 

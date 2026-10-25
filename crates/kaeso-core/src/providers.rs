@@ -336,7 +336,7 @@ impl ProviderRef {
     pub fn chat(&self) -> ChatProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.chat,
-            ProviderRef::Custom(_) => ChatProfile::OPENAI,
+            ProviderRef::Custom(_) => ChatProfile::OPENAI.without_verbosity(),
         }
     }
 
@@ -542,7 +542,7 @@ mod tests {
         let r = ProviderRef::Custom(Arc::new(p));
         assert_eq!(r.count_tokens(), Some(DialectId::AnthropicMessages));
         assert_eq!(r.auth(), Some(AuthStyle::XApiKey));
-        assert_eq!(r.chat(), ChatProfile::OPENAI);
+        assert_eq!(r.chat(), ChatProfile::OPENAI.without_verbosity());
         assert_eq!(r.responses(), ResponsesProfile::compatible("OpenAI"));
         assert!(r.account().is_none() && !r.refuses_key("Incorrect API key provided"));
         assert_eq!(r.metric_label(), "custom");

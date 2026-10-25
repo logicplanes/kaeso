@@ -216,6 +216,36 @@ expression: outcomes
       "total_tokens": 251
     }
   },
+  "providers/xai/recorded-codex-gpt-history": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "OK",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "bcedf421-5a21-95c5-9114-ab74edb142ed",
+    "model": "grok-4.7",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 38,
+      "completion_tokens_details": {
+        "reasoning_tokens": 37
+      },
+      "prompt_tokens": 2827,
+      "prompt_tokens_details": {
+        "cached_tokens": 1152
+      },
+      "total_tokens": 2865
+    }
+  },
   "providers/xai/recorded-codex-turn-one": {
     "choices": [
       {

@@ -86,6 +86,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `prompt_cache_key` | request, from `openai_responses` | As above. | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `phase` (on assistant messages: `commentary`, `final_answer`) | message, from `openai_responses` | Marks an assistant message as a preamble or the final answer, so OpenAI can tell them apart when the turn is replayed. The text is the same either way, and other formats have no such mark. | Codex sends GPT-6's messages back with it; a thread that switches to another model carries them; `openai_responses/requests/codex-model-switch.json` |
 
 ### Conditional entries
 
@@ -115,7 +116,8 @@ OpenAI Responses names its hosted search tool `web_search`, and earlier `web_sea
 
 | Responses | Anthropic |
 | --- | --- |
-| `filters.allowed_domains` | `allowed_domains` |
+| `filters.allowed_domains`, `filters.excluded_domains` (one of them; an empty list counts as none) | `allowed_domains`, `blocked_domains` |
+| `enable_image_understanding`, `enable_image_search` (xAI's) | left out, named in `kaeso-left-out` when `true` |
 | `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` |
 | `external_web_access: true`, `search_context_size: "medium"` (the default), `search_content_types: ["text"]` | nothing; they describe what Anthropic's search does |
 | `search_content_types` with `image` | left out, named in `kaeso-left-out`; Anthropic's search returns text results only |
@@ -145,7 +147,7 @@ These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`: Claude always searches live |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`, for a provider whose profile has `WebSearchTool::Xai`: SpaceX always searches live |
 
-A `tool_choice` that forces a tool left out stays `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them, because Chat Completions refuses them without tools; `tool_choice: "required"` is `Unsupported`, since no tool would be left to call.
+A `tool_choice` that asks for a tool left out, itself or in `allowed_tools`, is `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them and are named in `kaeso-left-out`, because providers refuse them without tools; `tool_choice: "required"` or a named tool is `Unsupported`, since no tool would be left to call.
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
@@ -162,7 +164,7 @@ A Codex thread that started on a GPT model holds items only OpenAI Responses has
 | `local_shell_call` | `Block::ToolCall` named `local_shell`, its `action` object as the arguments |
 | `local_shell_call_output` | `Block::ToolResult` for the call its `id` names; Codex sends a `function_call_output` instead |
 
-OpenAI gets the items as sent. An item that doesn't have the shape above stays an unknown block and is refused like one.
+OpenAI and SpaceX get the items as sent: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). An item that doesn't have the shape above stays an unknown block and is refused like one.
 
 ## Usage
 
@@ -173,8 +175,8 @@ OpenAI gets the items as sent. An item that doesn't have the shape above stays a
 A system message after the start of a conversation is kept as a `Role::System` message.
 
 - **To Anthropic, from Anthropic Messages:** sent unchanged; the API judges their placement and which models support them. Claude Code sends such messages on every request.
-- **To Anthropic, from other dialects:** the text joins the next user turn, after its tool results, or the last user turn when none follows. Codex sends such messages when a thread switches models (`<model_switch>`) or modes (`<collaboration_mode>`). Anthropic takes a system message only right after a user turn and right before an assistant turn, and not on every model ([mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)), while OpenAI apps place them anywhere, usually before the turn they introduce. The fields of the message go through the same check as any message's. Leading system and developer messages are not affected: the decoders make them the system prompt.
-- **To OpenAI:** later `system` or `developer` messages.
+- **To Anthropic, from other dialects:** the text joins the next user turn, after its tool results, or the last user turn when none follows. Codex sends such messages when a thread switches models (`<model_switch>`) or modes (`<collaboration_mode>`). Anthropic takes a system message only right after a user turn and right before an assistant turn, and not on every model ([mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)), while OpenAI apps place them anywhere, usually before the turn they introduce. The fields of the message go through the same check as any message's. Leading ones, before any user or assistant message, join the system prompt; the decoders already make most of them the system prompt. Before a final assistant message, which Anthropic continues as a prefill, the text joins the last user turn instead.
+- **To OpenAI:** later `system` or `developer` messages. For Chat Completions, one between an assistant message's tool calls and their results moves after the results, because Mistral refuses a system message there (`Unexpected role 'tool' after role 'system'`).
 
 ## Keepalives
 

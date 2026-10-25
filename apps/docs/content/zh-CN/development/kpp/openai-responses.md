@@ -105,7 +105,7 @@ order: 7
 | 线路 | KPP | 说明 |
 | --- | --- | --- |
 | 开头的 `system` / `developer` 消息 item，只含文本，且除 `type`、`role` 和 `id` 外没有其他 item 数据 | `GenerateRequest.system` 的块 | 请求上的形式标记 `system_items`（`[{n, role, type, parts, id}]`）和 `instructions` 记录拆分方式；不是 Kaeso 自己生成的 `id` 会被写回。Codex 0.164 以这种方式发送它的指令。带有 `status`、图像或未知键的开头 item 仍是一条 `Role::System` 消息。 |
-| `message` item，角色 `user` / `assistant` | `Message { role: User / Assistant }` 的内容块 | 支持 `EasyInputMessage`、`InputMessage` 和 `OutputMessage` 三种结构。item 的 `type`、`id`、`status` 和 `role` 的写法：消息上的形式标记；`phase` 和未知键：消息的 extras。一条 KPP 消息最多包含一个消息 item。 |
+| `message` item，角色 `user` / `assistant` | `Message { role: User / Assistant }` 的内容块 | 支持 `EasyInputMessage`、`InputMessage` 和 `OutputMessage` 三种结构。item 的 `type`、`id`、`status` 和 `role` 的写法：消息上的形式标记；`phase` 和未知键：消息的 extras；发往其他格式时省略 `phase`（[允许列表](cross-format.md#允许列表)）。一条 KPP 消息最多包含一个消息 item。 |
 | `message` item，角色 `system` / `developer`（不在开头） | `Message { role: System }`（参见[系统消息](cross-format.md#系统消息)） | 规范角色为 `developer`；`system`：形式标记。 |
 | `content` 为字符串或部分列表 | 消息上的形式标记 `parts` | 对单个纯文本块而言，字符串是规范写法。空的部分列表：形式标记 `empty_at`。 |
 | `function_call`（`FunctionToolCall`） | 当前助手消息中的 `Block::ToolCall` | `call_id` → `id`，`name`，`arguments`（一个 JSON 字符串）→ 原始 JSON。不是 JSON 的参数按 KPP 约定保存为 JSON 字符串，并带形式标记 `args_string`；来自其他方言、本身是 JSON 字符串的 `arguments` 值以其文本发送。`id`、`status`：形式标记；`namespace`、`caller`、未知键：该块的 extras。来自其他方言、超过 64 个字符的调用 ID 会缩短为前 55 个字符加 `_` 和 FNV-1a 哈希的 8 位十六进制数，记录在 `EgressCtx::tool_ids` 中，并在解码时映射回原值。 |
@@ -335,7 +335,7 @@ order: 7
 
 - 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
 - 它会设置 `stream: true` 和 `store: false`。
-- 它会删除形式标记 `input`、`system_items` 和 `instructions`，因此 `input` 为数组，开头的系统文本成为 `instructions`。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
+- 它会删除形式标记 `input`，因此 `input` 为数组。若某个开头的项角色为 `system`，它还会删除形式标记 `system_items` 和 `instructions`，开头的系统文本成为 `instructions`；Codex 发送的开头 `developer` 项保留其结构和 ID。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
 
 由于这条路由只支持流式，当应用的请求不是流式时，网关会把它的流汇总成一个回复。KPP 未建模的项目（例如 `web_search_call`）就是 `response.output_item.done` 发送的那个项目（`dispatch::finished_item`）。通过 `item_id` 报告项目进度的 `response.*` 事件（例如 `response.web_search_call.searching`）不会出现在回复中，因为完成的项目已经包含它们报告的内容（`dispatch::reports_item_progress`）。
 

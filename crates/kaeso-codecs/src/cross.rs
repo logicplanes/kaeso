@@ -30,6 +30,7 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "request", "prompt_cache_key"),
     (DialectId::OpenAiResponses, "request", "client_metadata"),
     (DialectId::OpenAiResponses, "image", "detail"),
+    (DialectId::OpenAiResponses, "message", "phase"),
 ];
 
 /// The type names of OpenAI Responses' hosted search tool, current and earlier versions.

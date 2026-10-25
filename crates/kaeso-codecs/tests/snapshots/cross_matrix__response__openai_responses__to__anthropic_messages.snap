@@ -196,6 +196,36 @@ expression: outcomes
       }
     }
   },
+  "providers/xai/recorded-codex-gpt-history": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc19iY2VkZjQyMS01YTIxLTk1YzUtOTExNC1hYjc0ZWRiMTQyZWQifSx7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX2VuY3J5cHRlZF9yZWFzb25pbmciLCJkYXRhIjoiRjhBc2RWK0RXUjkwSHdZZG5CaEtoamhvT0FmbUN4OExsSm9YTGVQdVBNeDA0eFAvWnNMVjkwcEVqVVc5RVBNUnljV2lXMmpQdlFtM3RYTEI3Z1BORXNmUnlubVhRbWpldEJseW9aVXRzTnFSS1R5WWpjV1lzc0ZiTTRYdkJpekxNNEtvT093ZFp0NU0xYUZwYmtyMnprcXk4MUdXSk1VM1E5ZFV5MG9tQmkrUWplMzNLOG53WXoyVVFXNGt6NHJGYk9QaGV4ZHhHaVAxQVNKaFpZYmRNVEhvV3pvamhVcm1WQSJ9XX0",
+        "thinking": "",
+        "type": "thinking"
+      },
+      {
+        "text": "OK",
+        "type": "text"
+      }
+    ],
+    "id": "bcedf421-5a21-95c5-9114-ab74edb142ed",
+    "model": "grok-4.7",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 1152,
+      "input_tokens": 1675,
+      "output_tokens": 38,
+      "output_tokens_details": {
+        "thinking_tokens": 37
+      }
+    }
+  },
   "providers/xai/recorded-codex-turn-one": {
     "content": [
       {

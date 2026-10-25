@@ -64,62 +64,93 @@
       "content": [
         {
           "type": "input_text",
-          "text": "Create hello.txt, show it, and search the web."
+          "text": "Search the web for what the Kaeso AI gateway is, in one sentence. Then create proof.txt containing OK using the shell and reply with its contents."
         }
       ]
     },
     {
-      "type": "reasoning",
-      "id": "rs_0199f3a2-reasoning-0002",
-      "summary": [
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf902c42887d2a71aba8282778fe7",
+      "role": "assistant",
+      "content": [
         {
-          "type": "summary_text",
-          "text": "Create the file."
+          "type": "output_text",
+          "text": "I’ll look up the Kaeso AI gateway, then write `proof.txt` in the workspace and report its contents.",
+          "annotations": [],
+          "logprobs": []
         }
       ],
-      "content": null,
-      "encrypted_content": "gAAAAABo-placeholder-encrypted-reasoning"
+      "phase": "commentary"
+    },
+    {
+      "type": "web_search_call",
+      "id": "ws_0992021c1dd245b3016addf903774487d298ad27921d40a410",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "Kaeso AI gateway",
+        "queries": [
+          "Kaeso AI gateway"
+        ]
+      }
+    },
+    {
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf905ef7887d28288e0a9ccf10291",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "The search result describes Kaeso as a self-hosted gateway with a single compatible API and controls for keys, routing, limits, and logs. I’m writing `OK` to `proof.txt` now.",
+          "annotations": [],
+          "logprobs": []
+        }
+      ],
+      "phase": "commentary"
     },
     {
       "type": "custom_tool_call",
-      "id": "ctc_0001",
+      "id": "ctc_0992021c1dd245b3016addf907047887d2b589ae84d5e2e8a9",
       "status": "completed",
-      "call_id": "call_patch_1",
-      "name": "apply_patch",
-      "input": "*** Begin Patch\n*** Add File: hello.txt\n+hello\n*** End Patch\n"
+      "call_id": "call_8T8RbkBlHo4KilFkd28euzyo",
+      "name": "exec",
+      "input": "const r = await tools.exec_command({cmd:\"printf 'OK' > proof.txt && cat proof.txt\",yield_time_ms:10000,max_output_tokens:1000});\ntext(r.output);\n"
     },
     {
       "type": "custom_tool_call_output",
       "id": "ctco_019a0e5c-7d07-7000-8000-000000000007",
-      "call_id": "call_patch_1",
-      "output": "Exit code: 0\nWall time: 0 seconds\nOutput:\nSuccess. Updated the following files:\nA hello.txt\n"
-    },
-    {
-      "type": "local_shell_call",
-      "id": "lsh_0002",
-      "call_id": "call_shell_2",
-      "status": "completed",
-      "action": {
-        "type": "exec",
-        "command": [
-          "cat",
-          "hello.txt"
-        ],
-        "timeout_ms": 10000,
-        "working_directory": null,
-        "env": {},
-        "user": null
-      }
-    },
-    {
-      "type": "function_call_output",
-      "id": "fco_019a0e5c-7d08-7000-8000-000000000008",
-      "call_id": "call_shell_2",
-      "output": "aborted"
+      "call_id": "call_8T8RbkBlHo4KilFkd28euzyo",
+      "output": [
+        {
+          "type": "input_text",
+          "text": "Script completed\nWall time 0.1 seconds\nOutput:\n"
+        },
+        {
+          "type": "input_text",
+          "text": "OK"
+        }
+      ]
     },
     {
       "type": "message",
-      "id": "msg_019a0e5c-7d09-7000-8000-000000000009",
+      "status": "completed",
+      "id": "msg_0992021c1dd245b3016addf90a5b9887d28d1c19db6bb00c75",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Kaeso is a self-hosted AI gateway that provides a unified API for managing keys, routing, limits, and logs. `proof.txt` contains: `OK`.",
+          "annotations": [],
+          "logprobs": []
+        }
+      ],
+      "phase": "final_answer"
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d08-7000-8000-000000000008",
       "role": "developer",
       "content": [
         {
@@ -130,7 +161,7 @@
     },
     {
       "type": "message",
-      "id": "msg_019a0e5c-7d10-7000-8000-000000000010",
+      "id": "msg_019a0e5c-7d09-7000-8000-000000000009",
       "role": "developer",
       "content": [
         {
@@ -141,12 +172,12 @@
     },
     {
       "type": "message",
-      "id": "msg_019a0e5c-7d11-7000-8000-000000000011",
+      "id": "msg_019a0e5c-7d10-7000-8000-000000000010",
       "role": "user",
       "content": [
         {
           "type": "input_text",
-          "text": "What did you do?"
+          "text": "What did you write? Reply with only it."
         }
       ]
     }
@@ -190,14 +221,14 @@
   "include": [
     "reasoning.encrypted_content"
   ],
-  "prompt_cache_key": "019a0e5c-7d12-7000-8000-000000000012",
+  "prompt_cache_key": "019a0e5c-7d11-7000-8000-000000000011",
   "client_metadata": {
+    "root_turn_id": "019a0e5c-7d12-7000-8000-000000000012",
+    "session_id": "019a0e5c-7d11-7000-8000-000000000011",
     "x-codex-installation-id": "00000000-0000-4000-8000-000000000000",
-    "x-codex-window-id": "019a0e5c-7d12-7000-8000-000000000012:0",
-    "turn_id": "019a0e5c-7d13-7000-8000-000000000013",
-    "root_turn_id": "019a0e5c-7d13-7000-8000-000000000013",
-    "session_id": "019a0e5c-7d12-7000-8000-000000000012",
-    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"thread_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"agent_name\":\"/root\",\"turn_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"window_id\":\"019a0e5c-7d12-7000-8000-000000000012:0\",\"window_number\":0,\"context_window_id\":\"019a0e5c-7d14-7000-8000-000000000014\",\"request_kind\":\"turn\",\"history_initialization\":\"cold_resume\",\"root_turn_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"workspace-write\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"workspaces\":{\"/home/user/project\":{\"has_changes\":true}},\"turn_started_at_unix_ms\":1792923274019,\"analytics_enabled\":true,\"model\":\"claude-sonnet-5-5\",\"reasoning_effort\":\"medium\"}",
-    "thread_id": "019a0e5c-7d12-7000-8000-000000000012"
+    "x-codex-window-id": "019a0e5c-7d11-7000-8000-000000000011:0",
+    "turn_id": "019a0e5c-7d12-7000-8000-000000000012",
+    "thread_id": "019a0e5c-7d11-7000-8000-000000000011",
+    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"019a0e5c-7d11-7000-8000-000000000011\",\"thread_id\":\"019a0e5c-7d11-7000-8000-000000000011\",\"agent_name\":\"/root\",\"turn_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"window_id\":\"019a0e5c-7d11-7000-8000-000000000011:0\",\"window_number\":0,\"context_window_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"request_kind\":\"turn\",\"history_initialization\":\"cold_resume\",\"root_turn_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"workspace-write\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792932117926,\"analytics_enabled\":true,\"model\":\"claude-sonnet-5-5\",\"reasoning_effort\":\"medium\"}"
   }
 }

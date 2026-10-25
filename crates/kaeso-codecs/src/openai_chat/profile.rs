@@ -85,13 +85,18 @@ impl ChatProfile {
     };
 
     pub const fn compatible(provider: &'static str) -> Self {
-        let mut profile = ChatProfile {
+        // `verbosity` is OpenAI's; providers that reject unknown fields refuse it.
+        ChatProfile {
             provider,
             ..ChatProfile::OPENAI
-        };
-        // `verbosity` is OpenAI's; providers that reject unknown fields refuse it.
-        profile.request.verbosity = false;
-        profile
+        }
+        .without_verbosity()
+    }
+
+    #[must_use]
+    pub const fn without_verbosity(mut self) -> Self {
+        self.request.verbosity = false;
+        self
     }
 
     #[must_use]

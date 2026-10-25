@@ -125,15 +125,19 @@ fn anthropic_tool(
                     left_out.push(at);
                 }
             }
+            ("enable_image_understanding" | "enable_image_search", Value::Bool(on)) => {
+                if *on {
+                    left_out.push(at);
+                }
+            }
             ("filters", Value::Object(filters)) => {
                 for (k, v) in filters {
-                    match (k.as_str(), v) {
-                        (_, Value::Null) => {}
-                        ("allowed_domains", Value::Array(domains)) => {
-                            if !domains.is_empty() {
-                                tool.insert("allowed_domains".into(), v.clone());
-                            }
-                        }
+                    // Anthropic's names; it takes one of the two lists.
+                    // https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+                    let name = match k.as_str() {
+                        "allowed_domains" => "allowed_domains",
+                        "excluded_domains" => "blocked_domains",
+                        _ if v.is_null() => continue,
                         _ => {
                             return Err(refuse(
                                 &format!("web_search.filters.{k}"),
@@ -142,7 +146,28 @@ fn anthropic_tool(
                                 "Remove it.",
                             ));
                         }
+                    };
+                    match v {
+                        Value::Null => {}
+                        Value::Array(domains) if domains.is_empty() => {}
+                        Value::Array(_) => {
+                            tool.insert(name.into(), v.clone());
+                        }
+                        _ => {
+                            return Err(KppError::invalid_request(format!(
+                                "`{at}.{k}` must be a list of domains."
+                            ))
+                            .with_param(format!("{at}.{k}")));
+                        }
                     }
+                }
+                if tool.contains_key("allowed_domains") && tool.contains_key("blocked_domains") {
+                    return Err(KppError::unsupported_by(
+                        "web_search.filters",
+                        ANTHROPIC,
+                        "Claude's web search takes allowed or excluded domains, not both; send one list.",
+                    )
+                    .with_param(at));
                 }
             }
             ("user_location", Value::Object(location)) => {
@@ -341,6 +366,34 @@ fn map_searches(
         };
         mapped.push((i, out));
     }
+    let any_left_out = mapped.iter().any(|(_, m)| matches!(m, Mapped::LeftOut));
+    if any_left_out && d.get().tool_choice.as_ref().is_some_and(forces_search) {
+        return Err(KppError::unsupported_by(
+            "tool_choice",
+            target,
+            "It asks for `web_search`, which is left out for this model. Choose `auto` or another tool.",
+        )
+        .with_param("tool_choice"));
+    }
+    let lost_all = mapped.iter().all(|(_, m)| matches!(m, Mapped::LeftOut))
+        && mapped.len() == d.get().tools.len();
+    if lost_all {
+        match &d.get().tool_choice {
+            Some(ToolChoice::Required | ToolChoice::Tool(_)) => {
+                return Err(KppError::unsupported_by(
+                    "tool_choice",
+                    target,
+                    "It asks for a tool, and the only tool, `web_search`, is left out for this model. Remove `tool_choice`.",
+                )
+                .with_param("tool_choice"));
+            }
+            Some(_) => left_out.push("tool_choice".to_owned()),
+            None => {}
+        }
+        if d.get().parallel_tool_calls.is_some() {
+            left_out.push("parallel_tool_calls".to_owned());
+        }
+    }
     for path in left_out {
         d.leave_out(path);
     }
@@ -356,24 +409,32 @@ fn map_searches(
             }
         }
     }
-    let lost_all = kept.is_empty();
     r.tools = kept;
     if lost_all {
-        match r.tool_choice {
-            Some(ToolChoice::Required) => {
-                return Err(KppError::unsupported_by(
-                    "tool_choice `required`",
-                    target,
-                    "The only tool, `web_search`, is left out for this model. Remove `tool_choice`.",
-                )
-                .with_param("tool_choice"));
-            }
-            Some(ToolChoice::Auto | ToolChoice::None) => r.tool_choice = None,
-            _ => {}
-        }
+        r.tool_choice = None;
         r.parallel_tool_calls = None;
     }
     Ok(())
+}
+
+fn forces_search(choice: &ToolChoice) -> bool {
+    let ToolChoice::Unknown(item) = choice else {
+        return false;
+    };
+    let Ok(choice) = item.raw.to_value() else {
+        return false;
+    };
+    let is_search = |v: &Value| {
+        v.get("type")
+            .and_then(Value::as_str)
+            .is_some_and(|t| HOSTED_SEARCH_TYPES.contains(&t))
+    };
+    is_search(&choice)
+        || (choice.get("type").and_then(Value::as_str) == Some("allowed_tools")
+            && choice
+                .get("tools")
+                .and_then(Value::as_array)
+                .is_some_and(|tools| tools.iter().any(is_search)))
 }
 
 pub(crate) fn for_anthropic(d: &mut Draft<'_>) -> Result<(), KppError> {

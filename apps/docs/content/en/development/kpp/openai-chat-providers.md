@@ -11,7 +11,7 @@ Other providers than OpenAI speak [OpenAI Chat Completions](openai-chat.md) with
 
 Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field. The profile holds the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below.
 
-The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing. `ChatProfile::compatible(name)` differs only in `request.verbosity`, which is false: an OpenAI Responses app's `text.verbosity` is left out instead of sent as `verbosity`, a field only OpenAI documents, which providers that refuse unknown fields would refuse.
+The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing. `ChatProfile::compatible(name)` differs only in `request.verbosity`, which is false: an OpenAI Responses app's `text.verbosity` is left out instead of sent as `verbosity`, a field only OpenAI documents, which providers that refuse unknown fields would refuse. Custom providers get `ChatProfile::OPENAI.without_verbosity()` for the same reason.
 
 | Setting | What the encoder does | Why it is allowed |
 |---|---|---|
@@ -20,6 +20,7 @@ The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`
 | `random_seed()` | Sends `seed` as `random_seed`, a `seed: null` too. A negative seed, or a request with both `seed` and `random_seed` (either may be `null`), is `Unsupported` (`seed`). The rule follows Mistral's `random_seed`, which its OpenAPI document gives `minimum: 0`. | `seed` stays semantic: it is renamed or refused, never dropped. |
 | `without_end_user()` | Leaves KPP `user` out instead of sending it as `user` or `safety_identifier`, together with a second `user` a Chat app sent alongside `safety_identifier`, and their `null` spellings. | `user` is a hint ([field classes](index.md#field-classes)). |
 | `without_prefill()` | Refuses a conversation that ends with an assistant message, unless it calls tools or is a Chat app's message with `prefix: true`: `Unsupported` (`assistant prefill`, param `messages[i]`). | A provider that only continues such a message with `prefix: true` repeats the prefill in its reply, so the app would not get a continuation. |
+| `without_verbosity()` | Leaves out an OpenAI Responses app's `text.verbosity` instead of sending it as `verbosity`, and names it in `kaeso-left-out`. `compatible(name)` sets it. | `text.verbosity` is a hint ([field classes](index.md#field-classes)). |
 | `refusing(fields)` | Refuses a request whose body would contain one of these top-level keys, such as `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | Extras are semantic, so they are refused, not dropped. |
 | `refusing_in_messages(fields)` | The same for keys of system, user and assistant messages. Tool messages are not checked. | As above. |
 

@@ -29,6 +29,16 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
         DialectId::OpenAiChat,
         "custom and local shell calls become tool calls",
     ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::AnthropicMessages,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::OpenAiChat,
+        "custom and local shell calls become tool calls",
+    ),
 ];
 
 fn fixtures_dir(dialect: DialectId) -> PathBuf {

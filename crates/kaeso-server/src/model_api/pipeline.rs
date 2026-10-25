@@ -828,7 +828,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             kind,
             &eff.model_id,
         )
-        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect)),
+        .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
     };
     rec.reservation = state
         .limits
@@ -891,6 +891,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let served = Served {
         left_out: ectx.left_out.clone(),
         ..served.clone()
+    };
+    let fail = |stage: Stage| {
+        let served = served.clone();
+        move |err: KppError| Failure {
+            err,
+            served,
+            stage,
+            provider_said: None,
+        }
     };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));

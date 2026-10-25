@@ -39,3 +39,5 @@ xAI's errors are `{"error": "<message>"}`, with `"code": "invalid-argument"` on 
 | `responses/recorded-codex-turn-two.json` | the second turn recalls the first: `4817` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
 | `errors/recorded-codex-turn-two-null-content.json` | 400 `Could not decode the compaction blob. Ensure it is unmodified from the compact response.` for `content: null` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
 | `errors/recorded-codex-web-search-access.json` | 400 `Argument not supported: external_web_access` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |
+| `requests/codex-gpt-history.json` | `requests/codex-model-switch.json` resumed on `grok-4.7`: GPT-6 history with `phase`, OpenAI's `web_search_call` and a `custom_tool_call`, as Kaeso sends it | `requests/codex-model-switch.json` |
+| `responses/recorded-codex-gpt-history.json` | SpaceX takes that history as sent and answers `OK` | gateway-relayed (Kaeso 0.4.2 at `ai.logicplanes.com`) |

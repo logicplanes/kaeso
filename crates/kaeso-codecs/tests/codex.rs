@@ -601,13 +601,16 @@ fn later_developer_messages_join_the_next_user_turn_for_claude() {
     let text = texts(&last["content"]);
     assert!(text[0].starts_with("<model_switch>"), "{text:?}");
     assert!(text[1].starts_with("<collaboration_mode>"), "{text:?}");
-    assert_eq!(text[2], "What did you do?");
+    assert_eq!(text[2], "What did you write? Reply with only it.");
 }
 
 #[test]
 fn a_later_developer_message_without_a_user_turn_after_it_follows_the_tool_results() {
     let mut body = codex("codex-model-switch");
-    body["input"].as_array_mut().unwrap().pop();
+    let input = body["input"].as_array_mut().unwrap();
+    let developer: Vec<Value> = input[12..14].to_vec();
+    input.truncate(11);
+    input.extend(developer);
     let req = decode(&body);
     let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
     let last = sent["messages"].as_array().unwrap().last().unwrap();
@@ -623,6 +626,69 @@ fn a_later_developer_message_without_a_user_turn_after_it_follows_the_tool_resul
     let last = sent["messages"].as_array().unwrap().last().unwrap();
     assert_eq!(last["role"], "user");
     assert_eq!(texts(&last["content"]), ["Be brief."]);
+}
+
+#[test]
+fn a_developer_message_before_a_final_assistant_message_keeps_it_a_prefill_for_claude() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"role": "user", "content": "Write a haiku."},
+            {"role": "developer", "content": "Keep it under ten words."},
+            {"role": "assistant", "content": "Autumn"},
+        ],
+    });
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(roles(&sent["messages"]), ["user", "assistant"]);
+    assert_eq!(
+        texts(&sent["messages"][0]["content"]),
+        ["Write a haiku.", "Keep it under ten words."]
+    );
+}
+
+#[test]
+fn leading_developer_items_the_decoder_keeps_become_claudes_system_prompt() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"type": "message", "role": "developer", "status": "completed", "content": "You are terse."},
+            {"role": "user", "content": "Hi"},
+        ],
+    });
+    let req = decode(&body);
+    let Request::Generate(g) = &req else {
+        panic!("not a generation")
+    };
+    assert!(
+        g.system.is_empty(),
+        "the decoder keeps an item with a `status`"
+    );
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(texts(&sent["system"]), ["You are terse."]);
+    assert_eq!(roles(&sent["messages"]), ["user"]);
+}
+
+#[test]
+fn chat_models_get_developer_messages_where_chat_completions_takes_them() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"role": "user", "content": "List the files."},
+            {"type": "function_call", "call_id": "call_1", "name": "exec_command", "arguments": "{\"cmd\":\"ls\"}"},
+            {"role": "developer", "content": "Approvals are now off."},
+            {"type": "function_call_output", "call_id": "call_1", "output": "a.txt"},
+            {"role": "user", "content": "Thanks."},
+            {"role": "developer", "content": "Reply in one word."},
+        ],
+    });
+    let req = decode(&body);
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    assert_eq!(
+        roles(&sent["messages"]),
+        ["user", "assistant", "tool", "system", "user", "system"]
+    );
+    assert_eq!(sent["messages"][3]["content"], "Approvals are now off.");
 }
 
 #[test]
@@ -717,29 +783,68 @@ fn tool_settings_go_with_web_search_when_it_was_the_only_tool() {
     let mut body = codex("codex-developer-resume");
     body["tools"].as_array_mut().unwrap().remove(0);
     let req = decode(&body);
-    let (sent, _) = sent_with(C, &req, mistral(&req));
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
     for key in ["tools", "tool_choice", "parallel_tool_calls"] {
         assert!(sent.get(key).is_none(), "{key}: {sent}");
     }
+    assert_eq!(left_out, ["tools[0]", "tool_choice", "parallel_tool_calls"]);
 
-    body["tool_choice"] = json!("required");
-    let req = decode(&body);
-    let e = send(C, &req, &mut mistral(&req)).unwrap_err();
-    assert_eq!(e.unsupported_feature(), Some("tool_choice `required`"));
-    assert_eq!(e.param.as_deref(), Some("tool_choice"));
+    for choice in [
+        json!("required"),
+        json!({"type": "function", "name": "exec_command"}),
+    ] {
+        body["tool_choice"] = choice;
+        let req = decode(&body);
+        let e = send(C, &req, &mut mistral(&req)).unwrap_err();
+        assert_eq!(e.unsupported_feature(), Some("tool_choice"));
+        assert_eq!(e.param.as_deref(), Some("tool_choice"));
+    }
+}
+
+#[test]
+fn a_tool_choice_that_asks_for_a_search_left_out_is_refused() {
+    for choice in [
+        json!({"type": "web_search"}),
+        json!({"type": "allowed_tools", "mode": "auto", "tools": [{"type": "web_search"}, {"type": "function", "name": "exec_command"}]}),
+    ] {
+        let mut body = codex("codex-developer-resume");
+        body["tools"][1]["external_web_access"] = json!(false);
+        body["tool_choice"] = choice;
+        let req = decode(&body);
+        for (target, mut ctx) in [
+            (R, xai(&req)),
+            (A, EgressCtx::new(&req)),
+            (C, mistral(&req)),
+        ] {
+            let e = send(target, &req, &mut ctx).unwrap_err();
+            assert_eq!(e.param.as_deref(), Some("tool_choice"), "{target}: {e}");
+        }
+    }
 }
 
 #[test]
 fn gpt_tool_history_reaches_claude_and_chat_models_as_tool_calls() {
-    let body = codex("codex-model-switch");
-    let patch = body["input"][7]["input"].clone();
+    let mut body = codex("codex-model-switch");
+    let script = body["input"][9]["input"].clone();
+    let action =
+        json!({"type": "exec", "command": ["cat", "proof.txt"], "env": {}, "timeout_ms": 10000});
+    body["input"].as_array_mut().unwrap().splice(
+        11..11,
+        [
+            json!({"type": "local_shell_call", "id": "lsh_1", "call_id": "call_shell_1", "status": "completed", "action": action}),
+            json!({"type": "function_call_output", "call_id": "call_shell_1", "output": "OK"}),
+        ],
+    );
     let req = decode(&body);
     let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
-    let uses: Vec<Value> = sent["messages"]
+    let blocks: Vec<&Value> = sent["messages"]
         .as_array()
         .unwrap()
         .iter()
         .flat_map(|m| m["content"].as_array().unwrap())
+        .collect();
+    let uses: Vec<Value> = blocks
+        .iter()
         .filter(|b| b["type"] == "tool_use" || b["type"] == "tool_result")
         .map(|b| {
             json!([
@@ -752,20 +857,16 @@ fn gpt_tool_history_reaches_claude_and_chat_models_as_tool_calls() {
     assert_eq!(
         uses,
         [
-            json!(["tool_use", "call_patch_1", "apply_patch"]),
-            json!(["tool_result", "call_patch_1", null]),
-            json!(["tool_use", "call_shell_2", "local_shell"]),
-            json!(["tool_result", "call_shell_2", null]),
+            json!(["tool_use", "call_8T8RbkBlHo4KilFkd28euzyo", "exec"]),
+            json!(["tool_result", "call_8T8RbkBlHo4KilFkd28euzyo", null]),
+            json!(["tool_use", "call_shell_1", "local_shell"]),
+            json!(["tool_result", "call_shell_1", null]),
         ]
     );
-    let patch_use = sent["messages"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .flat_map(|m| m["content"].as_array().unwrap())
-        .find(|b| b["name"] == "apply_patch")
-        .unwrap();
-    assert_eq!(patch_use["input"], json!({"input": patch}));
+    let exec = blocks.iter().find(|b| b["name"] == "exec").unwrap();
+    assert_eq!(exec["input"], json!({"input": script}));
+    let shell = blocks.iter().find(|b| b["name"] == "local_shell").unwrap();
+    assert_eq!(shell["input"], action);
 
     let (sent, _) = sent_with(C, &req, mistral(&req));
     let calls: Vec<(&str, &str)> = sent["messages"]
@@ -783,20 +884,32 @@ fn gpt_tool_history_reaches_claude_and_chat_models_as_tool_calls() {
     assert_eq!(
         calls,
         [
-            ("call_patch_1", "apply_patch"),
-            ("call_shell_2", "local_shell")
+            ("call_8T8RbkBlHo4KilFkd28euzyo", "exec"),
+            ("call_shell_1", "local_shell")
         ]
     );
-    let shell = sent["messages"]
+    assert!(!sent.to_string().contains("\"phase\""), "{sent}");
+}
+
+#[test]
+fn gpt_6_assistant_messages_with_a_phase_reach_every_target() {
+    let body = codex("codex-model-switch");
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let assistant: Vec<&str> = sent["messages"]
         .as_array()
         .unwrap()
         .iter()
-        .flat_map(|m| m["tool_calls"].as_array().into_iter().flatten())
-        .find(|c| c["function"]["name"] == "local_shell")
-        .unwrap();
-    let args: Value =
-        serde_json::from_str(shell["function"]["arguments"].as_str().unwrap()).unwrap();
-    assert_eq!(args, body["input"][9]["action"]);
+        .filter(|m| m["role"] == "assistant")
+        .flat_map(|m| m["content"].as_array().unwrap())
+        .filter_map(|b| b["text"].as_str())
+        .collect();
+    assert_eq!(assistant.len(), 3, "{sent}");
+    assert!(!sent.to_string().contains("phase"), "{sent}");
+    let (sent, _) = sent_with(C, &req, EgressCtx::new(&req));
+    assert!(!sent.to_string().contains("\"phase\""), "{sent}");
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    assert_eq!(sent["input"][6]["phase"], "commentary");
 }
 
 #[test]
@@ -948,4 +1061,27 @@ fn xai_gets_codexs_second_turn_as_the_request_it_answered() {
     let (sent, left_out) = sent_with(R, &req, xai(&req));
     assert_eq!(sent, xai_fixture("requests/codex-turn-two.json"));
     assert!(left_out.is_empty());
+}
+
+#[test]
+fn claude_gets_excluded_domains_as_blocked_domains_and_no_image_options() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"][1] = json!({
+        "type": "web_search",
+        "filters": {"allowed_domains": [], "excluded_domains": ["spam.example"]},
+        "enable_image_understanding": true,
+        "enable_image_search": false,
+    });
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(
+        sent["tools"][1],
+        json!({"type": "web_search_20250305", "name": "web_search", "blocked_domains": ["spam.example"]})
+    );
+    assert_eq!(left_out, ["tools[1].enable_image_understanding"]);
+
+    body["tools"][1]["filters"]["allowed_domains"] = json!(["docs.kaeso.app"]);
+    let req = decode(&body);
+    let e = send(A, &req, &mut EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(e.param.as_deref(), Some("tools[1].filters"), "{e}");
 }

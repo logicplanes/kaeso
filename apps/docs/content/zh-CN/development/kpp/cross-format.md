@@ -86,6 +86,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `prompt_cache_key` | request，来自 `openai_responses` | 同上。 | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `phase`（位于助手消息上：`commentary`、`final_answer`） | message，来自 `openai_responses` | 把助手消息标记为前言或最终回答，便于 OpenAI 在重放该轮时区分它们。两种情况下文本相同，其他格式没有这种标记。 | Codex 把 GPT-6 的消息连同它一起发回；切换到其他模型的会话会带上它们；`openai_responses/requests/codex-model-switch.json` |
 
 ### 条件条目
 
@@ -115,7 +116,8 @@ OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的�
 
 | Responses | Anthropic |
 | --- | --- |
-| `filters.allowed_domains` | `allowed_domains` |
+| `filters.allowed_domains`、`filters.excluded_domains`（二选一；空列表视为没有） | `allowed_domains`、`blocked_domains` |
+| `enable_image_understanding`、`enable_image_search`（xAI 的字段） | 省略，为 `true` 时在 `kaeso-left-out` 中注明 |
 | `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` |
 | `external_web_access: true`、`search_context_size: "medium"`（默认值）、`search_content_types: ["text"]` | 不写入；它们描述的正是 Anthropic 搜索的行为 |
 | 含 `image` 的 `search_content_types` | 省略，并在 `kaeso-left-out` 中注明；Anthropic 的搜索只返回文本结果 |
@@ -145,7 +147,7 @@ OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的�
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`：Claude 总是实时搜索 |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`，且服务商的配置含 `WebSearchTool::Xai`：SpaceX 总是实时搜索 |
 
-强制使用被省略工具的 `tool_choice` 仍为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，因为 Chat Completions 在没有工具时会拒绝它们。`tool_choice: "required"` 为 `Unsupported`，因为已没有可调用的工具。
+要求使用被省略工具的 `tool_choice`（直接指定或在 `allowed_tools` 中）为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，并在 `kaeso-left-out` 中注明，因为服务商在没有工具时会拒绝它们。`tool_choice: "required"` 或指定某个工具为 `Unsupported`，因为已没有可调用的工具。
 
 Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
 
@@ -162,7 +164,7 @@ Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_s
 | `local_shell_call` | 名为 `local_shell` 的 `Block::ToolCall`，其 `action` 对象作为参数 |
 | `local_shell_call_output` | 对应其 `id` 所指调用的 `Block::ToolResult`；Codex 改为发送 `function_call_output` |
 
-OpenAI 原样收到这些项。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
+OpenAI 和 SpaceX 原样收到这些项：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
 
 ## 用量
 
@@ -173,8 +175,8 @@ OpenAI 原样收到这些项。不符合上述形状的项仍是未知块，并�
 对话开始之后的系统消息保存为 `Role::System` 消息。
 
 - **发往 Anthropic，来自 Anthropic Messages：** 原样发送，由 API 判断它们的位置是否合适、哪些模型支持它们。Claude Code 在每个请求中都会发送这类消息。
-- **发往 Anthropic，来自其他方言：** 文本并入下一个用户轮次，排在其工具结果之后；后面没有用户轮次时，并入最后一个用户轮次。线程切换模型（`<model_switch>`）或模式（`<collaboration_mode>`）时，Codex 会发送这类消息。Anthropic 只接受紧跟在用户轮次之后、紧接在助手轮次之前的系统消息，而且不是每个模型都支持（[对话中间的系统消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)）。OpenAI 应用则可以把它们放在任何位置，通常放在它们引出的轮次之前。消息的字段与任何消息的字段经过同样的检查。开头的 system 和 developer 消息不受影响：解码器会把它们作为系统提示词。
-- **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。
+- **发往 Anthropic，来自其他方言：** 文本并入下一个用户轮次，排在其工具结果之后；后面没有用户轮次时，并入最后一个用户轮次。线程切换模型（`<model_switch>`）或模式（`<collaboration_mode>`）时，Codex 会发送这类消息。Anthropic 只接受紧跟在用户轮次之后、紧接在助手轮次之前的系统消息，而且不是每个模型都支持（[对话中间的系统消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)）。OpenAI 应用则可以把它们放在任何位置，通常放在它们引出的轮次之前。消息的字段与任何消息的字段经过同样的检查。开头的消息（位于任何用户或助手消息之前）并入系统提示词；其中大多数已由解码器作为系统提示词。若其后是最后一条助手消息（Anthropic 会把它当作预填充继续），文本则并入最后一个用户轮次。
+- **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。发往 Chat Completions 时，位于助手消息的工具调用与其结果之间的此类消息会移到结果之后，因为 Mistral 拒绝那里的系统消息（`Unexpected role 'tool' after role 'system'`）。
 
 ## 保活消息
 

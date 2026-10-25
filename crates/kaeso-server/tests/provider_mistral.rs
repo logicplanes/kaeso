@@ -490,4 +490,16 @@ async fn a_codex_request_reaches_mistral_without_web_search_and_says_so() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(r.header("kaeso-left-out"), None);
+
+    let failing = json!({
+        "model": SMALL,
+        "input": format!("Hi {}", error("recorded-model-not-found")),
+        "tools": [
+            {"type": "function", "name": "exec_command", "parameters": {"type": "object", "properties": {}}},
+            {"type": "web_search"}
+        ]
+    });
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(failing)).await;
+    assert_ne!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("tools[1]"));
 }
