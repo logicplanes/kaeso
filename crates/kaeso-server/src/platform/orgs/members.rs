@@ -11,6 +11,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     GrantRequest, GrantView, RoleBook, RoleRef, check_org, check_org_peer, lock_roles,
@@ -236,7 +237,7 @@ pub async fn update(
     {
         return Err(ApiError::not_found("member"));
     }
-    ctx.audit(Some(scope.id()), "member.rights_update")
+    ctx.audit(Some(scope.id()), Action::MemberRightsUpdate)
         .target("user", UserId::from_uuid(target.user_id))
         .before(org_view(&before, RoleRef::of_org(&target.grant())))
         .after(org_view(&after, role))
@@ -297,7 +298,7 @@ pub(crate) async fn remove_member(
         key_lifecycle::archive_user_keys_in_org(&mut *tx, org.uuid(), target.user_id, ctx.now)
             .await?;
     let remaining = members::org_count_of_user(&mut *tx, target.user_id).await?;
-    ctx.audit(Some(org), "member.remove")
+    ctx.audit(Some(org), Action::MemberRemove)
         .target("user", UserId::from_uuid(target.user_id))
         .before(serde_json::json!({ "role": RoleRef::of_org(&target.grant()) }))
         .after(serde_json::json!({ "archived_keys": archived.len() }))

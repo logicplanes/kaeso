@@ -13,6 +13,7 @@ use time::OffsetDateTime;
 use utoipa::ToSchema;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::pagination::{List, PageParams};
@@ -425,7 +426,7 @@ pub async fn get(State(state): State<AppState>, _ctx: Ctx) -> ApiResult<Json<Upd
 pub async fn check(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<UpdatesView>> {
     let checked = service::check(&state, service::Trigger::Admin).await?;
     let view = overview(&state).await?;
-    ctx.audit(None, "instance.update_check")
+    ctx.audit(None, Action::InstanceUpdateCheck)
         .after(json!({
             "found": view.latest.as_ref().map(|l| l.version.clone()),
             "failed": matches!(checked, service::Checked::Failed(_)),
@@ -523,7 +524,7 @@ pub async fn settings(
     };
     let window_after = window(&before, &req)?;
     updates::choose(&mut *tx, &after, &window_after, ctx.now).await?;
-    ctx.audit(None, "instance.update_settings")
+    ctx.audit(None, Action::InstanceUpdateSettings)
         .before(json!({
             "channel": before.channel,
             "mode": before.mode,
@@ -615,7 +616,7 @@ pub async fn apply(
             "An update is already running; wait for it to finish.".into(),
         ));
     }
-    ctx.audit(None, "instance.update_start")
+    ctx.audit(None, Action::InstanceUpdateStart)
         .target("update", id)
         .before(json!({ "version": from }))
         .after(json!({ "version": to }))

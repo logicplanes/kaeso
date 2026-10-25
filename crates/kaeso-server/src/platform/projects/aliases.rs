@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use super::{MODELS_ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::pagination::List;
@@ -139,7 +140,7 @@ pub async fn create(
             req.name
         )));
     }
-    ctx.audit(Some(ctx.org()?.id()), "alias.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::AliasCreate)
         .target("alias", id)
         .after(
             serde_json::json!({ "name": req.name, "catalogue_model_id": req.catalogue_model_id }),
@@ -244,7 +245,7 @@ pub async fn update(
         Some(false) => return Err(ApiError::not_found("alias")),
         Some(true) => {}
     }
-    ctx.audit(Some(ctx.org()?.id()), "alias.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::AliasUpdate)
         .target("alias", AliasId::from_uuid(row.id))
         .before(serde_json::json!({ "name": row.name, "catalogue_model_id": CatalogueModelId::from_uuid(row.catalogue_model_id) }))
         .after(serde_json::json!({ "name": name, "catalogue_model_id": CatalogueModelId::from_uuid(target) }))
@@ -280,7 +281,7 @@ pub async fn delete(
     if !catalogue::delete_alias(&mut *tx, row.project_id, row.id).await? {
         return Err(ApiError::not_found("alias"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "alias.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::AliasDelete)
         .target("alias", AliasId::from_uuid(row.id))
         .before(serde_json::json!({ "name": row.name, "catalogue_model_id": CatalogueModelId::from_uuid(row.catalogue_model_id) }))
         .write(&mut tx)

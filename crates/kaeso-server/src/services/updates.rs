@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use time::OffsetDateTime;
 
+use crate::platform::audit::Action;
 use crate::services::updater::{self, Updater, UpdaterError};
 use crate::state::AppState;
 
@@ -758,7 +759,7 @@ pub async fn finish(
         crate::platform::audit::system_event(
             &mut tx,
             None,
-            "instance.update_finish",
+            Action::InstanceUpdateFinish,
             Some(("update", UpdateId::from_uuid(job.id).to_string())),
             Some(json!({ "version": job.from_version })),
             Some(json!({
@@ -911,7 +912,7 @@ pub async fn auto_update(state: &AppState) -> Result<Auto, StoreError> {
     crate::platform::audit::system_event(
         &mut tx,
         None,
-        "instance.update_start",
+        Action::InstanceUpdateStart,
         Some(("update", id.to_string())),
         Some(json!({ "version": from })),
         Some(json!({ "version": to, "automatic": true })),

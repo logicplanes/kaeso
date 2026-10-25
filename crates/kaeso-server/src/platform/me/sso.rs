@@ -11,6 +11,7 @@ use utoipa::ToSchema;
 
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::auth::next;
 use crate::platform::auth::oidc::{StartResponse, begin_confirm, begin_link};
 use crate::platform::error::{ApiError, ApiResult};
@@ -147,7 +148,7 @@ pub async fn unlink(
         return Err(ApiError::not_found("link"));
     }
     let ended = sessions_store::revoke_sso(&mut *tx, org.uuid(), Some(me.uuid()), ctx.now).await?;
-    ctx.audit(Some(org), "user.sso_unlink")
+    ctx.audit(Some(org), Action::UserSsoUnlink)
         .target("user", me)
         .after(serde_json::json!({ "sessions_ended": ended.len() }))
         .write(&mut tx)

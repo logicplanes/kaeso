@@ -187,8 +187,7 @@ impl Endless {
     }
 }
 
-// Opens a stream like `stream` and then repeats its text deltas without end, encoding each
-// only when it is sent, so a stream that is never read costs the mock no memory.
+// Each delta is encoded only when sent, so a stream that is never read costs the mock no memory.
 pub(super) fn endless(
     dialect: DialectId,
     body: &[u8],

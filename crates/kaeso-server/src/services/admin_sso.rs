@@ -4,6 +4,7 @@ use kaeso_store::pg::instance::{self, AdminSso, InstanceSettings};
 use kaeso_store::pg::{oidc, orgs};
 use serde_json::{Map, Value};
 
+use crate::platform::audit::Action;
 use crate::platform::error::ApiError;
 use crate::state::AppState;
 
@@ -98,7 +99,7 @@ pub async fn operator_set(state: &AppState, org: &str) -> Result<OperatorAdminSs
     crate::platform::audit::system_change(
         &mut tx,
         None,
-        "instance.admin_sso_update",
+        Action::InstanceAdminSsoUpdate,
         None,
         Some(Value::Object(audited(changed.before.as_ref()))),
         Some(Value::Object(after)),

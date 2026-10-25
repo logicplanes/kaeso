@@ -190,7 +190,6 @@ writeFileSync(
   join(dist, "tokens.json"),
   `${JSON.stringify(
     {
-      brandVersion: t.brandVersion,
       neutral: resolve(t.neutral),
       semantic: t.semantic,
       dangerFill: t.dangerFill,
@@ -219,4 +218,4 @@ writeFileSync(
     2,
   )}\n`,
 );
-console.log(`@logicplanes/kaeso-tokens: wrote tokens.css, theme.css, tokens.json (brand ${t.brandVersion})`);
+console.log("@logicplanes/kaeso-tokens: wrote tokens.css, theme.css, tokens.json");

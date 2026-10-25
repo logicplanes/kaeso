@@ -6,115 +6,137 @@ use serde_json::Value;
 use super::access::{Caller, Ctx};
 use super::error::ApiResult;
 
-pub const ACTIONS: &[&str] = &[
-    "alias.create",
-    "alias.delete",
-    "alias.update",
-    "audit_log.export",
-    "catalogue_model.check",
-    "catalogue_model.create",
-    "catalogue_model.delete",
-    "catalogue_model.price_change",
-    "catalogue_model.update",
-    "credential.assign",
-    "credential.create",
-    "credential.default",
-    "credential.delete",
-    "credential.rename",
-    "credential.replace",
-    "custom_provider.create",
-    "custom_provider.delete",
-    "custom_provider.update",
-    "instance.admin_sso_update",
-    "instance.invite",
-    "instance.settings_update",
-    "instance.setup",
-    "instance.update_check",
-    "instance.update_finish",
-    "instance.update_settings",
-    "instance.update_start",
-    "invite.accept",
-    "invite.create",
-    "invite.resend",
-    "invite.revoke",
-    "key.archive",
-    "key.create",
-    "key.disable",
-    "key.enable",
-    "key.rotate",
-    "limit.create",
-    "limit.delete",
-    "limit.threshold_reached",
-    "limit.update",
-    "logs.delete",
-    "logs.export",
-    "logs.project_content_logging",
-    "logs.settings_update",
-    "member.join_by_sso",
-    "member.remove",
-    "member.rights_update",
-    "model_access.update",
-    "models_dev.model_delisted",
-    "models_dev.price_change",
-    "models_dev.sync",
-    "org.create",
-    "org.delete_final",
-    "org.delete_now",
-    "org.owner_appointed",
-    "org.owner_appointed_by_instance_admin",
-    "org.ownership_transfer",
-    "org.restore",
-    "org.schedule_deletion",
-    "org.update",
-    "platform_key.archive",
-    "platform_key.create",
-    "platform_key.disable",
-    "platform_key.enable",
-    "platform_key.rotate",
-    "project.archive",
-    "project.create",
-    "project.default",
-    "project.key_policy",
-    "project.member_add",
-    "project.member_remove",
-    "project.member_rights_update",
-    "project.update",
-    "role.create",
-    "role.delete",
-    "role.update",
-    "security.key_policy",
-    "security.require_2fa",
-    "security.require_sso",
-    "security.sso_delete",
-    "security.sso_domain_verify",
-    "security.sso_update",
-    "service_account.archive",
-    "service_account.create",
-    "service_account.update",
-    "user.2fa_reset",
-    "user.create_by_invite",
-    "user.create_by_sso",
-    "user.deactivate",
-    "user.delete",
-    "user.email_change",
-    "user.email_change_cancel",
-    "user.email_change_request",
-    "user.instance_admin",
-    "user.notifications",
-    "user.password_change",
-    "user.password_reset",
-    "user.reactivate",
-    "user.recovery_codes_regenerate",
-    "user.sessions_revoke",
-    "user.sign_in_confirm",
-    "user.sign_in_link",
-    "user.signup",
-    "user.sso_link",
-    "user.sso_unlink",
-    "user.totp_disable",
-    "user.totp_enable",
-    "user.update",
-];
+macro_rules! actions {
+    (pub const $list:ident = [$($variant:ident = $name:literal,)*];) => {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub enum Action {
+            $($variant,)*
+        }
+
+        impl Action {
+            pub const fn as_str(self) -> &'static str {
+                match self {
+                    $(Self::$variant => $name,)*
+                }
+            }
+        }
+
+        pub const $list: &[&str] = &[$($name,)*];
+    };
+}
+
+// Spelled as a constant because the console's test reads the action names from this list.
+actions! {
+    pub const ACTIONS = [
+        AliasCreate = "alias.create",
+        AliasDelete = "alias.delete",
+        AliasUpdate = "alias.update",
+        AuditLogExport = "audit_log.export",
+        CatalogueModelCheck = "catalogue_model.check",
+        CatalogueModelCreate = "catalogue_model.create",
+        CatalogueModelDelete = "catalogue_model.delete",
+        CatalogueModelPriceChange = "catalogue_model.price_change",
+        CatalogueModelUpdate = "catalogue_model.update",
+        CredentialAssign = "credential.assign",
+        CredentialCreate = "credential.create",
+        CredentialDefault = "credential.default",
+        CredentialDelete = "credential.delete",
+        CredentialRename = "credential.rename",
+        CredentialReplace = "credential.replace",
+        CustomProviderCreate = "custom_provider.create",
+        CustomProviderDelete = "custom_provider.delete",
+        CustomProviderUpdate = "custom_provider.update",
+        InstanceAdminSsoUpdate = "instance.admin_sso_update",
+        InstanceInvite = "instance.invite",
+        InstanceSettingsUpdate = "instance.settings_update",
+        InstanceSetup = "instance.setup",
+        InstanceUpdateCheck = "instance.update_check",
+        InstanceUpdateFinish = "instance.update_finish",
+        InstanceUpdateSettings = "instance.update_settings",
+        InstanceUpdateStart = "instance.update_start",
+        InviteAccept = "invite.accept",
+        InviteCreate = "invite.create",
+        InviteResend = "invite.resend",
+        InviteRevoke = "invite.revoke",
+        KeyArchive = "key.archive",
+        KeyCreate = "key.create",
+        KeyDisable = "key.disable",
+        KeyEnable = "key.enable",
+        KeyRotate = "key.rotate",
+        LimitCreate = "limit.create",
+        LimitDelete = "limit.delete",
+        LimitThresholdReached = "limit.threshold_reached",
+        LimitUpdate = "limit.update",
+        LogsDelete = "logs.delete",
+        LogsExport = "logs.export",
+        LogsProjectContentLogging = "logs.project_content_logging",
+        LogsSettingsUpdate = "logs.settings_update",
+        MemberJoinBySso = "member.join_by_sso",
+        MemberRemove = "member.remove",
+        MemberRightsUpdate = "member.rights_update",
+        ModelAccessUpdate = "model_access.update",
+        ModelsDevModelDelisted = "models_dev.model_delisted",
+        ModelsDevPriceChange = "models_dev.price_change",
+        ModelsDevSync = "models_dev.sync",
+        OrgCreate = "org.create",
+        OrgDeleteFinal = "org.delete_final",
+        OrgDeleteNow = "org.delete_now",
+        OrgOwnerAppointed = "org.owner_appointed",
+        OrgOwnerAppointedByInstanceAdmin = "org.owner_appointed_by_instance_admin",
+        OrgOwnershipTransfer = "org.ownership_transfer",
+        OrgRestore = "org.restore",
+        OrgScheduleDeletion = "org.schedule_deletion",
+        OrgUpdate = "org.update",
+        PlatformKeyArchive = "platform_key.archive",
+        PlatformKeyCreate = "platform_key.create",
+        PlatformKeyDisable = "platform_key.disable",
+        PlatformKeyEnable = "platform_key.enable",
+        PlatformKeyRotate = "platform_key.rotate",
+        ProjectArchive = "project.archive",
+        ProjectCreate = "project.create",
+        ProjectDefault = "project.default",
+        ProjectKeyPolicy = "project.key_policy",
+        ProjectMemberAdd = "project.member_add",
+        ProjectMemberRemove = "project.member_remove",
+        ProjectMemberRightsUpdate = "project.member_rights_update",
+        ProjectUpdate = "project.update",
+        RoleCreate = "role.create",
+        RoleDelete = "role.delete",
+        RoleUpdate = "role.update",
+        SecurityKeyPolicy = "security.key_policy",
+        SecurityRequire2fa = "security.require_2fa",
+        SecurityRequireSso = "security.require_sso",
+        SecuritySsoDelete = "security.sso_delete",
+        SecuritySsoDomainVerify = "security.sso_domain_verify",
+        SecuritySsoUpdate = "security.sso_update",
+        ServiceAccountArchive = "service_account.archive",
+        ServiceAccountCreate = "service_account.create",
+        ServiceAccountUpdate = "service_account.update",
+        User2faReset = "user.2fa_reset",
+        UserCreateByInvite = "user.create_by_invite",
+        UserCreateBySso = "user.create_by_sso",
+        UserDeactivate = "user.deactivate",
+        UserDelete = "user.delete",
+        UserEmailChange = "user.email_change",
+        UserEmailChangeCancel = "user.email_change_cancel",
+        UserEmailChangeRequest = "user.email_change_request",
+        UserInstanceAdmin = "user.instance_admin",
+        UserNotifications = "user.notifications",
+        UserPasswordChange = "user.password_change",
+        UserPasswordReset = "user.password_reset",
+        UserReactivate = "user.reactivate",
+        UserRecoveryCodesRegenerate = "user.recovery_codes_regenerate",
+        UserSessionsRevoke = "user.sessions_revoke",
+        UserSignInConfirm = "user.sign_in_confirm",
+        UserSignInLink = "user.sign_in_link",
+        UserSignup = "user.signup",
+        UserSsoLink = "user.sso_link",
+        UserSsoUnlink = "user.sso_unlink",
+        UserTotpDisable = "user.totp_disable",
+        UserTotpEnable = "user.totp_enable",
+        UserUpdate = "user.update",
+    ];
+}
 
 #[derive(Debug)]
 #[must_use = "an audit event must be written with `write`"]
@@ -122,7 +144,7 @@ pub struct Event<'c> {
     ctx: &'c Ctx,
     org: Option<OrgId>,
     project: Option<ProjectId>,
-    action: &'static str,
+    action: Action,
     target: Option<(&'static str, String)>,
     before: Option<Value>,
     after: Option<Value>,
@@ -130,7 +152,7 @@ pub struct Event<'c> {
 }
 
 impl Ctx {
-    pub fn audit(&self, org: Option<OrgId>, action: &'static str) -> Event<'_> {
+    pub fn audit(&self, org: Option<OrgId>, action: Action) -> Event<'_> {
         let project = match (&self.project, org) {
             (Some(p), Some(o)) if p.project.org_id == o.uuid() => Some(p.id()),
             _ => None,
@@ -165,17 +187,16 @@ impl Event<'_> {
     }
 
     pub fn before(mut self, v: impl Serialize) -> Self {
-        self.before = snapshot(self.action, "before", v);
+        self.before = snapshot(self.action.as_str(), "before", v);
         self
     }
 
     pub fn after(mut self, v: impl Serialize) -> Self {
-        self.after = snapshot(self.action, "after", v);
+        self.after = snapshot(self.action.as_str(), "after", v);
         self
     }
 
     pub async fn write(self, db: &mut sqlx::PgConnection) -> ApiResult<()> {
-        debug_assert_listed(self.action);
         let (actor_kind, actor_id) = match (&self.actor, &self.ctx.caller) {
             (Some(user), _) => ("user", Some(user.uuid())),
             (None, Caller::Session(s)) => ("user", Some(s.user_id)),
@@ -191,7 +212,7 @@ impl Event<'_> {
                 project_id: self.project.map(|p| p.uuid()),
                 actor_kind,
                 actor_id,
-                action: self.action,
+                action: self.action.as_str(),
                 target_kind: self.target.as_ref().map(|(k, _)| *k),
                 target_id: self.target.as_ref().map(|(_, id)| id.as_str()),
                 before: self.before,
@@ -207,13 +228,6 @@ impl Event<'_> {
     }
 }
 
-fn debug_assert_listed(action: &str) {
-    debug_assert!(
-        ACTIONS.binary_search(&action).is_ok(),
-        "audit action `{action}` isn't in ACTIONS, so the console has no label for it"
-    );
-}
-
 fn snapshot(action: &'static str, side: &'static str, v: impl Serialize) -> Option<Value> {
     serde_json::to_value(v)
         .inspect_err(|e| {
@@ -225,7 +239,7 @@ fn snapshot(action: &'static str, side: &'static str, v: impl Serialize) -> Opti
 pub async fn system(
     db: &mut sqlx::PgConnection,
     org: Option<OrgId>,
-    action: &'static str,
+    action: Action,
     target: Option<(&'static str, String)>,
     after: Option<Value>,
     at: time::OffsetDateTime,
@@ -236,7 +250,7 @@ pub async fn system(
 pub async fn system_change(
     db: &mut sqlx::PgConnection,
     org: Option<OrgId>,
-    action: &'static str,
+    action: Action,
     target: Option<(&'static str, String)>,
     before: Option<Value>,
     after: Option<Value>,
@@ -249,13 +263,12 @@ pub async fn system_change(
 pub async fn system_event(
     db: &mut sqlx::PgConnection,
     org: Option<OrgId>,
-    action: &'static str,
+    action: Action,
     target: Option<(&'static str, String)>,
     before: Option<Value>,
     after: Option<Value>,
     at: time::OffsetDateTime,
 ) -> Result<(), kaeso_store::StoreError> {
-    debug_assert_listed(action);
     audit::insert(
         db,
         &NewEvent {
@@ -264,7 +277,7 @@ pub async fn system_event(
             project_id: None,
             actor_kind: "system",
             actor_id: None,
-            action,
+            action: action.as_str(),
             target_kind: target.as_ref().map(|(k, _)| *k),
             target_id: target.as_ref().map(|(_, id)| id.as_str()),
             before,

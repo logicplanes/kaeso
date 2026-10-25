@@ -7,9 +7,8 @@ use crate::Result;
 pub(crate) const READY: &str = "kaeso-bench ready";
 pub(crate) const SETUP_TOKEN: &str = " setup-token=";
 
-// Runs the gateway as `kaeso serve` does, in a process of its own so its memory can be
-// measured apart from the clients and the mock provider. It stops when its standard input
-// closes, so it never outlives the benchmark.
+// In a process of its own, so the gateway's memory is measured apart from the clients and the mock
+// provider. It stops when its standard input closes, so it never outlives the benchmark.
 pub(crate) async fn serve() -> Result<()> {
     let config = config::load(&ProcessSource)?;
     kaeso_server::telemetry::init_logging(&config.log)?;

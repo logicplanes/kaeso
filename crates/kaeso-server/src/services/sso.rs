@@ -1,6 +1,7 @@
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::{oidc, orgs, sessions};
 
+use crate::platform::audit::Action;
 use crate::platform::error::ApiError;
 use crate::state::AppState;
 
@@ -59,7 +60,7 @@ pub async fn operator_verify_domain(
     crate::platform::audit::system(
         &mut tx,
         Some(org),
-        "security.sso_domain_verify",
+        Action::SecuritySsoDomainVerify,
         Some(("org", org.to_string())),
         Some(serde_json::json!({ "domain": domain, "by": "operator", "sessions_ended": ended.len() })),
         now,
