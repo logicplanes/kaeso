@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "message": "Tool reference 'get_forecast' not found in available tools",
+    "type": "invalid_request_error"
+  },
+  "request_id": "req_01m5sckn6gefat1e2ez52j7h2k"
+}

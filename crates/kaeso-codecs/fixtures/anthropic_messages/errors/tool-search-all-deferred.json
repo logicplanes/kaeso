@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "message": "At least one tool must have defer_loading=false. All tools cannot be deferred.",
+    "type": "invalid_request_error"
+  },
+  "request_id": "req_01m5sckmfgengssh3s3y85j58y"
+}

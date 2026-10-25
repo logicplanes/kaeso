@@ -426,19 +426,12 @@ fn check_block(block: &Block, target: &Origin, path: &str) -> Result<(), KppErro
                     "Remove the message, or send the request to a model served through its original format.",
                 ));
             }
-            let hint = if item.origin.is(DialectId::AnthropicMessages)
-                && ty.as_deref() == Some("tool_reference")
-            {
-                "Remove the block, or send the request to a model served through its original format. From Claude Code, unset `ENABLE_TOOL_SEARCH` or set it to `false`."
-            } else {
-                "Remove the block, or send the request to a model served through its original format."
-            };
             Err(foreign(
                 format!("{} content block", ty.as_deref().unwrap_or("unknown")),
                 &item.origin,
                 dialect,
                 path,
-                hint,
+                "Remove the block, or send the request to a model served through its original format.",
             ))
         }
         Block::Text(t) => {
