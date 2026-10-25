@@ -31,10 +31,11 @@ function forget(token: string) {
   forgetFragment(token);
 }
 
-const LINK_ERRORS: ReadonlyMap<string, () => string> = new Map([
-  ["invalid_client", () => t("public.agentLinkUnknownClient", "Kaeso doesn't know this agent; connect it again from the agent.")],
-  ["invalid_redirect_uri", () => t("public.agentLinkBadReturn", "The agent asked to return to an address it didn't register; connect it again.")],
-]);
+function linkError(error: string | null): string | undefined {
+  if (error === "invalid_client") return t("public.agentLinkUnknownClient", "Kaeso doesn't know this agent; connect it again from the agent.");
+  if (error === "invalid_redirect_uri") return t("public.agentLinkBadReturn", "The agent asked to return to an address it didn't register; connect it again.");
+  return undefined;
+}
 
 export function AuthorizePage() {
   usePageTitle(t("public.connectAgent", "Connect an agent"));
@@ -44,10 +45,7 @@ export function AuthorizePage() {
     return (
       <PublicPage
         title={t("public.agentLinkUnusable", "This sign-in link can't be used")}
-        description={
-          (error ? LINK_ERRORS.get(error)?.() : undefined) ??
-          t("public.agentLinkMissing", "Start the sign-in from the agent again; it opens this page with its request.")
-        }
+        description={linkError(error) ?? t("public.agentLinkMissing", "Start the sign-in from the agent again; it opens this page with its request.")}
       >
         <Button size="xl" fullWidth href="/">
           {t("public.openKaeso", "Open Kaeso")}
