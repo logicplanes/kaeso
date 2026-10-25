@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -74,5 +75,15 @@ describe("DisplayOptions", () => {
     const { container } = render(<DisplayOptions inline />);
     expect(container.firstElementChild).toHaveClass("rounded-popover");
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("DisplayOptions"));
+  });
+
+  it("forwards its ref to the trigger, or to the panel when inline", () => {
+    const ref = createRef<HTMLElement>();
+    const toggles = [{ label: "Show archived", checked: false, onChange: vi.fn() }];
+    const { rerender } = render(<DisplayOptions ref={ref} toggles={toggles} />);
+    expect(ref.current).toBe(screen.getByRole("button", { name: "Display options" }));
+    rerender(<DisplayOptions ref={ref} inline toggles={toggles} />);
+    expect(ref.current).toHaveClass("rounded-popover");
+    expect(ref.current).toContainElement(screen.getByRole("switch", { name: "Show archived" }));
   });
 });

@@ -586,12 +586,19 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
 });
 GroupHeader.displayName = "GroupHeader";
 
-export function SelectionBar({ count, onClear, children }: { count: number; onClear: () => void; children?: ReactNode | undefined }) {
+export interface SelectionBarProps {
+  count: number;
+  onClear: () => void;
+  children?: ReactNode | undefined;
+}
+
+export const SelectionBar = forwardRef<HTMLDivElement, SelectionBarProps>(function SelectionBar({ count, onClear, children }, ref) {
   const container = usePortalContainer();
   const t = useUiText();
   if (typeof document === "undefined") return null;
   return createPortal(
     <div
+      ref={ref}
       role="region"
       aria-label={t("list.selection", "Selection")}
       className="pointer-events-none fixed right-0 bottom-24 left-0 z-50 flex justify-center px-16"
@@ -612,7 +619,7 @@ export function SelectionBar({ count, onClear, children }: { count: number; onCl
     </div>,
     container ?? document.body,
   );
-}
+});
 SelectionBar.displayName = "SelectionBar";
 
 export function SelectionAction({

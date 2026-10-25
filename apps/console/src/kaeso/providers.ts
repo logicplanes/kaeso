@@ -20,7 +20,7 @@ export interface Providers {
 
 export function providerCatalog(list: readonly ProviderView[]): Providers {
   const byId = new Map(list.map((p) => [p.id, p]));
-  const name = (id: string) => byId.get(id)?.name ?? id.charAt(0).toUpperCase() + id.slice(1);
+  const name = (id: string) => byId.get(id)?.name ?? id;
   return {
     list,
     get: (id) => byId.get(id),

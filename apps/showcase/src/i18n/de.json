@@ -1091,5 +1091,13 @@
   "What the figure shows, usually a ThemeImage.": "Was die Abbildung zeigt, meist ein ThemeImage.",
   "Where a figure wider than its column starts, as a share of its width: 0.5, the middle, by default.": "Wo eine Abbildung beginnt, die breiter als ihre Spalte ist, als Anteil ihrer Breite: standardmäßig 0.5, die Mitte.",
   "The name of the figure's scrolling region, read by screen readers.": "Der Name des scrollbaren Bereichs der Abbildung, den Screenreader vorlesen.",
-  "The figure's background: a well like a code block's, or none.": "Der Hintergrund der Abbildung: eine Fläche wie bei einem Codeblock oder keiner."
+  "The figure's background: a well like a code block's, or none.": "Der Hintergrund der Abbildung: eine Fläche wie bei einem Codeblock oder keiner.",
+  "Text that changes with state in a place sized for its widest version, so nothing around it moves.": "Text, der sich mit dem Zustand ändert, an einer Stelle mit der Breite seiner längsten Fassung, damit sich nichts um ihn herum bewegt.",
+  "Aligned at the start": "Am Anfang ausgerichtet",
+  "In a column, start-aligned labels keep the text after them on one line.": "In einer Spalte halten am Anfang ausgerichtete Beschriftungen den Text danach auf einer Linie.",
+  "Aligns the shorter labels at the start or in the center of the reserved width.": "Richtet die kürzeren Beschriftungen am Anfang oder in der Mitte der reservierten Breite aus.",
+  "What is shown now.": "Was jetzt angezeigt wird.",
+  "Every text this place can show (\"Copy page\", \"Copied\"). The width fits the widest, so a state change never resizes the control.": "Jeder Text, den diese Stelle zeigen kann („Seite kopieren“, „Kopiert“). Die Breite richtet sich nach dem breitesten, damit ein Zustandswechsel die Größe des Steuerelements nie verändert.",
+  "A circle that opens system, light or dark, stored as `kaeso:theme`; its icon shows the theme in use.": "Ein Kreis, der System, Hell oder Dunkel zur Wahl stellt, gespeichert als `kaeso:theme`; sein Symbol zeigt das verwendete Theme.",
+  "A filled button (`secondary`) or a quiet one (`ghost`).": "Ein gefüllter Button (`secondary`) oder ein leiser (`ghost`)."
 }

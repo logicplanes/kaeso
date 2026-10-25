@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -175,5 +176,15 @@ describe("CommandPalette", () => {
     render(<CommandPalette inline groups={groups()} />);
     fireEvent.mouseMove(screen.getByRole("option", { name: /API keys/ }));
     expect(screen.getByRole("option", { name: /API keys/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("forwards its ref to the dialog when open, and to the panel when inline", () => {
+    const ref = createRef<HTMLDivElement>();
+    const { unmount } = render(<CommandPalette ref={ref} open groups={groups()} />);
+    expect(ref.current).toBe(screen.getByRole("dialog", { name: "Command palette" }));
+    unmount();
+    render(<CommandPalette ref={ref} inline groups={groups()} />);
+    expect(ref.current).toHaveClass("rounded-palette");
+    expect(ref.current).toContainElement(screen.getByRole("combobox"));
   });
 });

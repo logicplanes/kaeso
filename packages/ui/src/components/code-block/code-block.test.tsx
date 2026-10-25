@@ -47,12 +47,12 @@ describe("CodeBlock", () => {
   });
 
   it("highlights code once the highlighter loads", async () => {
-    const { container } = render(<CodeBlock code={'const key = "sk-kaeso";\n'} title="client.ts" lineNumbers highlightLines={[1]} />);
+    const { container } = render(<CodeBlock code={'const key = "sk-kso";\n'} title="client.ts" lineNumbers highlightLines={[1]} />);
     expect(screen.getByText("client.ts")).toBeInTheDocument();
     expect(container.querySelector(".bg-fill-2")).not.toBeNull();
-    expect(screen.getByText('const key = "sk-kaeso";')).toBeInTheDocument();
+    expect(screen.getByText('const key = "sk-kso";')).toBeInTheDocument();
     await highlighted();
-    expect(screen.getByText('"sk-kaeso"')).toHaveClass("text-info-text");
+    expect(screen.getByText('"sk-kso"')).toHaveClass("text-info-text");
     expect(screen.getByText("const")).toHaveClass("font-semibold");
     expect(container.querySelector("[style]")).toBeNull();
   });

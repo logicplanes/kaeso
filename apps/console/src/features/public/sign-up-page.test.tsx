@@ -47,7 +47,7 @@ describe("creating an account", () => {
     on("POST", "auth/signup", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp("/sign-up");
     await user.type(await screen.findByRole("textbox", { name: "Email" }), "grace@example.com{Enter}");
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("grace@example.com");
   });
 });
