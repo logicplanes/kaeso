@@ -53,13 +53,13 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
     status: response.status,
     message:
       response.status === 502 || response.status === 504
-        ? t("common.unreachable", "Can't reach the gateway. Try again.")
+        ? t("common.unreachable", "Can't reach the gateway; try again.")
         : t("errors.gatewayAnswered", "The gateway answered {status}.", { status: String(response.status) }),
     requestId,
   });
 }
 
-export const networkError = () => new ApiError({ type: "network", status: 0, message: t("common.unreachable", "Can't reach the gateway. Try again.") });
+export const networkError = () => new ApiError({ type: "network", status: 0, message: t("common.unreachable", "Can't reach the gateway; try again.") });
 
 export async function translateGatewayMessage(message: string): Promise<string> {
   if (locale() === "en") return message;

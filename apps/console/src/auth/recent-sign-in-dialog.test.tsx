@@ -306,7 +306,7 @@ describe("signing in again without a password", () => {
     const { user } = await renderApp(PATH);
     const box = await toggle(user);
     await user.click(await within(box).findByRole("button", { name: "Email me a sign-in link" }));
-    expect((await (await notifications()).findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
   });
 });
 

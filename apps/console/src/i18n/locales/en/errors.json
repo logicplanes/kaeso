@@ -120,7 +120,7 @@
   "errors.expiryPast": "The expiry date must be in the future.",
   "errors.exportContentRight": "Exporting content needs the right `logs.content.view`.",
   "errors.exportFormat": "Use `jsonl` or `csv`.",
-  "errors.exportStopped": "The export stopped before the end. Try again.",
+  "errors.exportStopped": "The export stopped before the end; try again.",
   "errors.fieldDate": "`{name}` must be a date, YYYY-MM-DD.",
   "errors.fieldGivenTwice": "`{name}` is given more than once.",
   "errors.fieldIdPrefix": "`{name}` must be an id starting with `{prefix}`.",

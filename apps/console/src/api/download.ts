@@ -73,7 +73,7 @@ export async function saveExport(
     await discard();
     if (signal.aborted) return { kind: "canceled" };
     if (e instanceof ApiError) throw e;
-    throw new ApiError({ type: "network", status: 0, message: t("errors.exportStopped", "The export stopped before the end. Try again.") });
+    throw new ApiError({ type: "network", status: 0, message: t("errors.exportStopped", "The export stopped before the end; try again.") });
   }
   return { kind: "saved", bytes, name: saved.name };
 }
