@@ -27,6 +27,7 @@ export const docs = {
       ref: "A ref to the outer element.",
       rowMenu: "Items for a row's context menu (right-click).",
       selectable: "Adds a checkbox to every row.",
+      canSelectRow: "Whether a row can be selected; a row that can't keeps a disabled checkbox, and select all skips it.",
       selection: "The selected rows, when you control them.",
       sorting: "The sort order, when you control it.",
       stickyFirstColumn: "Keeps the first column in view while scrolling sideways.",

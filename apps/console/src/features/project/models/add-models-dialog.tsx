@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Autocomplete,
   Badge,
   Banner,
   Button,
+  DataTable,
   DialogScope,
   Empty,
+  IconButton,
   Input,
   LayerDialog,
   List,
@@ -15,6 +17,9 @@ import {
   SearchInput,
   Switch,
   Text,
+  col,
+  icons,
+  type RowSelectionState,
 } from "@logicplanes/kaeso-ui";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import { toast } from "~/shell/toast";
@@ -123,16 +128,21 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     },
   });
 
-  const startReview = async (modelId: string) => {
-    try {
-      const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId));
-      if (!preview) return toast.error(t("models.noLongerOnModelsDev", "models.dev doesn't list {model} any more.", { model: modelId }));
-      setReview({ preview, draft: draftFrom(previewFields(preview)) });
-      setView("review");
-    } catch (e) {
-      toastApiError(e);
-    }
-  };
+  const startReview = useCallback(
+    async (modelId: string) => {
+      try {
+        const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId));
+        if (!preview) return toast.error(t("models.noLongerOnModelsDev", "models.dev doesn't list {model} any more.", { model: modelId }));
+        setReview({ preview, draft: draftFrom(previewFields(preview)) });
+        setView("review");
+      } catch (e) {
+        toastApiError(e);
+      }
+    },
+    [queryClient, org, project, provider],
+  );
+  const providerName = catalog.name;
+  const columns = useMemo(() => hitColumns(providerName, (id) => void startReview(id)), [providerName, startReview]);
 
   const ownDraft = (modelId: string) => {
     const detected = detectedFor(modelId);
@@ -156,6 +166,12 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const list = hits.data?.data ?? [];
   const total = hits.data?.total ?? 0;
 
+  const toggle = (id: string) =>
+    setSelected((now) => {
+      const next = new Set(now);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   const addSelected = () => {
     if (ids.length) batch.mutate({ model_ids: ids });
   };
@@ -193,7 +209,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     />
   );
   const searchInput = (
-    <div className="min-w-0 flex-1 basis-200">
+    <div className="min-w-0 flex-1 basis-120">
       <SearchInput
         aria-label={t("models.search", "Search models")}
         placeholder={common.search()}
@@ -221,12 +237,14 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const ownLayer = {
     title: t("models.addModels", "Add models"),
     description: t("models.addOwnHint", "{provider} is this organization's own provider; pick a model it lists or type its id.", { provider: name }),
+    toolbar: (
+      <div className="flex w-full flex-wrap items-center gap-8 sm:flex-nowrap">
+        {picker}
+        {searchInput}
+      </div>
+    ),
     content: (
       <div className="flex flex-col gap-16">
-        <div className="flex flex-wrap items-center gap-8 sm:flex-nowrap">
-          {picker}
-          {searchInput}
-        </div>
         {keyBanner}
         <div className="flex min-h-0 flex-col">
           {offered.isPending ? (
@@ -275,19 +293,19 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
 
   const modelsDevLayer = {
     title: t("models.addModels", "Add models"),
-    description: t("models.addHint", "Search models.dev; each model brings its prices, limits and capabilities, which you can override."),
+    description: t("models.addHint", "Search models.dev; prices, limits and capabilities come along, and you can override them."),
+    toolbar: (
+      <div className="flex w-full flex-wrap items-center gap-8 sm:flex-nowrap">
+        {picker}
+        {searchInput}
+        <Switch size="sm" label={t("models.includeDeprecated", "Include deprecated")} checked={deprecated} onCheckedChange={setDeprecated} />
+      </div>
+    ),
     content: (
       <div className="flex flex-col gap-16">
-        <div className="flex flex-wrap items-center gap-8 sm:flex-nowrap">
-          {picker}
-          {searchInput}
-          <Switch size="sm" label={t("models.includeDeprecated", "Include deprecated")} checked={deprecated} onCheckedChange={setDeprecated} />
-        </div>
         {keyBanner}
         <div className="flex min-h-0 flex-col">
-          {hits.isPending && provider ? (
-            <List aria-label={t("models.onModelsDev", "Models on models.dev")} density="compact" items={[]} loading />
-          ) : list.length === 0 ? (
+          {list.length === 0 && !(hits.isPending && provider) ? (
             <Empty
               title={t("models.noneFound", "No models found")}
               description={
@@ -297,30 +315,17 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               }
             />
           ) : (
-            <List
+            <DataTable
               aria-label={t("models.onModelsDev", "Models on models.dev")}
-              density="compact"
+              data={list}
+              columns={columns}
+              getRowId={(h) => h.model_id}
+              loading={hits.isPending && !!provider}
               selectable
-              selectionBar={false}
-              selected={selected}
-              onSelectedChange={setSelected}
-              onOpen={(item) => void startReview(item.id)}
-              items={list.map((h) => ({
-                id: h.model_id,
-                textValue: h.model_id,
-                title: (
-                  <ModelLabel
-                    provider={h.provider}
-                    providerName={catalog.name(h.provider)}
-                    model={h.model_id}
-                    mark={false}
-                    {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
-                  />
-                ),
-                meta: <HitMeta hit={h} />,
-                date: h.release_date ? monthLabel(h.release_date) : undefined,
-                disabled: !!h.catalogue_model_id,
-              }))}
+              canSelectRow={(h) => !h.catalogue_model_id}
+              selection={Object.fromEntries(ids.map((id) => [id, true]))}
+              onSelectionChange={(next: RowSelectionState) => setSelected(new Set(Object.keys(next).filter((id) => next[id])))}
+              onRowClick={(h) => !h.catalogue_model_id && toggle(h.model_id)}
             />
           )}
         </div>
@@ -334,19 +339,28 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </Text>
         )}
         <Text variant="small" tone="secondary">
-          {tRich("models.notOnModelsDev", "Not on models.dev? {link}", {
-            link: (
-              <Button variant="link" size="sm" onClick={() => setView("custom")}>
-                {t("models.addCustom", "Add a custom model")}
+          {tRich("models.wantAll", "Want them all? {all}", {
+            all: (
+              <Button variant="link" size="sm" onClick={() => setView("all")}>
+                {t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}
               </Button>
             ),
           })}
         </Text>
       </div>
     ),
+    footerStart: (
+      <Button variant="ghost" leadingIcon={icons.add} onClick={() => setView("custom")}>
+        {t("models.addCustom", "Add a custom model")}
+      </Button>
+    ),
     footer: (
       <>
-        <Button onClick={() => setView("all")}>{t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}</Button>
+        {ids.length > 0 && (
+          <Button variant="ghost" onClick={() => setSelected(new Set())}>
+            {t("models.clearSelection", "Clear selection")}
+          </Button>
+        )}
         {only && <Button onClick={() => void startReview(only)}>{t("models.reviewValues", "Review values")}</Button>}
         <Button variant="primary" disabled={!ids.length} loading={batch.isPending} onClick={addSelected}>
           {t("models.addCount", "{count, plural, =0 {Add models} one {Add # model} other {Add # models}}", { count: ids.length })}
@@ -509,19 +523,61 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   );
 }
 
-function HitMeta({ hit }: { hit: SearchHit }) {
-  if (hit.catalogue_model_id) return <Badge>{t("models.inCatalogue", "Already in catalogue")}</Badge>;
-  return (
-    <span className="flex items-center gap-12">
-      {hit.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}
-      <Text variant="small" tone="secondary" tabular className="hidden min-w-48 text-right sm:block">
-        {contextLabel(hit.context_limit)}
-      </Text>
-      <Text variant="small" tone="secondary" tabular className="min-w-96 text-right">
-        {priceLabel(hit)}
-      </Text>
-    </span>
-  );
+function hitColumns(providerName: (id: string) => string, review: (modelId: string) => void) {
+  return [
+    col.custom(
+      { id: "model", header: t("common.model", "Model"), size: 320, minWidth: 220, priority: 1, grow: true },
+      (h: SearchHit) => h.model_id,
+      (_id: string, h: SearchHit) => (
+        <span className="flex min-w-0 items-center gap-8">
+          <ModelLabel
+            provider={h.provider}
+            providerName={providerName(h.provider)}
+            model={h.model_id}
+            mark={false}
+            {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
+          />
+          {h.catalogue_model_id ? (
+            <Badge>{t("models.inCatalogue", "In catalogue")}</Badge>
+          ) : (
+            h.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+          )}
+        </span>
+      ),
+    ),
+    col.custom(
+      { id: "context", header: t("models.field.context", "Context"), size: 88, priority: 3 },
+      (h: SearchHit) => h.context_limit ?? -1,
+      (_v: number, h: SearchHit) => contextLabel(h.context_limit),
+      { align: "end" },
+    ),
+    col.custom(
+      { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 136, priority: 2 },
+      (h: SearchHit) => Number(h.input_price ?? -1),
+      (_v: number, h: SearchHit) => priceLabel(h),
+      { align: "end" },
+    ),
+    col.custom(
+      { id: "released", header: t("models.field.released", "Released"), size: 104, priority: 4 },
+      (h: SearchHit) => h.release_date ?? "",
+      (_v: string, h: SearchHit) => (h.release_date ? monthLabel(h.release_date) : ""),
+      { align: "end" },
+    ),
+    col.custom(
+      { id: "review", header: "", size: 48, priority: 1 },
+      (h: SearchHit) => h.model_id,
+      (_id: string, h: SearchHit) =>
+        h.catalogue_model_id ? null : (
+          <IconButton
+            size="sm"
+            icon={icons.chevronRight}
+            aria-label={t("models.reviewModel", "Review {model}", { model: h.model_id })}
+            onClick={() => review(h.model_id)}
+          />
+        ),
+      { align: "end" },
+    ),
+  ];
 }
 
 const previewFields = (p: Preview): Fields => ({ ...p.fields, egress_dialect: p.fields.egress_dialect ?? p.egress_dialect });

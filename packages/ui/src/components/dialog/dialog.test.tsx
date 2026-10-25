@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
-import { StepDialog } from "./step-dialog.js";
+import { StepDialog, useStepDialog } from "./step-dialog.js";
 import { Button } from "../button/button.js";
 import { List } from "../list/list.js";
 import { TagInput } from "../input/tag-input.js";
@@ -1067,5 +1067,89 @@ describe("dialog refs", () => {
     render(<StepDialog ref={ref} inline title="Create key" submitLabel="Create key" onSubmit={vi.fn()} steps={steps} />);
     expect(ref.current).toHaveAttribute("data-dialog-frame");
     expect(ref.current).toContainElement(screen.getByRole("textbox", { name: "Name" }));
+  });
+});
+
+describe("dialog toolbar and footer start", () => {
+  it("keeps the toolbar outside the scrolling body, focuses its search first and puts the footer start before the actions", () => {
+    render(
+      <Dialog
+        open
+        title="Add models"
+        toolbar={<input aria-label="Search models" data-autofocus />}
+        footerStart={<Button>Add a custom model</Button>}
+        footer={<Button variant="primary">Add models</Button>}
+      >
+        <input aria-label="Notes" />
+      </Dialog>,
+    );
+    const search = screen.getByRole("textbox", { name: "Search models" });
+    expect(search.closest("[data-dialog-toolbar]")).not.toBeNull();
+    expect(search.closest("[data-dialog-body]")).toBeNull();
+    expect(search).toHaveFocus();
+    const footer = screen.getByRole("button", { name: "Add models" }).closest("[data-dialog-footer]") as HTMLElement;
+    expect([...footer.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Add a custom model", "Add models"]);
+  });
+
+  it("shows a layer's own toolbar only on that layer", async () => {
+    const user = userEvent.setup();
+    function Layers() {
+      const [layer, setLayer] = useState(0);
+      return (
+        <LayerDialog
+          open
+          layer={layer}
+          onLayerChange={setLayer}
+          layers={[
+            { title: "Add models", toolbar: <input aria-label="Search models" />, content: <Button onClick={() => setLayer(1)}>Review</Button> },
+            { title: "Review", content: <input aria-label="Display name" /> },
+          ]}
+        />
+      );
+    }
+    render(<Layers />);
+    expect(screen.getByRole("textbox", { name: "Search models" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Review" }));
+    expect(screen.queryByRole("textbox", { name: "Search models" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("button", { name: "Review" })).toHaveFocus();
+  });
+});
+
+describe("StepDialog advance", () => {
+  it("continues from inside a step once the step is no longer blocked", async () => {
+    const user = userEvent.setup();
+    function Pick() {
+      const [choice, setChoice] = useState<string | null>(null);
+      function Choices() {
+        const step = useStepDialog();
+        return (
+          <Button
+            onClick={() => {
+              setChoice("groq");
+              step?.advance();
+            }}
+          >
+            Groq
+          </Button>
+        );
+      }
+      return (
+        <StepDialog
+          open
+          title="Add provider key"
+          submitLabel="Add key"
+          onSubmit={() => {}}
+          steps={[
+            { id: "provider", title: "Which provider?", blockedReason: choice ? undefined : "Choose a provider", content: <Choices /> },
+            { id: "key", title: `Paste your ${choice ?? ""} key`, content: <input aria-label="Key" /> },
+          ]}
+        />
+      );
+    }
+    render(<Pick />);
+    await user.click(screen.getByRole("button", { name: "Groq" }));
+    expect(await screen.findByRole("heading", { name: "Paste your groq key" })).toBeVisible();
+    expect(screen.getByText("Step 2 of 2")).toBeInTheDocument();
   });
 });

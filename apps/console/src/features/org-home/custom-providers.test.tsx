@@ -723,9 +723,8 @@ describe("a custom provider's models", () => {
 
     await user.click((await screen.findAllByRole("button", { name: "Add provider key" }))[0] as HTMLElement);
     const dialog = await screen.findByRole("dialog", { name: /Add provider key/ });
-    expect(within(dialog).queryByRole("option", { name: /^Open lab/ })).not.toBeInTheDocument();
-    await user.click(within(dialog).getByRole("option", { name: /^Keyed lab/ }));
-    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(within(dialog).queryByRole("radio", { name: /^Open lab/ })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("radio", { name: /^Keyed lab/ }));
     expect(await within(dialog).findByText("Paste the key that Keyed lab expects.")).toBeInTheDocument();
   });
 });

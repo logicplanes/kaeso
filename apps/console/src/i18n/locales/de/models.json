@@ -63,6 +63,7 @@
   "models.chooseFormat": "Format wählen",
   "models.chooseModel": "Modell wählen",
   "models.clearFilters": "Filter zurücksetzen",
+  "models.clearSelection": "Auswahl aufheben",
   "models.createAlias": "Alias erstellen",
   "models.custom": "Eigenes",
   "models.customListed": "models.dev führt {model}: Die Werte sind eingetragen.",
@@ -98,7 +99,7 @@
   "models.filter": "Modelle filtern",
   "models.filters": "Filter",
   "models.filtersCount": "Filter · {count}",
-  "models.inCatalogue": "Bereits im Katalog",
+  "models.inCatalogue": "Im Katalog",
   "models.includeDeprecated": "Veraltete anzeigen",
   "models.listSeparator": ", ",
   "models.loadFailed": "Das Modell konnte nicht geladen werden.",
@@ -120,7 +121,6 @@
   "models.noneFoundHint": "Einen anderen Namen versuchen oder veraltete Modelle anzeigen.",
   "models.noneListed": "models.dev führt keine {provider}-Modelle.",
   "models.notFound": "Dieses Modell existiert nicht oder wurde entfernt.",
-  "models.notOnModelsDev": "Nicht auf models.dev? {link}",
   "models.onModelsDev": "Modelle auf models.dev",
   "models.onlyOverridden": "Nur angepasste",
   "models.openProviders": "Anbieter öffnen",
@@ -129,6 +129,7 @@
   "models.overridesSaved": "Anpassungen gespeichert",
   "models.perMillionInput": "Pro Million Eingabe-Token",
   "models.perMillionInputOutput": "Pro Million Eingabe- / Ausgabe-Token",
+  "models.priceInOut": "Pro 1 Mio. ein / aus",
   "models.pricePerMillion": "{price} / Mio. Token",
   "models.priceWithCache": "{unit}; {cache}",
   "models.problem.format": "Ein eigenes Modell braucht das Format, in dem Kaeso es anspricht.",
@@ -175,5 +176,6 @@
   "models.addOwn": "Ein Modell von {provider} hinzufügen",
   "models.addOwnModelHint": "Die ID des Modells angeben, wie {provider} sie kennt, dann Eingaben, Limits, Preise und Format.",
   "models.ownUnknown": "Kaeso kennt diese Werte für {provider} nicht; Eingaben, Ausgaben, Limits, Ein- und Ausgabepreis und das Format sind Pflicht.",
-  "models.ownFound": "Kaeso hat eingetragen, was {provider} und models.dev über {model} sagen; prüfen Sie es und legen Sie die Preise fest."
+  "models.ownFound": "Kaeso hat eingetragen, was {provider} und models.dev über {model} sagen; prüfen Sie es und legen Sie die Preise fest.",
+  "models.wantAll": "Alle auf einmal? {all}"
 }

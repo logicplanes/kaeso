@@ -9,12 +9,15 @@ const firstUsable = (scope: ParentNode, selector: string) => [...scope.querySele
 
 export function initialDialogControl(frame: HTMLElement, scope?: HTMLElement | undefined): HTMLElement | null {
   const content = scope ?? frame.querySelector<HTMLElement>("[data-dialog-body]");
+  const toolbar = frame.querySelector<HTMLElement>("[data-dialog-toolbar]");
   const footer = frame.querySelector<HTMLElement>("[data-dialog-footer]");
   const actions = footer ? [...footer.querySelectorAll<HTMLElement>("button, a[href]")].filter(usable) : [];
   const { primary, danger, "danger-secondary": dangerSecondary } = KAESO_BUTTON_VARIANTS.variant;
   const safe = actions.filter((a) => !a.classList.contains(danger.classes) && !a.classList.contains(dangerSecondary.classes));
   return (
+    (toolbar && firstUsable(toolbar, "[data-autofocus]")) ??
     (content && (firstUsable(content, "[data-autofocus]") ?? firstUsable(content, DIALOG_FIELD))) ??
+    (toolbar && firstUsable(toolbar, DIALOG_FIELD)) ??
     safe.find((a) => a.classList.contains(primary.classes)) ??
     safe[0] ??
     (content && firstUsable(content, FOCUSABLE)) ??

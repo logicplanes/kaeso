@@ -107,4 +107,44 @@ describe("ProviderPicker", () => {
     );
     expect(screen.getByRole("group", { name: "Weitere Anbieter" })).toBeInTheDocument();
   });
+
+  it("shows tiles with each provider's mark, connected first, and continues only on a press", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    const onChoose = vi.fn();
+    render(<ProviderPicker appearance="grid" providers={providers} aria-label="Provider" onValueChange={onValueChange} onChoose={onChoose} />);
+    const group = screen.getByRole("radiogroup", { name: "Provider" });
+    expect(
+      within(screen.getByRole("group", { name: "Connected" }))
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["Anthropic1 key", "OpenAI2 keys"]);
+    expect(
+      within(screen.getByRole("group", { name: "Other providers" }))
+        .getAllByRole("radio")
+        .map((r) => r.textContent),
+    ).toEqual(["DeepSeek", "Groq", "Together AI"]);
+    expect(within(group).getByRole("radio", { name: "OpenAI 2 keys" })).toBeInTheDocument();
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Groq" }));
+    expect(onValueChange).toHaveBeenLastCalledWith("groq");
+    expect(onChoose).toHaveBeenCalledWith("groq");
+    onChoose.mockClear();
+    await user.keyboard("{ArrowRight}");
+    expect(onValueChange).toHaveBeenLastCalledWith("togetherai");
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it("searches the tiles once there are many providers", async () => {
+    const user = userEvent.setup();
+    const many: ProviderPickerOption[] = Array.from({ length: 12 }, (_, i) => ({ id: `p${i}`, name: `Provider ${String.fromCharCode(65 + i)}` }));
+    render(<ProviderPicker appearance="grid" providers={many} aria-label="Provider" />);
+    expect(screen.getAllByRole("radio")).toHaveLength(12);
+    await user.type(screen.getByRole("searchbox", { name: "Search providers" }), "provider c");
+    expect(screen.getAllByRole("radio")).toHaveLength(1);
+    expect(screen.getByRole("radio", { name: "Provider C" })).toBeInTheDocument();
+    await user.clear(screen.getByRole("searchbox", { name: "Search providers" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search providers" }), "nothing");
+    expect(screen.getByText("No providers match")).toBeInTheDocument();
+  });
 });

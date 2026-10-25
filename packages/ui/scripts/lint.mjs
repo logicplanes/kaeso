@@ -36,6 +36,7 @@ const WITHOUT_REF = new Map([
   ["src/utils/link-provider.tsx#LinkProvider", "a context provider around its children"],
   ["src/utils/inset.tsx#InsetContent", "a context provider around its children"],
   ["src/utils/inset.tsx#GutterContent", "a context provider around its children"],
+  ["src/utils/inset.tsx#RaisedContent", "a context provider around its children"],
   ["src/utils/portal-context.tsx#PortalContainer", "a context provider; its host element is a mount point after the children, not a root around them"],
   ["src/components/tooltip/tooltip-provider.tsx#TooltipProvider", "a context provider around its children"],
   ["src/components/sidebar/sidebar.tsx#Provider", "a context provider around its children"],

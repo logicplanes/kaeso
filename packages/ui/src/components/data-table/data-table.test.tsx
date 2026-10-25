@@ -269,4 +269,29 @@ describe("DataTable from the keyboard", () => {
     await user.keyboard("{ArrowLeft}{ArrowLeft}");
     expect(handle).toHaveAttribute("aria-valuenow", "144");
   });
+
+  it("keeps rows that can't be selected out of the selection, select all included", async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const rows = [
+      { id: "a", name: "Alpha", done: false },
+      { id: "b", name: "Beta", done: true },
+      { id: "c", name: "Gamma", done: false },
+    ];
+    render(
+      <DataTable
+        aria-label="Models"
+        data={rows}
+        getRowId={(r) => r.id}
+        columns={[col.text({ id: "name", header: "Name" }, (r: (typeof rows)[number]) => r.name)]}
+        selectable
+        canSelectRow={(r) => !r.done}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+    expect(screen.getByRole("checkbox", { name: "Select Beta" })).toHaveAttribute("aria-disabled", "true");
+    await user.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ a: true, c: true });
+    expect(screen.getByRole("checkbox", { name: "Select all rows" })).toHaveAttribute("aria-checked", "true");
+  });
 });

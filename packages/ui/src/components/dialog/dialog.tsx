@@ -1,4 +1,4 @@
-import { GutterContent, InsetContent } from "../../utils/inset.js";
+import { GutterContent, InsetContent, RaisedContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import {
   cloneElement,
@@ -54,9 +54,12 @@ const DialogBusy = createContext(false);
 function useScrolledUnder<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [under, setUnder] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const check = useCallback(() => {
     const el = ref.current;
-    if (el && !el.closest("[data-resizing]")) setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    if (!el || el.closest("[data-resizing]")) return;
+    setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    setScrolled(el.scrollTop > 0);
   }, []);
   useEffect(() => {
     const el = ref.current;
@@ -69,7 +72,7 @@ function useScrolledUnder<T extends HTMLElement>() {
       window.removeEventListener("resize", check);
     };
   }, [check]);
-  return { ref, under, check };
+  return { ref, under, scrolled, check };
 }
 
 function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
@@ -111,7 +114,9 @@ export interface DialogProps {
   size?: keyof typeof KAESO_DIALOG_VARIANTS.size | undefined;
   anchor?: keyof typeof KAESO_DIALOG_VARIANTS.anchor | undefined;
   children?: ReactNode | undefined;
+  toolbar?: ReactNode | undefined;
   footer?: ReactNode | undefined;
+  footerStart?: ReactNode | undefined;
   onSubmit?: (() => void) | undefined;
   hideClose?: boolean | undefined;
   headerStart?: ReactNode | undefined;
@@ -124,7 +129,9 @@ function DialogFrame({
   title,
   description,
   children,
+  toolbar,
   footer,
+  footerStart,
   onSubmit,
   hideClose,
   headerStart,
@@ -135,7 +142,7 @@ function DialogFrame({
   busy,
   rootRef,
 }: DialogProps & { rootRef?: Ref<HTMLDivElement> | undefined }) {
-  const { ref, under, check } = useScrolledUnder<HTMLDivElement>();
+  const { ref, under, scrolled, check } = useScrolledUnder<HTMLDivElement>();
   const [box, boxRef] = useBox(inline);
   const frameRef = useMemo(() => mergeRefs(boxRef, rootRef), [boxRef, rootRef]);
   useResizeMotion(box, check);
@@ -163,29 +170,31 @@ function DialogFrame({
           }
         }}
       >
-        {headerStart !== undefined ? (
-          <>
-            <div className="flex h-32 items-center justify-between px-24 pt-16 box-content">
-              <span className="flex items-center">{headerStart}</span>
-              {close}
-            </div>
-            <div className="flex flex-col gap-4 px-24 pt-8 pb-4">
-              <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-              {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
-            </div>
-          </>
-        ) : (
-          <div className="flex items-start gap-12 px-24 pt-20 pb-4">
-            <div className="flex min-w-0 flex-1 flex-col gap-4 pt-4">
-              <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-              {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
-            </div>
-            {close && <span className="flex">{close}</span>}
+        <div className="flex items-start gap-12 px-24 pt-20 pb-4">
+          {headerStart ? <span className="flex shrink-0 items-center">{headerStart}</span> : null}
+          <div className="flex min-w-0 flex-1 flex-col gap-4 pt-4">
+            <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
+            {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+          </div>
+          {close && <span className="flex">{close}</span>}
+        </div>
+        {toolbar && (
+          <div
+            data-dialog-toolbar=""
+            className={cn("flex shrink-0 flex-wrap items-center gap-8 px-24 pt-16 pb-12 transition-control", scrolled && "hairline-b")}
+          >
+            {toolbar}
           </div>
         )}
         {children && (
-          <div ref={ref} data-dialog-body="" className={cn("min-h-0 flex-1 overflow-y-auto px-24 pt-16 scrollbar-quiet", footer ? "pb-8" : "pb-24")}>
-            <GutterContent>{children}</GutterContent>
+          <div
+            ref={ref}
+            data-dialog-body=""
+            className={cn("min-h-0 flex-1 overflow-y-auto px-24 scrollbar-quiet", toolbar ? "pt-0" : "pt-16", footer ? "pb-8" : "pb-24")}
+          >
+            <GutterContent>
+              <RaisedContent>{children}</RaisedContent>
+            </GutterContent>
           </div>
         )}
         {footer && (
@@ -193,6 +202,7 @@ function DialogFrame({
             data-dialog-footer=""
             className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-20 transition-control", under && "hairline-t")}
           >
+            {footerStart && <div className="mr-auto flex min-w-0 items-center gap-8">{footerStart}</div>}
             {footer}
           </div>
         )}
@@ -398,11 +408,13 @@ export const KAESO_LAYER_DIALOG_DEFAULT_VARIANTS = KAESO_DIALOG_DEFAULT_VARIANTS
 export interface DialogLayer {
   title: ReactNode;
   description?: ReactNode | undefined;
+  toolbar?: ReactNode | undefined;
   content: ReactNode;
   footer?: ReactNode | undefined;
+  footerStart?: ReactNode | undefined;
 }
 
-export interface LayerDialogProps extends Omit<DialogProps, "title" | "description" | "children" | "footer" | "headerStart"> {
+export interface LayerDialogProps extends Omit<DialogProps, "title" | "description" | "children" | "toolbar" | "footer" | "footerStart" | "headerStart"> {
   layers: DialogLayer[];
   layer?: number | undefined;
   onLayerChange?: ((layer: number) => void) | undefined;
@@ -453,6 +465,8 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
       {...props}
       title={current.title}
       description={current.description}
+      toolbar={current.toolbar}
+      footerStart={current.footerStart}
       footer={
         current.footer
           ? stack.map((l, i) =>
