@@ -1085,3 +1085,23 @@ fn claude_gets_excluded_domains_as_blocked_domains_and_no_image_options() {
     let e = send(A, &req, &mut EgressCtx::new(&req)).unwrap_err();
     assert_eq!(e.param.as_deref(), Some("tools[1].filters"), "{e}");
 }
+
+#[test]
+fn only_documented_verbosity_values_cross_formats() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"].as_array_mut().unwrap().pop();
+    body["text"] = json!({"verbosity": "loud"});
+    let req = decode(&body);
+    for (target, mut ctx) in [
+        (A, EgressCtx::new(&req)),
+        (C, EgressCtx::new(&req)),
+        (C, mistral(&req)),
+    ] {
+        let e = send(target, &req, &mut ctx).unwrap_err();
+        assert_eq!(
+            e.unsupported_feature(),
+            Some("text.verbosity"),
+            "{target}: {e}"
+        );
+    }
+}

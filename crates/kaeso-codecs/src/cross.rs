@@ -215,7 +215,9 @@ pub fn is_droppable_value(origin: DialectId, scope: &str, key: &str, value: &Raw
         (DialectId::AnthropicMessages, "request", "context_management") => {
             only_thinking_edits(value)
         }
-        (DialectId::OpenAiResponses, "request", "text.verbosity") => true,
+        (DialectId::OpenAiResponses, "request", "text.verbosity") => {
+            matches!(value.parse::<String>().as_deref(), Ok("low" | "high"))
+        }
         _ => false,
     }
 }
