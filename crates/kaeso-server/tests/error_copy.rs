@@ -17,6 +17,7 @@ const SCANNED: &[&str] = &[
     "crates/kaeso-server/src/services/managed.rs",
     "crates/kaeso-server/src/services/orgs.rs",
     "crates/kaeso-server/src/services/users.rs",
+    "crates/kaeso-core/src/catalogue/capability.rs",
     "crates/kaeso-core/src/catalogue/mod.rs",
     "crates/kaeso-core/src/email.rs",
     "crates/kaeso-core/src/keys.rs",
@@ -367,8 +368,6 @@ const CONSOLE_ERRORS: &str = "apps/console/src/i18n/locales/en/errors.json";
 
 const CONSOLE_RULES: &str = "apps/console/src/api/gateway-errors.ts";
 
-const SHOWN_IN_THE_PLAYGROUND: &[&str] = &["crates/kaeso-core/src/catalogue/capability.rs"];
-
 const SHOWN_IN_REQUEST_LOGS: &[&str] = &[
     "crates/kaeso-server/src/model_api",
     "crates/kaeso-core/src/catalogue/resolve.rs",
@@ -467,11 +466,7 @@ fn the_console_translates_every_message() {
         console.len()
     );
     let mut files = Vec::new();
-    for p in SCANNED
-        .iter()
-        .chain(SHOWN_IN_THE_PLAYGROUND)
-        .chain(SHOWN_IN_REQUEST_LOGS)
-    {
+    for p in SCANNED.iter().chain(SHOWN_IN_REQUEST_LOGS) {
         rust_files(&root.join(p), &mut files);
     }
     let mut checked = 0;
