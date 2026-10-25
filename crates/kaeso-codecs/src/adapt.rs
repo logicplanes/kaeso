@@ -1,10 +1,12 @@
 use std::borrow::Cow;
 
 use kaeso_kpp::{Block, DialectId, GenerateRequest, KppError, Message, Request, Role};
+use serde_json::Value;
 
 use crate::codec::EgressCtx;
-use crate::cross::check_extras;
+use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, check_extras, is_chat_bookkeeping};
 use crate::openai_responses::{ReasoningReplay, history, namespaces, replay};
+use crate::wire::VERBATIM_FORM_KEY;
 use crate::{tool_search, verbosity, web_search};
 
 pub(crate) struct Draft<'a> {
@@ -89,6 +91,12 @@ pub(crate) fn for_target<'a>(
     }
     if !ctx.takes_tool_namespaces(target) {
         namespaces::flatten(&mut draft, target)?;
+    }
+    if target == DialectId::OpenAiChat
+        && !ctx.chat_profile.request.message_bookkeeping
+        && has_bookkeeping(draft.get())
+    {
+        strip_bookkeeping(draft.edit());
     }
     verbosity::left_out(&mut draft, target, &ctx.chat_profile);
     let Draft {
@@ -215,4 +223,40 @@ fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
     }
     out.append(&mut deferred);
     r.messages = out;
+}
+
+fn null_bookkeeping(message: &Message) -> bool {
+    message
+        .extras
+        .form_value(DialectId::OpenAiChat, VERBATIM_FORM_KEY)
+        .and_then(Value::as_object)
+        .is_some_and(|nulls| nulls.keys().any(|key| is_chat_bookkeeping(message, key)))
+}
+
+fn has_bookkeeping(r: &GenerateRequest) -> bool {
+    r.messages.iter().any(|m| {
+        m.extras
+            .fields
+            .keys()
+            .any(|key| is_chat_bookkeeping(m, key))
+            || null_bookkeeping(m)
+    })
+}
+
+fn strip_bookkeeping(r: &mut GenerateRequest) {
+    for message in &mut r.messages {
+        if message.role != Role::Assistant || !message.extras.is_from(DialectId::OpenAiChat) {
+            continue;
+        }
+        let extras = &mut message.extras;
+        extras
+            .fields
+            .retain(|key, _| !CHAT_ASSISTANT_BOOKKEEPING.contains(&key.as_str()));
+        if let Some(Value::Object(nulls)) = extras.form.get_mut(VERBATIM_FORM_KEY) {
+            nulls.retain(|key, _| !CHAT_ASSISTANT_BOOKKEEPING.contains(&key.as_str()));
+            if nulls.is_empty() {
+                extras.form.shift_remove(VERBATIM_FORM_KEY);
+            }
+        }
+    }
 }

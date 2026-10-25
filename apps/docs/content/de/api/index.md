@@ -4,7 +4,7 @@ description: Modelle aus Ihren Apps aufrufen und Ihre Installation über HTTP ve
 order: 4
 ---
 
-Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle über die Modell-API unter `/v1` mit einem API-Schlüssel auf, und Skripte verwalten die Installation über die Platform API unter `/platform/v1`.
+Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle über die Modell-API unter `/v1` mit einem API-Schlüssel auf, und Skripte verwalten die Installation über die Platform API unter `/platform/v1`. Agenten erreichen die Platform API über den MCP-Server unter `/mcp`.
 
 ## Nächste Schritte
 
@@ -12,3 +12,4 @@ Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle �
 - [Fehler](errors.md): Nachlesen, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt und warum sie fehlschlug.
 - [Platform API](platform-api.md): Authentifizierung, Konventionen, Fehler und Routen zum Verwalten einer Installation nachschlagen.
 - [Mit der Platform API automatisieren](automation.md): Ein Projekt, ein Modell und den Schlüssel einer App per Skript einrichten.
+- [MCP-Server](mcp.md): Coding-Agenten verbinden, festlegen, was sie dürfen, und ihre Tools und Anmeldung nachschlagen.

@@ -41,7 +41,7 @@ pub async fn list(
     Query(f): Query<MyKeyFilter>,
 ) -> ApiResult<Json<List<KeyView>>> {
     let page = page.page()?;
-    let session = ctx.session()?;
+    let session = ctx.sign_in()?;
     let managed = managed_by(&state, session).await?.map(|m| m.org_id);
     let open: Vec<uuid::Uuid> = members::orgs_of_user(&state.pg, session.user_id)
         .await?
@@ -88,7 +88,7 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
         if f.org.state == "scheduled_for_deletion" {
             return Err(ApiError::OrgScheduledForDeletion);
         }
-        require_policy(state, ctx.session()?, Area::of_org(&f.org)).await?;
+        require_policy(state, ctx.sign_in()?, Area::of_org(&f.org)).await?;
     }
     let rights = match found {
         Some(f) => {

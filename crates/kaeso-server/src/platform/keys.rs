@@ -294,6 +294,7 @@ pub fn new_secret(kind: KeyKind) -> NewSecret {
 pub fn creator_of(ctx: &Ctx) -> (&'static str, Option<uuid::Uuid>) {
     match &ctx.caller {
         Caller::Session(s) => ("user", Some(s.user_id)),
+        Caller::Agent(a) => ("user", Some(a.user_id())),
         Caller::ProjectKey(k) => ("api_key", Some(k.id)),
         Caller::OrgKey(k) => ("org_platform_key", Some(k.id)),
         Caller::Anonymous => ("system", None),

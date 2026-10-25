@@ -28,7 +28,7 @@ Open **Organization settings** in the menu at the foot of the sidebar. It has th
 | --- | --- |
 | General | Picture, name and organization id, **Transfer ownership**, and deleting the organization |
 | Members | Members, invitations and roles ([members and roles](members-and-roles.md)) |
-| Security | Single sign-on, the sign-in requirements and the maximum key lifetime |
+| Security | Single sign-on, the sign-in requirements, the maximum key lifetime and members' agents |
 | Platform keys | Keys for scripts that manage the organization ([platform keys](api-keys.md#platform-keys)) |
 | Logging | Content logging, retention, storage and log deletion ([request logs](request-logs.md#retention)) |
 | Audit log | Every change in the organization ([audit log](#read-the-audit-log)) |
@@ -79,6 +79,19 @@ Under **Security**, you can tighten how members get into the organization:
 
 Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console asks before it saves. Requiring single sign-on keeps your own session, so a [sign-in link from the server](../self-hosting/sign-in.md#get-back-in) is never your only way back. Disconnecting the identity provider turns off **Require single sign-on** as well.
 
+## Let members' agents in
+
+Members can connect agents, such as Claude Code or Codex, that act for them through the [MCP server](../api/mcp.md). Under **Security**, the **Agents** section holds the organization's agent policy. It decides whether those agents may act in the organization, and how far:
+
+| Setting | What it does |
+| --- | --- |
+| Allow members' agents | On by default. Turned off, every agent gets 403 in this organization at its next request and keeps working elsewhere |
+| Most an agent may do | **Observer**, **Builder**, **Operator** or **Full access**, each including the ones before it. **Full access** is the default. An agent never gets more here, whatever its member gave it |
+
+Changing the policy needs **Change member roles** and a console session; no agent can change it. [Agents](../concepts/rights.md#presets) lists what each preset holds.
+
+The same page lists the agents that may act in the organization, with their member, model family, and when they were created and last used. Seeing them needs **View members**. **Close access** closes the organization to an agent and needs **Change member roles**. The agent keeps working in its member's other organizations, and its member can open this one to it again.
+
 ## Delete an organization
 
 Under **General**, choose **Delete organization** and type the organization's name to confirm. You need the right **Delete organization**, which owners have, and the install must allow deleting organizations.
@@ -92,6 +105,8 @@ Under **General**, choose **Delete organization** and type the organization's na
 The organization's **Audit log**, in **Organization settings**, records every change in the organization. A project's **Audit log**, in the project's sidebar, records every change in that project.
 
 Each entry shows when it happened, who made the change, the action and its target. Filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after.
+
+An agent's change shows the picture of the member it acts for, with a small bot badge at its lower right. Hover over it to see the member, the agent and its model family. **Done by agents** shows only the changes agents made, and the Platform API names the agent in `actor.agent` ([activity and audit](../api/mcp.md#activity-and-audit)).
 
 | To | Right |
 | --- | --- |

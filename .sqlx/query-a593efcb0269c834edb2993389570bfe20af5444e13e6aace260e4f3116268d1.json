@@ -1,0 +1,221 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", a.model AS \"agent_model?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "actor_kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "actor_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "actor_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "actor_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "agent_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "agent_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "agent_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "agent_model?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "action",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "action"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "target_kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "target_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "target_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "target_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "before",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "before"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "after",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "after"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "ip",
+        "type_info": "Inet",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "ip"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "user_agent",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "user_agent"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "request_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "request_id"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "audit_events",
+            "name": "at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "a593efcb0269c834edb2993389570bfe20af5444e13e6aace260e4f3116268d1"
+}

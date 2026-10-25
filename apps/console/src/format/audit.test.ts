@@ -69,6 +69,12 @@ describe("audit actions", () => {
     expect(new Set(gateway.map(auditActionLabel)).size).toBe(gateway.length);
   });
 
+  it("name agents as targets and as a kind of action", () => {
+    expect(targetKindLabel("agent")).toBe("Agent");
+    expect(targetKindLabel("custom_provider")).toBe("Custom provider");
+    expect(auditActionOptions().find((o) => o.value === "agent.")?.label).toBe("Agents: every action");
+  });
+
   it("keep an action they don't know as it was written", () => {
     expect(auditActionLabel("webhook.create")).toBe("webhook.create");
   });

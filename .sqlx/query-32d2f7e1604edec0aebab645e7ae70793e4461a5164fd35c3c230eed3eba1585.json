@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE agent_tokens SET revoked_at = $2 WHERE token_hash = $1 AND kind <> 'code' AND revoked_at IS NULL RETURNING family",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "family",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agent_tokens",
+            "name": "family"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "32d2f7e1604edec0aebab645e7ae70793e4461a5164fd35c3c230eed3eba1585"
+}

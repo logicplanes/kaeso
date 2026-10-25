@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO agent_orgs (agent_id, org_id, included, rights, all_projects, project_rights) VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool",
+        "TextArray",
+        "Bool",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0a5793df83407a78318b02b33a3d82f22e3a41a219c75a647166cb4dbf7c4eb3"
+}

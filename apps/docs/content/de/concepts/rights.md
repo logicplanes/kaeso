@@ -1,12 +1,12 @@
 ---
 title: Rechte
-description: Jedes Recht in einer Organisation und einem Projekt nachschlagen, welche Rollen es haben und nach welchen Regeln es vergeben wird.
+description: Jedes Recht in Organisationen, Projekten, der Instanz und Konten nachschlagen, wer es hat und nach welchen Regeln es vergeben wird.
 order: 4
 ---
 
 Ein Recht erlaubt eine Art von Aktion und wird als `resource.action` geschrieben, etwa `keys.all.view`. Jede Operation der Platform API unter `orgs/{org}` prüft genau ein Recht, auf der Organisation oder dem Projekt in ihrem Pfad. [Mitglieder und Rollen](../console/members-and-roles.md) zeigt, wie Sie Rollen und Rechte in der Konsole vergeben.
 
-Ihr eigenes Konto zu verwalten, braucht kein Recht. Auch die Instanzverwaltung ist kein Recht: Sie ist ein Flag an einem Benutzer und gibt keine Rechte in Organisationen oder Projekten.
+Ihr eigenes Konto in einer Konsolensitzung zu verwalten, braucht kein Recht. Die Instanzverwaltung ist ein Flag an einem Benutzer, keine Rolle: Sie gibt jedes [Instanzrecht](#instanzrechte) und keine Rechte in Organisationen oder Projekten. Agenten brauchen jedes Instanz- und [Kontorecht](#kontorechte) eigens vergeben ([Agenten](#agenten)).
 
 ## Hinweise
 
@@ -245,3 +245,76 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `project.audit_log.view` | Projekt-Audit-Log ansehen | Das Audit-Log der Änderungen in diesem Projekt lesen. |  |
+
+## Instanzrechte
+
+Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung eines Instanz-Admins hat sie alle. Ein Agent braucht jedes davon vergeben, von einem Instanz-Admin, innerhalb der Agenten-Richtlinie der Instanz. Jedes Instanzrecht erfordert zusätzlich `instance.system.view`.
+
+| Recht | Name | Was es erlaubt | Hinweise |
+| --- | --- | --- | --- |
+| `instance.system.view` | System ansehen | Das System, die Instanzeinstellungen, die Modellquellen und den Update-Status sehen. |  |
+| `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden. |  |
+| `instance.model_sources.manage` | Modellquellen verwalten | Die Modelldaten von models.dev synchronisieren. |  |
+| `instance.updates.manage` | Updates verwalten | Nach Updates suchen und die Update-Einstellungen ändern. |  |
+| `instance.updates.apply` | Updates installieren | Eine neue Version von Kaeso installieren. | sensibel; erfordert `instance.updates.manage` |
+| `instance.users.view` | Benutzer ansehen | Jedes Konto der Instanz und seine Organisationen sehen. |  |
+| `instance.users.manage` | Benutzer verwalten | Konten einladen, deaktivieren und reaktivieren, ihre Sitzungen beenden und ihre Zwei-Faktor-Authentifizierung zurücksetzen. | sensibel; erfordert `instance.users.view` |
+| `instance.orgs.view` | Organisationen ansehen | Jede Organisation mit ihren Mitgliedern, Projekten und ihrer Nutzung sehen. |  |
+| `instance.orgs.manage` | Organisationen verwalten | Organisationen erstellen und umbenennen, Inhaber ernennen und ihre Löschung planen oder abbrechen. | sensibel; erfordert `instance.orgs.view` |
+| `instance.audit_log.view` | Instanz-Audit-Log ansehen | Das Audit-Log der Instanz lesen. |  |
+
+## Kontorechte
+
+Die Routen unter `me/*`, die ein Agent nutzen kann, prüfen eines dieser Rechte. Eine Konsolensitzung braucht keines davon. Jedes Kontorecht erfordert zusätzlich `account.view`, das jeder Agent hat.
+
+| Recht | Name | Was es erlaubt | Hinweise |
+| --- | --- | --- | --- |
+| `account.view` | Konto ansehen | Profil, Organisationen, Benachrichtigungseinstellungen und Neuigkeiten sehen. |  |
+| `account.update` | Profil bearbeiten | Name, Bild, Sprache und Darstellung ändern. |  |
+| `account.keys.view` | Eigene Schlüssel ansehen | Die API-Schlüssel des Kontos in jedem Projekt sehen (Metadaten). |  |
+| `account.keys.manage` | Eigene Schlüssel verwalten | Die API-Schlüssel des Kontos deaktivieren, aktivieren oder archivieren. | sensibel; erfordert `account.keys.view` |
+| `account.notifications.manage` | Benachrichtigungen ändern | Wählen, welche E-Mails das Konto erhält. |  |
+| `account.memberships.leave` | Organisationen verlassen | Organisationen verlassen, denen das Konto angehört. | sensibel |
+
+## Agenten
+
+Ein Agent verbindet sich über den [MCP-Server](../api/mcp.md) und handelt für den Benutzer, der ihn autorisiert hat. Er hat nie ein Recht, das seinem Benutzer fehlt, und der Benutzer wählt, welche seiner Rechte er erhält.
+
+### Vorlagen
+
+Die Konsole bietet vier Vorlagen für einen Agenten. Jede ist ein Ausgangspunkt, und Sie können darüber hinaus einzelne Rechte hinzufügen oder entziehen.
+
+| Vorlage | Organisationsrechte | Projektrechte | Kontorechte | Instanz-Vorlage |
+| --- | --- | --- | --- | --- |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
+| Builder | Die der Rolle Entwickler | Die der Rolle Entwickler ohne `logs.content.view`, und `models.manage` | `account.view`, `account.keys.view` | Keine |
+| Operator | Die der Rolle Admin, ohne die Rechte, die Agenten nie erhalten | Alle | Alle außer `account.keys.manage` und `account.memberships.leave` | Konfigurieren |
+| Vollzugriff | Alle außer den Rechten, die Agenten nie erhalten | Alle | Alle | Admin |
+
+Builder ist der Standard. Die Instanz-Vorlage gilt nur für Instanz-Admins:
+
+| Instanz-Vorlage | Rechte |
+| --- | --- |
+| Keine | Keine |
+| Lesen | `instance.system.view`, `instance.users.view`, `instance.orgs.view`, `instance.audit_log.view` |
+| Konfigurieren | Die von Lesen und `instance.settings.manage`, `instance.model_sources.manage`, `instance.updates.manage` |
+| Admin | Alle Instanzrechte |
+
+### Wirksame Rechte
+
+Kaeso ermittelt die Rechte eines Agenten bei jeder Anfrage neu, sodass eine Änderung am Benutzer, an einer Rolle oder an einer Richtlinie sofort gilt:
+
+- **In einer Organisation:** die Rechte, die der Agent dort erhalten hat und die sein Benutzer jetzt hat, innerhalb der Agenten-Richtlinie der Organisation. Die Richtlinie nennt eine Vorlage, und Agenten erhalten höchstens die Rechte dieser Vorlage und der Vorlagen davor.
+- **In einem Projekt:** die Projektrechte, die der Agent dort erhalten hat, innerhalb derselben Richtlinie, und die, die `projects.view.all` oder `projects.archive.any` erreichen. Nur diese beiden Rechte, wenn der Agent sie selbst hat, reichen in Projekte. Der Benutzer muss jedes davon im Projekt haben.
+- **Auf der Instanz:** die Instanzrechte, die der Agent erhalten hat, solange sein Benutzer Instanz-Admin ist, innerhalb der Agenten-Richtlinie der Instanz.
+- **Im Konto:** die Kontorechte, die der Agent erhalten hat, und immer `account.view`.
+
+Eine Organisation, die keine Agenten zulässt, ist jedem Agenten verschlossen. Eine Instanz, die keine Agenten zulässt, stoppt sie alle.
+
+### Nie für Agenten
+
+Kein Agent erhält `org.ownership.transfer`, `security.sso.manage` oder `security.sso.require`. Agenten können auch ihren eigenen Zugriff nicht erweitern, keine anderen Agenten autorisieren und niemandes Agenten verwalten. Die Kontosicherheit berühren sie nie: die E-Mail-Adresse, das Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes, Sitzungen, Verknüpfungen mit Single Sign-on und das Löschen des Kontos. [Tools](../api/mcp.md#tools) listet jede Aktion, die eine Konsolensitzung braucht.
+
+### Sensible Rechte
+
+Ein Recht, das in den Tabellen oben sensibel ist oder eine kürzliche Anmeldung erfordert, ist für Agenten sensibel, und die Konsole kennzeichnet es mit ⚠. Es einem Agenten zu geben, erfordert eine Anmeldung in den letzten 15 Minuten und eine Bestätigung. Der Agent nutzt es dann ohne eigene kürzliche Anmeldung.

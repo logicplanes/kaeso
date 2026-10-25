@@ -78,3 +78,4 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 - [API 密钥](../console/api-keys.md)：把工具的密钥限制在它需要的模型内，或为它设置过期日期。
 - [限额和预算](../console/limits-and-budgets.md)：限制工具可以消耗的 Token 数量或金额。
 - [格式转换](../concepts/format-translation.md)：了解工具调用其他服务商的模型时，哪些内容能够保留。
+- [MCP 服务器](../api/mcp.md)：让编程工具按您选择的权限管理实例。

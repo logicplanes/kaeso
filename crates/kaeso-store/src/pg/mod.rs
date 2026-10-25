@@ -7,6 +7,7 @@ use sqlx::{ConnectOptions, Connection, PgConnection, PgPool, Postgres, Transacti
 
 use crate::StoreError;
 
+pub mod agents;
 pub mod audit;
 pub mod avatars;
 pub mod catalogue;

@@ -14,6 +14,7 @@ export function auditParams(f: AuditFilters) {
     ...(f.actor ? { actor: f.actor } : {}),
     ...(f.action ? { action: f.action } : {}),
     ...(f.target ? { target: f.target } : {}),
+    ...(f.by_agents ? { by_agents: true } : {}),
     ...(f.from ? { from: `${f.from}T00:00:00Z` } : {}),
     ...(f.to ? { to: endOfDay(f.to) } : {}),
   };

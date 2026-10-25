@@ -156,6 +156,9 @@ public_id!(AuditEventId, "evt_");
 public_id!(ExportId, "exp_");
 public_id!(RoleId, "role_");
 public_id!(UpdateId, "upd_");
+public_id!(AgentId, "agt_");
+public_id!(AgentClientId, "cli_");
+public_id!(AgentActivityId, "act_");
 
 #[cfg(test)]
 mod tests {

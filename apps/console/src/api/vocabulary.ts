@@ -312,9 +312,11 @@ export function rightEnglish(id: string): [string | undefined, string | undefine
   return [catalog[`${base}.name`], catalog[`${base}.description`]];
 }
 
-type Node = Record<string, unknown>;
+export type Node = Record<string, unknown>;
 
-function translateNode(o: Node): boolean {
+export type NodeTranslator = (o: Node, set: (field: string, text: string) => void, id: string, name: string) => boolean;
+
+function translateNode(o: Node, special?: NodeTranslator): boolean {
   let changed = false;
   const set = (field: string, text: string) => {
     if (o[field] !== text) {
@@ -325,6 +327,7 @@ function translateNode(o: Node): boolean {
   const id = typeof o.id === "string" ? o.id : undefined;
   const name = typeof o.name === "string" ? o.name : undefined;
   if (id === undefined || name === undefined) return false;
+  if (special?.(o, set, id, name)) return changed;
   if (Array.isArray(o.needs) && rights[id]) {
     const [englishName, englishDescription] = rightEnglish(id);
     const [translatedName, translatedDescription] = rights[id]();
@@ -346,15 +349,18 @@ function translateNode(o: Node): boolean {
   return changed;
 }
 
+const isAgentCatalogue = (body: unknown): boolean => body !== null && typeof body === "object" && Array.isArray((body as Node).instance_presets);
+
 export async function translateBody(body: unknown): Promise<boolean> {
   let changed = false;
+  const special = isAgentCatalogue(body) ? (await import("./vocabulary-agents")).translateAgentNode : undefined;
   const visit = (node: unknown) => {
     if (Array.isArray(node)) {
       for (const item of node) visit(item);
       return;
     }
     if (node === null || typeof node !== "object") return;
-    if (translateNode(node as Node)) changed = true;
+    if (translateNode(node as Node, special)) changed = true;
     for (const value of Object.values(node)) if (value !== null && typeof value === "object") visit(value);
   };
   visit(body);
