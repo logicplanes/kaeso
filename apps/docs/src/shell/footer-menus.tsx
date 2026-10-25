@@ -1,11 +1,14 @@
 import { forwardRef, useEffect, useRef } from "react";
 import { IconButton, Menu, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
-import { LANGUAGE_NAMES, LOCALES, isLocale } from "~/i18n/locales";
+import { LANGUAGE_NAMES, LOCALES, isLocale, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import { useSwitchLocale } from "./use-switch-locale";
 
-const PRIVACY = "https://kaeso.app/datenschutz";
-const IMPRINT = "https://kaeso.app/impressum";
+const LEGAL: Record<Locale, { privacy: string; imprint: string }> = {
+  en: { privacy: "https://kaeso.app/datenschutz", imprint: "https://kaeso.app/impressum" },
+  de: { privacy: "https://kaeso.app/de/datenschutz", imprint: "https://kaeso.app/de/impressum" },
+  "zh-CN": { privacy: "https://kaeso.app/zh-CN/datenschutz", imprint: "https://kaeso.app/zh-CN/impressum" },
+};
 
 export type FooterMenu = "legal" | "theme" | "language";
 
@@ -30,14 +33,15 @@ export default function FooterMenus({ opening }: { opening: FooterMenu | null })
 
 const LegalMenu = forwardRef<HTMLButtonElement>(function LegalMenu(_, ref) {
   const t = useText();
+  const legal = LEGAL[useSiteLocale()];
   return (
     <Menu>
       <Menu.Trigger>
         <IconButton ref={ref} icon={icons.legal} aria-label={t("legal.label")} />
       </Menu.Trigger>
       <Menu.Content side="top" align="start" className="min-w-180">
-        <Menu.LinkItem href={PRIVACY}>{t("legal.privacy")}</Menu.LinkItem>
-        <Menu.LinkItem href={IMPRINT}>{t("legal.imprint")}</Menu.LinkItem>
+        <Menu.LinkItem href={legal.privacy}>{t("legal.privacy")}</Menu.LinkItem>
+        <Menu.LinkItem href={legal.imprint}>{t("legal.imprint")}</Menu.LinkItem>
       </Menu.Content>
     </Menu>
   );

@@ -49,7 +49,7 @@
   "account.connectClaudeHint": "When the plugin asks for your Kaeso address, enter {origin}. Then run /mcp to sign in.",
   "account.connectClient": "Add to {client}",
   "account.connectCursorHint": "Or install Kaeso from the Cursor Marketplace and enter {origin} as KAESO_URL.",
-  "account.connectDocs": "Documentation",
+  "account.connectDocs": "Read the documentation",
   "account.connectLead": "Your agent signs in through your browser, and you choose what it may do.",
   "account.connectPlugin": "Plugin",
   "account.connectServerOnly": "Server only",
