@@ -1091,6 +1091,11 @@ describe("dialog toolbar and footer start", () => {
     expect([...footer.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Add a custom model", "Add models"]);
   });
 
+  it("shows a footer start on its own, without other actions", () => {
+    render(<Dialog open title="Add models" footerStart={<Button>Add a custom model</Button>} />);
+    expect(screen.getByRole("button", { name: "Add a custom model" }).closest("[data-dialog-footer]")).not.toBeNull();
+  });
+
   it("shows a layer's own toolbar only on that layer", async () => {
     const user = userEvent.setup();
     function Layers() {
@@ -1101,7 +1106,12 @@ describe("dialog toolbar and footer start", () => {
           layer={layer}
           onLayerChange={setLayer}
           layers={[
-            { title: "Add models", toolbar: <input aria-label="Search models" />, content: <Button onClick={() => setLayer(1)}>Review</Button> },
+            {
+              title: "Add models",
+              toolbar: <input aria-label="Search models" />,
+              content: <Button onClick={() => setLayer(1)}>Review</Button>,
+              footerStart: <Button onClick={() => setLayer(1)}>Add a custom model</Button>,
+            },
             { title: "Review", content: <input aria-label="Display name" /> },
           ]}
         />
@@ -1113,6 +1123,9 @@ describe("dialog toolbar and footer start", () => {
     expect(screen.queryByRole("textbox", { name: "Search models" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(screen.getByRole("button", { name: "Review" })).toHaveFocus();
+    await user.click(screen.getByRole("button", { name: "Add a custom model" }));
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("button", { name: "Add a custom model" })).toHaveFocus();
   });
 });
 

@@ -196,8 +196,7 @@ test("provider keys: several per provider, one default, assigned to a project, r
   ] as const) {
     await page.getByRole("button", { name: "Add provider key", exact: true }).click();
     const add = page.getByRole("dialog", { name: "Add provider key" });
-    await add.getByRole("option", { name: /^Anthropic/ }).click();
-    await add.getByRole("button", { name: "Continue" }).click();
+    await add.getByRole("radio", { name: /^Anthropic/ }).click();
     await add.getByRole("textbox", { name: "Anthropic API key", exact: true }).fill(secret);
     await add.getByLabel("Name", { exact: true }).fill(name);
     const submit = add.getByRole("button", { name: "Add key" });

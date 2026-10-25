@@ -96,7 +96,7 @@ function ProviderTiles({
       ) : (
         <BaseRadioGroup
           aria-label={label}
-          {...(value ? { value } : {})}
+          value={value ?? null}
           onValueChange={(v: unknown) => onValueChange?.(v ? String(v) : null)}
           className="flex flex-col gap-20"
         >

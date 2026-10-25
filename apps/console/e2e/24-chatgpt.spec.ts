@@ -19,8 +19,7 @@ test("a ChatGPT account becomes an OpenAI key by pasting the address the browser
 
   await page.getByRole("button", { name: "Add provider key", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add provider key" });
-  await add.getByRole("option", { name: /^OpenAI/ }).click();
-  await add.getByRole("button", { name: "Continue" }).click();
+  await add.getByRole("radio", { name: /^OpenAI/ }).click();
   await add.getByRole("radio", { name: /^ChatGPT account/ }).click();
   await add.getByRole("button", { name: "Continue" }).click();
   const asDefault = add.getByRole("heading", { name: "Make it the OpenAI default?" });
