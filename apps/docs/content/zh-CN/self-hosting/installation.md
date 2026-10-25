@@ -76,7 +76,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso migrate` | 运行 PostgreSQL 和 ClickHouse 迁移，然后退出 |
 | `kaeso serve` | 运行网关。这是镜像的默认命令 |
 
-## 后续步骤
+## 下一步
 
 - [配置](configuration.md)：查找每项设置及其所在位置。
 - [域名和 TLS](domains-and-tls.md)：获取证书，或在自己的代理后面运行 Kaeso。

@@ -40,7 +40,7 @@ A page exists because a real reader opens it to get something done. Before you a
 
 A page that fails any of them is removed or merged, not tightened. Numbers and lists that only CI acts on, such as bundle budgets or coverage thresholds, stay in the code or configuration that enforces them. The docs name the command that checks them.
 
-To remove a page, delete it in all three languages. Add its address to `apps/docs/redirects.json` with the most relevant page ([where a page goes](#where-a-page-goes)), then fix the links the build names.
+To remove a page, delete it in all three languages. Change every link to it in the same commit, to the most relevant page instead; the build names the links you missed.
 
 ## Page types
 
@@ -56,7 +56,7 @@ Every page is one of five types. Pick the type before you write: it decides the 
 
 Guides show how to do a task and link to the reference for every option. Reference pages list every option and tell no story. The same table never appears on both.
 
-A folder's `index.md` is an overview: one or two sentences on what the section covers, then a [link list](#next-steps) of its pages with a sentence each.
+A folder's `index.md` is an overview: one or two sentences on what the section covers, then anything every page of the section relies on, such as its terms. It ends with [next steps](#next-steps) that list its pages, a sentence each.
 
 ### Quick start
 
@@ -249,6 +249,7 @@ Readers copy code before they read prose, so the code has to work as it stands.
 
 - **Lead with a runnable example.** Every API page, and every guide where an app calls Kaeso, shows a minimal request that works within its first screen: right after the introduction, before the first `##` heading.
 - **Runnable as pasted.** A reader changes only the placeholders: the address `kaeso.example.com`, the key in the environment variable `KAESO_API_KEY` and the model `claude-haiku-4-5` or `gpt-5-mini`. Where a literal key is unavoidable, show it as `sk-kso-…`. Use the same prompt across a page: "Write a haiku about gateways."
+- **Other names are reserved too.** The reader's address is `owner@example.com`. Anything that isn't Kaeso, such as an identity provider or an SMTP server, takes another name under `example.com` or `.example`, such as `login.example.com` or `smtp.example.com`. Never show a real host, key or person.
 - **Minimal.** Only the fields the example needs. A guide's block stays under 25 lines; longer code links to a file on GitHub.
 - **Keys come from the environment.** Code reads `KAESO_API_KEY`: `os.environ["KAESO_API_KEY"]` in Python, `process.env.KAESO_API_KEY` in TypeScript, `$KAESO_API_KEY` in curl. Never write a key into SDK code.
 - **The official SDKs.** Python uses `openai` and `anthropic` with their synchronous clients; TypeScript uses `openai` and `@anthropic-ai/sdk` as ES modules with top-level `await`. The OpenAI SDK's base URL is `https://kaeso.example.com/v1`, the Anthropic SDK's `https://kaeso.example.com`. A reader's app installs them with `pip install openai anthropic` and `npm install openai @anthropic-ai/sdk`; commands for working on this repository use pnpm.
@@ -362,7 +363,7 @@ A quick start, a guide and an overview end with `## Next steps`: a list whose ev
 - [API keys](../console/api-keys.md): Limit a key to the models and rates an app needs.
 ```
 
-- Two to four items, the most likely next task first.
+- Two to four items, the most likely next task first. An overview lists every page or section it leads to instead, however many there are.
 - The link text is the page's title; the sentence says what the reader can do there.
 - Use this form only for lists of links. A list item that starts with a link and goes on as a sentence turns into a card too, so start such sentences with a word.
 - Reference and troubleshooting pages have no next steps.
@@ -416,7 +417,7 @@ Any other field is an error. The title is the page's only `#` heading, so headin
 
 A file's name is its address: lowercase, words joined by hyphens (`provider-keys.md`). Renaming or moving a file changes its address in every language, and every link to it must follow; the build names the ones that don't.
 
-Links from elsewhere and bookmarks keep the old address. Add it to `apps/docs/redirects.json` with the page, and optionally the heading, it moved to: `"development/kpp/extras-allowlist": "development/kpp/cross-format.md#extras"`. The build then writes a page at the old address in every language that sends the reader on, to the same heading of the translation. An address can also go to a page outside the docs, such as `"changelog": "https://kaeso.app/changelog"`. Each language then goes to the same language there, and so does every address below the old one.
+The old address is not kept, and nothing sends readers on from it. Change every link to the page in the same commit, in all three languages.
 
 A folder inside a group needs an `index.md`, and folders nest at most three deep. Files and folders whose names start with `_` are not published.
 
@@ -536,7 +537,7 @@ Check every page the pull request adds or changes:
 - [ ] Sentences address the reader, in the active voice and the present tense, and none runs over 30 words.
 - [ ] Bold marks only console labels and defined names; code marks everything the reader types.
 - [ ] At most one callout per section and three per page, each under 50 words.
-- [ ] Quick starts, guides and overviews end with next steps: two to four links, each with one sentence.
+- [ ] Quick starts and guides end with next steps of two to four links, and overviews with one link per page; each link has one sentence.
 - [ ] Every statement matches the code on `dev`, and the version is written as `\{{version}}`.
 - [ ] The German and Chinese pages say the same, naturally, with the same headings, callouts and code.
 - [ ] `pnpm --filter kaeso-docs check:content` passes, and you have read the page on the site in light and dark, at desktop width and at 375 px.

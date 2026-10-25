@@ -85,7 +85,9 @@ flowchart TD
 
 [请求流程](concepts/request-flow.md)跟随一个请求走完网关。[格式转换](concepts/format-translation.md)说明 KPP 在格式之间能传递什么、会拒绝什么。
 
-## 从哪里开始
+Kaeso 采用 MIT 许可证。网关、KPP、控制台、UI 组件库和本文档都在同一个仓库中：[logicplanes/kaeso](https://github.com/logicplanes/kaeso)。
+
+## 下一步
 
 - [快速开始](get-started/quick-start.md)：在服务器上安装 Kaeso，并发送第一个请求。
 - [调用模型](get-started/calling-models.md)：用 OpenAI 和 Anthropic 的 SDK 在代码中调用模型。
@@ -95,5 +97,3 @@ flowchart TD
 - [API](api/index.md)：查阅模型 API 和 Platform API。
 - [自托管](self-hosting/index.md)：规划、运行和升级一个实例。
 - [开发](development/index.md)：构建、测试和修改 Kaeso 本身。
-
-Kaeso 采用 MIT 许可证。网关、KPP、控制台、UI 组件库和本文档都在同一个仓库中：[logicplanes/kaeso](https://github.com/logicplanes/kaeso)。

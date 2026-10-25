@@ -64,3 +64,9 @@ docker compose logs -f gateway
 ```
 
 Jede Zeile, die eine Anfrage auslöst, trägt ihre `request_id`, die die Antwort auch im Header `kaeso-request-id` sendet. Secrets, Anbieter-Schlüssel und Authorization-Header werden nie protokolliert. `KAESO_LOG_LEVEL` setzt das Level oder einen Filter, etwa `info,kaeso_server=debug`, und `KAESO_LOG_FORMAT=text` schreibt für die Entwicklung einfache Zeilen.
+
+## Nächste Schritte
+
+- [Fehlerbehebung](troubleshooting.md): Finden Sie die Lösung für ein Problem, das Health-Checks, Metriken oder Protokolle zeigen.
+- [Konfiguration](configuration.md): Ändern Sie die Adresse der Metriken, das Log-Level und jede andere Einstellung.
+- [Backups und Hauptschlüssel](backups.md): Sichern Sie die Datenbanken und Hauptschlüssel, bevor etwas schiefgeht.

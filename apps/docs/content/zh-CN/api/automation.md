@@ -164,7 +164,7 @@ curl -s -c "$JAR" https://kaeso.example.com/platform/v1/auth/password \
 
 开启双重验证时，`auth/password` 返回 202 和一个 `challenge`。以 `{"challenge": "…", "code": "123456"}` 的形式发送到 `POST auth/totp`，也可以用 `recovery_code` 代替 `code`。只有在实例开启密码登录时（默认开启），才能用密码登录。在新实例中，第一个用户通过 `kaeso setup-link` 输出的设置链接注册（[安装](../self-hosting/installation.md)）。
 
-## 后续步骤
+## 下一步
 
 - [Platform API](platform-api.md)：查阅每个路由、约定、错误和权限。
 - [API 密钥](../console/api-keys.md)：把密钥限制在应用所需的模型和速率内。
