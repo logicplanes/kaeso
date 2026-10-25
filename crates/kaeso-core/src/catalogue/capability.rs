@@ -180,7 +180,7 @@ fn check_generation(
             "forced tool choice",
             Some("tool_choice"),
             format!(
-                "The model `{name}` does not accept {words}; send `auto` and ask for the tool in the prompt."
+                "The model `{name}` does not accept {words}; send `auto` and name the tool in the prompt."
             ),
         ));
     }
@@ -207,7 +207,7 @@ fn check_generation(
             "adaptive thinking",
             Some("thinking"),
             format!(
-                "The model `{name}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead."
+                "The model `{name}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
             ),
         ));
     }

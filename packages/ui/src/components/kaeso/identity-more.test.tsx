@@ -87,7 +87,7 @@ describe("identity parts", () => {
   });
 
   it("shows a key with its state and access, without copy", () => {
-    render(<KeyDisplay redacted="sk-kaeso-••••1a2b" state="expired" access="both" copy={false} />);
+    render(<KeyDisplay redacted="sk-kso-••••1a2b" state="expired" access="both" copy={false} />);
     expect(screen.getByText("Expired")).toBeInTheDocument();
     expect(screen.getByText("Inference + platform")).toBeInTheDocument();
     expect(screen.queryByRole("button")).toBeNull();

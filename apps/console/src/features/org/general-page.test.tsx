@@ -97,7 +97,7 @@ describe("organization general settings", () => {
   it("goes home from the settings of an organization the person doesn't belong to", async () => {
     signedIn();
     await renderApp("/settings/orgs/org_contoso/general");
-    expect(await notifications().findByText("That organization doesn't exist, or you don't have access to it")).toBeInTheDocument();
+    expect(await notifications().findByText("That organization doesn't exist or you can't access it")).toBeInTheDocument();
     await waitFor(() => expect(window.location.pathname).not.toContain("org_contoso"));
     expect(screen.queryByRole("heading", { name: "General", level: 1 })).not.toBeInTheDocument();
   });

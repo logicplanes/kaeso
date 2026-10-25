@@ -413,7 +413,7 @@
   "errors.model.noImages": "模型 `{model}` 不接受图片。",
   "errors.model.noPdf": "模型 `{model}` 不接受 PDF 文档。",
   "errors.model.noTools": "模型 `{model}` 不支持工具调用。",
-  "errors.model.forcedTool": "模型 `{model}` 不接受 {choice}，请发送 `auto`，并在提示词中要求使用该工具。",
+  "errors.model.forcedTool": "模型 `{model}` 不接受 {choice}，请发送 `auto`，并在提示词中指明该工具。",
   "errors.model.noStructured": "模型 `{model}` 不支持结构化输出（JSON Schema）。",
   "errors.model.noReasoning": "模型 `{model}` 不支持推理。",
   "errors.model.noAdaptive": "模型 `{model}` 不支持自适应思考，请改为发送带 `budget_tokens` 的 `thinking` `enabled`。",
@@ -525,5 +525,9 @@
   "errors.modelApi.customAsksForKey": "自定义服务商 `{provider}` 需要密钥，组织管理员可在“服务商”中设置其认证方式。",
   "errors.modelApi.customKeyRefused": "自定义服务商 `{provider}` 拒绝了此项目的密钥，请组织管理员在“服务商”中检查。",
   "errors.modelApi.customUnreadable": "自定义服务商 `{provider}` 的回复格式无法按 `{dialect}` 读取，请检查其 API 格式。",
-  "errors.modelApi.customTurnedOff": "此实例已关闭自定义服务商，因此无法调用 `{provider}`。"
+  "errors.modelApi.customTurnedOff": "此实例已关闭自定义服务商，因此无法调用 `{provider}`。",
+  "errors.signUpInvitationOnly": "此实例仅限受邀创建账户，请让管理员邀请您。",
+  "errors.signUpDomainNotAllowed": "此邮箱地址无法在此创建账户，请让管理员邀请您。",
+  "errors.orgCreationDomainNotAllowed": "您的邮箱地址无法在此创建组织，请联系实例管理员。",
+  "errors.orgCreationInstanceAdminsOnly": "在此实例中，只有实例管理员可以创建组织。"
 }

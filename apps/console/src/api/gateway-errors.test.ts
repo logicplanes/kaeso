@@ -130,15 +130,15 @@ describe("a refusal from the Playground's capability checks", () => {
 
   it("translates the named tool choice and keeps a choice written as code", async () => {
     await speak("de");
-    const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and ask for the tool in the prompt.";
+    const named = "The model `o3` does not accept a named function in `tool_choice`; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(named))).message).toBe(
-      "Das Modell `o3` nimmt eine benannte Funktion in `tool_choice` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+      "Das Modell `o3` nimmt eine benannte Funktion in `tool_choice` nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
     );
-    const code = "The model `o3` does not accept `tool_choice` `required`; send `auto` and ask for the tool in the prompt.";
+    const code = "The model `o3` does not accept `tool_choice` `required`; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(code))).message).toBe(
-      "Das Modell `o3` nimmt `tool_choice` `required` nicht an; senden Sie `auto` und fordern Sie das Tool im Prompt an.",
+      "Das Modell `o3` nimmt `tool_choice` `required` nicht an; senden Sie `auto` und nennen Sie das Tool im Prompt.",
     );
-    const unknown = "The model `o3` does not accept a brand new choice; send `auto` and ask for the tool in the prompt.";
+    const unknown = "The model `o3` does not accept a brand new choice; send `auto` and name the tool in the prompt.";
     expect((await errorFromResponse(refusal(unknown))).message).toBe(unknown);
   });
 });
@@ -179,6 +179,27 @@ describe("the model API's messages, as request logs show them", () => {
     const message = "Open Kaeso at https://kaeso.example.com; it refuses requests from pages at other addresses.";
     expect((await errorFromResponse(new Response(JSON.stringify({ error: { type: "permission_denied", message } }), { status: 403 }))).message).toBe(
       "Kaeso unter https://kaeso.example.com öffnen; Anfragen von Seiten unter anderen Adressen lehnt es ab.",
+    );
+  });
+});
+
+describe("a refusal to create an account or an organization", () => {
+  const refused = (message: string) => new Response(JSON.stringify({ error: { type: "permission_denied", message } }), { status: 403 });
+
+  it("tells the person in German and Chinese whom to ask", async () => {
+    await speak("de");
+    expect((await errorFromResponse(refused("Accounts on this install are by invitation only; ask an administrator to invite you."))).message).toBe(
+      "Konten gibt es in dieser Installation nur auf Einladung; bitten Sie einen Administrator um eine Einladung.",
+    );
+    expect((await errorFromResponse(refused("Only instance admins can create organizations on this install."))).message).toBe(
+      "In dieser Installation können nur Instanz-Admins Organisationen erstellen.",
+    );
+    await speak("zh-CN");
+    expect((await errorFromResponse(refused("This email address can't create an account here; ask an administrator to invite you."))).message).toBe(
+      "此邮箱地址无法在此创建账户，请让管理员邀请您。",
+    );
+    expect((await errorFromResponse(refused("Your email address can't create organizations here; ask an instance admin."))).message).toBe(
+      "您的邮箱地址无法在此创建组织，请联系实例管理员。",
     );
   });
 });

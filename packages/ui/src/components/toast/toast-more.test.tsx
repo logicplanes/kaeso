@@ -1,3 +1,4 @@
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { Toast, ToastCapsule, toast } from "./toast.js";
@@ -60,5 +61,11 @@ describe("ToastCapsule", () => {
     expect(screen.getByRole("button", { name: "Dismiss" })).toHaveAttribute("data-force", "visible hover");
     render(<ToastCapsule title="Plain" />);
     expect(screen.getByText("Plain")).toBeInTheDocument();
+  });
+
+  it("forwards its ref to the status element", () => {
+    const ref = createRef<HTMLDivElement>();
+    render(<ToastCapsule ref={ref} title="Key revoked" />);
+    expect(ref.current).toBe(screen.getByRole("status"));
   });
 });
