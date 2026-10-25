@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { DayPicker, type DateRange, type Formatters, type Labels } from "react-day-picker";
+import { createContext, forwardRef, use, useCallback, useMemo, type Ref } from "react";
+import { DayPicker, type DateRange, type Formatters, type Labels, type RootProps } from "react-day-picker";
 import { Icon } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
@@ -47,6 +47,22 @@ function Chevron({ orientation }: { orientation?: "left" | "right" | "up" | "dow
   return <Icon icon={orientation === "left" ? icons.chevronLeft : orientation === "right" ? icons.chevronRight : icons.chevronDown} size="sm" />;
 }
 
+const RootRef = createContext<Ref<HTMLDivElement> | null>(null);
+
+function Root({ rootRef, ...props }: RootProps) {
+  const ref = use(RootRef);
+  const setRefs = useCallback(
+    (el: HTMLDivElement | null) => {
+      for (const r of [rootRef, ref]) {
+        if (typeof r === "function") r(el);
+        else if (r) r.current = el;
+      }
+    },
+    [rootRef, ref],
+  );
+  return <div {...props} ref={setRefs} />;
+}
+
 function localized(locale: string, t: UiText): { formatters: Partial<Formatters>; labels: Partial<Labels>; lang: string } {
   const monthYear = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
   const weekdayShort = new Intl.DateTimeFormat(locale, { weekday: "short" });
@@ -87,18 +103,10 @@ export interface CalendarProps {
   className?: string | undefined;
 }
 
-export function Calendar({
-  mode = "single",
-  selected,
-  onSelect,
-  month,
-  defaultMonth,
-  onMonthChange,
-  numberOfMonths = 1,
-  weekStartsOn = 1,
-  disabled,
-  className,
-}: CalendarProps) {
+export const Calendar = forwardRef<HTMLDivElement, CalendarProps>(function Calendar(
+  { mode = "single", selected, onSelect, month, defaultMonth, onMonthChange, numberOfMonths = 1, weekStartsOn = 1, disabled, className },
+  ref,
+) {
   const locale = useLocale();
   const t = useUiText();
   const language = useMemo(() => {
@@ -108,7 +116,7 @@ export function Calendar({
   const common = {
     ...language,
     classNames: numberOfMonths > 1 ? { ...CAL_CLASSES, outside: "k-outside invisible" } : CAL_CLASSES,
-    components: { Chevron },
+    components: { Chevron, Root },
     weekStartsOn,
     numberOfMonths,
     showOutsideDays: true,
@@ -119,9 +127,14 @@ export function Calendar({
     ...(disabled ? { disabled } : {}),
     ...(className ? { className } : {}),
   };
-  if (mode === "range") {
-    return <DayPicker mode="range" selected={selected as DateRange | undefined} onSelect={(r) => onSelect?.(r)} {...common} />;
-  }
-  return <DayPicker mode="single" selected={selected as Date | undefined} onSelect={(d) => onSelect?.(d)} {...common} />;
-}
+  return (
+    <RootRef value={ref}>
+      {mode === "range" ? (
+        <DayPicker mode="range" selected={selected as DateRange | undefined} onSelect={(r) => onSelect?.(r)} {...common} />
+      ) : (
+        <DayPicker mode="single" selected={selected as Date | undefined} onSelect={(d) => onSelect?.(d)} {...common} />
+      )}
+    </RootRef>
+  );
+});
 Calendar.displayName = "Calendar";

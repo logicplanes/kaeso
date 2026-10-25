@@ -1,7 +1,8 @@
+import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { List, SelectionAction } from "./list.js";
+import { List, SelectionAction, SelectionBar } from "./list.js";
 import { InsetContent } from "../../utils/inset.js";
 import { Empty } from "../empty/empty.js";
 import { Dialog } from "../dialog/dialog.js";
@@ -224,5 +225,22 @@ describe("List contrast", () => {
       <List aria-label="Keys" items={[{ id: "a", title: "checkout-web", displayId: "key_01" }]} selectable selected={new Set(["a"])} selectionBar={false} />,
     );
     expect(screen.getByText("key_01")).toHaveClass("text-fg-secondary");
+  });
+});
+
+describe("SelectionBar", () => {
+  it("forwards its ref to the selection region and clears from its button", async () => {
+    const ref = createRef<HTMLDivElement>();
+    const onClear = vi.fn();
+    render(
+      <SelectionBar ref={ref} count={2} onClear={onClear}>
+        <SelectionAction onClick={vi.fn()}>Revoke</SelectionAction>
+      </SelectionBar>,
+    );
+    const region = screen.getByRole("region", { name: "Selection" });
+    expect(ref.current).toBe(region);
+    expect(region).toHaveTextContent("2 selected");
+    await userEvent.click(within(region).getByRole("button", { name: "Clear selection" }));
+    expect(onClear).toHaveBeenCalledOnce();
   });
 });

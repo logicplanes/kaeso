@@ -6,7 +6,7 @@ type ToastErrorOptions = { action?: { label: string; onClick: () => void }; id?:
 
 export function toastApiError(error: unknown, { fallback, ...options }: ToastErrorOptions & { fallback?: string } = {}): void {
   if (!isApiError(error)) {
-    toast.error(fallback ?? t("common.unreachable", "Can't reach the gateway. Try again."), options);
+    toast.error(fallback ?? t("common.unreachable", "Can't reach the gateway; try again."), options);
     return;
   }
   if (error.type === "permission_denied" && error.right) {

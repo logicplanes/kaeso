@@ -4,7 +4,7 @@ description: The health checks, Prometheus metrics and logs of a running install
 order: 10
 ---
 
-The gateway reports its health on two endpoints, serves Prometheus metrics on a port of its own, and writes JSON logs. In the console, **Settings** › **Instance** › **System** shows the same health, the running version, the request log buffer and storage.
+The gateway reports its health on two endpoints, serves Prometheus metrics on a port of its own, and writes JSON logs. In the console, **Instance** › **System** shows the same health, the running version, the request log buffer and storage.
 
 ## Health checks
 

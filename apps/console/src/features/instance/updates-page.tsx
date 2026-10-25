@@ -73,7 +73,7 @@ export function InstanceUpdatesPage() {
 function checkText(u: UpdatesView): string | undefined {
   const reason = u.latest && !u.can_apply && !u.manual && u.job?.state !== "running" ? blocked(u) : null;
   if (reason) return reason;
-  if (u.check.error) return t("instance.updates.checkFailed", "The last check for releases failed; Kaeso tries again shortly.");
+  if (u.check.error) return t("instance.updates.checkFailed", "The last release check failed; Kaeso tries again shortly.");
   if (!u.settings.check) return t("instance.updates.checkOffHint", "Checking is off in the gateway's configuration.");
   return undefined;
 }
@@ -137,11 +137,11 @@ function manualReason(u: UpdatesView, version: string): string {
 function blocked(u: UpdatesView): string | null {
   switch (u.updater.state) {
     case "not_installed":
-      return t("instance.updates.noUpdater", "The updater isn't installed, so this install updates by hand.");
+      return t("instance.updates.noUpdater", "The updater isn't installed; this install updates by hand.");
     case "unreachable":
       return t("instance.updates.updaterDown", "The updater doesn't answer; check that its container runs.");
     case "outdated":
-      return t("instance.updates.updaterOld", "The updater is too old for this release; update by hand once.");
+      return t("instance.updates.updaterOld", "This release needs a newer updater; update by hand once.");
     default:
       return null;
   }

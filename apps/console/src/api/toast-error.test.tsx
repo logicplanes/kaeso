@@ -24,14 +24,14 @@ describe("an error toast", () => {
   it("says the gateway can't be reached when the failure isn't an answer from it", async () => {
     await renderUi(<p>page</p>);
     toastApiError(new SyntaxError("Unexpected end of JSON input"));
-    expect((await notifications().findAllByText("Can't reach the gateway. Try again.")).length).toBeGreaterThan(0);
+    expect((await notifications().findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
     expect(notifications().queryByText("Unexpected end of JSON input")).not.toBeInTheDocument();
   });
 
   it("uses the caller's words for a failure that isn't an answer from the gateway", async () => {
     await renderUi(<p>page</p>);
-    toastApiError(new TypeError("network"), { fallback: "The export stopped before the end. Try again." });
-    expect((await notifications().findAllByText("The export stopped before the end. Try again.")).length).toBeGreaterThan(0);
+    toastApiError(new TypeError("network"), { fallback: "The export stopped before the end; try again." });
+    expect((await notifications().findAllByText("The export stopped before the end; try again.")).length).toBeGreaterThan(0);
   });
 
   it("shows the API's message for a missing right outside an organization", async () => {

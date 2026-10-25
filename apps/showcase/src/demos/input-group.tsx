@@ -15,7 +15,7 @@ export function Addons() {
     <div className="flex w-400 flex-col gap-12">
       <InputGroup>
         <InputGroup.Addon>https://</InputGroup.Addon>
-        <InputGroup.Input aria-label="Host" placeholder="gateway.northwind.example" />
+        <InputGroup.Input aria-label="Host" placeholder="kaeso.example.com" />
         <InputGroup.Addon>/v1</InputGroup.Addon>
       </InputGroup>
       <InputGroup trailingButton>

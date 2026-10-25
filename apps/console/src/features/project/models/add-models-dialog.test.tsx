@@ -442,7 +442,7 @@ describe("AddModelsDialog", () => {
     await pickProvider(user, dialog, "Anthropic");
     const notice = await within(dialog).findByText("Requests to these models fail until someone adds a key for Anthropic on the Providers page.");
     expect(notice).toBeInTheDocument();
-    expect(within(dialog).getByRole("link", { name: "Open Providers" })).toHaveAttribute("href", expect.stringMatching(/\/orgs\/[^/]+\/providers$/));
+    expect(within(dialog).getByRole("link", { name: "Open providers" })).toHaveAttribute("href", expect.stringMatching(/\/orgs\/[^/]+\/providers$/));
   });
 
   it("says nothing about provider keys to people who can't see them", async () => {

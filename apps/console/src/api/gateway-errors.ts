@@ -33,6 +33,18 @@ const messages = (): Rule[] => [
   rule("errors.recentSignIn", () => t("errors.recentSignIn", "This action needs a sign-in from the last 15 minutes; sign in again.")),
   rule("errors.consoleSessionOnly", () => t("errors.consoleSessionOnly", "This needs a console session; API keys cannot manage accounts or the instance.")),
   rule("errors.instanceAdminsOnly", () => t("errors.instanceAdminsOnly", "Only instance admins can do this.")),
+  rule("errors.signUpInvitationOnly", () =>
+    t("errors.signUpInvitationOnly", "Accounts on this install are by invitation only; ask an administrator to invite you."),
+  ),
+  rule("errors.signUpDomainNotAllowed", () =>
+    t("errors.signUpDomainNotAllowed", "This email address can't create an account here; ask an administrator to invite you."),
+  ),
+  rule("errors.orgCreationDomainNotAllowed", () =>
+    t("errors.orgCreationDomainNotAllowed", "Your email address can't create organizations here; ask an instance admin."),
+  ),
+  rule("errors.orgCreationInstanceAdminsOnly", () =>
+    t("errors.orgCreationInstanceAdminsOnly", "Only instance admins can create organizations on this install."),
+  ),
   rule("errors.missingRightOrg", (v) => t("errors.missingRightOrg", "You need the right `{right}` in this organization; ask one of its admins for it.", v)),
   rule("errors.missingRightProject", (v) => t("errors.missingRightProject", "You need the right `{right}` in this project; ask one of its admins for it.", v)),
   rule("errors.bearerKey", () => t("errors.bearerKey", "Send the key as `Authorization: Bearer <key>`.")),
@@ -589,13 +601,13 @@ const messages = (): Rule[] => [
   rule("errors.model.noTools", (v) => t("errors.model.noTools", "The model `{model}` does not support tool calling.", v)),
   rule(
     "errors.model.forcedTool",
-    (v) => t("errors.model.forcedTool", "The model `{model}` does not accept {choice}; send `auto` and ask for the tool in the prompt.", v),
+    (v) => t("errors.model.forcedTool", "The model `{model}` does not accept {choice}; send `auto` and name the tool in the prompt.", v),
     { choice: "toolChoice" },
   ),
   rule("errors.model.noStructured", (v) => t("errors.model.noStructured", "The model `{model}` does not support structured output (a JSON schema).", v)),
   rule("errors.model.noReasoning", (v) => t("errors.model.noReasoning", "The model `{model}` does not support reasoning.", v)),
   rule("errors.model.noAdaptive", (v) =>
-    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `thinking` `enabled` with `budget_tokens` instead.", v),
+    t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`.", v),
   ),
   rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
   rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),

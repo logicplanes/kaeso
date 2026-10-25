@@ -160,10 +160,7 @@ export function AccountKeysPage() {
         onOpenChange={(o) => !o && setArchiving(null)}
         tone="danger"
         title={archiving ? t("account.archiveKeyConfirm", "Archive {name}?", { name: archiving.name }) : t("account.archiveKeyConfirmAny", "Archive this key?")}
-        description={t(
-          "account.archiveKeyConfirmHint",
-          "Applications using it stop authenticating with the gateway. Archiving can't be undone; its history stays.",
-        )}
+        description={t("account.archiveKeyConfirmHint", "Applications using it stop authenticating; archiving can't be undone, and its history stays.")}
         confirmLabel={t("account.archiveKey", "Archive key")}
         loading={act.isPending}
         onConfirm={() => (archiving ? act.mutateAsync({ key: archiving, action: "archive" }) : undefined)}

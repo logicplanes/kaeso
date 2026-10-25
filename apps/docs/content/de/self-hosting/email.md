@@ -23,7 +23,7 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 
 ## Test-E-Mail senden
 
-1. Öffnen Sie in der Konsole **Einstellungen** › **Instanz** › **Einstellungen**. Der Abschnitt **E-Mail** zeigt den Transport, den SMTP-Host und den Absender.
+1. Öffnen Sie in der Konsole **Instanz** › **System**. Der Abschnitt **E-Mail** zeigt den Transport, den SMTP-Host und den Absender.
 2. Wählen Sie **Test-E-Mail senden**. Sie geht an Sie oder an die Adresse, die Sie eingeben.
 3. Scheitert sie oder kommt sie nicht an, lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways mit `docker compose logs gateway`.
 
@@ -44,6 +44,7 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 | Anmeldelink | Jemand einen Anmeldelink anfordert |
 | Passwort-Reset | Jemand sein Passwort zurücksetzen will |
 | Adressänderung | Jemand seine E-Mail-Adresse ändert; geht an die neue Adresse |
+| Änderungsanfrage | Jemand seine E-Mail-Adresse ändert; geht an die bisherige Adresse, mit einem Link, der die Änderung abbricht |
 | Registrierung | Sich jemand registriert, wo die Instanz es erlaubt |
 | Passwort geändert | Ein Passwort sich ändert |
 | Zwei-Faktor an | Jemand die Zwei-Faktor-Authentifizierung einschaltet |
@@ -59,7 +60,7 @@ Die Anmeldung mit Passwort funktioniert weiter, und `kaeso setup-link` gibt den 
 | Budgetwarnung | Ein Budget eine seiner Warnschwellen erreicht |
 | Test | Ein Instanz-Admin eine Test-E-Mail sendet |
 
-Sicherheits- und Organisationshinweise werden immer gesendet. Welche Warnungen sie erhält, wählt jede Person unter **Einstellungen** › **Konto** › **Benachrichtigungen**, und jede Warnung sagt in ihrer Fußzeile, wie sie sich abschalten lässt.
+Sicherheits- und Organisationshinweise werden immer gesendet. Welche Warnungen sie erhält, wählt jede Person unter **Konto** › **Benachrichtigungen**, und jede Warnung sagt in ihrer Fußzeile, wie sie sich abschalten lässt.
 
 Jede E-Mail hat einen HTML- und einen Textteil, hell und dunkel. Ihre Bilder sind in die E-Mail eingebettet, sodass sie nichts von Ihrer Installation lädt und keine Tracking-Pixel enthält.
 
@@ -69,7 +70,7 @@ Jede E-Mail gibt es auf Englisch, Deutsch und vereinfachtem Chinesisch. Kaeso w�
 
 | Empfänger | Sprache |
 | --- | --- |
-| Eine Person mit Konto | Ihre Wahl unter **Einstellungen** › **Konto** › **Darstellung**. Bei Automatisch die Sprache des Browsers, der die E-Mail ausgelöst hat, sonst Englisch |
+| Eine Person mit Konto | Ihre Wahl unter **Konto** › **Darstellung**. Bei Automatisch die Sprache des Browsers, der die E-Mail ausgelöst hat, sonst Englisch |
 | Jemand ohne Konto, für eine Einladung oder einen Registrierungslink | Die Sprache der Person, die eingeladen oder angefragt hat, sonst Englisch |
 | Empfänger von Ablaufwarnungen, Budgetwarnungen und Löschhinweisen | Die Wahl jedes Empfängers, sonst Englisch |
 

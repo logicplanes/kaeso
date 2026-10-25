@@ -12,7 +12,7 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | --- | --- |
 | 系统 | Linux，Docker Engine 和 Docker Compose 2.24 或更高版本，`linux/amd64` 或 `linux/arm64` |
 | CPU | 2 个 vCPU |
-| 内存 | 4 GB，其中 ClickHouse 约占 2 GB |
+| 内存 | 4 GB。ClickHouse 占用最多，可增长到其上限 `CLICKHOUSE_MEMORY`（[容器限制](configuration.md#容器限制)） |
 | 磁盘 | 20 GB，另加请求日志所需空间 |
 
 [更新器](upgrades.md#更新器)还需要 Docker Engine 25 或更高版本。
@@ -47,6 +47,6 @@ Kaeso 运行在一台装有 Docker 的 Linux 服务器上。请按需要记录�
 | 仅元数据：模型、状态、Token、费用和耗时 | 约 0.1 GB |
 | 元数据和内容，按每个请求约 2.5 KB 文本计 | 约 0.65 GB |
 
-内容会随提示词和回复的长度增长。保留期决定总量上限。每天一百万个请求时，按默认保留期约占 6 GB 元数据（90 天）和 16 GB 内容（30 天）。
+内容会随提示词和回复的长度增长。保留期决定总量上限。每天一百万个请求时，按默认保留期约占 9 GB 元数据（90 天）和 16 GB 内容（30 天）。
 
 每个组织在其**日志记录**页面上选择保留期，但不能超过实例的上限（[请求日志](../console/request-logs.md)）。实例的**系统**页面显示日志实际占用的空间。

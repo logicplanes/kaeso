@@ -31,9 +31,3 @@ export function writeStored(key: string, value: string | null, area: Area = "loc
     return false;
   }
 }
-
-export function takeStored(key: string, area: Area = "local"): string | null {
-  const value = readStored(key, area);
-  writeStored(key, null, area);
-  return value;
-}

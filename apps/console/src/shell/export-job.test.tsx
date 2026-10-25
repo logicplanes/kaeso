@@ -135,7 +135,7 @@ describe("an export", () => {
       throw new Error("blocked");
     });
     startExport(job);
-    expect(await notifications().findAllByText("The export stopped before the end. Try again.")).not.toHaveLength(0);
+    expect(await notifications().findAllByText("The export stopped before the end; try again.")).not.toHaveLength(0);
   });
 
   it("does nothing when the person closes the save dialog", async () => {
