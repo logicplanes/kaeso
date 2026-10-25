@@ -8472,6 +8472,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
