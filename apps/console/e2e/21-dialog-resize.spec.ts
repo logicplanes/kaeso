@@ -229,7 +229,7 @@ for (const viewport of [
         const after = await anchoredAtNaturalSize(page, reveal);
         expect(after.height).toBeGreaterThan(before.height);
         if (viewport.width > 760) expect(after.width).toBe(720);
-        await footerButton(reveal, "Done").click();
+        await footerButton(reveal, "Finish").click();
         await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
         await expect(reveal).toBeHidden();
       });
@@ -262,7 +262,7 @@ test("a dialog that jumps to its new size in one frame fails the smoothness chec
   const top = await anchorTop(page);
   expect(() => expectAnchoredAndSmooth(jump, top, "h")).toThrow();
   await anchoredAtNaturalSize(page, reveal);
-  await footerButton(reveal, "Done").click();
+  await footerButton(reveal, "Finish").click();
   await page.getByRole("alertdialog", { name: "Did you copy the key?" }).getByRole("button", { name: "Close without copying" }).click();
   await expect(reveal).toBeHidden();
 });
@@ -293,7 +293,7 @@ for (const [viewport, colorScheme] of [
     await expect(codes.getByRole("checkbox", { name: "I stored these codes" })).toBeFocused();
     const recovery = (await codes.locator("pre").first().innerText()).trim().split(/\s+/)[0] ?? "";
     await codes.getByRole("checkbox", { name: "I stored these codes" }).click();
-    await codes.getByRole("button", { name: "Done" }).click();
+    await codes.getByRole("button", { name: "Finish" }).click();
     await expect(codes).toBeHidden();
     await page.getByRole("button", { name: "Turn off" }).click();
     const off = page.getByRole("dialog", { name: "Turn off two-factor authentication?" });

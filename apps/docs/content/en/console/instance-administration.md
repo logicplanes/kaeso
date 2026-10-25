@@ -81,7 +81,7 @@ Only an instance admin's console session changes the policy; no agent can. An ag
 
 The history lists every update, with who started it, or **Automatically**, and how it ended.
 
-After an update, everyone who opens the console sees **What's new in Kaeso** once. It shows the new version on its own artwork, which never changes, with its improvements, and **Next** leads through every release they missed. **Continue**, Escape or a click outside closes it. **What's new** on **Updates** shows the running version's notes again.
+After an update, everyone who opens the console sees **What's new in Kaeso** once. It shows the new version on its own artwork, which never changes, with its improvements, and **Next** leads through every release they missed. **Continue**, Escape or a click outside closes it. **See what's new** on **Updates** shows the running version's notes again.
 
 ## Read the audit log
 

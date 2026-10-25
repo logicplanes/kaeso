@@ -11,15 +11,13 @@
   "common.create": "Erstellen",
   "common.created": "Erstellt",
   "common.delete": "Löschen",
-  "common.discard": "Verwerfen",
-  "common.done": "Fertig",
+  "common.finish": "Abschließen",
   "common.edit": "Bearbeiten",
   "common.email": "E-Mail",
   "common.expired": "Abgelaufen",
   "common.expires": "Läuft ab",
   "common.export": "Exportieren",
   "common.lastUsed": "Zuletzt verwendet",
-  "common.loadMore": "Mehr laden",
   "common.members": "Mitglieder",
   "common.model": "Modell",
   "common.models": "Modelle",
@@ -48,5 +46,7 @@
   "common.tryAgain": "Erneut versuchen",
   "common.unknown": "Unbekannt",
   "common.unreachable": "Gateway nicht erreichbar; bitte erneut versuchen.",
-  "common.yes": "Ja"
+  "common.yes": "Ja",
+  "common.discard": "Verwerfen",
+  "common.loadMore": "Mehr laden"
 }

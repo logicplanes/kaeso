@@ -389,7 +389,7 @@
   "instance.updates.verifyNote": "更新器只安装由 Kaeso 发布工作流构建并签名的镜像；如果新版本无法启动，且数据库尚未迁移，它会回退到当前版本。",
   "instance.updates.versions": "版本",
   "instance.updates.weekly": "每周",
-  "instance.updates.whatsNew": "新功能",
+  "instance.updates.whatsNew": "查看新功能",
   "instance.updates.when": "时间",
   "instance.updates.whyCompose": "您的 compose.yaml 有自己的修改；请手动更新。",
   "instance.updates.whyDocker": "更新器无法连接 Docker。",

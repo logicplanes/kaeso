@@ -389,7 +389,7 @@
   "instance.updates.verifyNote": "The updater installs only images built and signed by Kaeso's release workflow; if the new version doesn't start, it goes back to this one unless the database was already migrated.",
   "instance.updates.versions": "Versions",
   "instance.updates.weekly": "Weekly",
-  "instance.updates.whatsNew": "What's new",
+  "instance.updates.whatsNew": "See what's new",
   "instance.updates.when": "When",
   "instance.updates.whyCompose": "Your compose.yaml has changes of its own; update by hand.",
   "instance.updates.whyDocker": "The updater couldn't reach Docker.",

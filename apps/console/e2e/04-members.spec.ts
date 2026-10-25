@@ -89,7 +89,7 @@ test("a service account gets a key of its own and is archived with it", async ({
   await expect(create.getByRole("heading", { name: "A key for deploy-bot" })).toBeVisible();
   await create.getByLabel("Name").fill("deploy-bot-production");
   await submitSteps(create, "Create key");
-  await page.getByRole("dialog", { name: "Key created" }).getByRole("button", { name: "Done" }).click();
+  await page.getByRole("dialog", { name: "Key created" }).getByRole("button", { name: "Finish" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Close without copying" }).click();
   await expect(row(page, "Keys of deploy-bot", "deploy-bot-production")).toBeVisible();
   await expect(row(page, "Service accounts", "deploy-bot").getByText("1 key")).toBeVisible();

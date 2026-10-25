@@ -11,15 +11,13 @@
   "common.create": "创建",
   "common.created": "创建时间",
   "common.delete": "删除",
-  "common.discard": "放弃",
-  "common.done": "完成",
+  "common.finish": "完成",
   "common.edit": "编辑",
   "common.email": "邮箱",
   "common.expired": "已过期",
   "common.expires": "过期时间",
   "common.export": "导出",
   "common.lastUsed": "上次使用",
-  "common.loadMore": "加载更多",
   "common.members": "成员",
   "common.model": "模型",
   "common.models": "模型",
@@ -48,5 +46,7 @@
   "common.tryAgain": "重试",
   "common.unknown": "未知",
   "common.unreachable": "无法连接网关，请重试。",
-  "common.yes": "是"
+  "common.yes": "是",
+  "common.discard": "放弃",
+  "common.loadMore": "加载更多"
 }

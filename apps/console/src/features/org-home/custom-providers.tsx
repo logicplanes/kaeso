@@ -234,7 +234,7 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
                   {t("orgHome.custom.add", "Add custom provider")}
                 </Button>
                 <Button variant="ghost" href={docsPage("/console/custom-providers")}>
-                  {t("orgHome.custom.about", "About custom providers")}
+                  {t("orgHome.custom.about", "Read about custom providers")}
                 </Button>
               </>
             }
