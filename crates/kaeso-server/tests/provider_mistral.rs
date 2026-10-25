@@ -392,6 +392,37 @@ async fn mistral_errors_reach_apps_in_their_own_format() {
 }
 
 #[tokio::test]
+async fn a_context_window_error_tells_every_app_to_shorten_its_prompt() {
+    let env = env().await;
+    let text = format!("Hi {}", error("context-window"));
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["code"], "context_length_exceeded");
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
+    assert!(
+        message.starts_with("prompt is too long: Prompt contains 65673 tokens"),
+        "{message}"
+    );
+}
+
+#[tokio::test]
 async fn greedy_sampling_reaches_mistral_with_the_top_p_it_needs() {
     let env = env().await;
     for (path, anthropic) in [("/v1/chat/completions", false), ("/v1/messages", true)] {

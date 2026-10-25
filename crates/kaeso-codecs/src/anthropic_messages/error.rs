@@ -37,6 +37,9 @@ fn kind_for_status(status: u16) -> ErrorKind {
     }
 }
 
+// Anthropic's context overflow message, which Claude Code reads to compact the conversation.
+const CONTEXT_TOO_LONG: &str = "prompt is too long";
+
 fn wire_for_kind(kind: &ErrorKind) -> (u16, &'static str) {
     match kind {
         ErrorKind::InvalidRequest
@@ -79,7 +82,7 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
             let mut kind = kind_for_type(&e.known.error.ty)
                 .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
             if kind == ErrorKind::InvalidRequest
-                && e.known.error.message.starts_with("prompt is too long")
+                && e.known.error.message.starts_with(CONTEXT_TOO_LONG)
             {
                 kind = ErrorKind::ContextTooLong;
             }
@@ -127,9 +130,15 @@ fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {
 
 fn error_object(err: &KppError) -> ErrorObjectW {
     let (_, ty) = wire_for_kind(&err.kind);
+    let message =
+        if err.kind == ErrorKind::ContextTooLong && !err.message.starts_with(CONTEXT_TOO_LONG) {
+            format!("{CONTEXT_TOO_LONG}: {}", err.message)
+        } else {
+            err.message.clone()
+        };
     ErrorObjectW {
         ty: ty.into(),
-        message: err.message.clone(),
+        message,
     }
 }
 

@@ -111,14 +111,18 @@ struct OtherShape {
 // "code"}` (Mistral, vLLM), FastAPI's `detail` (Mistral's `HTTPValidationError`), a bare `message`.
 fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
     let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_owned);
-    let object_error = raw.get("object").and_then(Value::as_str) == Some("error");
+    if raw.get("error").is_some_and(|e| !e.is_null()) {
+        return None;
+    }
+    let object_error = raw
+        .get("object")
+        .and_then(Value::as_str)
+        .is_some_and(|o| o.eq_ignore_ascii_case("error"));
     let (message, param) = match (object_error, raw.get("message"), raw.get("detail")) {
         (true, Some(Value::String(m)), _) => (m.trim().to_owned(), text("param")),
         (true, Some(nested), _) => validation(nested.get("detail")?, status)?,
         (_, _, Some(detail)) => validation(detail, status)?,
-        (false, Some(Value::String(m)), None) if raw.get("error").is_none() => {
-            (quoted(m, status), None)
-        }
+        (false, Some(Value::String(m)), None) => (quoted(m, status), None),
         _ => return None,
     };
     if message.is_empty() {
@@ -150,10 +154,31 @@ fn quoted(message: &str, status: Option<u16>) -> String {
 }
 
 const ROLE_TAGS: &[&str] = &["system", "user", "assistant", "tool"];
+const CHUNK_TAGS: &[&str] = &[
+    "text",
+    "image_url",
+    "document_url",
+    "reference",
+    "file",
+    "thinking",
+    "input_audio",
+    "resource",
+    "resource_link",
+];
+
+fn union_tag(part: &str, after_index: bool) -> bool {
+    part == "str"
+        || part.starts_with("list[")
+        || (after_index && (ROLE_TAGS.contains(&part) || CHUNK_TAGS.contains(&part)))
+}
 
 fn validation(detail: &Value, status: Option<u16>) -> Option<(String, Option<String>)> {
     let items = match detail {
         Value::String(text) => return Some((quoted(text, status), None)),
+        Value::Object(fields) => {
+            let text = fields.get("message")?.as_str()?;
+            return Some((quoted(text, status), None));
+        }
         Value::Array(items) => items,
         _ => return None,
     };
@@ -167,9 +192,9 @@ fn validation(detail: &Value, status: Option<u16>) -> Option<(String, Option<Str
             for part in loc.iter().skip(1) {
                 match part {
                     Value::Number(n) => path.push_str(&format!("[{n}]")),
-                    // FastAPI puts the tag of a discriminated union, here a message role, after
-                    // the index; the request has no such key.
-                    Value::String(s) if after_index && ROLE_TAGS.contains(&s.as_str()) => {}
+                    // FastAPI names the union member it tried (`str`, `list[…]`) and the tag of a
+                    // discriminated union (a role, a chunk type) after an index; the request has no such key.
+                    Value::String(s) if union_tag(s, after_index) => {}
                     Value::String(s) if path.is_empty() => path.push_str(s),
                     Value::String(s) => path.push_str(&format!(".{s}")),
                     _ => return None,

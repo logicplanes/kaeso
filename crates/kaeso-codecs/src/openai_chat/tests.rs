@@ -79,6 +79,14 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::InvalidRequest,
     ),
     (
+        "providers/mistral/context-window",
+        ErrorKind::InvalidRequest,
+    ),
+    (
+        "providers/mistral/thinking-replay-validation",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-logit-bias",
         ErrorKind::InvalidRequest,
     ),
@@ -297,6 +305,14 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
             .as_deref(),
         Some("store")
     );
+    let thinking = decoded("providers/mistral/thinking-replay-validation").0;
+    assert_eq!(
+        (thinking.message.as_str(), thinking.param.as_deref()),
+        (
+            "Input should be a valid boolean (`messages[1].content[0].closed`).",
+            Some("messages[1].content[0].closed")
+        )
+    );
     assert_eq!(
         decoded("providers/mistral/recorded-reasoning-cached-usage")
             .0
@@ -335,6 +351,22 @@ fn error_bodies_in_other_shapes_keep_their_message_status_and_kind() {
             "{body}"
         );
         assert_eq!(err.raw.as_ref(), Some(&body));
+    }
+    for (status, body, message) in [
+        (
+            400,
+            json!({"message": "x", "error": null}),
+            "The provider returned an error (HTTP 400): x.",
+        ),
+        (
+            400,
+            json!({"detail": {"message": "Bad input"}}),
+            "The provider returned an error (HTTP 400): Bad input.",
+        ),
+        (400, json!({"error": "plain", "detail": "other"}), "plain"),
+    ] {
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body.to_string().as_bytes());
+        assert_eq!(err.message, message, "{body}");
     }
     let vllm = json!({"object": "error", "message": "Not here.", "type": "NotFoundError",
         "param": null, "code": 404});
