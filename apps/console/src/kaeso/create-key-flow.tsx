@@ -284,7 +284,7 @@ export function useKeyReveal(
         size: "lg",
         title: heading?.title ?? t("kaeso.createKey.created", "Key created"),
         description: heading?.description ?? t("kaeso.createKey.createdHint", "Copy the key now: it's shown once, and Kaeso keeps only a hash of it."),
-        footer: <Button onClick={done}>{t("common.done", "Done")}</Button>,
+        footer: <Button onClick={done}>{t("common.finish", "Finish")}</Button>,
         content: (
           <SecretReveal
             secret={created.key.secret}

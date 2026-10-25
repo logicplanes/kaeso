@@ -107,7 +107,7 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
             }
             actions={
               <Button size="sm" href={`/orgs/${org}/projects`}>
-                {t("orgHome.allProjects", "All projects")}
+                {t("orgHome.allProjects", "View all projects")}
               </Button>
             }
           >

@@ -79,7 +79,7 @@ describe("organization providers", () => {
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("No provider keys yet")).toBeInTheDocument();
     expect(screen.getByText("A provider key lets this organization's projects call that provider's models.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "About provider keys" })).toHaveAttribute("href", "https://docs.kaeso.app/console/provider-keys");
+    expect(screen.getByRole("link", { name: "Read about provider keys" })).toHaveAttribute("href", "https://docs.kaeso.app/console/provider-keys");
     await user.click(screen.getByRole("button", { name: "Add provider key" }));
     const dialog = await screen.findByRole("dialog", { name: /Add provider key/ });
     expect(within(dialog).getByRole("listbox", { name: "Provider" })).toBeInTheDocument();
@@ -95,7 +95,7 @@ describe("organization providers", () => {
     await hoverReason(user, add, "You need Add provider keys; ask an owner or admin for it.");
     await user.click(add);
     expect(screen.queryByRole("dialog", { name: /Add provider key/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "About provider keys" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Read about provider keys" })).toBeInTheDocument();
   });
 
   it("hides the providers from people who can't view them", async () => {
