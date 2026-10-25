@@ -1,5 +1,5 @@
 use kaeso_kpp::{
-    Block, BlockHeader, Delta, DialectId, Reply, RequestKind, StreamEvent, StreamMode,
+    Block, BlockHeader, Delta, DialectId, Reply, Request, RequestKind, StreamEvent, StreamMode,
 };
 use serde_json::{Value, json};
 
@@ -45,53 +45,48 @@ fn encode_stream(dialect: DialectId, events: &[StreamEvent]) -> Vec<u8> {
     out
 }
 
-// Mistral's content arrays reach Chat apps as the string `content` and `reasoning_content` that
-// other Chat providers send, because Chat clients read `content` as a string.
-fn as_chat_text(message: &mut Value, whole: bool) {
-    let Some(parts) = message["content"].as_array() else {
-        return;
-    };
-    let mut text: Option<String> = None;
-    let mut thought = String::new();
-    for part in parts {
-        match part["type"].as_str() {
-            Some("text") => text
-                .get_or_insert_with(String::new)
-                .push_str(part["text"].as_str().unwrap()),
-            Some("thinking") => {
-                for inner in part["thinking"].as_array().unwrap() {
-                    thought.push_str(inner["text"].as_str().unwrap());
-                }
-            }
-            _ => return,
-        }
-    }
-    let object = message.as_object_mut().unwrap();
-    match text {
-        Some(text) => object.insert("content".to_owned(), Value::from(text)),
-        None if whole => object.insert("content".to_owned(), Value::Null),
-        None => object.remove("content"),
-    };
-    if !thought.is_empty() {
-        object.insert("reasoning_content".to_owned(), Value::from(thought));
-    }
+fn for_chat_apps(name: &str) -> Option<Vec<u8>> {
+    let name = name.strip_prefix("providers/mistral/")?;
+    let dir =
+        crate::test_support::fixtures_dir().join("openai_chat/providers/mistral/for-chat-apps");
+    ["json", "sse"]
+        .iter()
+        .find_map(|ext| std::fs::read(dir.join(format!("{name}.{ext}"))).ok())
 }
 
-fn as_chat_text_stream(bytes: &[u8]) -> Vec<u8> {
-    let mut out = String::new();
-    for line in std::str::from_utf8(bytes).unwrap().split_inclusive('\n') {
-        match line
-            .strip_prefix("data: ")
-            .and_then(|d| serde_json::from_str::<Value>(d.trim_end()).ok())
-        {
-            Some(mut chunk) if chunk["choices"][0]["delta"].is_object() => {
-                as_chat_text(&mut chunk["choices"][0]["delta"], false);
-                out.push_str(&format!("data: {chunk}\n"));
-            }
-            _ => out.push_str(line),
-        }
-    }
-    out.into_bytes()
+fn encode_reply(resp: Reply) -> Value {
+    let out = OpenAiChat::encode_response(
+        &resp,
+        &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+    )
+    .unwrap();
+    serde_json::from_slice(&out).unwrap()
+}
+
+fn content_reply(content: Value) -> Vec<u8> {
+    json!({
+        "id": "x", "object": "chat.completion", "created": 1, "model": "m",
+        "choices": [{"index": 0, "finish_reason": "stop",
+            "message": {"role": "assistant", "content": content}}]
+    })
+    .to_string()
+    .into_bytes()
+}
+
+fn chat_request(messages: Value) -> Request {
+    let body = json!({"model": "m", "messages": messages}).to_string();
+    OpenAiChat::decode_request(RequestKind::Generate, body.as_bytes(), &HeaderList::new()).unwrap()
+}
+
+fn sent(req: &Request, profile: ChatProfile) -> Result<Value, kaeso_kpp::KppError> {
+    let mut ctx = EgressCtx::new(req).with_chat_profile(profile);
+    OpenAiChat::check(req, &ctx)?;
+    let enc = OpenAiChat::encode_request(req, &mut ctx)?;
+    Ok(serde_json::from_slice(&enc.body).unwrap())
+}
+
+fn thinking_chunk(text: &str) -> Value {
+    json!({"type": "thinking", "thinking": [{"type": "text", "text": text}]})
 }
 
 #[test]
@@ -127,9 +122,8 @@ fn a_thinking_part_is_reasoning_and_chat_apps_get_mistral_replies_as_text_and_re
             &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
         )
         .unwrap();
-        let mut expected: Value = serde_json::from_slice(&body).unwrap();
-        as_chat_text(&mut expected["choices"][0]["message"], true);
-        assert_json_eq(&name, expected.to_string().as_bytes(), &out);
+        let expected = for_chat_apps(&name).unwrap_or(body);
+        assert_json_eq(&name, &expected, &out);
     }
     let body = recorded(
         "responses",
@@ -176,27 +170,91 @@ fn a_thinking_part_is_reasoning_and_chat_apps_get_mistral_replies_as_text_and_re
 }
 
 #[test]
-fn a_thinking_part_it_cannot_read_whole_stays_as_sent() {
-    let body = json!({
-        "id": "x", "object": "chat.completion", "created": 1, "model": "m",
-        "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": [
-            {"type": "thinking", "thinking": [{"type": "text", "text": "a"}], "signature": "s"},
-            {"type": "thinking", "thinking": [{"type": "reference", "reference_ids": [1]}]},
-            {"type": "text", "text": "b"}
-        ]}}]
-    })
-    .to_string();
-    let Reply::Generate(resp) = reply(body.as_bytes()) else {
+fn chat_apps_never_get_mistral_chunks_they_cannot_read_as_an_array() {
+    let body = content_reply(json!([
+        {"type": "thinking", "thinking": [{"type": "text", "text": "a"}], "signature": "s"},
+        {"type": "thinking", "thinking": [
+            {"type": "text", "text": "b"}, {"type": "reference", "reference_ids": [1]}]},
+        {"type": "reference", "reference_ids": [2]},
+        {"type": "text", "text": "c"}
+    ]));
+    let Reply::Generate(resp) = reply(&body) else {
         panic!("not a reply")
     };
-    assert!(matches!(resp.blocks[0], Block::Unknown(_)));
-    assert!(matches!(resp.blocks[1], Block::Unknown(_)));
-    let out = OpenAiChat::encode_response(
-        &Reply::Generate(resp),
-        &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
-    )
+    let Block::Reasoning(signed) = &resp.blocks[0] else {
+        panic!("{:?}", resp.blocks[0])
+    };
+    assert_eq!(signed.text, ["a"]);
+    assert_eq!(
+        signed
+            .extras
+            .form_value(DialectId::OpenAiChat, super::response::FORM_THINKING),
+        Some(&json!({"signature": "s"}))
+    );
+    let Block::Reasoning(referring) = &resp.blocks[1] else {
+        panic!("{:?}", resp.blocks[1])
+    };
+    assert_eq!(referring.text, ["b"]);
+    assert!(matches!(resp.blocks[2], Block::Unknown(_)));
+    let message = encode_reply(Reply::Generate(resp))["choices"][0]["message"].clone();
+    assert_eq!(message["content"], "c");
+    assert_eq!(message["reasoning_content"], "a\n\nb");
+
+    let only_thinking =
+        content_reply(json!([{"type": "thinking", "thinking": [], "closed": true}]));
+    let message = encode_reply(reply(&only_thinking))["choices"][0]["message"].clone();
+    assert_eq!(message["content"], Value::Null);
+    assert!(message.get("reasoning_content").is_none(), "{message}");
+}
+
+#[test]
+fn stream_chunks_that_carry_nothing_readable_reach_chat_apps_without_an_array() {
+    let chunk = |delta: Value, finish: Value| {
+        format!(
+            "data: {}\n\n",
+            json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+                "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]})
+        )
+    };
+    let call = json!({"index": 0, "id": "call_1", "type": "function",
+        "function": {"name": "f", "arguments": "{}"}});
+    let sse = [
+        chunk(
+            json!({"role": "assistant", "content": [thinking_chunk("Plan.")]}),
+            Value::Null,
+        ),
+        chunk(
+            json!({"content": [{"type": "thinking", "thinking": [], "closed": true}]}),
+            Value::Null,
+        ),
+        chunk(json!({"content": []}), Value::Null),
+        chunk(
+            json!({"content": [{"type": "text", "text": ""}]}),
+            Value::Null,
+        ),
+        chunk(
+            json!({"content": [{"type": "reference", "reference_ids": [1]}]}),
+            Value::Null,
+        ),
+        chunk(json!({"tool_calls": [call]}), json!("tool_calls")),
+        "data: [DONE]\n\n".to_owned(),
+    ]
+    .concat();
+    let out = String::from_utf8(encode_stream(
+        DialectId::OpenAiChat,
+        &stream(sse.as_bytes()),
+    ))
     .unwrap();
-    assert_json_eq("unreadable thinking", body.as_bytes(), &out);
+    let deltas: Vec<Value> = out
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|d| serde_json::from_str::<Value>(d).ok())
+        .map(|c| c["choices"][0]["delta"].clone())
+        .collect();
+    assert!(deltas.iter().all(|d| !d["content"].is_array()), "{out}");
+    assert_eq!(deltas[0]["reasoning_content"], "Plan.");
+    assert_eq!(deltas[3]["content"], "");
+    assert_eq!(deltas[5]["tool_calls"][0]["id"], "call_1");
 }
 
 #[test]
@@ -207,7 +265,8 @@ fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_reaches_chat_a
             continue;
         }
         let out = encode_stream(DialectId::OpenAiChat, &stream(&bytes));
-        assert_sse_eq(&name, &as_chat_text_stream(&bytes), &out);
+        let expected = for_chat_apps(&name).unwrap_or_else(|| bytes.clone());
+        assert_sse_eq(&name, &expected, &out);
     }
     let bytes = recorded(
         "streams",
@@ -269,53 +328,138 @@ fn replayed_reasoning_content_goes_back_to_mistral_as_a_thinking_chunk() {
         .find(|(n, _)| n == "grok-cli-reasoning-content")
         .unwrap();
     let req = OpenAiChat::decode_request(RequestKind::Generate, &body, &HeaderList::new()).unwrap();
-    let sent = |profile: ChatProfile| -> Value {
-        let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
-        OpenAiChat::check(&req, &ctx).unwrap();
-        let enc = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
-        serde_json::from_slice(&enc.body).unwrap()
-    };
     let original: Value = serde_json::from_slice(&body).unwrap();
-    assert_eq!(sent(ChatProfile::OPENAI)["messages"], original["messages"]);
+    assert_eq!(
+        sent(&req, ChatProfile::OPENAI).unwrap()["messages"],
+        original["messages"]
+    );
 
-    let mistral = sent(THINKING);
-    let thinking =
-        |text: &str| json!({"type": "thinking", "thinking": [{"type": "text", "text": text}]});
+    let mistral = sent(&req, THINKING).unwrap();
     let call = &mistral["messages"][2];
     assert_eq!(
         call["content"],
-        json!([thinking("The user wants echo ok.")])
+        json!([thinking_chunk("The user wants echo ok.")])
     );
     assert_eq!(call["tool_calls"], original["messages"][2]["tool_calls"]);
     assert!(call.get("reasoning_content").is_none(), "{call}");
     let answer = &mistral["messages"][4];
     assert_eq!(
         answer["content"],
-        json!([thinking("Answer briefly."), {"type": "text", "text": "ok"}])
+        json!([thinking_chunk("Answer briefly."), {"type": "text", "text": "ok"}])
     );
     assert!(answer.get("reasoning_content").is_none(), "{answer}");
     assert_eq!(mistral["messages"][3], original["messages"][3]);
     assert_eq!(mistral["messages"][5], original["messages"][5]);
+
+    let mut limited = req.clone();
+    if let Request::Generate(g) = &mut limited {
+        g.sampling.max_output_tokens = Some(1024);
+    }
+    for dialect in [DialectId::AnthropicMessages, DialectId::OpenAiResponses] {
+        let mut ctx = EgressCtx::new(&limited);
+        dispatch::check(dialect, &limited, &ctx).unwrap_or_else(|e| panic!("{dialect}: {e}"));
+        let enc = dispatch::encode_request(dialect, &limited, &mut ctx).unwrap();
+        let text = String::from_utf8(enc.body).unwrap();
+        assert!(!text.contains("Answer briefly."), "{dialect}: {text}");
+    }
 }
 
 #[test]
-fn reasoning_content_mistral_cannot_take_as_a_chunk_is_refused() {
-    let body = json!({
-        "model": "m",
-        "messages": [
-            {"role": "user", "content": "hi"},
-            {"role": "assistant", "content": "ok", "reasoning_content": ["not", "text"]},
-            {"role": "user", "content": "again"}
-        ]
-    });
-    let req = OpenAiChat::decode_request(
+fn every_chat_reasoning_field_is_readable_and_goes_back_as_it_came() {
+    let details = json!([{"type": "reasoning.text", "text": "Use the tool.", "format": "unknown", "index": 0}]);
+    let req = chat_request(json!([
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": "ok", "reasoning": "Use the tool.", "reasoning_details": details},
+        {"role": "assistant", "content": "ok", "reasoning_details": [
+            {"type": "reasoning.summary", "summary": "Summed up.", "format": "unknown", "index": 0}]},
+        {"role": "assistant", "content": "ok", "reasoning_details": [
+            {"type": "reasoning.encrypted", "data": "opaque", "format": "unknown", "index": 0}]},
+        {"role": "user", "content": "again"}
+    ]));
+    let Request::Generate(g) = &req else { panic!() };
+    let Block::Reasoning(first) = &g.messages[1].blocks[0] else {
+        panic!("{:?}", g.messages[1])
+    };
+    assert_eq!(first.text, ["Use the tool."]);
+    assert!(
+        matches!(&g.messages[3].blocks[0], Block::Text(_)),
+        "encrypted only is not readable"
+    );
+
+    let openai = sent(&req, ChatProfile::OPENAI).unwrap();
+    assert_eq!(openai["messages"][1]["reasoning"], "Use the tool.");
+    assert_eq!(openai["messages"][1]["reasoning_details"], details);
+    assert_eq!(
+        openai["messages"][3]["reasoning_details"][0]["data"],
+        "opaque"
+    );
+
+    let mistral = sent(&req, THINKING);
+    let err = mistral.unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("messages[3].reasoning_details"));
+    let mut readable = req.clone();
+    let Request::Generate(g) = &mut readable else {
+        panic!()
+    };
+    g.messages.remove(3);
+    let mistral = sent(&readable, THINKING).unwrap();
+    assert_eq!(
+        mistral["messages"][1]["content"],
+        json!([thinking_chunk("Use the tool."), {"type": "text", "text": "ok"}])
+    );
+    assert_eq!(
+        mistral["messages"][2]["content"],
+        json!([thinking_chunk("Summed up."), {"type": "text", "text": "ok"}])
+    );
+}
+
+#[test]
+fn reasoning_mistral_cannot_take_as_a_chunk_is_refused() {
+    let req = chat_request(json!([
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": "ok", "reasoning_content": ["not", "text"]},
+        {"role": "user", "content": "again"}
+    ]));
+    let err = sent(&req, THINKING).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("messages[1].reasoning_content"));
+    assert!(err.message.contains("Example Cloud"), "{}", err.message);
+}
+
+#[test]
+fn mistral_thinking_an_app_in_another_format_sends_back_returns_as_mistral_sent_it() {
+    let body = recorded(
+        "responses",
+        "json",
+        "providers/mistral/recorded-reasoning-effort-high",
+    );
+    let anthropic = dispatch::encode_response(
+        DialectId::AnthropicMessages,
+        &reply(&body),
+        &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
+    )
+    .unwrap();
+    let content: Value = serde_json::from_slice::<Value>(&anthropic).unwrap()["content"].clone();
+    let next = json!({"model": "m", "max_tokens": 256, "messages": [
+        {"role": "user", "content": "Is 91 prime?"},
+        {"role": "assistant", "content": content},
+        {"role": "user", "content": "And 97?"}
+    ]});
+    let req = dispatch::decode_request(
+        DialectId::AnthropicMessages,
         RequestKind::Generate,
-        body.to_string().as_bytes(),
+        next.to_string().as_bytes(),
         &HeaderList::new(),
     )
     .unwrap();
-    let mut ctx = EgressCtx::new(&req).with_chat_profile(THINKING);
-    let err = OpenAiChat::encode_request(&req, &mut ctx).unwrap_err();
-    assert_eq!(err.param.as_deref(), Some("messages[1].reasoning_content"));
-    assert!(err.message.contains("Example Cloud"), "{}", err.message);
+    let mistral = sent(&req, THINKING).unwrap();
+    let mut original: Value = serde_json::from_slice(&body).unwrap();
+    let thinking = &mut original["choices"][0]["message"]["content"][0];
+    assert_eq!(
+        thinking.as_object_mut().unwrap().remove("closed"),
+        Some(json!(true))
+    );
+    assert_eq!(
+        mistral["messages"][1]["content"], original["choices"][0]["message"]["content"],
+        "`closed` defaults to true"
+    );
 }

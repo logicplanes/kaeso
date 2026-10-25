@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, Role, StreamMode,
-    TextBlock, ToolChoice, ToolDef, ToolResultBlock,
+    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, ReasoningBlock, Role,
+    StreamMode, TextBlock, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 
@@ -12,16 +12,18 @@ use super::convert::{
 };
 use super::profile::{ChatProfile, OutputLimit, ReplyReasoning, SeedField};
 use super::request::{
-    CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_RESPONSE_FORMAT_TEXT,
-    FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE, FORM_STREAM_OPTIONS,
-    FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE, KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX,
+    CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_REPLAYED,
+    FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE,
+    FORM_STREAM_OPTIONS, FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE,
+    KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX, REPLAYED_REASONING,
 };
-use super::response::{THINKING_PARTS_FIELD, encode_thinking_part};
+use super::response::{FORM_THINKING, encode_thinking_part};
 use super::wire::{
     AssistantMessage, ChatRequest, FunctionObject, FunctionToolWire, InstructionMessage,
     JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
 };
 use crate::codec::EgressCtx;
+use crate::cross::reasoning_replayable;
 use crate::wire::{Ext, StringOr};
 
 pub(crate) const DEFAULT_SCHEMA_NAME: &str = "response";
@@ -585,38 +587,60 @@ fn encode_assistant(
             Some(StringOr::List(parts))
         }
     };
+    let target = names.ctx.origin(DIALECT);
+    let replayed: Vec<&ReasoningBlock> = message
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Reasoning(r) if reasoning_replayable(r, &target) => Some(r),
+            _ => None,
+        })
+        .collect();
     if names.ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts {
-        thought_into_content(&mut wire, &mut wrapped, &names.ctx.chat_profile, index)?;
+        thoughts_into_content(&replayed, &mut wire, &mut wrapped)?;
+        refuse_unreadable_reasoning(&wrapped, &names.ctx.chat_profile, index)?;
+    } else {
+        for r in replayed {
+            if let Some(Value::Object(fields)) = r.extras.form_value(DIALECT, FORM_REPLAYED) {
+                for (key, value) in fields {
+                    wrapped.extra.entry(key.clone()).or_insert(to_raw(&value)?);
+                }
+            }
+        }
     }
     wrapped.known = wire;
     to_raw(&wrapped)
 }
 
-fn thought_into_content(
+fn thoughts_into_content(
+    replayed: &[&ReasoningBlock],
     wire: &mut AssistantMessage,
     wrapped: &mut Ext<AssistantMessage>,
-    profile: &ChatProfile,
-    index: usize,
 ) -> Result<(), KppError> {
-    wrapped.verbatim.shift_remove(THINKING_PARTS_FIELD);
-    let Some(raw) = wrapped.extra.shift_remove(THINKING_PARTS_FIELD) else {
-        return Ok(());
-    };
-    let Ok(thought) = raw.parse::<String>() else {
-        let param = format!("messages[{index}].{THINKING_PARTS_FIELD}");
-        return Err(KppError::unsupported(
-            param.clone(),
-            format!(
-                "{} takes `{THINKING_PARTS_FIELD}` only as a string; send it as text or remove it.",
-                profile.provider
-            ),
-        )
-        .with_param(param));
-    };
-    if thought.is_empty() {
+    let no_rest = serde_json::Map::new();
+    let mut parts = Vec::new();
+    for r in replayed {
+        let rest = r
+            .extras
+            .form_value(DIALECT, FORM_THINKING)
+            .and_then(Value::as_object)
+            .unwrap_or(&no_rest);
+        let text = if r.text.is_empty() {
+            &r.summary
+        } else {
+            &r.text
+        };
+        if text.iter().all(String::is_empty) && !rest.contains_key("thinking") {
+            continue;
+        }
+        parts.push(encode_thinking_part(text, rest)?);
+    }
+    for key in REPLAYED_REASONING {
+        wrapped.verbatim.shift_remove(*key);
+    }
+    if parts.is_empty() {
         return Ok(());
     }
-    let mut parts = vec![encode_thinking_part(&[thought], &serde_json::Map::new())?];
     match wire.content.take() {
         Some(StringOr::String(text)) if !text.is_empty() => {
             parts.push(to_raw(&serde_json::json!({"type": "text", "text": text}))?);
@@ -627,6 +651,28 @@ fn thought_into_content(
     wrapped.verbatim.shift_remove("content");
     wire.content = Some(StringOr::List(parts));
     Ok(())
+}
+
+fn refuse_unreadable_reasoning(
+    wrapped: &Ext<AssistantMessage>,
+    profile: &ChatProfile,
+    index: usize,
+) -> Result<(), KppError> {
+    let Some(key) = REPLAYED_REASONING
+        .iter()
+        .find(|key| wrapped.extra.contains_key(**key))
+    else {
+        return Ok(());
+    };
+    let param = format!("messages[{index}].{key}");
+    Err(KppError::unsupported(
+        param.clone(),
+        format!(
+            "{} takes reasoning only as text; send `{key}` as a string or remove it.",
+            profile.provider
+        ),
+    )
+    .with_param(param))
 }
 
 fn block_unsupported(block: &Block, place: &str) -> KppError {

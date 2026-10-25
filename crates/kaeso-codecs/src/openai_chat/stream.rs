@@ -11,8 +11,8 @@ use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::{decode_body, with_detail};
 use super::profile::ReplyReasoning;
 use super::response::{
-    THINKING_PARTS_FIELD, decode_finish, decode_usage, plain_text_part, take_reasoning_field,
-    thinking_part,
+    ChatPart, REASONING_CONTENT, decode_finish, decode_usage, plain_text_part, read_part,
+    take_reasoning_field,
 };
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
@@ -22,7 +22,8 @@ use crate::wire::StringOr;
 
 pub(crate) const FORM_CHUNK: &str = "chunk";
 pub(crate) const FORM_CONTENT_SLOTS: &str = "cs";
-pub(crate) const FORM_REASONING_SLOT: &str = "r";
+pub(crate) const FORM_THINKING_REST: &str = "th";
+pub(crate) const FORM_OMITTED_PARTS: &str = "op";
 pub(crate) const FORM_REASONING_FIELD: &str = "rf";
 pub(crate) const FORM_EMPTY_TEXT: &str = "et";
 pub(crate) const FORM_IN_CHUNK: &str = "in_chunk";
@@ -340,6 +341,9 @@ impl ChatStreamDecoder {
             return;
         }
         match self.chunk(&raw, framing) {
+            Ok(events) if events.is_empty() && self.thinking_parts => {
+                self.extra(crate::sse::frame_extra(&without_content_parts(event)), out);
+            }
             Ok(events) if events.is_empty() => self.extra(crate::sse::frame_extra(&event), out),
             Ok(events) => out.extend(events),
             Err(err) => self.fail(out, err),
@@ -584,6 +588,36 @@ impl ChatStreamDecoder {
         let mut thoughts: Vec<String> = Vec::new();
         let text = match delta.content {
             Some(StringOr::String(text)) => Some(text),
+            Some(StringOr::List(parts)) if self.thinking_parts => {
+                let mut text: Option<String> = None;
+                let mut kept = Vec::new();
+                let mut omitted = Vec::new();
+                for part in parts {
+                    match read_part(&part) {
+                        ChatPart::Text(t) => text.get_or_insert_with(String::new).push_str(&t),
+                        ChatPart::Thinking(thought) => {
+                            thoughts.extend(thought.text);
+                            if !thought.rest.is_empty() {
+                                kept.push(Value::Object(thought.rest));
+                            }
+                        }
+                        ChatPart::Other => omitted.push(part.to_value().unwrap_or(Value::Null)),
+                    }
+                }
+                if thoughts.iter().any(|t| !t.is_empty()) {
+                    form.insert(
+                        FORM_REASONING_FIELD.to_owned(),
+                        Value::from(REASONING_CONTENT),
+                    );
+                }
+                if !kept.is_empty() {
+                    form.insert(FORM_THINKING_REST.to_owned(), Value::Array(kept));
+                }
+                if !omitted.is_empty() {
+                    form.insert(FORM_OMITTED_PARTS.to_owned(), Value::Array(omitted));
+                }
+                text
+            }
             Some(StringOr::List(parts)) => {
                 let mut text: Option<String> = None;
                 let mut slots = Vec::new();
@@ -592,31 +626,12 @@ impl ChatStreamDecoder {
                     if let Some(t) = plain_text_part(&part) {
                         slots.push(Value::from(t.len()));
                         text.get_or_insert_with(String::new).push_str(&t);
-                    } else if let Some(thought) =
-                        self.thinking_parts.then(|| thinking_part(&part)).flatten()
-                    {
-                        let mut slot = thought.rest;
-                        slot.insert(
-                            FORM_REASONING_SLOT.to_owned(),
-                            thought.text.iter().map(|t| Value::from(t.len())).collect(),
-                        );
-                        slots.push(Value::Object(slot));
-                        thoughts.extend(thought.text);
                     } else {
                         slots.push(Value::Null);
                         others.push(part);
                     }
                 }
-                if self.thinking_parts && others.is_empty() {
-                    if thoughts.iter().any(|t| !t.is_empty()) {
-                        form.insert(
-                            FORM_REASONING_FIELD.to_owned(),
-                            Value::from(THINKING_PARTS_FIELD),
-                        );
-                    }
-                } else {
-                    form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
-                }
+                form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
                 if !others.is_empty() {
                     fields.insert("delta.content".to_owned(), to_raw(&others)?);
                 }
@@ -953,6 +968,30 @@ pub(crate) fn generated_call_id(scope: &str, index: impl std::fmt::Display) -> S
     } else {
         format!("call_kaeso_{scope}_{index}")
     }
+}
+
+// A chunk that carries nothing readable, such as Mistral's empty thinking chunk that closes its
+// thinking, reaches Chat apps as a raw frame; it must not carry Mistral's content array to them.
+fn without_content_parts(mut event: SseEvent) -> SseEvent {
+    let Ok(mut chunk) = serde_json::from_str::<Value>(&event.data) else {
+        return event;
+    };
+    let Some(Value::Object(delta)) = chunk.pointer_mut("/choices/0/delta") else {
+        return event;
+    };
+    let Some(Value::Array(parts)) = delta.get("content") else {
+        return event;
+    };
+    let text: Option<String> = parts
+        .iter()
+        .filter_map(|p| plain_text_part(&RawJson::from_serialize(p).ok()?))
+        .reduce(|a, b| a + &b);
+    match text {
+        Some(text) => delta.insert("content".to_owned(), Value::String(text)),
+        None => delta.remove("content"),
+    };
+    event.data = chunk.to_string();
+    event
 }
 
 fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {

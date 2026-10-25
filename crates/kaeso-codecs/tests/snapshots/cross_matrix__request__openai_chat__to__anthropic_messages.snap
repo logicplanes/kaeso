@@ -114,9 +114,100 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "grok-cli-reasoning-content": {
-    "message": "`messages[1].reasoning_content` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": "messages[1]",
-    "unsupported": "messages[1].reasoning_content"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<user_query>\nRun echo ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_kaeso_1",
+              "input": {
+                "command": "echo ok",
+                "description": "Print ok."
+              },
+              "name": "run_terminal_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "exit: 0\nok\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_kaeso_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "<user_query>\nsay ok\n</user_query>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-large-4",
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
+          "type": "text"
+        }
+      ],
+      "tools": [
+        {
+          "description": "Run a bash command and return its output.",
+          "input_schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "properties": {
+              "command": {
+                "description": "The bash command to run.",
+                "type": "string"
+              },
+              "description": {
+                "description": "One short sentence that says what this command does and why you run it.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "command",
+              "description"
+            ],
+            "type": "object"
+          },
+          "name": "run_terminal_command"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "identifiers-metadata-store": {
     "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
