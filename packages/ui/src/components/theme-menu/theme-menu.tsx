@@ -16,10 +16,15 @@ export const KAESO_THEME_MENU_DEFAULT_VARIANTS = { variant: "ghost" } as const;
 export interface ThemeMenuProps {
   variant?: keyof typeof KAESO_THEME_MENU_VARIANTS.variant | undefined;
   size?: "sm" | "md" | undefined;
+  side?: "top" | "bottom" | undefined;
+  align?: "start" | "end" | undefined;
   "data-force"?: string | undefined;
 }
 
-export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function ThemeMenu({ variant = "ghost", size = "sm", "data-force": force }, ref) {
+export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function ThemeMenu(
+  { variant = "ghost", size = "sm", side = "bottom", align = "end", "data-force": force },
+  ref,
+) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const t = useUiText();
   return (
@@ -34,7 +39,7 @@ export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function 
           data-force={force}
         />
       </Menu.Trigger>
-      <Menu.Content align="end" className="min-w-180">
+      <Menu.Content side={side} align={align} className="min-w-180">
         <Menu.RadioGroup value={theme} onValueChange={(v) => setTheme(v as ThemePreference)}>
           <Menu.RadioItem value="system" icon={icons.themeSystem}>
             {t("themeMenu.system", "System")}

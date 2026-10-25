@@ -27,6 +27,8 @@ import {
   Edit02Icon,
   EyeIcon,
   FilterHorizontalIcon,
+  Globe02Icon,
+  SectionIcon,
   Folder01Icon,
   GaugeIcon,
   GithubIcon,
@@ -168,6 +170,8 @@ export const icons = {
   themeLight: Sun03Icon,
   themeDark: Moon02Icon,
   themeSystem: ComputerIcon,
+  language: Globe02Icon,
+  legal: SectionIcon,
 } as const;
 
 export type IconName = keyof typeof icons;

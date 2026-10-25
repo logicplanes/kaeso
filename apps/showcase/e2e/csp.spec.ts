@@ -49,8 +49,8 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto(path);
       await hydrated(page);
       if (!path.endsWith("/states")) {
-        await page.getByRole("combobox", { name: THEME[languageOf(path)] }).click();
-        await expect(page.getByRole("option").first()).toBeVisible();
+        await page.getByRole("button", { name: THEME[languageOf(path)] }).click();
+        await expect(page.getByRole("menuitemradio").first()).toBeVisible();
         await page.keyboard.press("Escape");
       }
       expect(await violations()).toEqual([]);
@@ -84,11 +84,11 @@ test("moving between pages, languages and themes stays within the policy", async
   await hydrated(page);
   await page.getByRole("link", { name: "Select", exact: true }).first().click();
   await expect(page).toHaveURL("/components/select");
-  await page.getByRole("combobox", { name: "Theme" }).click();
-  await page.getByRole("option", { name: "Dark" }).click();
+  await page.getByRole("button", { name: "Theme" }).click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("combobox", { name: "Language" }).click();
-  await page.getByRole("option", { name: "Deutsch" }).click();
+  await page.getByRole("button", { name: "Language" }).click();
+  await page.getByRole("menuitemradio", { name: "Deutsch" }).click();
   await expect(page).toHaveURL("/de/components/select");
   await page.getByRole("link", { name: "Übersicht" }).first().click();
   await expect(page).toHaveURL("/de");

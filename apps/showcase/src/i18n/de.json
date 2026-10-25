@@ -1106,6 +1106,8 @@
   "What the image shows, read by screen readers and shown in its place when it can't load.": "Was das Bild zeigt; Screenreader lesen es vor, und es erscheint an seiner Stelle, wenn das Bild nicht lädt.",
   "The width and height: 64, 120 or 160 pixels.": "Breite und Höhe: 64, 120 oder 160 Pixel.",
   "The image's address, including a data: URL.": "Die Adresse des Bildes, auch eine data:-URL.",
+  "Which edge of the button the menu lines up with: its end (`end`) or its start (`start`), for a button at the left edge.": "An welcher Kante des Buttons das Menü ausgerichtet ist: an seinem Ende (`end`) oder an seinem Anfang (`start`), für einen Button am linken Rand.",
+  "Where the menu opens: below the button (`bottom`), or above it (`top`) when the button sits at the foot of a sidebar.": "Wo sich das Menü öffnet: unter dem Button (`bottom`) oder darüber (`top`), wenn der Button am Fuß einer Seitenleiste sitzt.",
   "Hides it from assistive technology when the agent's name is already written next to it.": "Verbirgt ihn vor assistiven Technologien, wenn der Name des Agents bereits daneben steht.",
   "The agent's name, such as `Release helper`; it is the accessible name.": "Der Name des Agents, z. B. `Release helper`; er ist der zugängliche Name.",
   "The side of the square in pixels, on the same scale as `Avatar`.": "Die Seitenlänge des Quadrats in Pixeln, auf derselben Skala wie `Avatar`.",

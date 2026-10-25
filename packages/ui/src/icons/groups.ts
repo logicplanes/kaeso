@@ -65,5 +65,5 @@ export const ICON_GROUPS = {
   ],
   Status: ["check", "success", "warning", "error", "info", "minus", "notification"],
   Navigation: ["chevronDown", "chevronUp", "chevronLeft", "chevronRight", "arrowRight"],
-  Misc: ["calendar", "time", "code", "mail", "keyboard", "help", "github", "themeLight", "themeDark", "themeSystem"],
+  Misc: ["calendar", "time", "code", "mail", "keyboard", "help", "github", "themeLight", "themeDark", "themeSystem", "language", "legal"],
 } as const satisfies Readonly<Record<string, readonly IconName[]>>;

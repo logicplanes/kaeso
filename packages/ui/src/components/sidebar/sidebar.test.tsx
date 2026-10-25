@@ -13,6 +13,27 @@ function State() {
 }
 
 describe("Sidebar", () => {
+  it("draws a line above the foot only while the list scrolls under it", () => {
+    render(
+      <Sidebar.Provider>
+        <Sidebar aria-label="Console">
+          <Sidebar.Content data-testid="content" />
+          <Sidebar.Footer data-testid="footer" />
+        </Sidebar>
+      </Sidebar.Provider>,
+    );
+    const content = screen.getByTestId("content");
+    const root = screen.getByRole("navigation", { name: "Console" });
+    expect(screen.getByTestId("footer")).toHaveClass("group-data-scrolled-under/sidebar:hairline-t-strong");
+    expect(root).not.toHaveAttribute("data-scrolled-under");
+    Object.defineProperty(content, "scrollHeight", { configurable: true, value: 900 });
+    Object.defineProperty(content, "clientHeight", { configurable: true, value: 600 });
+    fireEvent.scroll(content);
+    expect(root).toHaveAttribute("data-scrolled-under");
+    content.scrollTop = 300;
+    fireEvent.scroll(content);
+    expect(root).not.toHaveAttribute("data-scrolled-under");
+  });
   it("[ collapses and expands the page's sidebar", () => {
     render(
       <Sidebar.Provider>

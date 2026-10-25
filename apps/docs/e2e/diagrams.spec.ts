@@ -45,8 +45,8 @@ test("a diagram follows the site's theme setting, not only the system's, and pri
   const title = "Which provider key a request uses";
   await shown(page, title).scrollIntoViewIfNeeded();
   await expect.poll(() => drawing(page, title)).toMatchObject({ src: expect.stringContaining(".light-"), loaded: true });
-  await page.getByRole("combobox", { name: "Theme" }).click();
-  await page.getByRole("option", { name: "Dark" }).click();
+  await page.getByRole("button", { name: "Theme" }).click();
+  await page.getByRole("menuitemradio", { name: "Dark" }).click();
   await expect.poll(() => drawing(page, title)).toMatchObject({ src: expect.stringContaining(".dark-"), loaded: true });
   await page.emulateMedia({ media: "print" });
   await expect.poll(() => drawing(page, title)).toMatchObject({ src: expect.stringContaining(".light-") });

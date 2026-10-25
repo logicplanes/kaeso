@@ -1,10 +1,25 @@
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useSidebar, IconButton, NavSheet, PortalContainer, Toaster, Sidebar, ThemeProvider, ThemeSelect, TooltipProvider, icons } from "@logicplanes/kaeso-ui";
+import {
+  useSidebar,
+  IconButton,
+  Menu,
+  NavSheet,
+  PortalContainer,
+  Toaster,
+  Sidebar,
+  ThemeProvider,
+  ThemeMenu,
+  TooltipProvider,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import type { NavSection } from "~/lib/nav";
 import { DocsSearch } from "./DocsSearch";
-import { DocsLanguageSelect, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
+import { DocsLanguageMenu, DocsLocale, docsText, useDocsLang } from "~/lib/locale";
 import { localizedPath } from "~/lib/languages";
+
+const PRIVACY = "https://kaeso.app/datenschutz";
+const IMPRINT = "https://kaeso.app/impressum";
 
 const clean = (p: string) => p.replace(/\.html$/, "").replace(/\/$/, "") || "/";
 
@@ -54,11 +69,18 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
           </Sidebar.Group>
         ))}
       </Sidebar.Content>
-      <Sidebar.Footer>
-        <div className="grid w-full grid-cols-2 gap-4">
-          <DocsLanguageSelect />
-          <ThemeSelect fullWidth />
-        </div>
+      <Sidebar.Footer className="gap-8">
+        <Menu>
+          <Menu.Trigger>
+            <IconButton icon={icons.legal} aria-label={docsText(lang, "Legal")} />
+          </Menu.Trigger>
+          <Menu.Content side="top" align="start" className="min-w-180">
+            <Menu.LinkItem href={PRIVACY}>{docsText(lang, "Privacy")}</Menu.LinkItem>
+            <Menu.LinkItem href={IMPRINT}>{docsText(lang, "Imprint")}</Menu.LinkItem>
+          </Menu.Content>
+        </Menu>
+        <ThemeMenu side="top" align="start" />
+        <DocsLanguageMenu />
       </Sidebar.Footer>
     </Sidebar>
   );

@@ -1106,6 +1106,8 @@
   "What the image shows, read by screen readers and shown in its place when it can't load.": "图片展示的内容，由屏幕阅读器朗读，图片无法加载时显示在其位置。",
   "The width and height: 64, 120 or 160 pixels.": "宽度和高度：64、120 或 160 像素。",
   "The image's address, including a data: URL.": "图片的地址，也可以是 data: URL。",
+  "Which edge of the button the menu lines up with: its end (`end`) or its start (`start`), for a button at the left edge.": "菜单与按钮的哪一侧对齐：末端（`end`）或起始端（`start`），后者适用于位于左边缘的按钮。",
+  "Where the menu opens: below the button (`bottom`), or above it (`top`) when the button sits at the foot of a sidebar.": "菜单的打开位置：按钮下方（`bottom`），或在按钮位于侧边栏底部时显示在其上方（`top`）。",
   "Hides it from assistive technology when the agent's name is already written next to it.": "智能体名称已写在旁边时，对辅助技术隐藏。",
   "The agent's name, such as `Release helper`; it is the accessible name.": "智能体的名称，例如 `Release helper`；它是无障碍名称。",
   "The side of the square in pixels, on the same scale as `Avatar`.": "方形的边长（像素），与 `Avatar` 使用相同的尺寸刻度。",

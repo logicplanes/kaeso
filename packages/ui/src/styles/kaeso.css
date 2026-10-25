@@ -792,6 +792,9 @@
 @utility hairline-b-strong {
   box-shadow: inset 0 -1px 0 var(--k-line);
 }
+@utility hairline-t-strong {
+  box-shadow: inset 0 1px 0 var(--k-line);
+}
 @utility hairline-l {
   box-shadow: inset 1px 0 0 var(--k-line-subtle);
 }

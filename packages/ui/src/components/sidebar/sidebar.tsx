@@ -552,9 +552,25 @@ function PlaceName({ label }: { label: string }) {
 
 const Content = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function SidebarContent({ className, ...props }, ref) {
   const { rail } = useSidebar();
+  const own = useRef<HTMLDivElement | null>(null);
+  const refs = useMemo(() => mergeRefs(own, ref), [ref]);
+  useEffect(() => {
+    const el = own.current;
+    const root = el?.closest("[data-sidebar-root]");
+    if (!el || !root) return;
+    const check = () => root.toggleAttribute("data-scrolled-under", el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const stop = observeResize([el, ...el.children], check);
+    return () => {
+      el.removeEventListener("scroll", check);
+      stop();
+      root.removeAttribute("data-scrolled-under");
+    };
+  }, []);
   return (
     <div
-      ref={ref}
+      ref={refs}
       className={cn("flex min-h-0 flex-1 flex-col gap-16 overflow-y-auto overscroll-contain pt-8 pb-16 scrollbar-quiet", rail ? "px-8" : "px-16", className)}
       {...props}
     />
@@ -564,7 +580,17 @@ Content.displayName = "Sidebar.Content";
 
 const Footer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function SidebarFooter({ className, ...props }, ref) {
   const { rail } = useSidebar();
-  return <div ref={ref} className={cn("flex shrink-0 items-center gap-4 pt-8 pb-12", rail ? "px-8" : "px-16", className)} {...props} />;
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex shrink-0 items-center gap-4 pt-8 pb-12 transition-control group-data-scrolled-under/sidebar:hairline-t-strong",
+        rail ? "px-8" : "px-16",
+        className,
+      )}
+      {...props}
+    />
+  );
 });
 Footer.displayName = "Sidebar.Footer";
 

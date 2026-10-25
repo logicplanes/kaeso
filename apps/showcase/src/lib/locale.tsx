@@ -1,6 +1,6 @@
 import { useSyncExternalStore, type ReactNode } from "react";
 import { navigate } from "astro:transitions/client";
-import { Select } from "@logicplanes/kaeso-ui";
+import { IconButton, Menu, icons } from "@logicplanes/kaeso-ui";
 import { LocaleProvider, loadUiMessages, type UiMessages } from "@logicplanes/kaeso-ui/i18n";
 import { DOCS_LANGUAGES, DOCS_LANG_STORAGE_KEY, docsLangOf, localizedPath, pageOfPath, parseDocsLang, type DocsLang } from "./languages";
 
@@ -63,6 +63,9 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "All states · light and dark": "Alle Zustände · hell und dunkel",
     "Search pages, components and props": "Seiten, Komponenten und Props suchen",
     "Nothing matches. Try a component or a prop name.": "Keine Treffer. Suchen Sie nach einer Komponente oder einem Prop.",
+    Legal: "Rechtliches",
+    Privacy: "Datenschutz",
+    Imprint: "Impressum",
   },
   "zh-CN": {
     Overview: "概览",
@@ -114,6 +117,9 @@ const DOCS_TEXT: Record<Exclude<DocsLang, "en">, Record<string, string>> = {
     "All states · light and dark": "全部状态 · 浅色和深色",
     "Search pages, components and props": "搜索页面、组件和属性",
     "Nothing matches. Try a component or a prop name.": "没有匹配项，请尝试组件名或属性名。",
+    Legal: "法律信息",
+    Privacy: "隐私政策",
+    Imprint: "法律声明",
   },
 };
 
@@ -211,17 +217,22 @@ export function DocsLocale({ children }: { children: ReactNode }) {
   );
 }
 
-export function DocsLanguageSelect() {
+export function DocsLanguageMenu() {
   const { lang } = useDocsLang();
   return (
-    <Select
-      aria-label={docsText(lang, "Language")}
-      size="sm"
-      appearance="ghost"
-      fullWidth
-      value={lang}
-      onValueChange={(v) => setDocsLang(parseDocsLang(v) ?? "en")}
-      options={DOCS_LANGUAGES.map((l) => ({ value: l.value, label: <span lang={l.value}>{l.label}</span>, textValue: l.label }))}
-    />
+    <Menu>
+      <Menu.Trigger>
+        <IconButton icon={icons.language} aria-label={docsText(lang, "Language")} />
+      </Menu.Trigger>
+      <Menu.Content side="top" align="start" className="min-w-180">
+        <Menu.RadioGroup value={lang} onValueChange={(v) => setDocsLang(parseDocsLang(String(v)) ?? "en")}>
+          {DOCS_LANGUAGES.map((l) => (
+            <Menu.RadioItem key={l.value} value={l.value}>
+              <span lang={l.value}>{l.label}</span>
+            </Menu.RadioItem>
+          ))}
+        </Menu.RadioGroup>
+      </Menu.Content>
+    </Menu>
   );
 }
