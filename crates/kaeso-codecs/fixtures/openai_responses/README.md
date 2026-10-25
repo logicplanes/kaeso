@@ -8,9 +8,9 @@ Wire bodies for `POST /v1/responses` (incl. streaming) and `POST /v1/responses/i
 - openai-python at commit `16d3d3b3c33b1b4f01114a16e4c3eba2293799ba` (`src/openai/types/responses/`) to check required vs optional fields, and `tests/lib/responses/test_responses.py` for the top-level field set of a current Response object.
 - Official doc pages (create, streaming events, input token count, error codes). Files marked `doc:` copy the `x-oaiMeta` examples of the spec, which are the same examples the reference pages show.
 
-No fixture was recorded from the live API. Re-record with `cargo xtask record` and replace `schema:` files where possible.
+The files that `cargo xtask record` captured from the live API are listed in each folder's `RECORDED.md`; the rest are built from the documentation, the spec or the SDK. Re-record with `cargo xtask record` and replace `schema:` files where possible.
 
-The layout, the provenance marks (`doc:`, `sdk:`, `schema:`) and the conventions every constructed fixture follows are in [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures). Each folder's `README.md` lists every file, what it covers and its provenance.
+The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures), and the rules every constructed fixture follows in [Fixture conventions](https://docs.kaeso.app/development/kpp/fixture-conventions). Each folder's `README.md` lists every file, what it covers and its provenance.
 
 ## Special fixture groups
 

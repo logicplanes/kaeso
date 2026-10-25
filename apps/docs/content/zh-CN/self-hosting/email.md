@@ -85,7 +85,7 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 
 网关会记录每封无法投递的邮件。`kaeso_emails_total` 按 `outcome` 统计邮件：`sent`、`failed` 或 `dropped`（[健康状态和指标](monitoring.md)）。
 
-## 后续步骤
+## 下一步
 
 - [登录和单点登录](sign-in.md)：选择用户的登录方式。
 - [故障排除](troubleshooting.md#收不到邮件)：找出邮件没有送达的原因。

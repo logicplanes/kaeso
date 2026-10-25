@@ -241,3 +241,4 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
+- [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。

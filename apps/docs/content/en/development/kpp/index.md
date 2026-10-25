@@ -241,3 +241,4 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
 - [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
 - [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
+- [Fixture conventions](fixture-conventions.md): Look up the rules every constructed fixture follows.
