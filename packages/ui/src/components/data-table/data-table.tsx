@@ -268,7 +268,7 @@ function DataTableInner<T>(
   const rows = table.getRowModel().rows;
   const virtual = rows.length > virtualizeAbove;
   const getScrollElement = () => scrollParent(root.current);
-  const scrollMargin = useScrollMargin(body, getScrollElement, rows.length);
+  const scrollMargin = useScrollMargin(body, getScrollElement, rows.length, virtual);
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement,

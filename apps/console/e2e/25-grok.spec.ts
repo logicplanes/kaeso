@@ -17,8 +17,7 @@ test("a Grok account becomes a SpaceX key once its code is approved on another d
 
   await page.getByRole("button", { name: "Add provider key", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add provider key" });
-  await add.getByRole("option", { name: /^SpaceX/ }).click();
-  await add.getByRole("button", { name: "Continue" }).click();
+  await add.getByRole("radio", { name: /^SpaceX/ }).click();
   const grok = add.getByRole("radio", { name: /^Grok account/ });
   await expect(add.getByText("Experimental", { exact: true })).toBeVisible();
   await grok.click();
