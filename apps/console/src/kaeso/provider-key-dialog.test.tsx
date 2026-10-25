@@ -71,8 +71,7 @@ function expectKeyHint(dialog: HTMLElement, host: string, url: string, page: str
 }
 
 async function choose(user: Awaited<ReturnType<typeof renderUi>>["user"], dialog: HTMLElement, provider: string) {
-  await user.click(within(dialog).getByRole("option", { name: (name) => name.startsWith(provider) }));
-  await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+  await user.click(within(dialog).getByRole("radio", { name: (name) => name.startsWith(provider) }));
 }
 
 async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}) {
@@ -89,13 +88,11 @@ describe("ProviderKeyDialog", () => {
     const { user, dialog, onClose } = await open({ keys: [credential(), credential({ id: "cred_two", is_default: false })] });
 
     expect(within(dialog).getByRole("heading", { name: "Add provider key" })).toBeInTheDocument();
-    expect(within(dialog).getByRole("combobox", { name: "Search providers" })).toBeInTheDocument();
-    expect(within(within(dialog).getByRole("group", { name: "Connected" })).getByRole("option")).toHaveAccessibleName("OpenAI 2 keys");
-    expect(within(dialog).getByRole("option", { name: "OpenAI 2 keys" })).toHaveAttribute("aria-selected", "false");
+    expect(within(within(dialog).getByRole("group", { name: "Connected" })).getByRole("radio")).toHaveAccessibleName("OpenAI 2 keys");
+    expect(within(dialog).getByRole("radio", { name: "OpenAI 2 keys" })).toHaveAttribute("aria-checked", "false");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose a provider");
-    expect(within(dialog).getByRole("group", { name: "Other providers" })).toContainElement(within(dialog).getByRole("option", { name: "Anthropic" }));
-    await user.click(within(dialog).getByRole("option", { name: "Anthropic" }));
-    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(within(dialog).getByRole("group", { name: "Other providers" })).toContainElement(within(dialog).getByRole("radio", { name: "Anthropic" }));
+    await user.click(within(dialog).getByRole("radio", { name: "Anthropic" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
     expectKeyHint(dialog, "platform.claude.com", "https://platform.claude.com/settings/keys", "Settings → API keys", "sk-ant-");
@@ -116,10 +113,10 @@ describe("ProviderKeyDialog", () => {
     const { dialog } = await open({ keys: [credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" })] });
     expect(
       within(dialog)
-        .getAllByRole("option")
+        .getAllByRole("radio")
         .map((o) => o.textContent),
     ).toHaveLength(providers.length);
-    expect(within(dialog).queryByRole("option", { name: /Cohere/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio", { name: /Cohere/ })).not.toBeInTheDocument();
   });
 
   it("says when the providers can't load and loads them again", async () => {
@@ -128,18 +125,17 @@ describe("ProviderKeyDialog", () => {
     const onClose = vi.fn();
     const { user } = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} />);
     const dialog = await screen.findByRole("dialog", { name: /provider key/ });
-    expect(within(dialog).queryByRole("option")).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio")).not.toBeInTheDocument();
     expect(await notifications().findByText("Too many requests; try again in a minute.")).toBeInTheDocument();
     await user.click(notifications().getByRole("button", { name: "Try again", hidden: true }));
-    expect(await within(dialog).findAllByRole("option")).toHaveLength(providers.length);
+    expect(await within(dialog).findAllByRole("radio")).toHaveLength(providers.length);
   });
 
   it("adds a DeepSeek key", async () => {
     on("POST", CREDENTIALS, credential({ provider: "deepseek", name: "Reasoning", is_default: true }));
     const { user, dialog } = await open();
 
-    await user.click(within(dialog).getByRole("option", { name: "DeepSeek" }));
-    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(within(dialog).getByRole("radio", { name: "DeepSeek" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your DeepSeek API key" })).toBeVisible();
     expectKeyHint(dialog, "platform.deepseek.com", "https://platform.deepseek.com/api_keys", "API keys", "sk-");
@@ -284,7 +280,7 @@ describe("ProviderKeyDialog", () => {
       "Create one at console.mistral.ai under API keys.",
     );
     const secret = within(dialog).getByLabelText("Mistral API key");
-    expect(secret).toHaveAttribute("placeholder", "…");
+    expect(secret).not.toHaveAttribute("placeholder");
     await user.type(secret, "AbCdEf0123456789AbCdEf0123456789");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Mistral prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
@@ -300,7 +296,7 @@ describe("ProviderKeyDialog", () => {
     const { dialog } = await open({ keys: [cohere], replace: cohere });
     expect(within(dialog).getByRole("heading", { name: "Paste the new cohere key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("cohere API key")).toHaveAttribute("placeholder", "…");
+    expect(within(dialog).getByLabelText("cohere API key")).not.toHaveAttribute("placeholder");
   });
 
   it("links a provider's key page without a prefix when its keys have none", async () => {

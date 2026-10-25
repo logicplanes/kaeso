@@ -63,6 +63,7 @@
   "models.chooseFormat": "选择格式",
   "models.chooseModel": "选择模型",
   "models.clearFilters": "清除筛选",
+  "models.clearSelection": "清除选择",
   "models.createAlias": "创建别名",
   "models.custom": "自定义",
   "models.customListed": "models.dev 已收录 {model}：已填入其参数。",
@@ -98,7 +99,7 @@
   "models.filter": "筛选模型",
   "models.filters": "筛选",
   "models.filtersCount": "筛选 · {count}",
-  "models.inCatalogue": "已在目录中",
+  "models.inCatalogue": "已在目录",
   "models.includeDeprecated": "包含已弃用",
   "models.listSeparator": "、",
   "models.loadFailed": "无法加载此模型。",
@@ -120,7 +121,6 @@
   "models.noneFoundHint": "换个名称试试，或包含已弃用的模型。",
   "models.noneListed": "models.dev 未收录 {provider} 模型。",
   "models.notFound": "此模型不存在或已被移除。",
-  "models.notOnModelsDev": "models.dev 上没有？{link}",
   "models.onModelsDev": "models.dev 上的模型",
   "models.onlyOverridden": "仅已覆盖",
   "models.openProviders": "打开服务商",
@@ -129,6 +129,7 @@
   "models.overridesSaved": "覆盖值已保存",
   "models.perMillionInput": "每百万输入 Token",
   "models.perMillionInputOutput": "每百万输入 / 输出 Token",
+  "models.priceInOut": "每百万 输入 / 输出",
   "models.pricePerMillion": "{price} / 百万 Token",
   "models.priceWithCache": "{unit}；{cache}",
   "models.problem.format": "自定义模型需要指定 Kaeso 发送的格式。",
@@ -175,5 +176,6 @@
   "models.addOwn": "添加 {provider} 的模型",
   "models.addOwnModelHint": "填写 {provider} 使用的模型 ID，然后填写输入、限制、价格和格式。",
   "models.ownUnknown": "Kaeso 无法得知 {provider} 的这些值；输入、输出、限制、输入和输出价格以及格式均为必填。",
-  "models.ownFound": "Kaeso 已填入 {provider} 和 models.dev 关于 {model} 的信息，请检查并设置其价格。"
+  "models.ownFound": "Kaeso 已填入 {provider} 和 models.dev 关于 {model} 的信息，请检查并设置其价格。",
+  "models.wantAll": "想全部添加？{all}"
 }

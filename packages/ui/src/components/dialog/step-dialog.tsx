@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "../button/button.js";
 import { Dialog, KAESO_DIALOG_VARIANTS } from "./dialog.js";
 import { focusDialogSection } from "./focus.js";
@@ -48,6 +48,16 @@ export interface StepDialogProps {
   inline?: boolean | undefined;
   defaultStep?: number | undefined;
   result?: StepDialogResult | undefined;
+}
+
+export interface StepDialogControls {
+  advance: () => void;
+}
+
+const StepDialogContext = createContext<StepDialogControls | null>(null);
+
+export function useStepDialog(): StepDialogControls | null {
+  return useContext(StepDialogContext);
 }
 
 function reducedMotion() {
@@ -121,6 +131,15 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
       )
       .finally(() => setContinuing(false));
   };
+  const latestNext = useRef(next);
+  useLayoutEffect(() => {
+    latestNext.current = next;
+  });
+  const [advanced, setAdvanced] = useState(0);
+  useEffect(() => {
+    if (advanced) latestNext.current();
+  }, [advanced]);
+  const controls = useMemo<StepDialogControls>(() => ({ advance: () => setAdvanced((n) => n + 1) }), []);
   const waiting = !!submitting || continuing;
   const progress = { current: index + 1, total: steps.length };
   const continueLabel = t("stepDialog.continue", "Continue");
@@ -209,7 +228,7 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
           </>
         )}
       </p>
-      {stepList}
+      <StepDialogContext.Provider value={controls}>{stepList}</StepDialogContext.Provider>
     </Dialog>
   );
 });

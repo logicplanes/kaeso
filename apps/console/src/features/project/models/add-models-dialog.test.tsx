@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { signedIn, withRights } from "~/test/fixtures";
 import { credential, fill, hoverReason, notifications } from "~/test/fixtures/org";
@@ -37,6 +37,11 @@ const MODELS = "orgs/:org/projects/:project/models";
 const SEARCH = "orgs/:org/projects/:project/models/search";
 const searches = () => requests("GET", SEARCH).map((r) => Object.fromEntries(r.query));
 
+const rowOf = (dialog: HTMLElement, model: string) =>
+  within(dialog)
+    .getByRole("checkbox", { name: `Select ${model}` })
+    .closest("[role=row]") as HTMLElement;
+
 describe("AddModelsDialog", () => {
   it("adds the chosen models from models.dev and says which were already there", async () => {
     setUp();
@@ -45,16 +50,19 @@ describe("AddModelsDialog", () => {
 
     expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
     expect(searches()).toContainEqual({ provider: "openai", include_deprecated: "false", limit: "50" });
-    expect(within(dialog).getByRole("gridcell", { name: /gpt-4o/ })).toHaveTextContent("Already in catalogue");
-    expect(within(dialog).getByRole("gridcell", { name: /^Select gpt-5 / })).toHaveTextContent(/GPT-5gpt-5400K\$1\.25 \/ \$10Aug 2025/);
+    expect(rowOf(dialog, "gpt-4o")).toHaveTextContent("In catalogue");
+    expect(within(dialog).getByRole("checkbox", { name: "Select gpt-4o" })).toHaveAttribute("aria-disabled", "true");
+    expect(within(dialog).queryByRole("button", { name: "Review gpt-4o" })).not.toBeInTheDocument();
+    expect(rowOf(dialog, "gpt-5")).toHaveTextContent(/GPT-5gpt-5400K\$1\.25 \/ \$10Aug 2025/);
     expect(within(dialog).queryByRole("img", { name: "OpenAI" })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Showing", { exact: false })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("gpt-3.5-turbo")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Add models" })).toBeDisabled();
     await user.click(within(dialog).getByRole("checkbox", { name: "Select gpt-5" }));
     expect(within(dialog).getByRole("button", { name: "Review values" })).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("gridcell", { name: /GPT-5 mini/ }));
+    await user.click(within(dialog).getByText("GPT-5 mini"));
     expect(within(dialog).queryByRole("button", { name: "Review values" })).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Clear selection" })).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Add 2 models" }));
 
     expect(await notifications().findByText("Added 1 model")).toBeInTheDocument();
@@ -83,9 +91,7 @@ describe("AddModelsDialog", () => {
     expect(within(dialog).getByRole("searchbox", { name: "Search models" })).toHaveFocus();
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(requests("POST", BATCH)).toEqual([]);
-    await user.tab();
-    await user.tab();
-    expect(within(dialog).getByRole("gridcell", { name: /^Select gpt-5 / })).toHaveFocus();
+    act(() => rowOf(dialog, "gpt-5").focus());
     await user.keyboard(" ");
     expect(within(dialog).getByRole("button", { name: "Add 1 model" })).toBeInTheDocument();
     await user.keyboard("{ArrowDown} ");
@@ -109,23 +115,21 @@ describe("AddModelsDialog", () => {
     expect(requests("POST", BATCH)).toEqual([]);
   });
 
-  it("opens a model's values with Enter or a click, and Back returns to the search", async () => {
+  it("opens a model's values from its row, and Back returns to the search", async () => {
     setUp();
     on("POST", MODELS, catalogueModel({ id: "cm_gpt5", model_id: "gpt-5" }));
     const { user, dialog } = await open();
 
     await within(dialog).findByText("gpt-5-mini");
-    await user.tab();
-    await user.tab();
-    await user.keyboard("{Enter}");
+    await user.click(within(dialog).getByRole("button", { name: "Review gpt-5" }));
     const reviewing = await screen.findByRole("dialog", { name: /Review gpt-5/ });
     expect(within(reviewing).getByRole("textbox", { name: "Display name" })).toHaveFocus();
     expect(requests("POST", BATCH)).toEqual([]);
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(await within(dialog).findByRole("button", { name: "Add models" })).toBeDisabled();
-    expect(within(dialog).getByRole("gridcell", { name: /^Select gpt-5 / })).toHaveFocus();
+    expect(within(dialog).getByRole("button", { name: "Review gpt-5" })).toHaveFocus();
 
-    await user.click(within(dialog).getByRole("gridcell", { name: /^Select gpt-5 / }));
+    await user.click(within(dialog).getByRole("button", { name: "Review gpt-5" }));
     const review = await screen.findByRole("dialog", { name: /Review gpt-5/ });
     expect(within(review).getByRole("textbox", { name: "Display name" })).toHaveFocus();
     await user.keyboard("{Meta>}{Enter}{/Meta}");

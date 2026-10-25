@@ -30,6 +30,8 @@ export const docs = {
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       description: "One sentence under the title.",
       footer: "Right-aligned actions: Cancel (secondary) then the primary.",
+      footerStart: "A quiet action at the footer's start, such as a link to another way of doing the task.",
+      toolbar: "Controls that stay under the title while the body scrolls, such as a search over the list below; a hairline shows once the body is scrolled.",
       headerStart:
         "A top bar above the title, with this at its start and the close circle at its end (LayerDialog's back button). The title, description and content keep one left edge; `null` keeps the bar with an empty start.",
       hideClose: "Hide the close circle (rare).",
@@ -63,7 +65,8 @@ export const docs = {
       hideClose: "Hide the close circle (rare).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",
       layer: "The visible layer; layers above the first slide over it.",
-      layers: "The layers, each with its title, content and footer; one shows at a time, and the ones below it stay mounted and hidden.",
+      layers:
+        "The layers, each with its title, content and footer, and optionally a toolbar and a footer start; one shows at a time, and the ones below it stay mounted and hidden.",
       onLayerChange: "Called with the index of the layer shown.",
       onOpenChange: "Called when it opens or closes.",
       onSubmit: "Enter in a single-line field and ⌘/Ctrl+Enter call this on every layer; pass the action of the layer shown.",
@@ -76,7 +79,7 @@ export const docs = {
   },
   StepDialog: {
     description:
-      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a single-line field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and keeps its top edge where it opened: it grows or shrinks 200ms downward from the size it has as the step changes, so the title never jumps, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is.",
+      "A form split into steps, one question at a time, like sign-in: the step's title and fields, Back and Continue, the action on the last step. Enter in a single-line field and ⌘/Ctrl+Enter continue. The dialog takes each step's own height and keeps its top edge where it opened: it grows or shrinks 200ms downward from the size it has as the step changes, so the title never jumps, and the new step drifts in from the side it comes from. With `result`, what the last step made (a key shown once) takes the steps' place in the same dialog, at its own size. Continue and Back move the focus into the step they show (its first field; without one, the primary action, or Back when the last step destroys), and a screen reader hears which step it is. Inside a step, `useStepDialog()?.advance()` continues as Continue would, once the step is no longer blocked: a choice that answers the step, like a provider tile, moves on in one press.",
     props: {
       defaultStep: "Start on this step (state matrices).",
       inline: "Render without a portal and backdrop, for documentation and state matrices.",

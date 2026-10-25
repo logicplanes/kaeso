@@ -13,7 +13,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { useGutterPadded, useInset } from "../../utils/inset.js";
+import { useGutterPadded, useInset, useRaised } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CheckboxBox } from "../checkbox/checkbox.js";
@@ -57,6 +57,7 @@ export interface DataTableProps<T> {
   onRowClick?: ((row: T) => void) | undefined;
   rowMenu?: ((row: T) => ReactNode) | undefined;
   selectable?: boolean | undefined;
+  canSelectRow?: ((row: T) => boolean) | undefined;
   selection?: RowSelectionState | undefined;
   onSelectionChange?: ((selection: RowSelectionState) => void) | undefined;
   sorting?: SortingState | undefined;
@@ -132,6 +133,7 @@ function DataTableInner<T>(
     onRowClick,
     rowMenu,
     selectable,
+    canSelectRow,
     selection,
     onSelectionChange,
     sorting: sortingProp,
@@ -155,6 +157,7 @@ function DataTableInner<T>(
   ref: React.Ref<HTMLDivElement>,
 ) {
   const inset = useInset();
+  const raised = useRaised();
   const padded = useGutterPadded();
   const t = useUiText();
   const [sortingInner, setSortingInner] = useState<SortingState>([]);
@@ -175,7 +178,7 @@ function DataTableInner<T>(
           <CheckboxBox
             aria-label={t("dataTable.selectAllRows", "Select all rows")}
             checked={table.getIsAllRowsSelected()}
-            indeterminate={table.getIsSomeRowsSelected()}
+            indeterminate={table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()}
             onCheckedChange={(c) => table.toggleAllRowsSelected(c)}
           />
         ),
@@ -185,6 +188,7 @@ function DataTableInner<T>(
             <CheckboxBox
               aria-label={name ? t("dataTable.selectNamed", "Select {name}", { name }) : t("dataTable.selectRow", "Select row")}
               checked={row.getIsSelected()}
+              disabled={!row.getCanSelect()}
               onCheckedChange={(c) => row.toggleSelected(c)}
             />
           );
@@ -211,7 +215,7 @@ function DataTableInner<T>(
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     manualSorting: !!manualSorting,
-    enableRowSelection: !!selectable,
+    enableRowSelection: selectable ? (canSelectRow ? (row) => canSelectRow(row.original) : true) : false,
     columnResizeMode: "onChange",
     ...(getRowId ? { getRowId: (r: T) => getRowId(r) } : {}),
     defaultColumn: { size: 140, minSize: 64, maxSize: 640 },
@@ -280,7 +284,7 @@ function DataTableInner<T>(
     cn(
       "sticky z-10 group-hover/tr:bg-fill-1 group-aria-selected/tr:bg-fill-2 group-data-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      inset ? "bg-raised" : cn("bg-panel", !header && (i === 0 ? "rounded-l-item" : "rounded-r-item")),
+      inset ? "bg-raised" : cn(raised ? "bg-raised" : "bg-panel", !header && (i === 0 ? "rounded-l-item" : "rounded-r-item")),
     );
 
   const focusable = !!onRowClick || !!selectable;
@@ -361,6 +365,8 @@ function DataTableInner<T>(
                 <Text truncate tone={tone ?? "default"} className={cn("min-w-0", meta?.mono && "text-small")} mono={!!meta?.mono}>
                   {text}
                 </Text>
+              ) : cell.column.id === "__select" ? (
+                <span className="flex">{content}</span>
               ) : (
                 <span className={cn("min-w-0 truncate cell-fit", meta?.grow && "flex-1")}>{content}</span>
               )}
@@ -397,7 +403,7 @@ function DataTableInner<T>(
         <div
           ref={head}
           role="rowgroup"
-          className={cn("sticky top-0 z-20 overflow-hidden", inset ? "bg-raised" : "bg-panel")}
+          className={cn("sticky top-0 z-20 overflow-hidden", inset || raised ? "bg-raised" : "bg-panel")}
           onScroll={(e) => {
             if (body.current && body.current.scrollLeft !== e.currentTarget.scrollLeft) body.current.scrollLeft = e.currentTarget.scrollLeft;
           }}

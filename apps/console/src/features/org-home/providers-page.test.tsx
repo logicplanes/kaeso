@@ -82,7 +82,7 @@ describe("organization providers", () => {
     expect(screen.getByRole("link", { name: "Read about provider keys" })).toHaveAttribute("href", "https://docs.kaeso.app/console/provider-keys");
     await user.click(screen.getByRole("button", { name: "Add provider key" }));
     const dialog = await screen.findByRole("dialog", { name: /Add provider key/ });
-    expect(within(dialog).getByRole("listbox", { name: "Provider" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("radiogroup", { name: "Provider" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("group")).not.toBeInTheDocument();
   });
 

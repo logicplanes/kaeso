@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Input, KeyValue, LayerDialog, List, ModelLabel, Text, toast } from "@logicplanes/kaeso-ui";
+import { Button, Input, KeyValue, LayerDialog, List, ModelLabel, SearchInput, icons, toast } from "@logicplanes/kaeso-ui";
 import { models, providerNames } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -27,11 +27,13 @@ export function Wizard() {
   const [view, setView] = useState<"pick" | "review" | "custom">("pick");
   const [model, setModel] = useState("");
   const [custom, setCustom] = useState("");
+  const [query, setQuery] = useState("");
   const m = models.find((x) => x.model === model);
   const start = () => {
     setView("pick");
     setModel("");
     setCustom("");
+    setQuery("");
     setOpen(true);
   };
   const close = () => setOpen(false);
@@ -43,28 +45,30 @@ export function Wizard() {
   const pick = {
     title: "Add model",
     description: "Pick a model from the models.dev catalogue.",
+    toolbar: <SearchInput aria-label="Search models" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />,
     content: (
       <div className="flex flex-col gap-12">
         <List
           aria-label="Models on models.dev"
           density="compact"
-          items={models.map((x) => ({
-            id: x.model,
-            textValue: x.model,
-            title: <ModelLabel provider={x.provider} providerName={providerNames[x.provider]} model={x.model} name={x.name} />,
-          }))}
+          items={models
+            .filter((x) => x.model.includes(query.trim().toLowerCase()))
+            .map((x) => ({
+              id: x.model,
+              textValue: x.model,
+              title: <ModelLabel provider={x.provider} providerName={providerNames[x.provider]} model={x.model} name={x.name} />,
+            }))}
           onOpen={(item) => {
             setModel(item.id);
             setView("review");
           }}
         />
-        <Text variant="small" tone="secondary">
-          Not on models.dev?{" "}
-          <Button variant="link" size="sm" onClick={() => setView("custom")}>
-            Add a custom model
-          </Button>
-        </Text>
       </div>
+    ),
+    footerStart: (
+      <Button variant="ghost" leadingIcon={icons.add} onClick={() => setView("custom")}>
+        Add a custom model
+      </Button>
     ),
   };
   const second = {

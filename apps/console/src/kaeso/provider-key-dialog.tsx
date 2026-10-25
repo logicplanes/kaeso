@@ -1,5 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from "react";
-import { Badge, Button, Code, Input, Link, ProviderPicker, Radio, RadioCards, SensitiveInput, StepDialog, icons } from "@logicplanes/kaeso-ui";
+import {
+  Badge,
+  Button,
+  Code,
+  Input,
+  Link,
+  ProviderBadge,
+  ProviderPicker,
+  Radio,
+  RadioCards,
+  SensitiveInput,
+  StepDialog,
+  icons,
+  useStepDialog,
+  type ProviderPickerOption,
+} from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { AccountAttempt, AccountPending, AccountSignInView, CredentialView, ProviderView } from "~/api/generated/types";
@@ -32,8 +47,26 @@ function keyHelp(provider: ProviderView | undefined): ReactNode {
     : tRich("kaeso.providerKey.whereSite", "Create one at {site} under {page}.", { site, page: page.label });
 }
 
-function keyPlaceholder(provider: ProviderView | undefined): string {
-  return `${provider?.key_prefix ?? ""}…`;
+function keyPlaceholder(provider: ProviderView | undefined): string | undefined {
+  return provider?.key_prefix ? `${provider.key_prefix}…` : undefined;
+}
+
+function ProviderChoice({ choices, value, onChoose }: { choices: ProviderPickerOption[]; value: string | null; onChoose: (provider: string) => void }) {
+  const step = useStepDialog();
+  return (
+    <ProviderPicker
+      appearance="grid"
+      aria-label={t("common.provider", "Provider")}
+      providers={choices}
+      value={value}
+      onValueChange={(p) => p && onChoose(p)}
+      onChoose={(p) => {
+        onChoose(p);
+        step?.advance();
+      }}
+      autoFocus
+    />
+  );
 }
 
 const pending = (answer: CredentialView | AccountPending): answer is AccountPending => "interval" in answer;
@@ -212,9 +245,18 @@ export function ProviderKeyDialog({
 
   const keyStep: DialogStep = {
     id: "key",
-    title: replace
-      ? t("kaeso.providerKey.pasteNew", "Paste the new {provider} key", { provider: label })
-      : t("kaeso.providerKey.paste", "Paste your {provider} API key", { provider: label }),
+    title: (
+      <span className="flex items-center gap-10">
+        {provider && (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={provider} name={label} size="lg" />
+          </span>
+        )}
+        {replace
+          ? t("kaeso.providerKey.pasteNew", "Paste the new {provider} key", { provider: label })
+          : t("kaeso.providerKey.paste", "Paste your {provider} API key", { provider: label })}
+      </span>
+    ),
     description: provider ? keyHelp(known) : undefined,
     blockedReason: !secret.trim()
       ? t("kaeso.providerKey.pasteBlocked", "Paste the {provider} API key", { provider: label })
@@ -227,7 +269,7 @@ export function ProviderKeyDialog({
       <div className="flex flex-col gap-12">
         <SensitiveInput
           label={t("kaeso.providerKey.secret", "{provider} API key", { provider: label })}
-          placeholder={provider ? keyPlaceholder(known) : undefined}
+          {...(keyPlaceholder(known) ? { placeholder: keyPlaceholder(known) } : {})}
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
           autoComplete="off"
@@ -411,9 +453,7 @@ export function ProviderKeyDialog({
     id: "provider",
     title: t("kaeso.providerKey.which", "Which provider is the key for?"),
     blockedReason: provider ? undefined : t("kaeso.providerKey.chooseProvider", "Choose a provider"),
-    content: (
-      <ProviderPicker aria-label={t("common.provider", "Provider")} providers={choices} value={provider} onValueChange={(p) => p && choose(p)} autoFocus />
-    ),
+    content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
   const steps: DialogStep[] = replace
@@ -427,6 +467,7 @@ export function ProviderKeyDialog({
 
   return (
     <StepDialog
+      size={replace ? "sm" : "md"}
       open
       onOpenChange={(o) => !o && onClose()}
       title={

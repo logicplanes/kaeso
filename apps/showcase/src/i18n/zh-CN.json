@@ -719,7 +719,6 @@
   "The label's text.": "标签的文字。",
   "The label; the whole row becomes the target.": "标签；整行都可点击。",
   "The language of the code, for highlighting.": "代码的语言，用于语法高亮。",
-  "The layers, each with its title, content and footer; one shows at a time, and the ones below it stay mounted and hidden.": "各层，每层带标题、内容和页脚；每次显示一层，下方的层保持挂载并隐藏。",
   "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.": "线条的颜色（默认 `var(--k-viz-1)`）。传入 `seriesColor(id)` 可与其他位置的系列颜色一致。",
   "The link's relationship, as on an `a` element.": "链接关系，与 `a` 元素相同。",
   "The link's text.": "链接的文字。",
@@ -1042,7 +1041,6 @@
   "The chosen model, or models with `multiple`, when you control it.": "受控时选中的模型，或使用 `multiple` 时的多个模型。",
   "Choosing a provider from any number of them: connected ones first with their key counts, then the rest.": "从任意数量的服务商中选择：已连接的排在前面并显示密钥数量，其余随后。",
   "Select only: a first option for no provider in particular, such as \"All providers\"; choosing it reports `null`.": "仅限选择框：第一个选项表示不限特定服务商，例如“所有服务商”；选择它时报告 `null`。",
-  "An always-open list for a dialog step, or a pill that opens it.": "用于对话框步骤的常开列表，或打开该列表的胶囊按钮。",
   "List only: focuses the search field when it appears.": "仅限列表：出现时聚焦搜索框。",
   "Called with the chosen provider's id, or `null` for `allLabel`.": "以选中服务商的 ID 调用；选择 `allLabel` 时为 `null`。",
   "The search field's placeholder; in a pill without `allLabel`, also the text shown while nothing is chosen.": "搜索框的占位符；在没有 `allLabel` 的胶囊按钮中，也是未选择时显示的文本。",
@@ -1139,5 +1137,14 @@
   "Which client's mark it shows.": "显示哪个客户端的标志。",
   "Opens how to connect the client.": "显示如何连接该客户端。",
   "A button named by `aria-label`, which is also its tooltip; the mark is decorative.": "由 `aria-label` 命名的按钮，它同时也是提示文字；标志仅作装饰。",
-  "Every client": "每个客户端"
+  "Every client": "每个客户端",
+  "Tiles in a dialog's first step": "对话框第一步中的图块",
+  "Tiles, one chosen": "图块，已选一项",
+  "As tiles, a radio group: arrow keys move the choice, and a press or click on a tile calls onChoose, so a dialog step can continue at once.": "以图块显示时为单选组：方向键移动选择，按下或点击图块会调用 onChoose，让对话框步骤立即继续。",
+  "Whether a row can be selected; a row that can't keeps a disabled checkbox, and select all skips it.": "某行能否被选择；不能选择的行保留一个禁用的复选框，全选会跳过它。",
+  "A quiet action at the footer's start, such as a link to another way of doing the task.": "位于页脚开头的低调操作，例如以另一种方式完成任务的链接。",
+  "Controls that stay under the title while the body scrolls, such as a search over the list below; a hairline shows once the body is scrolled.": "在正文滚动时固定于标题下方的控件，例如位于下方列表之上的搜索；正文一旦滚动便显示一条细线。",
+  "The layers, each with its title, content and footer, and optionally a toolbar and a footer start; one shows at a time, and the ones below it stay mounted and hidden.": "各个层，每层都有标题、内容和页脚，并可选工具栏和页脚开头；一次显示一层，其下方的层保持挂载并隐藏。",
+  "An always-open list for a dialog step, tiles with each provider's mark for a dialog's first step, or a pill that opens the list.": "用于对话框步骤的常开列表、用于对话框第一步并带有各提供商标志的图块，或打开该列表的胶囊按钮。",
+  "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.": "使用 `grid` 时：在按下或点击图块时调用，方向键移动选择时不调用，因此对话框步骤可以立即继续。"
 }
