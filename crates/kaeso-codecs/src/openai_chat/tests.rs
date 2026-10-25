@@ -273,7 +273,7 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
         ),
         (
             "providers/mistral/recorded-invalid-api-key",
-            "Invalid API Key",
+            "The provider returned an error (HTTP 401): Invalid API Key.",
         ),
         (
             "providers/mistral/recorded-store-field",
@@ -281,7 +281,7 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
         ),
         (
             "providers/mistral/recorded-assistant-refusal-field",
-            "Extra inputs are not permitted (`messages[1].assistant.refusal`).",
+            "Extra inputs are not permitted (`messages[1].refusal`).",
         ),
         (
             "providers/mistral/recorded-reasoning-cached-usage",
@@ -290,6 +290,84 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
     ] {
         assert_eq!(decoded(name).0.message, message, "{name}");
     }
+    assert_eq!(
+        decoded("providers/mistral/recorded-store-field")
+            .0
+            .param
+            .as_deref(),
+        Some("store")
+    );
+    assert_eq!(
+        decoded("providers/mistral/recorded-reasoning-cached-usage")
+            .0
+            .param,
+        None
+    );
+}
+
+#[test]
+fn error_bodies_in_other_shapes_keep_their_message_status_and_kind() {
+    let cases = [
+        (
+            429,
+            json!({"message": "Requests rate limit exceeded"}),
+            ErrorKind::RateLimited,
+            "The provider returned an error (HTTP 429): Requests rate limit exceeded.",
+        ),
+        (
+            401,
+            json!({"message": "Unauthorized"}),
+            ErrorKind::Authentication,
+            "The provider returned an error (HTTP 401): Unauthorized.",
+        ),
+        (
+            404,
+            json!({"detail": "Not Found"}),
+            ErrorKind::NotFound,
+            "The provider returned an error (HTTP 404): Not Found.",
+        ),
+    ];
+    for (status, body, kind, message) in cases {
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body.to_string().as_bytes());
+        assert_eq!(
+            (&err.kind, err.message.as_str()),
+            (&kind, message),
+            "{body}"
+        );
+        assert_eq!(err.raw.as_ref(), Some(&body));
+    }
+    let vllm = json!({"object": "error", "message": "Not here.", "type": "NotFoundError",
+        "param": null, "code": 404});
+    let err = super::error::decode_body(None, vllm.to_string().as_bytes());
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (&ErrorKind::NotFound, "Not here."),
+        "a numeric code is the status"
+    );
+}
+
+#[test]
+fn a_mistral_error_frame_in_a_stream_ends_it_with_mistrals_error() {
+    let frame = json!({"object": "error", "message": "Service unavailable.",
+        "type": "internal_server_error", "param": null, "code": "1000", "raw_status_code": 503});
+    let sse = format!(
+        "data: {}\n\ndata: {frame}\n\n",
+        json!({"id": "x", "object": "chat.completion.chunk", "created": 1, "model": "m",
+            "choices": [{"index": 0, "delta": {"role": "assistant", "content": "Hi"}, "finish_reason": null}]})
+    );
+    let mut decoder = OpenAiChat::stream_decoder(&EgressCtx::for_kind(
+        RequestKind::Generate,
+        StreamMode::on(true),
+    ));
+    let mut events = decoder.feed(sse.as_bytes());
+    events.extend(decoder.finish());
+    let Some(kaeso_kpp::StreamEvent::Error(err)) = events.last() else {
+        panic!("{events:?}")
+    };
+    assert_eq!(
+        (&err.kind, err.message.as_str(), err.status),
+        (&ErrorKind::Overloaded, "Service unavailable.", Some(503))
+    );
 }
 
 #[test]

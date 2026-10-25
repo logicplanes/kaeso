@@ -414,16 +414,11 @@ async fn greedy_sampling_reaches_mistral_with_the_top_p_it_needs() {
             "{path}"
         );
 
-        env.mock.clear();
         body["top_p"] = json!(0.9);
         let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
-        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {}", r.text());
-        assert_eq!(
-            r.json()["error"]["message"],
-            "Mistral needs `top_p` 1 with `temperature` 0; remove `top_p` or raise `temperature`.",
-            "{path}"
-        );
-        assert!(env.mock.received().is_empty(), "{path}");
+        assert_eq!(r.status, StatusCode::OK, "{path}: {}", r.text());
+        let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+        assert_eq!(sent["top_p"].as_f64(), Some(1.0), "{path}");
     }
 }
 

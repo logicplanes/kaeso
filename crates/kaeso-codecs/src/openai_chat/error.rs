@@ -39,8 +39,13 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
     let raw: Value = serde_json::from_slice(body)
         .unwrap_or_else(|_| Value::String(String::from_utf8_lossy(body).into_owned()));
     let Some(parsed) = parsed else {
-        if let Some(own) = mistral_error(&raw) {
-            let kind = kind_for(status, own.ty.as_deref(), own.code.as_deref());
+        if let Some(own) = other_shape(&raw, status) {
+            let status = status.or(own.status);
+            let kind = kind_for(
+                status.or_else(|| http_status_code(own.code.as_ref())),
+                own.ty.as_deref(),
+                own.code.as_ref().and_then(Value::as_str),
+            );
             let mut err = KppError::new(kind, own.message)
                 .with_origin(origin)
                 .with_raw(raw);
@@ -94,69 +99,104 @@ pub(crate) fn decode_body(status: Option<u16>, body: &[u8]) -> KppError {
     err
 }
 
-struct MistralError {
+struct OtherShape {
     message: String,
     ty: Option<String>,
-    code: Option<String>,
+    code: Option<Value>,
     param: Option<String>,
+    status: Option<u16>,
 }
 
-// Mistral's shapes: `{"object": "error", "message", "type", "param", "code"}` from its
-// gateway, and FastAPI's `HTTPValidationError` (`detail`) in Mistral's OpenAPI document.
-fn mistral_error(raw: &Value) -> Option<MistralError> {
+// Error bodies without OpenAI's `error` object: `{"object": "error", "message", "type", "param",
+// "code"}` (Mistral, vLLM), FastAPI's `detail` (Mistral's `HTTPValidationError`), a bare `message`.
+fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
     let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_owned);
-    let message = match (
-        raw.get("object").and_then(Value::as_str),
-        raw.get("message"),
-    ) {
-        (Some("error"), Some(Value::String(m))) => m.clone(),
-        (Some("error"), Some(nested)) => validation_message(nested.get("detail")?)?,
-        _ => validation_message(raw.get("detail")?)?,
+    let object_error = raw.get("object").and_then(Value::as_str) == Some("error");
+    let (message, param) = match (object_error, raw.get("message"), raw.get("detail")) {
+        (true, Some(Value::String(m)), _) => (m.trim().to_owned(), text("param")),
+        (true, Some(nested), _) => validation(nested.get("detail")?, status)?,
+        (_, _, Some(detail)) => validation(detail, status)?,
+        (false, Some(Value::String(m)), None) if raw.get("error").is_none() => {
+            (quoted(m, status), None)
+        }
+        _ => return None,
     };
-    let message = message.trim().to_owned();
     if message.is_empty() {
         return None;
     }
-    Some(MistralError {
+    Some(OtherShape {
         message,
         ty: text("type"),
-        code: text("code"),
-        param: text("param"),
+        code: raw.get("code").filter(|c| !c.is_null()).cloned(),
+        param,
+        status: raw
+            .get("raw_status_code")
+            .and_then(Value::as_u64)
+            .and_then(|s| u16::try_from(s).ok()),
     })
 }
 
-fn validation_message(detail: &Value) -> Option<String> {
+fn quoted(message: &str, status: Option<u16>) -> String {
+    let message = message.trim();
+    let end = if message.ends_with(['.', '!', '?']) {
+        ""
+    } else {
+        "."
+    };
+    format!(
+        "The provider returned an error{}: {message}{end}",
+        status.map(|s| format!(" (HTTP {s})")).unwrap_or_default()
+    )
+}
+
+const ROLE_TAGS: &[&str] = &["system", "user", "assistant", "tool"];
+
+fn validation(detail: &Value, status: Option<u16>) -> Option<(String, Option<String>)> {
     let items = match detail {
-        Value::String(text) => return Some(text.clone()),
+        Value::String(text) => return Some((quoted(text, status), None)),
         Value::Array(items) => items,
         _ => return None,
     };
-    let lines = items
+    let entries = items
         .iter()
         .map(|item| {
             let msg = item.get("msg")?.as_str()?;
+            let loc = item.get("loc")?.as_array()?;
             let mut path = String::new();
-            for part in item.get("loc")?.as_array()?.iter().skip(1) {
+            let mut after_index = false;
+            for part in loc.iter().skip(1) {
                 match part {
                     Value::Number(n) => path.push_str(&format!("[{n}]")),
+                    // FastAPI puts the tag of a discriminated union, here a message role, after
+                    // the index; the request has no such key.
+                    Value::String(s) if after_index && ROLE_TAGS.contains(&s.as_str()) => {}
                     Value::String(s) if path.is_empty() => path.push_str(s),
                     Value::String(s) => path.push_str(&format!(".{s}")),
                     _ => return None,
                 }
+                after_index = part.is_number();
             }
-            Some(if path.is_empty() {
-                msg.to_owned()
-            } else {
-                format!("{msg} (`{path}`)")
-            })
+            Some((msg.to_owned(), path))
         })
-        .collect::<Option<Vec<String>>>()?;
+        .collect::<Option<Vec<(String, String)>>>()?;
+    let lines: Vec<String> = entries
+        .iter()
+        .map(|(msg, path)| match path.as_str() {
+            "" => msg.clone(),
+            path => format!("{msg} (`{path}`)"),
+        })
+        .collect();
     let joined = lines.join("; ");
-    Some(if joined.ends_with('.') {
+    let message = if joined.ends_with('.') {
         joined
     } else {
         format!("{joined}.")
-    })
+    };
+    let param = match entries.as_slice() {
+        [(_, path)] if !path.is_empty() => Some(path.clone()),
+        _ => None,
+    };
+    Some((message, param))
 }
 
 pub(crate) struct ErrorProbe {
@@ -170,6 +210,8 @@ pub(crate) fn probe(json: &str) -> ErrorProbe {
         #[serde(default)]
         error: Option<Box<serde_json::value::RawValue>>,
         #[serde(default)]
+        object: Option<Box<serde_json::value::RawValue>>,
+        #[serde(default)]
         choices: Option<serde::de::IgnoredAny>,
     }
     serde_json::from_str::<Probe>(json).map_or(
@@ -179,8 +221,9 @@ pub(crate) fn probe(json: &str) -> ErrorProbe {
         },
         |p| {
             let error = p.error.as_ref().map(|e| e.get().trim());
+            let object = p.object.as_ref().map(|o| o.get().trim());
             ErrorProbe {
-                error: error.is_some_and(|e| e.starts_with('{')),
+                error: error.is_some_and(|e| e.starts_with('{')) || object == Some("\"error\""),
                 choices: p.choices.is_some(),
             }
         },

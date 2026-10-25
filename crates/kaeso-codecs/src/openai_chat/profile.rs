@@ -171,25 +171,11 @@ impl ChatProfile {
         Ok(seed)
     }
 
-    pub(crate) fn checked_top_p(
-        &self,
-        temperature: Option<f64>,
-        top_p: Option<f64>,
-    ) -> Result<Option<f64>, KppError> {
-        if !self.request.greedy_top_p || temperature != Some(0.0) {
-            return Ok(top_p);
-        }
-        match top_p {
-            None => Ok(Some(1.0)),
-            Some(p) if p < 1.0 => Err(KppError::unsupported(
-                "top_p",
-                format!(
-                    "{} needs `top_p` 1 with `temperature` 0; remove `top_p` or raise `temperature`.",
-                    self.provider
-                ),
-            )
-            .with_param("top_p")),
-            Some(p) => Ok(Some(p)),
+    pub(crate) fn sent_top_p(&self, temperature: Option<f64>, top_p: Option<f64>) -> Option<f64> {
+        if self.request.greedy_top_p && temperature == Some(0.0) {
+            Some(1.0)
+        } else {
+            top_p
         }
     }
 

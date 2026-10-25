@@ -452,7 +452,7 @@ fn a_refused_field_kaeso_models_is_found_as_well_as_one_it_passes_through() {
 }
 
 #[test]
-fn a_greedy_top_p_profile_sends_top_p_1_with_temperature_0_and_refuses_a_lower_one() {
+fn a_greedy_top_p_profile_sends_top_p_1_with_temperature_0() {
     let greedy = ChatProfile::compatible("Example Cloud").greedy_top_p();
     let (_, body) = fixtures("openai_chat", "requests", "json")
         .into_iter()
@@ -472,21 +472,20 @@ fn a_greedy_top_p_profile_sends_top_p_1_with_temperature_0_and_refuses_a_lower_o
     let null =
         sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": null})).unwrap();
     assert_eq!(null["top_p"], json!(1.0));
-    let one = sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": 1})).unwrap();
-    assert_eq!(one["top_p"], json!(1));
-    let warm = sent(json!({"model": "m", "messages": [], "temperature": 0.2})).unwrap();
-    assert!(warm.get("top_p").is_none(), "{warm}");
-    let err =
-        sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": 0.9})).unwrap_err();
-    assert_eq!(
-        refusal(&err),
-        (
-            Some("top_p"),
-            Some("top_p"),
-            "Example Cloud needs `top_p` 1 with `temperature` 0; remove `top_p` or raise `temperature`."
-                .to_owned()
-        )
-    );
+    for top_p in [json!(1), json!(0.9), json!(0)] {
+        let out =
+            sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": top_p})).unwrap();
+        assert_eq!(
+            out["top_p"].as_f64(),
+            Some(1.0),
+            "{top_p}: greedy ignores top_p"
+        );
+    }
+    let warm =
+        sent(json!({"model": "m", "messages": [], "temperature": 0.2, "top_p": 0.9})).unwrap();
+    assert_eq!(warm["top_p"], json!(0.9));
+    let unset = sent(json!({"model": "m", "messages": [], "temperature": 0.2})).unwrap();
+    assert!(unset.get("top_p").is_none(), "{unset}");
 
     let mut anthropic = foreign(DialectId::AnthropicMessages);
     anthropic.sampling.temperature = Some(0.0);
