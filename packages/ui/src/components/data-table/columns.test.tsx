@@ -20,7 +20,7 @@ const rows: Row[] = [
   {
     id: "r1",
     name: "Checkout assistant",
-    key: "sk-kaeso-1a2b",
+    key: "sk-kso-1a2b",
     requests: 12400,
     cost: "12.5",
     tokens: 1_840_000,
@@ -32,7 +32,7 @@ const rows: Row[] = [
   {
     id: "r2",
     name: "Docs search",
-    key: "sk-kaeso-3c4d",
+    key: "sk-kso-3c4d",
     requests: 80,
     cost: "0.004",
     tokens: 900,
@@ -76,7 +76,7 @@ describe("column helpers", () => {
       />,
     );
     const table = screen.getByRole("table", { name: "Projects" });
-    for (const text of ["Checkout assistant", "sk-kaeso-1a2b", "12,400", "$12.50", "$0.00400", "1.84M", "1.5 s", "1 h ago", "Active", "Ada Okafor", "r2"]) {
+    for (const text of ["Checkout assistant", "sk-kso-1a2b", "12,400", "$12.50", "$0.00400", "1.84M", "1.5 s", "1 h ago", "Active", "Ada Okafor", "r2"]) {
       expect(table).toHaveTextContent(text);
     }
     expect(table.querySelectorAll("time").length).toBeGreaterThanOrEqual(4);

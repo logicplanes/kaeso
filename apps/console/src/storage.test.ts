@@ -1,18 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readStored, readStoredJson, takeStored, writeStored } from "./storage";
+import { readStored, readStoredJson, writeStored } from "./storage";
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("browser storage", () => {
-  it("keeps and takes values in local and session storage", () => {
+  it("keeps and removes values in local and session storage", () => {
     expect(writeStored("kaeso:theme", "dark")).toBe(true);
     expect(readStored("kaeso:theme")).toBe("dark");
-    writeStored("kaeso:return", "/orgs/org_1", "session");
-    expect(takeStored("kaeso:return", "session")).toBe("/orgs/org_1");
-    expect(readStored("kaeso:return", "session")).toBeNull();
-    expect(window.localStorage.getItem("kaeso:return")).toBeNull();
+    writeStored("kaeso:invite", "inv_tok", "session");
+    expect(readStored("kaeso:invite", "session")).toBe("inv_tok");
+    expect(window.localStorage.getItem("kaeso:invite")).toBeNull();
+    writeStored("kaeso:invite", null, "session");
+    expect(readStored("kaeso:invite", "session")).toBeNull();
   });
 
   it("reads JSON and ignores what isn't", () => {
@@ -30,6 +31,5 @@ describe("browser storage", () => {
     expect(readStored("kaeso:theme")).toBeNull();
     expect(readStoredJson("kaeso:theme")).toBeNull();
     expect(writeStored("kaeso:theme", "dark")).toBe(false);
-    expect(takeStored("kaeso:theme")).toBeNull();
   });
 });
