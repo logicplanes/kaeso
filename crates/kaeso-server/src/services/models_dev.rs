@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 use time::OffsetDateTime;
 use url::Url;
 
+use crate::platform::audit::Action;
 use crate::state::AppState;
 
 pub const EMBEDDED_SOURCE: &str = "embedded";
@@ -200,7 +201,7 @@ async fn apply_locked(
             audit(
                 &mut tx,
                 None,
-                "models_dev.price_change",
+                Action::ModelsDevPriceChange,
                 ("model", target),
                 prices(&Fields::from_models_dev(before)),
                 prices(&Fields::from_models_dev(model)),
@@ -215,7 +216,7 @@ async fn apply_locked(
                     audit(
                         &mut tx,
                         Some(OrgId::from_uuid(entry.org_id)),
-                        "catalogue_model.price_change",
+                        Action::CatalogueModelPriceChange,
                         (
                             "catalogue_model",
                             CatalogueModelId::from_uuid(entry.id).to_string(),
@@ -246,7 +247,7 @@ async fn apply_locked(
                 audit(
                     &mut tx,
                     None,
-                    "models_dev.model_delisted",
+                    Action::ModelsDevModelDelisted,
                     ("model", format!("{provider}/{model}")),
                     None,
                     None,
@@ -288,7 +289,7 @@ fn prices(f: &Fields) -> Option<serde_json::Value> {
 async fn audit(
     tx: &mut sqlx::PgConnection,
     org: Option<OrgId>,
-    action: &'static str,
+    action: Action,
     target: (&'static str, String),
     before: Option<serde_json::Value>,
     after: Option<serde_json::Value>,

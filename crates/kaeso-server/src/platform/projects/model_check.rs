@@ -15,6 +15,7 @@ use utoipa::ToSchema;
 use super::models::{CatalogueModelView, view};
 use super::{MODELS_ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::params::Path;
 use crate::services::availability::{self, Listings, Probe};
@@ -256,7 +257,7 @@ pub async fn check(
             Recorded::EntryGone => {}
         }
     }
-    ctx.audit(Some(org), "catalogue_model.check")
+    ctx.audit(Some(org), Action::CatalogueModelCheck)
         .target("project", project)
         .after(serde_json::json!({
             "available": available,

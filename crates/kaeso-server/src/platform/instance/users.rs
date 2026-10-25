@@ -12,6 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use crate::auth::sessions;
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::RoleRef;
 use crate::platform::json::Body;
@@ -212,7 +213,7 @@ pub async fn invite(
         },
     )
     .await?;
-    ctx.audit(None, "instance.invite")
+    ctx.audit(None, Action::InstanceInvite)
         .target("invite", id)
         .after(serde_json::json!({ "email": email }))
         .write(&mut tx)
@@ -295,7 +296,7 @@ pub async fn deactivate(
         ctx.accept_language.as_deref(),
     )
     .await?;
-    ctx.audit(None, "user.deactivate")
+    ctx.audit(None, Action::UserDeactivate)
         .target("user", uid)
         .after(serde_json::json!({ "disabled_keys": keys.len() }))
         .write(&mut tx)
@@ -327,7 +328,7 @@ pub async fn reactivate(
     let uid = UserId::from_uuid(target.id);
     let mut tx = state.pg.begin().await?;
     let keys = lifecycle::reactivate(&mut tx, uid).await?;
-    ctx.audit(None, "user.reactivate")
+    ctx.audit(None, Action::UserReactivate)
         .target("user", uid)
         .after(serde_json::json!({ "enabled_keys": keys.len() }))
         .write(&mut tx)
@@ -362,7 +363,7 @@ pub async fn delete(
     let uid = UserId::from_uuid(target.id);
     let mut tx = state.pg.begin().await?;
     let keys = lifecycle::delete(&state, &mut tx, uid, ctx.now).await?;
-    ctx.audit(None, "user.delete")
+    ctx.audit(None, Action::UserDelete)
         .target("user", uid)
         .write(&mut tx)
         .await?;
@@ -388,7 +389,7 @@ pub async fn end_sessions(
     let uid = UserId::from_uuid(target.id);
     let ended = sessions::revoke_all(&state, uid, None).await?;
     let mut tx = state.pg.begin().await?;
-    ctx.audit(None, "user.sessions_revoke")
+    ctx.audit(None, Action::UserSessionsRevoke)
         .target("user", uid)
         .after(serde_json::json!({ "ended": ended }))
         .write(&mut tx)
@@ -435,7 +436,7 @@ pub async fn reset_2fa(
         ctx.accept_language.as_deref(),
     )
     .await?;
-    ctx.audit(None, "user.2fa_reset")
+    ctx.audit(None, Action::User2faReset)
         .target("user", uid)
         .write(&mut tx)
         .await?;
@@ -479,7 +480,7 @@ pub async fn set_admin(
         crate::services::users::ensure_not_last_instance_admin(&mut tx, uid).await?;
     }
     users::set_instance_admin(&mut *tx, uid.uuid(), req.is_instance_admin).await?;
-    ctx.audit(None, "user.instance_admin")
+    ctx.audit(None, Action::UserInstanceAdmin)
         .target("user", uid)
         .before(serde_json::json!({ "is_instance_admin": target.is_instance_admin }))
         .after(serde_json::json!({ "is_instance_admin": req.is_instance_admin }))

@@ -16,6 +16,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::{MODELS_ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{Party, creator, creator_of};
@@ -728,7 +729,7 @@ async fn insert_entry(
     let row = catalogue::get(&mut *tx, project.project.id, id.uuid())
         .await?
         .ok_or_else(|| ApiError::internal("new catalogue model vanished"))?;
-    ctx.audit(Some(ctx.org()?.id()), "catalogue_model.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::CatalogueModelCreate)
         .target("catalogue_model", id)
         .after(serde_json::json!({ "provider": prov.id(), "model_id": model_id, "custom": custom, "overrides": json }))
         .write(tx)
@@ -959,7 +960,7 @@ pub async fn update(
     if !catalogue::set_overrides(&mut *tx, row.project_id, row.id, &json).await? {
         return Err(ApiError::not_found("catalogue model"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "catalogue_model.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::CatalogueModelUpdate)
         .target("catalogue_model", CatalogueModelId::from_uuid(row.id))
         .before(&before)
         .after(json)
@@ -1002,7 +1003,7 @@ pub async fn delete(
     if !catalogue::delete(&mut *tx, row.project_id, row.id).await? {
         return Err(ApiError::not_found("catalogue model"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "catalogue_model.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::CatalogueModelDelete)
         .target("catalogue_model", CatalogueModelId::from_uuid(row.id))
         .before(view(&state, &providers, &row, &aliases)?)
         .write(&mut tx)

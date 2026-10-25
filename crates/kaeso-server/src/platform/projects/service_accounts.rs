@@ -12,6 +12,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::{ARCHIVED, ensure_active};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{
     GrantRequest, GrantView, RoleBook, RoleRef, check_project, check_service_account_peer,
@@ -145,7 +146,7 @@ pub async fn create(
         ctx.acting_user().map(|u| u.uuid()),
     )
     .await?;
-    ctx.audit(Some(ctx.org()?.id()), "service_account.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::ServiceAccountCreate)
         .target("service_account", id)
         .after(serde_json::json!({ "name": name, "grant": project_view(&grant, role) }))
         .write(&mut tx)
@@ -252,7 +253,7 @@ pub async fn update(
         after.set_grant(stored);
     }
     service_accounts::update(&mut *tx, &after).await?;
-    ctx.audit(Some(ctx.org()?.id()), "service_account.update")
+    ctx.audit(Some(ctx.org()?.id()), Action::ServiceAccountUpdate)
         .target("service_account", ServiceAccountId::from_uuid(after.id))
         .before(view(&before)?)
         .after(view(&after)?)
@@ -297,7 +298,7 @@ pub async fn archive(
     service_accounts::update(&mut *tx, &row).await?;
     let keys = key_lifecycle::archive_service_account_keys(&mut *tx, row.id, ctx.now).await?;
     kaeso_store::pg::catalogue::clear_service_account(&mut *tx, row.id).await?;
-    ctx.audit(Some(ctx.org()?.id()), "service_account.archive")
+    ctx.audit(Some(ctx.org()?.id()), Action::ServiceAccountArchive)
         .target("service_account", ServiceAccountId::from_uuid(row.id))
         .after(serde_json::json!({ "archived_keys": keys.len() }))
         .write(&mut tx)

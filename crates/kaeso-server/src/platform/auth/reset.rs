@@ -15,6 +15,7 @@ use super::{EmailSent, throttle_ip};
 use crate::auth::sessions;
 use crate::auth::throttle::{self, EMAILS_PER_ADDRESS, EMAILS_PER_IP, TOKENS_PER_IP};
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::state::AppState;
@@ -224,7 +225,7 @@ pub async fn verify(
     ] {
         tokens::retire_all(&mut *tx, kind, Some(user.id), ctx.now).await?;
     }
-    ctx.audit(None, "user.password_reset")
+    ctx.audit(None, Action::UserPasswordReset)
         .by(user_id)
         .target("user", user_id)
         .write(&mut tx)

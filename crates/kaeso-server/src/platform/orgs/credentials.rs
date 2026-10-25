@@ -14,6 +14,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::platform::access::Ctx;
+use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{Party, creator, creator_of, validate_name};
@@ -420,7 +421,7 @@ pub(super) async fn add(
         credentials::set_default(&mut tx, org, a.provider, a.id.uuid()).await?;
     }
     let view = view(&mut tx, org, a.id.uuid()).await?;
-    ctx.audit(Some(ctx.org()?.id()), "credential.create")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialCreate)
         .target("credential", a.id)
         .after(&view)
         .write(&mut tx)
@@ -549,7 +550,7 @@ pub(super) async fn rewrite(
         return Err(ApiError::not_found("credential"));
     }
     let after = view(&mut tx, org, id).await?;
-    ctx.audit(Some(ctx.org()?.id()), "credential.replace")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialReplace)
         .target("credential", before.id)
         .before(before)
         .after(&after)
@@ -585,7 +586,7 @@ pub async fn rename(
         return Err(ApiError::not_found("credential"));
     }
     let after = view(&mut tx, org, id).await?;
-    ctx.audit(Some(ctx.org()?.id()), "credential.rename")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialRename)
         .target("credential", before.id)
         .before(&before)
         .after(&after)
@@ -621,7 +622,7 @@ pub async fn make_default(
         return Err(ApiError::not_found("credential"));
     }
     let after = view(&mut tx, org, id).await?;
-    ctx.audit(Some(ctx.org()?.id()), "credential.default")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialDefault)
         .target("credential", before.id)
         .before(&before)
         .after(&after)
@@ -672,7 +673,7 @@ pub async fn assign(
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
     credentials::set_assignments(&mut tx, org, &before.provider, id, &projects).await?;
     let after = view(&mut tx, org, id).await?;
-    ctx.audit(Some(ctx.org()?.id()), "credential.assign")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialAssign)
         .target("credential", before.id)
         .before(&before)
         .after(&after)
@@ -713,7 +714,7 @@ pub async fn delete(
     if !credentials::delete(&mut *tx, org, id).await? {
         return Err(ApiError::not_found("credential"));
     }
-    ctx.audit(Some(ctx.org()?.id()), "credential.delete")
+    ctx.audit(Some(ctx.org()?.id()), Action::CredentialDelete)
         .target("credential", before.id)
         .before(&before)
         .write(&mut tx)
@@ -726,7 +727,7 @@ pub async fn delete(
             is_default: false,
             ..after.clone()
         };
-        ctx.audit(Some(ctx.org()?.id()), "credential.default")
+        ctx.audit(Some(ctx.org()?.id()), Action::CredentialDefault)
             .target("credential", after.id)
             .before(&was)
             .after(&after)
