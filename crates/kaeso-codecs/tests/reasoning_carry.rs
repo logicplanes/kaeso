@@ -334,6 +334,16 @@ fn chat_next_request(
     kept: &[kaeso_codecs::continuity::CarriedReasoning],
     target: DialectId,
 ) -> Value {
+    let adaptive = (target == A).then_some(false);
+    chat_next_encoded(body, kept, target, adaptive).0
+}
+
+fn chat_next_encoded(
+    body: &Value,
+    kept: &[kaeso_codecs::continuity::CarriedReasoning],
+    target: DialectId,
+    adaptive: Option<bool>,
+) -> (Value, HeaderList) {
     use kaeso_codecs::continuity::{restore_reasoning, tool_calls_missing_reasoning};
     let mut req = dispatch::decode_request(
         DialectId::OpenAiChat,
@@ -351,13 +361,16 @@ fn chat_next_request(
         .filter(|k| missing.contains(&k.tool_call_id))
         .cloned()
         .collect();
-    assert!(restore_reasoning(r, &found) > 0, "nothing restored");
-    let mut ctx = EgressCtx::new(&req).with_provider(provider(target));
-    if target == A {
-        ctx = ctx.with_adaptive_thinking(false);
+    if !kept.is_empty() {
+        assert!(restore_reasoning(r, &found) > 0, "nothing restored");
     }
+    let mut ctx = EgressCtx::new(&req).with_provider(provider(target));
+    if let Some(adaptive) = adaptive {
+        ctx = ctx.with_adaptive_thinking(adaptive);
+    }
+    dispatch::check(target, &req, &ctx).unwrap();
     let enc = dispatch::encode_request(target, &req, &mut ctx).unwrap();
-    serde_json::from_slice(&enc.body).unwrap()
+    (serde_json::from_slice(&enc.body).unwrap(), enc.headers)
 }
 
 #[test]
@@ -446,4 +459,371 @@ fn a_chat_app_keeps_openai_reasoning_through_the_gateway() {
         assert_eq!(items[at][key], reasoning[key], "{key}: {next}");
     }
     assert_eq!(items[at + 1]["type"], "function_call", "{next}");
+}
+
+const BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
+
+fn drop_block() -> Value {
+    json!({"prefix_mismatch_behavior": "drop_block"})
+}
+
+fn carried_claude_thinking() -> (Value, Vec<kaeso_codecs::continuity::CarriedReasoning>) {
+    use kaeso_codecs::continuity::reasoning_for_tool_calls;
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let ctx =
+        EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_provider("anthropic");
+    let reply = dispatch::decode_response(A, 200, &HeaderList::new(), &original, &ctx).unwrap();
+    let kaeso_kpp::Reply::Generate(resp) = &reply else {
+        panic!()
+    };
+    let enc = EncodeCtx::new(RequestKind::Generate, StreamMode::Off).with_created_at(1);
+    let chat: Value = serde_json::from_slice(
+        &dispatch::encode_response(DialectId::OpenAiChat, &reply, &enc).unwrap(),
+    )
+    .unwrap();
+    (
+        chat["choices"][0]["message"].clone(),
+        reasoning_for_tool_calls(&resp.blocks),
+    )
+}
+
+fn binding_ctx(
+    body: &Value,
+    kept: &[kaeso_codecs::continuity::CarriedReasoning],
+) -> (Value, HeaderList) {
+    use kaeso_codecs::continuity::{restore_reasoning, tool_calls_missing_reasoning};
+    let mut req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &serde_json::to_vec(body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let missing = tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    restore_reasoning(r, &found);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(true)
+        .with_thinking_binding(true);
+    dispatch::check(A, &req, &ctx).unwrap();
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    (serde_json::from_slice(&enc.body).unwrap(), enc.headers)
+}
+
+fn thinking_sent(body: &Value) -> bool {
+    body["messages"][1]["content"][0]["type"] == "thinking"
+}
+
+#[test]
+fn rebuilt_claude_thinking_is_bound_to_be_dropped_when_its_conversation_changed() {
+    let (message, kept) = carried_claude_thinking();
+    let (body, headers) = binding_ctx(&chat_next_turn(&message, "claude-sonnet-5-5"), &kept);
+    assert!(thinking_sent(&body), "{body}");
+    assert_eq!(body["thinking"]["type"], "adaptive", "{body}");
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let response = reply_for_app(A, &original, R);
+    let next = responses_next_turn(&response["output"]);
+    let req = dispatch::decode_request(
+        R,
+        RequestKind::Generate,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(true)
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), Some(BINDING_BETA));
+}
+
+#[test]
+fn thinking_kaeso_adds_for_the_binding_goes_out_without_sampling_settings() {
+    let (message, kept) = carried_claude_thinking();
+    let mut next = chat_next_turn(&message, "claude-sonnet-5-5");
+    let next = next.as_object_mut().unwrap();
+    next.remove("reasoning_effort");
+    next.insert("temperature".into(), json!(0.2));
+    next.insert("top_p".into(), json!(0.5));
+    let (body, _) = binding_ctx(&Value::Object(next.clone()), &kept);
+    assert_eq!(
+        body["thinking"],
+        json!({"type": "adaptive", "block_binding": drop_block()}),
+        "{body}"
+    );
+    assert!(
+        body.get("temperature").is_none() && body.get("top_p").is_none(),
+        "{body}"
+    );
+}
+
+#[test]
+fn the_binding_does_not_depend_on_whether_the_last_tool_turn_thought() {
+    let (message, kept) = carried_claude_thinking();
+    let mut next = chat_next_turn(&message, "claude-sonnet-5-5");
+    next.as_object_mut().unwrap().remove("reasoning_effort");
+    let messages = next["messages"].as_array_mut().unwrap();
+    messages.push(
+        json!({"role": "assistant", "content": "", "tool_calls": [{"id": "call_late",
+        "type": "function", "function": {"name": "get_weather", "arguments": "{}"}}]}),
+    );
+    messages.push(json!({"role": "tool", "tool_call_id": "call_late", "content": "rain"}));
+    let (body, headers) = binding_ctx(&next, &kept);
+    assert!(thinking_sent(&body), "{body}");
+    assert_eq!(body["thinking"]["block_binding"], drop_block(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), Some(BINDING_BETA));
+}
+
+#[test]
+fn rebuilt_thinking_that_cannot_be_bound_is_left_out() {
+    let (message, kept) = carried_claude_thinking();
+    let mut off = chat_next_turn(&message, "claude-sonnet-5-5");
+    off["reasoning_effort"] = json!("none");
+    let mut forced = chat_next_turn(&message, "claude-sonnet-5-5");
+    forced.as_object_mut().unwrap().remove("reasoning_effort");
+    forced["tool_choice"] = json!("required");
+    for next in [off, forced] {
+        let (body, headers) = binding_ctx(&next, &kept);
+        assert!(!thinking_sent(&body), "{body}");
+        assert!(body.get("thinking").is_none(), "{body}");
+        assert_eq!(headers.get("anthropic-beta"), None);
+        assert_eq!(
+            body["messages"][1]["content"][0]["type"], "tool_use",
+            "{body}"
+        );
+    }
+}
+
+#[test]
+fn enabled_thinking_goes_with_the_rebuilt_blocks_it_needs_on_a_tool_continuation() {
+    let (message, kept) = carried_claude_thinking();
+    let mut next = chat_next_turn(&message, "claude-sonnet-5-5");
+    next.as_object_mut().unwrap().remove("reasoning_effort");
+    let mut req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let mut budget = kaeso_kpp::ReasoningConfig::default();
+    budget.budget_tokens = Some(2048);
+    budget.extras = kaeso_kpp::Extras::new(DialectId::OpenAiChat);
+    r.reasoning = Some(budget);
+    let missing = kaeso_codecs::continuity::tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    assert!(kaeso_codecs::continuity::restore_reasoning(r, &found) > 0);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert!(!thinking_sent(&body), "{body}");
+    assert!(body.get("thinking").is_none(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn models_that_do_not_check_the_binding_get_rebuilt_thinking_as_before() {
+    let (message, kept) = carried_claude_thinking();
+    let (body, headers) = chat_next_encoded(
+        &chat_next_turn(&message, "claude-haiku-4-5"),
+        &kept,
+        A,
+        Some(false),
+    );
+    assert!(thinking_sent(&body), "{body}");
+    assert_eq!(body["thinking"]["type"], "enabled", "{body}");
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn anthropic_apps_and_requests_without_claude_thinking_keep_their_thinking_setting() {
+    for name in ["thinking-interleaved-tools", "thinking-redacted-replay"] {
+        let body = fixture(A, "requests", &format!("{name}.json"));
+        let req =
+            dispatch::decode_request(A, RequestKind::Generate, &body, &HeaderList::new()).unwrap();
+        let mut ctx = EgressCtx::new(&req)
+            .with_provider("anthropic")
+            .with_thinking_binding(true);
+        let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+        let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(sent["thinking"], original["thinking"], "{name}");
+        assert_eq!(enc.headers.get("anthropic-beta"), None, "{name}");
+    }
+
+    let (message, _) = carried_claude_thinking();
+    let (body, headers) = binding_ctx(&chat_next_turn(&message, "claude-sonnet-5-5"), &[]);
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn a_reply_that_reports_a_dropped_block_reaches_every_app() {
+    let original = fixture(A, "responses", "thinking-dropped-block.json");
+    let chat = reply_for_app(A, &original, DialectId::OpenAiChat);
+    assert_eq!(
+        chat["choices"][0]["message"]["content"],
+        "proof.txt contains OK."
+    );
+    assert!(chat.get("input_transformations").is_none(), "{chat}");
+    let responses = reply_for_app(A, &original, R);
+    assert_eq!(responses["status"], "completed", "{responses}");
+}
+
+#[test]
+fn qwen_code_turns_get_claude_thinking_back_only_where_claude_wrote_it() {
+    use kaeso_codecs::continuity::{CarriedReasoning, restore_reasoning};
+    let body: Value = serde_json::from_slice(&fixture(
+        DialectId::OpenAiChat,
+        "requests",
+        "qwen-code-tool-loop.json",
+    ))
+    .unwrap();
+    let write = "toolu_01L2nFMSBTMgp3v3ZF3Y1t1E";
+    let read = "toolu_01RVmKP3fRAvjjbjhPBio6BY";
+    let thinking = |text: &str| {
+        let origin = kaeso_kpp::Origin::new(A).with_provider("anthropic");
+        let mut block = kaeso_kpp::ReasoningBlock::new(origin.clone());
+        block.text.push(text.into());
+        block.opaque.push(kaeso_kpp::Opaque::new(
+            origin,
+            kaeso_kpp::OpaqueKind::AnthropicThinkingSignature,
+            format!("sig-{text}"),
+        ));
+        block
+    };
+    let kept = [
+        CarriedReasoning::new(write, vec![thinking("write")]).with_turn_calls(vec![write.into()]),
+        CarriedReasoning::new(read, vec![thinking("read")]).with_turn_calls(vec![read.into()]),
+    ];
+    let restored = |body: &Value| {
+        let mut req = dispatch::decode_request(
+            DialectId::OpenAiChat,
+            RequestKind::Generate,
+            &serde_json::to_vec(body).unwrap(),
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let Request::Generate(r) = &mut req else {
+            panic!()
+        };
+        let n = restore_reasoning(r, &kept);
+        (n, req)
+    };
+    let (n, req) = restored(&body);
+    assert_eq!(n, 2);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+    for (i, text) in [(1, "write"), (3, "read")] {
+        assert_eq!(
+            sent["messages"][i]["content"][0]["thinking"], text,
+            "{sent}"
+        );
+        assert_eq!(
+            sent["messages"][i]["content"][1]["type"], "tool_use",
+            "{sent}"
+        );
+    }
+
+    let mut merged = body.clone();
+    let messages = merged["messages"].as_array_mut().unwrap();
+    let second = messages[4]["tool_calls"][0].clone();
+    messages[2]["tool_calls"]
+        .as_array_mut()
+        .unwrap()
+        .push(second);
+    messages.remove(4);
+    let (n, _) = restored(&merged);
+    assert_eq!(n, 0, "a turn the app merged gets no thinking back");
+}
+
+#[test]
+fn a_model_without_adaptive_thinking_gets_no_binding_whatever_its_catalogue_says() {
+    let (message, kept) = carried_claude_thinking();
+    let effort = chat_next_turn(&message, "claude-sonnet-5-5");
+    let mut req = dispatch::decode_request(
+        DialectId::OpenAiChat,
+        RequestKind::Generate,
+        &serde_json::to_vec(&effort).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(r) = &mut req else {
+        panic!()
+    };
+    let missing = kaeso_codecs::continuity::tool_calls_missing_reasoning(r);
+    let found: Vec<_> = kept
+        .iter()
+        .filter(|k| missing.contains(&k.tool_call_id))
+        .cloned()
+        .collect();
+    kaeso_codecs::continuity::restore_reasoning(r, &found);
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(false)
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert!(thinking_sent(&body), "{body}");
+    assert_eq!(body["thinking"]["type"], "enabled", "{body}");
+    assert!(body["thinking"].get("block_binding").is_none(), "{body}");
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}
+
+#[test]
+fn token_counts_that_replay_claude_thinking_go_out_unbound() {
+    let original = fixture(A, "responses", "thinking-redacted.json");
+    let response = reply_for_app(A, &original, R);
+    let mut next = responses_next_turn(&response["output"]);
+    next.as_object_mut().unwrap().remove("max_output_tokens");
+    let req = dispatch::decode_request(
+        R,
+        RequestKind::CountTokens,
+        &serde_json::to_vec(&next).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req)
+        .with_provider("anthropic")
+        .with_adaptive_thinking(true)
+        .with_thinking_binding(true);
+    let enc = dispatch::encode_request(A, &req, &mut ctx).unwrap();
+    let body: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert_eq!(
+        body["messages"][1]["content"][0]["type"], "thinking",
+        "{body}"
+    );
+    assert!(
+        body.get("thinking")
+            .is_none_or(|t| t.get("block_binding").is_none()),
+        "{body}"
+    );
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
 }

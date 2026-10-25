@@ -129,6 +129,7 @@ pub struct EgressCtx {
     pub(crate) tool_ids: IndexMap<String, String>,
     pub(crate) tool_names: IndexMap<String, String>,
     pub adaptive_thinking: Option<bool>,
+    pub thinking_binding: Option<bool>,
     pub reasoning: Option<bool>,
     pub tool_namespaces: Option<bool>,
     pub chat_profile: ChatProfile,
@@ -149,6 +150,7 @@ impl EgressCtx {
             tool_ids: IndexMap::new(),
             tool_names: IndexMap::new(),
             adaptive_thinking: None,
+            thinking_binding: None,
             reasoning: None,
             tool_namespaces: None,
             chat_profile: ChatProfile::OPENAI,
@@ -160,6 +162,12 @@ impl EgressCtx {
     #[must_use]
     pub fn with_adaptive_thinking(mut self, supported: bool) -> Self {
         self.adaptive_thinking = Some(supported);
+        self
+    }
+
+    #[must_use]
+    pub fn with_thinking_binding(mut self, checks: bool) -> Self {
+        self.thinking_binding = Some(checks);
         self
     }
 
