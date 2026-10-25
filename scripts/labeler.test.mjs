@@ -47,6 +47,7 @@ test("the labeler sets only labels the changelog knows, and one rule for each ar
 test("a pull request gets the area of every part it changes", () => {
   assert.deepEqual(labelsFor(["crates/kaeso-server/src/routes.rs", "openapi.json"]), ["area: gateway"]);
   assert.deepEqual(labelsFor(["crates/kaeso-codecs/src/lib.rs"]), ["area: kpp"]);
+  assert.deepEqual(labelsFor(["plugins/kaeso/.mcp.json", ".claude-plugin/marketplace.json", ".cursor-plugin/marketplace.json"]), ["area: gateway"]);
   assert.deepEqual(labelsFor(["apps/console/src/routes/keys.tsx", "packages/ui/src/dialog.tsx"]), ["area: console", "area: ui library"]);
   assert.deepEqual(labelsFor(["apps/docs/content/en/index.md"]), ["area: documentation"]);
   assert.deepEqual(labelsFor(["deploy/compose.yaml"]), ["area: self-hosting"]);

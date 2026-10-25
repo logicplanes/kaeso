@@ -26,11 +26,15 @@ describe("links inside the console", () => {
         <Link href="https://docs.kaeso.app/self-hosting/upgrades">Docs</Link>
         <Link href="mailto:owner@example.com">Mail</Link>
         <Link href="otpauth://totp/Kaeso:owner@example.com?secret=JBSWY3DPEHPK3PXP">App</Link>
+        <Link href="cursor://anysphere.cursor-deeplink/mcp/install?name=kaeso&config=e30=">Cursor</Link>
+        <Link href="vscode:mcp/install?%7B%7D">VS Code</Link>
       </>,
     );
     expect(screen.getByRole("link", { name: /^Docs/ })).toHaveAttribute("href", "https://docs.kaeso.app/self-hosting/upgrades");
     expect(screen.getByRole("link", { name: /^Mail/ })).toHaveAttribute("href", "mailto:owner@example.com");
     expect(screen.getByRole("link", { name: "App" })).toHaveAttribute("href", "otpauth://totp/Kaeso:owner@example.com?secret=JBSWY3DPEHPK3PXP");
+    expect(screen.getByRole("link", { name: "Cursor" })).toHaveAttribute("href", "cursor://anysphere.cursor-deeplink/mcp/install?name=kaeso&config=e30=");
+    expect(screen.getByRole("link", { name: "VS Code" })).toHaveAttribute("href", "vscode:mcp/install?%7B%7D");
   });
 
   it("never lead to another origin or run a script", async () => {

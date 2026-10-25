@@ -1129,5 +1129,13 @@
   "Every agent looks the same; write its model family with useModelName where it matters.": "Jeder Agent sieht gleich aus; schreiben Sie seine Modellfamilie mit useModelName dazu, wo es darauf ankommt.",
   "Every size": "Jede Größe",
   "Agent": "Agent",
-  "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.": "Der Avatar einer Person mit dem Agenten, der für sie gehandelt hat, als kleines Abzeichen an der Ecke, für Zeilen im Audit-Log und Aktivitäten; er wirkt als ein Bild, benannt nach beiden. Das Abzeichen bleibt im Quadrat des Avatars, sodass keine Tabellenzelle es abschneidet."
+  "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.": "Der Avatar einer Person mit dem Agenten, der für sie gehandelt hat, als kleines Abzeichen an der Ecke, für Zeilen im Audit-Log und Aktivitäten; er wirkt als ein Bild, benannt nach beiden. Das Abzeichen bleibt im Quadrat des Avatars, sodass keine Tabellenzelle es abschneidet.",
+  "An agent client's mark on a raised tile, such as Claude, Cursor or GitHub Copilot, that opens how to connect it.": "Das Zeichen eines Agent-Clients auf einer erhabenen Kachel, etwa Claude, Cursor oder GitHub Copilot, das zeigt, wie man ihn verbindet.",
+  "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.": "Das Zeichen eines Agent-Clients, etwa Claude, Cursor oder GitHub Copilot, auf einer erhabenen Kachel, als Schaltfläche, die zeigt, wie man ihn verbindet.",
+  "Clients": "Clients",
+  "The client's name; also the tooltip.": "Der Name des Clients; zugleich der Tooltip.",
+  "Which client's mark it shows.": "Welches Client-Zeichen sie zeigt.",
+  "Opens how to connect the client.": "Zeigt, wie man den Client verbindet.",
+  "A button named by `aria-label`, which is also its tooltip; the mark is decorative.": "Eine Schaltfläche, benannt durch `aria-label`, das zugleich ihr Tooltip ist; das Zeichen ist Dekoration.",
+  "Every client": "Jeder Client"
 }

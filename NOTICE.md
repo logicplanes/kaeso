@@ -26,6 +26,10 @@ The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` are t
 
 Groq is a trademark of Groq LLC and/or its affiliates. Kaeso is not affiliated with or endorsed by any of these providers.
 
+## Client marks
+
+The client marks in `packages/ui/src/components/kaeso/client-button.tsx` are their owners' trademarks: Claude of Anthropic, Cursor of Anysphere, and GitHub Copilot of GitHub. Kaeso shows them only to say which client a set of install steps is for (nominative use), and implies no affiliation or endorsement. Each is the [Simple Icons](https://simpleicons.org) vector (CC0 1.0) of that mark, unchanged, in the theme's text colour.
+
 ## Wire formats
 
 KPP implements the OpenAI and Anthropic wire formats from the vendors' public documentation and specifications:

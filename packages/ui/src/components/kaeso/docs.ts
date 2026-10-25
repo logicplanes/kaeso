@@ -1,6 +1,14 @@
 import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
+  ClientButton: {
+    description: "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.",
+    props: {
+      "aria-label": "The client's name; also the tooltip.",
+      client: "Which client's mark it shows.",
+      onClick: "Opens how to connect the client.",
+    },
+  },
   ConversationView: {
     description:
       "A model conversation from a request log: role captions, prose, tool calls and results, reasoning, images, refusals. Inline images show; remote ones are links, so viewing a log never fetches them.",
