@@ -1,9 +1,16 @@
+mod agents;
 mod catalogue;
 mod descriptions;
 mod presets;
 mod sources;
 
-pub use catalogue::{Category, OrgRight, ProjectRight, Right, RightParseError};
+pub use agents::{
+    AgentPreset, InstancePreset, agent_account_rights, agent_instance_rights, agent_org_rights,
+    agent_project_rights, grantable_org_rights, needs_confirmation,
+};
+pub use catalogue::{
+    AccountRight, Category, InstanceRight, OrgRight, ProjectRight, Right, RightParseError,
+};
 pub use presets::{OrgPreset, PresetParseError, ProjectPreset};
 pub use sources::{Source, every_project_sources, org_sources, project_sources};
 
@@ -72,6 +79,21 @@ macro_rules! right_set {
             pub fn parse<'a>(names: impl IntoIterator<Item = &'a str>) -> Result<$name, RightParseError> {
                 names.into_iter().map(str::parse::<$right>).collect()
             }
+
+            #[must_use]
+            pub fn with_needs(self) -> $name {
+                let mut out = self;
+                loop {
+                    let grown = out
+                        .iter()
+                        .flat_map(<$right>::needs)
+                        .fold(out, $name::with);
+                    if grown == out {
+                        return out;
+                    }
+                    out = grown;
+                }
+            }
         }
 
         impl FromIterator<$right> for $name {
@@ -94,6 +116,8 @@ macro_rules! right_set {
 
 right_set!(OrgRights, OrgRight);
 right_set!(ProjectRights, ProjectRight);
+right_set!(InstanceRights, InstanceRight);
+right_set!(AccountRights, AccountRight);
 
 impl OrgRights {
     pub fn owner_only() -> OrgRights {

@@ -4,7 +4,7 @@ description: Serve Kaeso on your domain with a certificate, or behind a proxy yo
 order: 5
 ---
 
-An install answers on one domain. Caddy gets the certificate, sends `/v1` and `/platform` to the gateway, and sends every other path to the console.
+An install answers on one domain. Caddy gets the certificate, sends the APIs and the MCP server with its sign-in to the gateway, and sends every other path to the console.
 
 ## Set the domain
 
@@ -51,8 +51,10 @@ Then route these paths:
 
 | Path | To |
 | --- | --- |
-| `/v1/` and `/platform/` | The gateway, port 8080 |
+| `/v1/`, `/platform/`, `/mcp`, `/oauth/` and `/.well-known/oauth-` | The gateway, port 8080 |
 | Everything else | The console, port 3000 |
+
+Agents sign in through `/oauth/` and `/.well-known/oauth-` and then call `/mcp` ([MCP server](../api/mcp.md)). A proxy that sends these paths to the console stops every agent from connecting.
 
 Set up the proxy for Kaeso:
 

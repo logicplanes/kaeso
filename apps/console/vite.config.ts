@@ -226,6 +226,9 @@ export default defineConfig({
     proxy: {
       "/platform": { target: gateway, changeOrigin: false },
       "/v1": { target: gateway, changeOrigin: false },
+      "/mcp": { target: gateway, changeOrigin: false },
+      "/oauth": { target: gateway, changeOrigin: false },
+      "/.well-known/oauth-": { target: gateway, changeOrigin: false },
     },
     warmup: {
       clientFiles: ["./src/main.tsx", "./src/routes/**/*.tsx", "./src/shell/*.tsx", "./src/features/**/*.tsx", "./src/kaeso/*.tsx", "!./src/**/*.test.tsx"],
@@ -245,7 +248,11 @@ export default defineConfig({
       "marked",
     ],
   },
-  preview: { port: 3000, strictPort: true, proxy: { "/platform": gateway, "/v1": gateway } },
+  preview: {
+    port: 3000,
+    strictPort: true,
+    proxy: { "/platform": gateway, "/v1": gateway, "/mcp": gateway, "/oauth": gateway, "/.well-known/oauth-": gateway },
+  },
   build: {
     target: "es2023",
     sourcemap: true,

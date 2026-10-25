@@ -70,15 +70,17 @@ docker compose exec gateway kaeso openapi > openapi.json
 | Plattform-Schlüssel | `Authorization: Bearer sk-kso-org-…` | Den Rechten der Rolle Admin, in seiner Organisation und allen ihren Projekten |
 | API-Schlüssel mit Plattformzugriff | `Authorization: Bearer sk-kso-…` | Den Rechten seines Mitglieds oder Dienstkontos, nur im eigenen Projekt |
 | Sitzung | Das Sitzungs-Cookie, das die Anmelde-Endpunkte unter `auth/*` setzen | Ihren eigenen Rechten |
+| Agent | `Authorization: Bearer kso_at_…`, das Access-Token aus der Anmeldung am [MCP-Server](mcp.md) | Den Rechten seines Benutzers, eingeschränkt auf das, was der Agent erhalten hat, und auf die Agenten-Richtlinien ([Rechte](mcp.md#rechte)) |
 
 Verwenden Sie einen Plattform-Schlüssel, um eine ganze Organisation zu automatisieren, und einen Projektschlüssel für Skripte und CI in einem Projekt. Sitzungen dienen der Konsole und Personen mit curl. Das Sitzungs-Cookie heißt `__Host-kaeso_session`, bei einer `http://`-Installation unter einer Loopback-Adresse wie localhost `kaeso_session`.
 
 - **Schlüssel erreichen nur `orgs/{org}/*`.** `me/*`, `instance/*` und die Routen von `auth/*`, die eine Anmeldung voraussetzen, beantworten Schlüssel mit 403. Routen auf Organisationsebene beantworten Projektschlüssel mit 403.
+- **Agenten erreichen Routen, die ein Recht nennen.** Das sind alle Routen unter `orgs/{org}/*`, die ein Plattform-Schlüssel nutzen kann, Routen unter `instance/*`, die ein `instance.*`-Recht nennen, und Routen unter `me/*`, die ein `account.*`-Recht nennen. Andere Routen beantworten Agenten mit 403 ([Tools](mcp.md#tools)).
 - **Schlüssel stehen in `Authorization`.** Die Platform API liest nie `x-api-key`.
 - **Plattformzugriff wird beim Erstellen eines Schlüssels gewählt**, mit `"access": "platform"` oder `"both"`. Standard ist `inference`, und Plattformzugriff erfordert das Recht `keys.platform_access.grant` ([API-Schlüssel](../console/api-keys.md)).
 - **Plattform-Schlüssel entstehen nur in einer Sitzung**, durch jemanden, der jedes Recht der Rolle Admin hat. Sie rufen nie Modelle auf.
 - **Schlüssel rotieren mit einer Anfrage.** `POST …/keys/{key}/rotate`, `…/service-accounts/{account}/keys/{key}/rotate` und `orgs/{org}/platform-keys/{key}/rotate` nehmen `grace_hours` (0, 1, 24 oder 168) und den Ablauf des neuen Schlüssels. Sie antworten mit dem neuen Schlüssel, der die Einstellungen des alten behält, und erfordern, was das Erstellen dieses Schlüssels erfordert, sowie das Recht, ihn zu verwalten ([Schlüssel rotieren](../console/api-keys.md#schlüssel-rotieren)).
-- **Richtlinien der Organisation gelten für Sitzungen.** Eine Organisation, die Single Sign-on verlangt, beantwortet die Sitzungen der Konten, die sie verwaltet, mit 403, sofern sie nicht von ihrem Anbieter stammen; Sitzungen von Gästen kommen durch. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Sitzungen ohne zweiten Faktor mit 403. Ausgenommen ist eine Sitzung aus einem Single Sign-on, das dort zählt: ihrem eigenen oder dem der Organisation, die das Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
+- **Richtlinien der Organisation gelten für Sitzungen und Agenten.** Eine Organisation, die Single Sign-on verlangt, beantwortet die Sitzungen der Konten, die sie verwaltet, mit 403, sofern sie nicht von ihrem Anbieter stammen; Sitzungen von Gästen kommen durch. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, beantwortet Sitzungen ohne zweiten Faktor mit 403. Ausgenommen ist eine Sitzung aus einem Single Sign-on, das dort zählt: ihrem eigenen oder dem der Organisation, die das Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 - **Unbekannte Schlüssel werden gebremst.** Zu viele Anfragen mit unbekannten Schlüsseln von einer Adresse, auf beiden APIs zusammen, erhalten `429 rate_limited` mit `Retry-After` ([Fehlgeschlagene Schlüsselprüfungen](../self-hosting/configuration.md#fehlgeschlagene-schlüsselprüfungen)).
 
 ### Websiteübergreifende Anfragen
@@ -93,7 +95,7 @@ So können andere Websites weder mit Ihrer Sitzung handeln noch Ihren Browser in
 
 ### Kürzliche Anmeldung
 
-In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden. Sie bestätigen mit Ihrem Passwort oder einem Anmeldelink, oder über Single Sign-on, wenn das Konto keinen anderen Weg hat. Schlüssel brauchen das nie.
+In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 15 Minuten. Sonst antwortet Kaeso mit `403 recent_sign_in_required`, und die Konsole bittet Sie, sich erneut anzumelden. Sie bestätigen mit Ihrem Passwort oder einem Anmeldelink, oder über Single Sign-on, wenn das Konto keinen anderen Weg hat. Schlüssel und Agenten brauchen das nie: Einem Agenten ein sensibles Recht zu geben, erfordert stattdessen eine kürzliche Anmeldung.
 
 `GET me/sign-in-again` nennt, wie das Konto bestätigen kann: `password`, `magic_link` und `set_password`, wenn es noch kein Passwort hat, aber über `POST auth/password-reset` eines festlegen kann. Nur wenn alle drei `false` sind, nennt `sso` die Organisationen, mit deren Identitätsanbieter das Konto verknüpft ist. Die Organisation, die das Konto verwaltet, steht zuerst. Verlangt diese Single Sign-on, bestätigt nur ihr Anbieter.
 
@@ -112,7 +114,7 @@ Diese Aktionen verlangen eine kürzliche Anmeldung:
 | Thema | Regel |
 | --- | --- |
 | Format | REST mit JSON: Pfade im Plural in Kebab-Case (`service-accounts`), Felder in `snake_case`. Senden Sie Bodys mit `content-type: application/json`; auf ein Feld, das der Endpunkt nicht kennt, antwortet Kaeso mit 400. |
-| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`. |
+| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`. |
 | Zeiten | RFC 3339, in UTC. Jede Antwort nennt die Zeitzone der Installation in `Kaeso-Time-Zone`, etwa `Europe/Berlin`, die Zone, in der die Konsole Zeiten zeigt. |
 | Geld | US-Dollar als Dezimal-Strings, etwa `"0.0001"`. Senden Sie Preise und Beträge als Dezimal-Strings oder ganze Zahlen; ein JSON-Bruch wie `0.5` erhält 400. |
 | Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget 1.000.000.000 USD. |
@@ -162,8 +164,8 @@ Die Meldung ist ein kurzer Satz für Menschen, und die Konsole zeigt ihn unverä
 | Status | `type` | Wann |
 | --- | --- | --- |
 | 400 | `invalid_request` | Der Body ist kein JSON oder hat ein unbekanntes Feld. Ein Parameter hat den falschen Typ oder die falsche Form, oder ein Wert liegt außerhalb des Bereichs. |
-| 401 | `authentication` | Keine Sitzung und kein Schlüssel, oder einer, der unbekannt, abgelaufen oder beendet ist. |
-| 403 | `permission_denied` | Ein fehlendes Recht, ein Schlüssel auf einer Route, die er nicht nutzen kann, ein fehlendes `Origin` oder eine Richtlinie der Organisation. |
+| 401 | `authentication` | Keine Sitzung, kein Schlüssel und kein Agenten-Token, oder eines davon ist unbekannt, abgelaufen oder beendet. |
+| 403 | `permission_denied` | Ein fehlendes Recht, ein Schlüssel oder ein Agent auf einer Route, die er nicht nutzen kann, ein fehlendes `Origin` oder eine Richtlinie der Organisation. Außerdem eine Installation oder Organisation, die keine Agenten zulässt. |
 | 403 | `recent_sign_in_required` | Die Aktion verlangt eine [kürzliche Anmeldung](#kürzliche-anmeldung). |
 | 403 | `other_sign_in_required` | Die Sitzung stammt aus dem Single Sign-on einer Organisation, die das Konto nicht verwaltet, und die Aktion liegt außerhalb dieser Organisation; oder sie stammt aus Single Sign-on, und die Aktion gehört zur Verwaltung der Instanz, außer aus der Organisation, die für Instanz-Admins gewählt ist. Melden Sie sich mit einem Passwort oder einem Anmeldelink an. |
 | 404 | `not_found` | Den Pfad gibt es nicht, oder das Gesuchte gibt es nicht oder der Aufrufer kann es nicht sehen. |
@@ -184,10 +186,13 @@ Die Routen sind relativ zu `/platform/v1`. [`openapi.json`](#openapi-dokument) n
 | Pfade | Enthält |
 | --- | --- |
 | `auth/*` | Einrichtung beim ersten Start, Anmeldemethoden, Anmeldung mit Passwort und zweitem Faktor, Anmeldelinks, Passwort-Reset, Single Sign-on, Sitzungen, Registrierung, wo die Instanz die Adresse zulässt, und Einladungen. `auth/session` liefert den Benutzer, seine Mitgliedschaften mit Rollen und Rechten, die Organisation, die das Konto verwaltet (`managed_by`), und ob er Organisationen erstellen darf (`can_create_orgs`). |
-| `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel und Benachrichtigungen, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
+| `me`, `me/*` | Ihr Profil, Bild und Sprache (`locale`: `auto`, `en`, `de` oder `zh-CN`), E-Mail-Adresse, Passwort, Zwei-Faktor-Authentifizierung und Wiederherstellungscodes. Außerdem Ihre Sitzungen, Mitgliedschaften, Schlüssel, Benachrichtigungen und Agenten, das Erstellen einer Organisation und das Löschen Ihres Kontos. |
 | `orgs/{org}/*` | Die Organisation und ihr Bild, Mitglieder, Einladungen, Rollen und Rechte sowie Projekte. Außerdem die Anbieter, die Kaeso aufruft, Anbieter-Schlüssel, Sicherheitseinstellungen, Plattform-Schlüssel, Protokolleinstellungen und Speicher, Nutzung, das Audit-Log, Inhaberwechsel, Löschen und Wiederherstellen. |
 | `orgs/{org}/projects/{project}/*` | Das Projekt und sein Bild, Mitglieder mit ihrem Modellzugriff, Dienstkonten, Schlüssel mit ihren Modellen und Limits und die Schlüsselrichtlinie. Außerdem der Katalog und Aliasse, Limits, Inhaltsprotokollierung, Anfrageprotokolle und Exporte, Nutzung, das Audit-Log und der [Playground](#playground). |
-| `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen und die Organisation, deren Single Sign-on die Instanz verwalten darf (`instance/settings/admin-sso`), der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
+| `instance/*` | Für Instanz-Admins: Benutzer, Organisationen, Instanzeinstellungen und die Organisation, deren Single Sign-on die Instanz verwalten darf (`instance/settings/admin-sso`), die Agenten-Richtlinie, der Abgleich mit models.dev, Systemzustand und Speicher, Updates und das Audit-Log der Instanz. |
+| `orgs/{org}/agents`, `orgs/{org}/security/agents`, `me/agents/*`, `me/agent-requests/*` | Agenten, ihre Rechte und die Agenten-Richtlinien, getaggt mit `agents` ([Routen](mcp.md#routen-der-platform-api)). |
+
+Die meisten Routen unter `instance/*` nennen in `openapi.json` ein `instance.*`-Recht. Die Sitzung eines Instanz-Admins hat jedes davon, und der Agent eines Instanz-Admins braucht jedes eigens vergeben ([Instanzrechte](../concepts/rights.md#instanzrechte)). Jemanden zum Instanz-Admin machen, `instance/settings/admin-sso`, die Agenten-Richtlinie setzen und einen Benutzer oder eine Organisation sofort löschen gehen nur mit einer Sitzung. Ebenso nennen Routen unter `me/*`, die Agenten nutzen können, ein `account.*`-Recht, das eine Sitzung nicht braucht ([Kontorechte](../concepts/rights.md#kontorechte)).
 
 Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, auch den Admin selbst; so gelangt ein Instanz-Admin in eine Organisation, um sie zu verwalten. Das Audit-Log der Organisation hält das fest.
 

@@ -28,6 +28,11 @@ macro_rules! actions {
 // Spelled as a constant because the console's test reads the action names from this list.
 actions! {
     pub const ACTIONS = [
+        AgentAuthorize = "agent.authorize",
+        AgentOrgAccessRevoke = "agent.org_access_revoke",
+        AgentRevoke = "agent.revoke",
+        AgentRightsUpdate = "agent.rights_update",
+        AgentUpdate = "agent.update",
         AliasCreate = "alias.create",
         AliasDelete = "alias.delete",
         AliasUpdate = "alias.update",
@@ -47,6 +52,7 @@ actions! {
         CustomProviderDelete = "custom_provider.delete",
         CustomProviderUpdate = "custom_provider.update",
         InstanceAdminSsoUpdate = "instance.admin_sso_update",
+        InstanceAgentsPolicy = "instance.agents_policy",
         InstanceInvite = "instance.invite",
         InstanceSettingsUpdate = "instance.settings_update",
         InstanceSetup = "instance.setup",
@@ -103,6 +109,7 @@ actions! {
         RoleCreate = "role.create",
         RoleDelete = "role.delete",
         RoleUpdate = "role.update",
+        SecurityAgentsPolicy = "security.agents_policy",
         SecurityKeyPolicy = "security.key_policy",
         SecurityRequire2fa = "security.require_2fa",
         SecurityRequireSso = "security.require_sso",
@@ -197,7 +204,9 @@ impl Event<'_> {
     }
 
     pub async fn write(self, db: &mut sqlx::PgConnection) -> ApiResult<()> {
+        let agent_id = self.ctx.agent().map(|a| a.agent.id);
         let (actor_kind, actor_id) = match (&self.actor, &self.ctx.caller) {
+            (_, Caller::Agent(a)) => ("agent", Some(a.user_id())),
             (Some(user), _) => ("user", Some(user.uuid())),
             (None, Caller::Session(s)) => ("user", Some(s.user_id)),
             (None, Caller::ProjectKey(k)) => ("api_key", Some(k.id)),
@@ -212,6 +221,7 @@ impl Event<'_> {
                 project_id: self.project.map(|p| p.uuid()),
                 actor_kind,
                 actor_id,
+                agent_id,
                 action: self.action.as_str(),
                 target_kind: self.target.as_ref().map(|(k, _)| *k),
                 target_id: self.target.as_ref().map(|(_, id)| id.as_str()),
@@ -277,6 +287,7 @@ pub async fn system_event(
             project_id: None,
             actor_kind: "system",
             actor_id: None,
+            agent_id: None,
             action: action.as_str(),
             target_kind: target.as_ref().map(|(k, _)| *k),
             target_id: target.as_ref().map(|(_, id)| id.as_str()),

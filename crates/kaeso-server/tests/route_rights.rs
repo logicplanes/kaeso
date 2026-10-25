@@ -59,6 +59,7 @@ fn routes() -> Vec<Route> {
             let Some(right) = op["x-kaeso-access"]
                 .as_str()
                 .and_then(|a| a.strip_prefix("right:"))
+                .filter(|r| r.parse::<OrgRight>().is_ok() || r.parse::<ProjectRight>().is_ok())
             else {
                 continue;
             };

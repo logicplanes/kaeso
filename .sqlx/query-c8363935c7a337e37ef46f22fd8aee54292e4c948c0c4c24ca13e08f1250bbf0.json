@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE agents SET last_used_at = $2 WHERE id = $1 AND (last_used_at IS NULL OR last_used_at < $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c8363935c7a337e37ef46f22fd8aee54292e4c948c0c4c24ca13e08f1250bbf0"
+}

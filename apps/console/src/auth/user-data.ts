@@ -4,6 +4,7 @@ import { forget } from "~/shell/session-memory";
 import { writeStored } from "~/storage";
 
 export const INVITE_KEY = "kaeso:invite";
+export const AGENT_REQUEST_KEY = "kaeso:agent-request";
 
 const DRAFT_PREFIX = "kaeso:playground-draft:";
 
@@ -22,5 +23,6 @@ function storedDrafts(): string[] {
 export function forgetUserData(): void {
   for (const key of [RECENT_KEY, LAST_PLACE_KEY, ...storedDrafts()]) writeStored(key, null);
   writeStored(INVITE_KEY, null, "session");
+  writeStored(AGENT_REQUEST_KEY, null, "session");
   forget(PLAYGROUND_CONVERSATION);
 }

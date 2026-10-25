@@ -58,6 +58,12 @@ async fn create_key(
     ensure_active(ctx, KEYS_ARCHIVED)?;
     let name = validate_name(&req.name)?;
     let (inference, platform) = req.access.flags();
+    if inference
+        && ctx.agent().is_some()
+        && !ctx.project()?.rights.contains(ProjectRight::ApiRequest)
+    {
+        return Err(ApiError::PermissionDenied(AGENT_CALLS_MODELS.into()));
+    }
     if platform {
         if !matches!(ctx.caller, Caller::Session(_)) {
             return Err(ApiError::PermissionDenied(
@@ -355,6 +361,11 @@ fn may_enable(ctx: &Ctx, disabler: Option<&keys::Disabler>, holder: Holder) -> A
         Holder::Manager => Ok(()),
     }
 }
+
+// A key calls models with its holder's rights, so an agent without `api.request` could otherwise
+// mint itself access to models it may not call.
+const AGENT_CALLS_MODELS: &str =
+    "An agent needs `api.request` in this project to create keys that call models.";
 
 pub(crate) const PERSON_DISABLED: &str =
     "A person disabled this key, so only a person can enable it; use a console session.";

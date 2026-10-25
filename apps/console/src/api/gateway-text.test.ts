@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { apply, load, type Locale } from "~/i18n";
 import englishErrors from "~/i18n/locales/en/errors.json";
+import { agentRightIds } from "./vocabulary-agents";
 
 let fetchMock: Mock = vi.fn();
 vi.stubGlobal("fetch", (...args: unknown[]) => fetchMock(...args) as unknown);
@@ -229,5 +230,7 @@ describe("the gateway's words in its answers", () => {
       expect(description, id).toBeTruthy();
     }
     expect(knownRights()).toHaveLength(66);
+    for (const id of agentRightIds()) expect(rightEnglish(id)[0], id).toBeTruthy();
+    expect(agentRightIds()).toHaveLength(16);
   });
 });

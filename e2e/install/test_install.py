@@ -174,6 +174,20 @@ def test_a_fresh_install_serves_both_sdks_and_records_usage(install, owner):
     poll(recorded, "two log entries and their usage", seconds=30)
 
 
+def test_agents_reach_the_mcp_server_and_its_sign_in_through_the_proxy(install):
+    resource = httpx.get(f"{install.url}/.well-known/oauth-protected-resource/mcp", timeout=10)
+    assert resource.status_code == 200
+    assert resource.json()["resource"] == f"{install.url}/mcp"
+    server = httpx.get(f"{install.url}/.well-known/oauth-authorization-server", timeout=10)
+    assert server.json()["registration_endpoint"] == f"{install.url}/oauth/register"
+    mcp = httpx.post(f"{install.url}/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "ping"}, timeout=10)
+    assert mcp.status_code == 401
+    assert "resource_metadata=" in mcp.headers["www-authenticate"]
+    consent = httpx.get(f"{install.url}/authorize", timeout=10)
+    assert consent.status_code == 200
+    assert "text/html" in consent.headers["content-type"]
+
+
 def test_the_gateway_reads_a_master_key_file_only_its_own_user_can_read(install):
     assert (install.work / "master-keys").stat().st_mode & 0o777 == 0o400
     assert (install.work / ".env").stat().st_mode & 0o777 == 0o600

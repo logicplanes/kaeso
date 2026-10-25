@@ -4,15 +4,17 @@ use axum::Router;
 use axum::middleware;
 
 use crate::state::AppState;
-use crate::{health, http, model_api, platform};
+use crate::{health, http, mcp, model_api, platform};
 
 pub fn router(state: AppState) -> Router {
     let (platform, _) = platform::router(&state);
+    let in_process = platform.clone().with_state(state.clone());
     let origins = state.config.cors.origins.clone();
     let router = Router::new()
         .merge(health::router())
         .merge(model_api::router())
         .merge(platform)
+        .merge(mcp::router(&state, in_process))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
             http::metrics::middleware,
