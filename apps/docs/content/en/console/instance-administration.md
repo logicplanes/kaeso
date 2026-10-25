@@ -75,7 +75,7 @@ Only an instance admin's console session changes the policy; no agent can. An ag
 **Updates** shows the version the install runs and the newest Kaeso release, with the notes of every release since. A **New** mark beside **Updates** in the settings sidebar says that a newer release is out. The gateway looks for releases every 5 minutes, and the page says when a check failed.
 
 - **Releases** offers stable releases only, or pre-releases too. Only the gateway's [configuration](../self-hosting/configuration.md) turns the check off, for installs without internet access.
-- With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone.
+- With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone. A new major version, or a release with steps by hand, waits for you.
 - **Update to …** updates the install after you confirm, in either mode, and follows each step until Kaeso is back.
 - Without the updater, or for a release that needs steps by hand, the page shows the commands and the upgrade guide.
 

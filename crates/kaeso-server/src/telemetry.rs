@@ -67,8 +67,6 @@ pub fn init_metrics() -> Result<PrometheusHandle, TelemetryError> {
 
 #[cfg(test)]
 mod tests {
-    #![allow(clippy::unwrap_used)]
-
     use super::*;
 
     #[test]

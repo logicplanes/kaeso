@@ -46,7 +46,7 @@ Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben 
 
 Exportieren erfordert das Recht **Protokolle exportieren**, mit Inhalt zusätzlich **Prompts und Ausgaben ansehen**.
 
-In CSV setzt Kaeso jeden Textwert in doppelte Anführungszeichen. Ein `'` setzt es vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Dasselbe gilt für einen Wert mit `;`, `|` oder einem Tabulator und nach einem solchen Trennzeichen, wenn eines dieser Zeichen folgt. Eine Tabellenkalkulation zeigt den Wert dann als Text, an welchem Trennzeichen sie auch teilt.
+In CSV setzt Kaeso jeden Textwert in doppelte Anführungszeichen. Ein `'` setzt es vor jeden Wert, der mit `=`, `+`, `-`, `@`, einem Tabulator oder einem Wagenrücklauf beginnt. Dasselbe gilt für einen Wert mit `;`, `|` oder einem Tabulator und nach einem solchen Trennzeichen, wenn eines dieser Zeichen folgt. Eine Tabellenkalkulation zeigt den Wert dann als Text, statt ihn als Formel auszuführen, an welchem Trennzeichen sie auch teilt.
 
 ## Aufbewahrung
 
@@ -64,13 +64,13 @@ Ein Projekt kann die Inhaltsprotokollierung für sich in seinen **Einstellungen*
 
 ## Protokolle löschen
 
-Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation aufbewahrt und wie viel Platz sie je Projekt belegen.
+Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation aufbewahrt und wie viel Platz sie je Projekt belegen. Er und der Tab **Löschungen** erfordern das Recht **Protokollspeicher ansehen**.
 
 1. Wählen Sie auf dem Tab **Löschungen** **Protokolle löschen**.
 2. Wählen Sie ganze UTC-Tage und alle Projekte oder eines.
 3. Geben Sie zur Bestätigung `delete` ein.
 
-Kaeso löscht die Protokolle dieser Tage endgültig und behält Nutzung und Kosten. Die Liste zeigt jede Löschung als **In Warteschlange** oder **Erledigt**, und höchstens 10 Löschungen warten zugleich. Löschen erfordert das Recht **Protokolle löschen** und eine kürzliche Anmeldung.
+Kaeso löscht die Protokolle dieser Tage endgültig und behält Nutzung und Kosten. Die Liste zeigt jede Löschung als **In Warteschlange** oder **Erledigt**, und höchstens 10 Löschungen warten zugleich. Sie listet auch die Löschungen, die eine kürzere Aufbewahrung startet, als **Kürzere Aufbewahrung der Metadaten** oder **Kürzere Aufbewahrung der Inhalte**. Eine Löschung, die fehlgeschlagen ist und erneut laufen wird, zeigt „Neuer Versuch:“ und den Fehler. Löschen erfordert das Recht **Protokolle löschen** und eine kürzliche Anmeldung.
 
 ## Nächste Schritte
 

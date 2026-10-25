@@ -85,7 +85,7 @@ gh stack submit
 
 网关有自己的附加规则，例如不允许 panic、金额不使用浮点数（[网关规则](architecture/gateway.md#规则)）。KPP 也是如此（[设计原则](kpp/index.md#设计原则)）。
 
-仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs` 和 `apps/showcase` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。
+仓库根目录以及 `crates`、`packages`、`apps/console`、`apps/docs` 和 `apps/showcase` 各有一个 `AGENTS.md`，概括该部分的规则和检查，供编码代理和人阅读。`packages/ui/AGENTS.md` 收录用 UI 库构建界面的应用须遵守的规则，并随该库的 npm 包一起发布。
 
 ## 添加依赖
 
@@ -95,7 +95,7 @@ Kaeso 采用 MIT 许可证，它发布的所有内容都只依赖宽松许可证
 
 | 发布的内容 | 允许的许可证 | 检查方式 |
 | --- | --- | --- |
-| 网关和更新器 | `deny.toml` 中的列表：MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、Unicode 和 Zlib | `cargo deny check` |
+| 网关和更新器 | `deny.toml` 中的列表：MIT、MIT-0、Apache-2.0、Apache-2.0 WITH LLVM-exception、BSD-2-Clause、BSD-3-Clause、ISC、Unicode 和 Zlib | `cargo deny check` |
 | `kaeso-kpp`、`kaeso-codecs` | 同一列表，没有例外 | `cargo deny --manifest-path crates/kaeso-codecs/Cargo.toml check` |
 | UI 库、控制台和文档 | MIT、ISC、BSD-2-Clause、BSD-3-Clause、Apache-2.0 和 0BSD | `pnpm build` 之后运行 `pnpm licenses:check` |
 

@@ -105,9 +105,9 @@ In einer Sitzung verlangen einige Aktionen eine Anmeldung innerhalb der letzten 
 
 Diese Aktionen verlangen eine kürzliche Anmeldung:
 
-- **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
-- **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, die Zwei-Faktor-Authentifizierung abschalten, neue Wiederherstellungscodes erstellen und das Konto löschen.
-- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen. Die Wahl von Single Sign-on für Instanz-Admins verlangt ebenfalls eine, und nur ein Passwort oder ein Anmeldelink bestätigt sie.
+- **In Organisationen und Projekten:** die Rechte, die in `orgs/{org}/rights` das Kennzeichen `recent_sign_in` tragen. Das sind `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `providers.custom.manage`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` und `keys.platform_access.grant`.
+- **Im eigenen Konto:** die E-Mail-Adresse ändern, ein Passwort setzen, wenn das Konto keines hat, und das Konto löschen. Ebenso die Zwei-Faktor-Authentifizierung einrichten oder abschalten, neue Wiederherstellungscodes erstellen und Single Sign-on verknüpfen oder die Verknüpfung lösen.
+- **Für Instanz-Admins:** die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern, automatische Updates wählen, ein Update anwenden und eine Organisation zur Löschung vormerken oder löschen. Ebenso jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen. Die Wahl von Single Sign-on für Instanz-Admins verlangt ebenfalls eine, und nur ein Passwort oder ein Anmeldelink bestätigt sie.
 
 ## Konventionen
 
@@ -119,9 +119,9 @@ Diese Aktionen verlangen eine kürzliche Anmeldung:
 | Geld | US-Dollar als Dezimal-Strings, etwa `"0.0001"`. Senden Sie Preise und Beträge als Dezimal-Strings oder ganze Zahlen; ein JSON-Bruch wie `0.5` erhält 400. |
 | Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget 1.000.000.000 USD. |
 | Erstellen | `POST` auf die Sammlung, beantwortet mit 201 und der neuen Ressource. |
-| Ändern | `PATCH` nur mit den zu ändernden Feldern. |
+| Ändern | `PATCH` nur mit den zu ändernden Feldern. `PUT` setzt einen ganzen Wert, etwa ein Bild, eine Schlüsselrichtlinie oder die SSO-Verbindung. |
 | Aktionen | `POST …/archive`, `…/disable`, `…/enable`, `…/replace` oder `…/restore`. Archivieren behält den Datensatz. |
-| Löschen | `DELETE`, nur wo wirklich etwas gelöscht wird: Anbieter-Schlüssel, Aliasse, Katalogmodelle, Limits, eigene Rollen, Sitzungen, Einladungen und Ihr Konto. |
+| Löschen | `DELETE` entfernt etwas, etwa einen Anbieter-Schlüssel, ein Mitglied, ein Bild oder Ihr Konto. `DELETE orgs/{org}` merkt die Organisation dagegen nur zur Löschung vor. |
 | Audit | Jede Änderung wird in derselben Transaktion in das Audit-Log ihrer Ebene geschrieben. |
 | Anfrage-IDs | Jede Antwort trägt `kaeso-request-id`. |
 
@@ -137,7 +137,7 @@ Auf der letzten Seite ist `next_cursor` `null`.
 
 ### Revisionen
 
-Katalogmodelle und Limits tragen eine `revision`, die mit jeder Änderung steigt. Lesen, Erstellen oder Ändern antwortet mit `ETag: "<revision>"`. Senden Sie dieses Tag mit `PATCH` oder `DELETE` in `If-Match` zurück, um nur die gelesene Revision zu ändern. Hat sich der Eintrag inzwischen geändert, antwortet Kaeso mit `412 conflict`; ohne `If-Match` gilt die Änderung für die aktuelle Revision.
+Katalogmodelle, Limits und eigene Anbieter tragen eine `revision`, die mit jeder Änderung steigt. Lesen, Erstellen oder Ändern antwortet mit `ETag: "<revision>"`. Senden Sie dieses Tag mit `PATCH` oder `DELETE` in `If-Match` zurück, um nur die gelesene Revision zu ändern. Hat sich der Eintrag inzwischen geändert, antwortet Kaeso mit `412 conflict`; ohne `If-Match` gilt die Änderung für die aktuelle Revision.
 
 ### Zur Löschung vorgemerkte Organisationen
 
@@ -196,7 +196,7 @@ Die meisten Routen unter `instance/*` nennen in `openapi.json` ein `instance.*`-
 
 Instanz-Admins sehen die Metadaten jeder Organisation, nie ihre Inhalte. Sie erstellen, benennen um, merken zur Löschung vor, stellen wieder her und löschen Organisationen unter `instance/orgs`. `POST instance/orgs/{org}/owner` macht jeden aktiven Benutzer zum Inhaber, auch den Admin selbst; so gelangt ein Instanz-Admin in eine Organisation, um sie zu verwalten. Das Audit-Log der Organisation hält das fest.
 
-Nur Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers zurück, mit `POST instance/users/{user}/reset-2fa`. Abrechnungsrouten gibt es nicht: Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
+Instanz-Admins setzen die Zwei-Faktor-Authentifizierung eines Benutzers mit `POST instance/users/{user}/reset-2fa` zurück, Betreiber auf dem Server mit `kaeso user reset-2fa` ([Jemand hat seinen zweiten Faktor verloren](../self-hosting/troubleshooting.md#jemand-hat-seinen-zweiten-faktor-verloren)). Abrechnungsrouten gibt es nicht: Die Rechte `billing.view` und `billing.manage` sind für Kaeso Cloud und tragen in `orgs/{org}/rights` das Kennzeichen `cloud_only`.
 
 `GET orgs/{org}/providers` braucht `org.view` und listet jeden Anbieter, den Kaeso aufruft, in jeder Organisation gleich. Jeder Anbieter hat:
 

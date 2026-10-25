@@ -105,9 +105,9 @@ In a session, some actions need a sign-in within the last 15 minutes. Otherwise 
 
 These actions need a recent sign-in:
 
-- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
-- **In your account:** changing your email, setting a password when the account has none, turning off two-factor authentication, creating new recovery codes and deleting the account.
-- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
+- **In organizations and projects:** the rights flagged `recent_sign_in` in `orgs/{org}/rights`. These are `org.delete`, `org.ownership.transfer`, `provider_credentials.create`, `provider_credentials.replace`, `providers.custom.manage`, `security.sso.manage`, `security.sso.require`, `security.2fa.require`, `platform_keys.create`, `logs.delete` and `keys.platform_access.grant`.
+- **In your account:** changing your email, setting a password when the account has none, and deleting the account. Setting up or turning off two-factor authentication, creating new recovery codes, and linking or unlinking single sign-on need one too.
+- **For instance admins:** changing account creation, organization creation or the allowed domains, choosing automatic updates, applying an update, and scheduling an organization for deletion or deleting it. Making someone an instance admin or removing it, deleting a user, resetting a user's two-factor authentication and appointing an organization's owner need one too. Choosing single sign-on for instance admins needs one too, and only a password or a sign-in link confirms it.
 
 ## Conventions
 
@@ -119,9 +119,9 @@ These actions need a recent sign-in:
 | Money | US dollars as decimal strings, such as `"0.0001"`. Send prices and amounts as decimal strings or whole numbers; a JSON fraction such as `0.5` gets 400. |
 | Limit amounts | At most 10^12 requests or tokens, or 1,000,000,000 USD for a spend budget. |
 | Create | `POST` on the collection, answered with 201 and the new resource. |
-| Update | `PATCH` with only the fields to change. |
+| Update | `PATCH` with only the fields to change. `PUT` sets one whole value, such as a picture, a key policy or the SSO connection. |
 | Actions | `POST …/archive`, `…/disable`, `…/enable`, `…/replace` or `…/restore`. Archiving keeps the record. |
-| Delete | `DELETE`, only where something is really deleted: provider keys, aliases, catalogue models, limits, custom roles, sessions, invitations and your account. |
+| Delete | `DELETE` removes something, such as a provider key, a member, a picture or your account. `DELETE orgs/{org}` schedules the organization for deletion instead. |
 | Audit | Every change is written to the audit log of its level, in the same transaction. |
 | Request ids | Every answer carries `kaeso-request-id`. |
 
@@ -137,7 +137,7 @@ A list takes `limit`, from 1 to 100 with a default of 20, and `after`, the `next
 
 ### Revisions
 
-Catalogue models and limits carry a `revision` that goes up with every change. Reading, creating or changing one answers with `ETag: "<revision>"`. Send that tag back in `If-Match` with `PATCH` or `DELETE` to change only the revision you read. If the entry changed since, Kaeso answers `412 conflict`; without `If-Match`, the change applies to the current revision.
+Catalogue models, limits and custom providers carry a `revision` that goes up with every change. Reading, creating or changing one answers with `ETag: "<revision>"`. Send that tag back in `If-Match` with `PATCH` or `DELETE` to change only the revision you read. If the entry changed since, Kaeso answers `412 conflict`; without `If-Match`, the change applies to the current revision.
 
 ### Organizations scheduled for deletion
 
@@ -196,7 +196,7 @@ Most routes under `instance/*` name an `instance.*` right in `openapi.json`. An 
 
 Instance admins see every organization's metadata, never its content. They create, rename, schedule for deletion, restore and delete organizations under `instance/orgs`. `POST instance/orgs/{org}/owner` makes any active user an owner, the admin included, which is how an instance admin gets in to manage an organization. The organization's audit log records it.
 
-Only instance admins reset a user's two-factor authentication, with `POST instance/users/{user}/reset-2fa`. There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
+Instance admins reset a user's two-factor authentication with `POST instance/users/{user}/reset-2fa`, and operators on the server with `kaeso user reset-2fa` ([someone lost their second factor](../self-hosting/troubleshooting.md#someone-lost-their-second-factor)). There are no billing routes: the rights `billing.view` and `billing.manage` are for Kaeso Cloud, flagged `cloud_only` in `orgs/{org}/rights`.
 
 `GET orgs/{org}/providers` needs `org.view` and lists every provider Kaeso calls, the same in every organization. Each provider has:
 

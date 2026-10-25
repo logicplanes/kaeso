@@ -44,7 +44,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 
 | Crate | Aufgabe |
 | --- | --- |
-| `kaeso` | Das Binary: seine Befehlszeile (`serve`, `migrate`, `master-key`, `user`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` nutzen darf |
+| `kaeso` | Das Binary: seine Befehlszeile (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), Start und Herunterfahren. Das einzige Crate, das `anyhow` nutzen darf |
 | `kaeso-server` | Die Router für `/v1`, `/platform/v1`, `/mcp`, Health und Metriken, mit Extraktoren, Fehlerzuordnung, dem OpenAPI-Dokument, CSRF-Prüfungen, Anfrage-IDs und Größenlimits. Außerdem die Services hinter beiden APIs, die Konfiguration, Hintergrund-Jobs und Telemetrie |
 | `kaeso-core` | Fachregeln ohne I/O: IDs, Rechte und Rollen, das Schlüsselformat, die Modellauflösung, der Katalog, Fähigkeiten, Limits, Kosten und der Assembler für Stream-Antworten. `data/` enthält die Modelldaten, die jedes Release mitliefert |
 | `kaeso-store` | PostgreSQL über sqlx, ClickHouse, die Valkey-Verbindungen (eine für Limitprüfungen und Zähler, zwei für Cache-Einträge und aufbewahrtes Reasoning) mit der Cache-Invalidierung und die Migrationen beider Datenbanken |

@@ -64,10 +64,11 @@ Then run these for the parts you changed:
 
 `pnpm --filter <package> <script>` runs one package's script. The packages are `kaeso-console`, `kaeso-docs`, `kaeso-showcase`, `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens`. After you change a library, run `pnpm build:packages` before a filtered run. Each package's coverage thresholds are in its `vitest.config.ts`, and they only ever go up.
 
-Playwright needs Chromium, installed once:
+Playwright needs Chromium, and the showcase's suite also WebKit, installed once:
 
 ```bash
 pnpm --filter kaeso-console exec playwright install chromium
+pnpm --filter kaeso-showcase exec playwright install webkit
 ```
 
 ### The console
@@ -93,7 +94,7 @@ The unit tests and the end-to-end suite use the fixture pages in `apps/docs/e2e/
 
 Component tests run in happy-dom with Testing Library. The showcase has no unit tests.
 
-The showcase's end-to-end suite runs Playwright against its production build, so run `pnpm build` first. It checks accessibility with axe in both themes, and the keyboard and focus rings. It also checks the tokens' type scale, motion and geometry, every component page at phone width, the German and Chinese pages, and the sitemap and page heads.
+The showcase's end-to-end suite runs Playwright against its production build, so run `pnpm build` first. It checks accessibility with axe in both themes, and the keyboard and focus rings. It also checks the tokens' type scale, motion and geometry, every component page at phone width, the German and Chinese pages, and the sitemap and page heads. Its test of the navigation sheet runs in WebKit too.
 
 ## Rust
 
@@ -292,7 +293,7 @@ The one required check is **CI**. It passes when **Changes** and **Comments** pa
 | TypeScript libraries | `pnpm build:packages`, once for every job that needs the libraries |
 | TypeScript test | `pnpm test`, one job per workspace, the console's in six shards whose coverage is merged and checked in one more job |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check` |
-| End-to-end console, docs and showcase | Each package's `e2e`, the console's in five parts and the showcase's in shards, its accessibility checks in shards of their own |
+| End-to-end console, docs and showcase | Each package's `e2e`, the console's in five parts and the showcase's in shards, its accessibility checks in shards of their own and its WebKit test in one job of its own |
 | TypeScript dependencies | `pnpm audit --prod --audit-level high` |
 
 When an end-to-end shard fails, the job **End-to-end console report** or **End-to-end showcase report** merges the shards' results into one HTML report, the artifact `playwright-console` or `playwright-showcase`.

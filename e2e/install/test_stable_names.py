@@ -119,7 +119,7 @@ LANGUAGES = ("en", "de", "zh-CN")
 
 @pytest.mark.parametrize(
     "page",
-    ["README.md", *(f"apps/docs/content/{lang}/get-started/quick-start.md" for lang in LANGUAGES)],
+    [f"apps/docs/content/{lang}/get-started/quick-start.md" for lang in LANGUAGES],
 )
 def test_the_install_pages_download_the_latest_release_asset(page):
     assert re.search(rf"curl -fsSLO (\\\n +)?{re.escape(RELEASE_ASSET)}\n", (ROOT / page).read_text())

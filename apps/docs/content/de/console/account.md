@@ -76,10 +76,10 @@ Ein Agent hört auf zu funktionieren, wenn er abläuft, nach 90 Tagen ohne Nutzu
 
 Manche Aktionen verlangen eine Anmeldung innerhalb der letzten 15 Minuten. Ist Ihre älter, bittet die Konsole Sie, sich erneut anzumelden, bevor sie die Aktion ausführt. Eine Anmeldung über Single Sign-on zählt ab dem Zeitpunkt, zu dem Ihr Identitätsanbieter Sie zuletzt geprüft hat, und der kann lange vor der Rückkehr zu Kaeso liegen.
 
-- In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, die Zwei-Faktor-Authentifizierung ausschalten, Wiederherstellungscodes neu erzeugen und das Konto löschen.
+- In Ihrem Konto: die E-Mail-Adresse ändern, ein Passwort festlegen, wenn Sie keines haben, und das Konto löschen. Ebenso die Zwei-Faktor-Authentifizierung einrichten oder ausschalten, Wiederherstellungscodes neu erzeugen sowie **Verknüpfen** und **Trennen** unter **Single Sign-on**.
 - In einer Organisation: die Aktionen, deren Recht laut [Rechte](../concepts/rights.md) eine kürzliche Anmeldung erfordert, etwa Anbieter-Schlüssel hinzufügen, Plattform-Schlüssel erstellen oder Protokolle löschen.
 - Für Ihre Agenten: einem davon ein mit ⚠ gekennzeichnetes, sensibles Recht geben ([Agenten](../concepts/rights.md#sensible-rechte)).
-- Als Instanz-Admin: jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen.
+- Als Instanz-Admin: jemanden zum Instanz-Admin machen oder das zurücknehmen, einen Benutzer löschen, die Zwei-Faktor-Authentifizierung eines Benutzers zurücksetzen und einen Inhaber einer Organisation einsetzen. Ebenso eine Organisation zur Löschung vormerken, **Jetzt löschen**, **Auf … aktualisieren**, **Automatisch** für Updates wählen und die Kontoerstellung, die Organisationserstellung oder die erlaubten Domains ändern. **Single Sign-on für Instanz-Admins** verlangt eine Anmeldung mit Passwort oder Anmeldelink.
 
 Die Konsole fragt nach Ihrem Passwort oder sendet einen Anmeldelink oder einen Link, um ein Passwort festzulegen. Nur wenn Ihr Konto nichts davon hat, etwa weil die Organisation, die es verwaltet, Single Sign-on verlangt, bestätigt sie über Ihren Identitätsanbieter.
 
