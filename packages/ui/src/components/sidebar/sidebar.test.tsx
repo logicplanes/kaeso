@@ -23,15 +23,16 @@ describe("Sidebar", () => {
       </Sidebar.Provider>,
     );
     const content = screen.getByTestId("content");
-    const footer = screen.getByTestId("footer");
-    expect(footer).not.toHaveClass("hairline-t-strong");
+    const root = screen.getByRole("navigation", { name: "Console" });
+    expect(screen.getByTestId("footer")).toHaveClass("group-data-scrolled-under/sidebar:hairline-t-strong");
+    expect(root).not.toHaveAttribute("data-scrolled-under");
     Object.defineProperty(content, "scrollHeight", { configurable: true, value: 900 });
     Object.defineProperty(content, "clientHeight", { configurable: true, value: 600 });
     fireEvent.scroll(content);
-    expect(footer).toHaveClass("hairline-t-strong");
+    expect(root).toHaveAttribute("data-scrolled-under");
     content.scrollTop = 300;
     fireEvent.scroll(content);
-    expect(footer).not.toHaveClass("hairline-t-strong");
+    expect(root).not.toHaveAttribute("data-scrolled-under");
   });
   it("[ collapses and expands the page's sidebar", () => {
     render(
