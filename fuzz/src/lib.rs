@@ -193,8 +193,11 @@ fn reencode(target: DialectId, events: &[StreamEvent]) {
     let _ = encoder.finish();
 }
 
-fn parse<'a>(chunks: impl IntoIterator<Item = &'a [u8]>) -> Result<Vec<SseItem>, SseError> {
-    let mut parser = SseParser::with_limit(SSE_LIMIT);
+fn parse<'a>(
+    limit: usize,
+    chunks: impl IntoIterator<Item = &'a [u8]>,
+) -> Result<Vec<SseItem>, SseError> {
+    let mut parser = SseParser::with_limit(limit);
     let mut items = Vec::new();
     for chunk in chunks {
         parser.feed_into(chunk, &mut items)?;
@@ -204,16 +207,28 @@ fn parse<'a>(chunks: impl IntoIterator<Item = &'a [u8]>) -> Result<Vec<SseItem>,
 }
 
 pub fn sse(data: &[u8]) {
-    let whole = parse([data]);
-    let chunked = parse(data.chunks(chunk_size(data)));
+    let whole = parse(SSE_LIMIT, [data]);
+    let chunked = parse(SSE_LIMIT, data.chunks(chunk_size(data)));
     assert_eq!(whole, chunked);
-    let bytewise = parse(data.chunks(1));
+    let bytewise = parse(SSE_LIMIT, data.chunks(1));
     assert_eq!(whole, bytewise);
     if let Ok(items) = whole {
         let mut written = Vec::new();
         for item in &items {
             write_item(&mut written, item);
         }
-        assert_eq!(parse([written.as_slice()]), Ok(items));
+        let limit = SSE_LIMIT.max(written.len());
+        assert_eq!(parse(limit, [written.as_slice()]), Ok(items));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_event_just_under_the_limit_round_trips_although_writing_it_adds_a_colon_to_every_line() {
+        let data = "{\n".repeat((SSE_LIMIT - 2) / 2);
+        sse(data.as_bytes());
     }
 }
