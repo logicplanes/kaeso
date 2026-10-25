@@ -406,6 +406,8 @@ pub(super) fn encode_messages(
                 Block::Reasoning(r)
                     if reasoning_replayable(r, target)
                         && super::parts::reasoning_sendable(r)
+                        && (names.takes_openai_encrypted_reasoning()
+                            || !super::parts::has_openai_encryption(r))
                         && (!stateless
                             || r.opaque_of(OpaqueKind::OpenAiEncryptedReasoning).is_some()) =>
                 {

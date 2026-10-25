@@ -41,6 +41,12 @@ impl<'a> Names<'a> {
         self.ctx.as_ref().and_then(|c| c.reasoning)
     }
 
+    pub(super) fn takes_openai_encrypted_reasoning(&self) -> bool {
+        self.ctx
+            .as_ref()
+            .is_none_or(|c| c.responses_profile.openai_encrypted_reasoning)
+    }
+
     pub(crate) fn tool_name(&mut self, name: &str) -> String {
         match self.ctx.as_deref_mut() {
             Some(ctx) => crate::wire::rewrite_name(name, valid_tool_name, 64, &mut ctx.tool_names),

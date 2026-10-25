@@ -46,7 +46,8 @@ fn xai(req: &Request) -> EgressCtx {
         .with_responses_profile(
             ResponsesProfile::compatible("SpaceX")
                 .xai_web_search()
-                .without_null_reasoning_content(),
+                .without_null_reasoning_content()
+                .without_openai_encrypted_reasoning(),
         )
 }
 
@@ -986,14 +987,33 @@ fn web_search_fields_xai_has_no_equivalent_for_are_refused() {
 }
 
 #[test]
-fn xai_gets_replayed_reasoning_without_null_content() {
-    let body = codex("codex-developer-resume");
+fn xai_gets_a_gpt_thread_without_openais_encrypted_reasoning() {
+    let refused = codex("reasoning-encrypted");
+    let gpt_reasoning = refused["input"][1].clone();
+    let mut body = codex("codex-model-switch");
+    body["input"]
+        .as_array_mut()
+        .unwrap()
+        .insert(6, gpt_reasoning.clone());
     let req = decode(&body);
+
     let (sent, _) = sent_with(R, &req, xai(&req));
-    let mut want = body["input"][4].clone();
-    want.as_object_mut().unwrap().remove("content");
-    assert_eq!(sent["input"][4], want);
-    assert_eq!(sent["tools"][1], json!({"type": "web_search"}));
+    let without = decode(&codex("codex-model-switch"));
+    assert_eq!(sent, sent_with(R, &without, xai(&without)).0);
+    let (sent, _) = sent_with(R, &req, openai(&req));
+    assert_eq!(sent["input"][6], gpt_reasoning);
+
+    let req = decode(&refused);
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    assert_eq!(
+        sent["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["type"].as_str().unwrap_or("message"))
+            .collect::<Vec<_>>(),
+        ["message", "function_call", "function_call_output"]
+    );
 }
 
 #[test]

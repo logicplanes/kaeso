@@ -206,7 +206,7 @@ A Codex thread that started on a GPT model holds items only OpenAI Responses has
 | `local_shell_call` | `Block::ToolCall` named `local_shell`, its `action` object as the arguments |
 | `local_shell_call_output` | `Block::ToolResult` for the call its `id` names; Codex sends a `function_call_output` instead |
 
-OpenAI and SpaceX get the items as sent: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). An item that doesn't have the shape above stays an unknown block and is refused like one.
+OpenAI and SpaceX get the items as sent: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). GPT's reasoning items are left out for SpaceX, which can't decrypt OpenAI's `encrypted_content` and would refuse the request ([SpaceX](openai-responses.md#spacex)). An item that doesn't have the shape above stays an unknown block and is refused like one.
 
 ## Usage
 
