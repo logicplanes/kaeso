@@ -135,7 +135,7 @@
           "auth"
         ],
         "summary": "Ends this session and clears the cookie.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postAuthLogout",
         "responses": {
           "204": {
@@ -858,7 +858,7 @@
           "auth"
         ],
         "summary": "The signed-in user, this session, and the user's orgs with what this\nsession may do in each.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getAuthSession",
         "responses": {
           "200": {
@@ -909,7 +909,7 @@
           "auth"
         ],
         "summary": "The signed-in user's active sessions, newest first.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getAuthSessions",
         "responses": {
           "200": {
@@ -960,7 +960,7 @@
           "auth"
         ],
         "summary": "Ends every session of the user except this one.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postAuthSessionsRevokeAll",
         "responses": {
           "200": {
@@ -1011,7 +1011,7 @@
           "auth"
         ],
         "summary": "Ends one of the user's sessions.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "deleteAuthSessionsSession",
         "parameters": [
           {
@@ -1305,7 +1305,7 @@
           "instance"
         ],
         "summary": "The instance audit log, newest first.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.audit_log.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceAuditLog",
         "parameters": [
           {
@@ -1367,6 +1367,15 @@
             }
           },
           {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "description": "Not before this time (RFC 3339).",
@@ -1423,9 +1432,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
     "/platform/v1/instance/audit-log/{event}": {
@@ -1434,7 +1446,7 @@
           "instance"
         ],
         "summary": "One event of the instance audit log.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.audit_log.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceAuditLogEvent",
         "parameters": [
           {
@@ -1484,9 +1496,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
     "/platform/v1/instance/models-dev": {
@@ -1495,7 +1510,7 @@
           "instance"
         ],
         "summary": "The models.dev data in use and the last sync.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceModelsDev",
         "responses": {
           "200": {
@@ -1535,9 +1550,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       }
     },
     "/platform/v1/instance/models-dev/sync": {
@@ -1546,7 +1564,7 @@
           "instance"
         ],
         "summary": "Fetches models.dev now (even when periodic sync is off).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.model_sources.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceModelsDevSync",
         "responses": {
           "200": {
@@ -1586,9 +1604,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.model_sources.manage"
       }
     },
     "/platform/v1/instance/orgs": {
@@ -1597,7 +1618,7 @@
           "instance"
         ],
         "summary": "Every org of the install.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceOrgs",
         "parameters": [
           {
@@ -1693,16 +1714,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.view"
       },
       "post": {
         "tags": [
           "instance"
         ],
         "summary": "Creates an org with an owner.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceOrgs",
         "requestBody": {
           "content": {
@@ -1755,9 +1779,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.manage"
       }
     },
     "/platform/v1/instance/orgs/{org}": {
@@ -1766,7 +1793,7 @@
           "instance"
         ],
         "summary": "One org's metadata.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceOrgsOrg",
         "parameters": [
           {
@@ -1816,16 +1843,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.view"
       },
       "delete": {
         "tags": [
           "instance"
         ],
         "summary": "Deletes an org scheduled for deletion now, instead of at its date.\nNeeds a recent sign-in and an instance that allows\ndeleting orgs. `204` once it is gone; `202` when its logs cannot be\ndeleted yet, and the next run of the deletion job finishes it.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account. Agents can't use it.",
         "operationId": "deleteInstanceOrgsOrg",
         "parameters": [
           {
@@ -1881,7 +1911,7 @@
           "instance"
         ],
         "summary": "Renames an org. Recorded in the org's audit log and the instance's.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "patchInstanceOrgsOrg",
         "parameters": [
           {
@@ -1944,9 +1974,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.manage"
       }
     },
     "/platform/v1/instance/orgs/{org}/members": {
@@ -1955,7 +1988,7 @@
           "instance"
         ],
         "summary": "One org's members.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceOrgsOrgMembers",
         "parameters": [
           {
@@ -2027,9 +2060,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.view"
       }
     },
     "/platform/v1/instance/orgs/{org}/owner": {
@@ -2038,7 +2074,7 @@
           "instance"
         ],
         "summary": "Makes an active user an owner of the org, whether it has owners or not:\nhow an instance admin takes over an org\nwhose owners left, or gets in to manage it. Recorded in the org's audit\nlog, which its members see, and in the instance audit log. An owner\nalready is one: nothing changes. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceOrgsOrgOwner",
         "parameters": [
           {
@@ -2101,9 +2137,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.manage"
       }
     },
     "/platform/v1/instance/orgs/{org}/projects": {
@@ -2112,7 +2151,7 @@
           "instance"
         ],
         "summary": "One org's projects.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceOrgsOrgProjects",
         "parameters": [
           {
@@ -2184,9 +2223,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.view"
       }
     },
     "/platform/v1/instance/orgs/{org}/restore": {
@@ -2195,7 +2237,7 @@
           "instance"
         ],
         "summary": "Restores an org scheduled for deletion.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceOrgsOrgRestore",
         "parameters": [
           {
@@ -2245,9 +2287,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.manage"
       }
     },
     "/platform/v1/instance/orgs/{org}/schedule-deletion": {
@@ -2256,7 +2301,7 @@
           "instance"
         ],
         "summary": "Schedules an org for deletion, as its owner can: its\nkeys stop working at once, members and instance admins are told, and it\nstays read-only for the instance's grace period. Needs a recent sign-in\nand an instance that allows deleting orgs.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceOrgsOrgScheduleDeletion",
         "parameters": [
           {
@@ -2306,9 +2351,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.manage"
       }
     },
     "/platform/v1/instance/orgs/{org}/usage": {
@@ -2317,7 +2365,7 @@
           "instance"
         ],
         "summary": "An org's usage totals and log storage.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.orgs.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceOrgsOrgUsage",
         "parameters": [
           {
@@ -2367,9 +2415,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.orgs.view"
       }
     },
     "/platform/v1/instance/settings": {
@@ -2378,7 +2429,7 @@
           "instance"
         ],
         "summary": "The instance settings.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceSettings",
         "responses": {
           "200": {
@@ -2418,16 +2469,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       },
       "patch": {
         "tags": [
           "instance"
         ],
         "summary": "Changes who may create accounts and orgs and the allowed domains (with a\nrecent sign-in), org deletion, and the retention defaults and maximums.\nContent is never kept longer than metadata.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "patchInstanceSettings",
         "requestBody": {
           "content": {
@@ -2480,9 +2534,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.settings.manage"
       }
     },
     "/platform/v1/instance/settings/admin-sso": {
@@ -2491,7 +2548,7 @@
           "instance"
         ],
         "summary": "Chooses the org whose single sign-on may administer the instance, or\nnone.",
-        "description": "An instance admin's session from that org's SSO may then use `instance/*` while the org manages the admin's account. Changing it needs a recent sign-in that didn't come from SSO, so no org's identity provider can grant its admins the instance; a session from SSO gets `other_sign_in_required`. The org must have an SSO connection; if it later loses it, the setting has no effect. Audited as `instance.admin_sso_update`.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "An instance admin's session from that org's SSO may then use `instance/*` while the org manages the admin's account. Changing it needs a recent sign-in that didn't come from SSO, so no org's identity provider can grant its admins the instance; a session from SSO gets `other_sign_in_required`. The org must have an SSO connection; if it later loses it, the setting has no effect. Audited as `instance.admin_sso_update`.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account. Agents can't use it.",
         "operationId": "putInstanceSettingsAdminSso",
         "requestBody": {
           "content": {
@@ -2549,13 +2606,129 @@
         "x-kaeso-access": "instance_admin"
       }
     },
+    "/platform/v1/instance/settings/agents": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The instance's agent policy.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceSettingsAgents",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceAgentPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.system.view"
+      },
+      "put": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Sets the instance's agent policy.",
+        "description": "Turning agents off stops every agent at its next request; no agent can\nchange this setting.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account. Agents can't use it.",
+        "operationId": "putInstanceSettingsAgents",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstanceAgentPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceAgentPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "instance_admin"
+      }
+    },
     "/platform/v1/instance/settings/test-email": {
       "post": {
         "tags": [
           "instance"
         ],
         "summary": "Sends a test email now and reports whether the SMTP server took it.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceSettingsTestEmail",
         "requestBody": {
           "content": {
@@ -2608,9 +2781,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.settings.manage"
       }
     },
     "/platform/v1/instance/system": {
@@ -2619,7 +2795,7 @@
           "instance"
         ],
         "summary": "Version, component health and storage.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceSystem",
         "responses": {
           "200": {
@@ -2659,9 +2835,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       }
     },
     "/platform/v1/instance/updates": {
@@ -2670,7 +2849,7 @@
           "instance"
         ],
         "summary": "The running version, newer releases with their notes, the update settings, the updater and the last update.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUpdates",
         "responses": {
           "200": {
@@ -2710,9 +2889,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       }
     },
     "/platform/v1/instance/updates/apply": {
@@ -2721,7 +2903,7 @@
           "instance"
         ],
         "summary": "Updates the install to the newest offered release through the updater, with a recent sign-in; the console and the APIs are unavailable for about a minute.",
-        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "The updater checks the release's signed provenance, downloads the images, switches the console and then the gateway, and waits for the gateway's migrations and health. When the new version fails it goes back to the previous one, unless the new gateway may already have migrated the database: then it leaves the new gateway in place and ends `needs_attention`. Poll `instance/updates/jobs/{update}` for the progress; when the updater doesn't confirm the start, the update stays `running` until the updater reports on it.\n\n**Right:** `instance.updates.apply`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUpdatesApply",
         "requestBody": {
           "content": {
@@ -2774,9 +2956,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.updates.apply"
       }
     },
     "/platform/v1/instance/updates/check": {
@@ -2785,7 +2970,7 @@
           "instance"
         ],
         "summary": "Looks for new releases now, even when checking is off.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.updates.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUpdatesCheck",
         "responses": {
           "200": {
@@ -2825,9 +3010,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.updates.manage"
       }
     },
     "/platform/v1/instance/updates/jobs": {
@@ -2836,7 +3024,7 @@
           "instance"
         ],
         "summary": "Past and running updates, newest first.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUpdatesJobs",
         "parameters": [
           {
@@ -2900,9 +3088,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       }
     },
     "/platform/v1/instance/updates/jobs/{update}": {
@@ -2911,7 +3102,7 @@
           "instance"
         ],
         "summary": "One update and its progress.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUpdatesJobsUpdate",
         "parameters": [
           {
@@ -2961,9 +3152,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.system.view"
       }
     },
     "/platform/v1/instance/updates/settings": {
@@ -2972,7 +3166,7 @@
           "instance"
         ],
         "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.updates.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "patchInstanceUpdatesSettings",
         "requestBody": {
           "content": {
@@ -3025,9 +3219,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.updates.manage"
       }
     },
     "/platform/v1/instance/users": {
@@ -3036,7 +3233,7 @@
           "instance"
         ],
         "summary": "Every user of the install.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUsers",
         "parameters": [
           {
@@ -3118,9 +3315,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.view"
       }
     },
     "/platform/v1/instance/users/invites": {
@@ -3129,7 +3329,7 @@
           "instance"
         ],
         "summary": "Invites someone to create an account on this install (without an org).",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersInvites",
         "requestBody": {
           "content": {
@@ -3182,9 +3382,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.manage"
       }
     },
     "/platform/v1/instance/users/{user}": {
@@ -3193,7 +3396,7 @@
           "instance"
         ],
         "summary": "One user.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUsersUser",
         "parameters": [
           {
@@ -3243,16 +3446,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.view"
       },
       "delete": {
         "tags": [
           "instance"
         ],
         "summary": "Deletes a user: name and email are removed, keys archived; usage, logs\nand audit logs keep the id as \"Deleted user\". Refused for the last owner\nof an org. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account. Agents can't use it.",
         "operationId": "deleteInstanceUsersUser",
         "parameters": [
           {
@@ -3307,7 +3513,7 @@
           "instance"
         ],
         "summary": "Deactivates a user: no sign-in, every session ends, their keys are\ndisabled until reactivation.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserDeactivate",
         "parameters": [
           {
@@ -3357,9 +3563,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.manage"
       }
     },
     "/platform/v1/instance/users/{user}/instance-admin": {
@@ -3368,7 +3577,7 @@
           "instance"
         ],
         "summary": "Grants or removes instance administration. The last instance admin\ncannot remove the flag from themselves. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account. Agents can't use it.",
         "operationId": "putInstanceUsersUserInstanceAdmin",
         "parameters": [
           {
@@ -3442,7 +3651,7 @@
           "instance"
         ],
         "summary": "The orgs a user belongs to, by name, with their role in each.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceUsersUserOrgs",
         "parameters": [
           {
@@ -3492,9 +3701,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.view"
       }
     },
     "/platform/v1/instance/users/{user}/reactivate": {
@@ -3503,7 +3715,7 @@
           "instance"
         ],
         "summary": "Reactivates a user and re-enables the keys deactivation disabled.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserReactivate",
         "parameters": [
           {
@@ -3553,9 +3765,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.manage"
       }
     },
     "/platform/v1/instance/users/{user}/reset-2fa": {
@@ -3564,7 +3779,7 @@
           "instance"
         ],
         "summary": "Resets a user's two-factor authentication. Needs a recent sign-in.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserReset2fa",
         "parameters": [
           {
@@ -3608,9 +3823,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.manage"
       }
     },
     "/platform/v1/instance/users/{user}/sessions/revoke": {
@@ -3619,7 +3837,7 @@
           "instance"
         ],
         "summary": "Ends every session of a user and tells them.",
-        "description": "**Access:** a console session of an instance admin that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins (`instance/settings/admin-sso`) while it manages the account.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "postInstanceUsersUserSessionsRevoke",
         "parameters": [
           {
@@ -3663,9 +3881,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "instance_admin"
+        "x-kaeso-access": "right:instance.users.manage"
       }
     },
     "/platform/v1/me": {
@@ -3674,7 +3895,7 @@
           "me"
         ],
         "summary": "The signed-in user's profile and security state.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMe",
         "responses": {
           "200": {
@@ -3714,9 +3935,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.view"
       },
       "delete": {
         "tags": [
@@ -3766,7 +3990,7 @@
           "me"
         ],
         "summary": "Changes the user's display name or language.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "patchMe",
         "requestBody": {
           "content": {
@@ -3819,6 +4043,697 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.update"
+      }
+    },
+    "/platform/v1/me/agent-requests/approve": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Lets an agent sign in with the chosen name, rights and lifetime.",
+        "description": "Only rights the user holds, the policies allow and agents may be given.\nSensitive rights need a sign-in within the last 15 minutes. The browser\ngoes on to `redirect_to`, where the agent exchanges the code for tokens.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "postMeAgentRequestsApprove",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentApproval"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRedirect"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agent-requests/deny": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Refuses an agent's sign-in request.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "postMeAgentRequestsDeny",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequestRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRedirect"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agent-requests/view": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "An agent's sign-in request, for the consent page.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "postMeAgentRequestsView",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequestRef"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRequestView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "The user's agents, newest first.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeAgents",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_AgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents/catalogue": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "The rights, presets and harnesses for agents.",
+        "description": "`sensitive` marks rights whose grant needs a sign-in within the last 15\nminutes and a confirmation in the console.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeAgentsCatalogue",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCatalogue"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents/grantable": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "What the user could give an agent now, per organization and project.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeAgentsGrantable",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Grantable"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents/{agent}": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "One of the user's agents.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeAgentsAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      },
+      "delete": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Revokes an agent; its tokens stop working at once.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "deleteMeAgentsAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      },
+      "patch": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Renames an agent, changes its harness or gives it a new lifetime.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "patchMeAgentsAgent",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents/{agent}/activity": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "An agent's tool calls, newest first; kept for 90 days.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "getMeAgentsAgentActivity",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_AgentActivityView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "session"
+      }
+    },
+    "/platform/v1/me/agents/{agent}/rights": {
+      "put": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Replaces an agent's rights.",
+        "description": "Only rights the user holds, the instance's and each org's agent policy\nallow, and agents may be given. Giving sensitive rights it didn't have\nneeds a sign-in within the last 15 minutes.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "operationId": "putMeAgentsAgentRights",
+        "parameters": [
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
           }
         ],
         "x-kaeso-access": "session"
@@ -3830,7 +4745,7 @@
           "me"
         ],
         "summary": "Sets the user's picture: a square PNG, JPEG or WebP image of at most 512 KiB.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "putMeAvatar",
         "requestBody": {
           "content": {
@@ -3883,16 +4798,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.update"
       },
       "delete": {
         "tags": [
           "me"
         ],
         "summary": "Removes the user's picture; their initials show again.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "deleteMeAvatar",
         "responses": {
           "200": {
@@ -3932,9 +4850,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.update"
       }
     },
     "/platform/v1/me/avatars/{hash}": {
@@ -3943,7 +4864,7 @@
           "me"
         ],
         "summary": "A stored picture, by its hash.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeAvatarsHash",
         "parameters": [
           {
@@ -3991,9 +4912,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.view"
       }
     },
     "/platform/v1/me/email": {
@@ -4178,7 +5102,7 @@
           "me"
         ],
         "summary": "The signed-in user's keys, in every project of the orgs this session may\nopen.",
-        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from the SSO of an org that doesn't manage the account.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Leaves out the keys in an org whose `access` in `auth/session` isn't `ok`, such as another org's when the session came from the SSO of an org that doesn't manage the account.\n\n**Access:** a signed-in console session, or an agent granted `account.keys.view`.",
         "operationId": "getMeKeys",
         "parameters": [
           {
@@ -4251,9 +5175,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.keys.view"
       }
     },
     "/platform/v1/me/keys/{key}": {
@@ -4262,7 +5189,7 @@
           "me"
         ],
         "summary": "One of the user's own keys.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.view`.",
         "operationId": "getMeKeysKey",
         "parameters": [
           {
@@ -4312,9 +5239,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.keys.view"
       }
     },
     "/platform/v1/me/keys/{key}/archive": {
@@ -4323,7 +5253,7 @@
           "me"
         ],
         "summary": "Archives one of the user's keys. Permanent.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.manage`.",
         "operationId": "postMeKeysKeyArchive",
         "parameters": [
           {
@@ -4373,9 +5303,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.keys.manage"
       }
     },
     "/platform/v1/me/keys/{key}/disable": {
@@ -4384,7 +5317,7 @@
           "me"
         ],
         "summary": "Disables one of the user's keys.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.manage`.",
         "operationId": "postMeKeysKeyDisable",
         "parameters": [
           {
@@ -4434,9 +5367,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.keys.manage"
       }
     },
     "/platform/v1/me/keys/{key}/enable": {
@@ -4445,7 +5381,7 @@
           "me"
         ],
         "summary": "Enables one of the user's disabled keys.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.manage`.",
         "operationId": "postMeKeysKeyEnable",
         "parameters": [
           {
@@ -4495,9 +5431,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.keys.manage"
       }
     },
     "/platform/v1/me/memberships": {
@@ -4506,7 +5445,7 @@
           "me"
         ],
         "summary": "Every org and project the user belongs to.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeMemberships",
         "responses": {
           "200": {
@@ -4546,9 +5485,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.view"
       }
     },
     "/platform/v1/me/memberships/{org}": {
@@ -4557,7 +5499,7 @@
           "me"
         ],
         "summary": "Leaves an org: removes the user from it and its projects and archives\ntheir keys there. Refused for the last owner, and while the org is\nscheduled for deletion.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.memberships.leave`.",
         "operationId": "deleteMeMembershipsOrg",
         "parameters": [
           {
@@ -4601,9 +5543,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.memberships.leave"
       }
     },
     "/platform/v1/me/notifications": {
@@ -4612,7 +5557,7 @@
           "me"
         ],
         "summary": "The user's alert email preferences. Security emails are always sent.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeNotifications",
         "responses": {
           "200": {
@@ -4652,16 +5597,19 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.view"
       },
       "put": {
         "tags": [
           "me"
         ],
         "summary": "Turns alert emails on or off.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
         "operationId": "putMeNotifications",
         "requestBody": {
           "content": {
@@ -4714,9 +5662,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.notifications.manage"
       }
     },
     "/platform/v1/me/orgs": {
@@ -4918,7 +5869,7 @@
           "me"
         ],
         "summary": "The user's sessions, the current one first.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeSessions",
         "responses": {
           "200": {
@@ -4969,7 +5920,7 @@
           "me"
         ],
         "summary": "Ends every session of the user except the current one.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postMeSessionsRevokeAll",
         "responses": {
           "200": {
@@ -5020,7 +5971,7 @@
           "me"
         ],
         "summary": "Ends one of the user's sessions.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "deleteMeSessionsSession",
         "parameters": [
           {
@@ -5075,7 +6026,7 @@
           "me"
         ],
         "summary": "The ways the signed-in user can confirm it's them when an action needs a\nsign-in within the last 15 minutes.",
-        "description": "Single sign-on is listed only when the account has no other way to confirm, since an identity provider may ignore the request for a fresh sign-in. When the org that manages the account requires SSO, only its identity provider confirms, since the account can't sign in another way.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Single sign-on is listed only when the account has no other way to confirm, since an identity provider may ignore the request for a fresh sign-in. When the org that manages the account requires SSO, only its identity provider confirms, since the account can't sign in another way.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeSignInAgain",
         "responses": {
           "200": {
@@ -5126,7 +6077,7 @@
           "me"
         ],
         "summary": "Starts confirming the sign-in at an org's identity provider: answers with\nthe provider's URL, which asks the person to sign in again.",
-        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account` or `link_required`. `cannot_confirm` means the provider's answer didn't show a fresh sign-in: it left out `auth_time`, or carried an older sign-in the provider reused. The org's connection is then marked so, and `GET me/sign-in-again` stops offering it.\n\n**Access:** a signed-in console session; no right is needed.",
+        "description": "Only the same account, from a fresh sign-in at the provider, confirms: the session is replaced by a new one from that org's SSO, signed in now, and the browser comes back to `next`. On failure it comes back to `next` with an error code in `#sso_error=`, such as `other_account` or `link_required`. `cannot_confirm` means the provider's answer didn't show a fresh sign-in: it left out `auth_time`, or carried an older sign-in the provider reused. The org's connection is then marked so, and `GET me/sign-in-again` stops offering it.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postMeSignInAgainSso",
         "requestBody": {
           "content": {
@@ -5190,7 +6141,7 @@
           "me"
         ],
         "summary": "The user's orgs that sign in through SSO, and whether the account is\nlinked to each org's identity provider.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeSsoLinks",
         "responses": {
           "200": {
@@ -5530,7 +6481,7 @@
           "me"
         ],
         "summary": "The Kaeso releases since the signed-in user last saw what's new, with their notes.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeWhatsNew",
         "responses": {
           "200": {
@@ -5570,9 +6521,12 @@
         "security": [
           {
             "session": []
+          },
+          {
+            "agent": []
           }
         ],
-        "x-kaeso-access": "session"
+        "x-kaeso-access": "right:account.view"
       }
     },
     "/platform/v1/me/whats-new/seen": {
@@ -5581,7 +6535,7 @@
           "me"
         ],
         "summary": "Records that the signed-in user saw what's new in the running version.",
-        "description": "**Access:** a signed-in console session; no right is needed.",
+        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "postMeWhatsNewSeen",
         "responses": {
           "204": {
@@ -5679,6 +6633,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -5741,6 +6698,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.delete"
@@ -5816,9 +6776,142 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.update"
+      }
+    },
+    "/platform/v1/orgs/{org}/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "The members' agents that may act in the organization, newest first.",
+        "description": "Each acts only with rights its member holds here and the org's agent\npolicy allows.\n\n**Right:** `members.view` on the organization in the path.",
+        "operationId": "getOrgsOrgAgents",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_OrgAgentView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:members.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/agents/{agent}": {
+      "delete": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Closes the organization to a member's agent.",
+        "description": "The agent keeps working elsewhere; its member can open the org to it\nagain.\n\n**Right:** `members.rights.update` on the organization in the path; a console session only.",
+        "operationId": "deleteOrgsOrgAgentsAgent",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "agent",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AgentId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Closed."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:members.rights.update"
       }
     },
     "/platform/v1/orgs/{org}/audit-log": {
@@ -5897,6 +6990,15 @@
             }
           },
           {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "description": "Not before this time (RFC 3339).",
@@ -5956,6 +7058,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:audit_log.view"
@@ -6012,6 +7117,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
             }
           },
           {
@@ -6075,6 +7189,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:audit_log.export"
@@ -6147,6 +7264,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:audit_log.view"
@@ -6224,6 +7344,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.update"
@@ -6286,6 +7409,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.update"
@@ -6350,6 +7476,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.view"
@@ -6425,6 +7554,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.create"
@@ -6502,6 +7634,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.create"
@@ -6598,6 +7733,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.create"
@@ -6670,6 +7808,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.view"
@@ -6732,6 +7873,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.delete"
@@ -6815,6 +7959,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -6887,6 +8034,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -6959,6 +8109,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -7063,6 +8216,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -7148,6 +8304,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -7233,6 +8392,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:provider_credentials.replace"
@@ -7297,6 +8459,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.view"
@@ -7380,6 +8545,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
@@ -7460,6 +8628,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.view"
@@ -7537,6 +8708,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
@@ -7643,6 +8817,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
@@ -7720,6 +8897,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.update"
@@ -7815,6 +8995,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -7890,6 +9073,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.invite"
@@ -7962,6 +9148,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -8026,6 +9215,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.invites.revoke"
@@ -8098,6 +9290,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.invite"
@@ -8162,6 +9357,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.storage.view"
@@ -8237,6 +9435,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.delete"
@@ -8301,6 +9502,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -8376,6 +9580,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.settings.manage"
@@ -8440,6 +9647,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.storage.view"
@@ -8544,6 +9754,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -8616,6 +9829,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -8680,6 +9896,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.remove"
@@ -8763,6 +9982,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.rights.update"
@@ -8835,6 +10057,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -8912,6 +10137,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.ownership.transfer"
@@ -9007,6 +10235,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.view"
@@ -9082,6 +10313,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.create"
@@ -9154,6 +10388,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.view"
@@ -9226,6 +10463,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.revoke"
@@ -9298,6 +10538,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.revoke"
@@ -9370,6 +10613,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.revoke"
@@ -9455,6 +10701,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:platform_keys.create"
@@ -9550,6 +10799,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -9625,6 +10877,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:projects.create"
@@ -9697,6 +10952,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.view"
@@ -9780,6 +11038,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.update"
@@ -9852,6 +11113,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -9935,6 +11199,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -10015,6 +11282,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -10085,6 +11355,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -10176,6 +11449,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -10248,6 +11524,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.archive"
@@ -10337,6 +11616,15 @@
             }
           },
           {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "from",
             "in": "query",
             "description": "Not before this time (RFC 3339).",
@@ -10396,6 +11684,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.audit_log.view"
@@ -10481,6 +11772,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.update"
@@ -10551,6 +11845,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.update"
@@ -10636,6 +11933,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:security.key_policy.project.manage"
@@ -10757,6 +12057,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.all.view"
@@ -10840,6 +12143,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.own.create"
@@ -10920,6 +12226,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.all.view"
@@ -11000,6 +12309,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.all.manage"
@@ -11080,6 +12392,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.all.manage"
@@ -11160,6 +12475,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.all.manage"
@@ -11240,6 +12558,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.view"
@@ -11331,6 +12652,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -11424,6 +12748,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:keys.own.create"
@@ -11532,6 +12859,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.view"
@@ -11623,6 +12953,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -11711,6 +13044,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.view"
@@ -11796,6 +13132,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -11910,6 +13249,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -12114,6 +13456,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.metadata.view"
@@ -12311,6 +13656,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.export"
@@ -12383,6 +13731,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.view"
@@ -12466,6 +13817,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.content.manage"
@@ -12546,6 +13900,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:logs.metadata.view"
@@ -12640,6 +13997,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.view"
@@ -12723,6 +14083,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.add"
@@ -12803,6 +14166,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.view"
@@ -12875,6 +14241,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.remove"
@@ -12966,6 +14335,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.rights.update"
@@ -13046,6 +14418,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.view"
@@ -13137,6 +14512,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -13217,6 +14595,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.view"
@@ -13289,6 +14670,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -13380,6 +14764,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -13465,6 +14852,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -13537,6 +14927,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -13618,6 +15011,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -13708,6 +15104,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -13827,6 +15226,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -13915,6 +15317,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.view"
@@ -14000,6 +15405,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -14114,6 +15522,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:models.manage"
@@ -14186,6 +15597,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.view"
@@ -14258,6 +15672,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -14371,6 +15788,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -14452,6 +15872,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:project.members.view"
@@ -14555,6 +15978,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.view"
@@ -14638,6 +16064,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.create"
@@ -14718,6 +16147,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.view"
@@ -14809,6 +16241,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.rights.update"
@@ -14889,6 +16324,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.archive"
@@ -14982,6 +16420,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.keys.create"
@@ -15083,6 +16524,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:service_accounts.keys.create"
@@ -15163,6 +16607,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.view"
@@ -15254,6 +16701,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:limits.manage"
@@ -15353,6 +16803,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:usage.view"
@@ -15425,6 +16878,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:usage.view"
@@ -15489,6 +16945,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -15553,6 +17012,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.delete"
@@ -15617,6 +17079,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -15690,6 +17155,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:members.view"
@@ -15763,6 +17231,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -15838,6 +17309,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:roles.manage"
@@ -15920,6 +17394,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
@@ -15985,6 +17462,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:roles.manage"
@@ -16069,6 +17549,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:roles.manage"
@@ -16133,9 +17616,151 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:org.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/security/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "The organization's agent policy.",
+        "description": "**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgSecurityAgents",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgAgentPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      },
+      "put": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Sets the organization's agent policy.",
+        "description": "Narrowing it applies to every agent at its next request; no agent can\nchange it.\n\n**Right:** `members.rights.update` on the organization in the path; a console session only.",
+        "operationId": "putOrgsOrgSecurityAgents",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgAgentPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgAgentPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:members.rights.update"
       }
     },
     "/platform/v1/orgs/{org}/security/key-policy": {
@@ -16210,6 +17835,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:security.key_policy.manage"
@@ -16287,6 +17915,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:security.2fa.require"
@@ -16640,6 +18271,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:usage.org.view"
@@ -16704,6 +18338,9 @@
           },
           {
             "api_key": []
+          },
+          {
+            "agent": []
           }
         ],
         "x-kaeso-access": "right:usage.org.view"
@@ -16974,17 +18611,28 @@
           "kind"
         ],
         "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentRef",
+                "description": "The agent, for `agent`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "type": [
               "string",
               "null"
             ],
-            "description": "The actor's id (`usr_`, `opk_` or `key_`); `null` for the system.",
+            "description": "The actor's id (`usr_`, `opk_` or `key_`); for `agent`, the user the\nagent acts for; `null` for the system.",
             "example": "usr_01k7a3f8m2xq4v9c5r6t8w0yz1"
           },
           "kind": {
             "type": "string",
-            "description": "`user`, `org_platform_key`, `api_key` or `system`.",
+            "description": "`user`, `agent` (an agent acting for the user in `id`),\n`org_platform_key`, `api_key` or `system`.",
             "example": "user"
           }
         }
@@ -17061,6 +18709,464 @@
           "org": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org. An instance admin's session from its SSO may use\n`instance/*` while the org manages the admin's account."
+          }
+        }
+      },
+      "AgentActivityId": {
+        "type": "string",
+        "examples": [
+          "act_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^act_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "AgentActivityView": {
+        "type": "object",
+        "description": "One tool call of an agent.",
+        "required": [
+          "id",
+          "at",
+          "tool",
+          "status",
+          "result"
+        ],
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When."
+          },
+          "id": {
+            "$ref": "#/components/schemas/AgentActivityId",
+            "description": "The call."
+          },
+          "ip": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The agent's address."
+          },
+          "org_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OrgId",
+                "description": "The organization it acted in, if any."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The project it acted in, if any."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "type": "string",
+            "description": "`ok`, or the error type, such as `insufficient_rights`.",
+            "example": "ok"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The HTTP status the call ended with.",
+            "example": 200,
+            "minimum": 0
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What it acted on: the ids the call named.",
+            "example": "lim_01k7a3f8m2xq4v9c5r6t8w0yz1"
+          },
+          "tool": {
+            "type": "string",
+            "description": "The MCP tool it called.",
+            "example": "get_orgs_org_usage"
+          }
+        }
+      },
+      "AgentApproval": {
+        "type": "object",
+        "description": "The user's decision to let an agent sign in.",
+        "required": [
+          "request",
+          "name",
+          "harness",
+          "expiry",
+          "grant"
+        ],
+        "properties": {
+          "expiry": {
+            "type": "string",
+            "description": "How long its sign-in lasts: `7d`, `30d`, `90d` or `never`.",
+            "example": "90d"
+          },
+          "grant": {
+            "$ref": "#/components/schemas/GrantBody",
+            "description": "Its rights."
+          },
+          "harness": {
+            "type": "string",
+            "description": "Its harness.",
+            "example": "claude_code"
+          },
+          "name": {
+            "type": "string",
+            "description": "The agent's name, 1 to 100 characters.",
+            "example": "Release helper"
+          },
+          "request": {
+            "type": "string",
+            "description": "The request token from `#request=`.",
+            "writeOnly": true
+          }
+        }
+      },
+      "AgentCatalogue": {
+        "type": "object",
+        "description": "Everything an agent can be given.",
+        "required": [
+          "instance",
+          "account",
+          "org",
+          "project",
+          "presets",
+          "instance_presets",
+          "never_grantable",
+          "harnesses"
+        ],
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/ScopeCatalogue",
+            "description": "Account rights."
+          },
+          "harnesses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The harnesses agents can run in."
+          },
+          "instance": {
+            "$ref": "#/components/schemas/ScopeCatalogue",
+            "description": "Instance rights."
+          },
+          "instance_presets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstancePresetView"
+            },
+            "description": "The instance presets, in order."
+          },
+          "never_grantable": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Org rights no agent can be given.",
+            "example": [
+              "org.ownership.transfer",
+              "security.sso.manage",
+              "security.sso.require"
+            ]
+          },
+          "org": {
+            "$ref": "#/components/schemas/ScopeCatalogue",
+            "description": "Org rights."
+          },
+          "presets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentPresetView"
+            },
+            "description": "The presets, in order."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ScopeCatalogue",
+            "description": "Project rights."
+          }
+        }
+      },
+      "AgentId": {
+        "type": "string",
+        "examples": [
+          "agt_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^agt_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "AgentPresetView": {
+        "type": "object",
+        "description": "A preset for an agent's rights.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "org",
+          "project",
+          "account",
+          "instance",
+          "org_ceiling",
+          "project_ceiling"
+        ],
+        "properties": {
+          "account": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Its account rights."
+          },
+          "description": {
+            "type": "string",
+            "description": "What it allows, as one sentence."
+          },
+          "id": {
+            "type": "string",
+            "description": "`observer`, `builder`, `operator` or `full`.",
+            "example": "builder"
+          },
+          "instance": {
+            "type": "string",
+            "description": "Its instance preset, for instance admins.",
+            "example": "none"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name shown in the console.",
+            "example": "Builder"
+          },
+          "org": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Its org rights, before the user's own and the org's policy narrow them."
+          },
+          "org_ceiling": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The org rights an org whose policy allows at most this preset lets\nagents have."
+          },
+          "project": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Its project rights."
+          },
+          "project_ceiling": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The project rights such an org lets agents have."
+          }
+        }
+      },
+      "AgentRedirect": {
+        "type": "object",
+        "description": "Where to send the browser after a decision.",
+        "required": [
+          "redirect_to"
+        ],
+        "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AgentId",
+                "description": "The new agent, when authorized."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "redirect_to": {
+            "type": "string",
+            "description": "The agent's address, with the authorization code or the refusal."
+          }
+        }
+      },
+      "AgentRef": {
+        "type": "object",
+        "description": "An agent as an audit event names it.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "harness": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The harness it runs in, such as `claude_code`, `codex` or `other`;\n`null` once its user is deleted.",
+            "example": "codex"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AgentId",
+            "description": "The agent."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its name; `null` once its user is deleted.",
+            "example": "Release helper"
+          }
+        }
+      },
+      "AgentRequestRef": {
+        "type": "object",
+        "description": "A sign-in request of an agent, from the fragment of the console's consent page.",
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "type": "string",
+            "description": "The request token from `#request=`.",
+            "writeOnly": true
+          }
+        }
+      },
+      "AgentRequestView": {
+        "type": "object",
+        "description": "An agent asking to sign in.",
+        "required": [
+          "client",
+          "harness",
+          "redirect_host",
+          "expires_at"
+        ],
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "The name its client registered with.",
+            "example": "Claude Code"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the request ends."
+          },
+          "harness": {
+            "type": "string",
+            "description": "The harness Kaeso recognised; the user may change it.",
+            "example": "claude_code"
+          },
+          "redirect_host": {
+            "type": "string",
+            "description": "Where the browser goes back to after the decision.",
+            "example": "localhost"
+          }
+        }
+      },
+      "AgentUpdate": {
+        "type": "object",
+        "description": "Changes to an agent; fields left out stay.",
+        "properties": {
+          "expiry": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new lifetime from now: `7d`, `30d`, `90d` or `never`.",
+            "example": "90d"
+          },
+          "harness": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its harness."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its name, 1 to 100 characters."
+          }
+        }
+      },
+      "AgentView": {
+        "type": "object",
+        "description": "An agent connected through the MCP server.",
+        "required": [
+          "id",
+          "name",
+          "harness",
+          "grant",
+          "created_at"
+        ],
+        "properties": {
+          "client": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The name its client registered with.",
+            "example": "codex-mcp-client"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was authorized."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When its sign-in ends; `null` for never."
+          },
+          "grant": {
+            "$ref": "#/components/schemas/GrantBody",
+            "description": "Its rights."
+          },
+          "harness": {
+            "type": "string",
+            "description": "The harness it runs in: `claude_code`, `codex`, `cursor`, `gemini_cli`,\n`opencode`, `pi` or `other`.",
+            "example": "codex"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AgentId",
+            "description": "The agent."
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it last used Kaeso; `null` if never. After 90 days unused it\nstops working."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model it reported, if any.",
+            "example": "gpt-5.4"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name its user gave it.",
+            "example": "Release helper"
           }
         }
       },
@@ -18925,6 +21031,26 @@
         },
         "additionalProperties": false
       },
+      "FutureGrantBody": {
+        "type": "object",
+        "description": "An agent's rights in organizations its user joins later.",
+        "properties": {
+          "project_rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Project rights in every project of those organizations."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Org rights."
+          }
+        }
+      },
       "GenerationDialect": {
         "type": "string",
         "description": "An API format a custom provider generates with.",
@@ -18933,6 +21059,63 @@
           "openai_responses",
           "anthropic_messages"
         ]
+      },
+      "GrantBody": {
+        "type": "object",
+        "description": "What an agent may do: its rights on the instance, the account and each organization.",
+        "required": [
+          "preset"
+        ],
+        "properties": {
+          "account": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Account rights (`account.*`); `account.view` is always included.",
+            "example": [
+              "account.view",
+              "account.keys.view"
+            ]
+          },
+          "customized": {
+            "type": "boolean",
+            "description": "Whether rights were changed after choosing the preset; the console\nthen shows \"Custom (based on …)\"."
+          },
+          "future_orgs": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FutureGrantBody",
+                "description": "The rights in organizations the user joins later; `null`: none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Instance rights (`instance.*`); only for instance admins, within the\ninstance's agent policy.",
+            "example": [
+              "instance.system.view"
+            ]
+          },
+          "orgs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrgGrantBody"
+            },
+            "description": "One entry per organization of the user; one left out is closed to the agent."
+          },
+          "preset": {
+            "type": "string",
+            "description": "The preset it started from: `observer`, `builder`, `operator` or `full`.",
+            "example": "builder"
+          }
+        }
       },
       "GrantRequest": {
         "type": "object",
@@ -19029,6 +21212,147 @@
           }
         }
       },
+      "Grantable": {
+        "type": "object",
+        "description": "What the user could give an agent now.",
+        "required": [
+          "instance",
+          "allowed",
+          "instance_max",
+          "account",
+          "orgs"
+        ],
+        "properties": {
+          "account": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The account rights the user could give."
+          },
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether the instance allows agents."
+          },
+          "instance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The instance rights the user could give; empty unless an instance admin."
+          },
+          "instance_max": {
+            "type": "string",
+            "description": "The most the instance lets agents have there: `none`, `read`,\n`configure` or `admin`.",
+            "example": "configure"
+          },
+          "orgs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantableOrg"
+            },
+            "description": "The user's organizations."
+          }
+        }
+      },
+      "GrantableOrg": {
+        "type": "object",
+        "description": "An organization the user could open to an agent.",
+        "required": [
+          "id",
+          "name",
+          "allowed",
+          "max",
+          "rights",
+          "every_project",
+          "projects"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether it allows its members' agents."
+          },
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its picture; `null` without one."
+          },
+          "every_project": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The project rights the user holds in every project here."
+          },
+          "id": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The organization."
+          },
+          "max": {
+            "type": "string",
+            "description": "The most its policy lets agents have: `observer`, `builder`,\n`operator` or `full`.",
+            "example": "full"
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrantableProject"
+            },
+            "description": "The projects the user can open to an agent."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The org rights the user could give an agent here."
+          }
+        }
+      },
+      "GrantableProject": {
+        "type": "object",
+        "description": "A project the user could open to an agent.",
+        "required": [
+          "id",
+          "name",
+          "is_default",
+          "rights"
+        ],
+        "properties": {
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Its picture; `null` without one."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "is_default": {
+            "type": "boolean",
+            "description": "Whether it is the org's default project."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The user's rights in it, within the org's agent policy."
+          }
+        }
+      },
       "Grantors": {
         "type": "object",
         "description": "People who can grant a right.",
@@ -19064,6 +21388,25 @@
               "$ref": "#/components/schemas/SourceView"
             },
             "description": "Every reason it is held."
+          }
+        }
+      },
+      "InstanceAgentPolicy": {
+        "type": "object",
+        "description": "Whether agents may sign in to the instance, and how far instance admins' agents may administer it.",
+        "required": [
+          "allowed",
+          "max"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether agents may sign in through the MCP server at all."
+          },
+          "max": {
+            "type": "string",
+            "description": "The most instance admins' agents may have on the instance: `none`,\n`read`, `configure` or `admin`.",
+            "example": "configure"
           }
         }
       },
@@ -19194,6 +21537,39 @@
           }
         ],
         "description": "An org with its size."
+      },
+      "InstancePresetView": {
+        "type": "object",
+        "description": "A preset for an agent's instance rights.",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "rights"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "What it allows, as one sentence."
+          },
+          "id": {
+            "type": "string",
+            "description": "`none`, `read`, `configure` or `admin`.",
+            "example": "read"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name shown in the console.",
+            "example": "Read"
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Its instance rights."
+          }
+        }
       },
       "InstanceStorageView": {
         "type": "object",
@@ -20095,6 +22471,200 @@
           "org": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org; the user must be a member and the org must have an SSO\nconnection."
+          }
+        }
+      },
+      "List_AgentActivityView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One tool call of an agent.",
+              "required": [
+                "id",
+                "at",
+                "tool",
+                "status",
+                "result"
+              ],
+              "properties": {
+                "at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/AgentActivityId",
+                  "description": "The call."
+                },
+                "ip": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The agent's address."
+                },
+                "org_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OrgId",
+                      "description": "The organization it acted in, if any."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "project_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectId",
+                      "description": "The project it acted in, if any."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "result": {
+                  "type": "string",
+                  "description": "`ok`, or the error type, such as `insufficient_rights`.",
+                  "example": "ok"
+                },
+                "status": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The HTTP status the call ended with.",
+                  "example": 200,
+                  "minimum": 0
+                },
+                "target": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "What it acted on: the ids the call named.",
+                  "example": "lim_01k7a3f8m2xq4v9c5r6t8w0yz1"
+                },
+                "tool": {
+                  "type": "string",
+                  "description": "The MCP tool it called.",
+                  "example": "get_orgs_org_usage"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_AgentView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An agent connected through the MCP server.",
+              "required": [
+                "id",
+                "name",
+                "harness",
+                "grant",
+                "created_at"
+              ],
+              "properties": {
+                "client": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The name its client registered with.",
+                  "example": "codex-mcp-client"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it was authorized."
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When its sign-in ends; `null` for never."
+                },
+                "grant": {
+                  "$ref": "#/components/schemas/GrantBody",
+                  "description": "Its rights."
+                },
+                "harness": {
+                  "type": "string",
+                  "description": "The harness it runs in: `claude_code`, `codex`, `cursor`, `gemini_cli`,\n`opencode`, `pi` or `other`.",
+                  "example": "codex"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/AgentId",
+                  "description": "The agent."
+                },
+                "last_used_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it last used Kaeso; `null` if never. After 90 days unused it\nstops working."
+                },
+                "model": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The model it reported, if any.",
+                  "example": "gpt-5.4"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name its user gave it.",
+                  "example": "Release helper"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
           }
         }
       },
@@ -21524,6 +24094,90 @@
                 "user": {
                   "$ref": "#/components/schemas/MemberUser",
                   "description": "The user."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_OrgAgentView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An agent of a member that may act in the organization.",
+              "required": [
+                "id",
+                "name",
+                "harness",
+                "user",
+                "created_at"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it was authorized."
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When its sign-in ends; `null` for never."
+                },
+                "harness": {
+                  "type": "string",
+                  "description": "The harness it runs in.",
+                  "example": "claude_code"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/AgentId",
+                  "description": "The agent."
+                },
+                "last_used_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it last used Kaeso; `null` if never."
+                },
+                "model": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The model it reported, if any."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name its user gave it.",
+                  "example": "Release helper"
+                },
+                "user": {
+                  "$ref": "#/components/schemas/MemberUser",
+                  "description": "The member it acts for."
                 }
               }
             },
@@ -23429,6 +26083,84 @@
           }
         }
       },
+      "OrgAgentPolicy": {
+        "type": "object",
+        "description": "Whether the organization lets its members' agents act in it, and how far.",
+        "required": [
+          "allowed",
+          "max"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether members' agents may act in the organization."
+          },
+          "max": {
+            "type": "string",
+            "description": "The most agents may have here: `observer`, `builder`, `operator` or\n`full`; each includes the ones before it.",
+            "example": "full"
+          }
+        }
+      },
+      "OrgAgentView": {
+        "type": "object",
+        "description": "An agent of a member that may act in the organization.",
+        "required": [
+          "id",
+          "name",
+          "harness",
+          "user",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was authorized."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When its sign-in ends; `null` for never."
+          },
+          "harness": {
+            "type": "string",
+            "description": "The harness it runs in.",
+            "example": "claude_code"
+          },
+          "id": {
+            "$ref": "#/components/schemas/AgentId",
+            "description": "The agent."
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it last used Kaeso; `null` if never."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model it reported, if any."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name its user gave it.",
+            "example": "Release helper"
+          },
+          "user": {
+            "$ref": "#/components/schemas/MemberUser",
+            "description": "The member it acts for."
+          }
+        }
+      },
       "OrgCreate": {
         "type": "object",
         "description": "A new org.",
@@ -23469,6 +26201,39 @@
             "format": "int32",
             "description": "Days a deleted org stays read-only and restorable.",
             "example": 7
+          }
+        }
+      },
+      "OrgGrantBody": {
+        "type": "object",
+        "description": "An agent's rights in one organization.",
+        "required": [
+          "org",
+          "included"
+        ],
+        "properties": {
+          "included": {
+            "type": "boolean",
+            "description": "Whether the agent may act in it."
+          },
+          "org": {
+            "$ref": "#/components/schemas/OrgId",
+            "description": "The organization."
+          },
+          "projects": {
+            "$ref": "#/components/schemas/ProjectsGrantBody",
+            "description": "Its projects."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Org rights from the rights catalogue.",
+            "example": [
+              "org.view",
+              "usage.org.view"
+            ]
           }
         }
       },
@@ -24161,6 +26926,27 @@
           }
         }
       },
+      "ProjectGrantBody": {
+        "type": "object",
+        "description": "An agent's rights in one project.",
+        "required": [
+          "project",
+          "rights"
+        ],
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Project rights from the rights catalogue."
+          }
+        }
+      },
       "ProjectId": {
         "type": "string",
         "examples": [
@@ -24480,6 +27266,37 @@
           "org_id": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org."
+          }
+        }
+      },
+      "ProjectsGrantBody": {
+        "type": "object",
+        "description": "An agent's rights in the projects of one organization.",
+        "required": [
+          "all"
+        ],
+        "properties": {
+          "all": {
+            "type": "boolean",
+            "description": "Every project, including ones created later, with `rights`; `false`:\nonly the projects in `selected`."
+          },
+          "rights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Project rights in every project, for `all`.",
+            "example": [
+              "project.view",
+              "models.view"
+            ]
+          },
+          "selected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectGrantBody"
+            },
+            "description": "Projects and their rights, when not `all`."
           }
         }
       },
@@ -27338,6 +30155,11 @@
       }
     },
     "securitySchemes": {
+      "agent": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "An agent's access token (`kso_at_…`) from the OAuth sign-in of the MCP server at `/mcp`. The agent acts for its user with the rights both hold, within the instance's and each org's agent policies."
+      },
       "api_key": {
         "type": "http",
         "scheme": "bearer",
@@ -27359,6 +30181,10 @@
     {
       "name": "me",
       "description": "The signed-in user's own account"
+    },
+    {
+      "name": "agents",
+      "description": "Agents connected through the MCP server, their rights and policies"
     },
     {
       "name": "instance",

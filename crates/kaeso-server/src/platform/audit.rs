@@ -7,6 +7,11 @@ use super::access::{Caller, Ctx};
 use super::error::ApiResult;
 
 pub const ACTIONS: &[&str] = &[
+    "agent.authorize",
+    "agent.org_access_revoke",
+    "agent.revoke",
+    "agent.rights_update",
+    "agent.update",
     "alias.create",
     "alias.delete",
     "alias.update",
@@ -26,6 +31,7 @@ pub const ACTIONS: &[&str] = &[
     "custom_provider.delete",
     "custom_provider.update",
     "instance.admin_sso_update",
+    "instance.agents_policy",
     "instance.invite",
     "instance.settings_update",
     "instance.setup",
@@ -82,6 +88,7 @@ pub const ACTIONS: &[&str] = &[
     "role.create",
     "role.delete",
     "role.update",
+    "security.agents_policy",
     "security.key_policy",
     "security.require_2fa",
     "security.require_sso",
@@ -176,7 +183,9 @@ impl Event<'_> {
 
     pub async fn write(self, db: &mut sqlx::PgConnection) -> ApiResult<()> {
         debug_assert_listed(self.action);
+        let agent_id = self.ctx.agent().map(|a| a.agent.id);
         let (actor_kind, actor_id) = match (&self.actor, &self.ctx.caller) {
+            (_, Caller::Agent(a)) => ("agent", Some(a.user_id())),
             (Some(user), _) => ("user", Some(user.uuid())),
             (None, Caller::Session(s)) => ("user", Some(s.user_id)),
             (None, Caller::ProjectKey(k)) => ("api_key", Some(k.id)),
@@ -191,6 +200,7 @@ impl Event<'_> {
                 project_id: self.project.map(|p| p.uuid()),
                 actor_kind,
                 actor_id,
+                agent_id,
                 action: self.action,
                 target_kind: self.target.as_ref().map(|(k, _)| *k),
                 target_id: self.target.as_ref().map(|(_, id)| id.as_str()),
@@ -264,6 +274,7 @@ pub async fn system_event(
             project_id: None,
             actor_kind: "system",
             actor_id: None,
+            agent_id: None,
             action,
             target_kind: target.as_ref().map(|(k, _)| *k),
             target_id: target.as_ref().map(|(_, id)| id.as_str()),

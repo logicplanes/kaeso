@@ -9,8 +9,9 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, ProjectId, RequestId, UserId};
 use kaeso_core::rights::{
-    OrgGrant, OrgHolding, OrgPreset, OrgRight, OrgRights, ProjectGrant, ProjectRight,
-    ProjectRights, Right, effective_project_rights,
+    AccountRight, InstanceRight, OrgGrant, OrgHolding, OrgPreset, OrgRight, OrgRights,
+    ProjectGrant, ProjectRight, ProjectRights, Right, agent_org_rights, agent_project_rights,
+    effective_project_rights,
 };
 use kaeso_store::pg::keys::{KeyAuth, OrgKeyAuth};
 use kaeso_store::pg::members;
@@ -25,12 +26,16 @@ use utoipa_axum::router::UtoipaMethodRouter;
 
 use super::error::{ApiError, ApiResult};
 use super::{cookies, params};
+use crate::auth::agents::{self, AgentCaller, OrgPolicy};
 use crate::auth::keys::{self, KeyCaller, LookupError};
 use crate::auth::sessions::{self, RECENT_SIGN_IN};
 use crate::http::{client_ip, request_id};
 use crate::state::AppState;
 
 const WHILE_SCHEDULED: &[&str] = &["/orgs/{org}/restore"];
+pub const AGENT_NEEDS_SESSION: &str = "Agents can't do this; it needs a console session.";
+const SESSION_ONLY: &str = "Only a console session can do this; API keys and agents can't.";
+const ORG_REFUSES_AGENTS: &str = "This organization doesn't allow agents; ask one of its admins.";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Access {
@@ -38,7 +43,10 @@ pub enum Access {
     Session,
     Account,
     InstanceAdmin,
+    Instance(InstanceRight),
+    Me(AccountRight),
     Org(OrgRight),
+    OrgSession(OrgRight),
     Project(ProjectRight),
 }
 
@@ -49,7 +57,9 @@ impl Access {
             Access::Session => "session".into(),
             Access::Account => "account".into(),
             Access::InstanceAdmin => "instance_admin".into(),
-            Access::Org(r) => format!("right:{}", r.as_str()),
+            Access::Instance(r) => format!("right:{}", r.as_str()),
+            Access::Me(r) => format!("right:{}", r.as_str()),
+            Access::Org(r) | Access::OrgSession(r) => format!("right:{}", r.as_str()),
             Access::Project(r) => format!("right:{}", r.as_str()),
         }
     }
@@ -58,15 +68,31 @@ impl Access {
         match self {
             Access::Public => "**Access:** public; no authentication.".into(),
             Access::Session => {
-                "**Access:** a signed-in console session; no right is needed.".into()
+                "**Access:** a signed-in console session; no right is needed. Agents can't use it."
+                    .into()
             }
             Access::Account => "**Access:** a signed-in console session; one from the SSO of an \
                 org that doesn't manage the account gets `other_sign_in_required`."
                 .into(),
             Access::InstanceAdmin => "**Access:** a console session of an instance admin that \
                 didn't come from an organization's SSO, or came from the SSO of the org chosen \
-                for instance admins (`instance/settings/admin-sso`) while it manages the account."
+                for instance admins (`instance/settings/admin-sso`) while it manages the account. \
+                Agents can't use it."
                 .into(),
+            Access::Instance(r) => format!(
+                "**Right:** `{}`. Instance admins hold every instance right with a console session \
+                that didn't come from an organization's SSO, or came from the SSO of the org chosen \
+                for instance admins; an agent of an instance admin needs it granted.",
+                r.as_str()
+            ),
+            Access::Me(r) => format!(
+                "**Access:** a signed-in console session, or an agent granted `{}`.",
+                r.as_str()
+            ),
+            Access::OrgSession(r) => format!(
+                "**Right:** `{}` on the organization in the path; a console session only.",
+                r.as_str()
+            ),
             Access::Org(r) => format!(
                 "**Right:** `{}` on the organization in the path{}.",
                 r.as_str(),
@@ -92,7 +118,7 @@ impl Access {
 
     fn right(self) -> Option<Right> {
         match self {
-            Access::Org(r) => Some(Right::Org(r)),
+            Access::Org(r) | Access::OrgSession(r) => Some(Right::Org(r)),
             Access::Project(r) => Some(Right::Project(r)),
             _ => None,
         }
@@ -166,18 +192,17 @@ fn document(op: &mut Operation, access: Access) {
         serde_json::Value::String(access.name()),
     );
     op.extensions = Some(ext);
+    let scheme = |name: &str| SecurityRequirement::new(name, Vec::<String>::new());
     op.security = Some(match access {
         Access::Public => vec![SecurityRequirement::default()],
-        Access::Session | Access::Account | Access::InstanceAdmin => {
-            vec![SecurityRequirement::new("session", Vec::<String>::new())]
+        Access::Session | Access::Account | Access::InstanceAdmin | Access::OrgSession(_) => {
+            vec![scheme("session")]
         }
-        Access::Org(r) if r.needs_session() => {
-            vec![SecurityRequirement::new("session", Vec::<String>::new())]
+        Access::Org(r) if r.needs_session() => vec![scheme("session")],
+        Access::Instance(_) | Access::Me(_) => vec![scheme("session"), scheme("agent")],
+        Access::Org(_) | Access::Project(_) => {
+            vec![scheme("session"), scheme("api_key"), scheme("agent")]
         }
-        Access::Org(_) | Access::Project(_) => vec![
-            SecurityRequirement::new("session", Vec::<String>::new()),
-            SecurityRequirement::new("api_key", Vec::<String>::new()),
-        ],
     });
     for (status, name) in [
         ("400", "InvalidRequest"),
@@ -220,6 +245,7 @@ pub enum Caller {
     Session(Arc<SessionRow>),
     ProjectKey(Arc<KeyAuth>),
     OrgKey(Arc<OrgKeyAuth>),
+    Agent(Arc<AgentCaller>),
 }
 
 #[derive(Clone, Debug)]
@@ -291,16 +317,32 @@ impl CtxInner {
                 "This needs a console session; API keys cannot manage accounts or the instance."
                     .into(),
             )),
+            Caller::Agent(_) => Err(ApiError::PermissionDenied(AGENT_NEEDS_SESSION.into())),
+        }
+    }
+
+    pub fn sign_in(&self) -> ApiResult<&SessionRow> {
+        match &self.caller {
+            Caller::Agent(a) => Ok(&a.sign_in),
+            _ => self.session().map(AsRef::as_ref),
+        }
+    }
+
+    pub fn agent(&self) -> Option<&AgentCaller> {
+        match &self.caller {
+            Caller::Agent(a) => Some(a),
+            _ => None,
         }
     }
 
     pub fn user_id(&self) -> ApiResult<UserId> {
-        self.session().map(|s| UserId::from_uuid(s.user_id))
+        self.sign_in().map(|s| UserId::from_uuid(s.user_id))
     }
 
     pub fn acting_user(&self) -> Option<UserId> {
         match &self.caller {
             Caller::Session(s) => Some(UserId::from_uuid(s.user_id)),
+            Caller::Agent(a) => Some(UserId::from_uuid(a.user_id())),
             Caller::ProjectKey(k) => k.user_id.map(UserId::from_uuid),
             Caller::Anonymous | Caller::OrgKey(_) => None,
         }
@@ -325,6 +367,7 @@ impl CtxInner {
             .ok_or_else(|| ApiError::internal("route without a project scope"))
     }
 
+    // An agent's sensitive rights were granted with a recent sign-in; it can't sign in itself.
     pub fn require_recent_sign_in(&self) -> ApiResult<()> {
         match &self.caller {
             Caller::Session(s) if self.now - s.signed_in_at > RECENT_SIGN_IN => {
@@ -458,36 +501,46 @@ async fn check(
             require_policy(state, ctx.session()?, Area::Account).await?;
         }
         Access::InstanceAdmin => {
-            let session = ctx.session()?;
-            if !session.is_instance_admin {
-                return Err(ApiError::PermissionDenied(
-                    "Only instance admins can do this.".into(),
-                ));
-            }
-            let admin_sso = if from_sso(session) {
-                kaeso_store::pg::instance::admin_sso_org(&state.pg).await?
-            } else {
-                None
-            };
-            require_policy(state, session, Area::Instance { admin_sso }).await?;
+            instance_admin(state, ctx.session()?).await?;
         }
-        Access::Org(right) => {
+        Access::Instance(right) => match &ctx.caller {
+            Caller::Agent(agent) => {
+                if !agent.instance_rights().contains(right) {
+                    return Err(refused(&ctx.caller, Right::Instance(right), "instance"));
+                }
+                instance_admin(state, &agent.sign_in).await?;
+            }
+            _ => instance_admin(state, ctx.session()?).await?,
+        },
+        Access::Me(right) => match &ctx.caller {
+            Caller::Agent(agent) => {
+                if !agent.grant.account.contains(right) {
+                    return Err(refused(&ctx.caller, Right::Account(right), "account"));
+                }
+            }
+            _ => {
+                ctx.session()?;
+            }
+        },
+        Access::Org(right) | Access::OrgSession(right) => {
             let org = path_id::<OrgId>(params, "org", "organization")?;
+            let session_only = right.needs_session() || matches!(access, Access::OrgSession(_));
             let scope = match &ctx.caller {
                 Caller::Session(_) => org_scope(state, &ctx, org, None, changes_org).await?,
-                Caller::OrgKey(_) | Caller::ProjectKey(_) => {
-                    let scope = key_scope(state, &ctx, org, None).await?;
-                    if right.needs_session() {
-                        return Err(ApiError::PermissionDenied(
-                            "Only a console session can change SSO; API keys can't.".into(),
-                        ));
+                Caller::OrgKey(_) | Caller::ProjectKey(_) | Caller::Agent(_) => {
+                    let scope = match &ctx.caller {
+                        Caller::Agent(a) => agent_scope(state, a, org, None, changes_org).await?,
+                        _ => key_scope(state, &ctx, org, None).await?,
+                    };
+                    if session_only {
+                        return Err(ApiError::PermissionDenied(SESSION_ONLY.into()));
                     }
                     scope
                 }
                 Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
             };
             if !scope.0.rights.contains(right) {
-                return Err(denied(Right::Org(right), "organization"));
+                return Err(refused(&ctx.caller, Right::Org(right), "organization"));
             }
             ctx.org = Some(scope.0);
         }
@@ -501,11 +554,12 @@ async fn check(
                 Caller::OrgKey(_) | Caller::ProjectKey(_) => {
                     key_scope(state, &ctx, org, Some(project)).await?
                 }
+                Caller::Agent(a) => agent_scope(state, a, org, Some(project), changes_org).await?,
                 Caller::Anonymous => return Err(ApiError::Authentication("Sign in first.".into())),
             };
             let project_scope = project_scope.ok_or_else(|| ApiError::not_found("project"))?;
             if !project_scope.rights.contains(right) {
-                return Err(denied(Right::Project(right), "project"));
+                return Err(refused(&ctx.caller, Right::Project(right), "project"));
             }
             ctx.org = Some(org_scope);
             ctx.project = Some(project_scope);
@@ -516,6 +570,32 @@ async fn check(
         ctx.require_recent_sign_in()?;
     }
     Ok(ctx)
+}
+
+async fn instance_admin(state: &AppState, session: &SessionRow) -> ApiResult<()> {
+    if !session.is_instance_admin {
+        return Err(ApiError::PermissionDenied(
+            "Only instance admins can do this.".into(),
+        ));
+    }
+    let admin_sso = if from_sso(session) {
+        kaeso_store::pg::instance::admin_sso_org(&state.pg).await?
+    } else {
+        None
+    };
+    require_policy(state, session, Area::Instance { admin_sso }).await
+}
+
+fn refused(caller: &Caller, right: Right, on: &str) -> ApiError {
+    match caller {
+        Caller::Agent(_) => ApiError::MissingRight {
+            right: right.as_str(),
+            message: format!(
+                "This agent doesn't have `{right}`; its user can grant it in the console."
+            ),
+        },
+        _ => denied(right, on),
+    }
 }
 
 pub(crate) fn denied(right: Right, on: &str) -> ApiError {
@@ -540,6 +620,18 @@ async fn authenticate(state: &AppState, req: &Parts, ip: Option<IpAddr>) -> ApiR
         let presented = value.to_str().ok().and_then(keys::bearer).ok_or_else(|| {
             ApiError::Authentication("Send the key as `Authorization: Bearer <key>`.".into())
         })?;
+        if agents::is_access_token(presented) {
+            return match agents::authenticate(state, presented).await? {
+                Ok(agent) => Ok(Caller::Agent(agent)),
+                Err(refusal @ agents::Refusal::NotAllowed) => {
+                    Err(ApiError::PermissionDenied(refusal.message().into()))
+                }
+                Err(refusal) => {
+                    metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "agent", "reason" => "refused").increment(1);
+                    Err(ApiError::Authentication(refusal.message().into()))
+                }
+            };
+        }
         let found = keys::authenticate(state, presented, ip)
             .await
             .map_err(|e| match e {
@@ -651,6 +743,82 @@ async fn key_scope(
             } else {
                 project_rights
             },
+            grant: None,
+        },
+        project_scope,
+    ))
+}
+
+async fn agent_scope(
+    state: &AppState,
+    agent: &AgentCaller,
+    org: OrgId,
+    project: Option<ProjectId>,
+    changes: bool,
+) -> ApiResult<(OrgScope, Option<ProjectScope>)> {
+    let access = agent
+        .grant
+        .org(org.uuid())
+        .ok_or_else(|| ApiError::not_found("organization"))?;
+    let mut conn = state.pg.acquire().await?;
+    let found = members::access_context(
+        &mut conn,
+        org.uuid(),
+        Some(agent.user_id()),
+        project.map(|p| p.uuid()),
+    )
+    .await?
+    .ok_or_else(|| ApiError::not_found("organization"))?;
+    let grant = found
+        .org_grant
+        .as_ref()
+        .map(super::grants::org_from_store)
+        .transpose()?
+        .ok_or_else(|| ApiError::not_found("organization"))?;
+    let policy = kaeso_store::pg::agents::org_policy(&mut *conn, org.uuid())
+        .await?
+        .map(|p| OrgPolicy::from_store(&p))
+        .ok_or_else(|| ApiError::not_found("organization"))?;
+    drop(conn);
+    if !policy.allowed {
+        return Err(ApiError::PermissionDenied(ORG_REFUSES_AGENTS.into()));
+    }
+    if changes && found.org.state == "scheduled_for_deletion" {
+        return Err(ApiError::OrgScheduledForDeletion);
+    }
+    require_policy(state, &agent.sign_in, Area::of_org(&found.org)).await?;
+    let rights = agent_org_rights(grant.effective(), access.rights, policy.max);
+    let every_project = grant
+        .every_project()
+        .intersect(access.projects.every_project())
+        .intersect(policy.max.project_ceiling());
+    let project_scope = match (found.project, project) {
+        (Some(p), Some(_)) => {
+            let project_grant = found
+                .project_grant
+                .as_ref()
+                .map(super::grants::project_from_store)
+                .transpose()?;
+            let user = effective_project_rights(Some(&grant), project_grant.as_ref());
+            let rights =
+                agent_project_rights(user, access.projects.granted(p.id), policy.max, rights);
+            if rights.is_empty() {
+                return Err(ApiError::not_found("project"));
+            }
+            Some(ProjectScope {
+                project: p,
+                rights,
+                grant: None,
+            })
+        }
+        (None, Some(_)) => return Err(ApiError::not_found("project")),
+        _ => None,
+    };
+    Ok((
+        OrgScope {
+            org: found.org,
+            rights,
+            every_project,
             grant: None,
         },
         project_scope,

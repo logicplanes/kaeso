@@ -180,7 +180,7 @@ pub async fn leave(
 ) -> ApiResult<StatusCode> {
     let me = ctx.user_id()?;
     let org: OrgId = org.parse().map_err(|_| ApiError::not_found("membership"))?;
-    let session = ctx.session()?;
+    let session = ctx.sign_in()?;
     let leaving = Area::Org {
         id: org.uuid(),
         require_sso: false,

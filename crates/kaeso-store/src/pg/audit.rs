@@ -12,6 +12,7 @@ pub struct NewEvent<'a> {
     pub project_id: Option<Uuid>,
     pub actor_kind: &'a str,
     pub actor_id: Option<Uuid>,
+    pub agent_id: Option<Uuid>,
     pub action: &'a str,
     pub target_kind: Option<&'a str>,
     pub target_id: Option<&'a str>,
@@ -26,8 +27,8 @@ pub struct NewEvent<'a> {
 pub async fn insert(db: impl PgExecutor<'_>, e: &NewEvent<'_>) -> Result<(), StoreError> {
     sqlx::query!(
         "INSERT INTO audit_events (id, scope, org_id, actor_kind, actor_id, action, target_kind, target_id, \
-         before, after, ip, user_agent, request_id, at, project_id) \
-         VALUES ($1, CASE WHEN $2::uuid IS NULL THEN 'instance' ELSE 'org' END, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+         before, after, ip, user_agent, request_id, at, project_id, agent_id) \
+         VALUES ($1, CASE WHEN $2::uuid IS NULL THEN 'instance' ELSE 'org' END, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
         e.id,
         e.org_id,
         e.actor_kind,
@@ -42,6 +43,7 @@ pub async fn insert(db: impl PgExecutor<'_>, e: &NewEvent<'_>) -> Result<(), Sto
         e.request_id,
         e.at,
         e.project_id,
+        e.agent_id,
     )
     .execute(db)
     .await?;
@@ -55,6 +57,9 @@ pub struct Event {
     pub project_id: Option<Uuid>,
     pub actor_kind: String,
     pub actor_id: Option<Uuid>,
+    pub agent_id: Option<Uuid>,
+    pub agent_name: Option<String>,
+    pub agent_harness: Option<String>,
     pub action: String,
     pub target_kind: Option<String>,
     pub target_id: Option<String>,
@@ -72,6 +77,7 @@ pub struct Filter<'a> {
     pub action_prefix: Option<&'a str>,
     pub target_id: Option<&'a str>,
     pub project_id: Option<Uuid>,
+    pub agents_only: bool,
     pub from: Option<OffsetDateTime>,
     pub to: Option<OffsetDateTime>,
 }
@@ -93,17 +99,19 @@ pub async fn list(
     });
     Ok(sqlx::query_as!(
         Event,
-        "SELECT id, org_id, project_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, \
-         user_agent, request_id, at FROM audit_events \
-         WHERE (($1::uuid IS NULL AND scope = 'instance') OR (scope = 'org' AND org_id = $1)) \
-         AND ($2::uuid IS NULL OR id < $2) \
-         AND ($4::uuid IS NULL OR actor_id = $4) \
-         AND ($5::text IS NULL OR action LIKE $5) \
-         AND ($6::text IS NULL OR target_id = $6) \
-         AND ($7::timestamptz IS NULL OR at >= $7) \
-         AND ($8::timestamptz IS NULL OR at < $8) \
-         AND ($9::uuid IS NULL OR project_id = $9) \
-         ORDER BY id DESC LIMIT $3",
+        "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", \
+         a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
+         e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id \
+         WHERE (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1)) \
+         AND ($2::uuid IS NULL OR e.id < $2) \
+         AND ($4::uuid IS NULL OR e.actor_id = $4) \
+         AND ($5::text IS NULL OR e.action LIKE $5) \
+         AND ($6::text IS NULL OR e.target_id = $6) \
+         AND ($7::timestamptz IS NULL OR e.at >= $7) \
+         AND ($8::timestamptz IS NULL OR e.at < $8) \
+         AND ($9::uuid IS NULL OR e.project_id = $9) \
+         AND (NOT $10 OR e.actor_kind = 'agent') \
+         ORDER BY e.id DESC LIMIT $3",
         org_id,
         before,
         limit,
@@ -113,6 +121,7 @@ pub async fn list(
         f.from,
         f.to,
         f.project_id,
+        f.agents_only,
     )
     .fetch_all(db)
     .await?)
@@ -125,9 +134,10 @@ pub async fn get(
 ) -> Result<Option<Event>, StoreError> {
     Ok(sqlx::query_as!(
         Event,
-        "SELECT id, org_id, project_id, actor_kind, actor_id, action, target_kind, target_id, before, after, ip, \
-         user_agent, request_id, at FROM audit_events \
-         WHERE id = $2 AND (($1::uuid IS NULL AND scope = 'instance') OR (scope = 'org' AND org_id = $1))",
+        "SELECT e.id, e.org_id, e.project_id, e.actor_kind, e.actor_id, e.agent_id, a.name AS \"agent_name?\", \
+         a.harness AS \"agent_harness?\", e.action, e.target_kind, e.target_id, e.before, e.after, e.ip, \
+         e.user_agent, e.request_id, e.at FROM audit_events e LEFT JOIN agents a ON a.id = e.agent_id \
+         WHERE e.id = $2 AND (($1::uuid IS NULL AND e.scope = 'instance') OR (e.scope = 'org' AND e.org_id = $1))",
         org_id,
         id
     )

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM agent_clients c WHERE c.created_at < $1 AND NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id) AND NOT EXISTS (SELECT 1 FROM agent_requests r WHERE r.client_id = c.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6a467ade48402694a52622fa93911c1f65f8aa968c7a4f07346475179ec1649c"
+}

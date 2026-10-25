@@ -1,0 +1,257 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, user_id, client_id, name, harness, model, preset, customized, instance_rights, account_rights, future_orgs, future_org_rights, future_project_rights, sign_in_method, second_factor, oidc_org_id, created_at, last_used_at, expires_at, revoked_at FROM agents WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "client_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "client_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "harness",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "harness"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "preset",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "preset"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "customized",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "customized"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "instance_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "instance_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "account_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "account_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "future_orgs",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "future_orgs"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "future_org_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "future_org_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "future_project_rights",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "future_project_rights"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "sign_in_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "sign_in_method"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "second_factor",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "second_factor"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "oidc_org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "oidc_org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "last_used_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "last_used_at"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "revoked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "agents",
+            "name": "revoked_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "3b1e4cd4387b8c357193c3cf965ef4e36287c67baa5834ba8b48f1025c747099"
+}

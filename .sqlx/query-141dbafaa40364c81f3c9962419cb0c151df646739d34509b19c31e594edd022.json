@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE agent_requests SET used_at = $2 WHERE id = $1 AND used_at IS NULL AND expires_at > $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "141dbafaa40364c81f3c9962419cb0c151df646739d34509b19c31e594edd022"
+}
