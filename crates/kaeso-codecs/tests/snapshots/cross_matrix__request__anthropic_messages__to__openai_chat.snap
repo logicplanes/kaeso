@@ -280,9 +280,30 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "pause-turn-continuation": {
-    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
-    "param": "messages[1].blocks[1]",
-    "unsupported": "server_tool_use content block"
+    "body": {
+      "max_completion_tokens": 4096,
+      "messages": [
+        {
+          "content": "Who won the 2026 Nobel Prize in Physics?",
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Let me look up this year's laureates.",
+              "type": "text"
+            },
+            {
+              "text": "The first result is the prize overview page; I'll search for the announcement itself.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        }
+      ],
+      "model": "claude-opus-5-5"
+    },
+    "path": "/v1/chat/completions"
   },
   "refusal": {
     "body": {
@@ -1149,9 +1170,42 @@ expression: outcomes
     "unsupported": "tool_choice `tool`"
   },
   "web-search-result-replay": {
-    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Remove the block, or send the request to a model served through its original format.",
-    "param": "messages[1].blocks[1]",
-    "unsupported": "server_tool_use content block"
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "When was Claude Shannon born?",
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "I'll search for when Claude Shannon was born.",
+              "type": "text"
+            },
+            {
+              "text": "Based on the search results, ",
+              "type": "text"
+            },
+            {
+              "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan",
+              "type": "text"
+            },
+            {
+              "text": ".",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": "And where did he study?",
+          "role": "user"
+        }
+      ],
+      "model": "claude-opus-5-5"
+    },
+    "path": "/v1/chat/completions"
   },
   "web-search-server-tool": {
     "body": {

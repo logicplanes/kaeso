@@ -335,6 +335,7 @@ Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (
 `openai_responses::for_chatgpt_plan` schreibt einen `GenerateRequest` für die Responses-Route um, die über Sign in with ChatGPT ein ChatGPT-Abo bedient ([Einschränkungen der Vorschau](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). Das Gateway ruft es für einen Anbieter-Schlüssel auf, der ein ChatGPT-Konto ist.
 
 - Es lässt `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` und `previous_response_id` weg. Das betrifft die typisierten Felder, die Extras-Felder und die ausdrücklichen Standardwerte und Nullwerte in den Formen `set`, `unset` und `canon`.
+- Es lässt das `max_uses` eines Websuche-Tools von Anthropic weg, das zu `max_tool_calls` würde ([gehostete Websuche](cross-format.md#gehostete-websuche)).
 - Es setzt `stream: true` und `store: false`.
 - Es entfernt die Form `input`, sodass `input` ein Array ist. Hat ein führendes Item die Rolle `system`, entfernt es auch die Formen `system_items` und `instructions`, sodass führender Systemtext `instructions` wird; führende `developer`-Items, wie Codex sie sendet, behalten ihre Gestalt und IDs. Jede andere Systemnachricht verliert ihre `role`-Überschreibung und wird als `developer`-Nachricht geschrieben, weil die Route `system`-Items ablehnt.
 

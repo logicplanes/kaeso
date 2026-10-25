@@ -69,6 +69,18 @@ pub const TOOLS_LEFT_OUT: &[(DialectId, &str, DialectId, LeftOutWhen)] = &[
         LeftOutWhen::Always,
     ),
     (
+        DialectId::AnthropicMessages,
+        "web_search_20260209",
+        DialectId::OpenAiChat,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::AnthropicMessages,
+        "web_search_20260318",
+        DialectId::OpenAiChat,
+        LeftOutWhen::Always,
+    ),
+    (
         DialectId::OpenAiResponses,
         "web_search",
         DialectId::AnthropicMessages,

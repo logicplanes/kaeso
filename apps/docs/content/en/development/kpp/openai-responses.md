@@ -335,6 +335,7 @@ Encoding replays the body and status of errors that came from an OpenAI dialect 
 `openai_responses::for_chatgpt_plan` rewrites a `GenerateRequest` for the Responses route that serves a ChatGPT plan through Sign in with ChatGPT ([preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)). The gateway calls it for a provider key that is a ChatGPT account.
 
 - It leaves out `background`, `conversation`, `max_output_tokens`, `max_tool_calls`, `metadata`, `moderation`, `multi_agent`, `prompt`, `prompt_cache_retention`, `safety_identifier`, `temperature`, `top_logprobs`, `top_p`, `truncation`, `user` and `previous_response_id`. This covers the typed fields, the extras fields, and the explicit defaults and nulls in forms `set`, `unset` and `canon`.
+- It leaves out the `max_uses` of an Anthropic web search tool, which would become `max_tool_calls` ([hosted web search](cross-format.md#hosted-web-search)).
 - It sets `stream: true` and `store: false`.
 - It drops form `input`, so `input` is an array. When a leading item has the role `system`, it also drops forms `system_items` and `instructions`, so leading system text is `instructions`; leading `developer` items, as Codex sends them, keep their shape and ids. Any other system message loses its `role` override and is written as a `developer` message, because the route refuses `system` items.
 

@@ -470,70 +470,70 @@ expression: outcomes
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/plan-your-visit/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/plan-your-visit/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.tickets-lisbon.com/aquarium-lisbon-oceanarium/opening-hours/",
             "type": "web_search_result",
             "url": "https://www.tickets-lisbon.com/aquarium-lisbon-oceanarium/opening-hours/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://way4i.com/lisbon-oceanarium/",
             "type": "web_search_result",
             "url": "https://way4i.com/lisbon-oceanarium/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.traveldojo.com/lisbon-oceanarium/",
             "type": "web_search_result",
             "url": "https://www.traveldojo.com/lisbon-oceanarium/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/es/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/es/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.lisboacard.org/tickets/oceanario-de-lisboa/",
             "type": "web_search_result",
             "url": "https://www.lisboacard.org/tickets/oceanario-de-lisboa/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/fr/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/fr/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/es/preguntas-frecuentes/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/es/preguntas-frecuentes/"
           }
@@ -554,35 +554,35 @@ expression: outcomes
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/wp-content/uploads/2024/12/Um-Oceano-para-Ensinar_ed34_nov2024_Oceanario-de-Lisboa.pdf",
             "type": "web_search_result",
             "url": "https://oceanario.pt/wp-content/uploads/2024/12/Um-Oceano-para-Ensinar_ed34_nov2024_Oceanario-de-Lisboa.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/wp-content/uploads/2024/09/Um-Oceano-para-Ensinar_ed17_jun23_oceanario-de-lisboa.pdf",
             "type": "web_search_result",
             "url": "https://oceanario.pt/wp-content/uploads/2024/09/Um-Oceano-para-Ensinar_ed17_jun23_oceanario-de-lisboa.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/faqs/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/faqs/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/wp-content/uploads/2024/09/Um-Oceano-para-Ensinar_ed26_mar2024_Oceanario-de-Lisboa.pdf",
             "type": "web_search_result",
             "url": "https://oceanario.pt/wp-content/uploads/2024/09/Um-Oceano-para-Ensinar_ed26_mar2024_Oceanario-de-Lisboa.pdf"
           }
@@ -620,6 +620,9 @@ expression: outcomes
       "output_tokens": 544,
       "output_tokens_details": {
         "thinking_tokens": 255
+      },
+      "server_tool_use": {
+        "web_search_requests": 2
       }
     }
   },
@@ -1092,147 +1095,147 @@ expression: outcomes
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/plan-your-visit/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/plan-your-visit/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/faqs/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/faqs/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/contact-us/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/contact-us/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa",
             "type": "web_search_result",
             "url": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/planear-visita/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/planear-visita/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/oceanario-de-lisboa-en/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/oceanario-de-lisboa-en/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/contactos/",
             "type": "web_search_result",
             "url": "https://oceanario.pt/contactos/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.visitlisboa.com/pt-pt/locais/oceanario-de-lisboa",
             "type": "web_search_result",
             "url": "https://www.visitlisboa.com/pt-pt/locais/oceanario-de-lisboa"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://s3.eu-west-1.amazonaws.com/assets.visitlisboa.com/ZNxtKAxmBWXXwzXffejB5hPW",
             "type": "web_search_result",
             "url": "https://s3.eu-west-1.amazonaws.com/assets.visitlisboa.com/ZNxtKAxmBWXXwzXffejB5hPW"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://maps.apple.com/place?place-id=I5F801D69AA80A225",
             "type": "web_search_result",
             "url": "https://maps.apple.com/place?place-id=I5F801D69AA80A225"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.flytap.com/-/media/Flytap/PDF/Stopover/lisboa-card/Guia_LxCard_Ing_Esp_Maio_2025_compr.pdf?hash=7FB42371BAB9D69D68497BAB9F391A42CD1019E2&la=es-ES",
             "type": "web_search_result",
             "url": "https://www.flytap.com/-/media/Flytap/PDF/Stopover/lisboa-card/Guia_LxCard_Ing_Esp_Maio_2025_compr.pdf?hash=7FB42371BAB9D69D68497BAB9F391A42CD1019E2&la=es-ES"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanariodelisboa.com/visitor-guide/",
             "type": "web_search_result",
             "url": "https://oceanariodelisboa.com/visitor-guide/"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://assets-us-01.kc-usercontent.com/bb7ec940-c332-0010-dbb1-658c3c6cdf68/5eef55ee-c478-4b49-8b53-a69d04e05e61/Destination%20Guide%20Lisbon%20-%20AG.pdf",
             "type": "web_search_result",
             "url": "https://assets-us-01.kc-usercontent.com/bb7ec940-c332-0010-dbb1-658c3c6cdf68/5eef55ee-c478-4b49-8b53-a69d04e05e61/Destination%20Guide%20Lisbon%20-%20AG.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://storage.sbcevents.com/assets/2024/04/lisbon-accessible-tourism-cml-1-1.pdf",
             "type": "web_search_result",
             "url": "https://storage.sbcevents.com/assets/2024/04/lisbon-accessible-tourism-cml-1-1.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.turismodeportugal.pt/SiteCollectionDocuments/media/postcards-tp-eurovisao-2018.pdf",
             "type": "web_search_result",
             "url": "https://www.turismodeportugal.pt/SiteCollectionDocuments/media/postcards-tp-eurovisao-2018.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://manuals.plus/m/f77c1620a72ee63415d9ced94174041f43b8880d368bb8406c684b974e8748d7.pdf",
             "type": "web_search_result",
             "url": "https://manuals.plus/m/f77c1620a72ee63415d9ced94174041f43b8880d368bb8406c684b974e8748d7.pdf"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://en.wikipedia.org/wiki/Lisbon_Oceanarium",
             "type": "web_search_result",
             "url": "https://en.wikipedia.org/wiki/Lisbon_Oceanarium"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://de.wikipedia.org/wiki/Ocean%C3%A1rio_de_Lisboa",
             "type": "web_search_result",
             "url": "https://de.wikipedia.org/wiki/Ocean%C3%A1rio_de_Lisboa"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://oceanario.pt/en/?utm_source=openai",
             "type": "web_search_result",
             "url": "https://oceanario.pt/en/?utm_source=openai"
           }
@@ -1260,6 +1263,9 @@ expression: outcomes
       "output_tokens": 168,
       "output_tokens_details": {
         "thinking_tokens": 46
+      },
+      "server_tool_use": {
+        "web_search_requests": 1
       }
     }
   },
@@ -1522,14 +1528,14 @@ expression: outcomes
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.oceanario.pt/en/plan-your-visit/opening-hours",
             "type": "web_search_result",
             "url": "https://www.oceanario.pt/en/plan-your-visit/opening-hours"
           },
           {
             "encrypted_content": "",
             "page_age": null,
-            "title": "",
+            "title": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa",
             "type": "web_search_result",
             "url": "https://www.visitlisboa.com/en/places/oceanario-de-lisboa"
           }
@@ -1562,6 +1568,9 @@ expression: outcomes
       "output_tokens": 412,
       "output_tokens_details": {
         "thinking_tokens": 256
+      },
+      "server_tool_use": {
+        "web_search_requests": 1
       }
     }
   }

@@ -9,7 +9,7 @@ use serde_json::Value;
 use super::blocks::own_ext;
 use super::common::{D, internal, nested_ext, to_raw};
 use super::error::stream_error_data;
-use super::response::{UsageShape, add_default, encode_stop, encode_usage};
+use super::response::{UsageShape, add_default, encode_stop, encode_usage, with_web_searches};
 use super::stream::{
     CONTENT_BLOCK_FORM, EVENT_FORM, IN_START_FORM, INDEX_FORM, SSE_FORM, default_start_block,
 };
@@ -288,7 +288,11 @@ impl Encoder {
             verbatim_from_form(&d.extras, D, "delta"),
         );
         let usage = match d.usage.as_ref().or(self.last_usage.as_ref()) {
-            Some(u) => encode_usage(u, UsageShape::Delta),
+            Some(u) => with_web_searches(
+                encode_usage(u, UsageShape::Delta),
+                u,
+                self.searches.completed(),
+            ),
             None => serde_json::json!({"output_tokens": 0}),
         };
         let ev = own_ext(

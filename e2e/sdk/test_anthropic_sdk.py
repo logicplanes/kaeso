@@ -68,7 +68,6 @@ def test_tools(an, mock):
     assert mock.last()["body"]["tools"][0]["type"] == "function"
 
 
-
 def test_web_search_on_an_openai_model(an, mock):
     tools = [{"type": "web_search_20250305", "name": "web_search", "allowed_domains": ["blog.rust-lang.org"], "max_uses": 8}]
     with an.messages.stream(
@@ -87,6 +86,7 @@ def test_web_search_on_an_openai_model(an, mock):
     assert use.name == "web_search" and use.input["query"].startswith("Announcing Rust")
     assert result.tool_use_id == use.id
     assert all(r.url.startswith("https://blog.rust-lang.org/") for r in result.content)
+
 
 def test_images_and_pdfs(an, mock):
     content = [

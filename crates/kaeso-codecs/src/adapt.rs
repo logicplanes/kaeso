@@ -11,6 +11,7 @@ pub(crate) struct Draft<'a> {
     base: &'a GenerateRequest,
     edited: Option<GenerateRequest>,
     left_out: Vec<String>,
+    search_limit: Option<(&'static str, u64)>,
 }
 
 impl<'a> Draft<'a> {
@@ -19,6 +20,7 @@ impl<'a> Draft<'a> {
             base,
             edited: None,
             left_out: Vec::new(),
+            search_limit: None,
         }
     }
 
@@ -33,11 +35,16 @@ impl<'a> Draft<'a> {
     pub(crate) fn leave_out(&mut self, path: String) {
         self.left_out.push(path);
     }
+
+    pub(crate) fn set_search_limit(&mut self, field: &'static str, limit: u64) {
+        self.search_limit = Some((field, limit));
+    }
 }
 
 pub(crate) struct Adapted<'a> {
     pub(crate) req: Cow<'a, Request>,
     pub(crate) left_out: Vec<String>,
+    pub(crate) search_limit: Option<(&'static str, u64)>,
 }
 
 impl std::ops::Deref for Adapted<'_> {
@@ -57,6 +64,7 @@ pub(crate) fn for_target<'a>(
         return Ok(Adapted {
             req: Cow::Borrowed(req),
             left_out: Vec::new(),
+            search_limit: None,
         });
     };
     let profile = ctx.responses_profile;
@@ -86,14 +94,21 @@ pub(crate) fn for_target<'a>(
     }
     verbosity::left_out(&mut draft, target, &ctx.chat_profile);
     let Draft {
-        edited, left_out, ..
+        edited,
+        left_out,
+        search_limit,
+        ..
     } = draft;
     let req = match edited {
         None => Cow::Borrowed(req),
         Some(g) if matches!(req, Request::CountTokens(_)) => Cow::Owned(Request::CountTokens(g)),
         Some(g) => Cow::Owned(Request::Generate(g)),
     };
-    Ok(Adapted { req, left_out })
+    Ok(Adapted {
+        req,
+        left_out,
+        search_limit,
+    })
 }
 
 // Anthropic takes a system message only right after a user turn and right before an

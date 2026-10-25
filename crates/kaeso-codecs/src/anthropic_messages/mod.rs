@@ -71,7 +71,7 @@ impl Codec for AnthropicMessages {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        let crate::adapt::Adapted { req, left_out } =
+        let crate::adapt::Adapted { req, left_out, .. } =
             crate::adapt::for_target(req, Self::DIALECT, ctx)?;
         ctx.left_out = left_out;
         check::check(&req, &ctx.origin(Self::DIALECT))?;

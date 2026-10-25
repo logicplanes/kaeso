@@ -223,7 +223,12 @@ fn encode_message(r: &Response) -> Result<Ext<MessageRespW>, KppError> {
     let searches = crate::web_search::for_anthropic_reply(&r.blocks);
     let content = enc.blocks(searches.as_deref().unwrap_or(&r.blocks))?;
     let (stop_reason, stop_sequence) = encode_stop(Some(&r.stop), &r.extras, "");
-    let usage = to_raw(&encode_usage(&r.usage, UsageShape::Full))?;
+    let searches = crate::web_search::completed_searches(&r.blocks);
+    let usage = to_raw(&with_web_searches(
+        encode_usage(&r.usage, UsageShape::Full),
+        &r.usage,
+        searches,
+    ))?;
     let mut extra = extra_for(&r.extras, D);
     if !own {
         add_default(&mut extra, "type", "\"message\"");
@@ -242,6 +247,19 @@ fn encode_message(r: &Response) -> Result<Ext<MessageRespW>, KppError> {
         extra,
         verbatim_from_form(&r.extras, D, ""),
     ))
+}
+
+pub(crate) fn with_web_searches(mut usage: Value, u: &Usage, searches: u64) -> Value {
+    if searches > 0
+        && u.raw_for(D).is_none()
+        && let Value::Object(m) = &mut usage
+    {
+        m.insert(
+            "server_tool_use".into(),
+            json!({ "web_search_requests": searches }),
+        );
+    }
+    usage
 }
 
 pub(crate) fn add_default(extra: &mut indexmap::IndexMap<String, RawJson>, key: &str, json: &str) {

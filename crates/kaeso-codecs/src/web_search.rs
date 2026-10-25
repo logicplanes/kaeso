@@ -20,6 +20,11 @@ const TOOL: &str = "web_search";
 const SEARCH_CALL: &str = "web_search_call";
 const KAESO_SEARCH_ID: &str = "ws_kaeso_";
 const ANTHROPIC_TOOL: &str = "web_search_20250305";
+const ANTHROPIC_TOOLS: &[&str] = &[
+    "web_search_20250305",
+    "web_search_20260209",
+    "web_search_20260318",
+];
 const ANTHROPIC_NAME: &str = "web_search";
 const ACCESS: &str = "external_web_access";
 const CONTENT_TYPES: &str = "search_content_types";
@@ -340,7 +345,10 @@ fn without_search_calls(d: &mut Draft<'_>, drop: impl Fn(Option<&str>) -> bool) 
 
 fn is_anthropic_search(item: &RawItem) -> bool {
     item.origin.is(ANTHROPIC)
-        && type_tag(item.raw.as_raw()).ok().flatten().as_deref() == Some(ANTHROPIC_TOOL)
+        && type_tag(item.raw.as_raw())
+            .ok()
+            .flatten()
+            .is_some_and(|t| ANTHROPIC_TOOLS.contains(&t.as_str()))
 }
 
 fn hosted_searches(r: &GenerateRequest, origin: DialectId) -> Vec<usize> {
@@ -376,7 +384,13 @@ fn map_searches(
         let fields = fields_of(item, &path)?;
         let (tool, cached) = match origin {
             RESPONSES => (TOOL, cached_only(&fields, &path)?),
-            _ => (ANTHROPIC_TOOL, false),
+            _ => (
+                fields
+                    .get("type")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default(),
+                false,
+            ),
         };
         let out = if leaves_out_tool(origin, tool, target, cached) {
             left_out.push(path);
@@ -469,7 +483,7 @@ pub(crate) fn for_chat(d: &mut Draft<'_>) -> Result<(), KppError> {
     map_searches(d, RESPONSES, CHAT, |_, _, _| Ok(Mapped::LeftOut))?;
     without_search_calls(d, |_| true);
     anthropic_searches(d, CHAT, |_, _| Ok(Mapped::LeftOut))?;
-    without_reported_searches(d);
+    without_claudes_searches(d, true);
     Ok(())
 }
 
@@ -480,20 +494,29 @@ pub(crate) fn for_responses(d: &mut Draft<'_>, profile: ResponsesProfile) -> Res
         })?;
     }
     without_search_calls(d, |id| id.is_some_and(|id| id.starts_with(KAESO_SEARCH_ID)));
+    let mut limit = None;
     anthropic_searches(d, RESPONSES, |fields, path| {
-        let (fields, _) = responses_fields(fields, path, profile.web_search)?;
+        let (fields, max_uses) = responses_fields(fields, path, profile)?;
+        limit = limit.or(max_uses);
         match profile.web_search {
             WebSearchTool::Xai => xai_tool(&fields, path, profile.provider),
             _ => raw_tool(RESPONSES, fields),
         }
         .map(Mapped::Tool)
     })?;
-    without_reported_searches(d);
+    if let Some(n) = limit {
+        let key = match profile.web_search {
+            WebSearchTool::Xai => "max_turns",
+            _ => "max_tool_calls",
+        };
+        d.set_search_limit(key, n);
+    }
+    without_claudes_searches(d, true);
     Ok(())
 }
 
 pub(crate) fn for_claude(d: &mut Draft<'_>) {
-    without_reported_searches(d);
+    without_claudes_searches(d, false);
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -560,49 +583,67 @@ const KAESO_SERVER_ID: &str = "srvtoolu_kaeso_";
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ResponsesSearch {
     id: String,
-    status: String,
+    completed: bool,
     query: Option<String>,
     sources: Vec<String>,
 }
 
-pub(crate) fn responses_search(item: &RawItem) -> Option<ResponsesSearch> {
-    #[derive(Deserialize)]
-    struct Call {
-        #[serde(rename = "type")]
-        ty: String,
-        id: String,
-        #[serde(default)]
-        status: Option<String>,
-        #[serde(default)]
-        action: Option<Action>,
-    }
-    #[derive(Deserialize)]
-    struct Action {
-        #[serde(rename = "type")]
-        ty: String,
-        #[serde(default)]
-        query: Option<String>,
-        #[serde(default)]
-        sources: Option<Vec<Source>>,
-    }
-    #[derive(Deserialize)]
-    struct Source {
-        #[serde(default)]
-        url: Option<String>,
-    }
+#[derive(Deserialize)]
+struct SearchCall {
+    #[serde(rename = "type")]
+    ty: String,
+    id: String,
+    #[serde(default)]
+    status: Option<String>,
+    #[serde(default)]
+    action: Option<SearchAction>,
+}
+
+#[derive(Deserialize)]
+struct SearchAction {
+    #[serde(rename = "type")]
+    ty: String,
+    #[serde(default)]
+    query: Option<String>,
+    #[serde(default)]
+    queries: Option<Vec<String>>,
+    #[serde(default)]
+    sources: Option<Vec<SearchSource>>,
+}
+
+#[derive(Deserialize)]
+struct SearchSource {
+    #[serde(default)]
+    url: Option<String>,
+}
+
+fn search_call(item: &RawItem) -> Option<SearchCall> {
     if !item.origin.is(RESPONSES) {
         return None;
     }
-    let call: Call = item.raw.parse().ok()?;
-    let action = call.action.unwrap_or(Action {
-        ty: "search".into(),
-        query: None,
-        sources: None,
-    });
-    (call.ty == SEARCH_CALL && action.ty == "search").then(|| ResponsesSearch {
+    let call: SearchCall = item.raw.parse().ok()?;
+    (call.ty == SEARCH_CALL).then_some(call)
+}
+
+pub(crate) fn is_search_call(item: &RawItem) -> bool {
+    search_call(item).is_some()
+}
+
+pub(crate) fn responses_search(item: &RawItem) -> Option<ResponsesSearch> {
+    let call = search_call(item)?;
+    let action = call.action.filter(|a| a.ty == "search")?;
+    let completed = match call.status.as_deref() {
+        Some("completed") => true,
+        Some("failed") => false,
+        _ => return None,
+    };
+    let query = action
+        .query
+        .or_else(|| action.queries.and_then(|q| q.into_iter().next()));
+    Some(ResponsesSearch {
         id: call.id,
-        status: call.status.unwrap_or_default(),
-        query: action.query,
+        completed,
+        query,
         sources: action
             .sources
             .unwrap_or_default()
@@ -644,8 +685,8 @@ pub(crate) fn search_input(search: &ResponsesSearch) -> Value {
 }
 
 pub(crate) fn search_result(search: &ResponsesSearch) -> Option<RawItem> {
-    let content = match search.status.as_str() {
-        "completed" => Value::Array(
+    let content = if search.completed {
+        Value::Array(
             search
                 .sources
                 .iter()
@@ -653,24 +694,32 @@ pub(crate) fn search_result(search: &ResponsesSearch) -> Option<RawItem> {
                     serde_json::json!({
                         "type": "web_search_result",
                         "url": url,
-                        "title": "",
+                        "title": url,
                         "encrypted_content": "",
                         "page_age": null,
                     })
                 })
                 .collect(),
-        ),
-        "failed" => serde_json::json!({
+        )
+    } else {
+        serde_json::json!({
             "type": "web_search_tool_result_error",
             "error_code": "unavailable",
-        }),
-        _ => return None,
+        })
     };
     anthropic_item(serde_json::json!({
         "type": "web_search_tool_result",
         "tool_use_id": server_tool_id(search),
         "content": content,
     }))
+}
+
+pub(crate) fn completed_searches(blocks: &[Block]) -> u64 {
+    let completed = |b: &Block| match b {
+        Block::Unknown(item) => responses_search(item).is_some_and(|s| s.completed),
+        _ => false,
+    };
+    blocks.iter().filter(|b| completed(b)).count() as u64
 }
 
 pub(crate) fn for_anthropic_reply(blocks: &[Block]) -> Option<Vec<Block>> {
@@ -699,6 +748,7 @@ pub(crate) struct ReplySearches {
     index: HashMap<u32, u32>,
     next: u32,
     held: HashMap<u32, RawItem>,
+    completed: u64,
 }
 
 impl ReplySearches {
@@ -717,10 +767,17 @@ impl ReplySearches {
         i
     }
 
+    pub(crate) fn completed(&self) -> u64 {
+        self.completed
+    }
+
     fn found(&mut self, item: &RawItem) -> Vec<StreamEvent> {
         let Some(search) = responses_search(item) else {
             return Vec::new();
         };
+        if search.completed {
+            self.completed += 1;
+        }
         let mut out = Vec::new();
         if let Some(start) = server_tool_use(&search, Value::Object(Map::new())) {
             let at = self.fresh();
@@ -760,7 +817,7 @@ impl ReplySearches {
         let upstream = match event {
             StreamEvent::BlockStart(s) => {
                 if let BlockHeader::Unknown(item) = &s.block
-                    && responses_search(item).is_some()
+                    && is_search_call(item)
                 {
                     self.held.insert(s.index, item.clone());
                     return Some(Vec::new());
@@ -770,7 +827,7 @@ impl ReplySearches {
             StreamEvent::BlockDelta(d) => {
                 if let Some(held) = self.held.get_mut(&d.index) {
                     if let Delta::Unknown(item) = &d.delta
-                        && responses_search(item).is_some()
+                        && is_search_call(item)
                     {
                         *held = item.clone();
                     }
@@ -808,8 +865,6 @@ impl ReplySearches {
     }
 }
 
-// Anthropic's `web_search_20250305` server tool, as Claude Code's `WebSearch` sends it.
-// https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
 fn anthropic_searches(
     d: &mut Draft<'_>,
     target: DialectId,
@@ -835,12 +890,33 @@ fn anthropic_searches(
     map_searches(d, ANTHROPIC, target, |fields, path, _| map(fields, path))
 }
 
+fn default_callers(version: &str) -> &'static str {
+    match version {
+        ANTHROPIC_TOOL => "direct",
+        _ => "code_execution_20260120",
+    }
+}
+
 fn responses_fields(
     fields: &Map<String, Value>,
     path: &str,
-    shape: WebSearchTool,
+    profile: ResponsesProfile,
 ) -> Result<(Map<String, Value>, Option<u64>), KppError> {
     let target = RESPONSES.display_name();
+    let provider = profile.provider;
+    let xai = profile.web_search == WebSearchTool::Xai;
+    let version = fields
+        .get("type")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    let set = |key: &str| fields.get(key).is_some_and(|v| !v.is_null());
+    if set("allowed_domains") && set("blocked_domains") {
+        let at = path.replace('[', ".").replace(']', "");
+        return Err(KppError::invalid_request(format!(
+            "{at}.{version}: Only one of `allowed_domains` and `blocked_domains` can be provided."
+        ))
+        .with_param(path));
+    }
     let mut tool = Map::new();
     tool.insert("type".into(), TOOL.into());
     let mut filters = Map::new();
@@ -850,18 +926,35 @@ fn responses_fields(
         match (key.as_str(), value) {
             ("type" | "cache_control", _) | (_, Value::Null) => {}
             ("name", Value::String(n)) if n == ANTHROPIC_NAME => {}
-            ("allowed_domains", Value::Array(_)) => {
-                filters.insert(key.clone(), value.clone());
-            }
-            ("blocked_domains", Value::Array(_)) => {
-                let name = match shape {
-                    WebSearchTool::Xai => "excluded_domains",
-                    _ => "blocked_domains",
+            ("allowed_callers", Value::Array(callers)) if matches!(callers.as_slice(), [Value::String(c)] if c == "direct" || c == default_callers(version)) =>
+                {}
+            ("response_inclusion", Value::String(r))
+                if version == "web_search_20260318" && (r == "full" || r == "excluded") => {}
+            ("allowed_domains" | "blocked_domains", Value::Array(domains)) => {
+                if xai && domains.len() > XAI_MAX_DOMAINS {
+                    return Err(KppError::unsupported(
+                        format!("web_search.{key}"),
+                        format!(
+                            "{provider}'s web search takes a list of at most {XAI_MAX_DOMAINS} domains in `{at}`; send fewer."
+                        ),
+                    )
+                    .with_param(at));
+                }
+                let name = match (key.as_str(), xai) {
+                    ("blocked_domains", true) => "excluded_domains",
+                    _ => key.as_str(),
                 };
                 filters.insert(name.into(), value.clone());
             }
             ("max_uses", Value::Number(n)) if n.as_u64().is_some_and(|n| n > 0) => {
                 limit = n.as_u64();
+            }
+            ("user_location", Value::Object(_)) if xai => {
+                return Err(KppError::unsupported(
+                    "web_search.user_location",
+                    format!("{provider}'s web search has no `user_location`. Remove it."),
+                )
+                .with_param(at));
             }
             ("user_location", Value::Object(location)) => {
                 let mut out = Map::new();
@@ -906,31 +999,24 @@ fn responses_fields(
 
 pub(crate) const SOURCES: &str = "web_search_call.action.sources";
 
-pub(crate) fn search_limit(
-    r: &GenerateRequest,
-    shape: WebSearchTool,
-) -> Result<Option<(&'static str, u64)>, KppError> {
-    let key = match shape {
-        WebSearchTool::Xai => "max_turns",
-        _ => "max_tool_calls",
-    };
-    for i in hosted_searches(r, ANTHROPIC) {
-        let path = format!("tools[{i}]");
-        let Some(ToolDef::Unknown(item)) = r.tools.get(i) else {
-            continue;
-        };
-        if let (_, Some(limit)) = responses_fields(&fields_of(item, &path)?, &path, shape)? {
-            return Ok(Some((key, limit)));
+pub(crate) fn without_search_limit(tools: &mut [ToolDef]) {
+    for t in tools {
+        if let ToolDef::Unknown(item) = t
+            && is_anthropic_search(item)
+            && let Ok(Value::Object(mut fields)) = item.raw.to_value()
+            && fields.remove("max_uses").is_some()
+            && let Ok(raw) = RawJson::from_serialize(&Value::Object(fields))
+        {
+            item.raw = raw;
         }
     }
-    Ok(None)
 }
 
 pub(crate) fn asks_for_sources(r: &GenerateRequest) -> bool {
     !r.extras.is_from(RESPONSES) && !hosted_searches(r, RESPONSES).is_empty()
 }
 
-fn reported_by_kaeso(block: &Block) -> bool {
+fn claudes_search_id(block: &Block) -> Option<String> {
     #[derive(Deserialize)]
     struct Ids {
         #[serde(rename = "type")]
@@ -938,37 +1024,50 @@ fn reported_by_kaeso(block: &Block) -> bool {
         #[serde(default)]
         id: Option<String>,
         #[serde(default)]
+        name: Option<String>,
+        #[serde(default)]
         tool_use_id: Option<String>,
     }
     let Block::Unknown(item) = block else {
-        return false;
+        return None;
     };
     if !item.origin.is(ANTHROPIC) {
-        return false;
+        return None;
     }
-    let Ok(ids) = item.raw.parse::<Ids>() else {
-        return false;
-    };
-    let id = match ids.ty.as_str() {
-        "server_tool_use" => ids.id,
+    let ids = item.raw.parse::<Ids>().ok()?;
+    match ids.ty.as_str() {
+        "server_tool_use" if ids.name.as_deref() == Some(ANTHROPIC_NAME) => ids.id,
         "web_search_tool_result" => ids.tool_use_id,
         _ => None,
-    };
-    id.is_some_and(|id| id.starts_with(KAESO_SERVER_ID))
+    }
 }
 
-fn without_reported_searches(d: &mut Draft<'_>) {
-    let reported = d
+fn cites_search(c: &kaeso_kpp::Citation) -> bool {
+    c.origin.is(ANTHROPIC)
+        && type_tag(c.raw.as_raw()).ok().flatten().as_deref() == Some("web_search_result_location")
+}
+
+fn without_claudes_searches(d: &mut Draft<'_>, all: bool) {
+    let dropped =
+        |b: &Block| claudes_search_id(b).is_some_and(|id| all || id.starts_with(KAESO_SERVER_ID));
+    let found = d
         .get()
         .messages
         .iter()
-        .any(|m| m.blocks.iter().any(reported_by_kaeso));
-    if !reported {
+        .any(|m| m.blocks.iter().any(dropped));
+    if !found {
         return;
     }
     d.edit().messages.retain_mut(|m| {
         let held = m.blocks.len();
-        m.blocks.retain(|b| !reported_by_kaeso(b));
+        m.blocks.retain(|b| !dropped(b));
+        if all {
+            for b in &mut m.blocks {
+                if let Block::Text(t) = b {
+                    t.citations.retain(|c| !cites_search(c));
+                }
+            }
+        }
         m.blocks.len() == held || !m.blocks.is_empty()
     });
 }
