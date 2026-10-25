@@ -621,18 +621,8 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     if let Some(user) = flow.link_user {
         return link(state, ctx, flow, &connection, &identity, user).await;
     }
-    if let Some((user, session)) = flow.confirm {
-        return confirm(
-            state,
-            ctx,
-            flow,
-            &connection,
-            &identity,
-            &email,
-            user,
-            session,
-        )
-        .await;
+    if let Some(signed_in) = flow.confirm {
+        return confirm(state, ctx, flow, &connection, &identity, &email, signed_in).await;
     }
     let org_row = orgs::get(&state.pg, org.uuid())
         .await?
@@ -848,7 +838,6 @@ fn signed_in_afresh(identity: &crate::auth::oidc::Identity) -> bool {
 
 // A confirmation proves the signed-in person is at the keyboard, so it must come back as the
 // same account and from a fresh sign-in at the provider; it never creates or switches accounts.
-#[allow(clippy::too_many_arguments)]
 async fn confirm(
     state: &AppState,
     ctx: &Ctx,
@@ -856,8 +845,7 @@ async fn confirm(
     connection: &oidc::Connection,
     identity: &crate::auth::oidc::Identity,
     email: &str,
-    user: UserId,
-    session: SessionId,
+    (user, session): (UserId, SessionId),
 ) -> ApiResult<Response> {
     let afresh = signed_in_afresh(identity);
     if connection.confirms_sign_in != Some(afresh) {
