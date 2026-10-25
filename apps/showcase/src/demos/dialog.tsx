@@ -229,7 +229,7 @@ export function WithResult() {
                 title: "Key created",
                 description: "Copy the key now: it's shown once, and Kaeso keeps only a hash of it.",
                 size: "lg",
-                content: <SecretReveal secret={SECRET} name={name.trim()} baseUrl="https://gateway.northwind.example" model="gpt-5-mini" />,
+                content: <SecretReveal secret={SECRET} name={name.trim()} baseUrl="https://kaeso.example.com" model="gpt-5-mini" />,
                 footer: <Button onClick={close}>Done</Button>,
               }
             : undefined

@@ -121,7 +121,7 @@ describe("Collapsible and Accordion", () => {
 
 describe("SensitiveInput", () => {
   it("reveals and hides a secret in mono", async () => {
-    render(<SensitiveInput aria-label="API key" defaultValue="sk-kaeso-live" />);
+    render(<SensitiveInput aria-label="API key" defaultValue="sk-kso-live" />);
     const input = screen.getByLabelText("API key");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("data-1p-ignore");

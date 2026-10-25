@@ -13,8 +13,8 @@ describe("useCopy", () => {
     const writeText = vi.fn(() => Promise.resolve());
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
     const { result } = renderHook(() => useCopy(500));
-    await act(async () => expect(await result.current.copy("sk-kaeso-live")).toBe(true));
-    expect(writeText).toHaveBeenCalledWith("sk-kaeso-live");
+    await act(async () => expect(await result.current.copy("sk-kso-live")).toBe(true));
+    expect(writeText).toHaveBeenCalledWith("sk-kso-live");
     expect(result.current.copied).toBe(true);
     act(() => vi.advanceTimersByTime(500));
     expect(result.current.copied).toBe(false);
