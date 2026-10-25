@@ -10,12 +10,13 @@ use super::convert::{
     FORM_REFUSAL_PART, encode_file_part, encode_image_part, encode_refusal_part, encode_text_part,
     encode_tool_call, ext_nested, ext_with, is_tool_call_item, nested_keys, safe_tool_name, to_raw,
 };
-use super::profile::{ChatProfile, OutputLimit, SeedField};
+use super::profile::{ChatProfile, OutputLimit, ReplyReasoning, SeedField};
 use super::request::{
     CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_RESPONSE_FORMAT_TEXT,
     FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE, FORM_STREAM_OPTIONS,
     FORM_STREAM_OPTIONS_OFF, FORM_USER, FUNCTION_ROLE, KEY_MAX_TOKENS_CONFLICT, MESSAGE_PREFIX,
 };
+use super::response::{THINKING_PARTS_FIELD, encode_thinking_part};
 use super::wire::{
     AssistantMessage, ChatRequest, FunctionObject, FunctionToolWire, InstructionMessage,
     JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
@@ -428,7 +429,10 @@ fn encode_message(
             out.push(to_raw(&ext_with(wire, &message.extras))?);
         }
         Role::User => encode_user(message, out)?,
-        Role::Assistant => out.push(encode_assistant(message, names)?),
+        Role::Assistant => {
+            let index = out.len();
+            out.push(encode_assistant(message, names, index)?);
+        }
         _ => {
             return Err(KppError::unsupported_by(
                 "message role",
@@ -497,7 +501,11 @@ fn encode_tool_message(result: &ToolResultBlock) -> Result<RawJson, KppError> {
     to_raw(&ext_with(wire, &result.extras))
 }
 
-fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson, KppError> {
+fn encode_assistant(
+    message: &Message,
+    names: &mut Names<'_>,
+    index: usize,
+) -> Result<RawJson, KppError> {
     let mut content: Vec<&Block> = Vec::new();
     let mut refusal: Option<String> = None;
     let mut tool_calls = Vec::new();
@@ -577,8 +585,48 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
             Some(StringOr::List(parts))
         }
     };
+    if names.ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts {
+        thought_into_content(&mut wire, &mut wrapped, &names.ctx.chat_profile, index)?;
+    }
     wrapped.known = wire;
     to_raw(&wrapped)
+}
+
+fn thought_into_content(
+    wire: &mut AssistantMessage,
+    wrapped: &mut Ext<AssistantMessage>,
+    profile: &ChatProfile,
+    index: usize,
+) -> Result<(), KppError> {
+    wrapped.verbatim.shift_remove(THINKING_PARTS_FIELD);
+    let Some(raw) = wrapped.extra.shift_remove(THINKING_PARTS_FIELD) else {
+        return Ok(());
+    };
+    let Ok(thought) = raw.parse::<String>() else {
+        let param = format!("messages[{index}].{THINKING_PARTS_FIELD}");
+        return Err(KppError::unsupported(
+            param.clone(),
+            format!(
+                "{} takes `{THINKING_PARTS_FIELD}` only as a string; send it as text or remove it.",
+                profile.provider
+            ),
+        )
+        .with_param(param));
+    };
+    if thought.is_empty() {
+        return Ok(());
+    }
+    let mut parts = vec![encode_thinking_part(&[thought], &serde_json::Map::new())?];
+    match wire.content.take() {
+        Some(StringOr::String(text)) if !text.is_empty() => {
+            parts.push(to_raw(&serde_json::json!({"type": "text", "text": text}))?);
+        }
+        Some(StringOr::List(rest)) => parts.extend(rest),
+        Some(StringOr::String(_)) | None => {}
+    }
+    wrapped.verbatim.shift_remove("content");
+    wire.content = Some(StringOr::List(parts));
+    Ok(())
 }
 
 fn block_unsupported(block: &Block, place: &str) -> KppError {

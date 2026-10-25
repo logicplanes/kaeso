@@ -89,10 +89,24 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
     let Ext {
         known: message,
         extra: mut m_extra,
-        verbatim: m_verbatim,
+        verbatim: mut m_verbatim,
         ..
     } = choice.message;
     let reasoning = take_reasoning_field(ctx.chat_profile.reply.reasoning_fields, &mut m_extra);
+    let read = match &message.content {
+        Some(StringOr::List(parts))
+            if ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts =>
+        {
+            text_and_thinking(parts)
+        }
+        _ => None,
+    };
+    if read
+        .as_ref()
+        .is_some_and(|read| read.iter().all(|(thought, _)| thought.is_some()))
+    {
+        m_verbatim.insert("content".to_owned(), RawJson::null());
+    }
     add_nested(&mut extras, MESSAGE, m_extra, m_verbatim);
 
     let name_back = |n: &str| ctx.original_tool_name(n).to_owned();
@@ -118,6 +132,34 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
             block.citations = citations;
             block.extras = Extras::new(origin.clone());
             blocks.push(Block::Text(block));
+        }
+        Some(StringOr::List(_)) if let Some(read) = read => {
+            for (thought, text) in read {
+                let block = match thought {
+                    Some(thought) => {
+                        let mut block = ReasoningBlock::new(origin.clone());
+                        block.text = thought.text;
+                        block.extras = Extras::new(origin.clone());
+                        block.extras.form.insert(
+                            FORM_REASONING_FIELD.to_owned(),
+                            Value::from(THINKING_PARTS_FIELD),
+                        );
+                        Block::Reasoning(block)
+                    }
+                    None => {
+                        let mut block = TextBlock::new(text);
+                        block.extras = Extras::new(origin.clone());
+                        Block::Text(block)
+                    }
+                };
+                blocks.push(block);
+            }
+            if !citations.is_empty() {
+                extras.fields.insert(
+                    format!("{MESSAGE}.annotations"),
+                    to_raw(&message.annotations)?,
+                );
+            }
         }
         Some(StringOr::List(parts)) => {
             extras
@@ -489,6 +531,18 @@ pub(crate) fn take_reasoning_field(
 
 fn reasoning_field(block: &ReasoningBlock) -> Option<&str> {
     block.extras.form_str(DIALECT, FORM_REASONING_FIELD)
+}
+
+pub(crate) const THINKING_PARTS_FIELD: &str = "reasoning_content";
+
+pub(crate) fn text_and_thinking(parts: &[RawJson]) -> Option<Vec<(Option<Thought>, String)>> {
+    parts
+        .iter()
+        .map(|part| match plain_text_part(part) {
+            Some(text) => Some((None, text)),
+            None => thinking_part(part).map(|thought| (Some(thought), String::new())),
+        })
+        .collect()
 }
 
 pub(crate) struct Thought {

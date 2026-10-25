@@ -11,7 +11,8 @@ use super::convert::{nulls_to_verbatim, parse_ext, to_raw};
 use super::error::{decode_body, with_detail};
 use super::profile::ReplyReasoning;
 use super::response::{
-    decode_finish, decode_usage, plain_text_part, take_reasoning_field, thinking_part,
+    THINKING_PARTS_FIELD, decode_finish, decode_usage, plain_text_part, take_reasoning_field,
+    thinking_part,
 };
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
@@ -606,7 +607,16 @@ impl ChatStreamDecoder {
                         others.push(part);
                     }
                 }
-                form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
+                if self.thinking_parts && others.is_empty() {
+                    if thoughts.iter().any(|t| !t.is_empty()) {
+                        form.insert(
+                            FORM_REASONING_FIELD.to_owned(),
+                            Value::from(THINKING_PARTS_FIELD),
+                        );
+                    }
+                } else {
+                    form.insert(FORM_CONTENT_SLOTS.to_owned(), Value::Array(slots));
+                }
                 if !others.is_empty() {
                     fields.insert("delta.content".to_owned(), to_raw(&others)?);
                 }

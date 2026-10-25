@@ -45,6 +45,55 @@ fn encode_stream(dialect: DialectId, events: &[StreamEvent]) -> Vec<u8> {
     out
 }
 
+// Mistral's content arrays reach Chat apps as the string `content` and `reasoning_content` that
+// other Chat providers send, because Chat clients read `content` as a string.
+fn as_chat_text(message: &mut Value, whole: bool) {
+    let Some(parts) = message["content"].as_array() else {
+        return;
+    };
+    let mut text: Option<String> = None;
+    let mut thought = String::new();
+    for part in parts {
+        match part["type"].as_str() {
+            Some("text") => text
+                .get_or_insert_with(String::new)
+                .push_str(part["text"].as_str().unwrap()),
+            Some("thinking") => {
+                for inner in part["thinking"].as_array().unwrap() {
+                    thought.push_str(inner["text"].as_str().unwrap());
+                }
+            }
+            _ => return,
+        }
+    }
+    let object = message.as_object_mut().unwrap();
+    match text {
+        Some(text) => object.insert("content".to_owned(), Value::from(text)),
+        None if whole => object.insert("content".to_owned(), Value::Null),
+        None => object.remove("content"),
+    };
+    if !thought.is_empty() {
+        object.insert("reasoning_content".to_owned(), Value::from(thought));
+    }
+}
+
+fn as_chat_text_stream(bytes: &[u8]) -> Vec<u8> {
+    let mut out = String::new();
+    for line in std::str::from_utf8(bytes).unwrap().split_inclusive('\n') {
+        match line
+            .strip_prefix("data: ")
+            .and_then(|d| serde_json::from_str::<Value>(d.trim_end()).ok())
+        {
+            Some(mut chunk) if chunk["choices"][0]["delta"].is_object() => {
+                as_chat_text(&mut chunk["choices"][0]["delta"], false);
+                out.push_str(&format!("data: {chunk}\n"));
+            }
+            _ => out.push_str(line),
+        }
+    }
+    out.into_bytes()
+}
+
 #[test]
 fn the_profile_reads_thinking_parts_only_when_it_says_so() {
     assert_eq!(ChatProfile::OPENAI.reply.reasoning, ReplyReasoning::AsSent);
@@ -68,7 +117,7 @@ fn the_profile_reads_thinking_parts_only_when_it_says_so() {
 }
 
 #[test]
-fn a_thinking_part_is_reasoning_and_every_mistral_reply_still_round_trips() {
+fn a_thinking_part_is_reasoning_and_chat_apps_get_mistral_replies_as_text_and_reasoning_content() {
     for (name, body) in fixtures("openai_chat", "responses", "json") {
         if !name.starts_with("providers/mistral/") {
             continue;
@@ -78,7 +127,9 @@ fn a_thinking_part_is_reasoning_and_every_mistral_reply_still_round_trips() {
             &EncodeCtx::new(RequestKind::Generate, StreamMode::Off),
         )
         .unwrap();
-        assert_json_eq(&name, &body, &out);
+        let mut expected: Value = serde_json::from_slice(&body).unwrap();
+        as_chat_text(&mut expected["choices"][0]["message"], true);
+        assert_json_eq(&name, expected.to_string().as_bytes(), &out);
     }
     let body = recorded(
         "responses",
@@ -149,13 +200,14 @@ fn a_thinking_part_it_cannot_read_whole_stays_as_sent() {
 }
 
 #[test]
-fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_still_round_trips() {
+fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_reaches_chat_apps_as_reasoning_content()
+ {
     for (name, bytes) in fixtures("openai_chat", "streams", "sse") {
         if !name.starts_with("providers/mistral/") {
             continue;
         }
         let out = encode_stream(DialectId::OpenAiChat, &stream(&bytes));
-        assert_sse_eq(&name, &bytes, &out);
+        assert_sse_eq(&name, &as_chat_text_stream(&bytes), &out);
     }
     let bytes = recorded(
         "streams",
@@ -208,4 +260,62 @@ fn streamed_thinking_is_reasoning_that_ends_before_the_answer_and_still_round_tr
         responses.contains("response.reasoning_summary_text.delta"),
         "{responses}"
     );
+}
+
+#[test]
+fn replayed_reasoning_content_goes_back_to_mistral_as_a_thinking_chunk() {
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "grok-cli-reasoning-content")
+        .unwrap();
+    let req = OpenAiChat::decode_request(RequestKind::Generate, &body, &HeaderList::new()).unwrap();
+    let sent = |profile: ChatProfile| -> Value {
+        let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+        OpenAiChat::check(&req, &ctx).unwrap();
+        let enc = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+        serde_json::from_slice(&enc.body).unwrap()
+    };
+    let original: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(sent(ChatProfile::OPENAI)["messages"], original["messages"]);
+
+    let mistral = sent(THINKING);
+    let thinking =
+        |text: &str| json!({"type": "thinking", "thinking": [{"type": "text", "text": text}]});
+    let call = &mistral["messages"][2];
+    assert_eq!(
+        call["content"],
+        json!([thinking("The user wants echo ok.")])
+    );
+    assert_eq!(call["tool_calls"], original["messages"][2]["tool_calls"]);
+    assert!(call.get("reasoning_content").is_none(), "{call}");
+    let answer = &mistral["messages"][4];
+    assert_eq!(
+        answer["content"],
+        json!([thinking("Answer briefly."), {"type": "text", "text": "ok"}])
+    );
+    assert!(answer.get("reasoning_content").is_none(), "{answer}");
+    assert_eq!(mistral["messages"][3], original["messages"][3]);
+    assert_eq!(mistral["messages"][5], original["messages"][5]);
+}
+
+#[test]
+fn reasoning_content_mistral_cannot_take_as_a_chunk_is_refused() {
+    let body = json!({
+        "model": "m",
+        "messages": [
+            {"role": "user", "content": "hi"},
+            {"role": "assistant", "content": "ok", "reasoning_content": ["not", "text"]},
+            {"role": "user", "content": "again"}
+        ]
+    });
+    let req = OpenAiChat::decode_request(
+        RequestKind::Generate,
+        body.to_string().as_bytes(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(THINKING);
+    let err = OpenAiChat::encode_request(&req, &mut ctx).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("messages[1].reasoning_content"));
+    assert!(err.message.contains("Example Cloud"), "{}", err.message);
 }

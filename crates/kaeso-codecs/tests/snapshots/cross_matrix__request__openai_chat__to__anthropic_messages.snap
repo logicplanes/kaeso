@@ -113,6 +113,11 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "grok-cli-reasoning-content": {
+    "message": "`messages[1].reasoning_content` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[1]",
+    "unsupported": "messages[1].reasoning_content"
+  },
   "identifiers-metadata-store": {
     "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,
