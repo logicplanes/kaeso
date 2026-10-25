@@ -112,10 +112,10 @@ OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称�
 
 Anthropic 的工具搜索按需加载工具。带 `defer_loading: true` 的工具不进入模型的上下文，直到某次搜索返回指名它的 `tool_reference` 块；此后模型在每一轮都能看到它的定义（[工具搜索工具](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)）。Claude Code 用自己的 `ToolSearch` 工具搜索：每个会话都以一个延迟加载的 `DeferredToolPlaceholder` 开始；`ToolSearch` 找到某个工具后，之后的每个请求都会以延迟加载方式发送该工具，并附上一个带其 `tool_reference` 的 `tool_result`。其他格式没有延迟加载的工具，因此 Kaeso 替它们做 Anthropic 所做的事：
 
-- **工具。** 带 `defer_loading: true` 的工具会被省略，直到对话中的某个 `tool_reference` 指名它，然后作为普通函数工具发送。默认值 `defer_loading: false` 会被省略。
+- **工具。** 带 `defer_loading: true` 的工具会被省略，直到对话中的某个 `tool_reference` 指名它，然后作为普通函数工具发送。被 `tool_choice` 强制使用的延迟工具也会发送：Claude 接受在搜索之前强制使用它，而其他格式只能强制使用已收到的工具。默认值 `defer_loading: false` 会被省略。
 - **引用。** `tool_result` 中的 `tool_reference` 块变为包含该工具名称的文本块，让模型读到搜索加载了哪个工具。
 - **像 Anthropic 一样拒绝**，返回 `InvalidRequest` 和 Anthropic 的消息：引用了请求中未发送的工具，以及所有工具都延迟加载的请求。
-- **拒绝**并返回 `Unsupported`：强制使用尚未被任何引用加载的延迟工具的 `tool_choice`、不是布尔值的 `defer_loading`，以及位于 `tool_result` 之外或带有 Kaeso 不认识字段的 `tool_reference`。
+- **拒绝**并返回 `Unsupported`：不是布尔值的 `defer_loading`，以及位于 `tool_result` 之外或带有 Kaeso 不认识字段的 `tool_reference`。
 
 Anthropic 模型按原样收到延迟加载的工具和引用。开启工具搜索的 beta `advanced-tool-use-2025-11-20` 位于 `anthropic-beta` 请求头中，其他格式不会收到该请求头（[允许列表](#允许列表)）。
 

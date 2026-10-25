@@ -112,10 +112,10 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 
 Anthropic's tool search loads tools on demand. A tool with `defer_loading: true` stays out of the model's context until a search returns a `tool_reference` block that names it, and from then on the model sees its definition in every turn ([tool search tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)). Claude Code searches with its own `ToolSearch` tool: every session starts with a deferred `DeferredToolPlaceholder`, and once `ToolSearch` finds a tool, each later request sends that tool deferred and a `tool_result` with its `tool_reference`. Other formats have no deferred tools, so Kaeso does for them what Anthropic does:
 
-- **Tools.** A tool with `defer_loading: true` is left out until a `tool_reference` in the conversation names it, and then sent as an ordinary function tool. `defer_loading: false`, the default, is left out.
+- **Tools.** A tool with `defer_loading: true` is left out until a `tool_reference` in the conversation names it, and then sent as an ordinary function tool. A deferred tool that `tool_choice` forces is sent too: Claude accepts forcing it before a search, and other formats can force only a tool they were sent. `defer_loading: false`, the default, is left out.
 - **References.** A `tool_reference` block in a `tool_result` becomes a text block with the tool's name, so the model reads which tool the search loaded.
 - **Refused as Anthropic refuses them**, with `InvalidRequest` and Anthropic's message: a reference to a tool the request doesn't send, and a request whose tools are all deferred.
-- **Refused** with `Unsupported`: a `tool_choice` that forces a deferred tool no reference has loaded, a `defer_loading` that isn't a boolean, and a `tool_reference` outside a `tool_result` or with a field Kaeso doesn't know.
+- **Refused** with `Unsupported`: a `defer_loading` that isn't a boolean, and a `tool_reference` outside a `tool_result` or with a field Kaeso doesn't know.
 
 Anthropic models get deferred tools and references as sent. The `advanced-tool-use-2025-11-20` beta that turns tool search on is part of the `anthropic-beta` header, which other formats don't get ([allowlist](#allowlist)).
 

@@ -179,18 +179,20 @@ fn a_reference_with_a_field_kaeso_does_not_know_is_refused() {
     }
 }
 
+fn recorded_message(name: &str) -> String {
+    let body: Value = serde_json::from_slice(&fixture(&format!("errors/{name}.json"))).unwrap();
+    body["error"]["message"].as_str().unwrap().to_owned()
+}
+
 #[test]
 fn a_reference_to_a_tool_that_is_not_sent_is_refused_like_claude_does() {
     let req = loaded_with(|b| {
-        reference(b)["tool_name"] = json!("WebSearch");
+        reference(b)["tool_name"] = json!("get_forecast");
     });
     for target in [C, R] {
         let e = send(target, &req).unwrap_err();
         assert_eq!(e.kind.as_str(), "invalid_request", "{target}");
-        assert_eq!(
-            e.message,
-            "Tool reference 'WebSearch' not found in available tools."
-        );
+        assert_eq!(e.message, recorded_message("tool-search-unknown-reference"));
         assert_eq!(e.param.as_deref(), Some("messages[3].blocks[0].content[0]"));
     }
 }
@@ -205,33 +207,23 @@ fn deferring_every_tool_is_refused_like_claude_does() {
     for target in [C, R] {
         let e = send(target, &req).unwrap_err();
         assert_eq!(e.kind.as_str(), "invalid_request", "{target}");
-        assert!(
-            e.message
-                .starts_with("At least one tool must have defer_loading=false.")
-        );
+        assert_eq!(e.message, recorded_message("tool-search-all-deferred"));
         assert_eq!(e.param.as_deref(), Some("tools"));
     }
 }
 
 #[test]
-fn forcing_a_deferred_tool_that_is_not_loaded_is_refused() {
+fn a_forced_deferred_tool_is_sent_although_no_search_loaded_it() {
     let req = loaded_with(|b| {
         b["tool_choice"] = json!({"type": "tool", "name": "DeferredToolPlaceholder"});
     });
     for target in [C, R] {
-        let e = send(target, &req).unwrap_err();
+        let sent = send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
         assert_eq!(
-            e.unsupported_feature(),
-            Some("tool_choice `DeferredToolPlaceholder`"),
+            tool_names(target, &sent),
+            ["Read", "ToolSearch", "WebFetch", "DeferredToolPlaceholder"],
             "{target}"
         );
-        assert!(e.message.contains("tool search"), "{}", e.message);
-    }
-    let req = loaded_with(|b| {
-        b["tool_choice"] = json!({"type": "tool", "name": "WebFetch"});
-    });
-    for target in [C, R] {
-        send(target, &req).unwrap_or_else(|e| panic!("{target}: {e}"));
     }
 }
 

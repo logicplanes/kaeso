@@ -68,7 +68,6 @@ def test_tools(an, mock):
     assert mock.last()["body"]["tools"][0]["type"] == "function"
 
 
-
 def test_tool_search_on_an_openai_model(an, mock):
     schema = {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}
     tools = [
@@ -103,6 +102,7 @@ def test_tool_search_on_an_openai_model(an, mock):
     assert "defer_loading" not in sent["tools"][1]
     output = next(i for i in sent["input"] if i.get("type") == "function_call_output")
     assert output["output"] == "get_weather"
+
 
 def test_images_and_pdfs(an, mock):
     content = [

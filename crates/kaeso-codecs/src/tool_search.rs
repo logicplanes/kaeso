@@ -3,7 +3,6 @@ use std::collections::HashSet;
 use kaeso_kpp::{Block, DialectId, GenerateRequest, KppError, ToolChoice, ToolDef};
 
 use crate::anthropic_messages::tool_reference;
-use crate::cross::foreign;
 
 const ANTHROPIC: DialectId = DialectId::AnthropicMessages;
 const DEFER: &str = "defer_loading";
@@ -54,16 +53,6 @@ fn loaded_by_references(r: &mut GenerateRequest) -> Vec<(String, String)> {
     loaded
 }
 
-fn not_loaded(name: &str, target: DialectId) -> KppError {
-    foreign(
-        format!("tool_choice `{name}`"),
-        &kaeso_kpp::Origin::new(ANTHROPIC),
-        target,
-        "tool_choice",
-        "The tool has `defer_loading: true` and no `tool_reference` has loaded it yet. Load it through tool search first, or remove `defer_loading`.",
-    )
-}
-
 pub(crate) fn for_foreign(
     r: &GenerateRequest,
     target: DialectId,
@@ -81,9 +70,11 @@ pub(crate) fn for_foreign(
             _ => None,
         })
         .collect();
+    // Anthropic's own messages for both cases, recorded in
+    // fixtures/anthropic_messages/errors/tool-search-*.json.
     if let Some((name, path)) = references.iter().find(|(n, _)| !names.contains(n.as_str())) {
         return Err(KppError::invalid_request(format!(
-            "Tool reference '{name}' not found in available tools."
+            "Tool reference '{name}' not found in available tools"
         ))
         .with_param(path.clone()));
     }
@@ -93,15 +84,17 @@ pub(crate) fn for_foreign(
         )
         .with_param("tools"));
     }
-    let loaded: HashSet<&str> = references.iter().map(|(n, _)| n.as_str()).collect();
+    let mut loaded: HashSet<&str> = references.iter().map(|(n, _)| n.as_str()).collect();
+    // Claude accepts a forced deferred tool that no search has loaded; other formats can
+    // only force a tool they were sent.
+    if let Some(ToolChoice::Tool(forced)) = &r.tool_choice {
+        loaded.insert(forced);
+    }
     let mut tools = Vec::with_capacity(out.tools.len());
     for mut t in std::mem::take(&mut out.tools) {
         let deferred = deferral(&t);
         if let ToolDef::Function(f) = &mut t {
             if deferred == Some(true) && !loaded.contains(f.name.as_str()) {
-                if matches!(&out.tool_choice, Some(ToolChoice::Tool(chosen)) if *chosen == f.name) {
-                    return Err(not_loaded(&f.name, target));
-                }
                 continue;
             }
             if deferred.is_some() {
