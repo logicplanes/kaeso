@@ -32,6 +32,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | no | The token the gateway and the updater share, and `updater` to start the updater ([the updater](upgrades.md#the-updater)). |
 | `KAESO_DIR` | with the updater | The install's folder, the only folder the updater's Docker proxy allows bind mounts from. |
 | `DOCKER_SOCKET` | no | The path of Docker's socket for the updater, when it isn't `/var/run/docker.sock`. |
+| `KAESO_TRUSTED_PROXIES` | no | The networks of proxies whose `X-Forwarded-For` the gateway believes, `127.0.0.0/8,::1/128` and `EDGE_SUBNET` by default. Set it to your own proxy's address ([your own reverse proxy](domains-and-tls.md#use-your-own-reverse-proxy)). |
 | `EDGE_SUBNET` | no | The subnet of the `edge` network, `172.30.83.0/24` by default, whose `X-Forwarded-For` the gateway believes. Change it when the server already uses that range. |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … and `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | no | The services' memory and process limits, and the memory Valkey keeps its data in ([container limits](#container-limits)). |
 
@@ -155,7 +156,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 
 ### Updates
 
-The first three settings only seed a new install. After that, instance admins change them under **Settings** › **Instance** › **Updates** ([upgrades](upgrades.md)).
+The first three settings only seed a new install. After that, instance admins change them under **Instance** › **Updates** ([upgrades](upgrades.md)).
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
@@ -233,7 +234,7 @@ The gateway also follows no redirects from a custom provider, and calls it witho
 
 ### Instance defaults
 
-These settings only seed a new install. After that, instance admins change them under **Settings** › **Instance** › **Settings**, or through the Platform API, and the stored values win.
+These settings only seed a new install. After that, instance admins change them under **Instance** › **General**, the retention under **Instance** › **Logging**, or through the Platform API. The stored values win.
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |

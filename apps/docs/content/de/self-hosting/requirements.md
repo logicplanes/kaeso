@@ -12,7 +12,7 @@ Kaeso läuft auf einem Linux-Server mit Docker. Bemessen Sie den Speicherplatz d
 | --- | --- |
 | System | Linux mit Docker Engine und Docker Compose 2.24 oder neuer, auf `linux/amd64` oder `linux/arm64` |
 | CPU | 2 vCPUs |
-| Arbeitsspeicher | 4 GB, davon nutzt ClickHouse etwa 2 GB |
+| Arbeitsspeicher | 4 GB. Am meisten nutzt ClickHouse, bis zu seiner Grenze `CLICKHOUSE_MEMORY` ([Container-Grenzen](configuration.md#container-grenzen)) |
 | Speicherplatz | 20 GB, dazu Platz für Anfrageprotokolle |
 
 [Der Updater](upgrades.md#der-updater) braucht außerdem Docker Engine 25 oder neuer.
@@ -47,6 +47,6 @@ Anfrageprotokolle liegen in ClickHouse. Planen Sie je Million Anfragen so viel S
 | Nur Metadaten: Modell, Status, Token, Kosten und Zeiten | Etwa 0,1 GB |
 | Metadaten und Inhalte, bei etwa 2,5 KB Text je Anfrage | Etwa 0,65 GB |
 
-Die Inhalte wachsen mit der Länge Ihrer Prompts und Antworten. Die Aufbewahrung begrenzt die Gesamtmenge. Bei einer Million Anfragen am Tag belegen die Standardfristen etwa 6 GB Metadaten (90 Tage) und 16 GB Inhalte (30 Tage).
+Die Inhalte wachsen mit der Länge Ihrer Prompts und Antworten. Die Aufbewahrung begrenzt die Gesamtmenge. Bei einer Million Anfragen am Tag belegen die Standardfristen etwa 9 GB Metadaten (90 Tage) und 16 GB Inhalte (30 Tage).
 
 Jede Organisation wählt ihre Aufbewahrung auf ihrer Seite **Protokollierung**, innerhalb der Höchstwerte der Instanz ([Anfrageprotokolle](../console/request-logs.md)). Die Seite **System** der Instanz zeigt, wie viel Platz die Protokolle belegen.

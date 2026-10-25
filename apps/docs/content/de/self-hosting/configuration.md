@@ -32,6 +32,7 @@ services:
 | `KAESO_UPDATER_TOKEN`, `COMPOSE_PROFILES` | nein | Das Token, das Gateway und Updater teilen, und `updater`, um den Updater zu starten ([Der Updater](upgrades.md#der-updater)). |
 | `KAESO_DIR` | mit dem Updater | Der Ordner der Installation, der einzige, aus dem der Docker-Proxy des Updaters Bind-Mounts erlaubt. |
 | `DOCKER_SOCKET` | nein | Der Pfad des Docker-Sockets für den Updater, wenn er nicht `/var/run/docker.sock` ist. |
+| `KAESO_TRUSTED_PROXIES` | nein | Die Netze von Proxys, deren `X-Forwarded-For` das Gateway vertraut, standardmäßig `127.0.0.0/8,::1/128` und `EDGE_SUBNET`. Setzen Sie es auf die Adresse Ihres eigenen Proxys ([eigener Reverse Proxy](domains-and-tls.md#eigenen-reverse-proxy-verwenden)). |
 | `EDGE_SUBNET` | nein | Das Subnetz des Netzwerks `edge`, standardmäßig `172.30.83.0/24`, dessen `X-Forwarded-For` das Gateway glaubt. Ändern Sie es, wenn der Server diesen Bereich schon nutzt. |
 | `CADDY_MEMORY`, `GATEWAY_MEMORY`, … und `CADDY_PIDS`, `GATEWAY_PIDS`, …, `VALKEY_MAXMEMORY` | nein | Die Speicher- und Prozessgrenzen der Dienste und der Speicher, in dem Valkey seine Daten hält ([Container-Grenzen](#container-grenzen)). |
 
@@ -155,7 +156,7 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 
 ### Updates
 
-Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Updates** ([Upgrades](upgrades.md)).
+Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Instanz** › **Updates** ([Upgrades](upgrades.md)).
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
@@ -233,7 +234,7 @@ Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und r
 
 ### Standards der Instanz
 
-Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Einstellungen** › **Instanz** › **Einstellungen** oder über die Platform API, und die gespeicherten Werte haben Vorrang.
+Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie über die Platform API oder in der Konsole: unter **Instanz** › **Allgemein**, die Aufbewahrung unter **Instanz** › **Protokollierung**. Die gespeicherten Werte haben Vorrang.
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
