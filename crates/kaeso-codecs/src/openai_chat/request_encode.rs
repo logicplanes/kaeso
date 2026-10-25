@@ -24,6 +24,7 @@ use super::wire::{
 };
 use crate::codec::EgressCtx;
 use crate::cross::reasoning_replayable;
+use crate::verbosity;
 use crate::wire::{Ext, StringOr};
 
 pub(crate) const DEFAULT_SCHEMA_NAME: &str = "response";
@@ -141,7 +142,7 @@ pub(crate) fn encode_generate(
     }
 
     let (extra, verbatim) = super::convert::own_keys(&req.extras);
-    let extra = extra
+    let mut extra: IndexMap<String, RawJson> = extra
         .into_iter()
         .map(|(key, value)| {
             let wire = CONFLICT_KEYS
@@ -151,6 +152,9 @@ pub(crate) fn encode_generate(
             (wire, value)
         })
         .collect();
+    if let Some(v) = verbosity::of_responses(req).filter(|_| rules.verbosity) {
+        extra.insert("verbosity".to_owned(), v.clone());
+    }
     let mut out = Ext::with(w, extra, verbatim);
     apply_profile(&profile, seed, &req.extras, &mut out)?;
     Ok(out)

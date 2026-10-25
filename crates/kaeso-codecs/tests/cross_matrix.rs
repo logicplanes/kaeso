@@ -4,7 +4,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
-use kaeso_kpp::{Block, Delta, DialectId, Reply, Request, RequestKind, StreamEvent, StreamMode};
+use kaeso_kpp::{
+    Block, Delta, DialectId, Reply, Request, RequestKind, Role, StreamEvent, StreamMode,
+};
 use serde_json::{Value, json};
 
 const GENERATION: [DialectId; 3] = [
@@ -14,6 +16,30 @@ const GENERATION: [DialectId; 3] = [
 ];
 
 const PROVIDERS: &str = "providers";
+
+// Routes whose conversation changes on purpose, each change asserted in tests/codex.rs.
+const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
+    (
+        "codex-model-switch",
+        DialectId::AnthropicMessages,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "codex-model-switch",
+        DialectId::OpenAiChat,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::AnthropicMessages,
+        "custom and local shell calls become tool calls",
+    ),
+    (
+        "providers/xai/codex-gpt-history",
+        DialectId::OpenAiChat,
+        "custom and local shell calls become tool calls",
+    ),
+];
 
 fn fixtures_dir(dialect: DialectId) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -94,6 +120,43 @@ fn called(call: &kaeso_kpp::ToolCallBlock) -> String {
         Some(ns) => format!("{ns}__{}", call.name),
         None => call.name.clone(),
     }
+}
+
+// The cross-format rule for Anthropic: a system or developer message of another format
+// joins the next user turn, after its tool results, or the last user turn.
+fn as_anthropic_reads(req: &Request) -> Request {
+    let mut req = req.clone();
+    let Request::Generate(r) = &mut req else {
+        return req;
+    };
+    if r.extras.is_from(DialectId::AnthropicMessages) {
+        return req;
+    }
+    let mut held = Vec::new();
+    let mut out: Vec<kaeso_kpp::Message> = Vec::new();
+    for mut m in std::mem::take(&mut r.messages) {
+        if m.role == Role::System {
+            held.extend(m.blocks);
+            continue;
+        }
+        if m.role == Role::User && !held.is_empty() {
+            let at = m
+                .blocks
+                .iter()
+                .take_while(|b| matches!(b, Block::ToolResult(_)))
+                .count();
+            m.blocks.splice(at..at, held.drain(..));
+        }
+        out.push(m);
+    }
+    if !held.is_empty() {
+        match out.last_mut() {
+            Some(last) if last.role == Role::User => last.blocks.append(&mut held),
+            _ => out.push(kaeso_kpp::Message::new(Role::User, held)),
+        }
+    }
+    r.messages = out;
+    req
 }
 
 fn referenced_tool(item: &kaeso_kpp::RawItem) -> Option<String> {
@@ -246,11 +309,17 @@ fn requests_cross_every_dialect() {
                         .unwrap_or_else(|e| {
                             panic!("{a}->{b} {name}: target cannot decode its own output: {e}")
                         });
-                        assert_eq!(
-                            request_meaning(&back)["turns"],
-                            request_meaning(&req)["turns"],
-                            "{a}->{b} {name}: conversation meaning changed",
-                        );
+                        if !CHANGED_TURNS.iter().any(|(n, t, _)| n == name && *t == b) {
+                            assert_eq!(
+                                request_meaning(&back)["turns"],
+                                request_meaning(&if b == DialectId::AnthropicMessages {
+                                    as_anthropic_reads(&req)
+                                } else {
+                                    req.clone()
+                                })["turns"],
+                                "{a}->{b} {name}: conversation meaning changed",
+                            );
+                        }
                         json!({"path": enc.path, "body": pretty(&enc.body)})
                     }
                     Err(e) => {

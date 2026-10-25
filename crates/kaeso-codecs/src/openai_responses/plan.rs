@@ -53,7 +53,8 @@ fn forget(extras: &mut Extras, drop: impl Fn(&str) -> bool) {
 /// It leaves out every field that route refuses, wherever the request keeps it (typed
 /// fields, extras, and a Responses app's explicit defaults and nulls), asks for a stream
 /// that OpenAI doesn't store, sends `input` as an array, and sends every system text as
-/// `instructions` or a `developer` message, since the route refuses `system` items.
+/// `instructions` or a `developer` message, since the route refuses `system` items. Leading
+/// `developer` items that need no change keep their own shape and ids.
 pub fn for_chatgpt_plan(req: &mut GenerateRequest) {
     req.sampling.max_output_tokens = None;
     req.sampling.temperature = None;
@@ -62,9 +63,14 @@ pub fn for_chatgpt_plan(req: &mut GenerateRequest) {
     req.stream = StreamMode::on(true);
     forget(&mut req.extras, refused);
     if req.extras.is_from(DIALECT) {
-        req.extras
-            .form
-            .retain(|name, _| ![INPUT, SYSTEM_ITEMS, INSTRUCTIONS].contains(&name.as_str()));
+        let system_items = match req.extras.form.get(SYSTEM_ITEMS) {
+            Some(Value::Array(items)) => items.iter().any(|i| i["role"] == "system"),
+            _ => false,
+        };
+        req.extras.form.retain(|name, _| {
+            name != INPUT
+                && !(system_items && [SYSTEM_ITEMS, INSTRUCTIONS].contains(&name.as_str()))
+        });
         form_set_insert(&mut req.extras, "store".to_owned(), Value::Bool(false));
     }
     for message in req.messages.iter_mut().filter(|m| m.role == Role::System) {

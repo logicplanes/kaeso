@@ -1,11 +1,14 @@
 pub(crate) mod assembly;
 pub(crate) mod error;
+pub(crate) mod history;
 mod input;
 pub(crate) mod namespaces;
 mod node;
 mod overrides;
 mod parts;
 mod plan;
+mod profile;
+pub(crate) mod replay;
 mod request;
 mod response;
 pub(crate) mod stream;
@@ -30,6 +33,7 @@ pub const RESPONSES_PATH: &str = "/v1/responses";
 pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
 
 pub use plan::for_chatgpt_plan;
+pub use profile::{ReasoningReplay, ResponsesProfile, WebSearchTool};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -69,7 +73,8 @@ impl Codec for OpenAiResponses {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        let req = crate::adapt::for_target(req, DIALECT, ctx)?;
+        let crate::adapt::Adapted { req, left_out } = crate::adapt::for_target(req, DIALECT, ctx)?;
+        ctx.left_out = left_out;
         request::encode(&req, ctx)
     }
 

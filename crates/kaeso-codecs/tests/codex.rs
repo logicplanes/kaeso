@@ -3,6 +3,8 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::sse::{SseItem, parse_all};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{DialectId, KppError, Request, RequestKind};
@@ -41,7 +43,46 @@ fn decode(body: &Value) -> Request {
 fn xai(req: &Request) -> EgressCtx {
     EgressCtx::new(req)
         .with_provider("xai")
-        .with_tool_namespaces(false)
+        .with_responses_profile(
+            ResponsesProfile::compatible("SpaceX")
+                .xai_web_search()
+                .without_null_reasoning_content(),
+        )
+}
+
+fn openai(req: &Request) -> EgressCtx {
+    EgressCtx::new(req)
+        .with_provider("openai")
+        .with_responses_profile(ResponsesProfile::OPENAI)
+}
+
+fn mistral(req: &Request) -> EgressCtx {
+    EgressCtx::new(req)
+        .with_provider("mistral")
+        .with_chat_profile(ChatProfile::compatible("Mistral").system_role())
+}
+
+fn sent_with(target: DialectId, req: &Request, mut ctx: EgressCtx) -> (Value, Vec<String>) {
+    let body = send(target, req, &mut ctx).unwrap_or_else(|e| panic!("{target}: {e}"));
+    (body, ctx.left_out)
+}
+
+fn texts(blocks: &Value) -> Vec<&str> {
+    blocks
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| b["text"].as_str().unwrap())
+        .collect()
+}
+
+fn roles(messages: &Value) -> Vec<&str> {
+    messages
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["role"].as_str().unwrap())
+        .collect()
 }
 
 fn send(target: DialectId, req: &Request, ctx: &mut EgressCtx) -> Result<Value, KppError> {
@@ -138,11 +179,6 @@ fn namespace_tools_flatten_for_every_target_without_namespaces() {
         (C, EgressCtx::new(&req)),
         (R, xai(&req)),
     ] {
-        let mut body = codex("codex-namespace-tools");
-        if target == C {
-            body["tools"].as_array_mut().unwrap().pop();
-        }
-        let req = decode(&body);
         let sent = send(target, &req, &mut ctx).unwrap_or_else(|e| panic!("{target}: {e}"));
         assert_eq!(&tool_names(target, &sent)[..4], flat, "{target}");
         let text = sent.to_string();
@@ -172,7 +208,7 @@ fn namespace_tools_flatten_for_every_target_without_namespaces() {
 fn openai_keeps_namespaces_and_client_metadata() {
     let body = codex("codex-namespace-tools");
     let req = decode(&body);
-    let sent = send(R, &req, &mut EgressCtx::new(&req).with_provider("openai")).unwrap();
+    let sent = send(R, &req, &mut openai(&req)).unwrap();
     let mut want = body.clone();
     want["max_output_tokens"] = json!(4096);
     assert_eq!(sent, want);
@@ -291,11 +327,6 @@ fn hosted_web_search_becomes_anthropics_server_tool() {
 fn web_search_settings_claude_cannot_honour_are_refused() {
     for (field, value, param) in [
         (
-            "external_web_access",
-            json!(false),
-            "tools[3].external_web_access",
-        ),
-        (
             "search_context_size",
             json!("high"),
             "tools[3].search_context_size",
@@ -319,14 +350,69 @@ fn web_search_settings_claude_cannot_honour_are_refused() {
         assert!(e.message.contains("Anthropic Messages"), "{}", e.message);
     }
     let mut body = codex("codex-namespace-tools");
-    body["tools"][3]["external_web_access"] = json!(false);
+    body["tools"][3]["external_web_access"] = json!("yes");
     let req = decode(&body);
     let e = send(A, &req, &mut EgressCtx::new(&req)).unwrap_err();
-    assert!(
-        e.message.contains("`web_search = \"live\"`"),
-        "{}",
-        e.message
+    assert_eq!(e.param.as_deref(), Some("tools[3].external_web_access"));
+    assert!(e.message.contains("`true` or `false`"), "{}", e.message);
+}
+
+#[test]
+fn a_cached_only_web_search_is_left_out_where_search_is_always_live() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"][1]["external_web_access"] = json!(false);
+    let req = decode(&body);
+    for (target, ctx) in [(A, EgressCtx::new(&req)), (R, xai(&req))] {
+        let (sent, left_out) = sent_with(target, &req, ctx);
+        assert_eq!(tool_names(target, &sent), ["exec_command"], "{target}");
+        assert_eq!(left_out, ["tools[1]"], "{target}");
+    }
+    let (sent, left_out) = sent_with(R, &req, openai(&req));
+    assert_eq!(sent["tools"][1], body["tools"][1]);
+    assert!(left_out.is_empty());
+}
+
+#[test]
+fn every_hosted_search_type_is_treated_as_web_search() {
+    for ty in [
+        "web_search_preview",
+        "web_search_preview_2025_03_11",
+        "web_search_2025_08_26",
+    ] {
+        let mut body = codex("codex-developer-resume");
+        body["tools"][1] = json!({"type": ty, "search_context_size": "medium"});
+        let req = decode(&body);
+        let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+        assert_eq!(sent["tools"][1]["type"], "web_search_20250305", "{ty}");
+        let (sent, _) = sent_with(R, &req, xai(&req));
+        assert_eq!(sent["tools"][1], json!({"type": "web_search"}), "{ty}");
+        let (sent, left_out) = sent_with(C, &req, mistral(&req));
+        assert_eq!(tool_names(C, &sent), ["exec_command"], "{ty}");
+        assert_eq!(left_out, ["tools[1]"], "{ty}");
+    }
+}
+
+#[test]
+fn image_results_are_left_out_for_claude_and_asked_of_xai() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"][1]["search_content_types"] = json!(["text", "image"]);
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(
+        sent["tools"][1],
+        json!({"type": "web_search_20250305", "name": "web_search"})
     );
+    assert_eq!(left_out, ["tools[1].search_content_types"]);
+    let (sent, left_out) = sent_with(R, &req, xai(&req));
+    assert_eq!(
+        sent["tools"][1],
+        json!({"type": "web_search", "enable_image_search": true})
+    );
+    assert!(left_out.is_empty());
+
+    body["tools"][1]["search_content_types"] = json!(["text"]);
+    let req = decode(&body);
+    assert!(sent_with(A, &req, EgressCtx::new(&req)).1.is_empty());
 }
 
 #[test]
@@ -422,7 +508,11 @@ fn web_searches_kaeso_reported_are_left_out_for_openai_and_others_kept() {
     let mut ours = body.clone();
     ours["input"][2]["id"] = json!("ws_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1");
     let req = decode(&ours);
-    let sent = send(R, &req, &mut EgressCtx::new(&req)).unwrap();
+    let (sent, left_out) = sent_with(R, &req, EgressCtx::new(&req));
+    assert_eq!(
+        left_out,
+        ["web_search_call ws_kaeso_msg01R2R14PadDFvMb1xgawpzvm_1"]
+    );
     let types: Vec<&str> = sent["input"]
         .as_array()
         .unwrap()
@@ -432,14 +522,586 @@ fn web_searches_kaeso_reported_are_left_out_for_openai_and_others_kept() {
     assert_eq!(types, ["message", "message", "message", "message"]);
 }
 
+fn decode_as(dialect: DialectId, body: &Value) -> Request {
+    dispatch::decode_request(
+        dialect,
+        RequestKind::Generate,
+        &serde_json::to_vec(body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap()
+}
+
+fn content_types(message: &Value) -> Vec<&str> {
+    message["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| b["type"].as_str().unwrap())
+        .collect()
+}
+
 #[test]
-fn chat_models_refuse_hosted_web_search_with_a_codex_hint() {
-    let req = decode(&codex("codex-namespace-tools"));
-    let e = send(C, &req, &mut EgressCtx::new(&req)).unwrap_err();
-    assert_eq!(e.unsupported_feature(), Some("web_search tool"));
-    assert!(
-        e.message.contains("`web_search = \"disabled\"`"),
-        "{}",
-        e.message
+fn leading_developer_messages_become_claudes_system_prompt() {
+    let body = codex("codex-developer-resume");
+    let req = decode(&body);
+    let Request::Generate(g) = &req else {
+        panic!("not a generation")
+    };
+    assert_eq!(
+        g.system.len(),
+        4,
+        "the decoder hoists items with an `id` too"
     );
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let developer: Vec<&str> = body["input"].as_array().unwrap()[..2]
+        .iter()
+        .flat_map(|m| texts(&m["content"]))
+        .collect();
+    assert_eq!(texts(&sent["system"]), developer);
+    assert_eq!(
+        roles(&sent["messages"]),
+        ["user", "user", "assistant", "user"]
+    );
+}
+
+#[test]
+fn instructions_lead_the_hoisted_developer_messages() {
+    let mut body = codex("codex-developer-resume");
+    body["instructions"] = json!("Answer briefly.");
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let system = texts(&sent["system"]);
+    assert_eq!(system[0], "Answer briefly.");
+    assert_eq!(system[1], body["input"][0]["content"][0]["text"]);
+    assert_eq!(system.len(), 5);
+}
+
+#[test]
+fn openai_gets_codex_requests_unchanged() {
+    for name in ["codex-developer-resume", "codex-model-switch"] {
+        let body = codex(name);
+        let req = decode(&body);
+        let (sent, left_out) = sent_with(R, &req, openai(&req));
+        let mut want = body.clone();
+        want["max_output_tokens"] = json!(4096);
+        assert_eq!(sent, want, "{name}");
+        assert!(left_out.is_empty(), "{name}");
+    }
+}
+
+#[test]
+fn later_developer_messages_join_the_next_user_turn_for_claude() {
+    let body = codex("codex-model-switch");
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(texts(&sent["system"]).len(), 4);
+    assert!(!roles(&sent["messages"]).contains(&"system"), "{sent}");
+    let last = sent["messages"].as_array().unwrap().last().unwrap();
+    let text = texts(&last["content"]);
+    assert!(text[0].starts_with("<model_switch>"), "{text:?}");
+    assert!(text[1].starts_with("<collaboration_mode>"), "{text:?}");
+    assert_eq!(text[2], "What did you write? Reply with only it.");
+}
+
+#[test]
+fn a_later_developer_message_without_a_user_turn_after_it_follows_the_tool_results() {
+    let mut body = codex("codex-model-switch");
+    let input = body["input"].as_array_mut().unwrap();
+    let developer: Vec<Value> = input[12..14].to_vec();
+    input.truncate(11);
+    input.extend(developer);
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let last = sent["messages"].as_array().unwrap().last().unwrap();
+    assert_eq!(last["role"], "user");
+    assert_eq!(content_types(last), ["tool_result", "text", "text"]);
+
+    let mut body = codex("codex-developer-resume");
+    let input = body["input"].as_array_mut().unwrap();
+    input.pop();
+    input.push(json!({"type": "message", "role": "developer", "content": "Be brief."}));
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let last = sent["messages"].as_array().unwrap().last().unwrap();
+    assert_eq!(last["role"], "user");
+    assert_eq!(texts(&last["content"]), ["Be brief."]);
+}
+
+#[test]
+fn a_developer_message_before_a_final_assistant_message_keeps_it_a_prefill_for_claude() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"role": "user", "content": "Write a haiku."},
+            {"role": "developer", "content": "Keep it under ten words."},
+            {"role": "assistant", "content": "Autumn"},
+        ],
+    });
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(roles(&sent["messages"]), ["user", "assistant"]);
+    assert_eq!(
+        texts(&sent["messages"][0]["content"]),
+        ["Write a haiku.", "Keep it under ten words."]
+    );
+}
+
+#[test]
+fn leading_developer_items_the_decoder_keeps_become_claudes_system_prompt() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"type": "message", "role": "developer", "status": "completed", "content": "You are terse."},
+            {"role": "user", "content": "Hi"},
+        ],
+    });
+    let req = decode(&body);
+    let Request::Generate(g) = &req else {
+        panic!("not a generation")
+    };
+    assert!(
+        g.system.is_empty(),
+        "the decoder keeps an item with a `status`"
+    );
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(texts(&sent["system"]), ["You are terse."]);
+    assert_eq!(roles(&sent["messages"]), ["user"]);
+}
+
+#[test]
+fn chat_models_get_developer_messages_where_chat_completions_takes_them() {
+    let body = json!({
+        "model": "m",
+        "input": [
+            {"role": "user", "content": "List the files."},
+            {"type": "function_call", "call_id": "call_1", "name": "exec_command", "arguments": "{\"cmd\":\"ls\"}"},
+            {"role": "developer", "content": "Approvals are now off."},
+            {"type": "function_call_output", "call_id": "call_1", "output": "a.txt"},
+            {"role": "user", "content": "Thanks."},
+            {"role": "developer", "content": "Reply in one word."},
+        ],
+    });
+    let req = decode(&body);
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    assert_eq!(
+        roles(&sent["messages"]),
+        ["user", "assistant", "tool", "system", "user", "system"]
+    );
+    assert_eq!(sent["messages"][3]["content"], "Approvals are now off.");
+}
+
+#[test]
+fn chat_system_messages_reach_claude_as_system_prompt_and_user_turn_text() {
+    let body = json!({
+        "model": "m",
+        "max_tokens": 1024,
+        "messages": [
+            {"role": "system", "content": "You are a coding assistant."},
+            {"role": "developer", "content": "Prefer small diffs."},
+            {"role": "user", "content": "Fix the bug."},
+            {"role": "assistant", "content": "Done."},
+            {"role": "system", "content": "Reminder: reply with a diff."},
+            {"role": "user", "content": "And the test?"},
+        ],
+    });
+    let req = decode_as(C, &body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(
+        texts(&sent["system"]),
+        ["You are a coding assistant.", "Prefer small diffs."]
+    );
+    assert_eq!(roles(&sent["messages"]), ["user", "assistant", "user"]);
+    assert_eq!(
+        texts(&sent["messages"][2]["content"]),
+        ["Reminder: reply with a diff.", "And the test?"]
+    );
+}
+
+#[test]
+fn anthropic_system_messages_stay_messages() {
+    let body = json!({
+        "model": "claude-sonnet-5-5",
+        "max_tokens": 1024,
+        "messages": [
+            {"role": "system", "content": "Be brief."},
+            {"role": "user", "content": "Hi"},
+            {"role": "assistant", "content": "Hello."},
+            {"role": "user", "content": "Bye"},
+            {"role": "system", "content": "Say goodbye."},
+        ],
+    });
+    let req = decode_as(A, &body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(sent, body);
+}
+
+#[test]
+fn chat_models_get_hoisted_developer_messages_as_their_system_prompt() {
+    let req = decode(&codex("codex-model-switch"));
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    let roles = roles(&sent["messages"]);
+    assert_eq!(roles[0], "system");
+    assert_eq!(
+        roles.iter().filter(|r| **r == "system").count(),
+        3,
+        "{roles:?}"
+    );
+}
+
+#[test]
+fn chat_models_get_codex_requests_without_hosted_web_search() {
+    let req = decode(&codex("codex-developer-resume"));
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
+    assert_eq!(tool_names(C, &sent), ["exec_command"]);
+    assert_eq!(left_out, ["tools[1]"]);
+
+    let body = codex("codex-web-search-resume");
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
+    assert!(!sent.to_string().contains("web_search"), "{sent}");
+    let search = format!(
+        "web_search_call {}",
+        body["input"][2]["id"].as_str().unwrap()
+    );
+    assert_eq!(left_out, ["tools[3]".to_owned(), search.clone()]);
+    let (_, left_out) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(left_out, [search]);
+}
+
+#[test]
+fn chat_models_refuse_a_forced_hosted_web_search() {
+    let mut body = codex("codex-developer-resume");
+    body["tool_choice"] = json!({"type": "web_search"});
+    let req = decode(&body);
+    let e = send(C, &req, &mut mistral(&req)).unwrap_err();
+    assert_eq!(e.param.as_deref(), Some("tool_choice"), "{e}");
+}
+
+#[test]
+fn tool_settings_go_with_web_search_when_it_was_the_only_tool() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"].as_array_mut().unwrap().remove(0);
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(C, &req, mistral(&req));
+    for key in ["tools", "tool_choice", "parallel_tool_calls"] {
+        assert!(sent.get(key).is_none(), "{key}: {sent}");
+    }
+    assert_eq!(left_out, ["tools[0]", "tool_choice", "parallel_tool_calls"]);
+
+    for choice in [
+        json!("required"),
+        json!({"type": "function", "name": "exec_command"}),
+    ] {
+        body["tool_choice"] = choice;
+        let req = decode(&body);
+        let e = send(C, &req, &mut mistral(&req)).unwrap_err();
+        assert_eq!(e.unsupported_feature(), Some("tool_choice"));
+        assert_eq!(e.param.as_deref(), Some("tool_choice"));
+    }
+}
+
+#[test]
+fn a_tool_choice_that_asks_for_a_search_left_out_is_refused() {
+    for choice in [
+        json!({"type": "web_search"}),
+        json!({"type": "allowed_tools", "mode": "auto", "tools": [{"type": "web_search"}, {"type": "function", "name": "exec_command"}]}),
+    ] {
+        let mut body = codex("codex-developer-resume");
+        body["tools"][1]["external_web_access"] = json!(false);
+        body["tool_choice"] = choice;
+        let req = decode(&body);
+        for (target, mut ctx) in [
+            (R, xai(&req)),
+            (A, EgressCtx::new(&req)),
+            (C, mistral(&req)),
+        ] {
+            let e = send(target, &req, &mut ctx).unwrap_err();
+            assert_eq!(e.param.as_deref(), Some("tool_choice"), "{target}: {e}");
+        }
+    }
+}
+
+#[test]
+fn gpt_tool_history_reaches_claude_and_chat_models_as_tool_calls() {
+    let mut body = codex("codex-model-switch");
+    let script = body["input"][9]["input"].clone();
+    let action =
+        json!({"type": "exec", "command": ["cat", "proof.txt"], "env": {}, "timeout_ms": 10000});
+    body["input"].as_array_mut().unwrap().splice(
+        11..11,
+        [
+            json!({"type": "local_shell_call", "id": "lsh_1", "call_id": "call_shell_1", "status": "completed", "action": action}),
+            json!({"type": "function_call_output", "call_id": "call_shell_1", "output": "OK"}),
+        ],
+    );
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let blocks: Vec<&Value> = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|m| m["content"].as_array().unwrap())
+        .collect();
+    let uses: Vec<Value> = blocks
+        .iter()
+        .filter(|b| b["type"] == "tool_use" || b["type"] == "tool_result")
+        .map(|b| {
+            json!([
+                b["type"],
+                b["id"].as_str().or(b["tool_use_id"].as_str()),
+                b["name"]
+            ])
+        })
+        .collect();
+    assert_eq!(
+        uses,
+        [
+            json!(["tool_use", "call_8T8RbkBlHo4KilFkd28euzyo", "exec"]),
+            json!(["tool_result", "call_8T8RbkBlHo4KilFkd28euzyo", null]),
+            json!(["tool_use", "call_shell_1", "local_shell"]),
+            json!(["tool_result", "call_shell_1", null]),
+        ]
+    );
+    let exec = blocks.iter().find(|b| b["name"] == "exec").unwrap();
+    assert_eq!(exec["input"], json!({"input": script}));
+    let shell = blocks.iter().find(|b| b["name"] == "local_shell").unwrap();
+    assert_eq!(shell["input"], action);
+
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    let calls: Vec<(&str, &str)> = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|m| m["tool_calls"].as_array().into_iter().flatten())
+        .map(|c| {
+            (
+                c["id"].as_str().unwrap(),
+                c["function"]["name"].as_str().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        calls,
+        [
+            ("call_8T8RbkBlHo4KilFkd28euzyo", "exec"),
+            ("call_shell_1", "local_shell")
+        ]
+    );
+    assert!(!sent.to_string().contains("\"phase\""), "{sent}");
+}
+
+#[test]
+fn gpt_6_assistant_messages_with_a_phase_reach_every_target() {
+    let body = codex("codex-model-switch");
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    let assistant: Vec<&str> = sent["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|m| m["role"] == "assistant")
+        .flat_map(|m| m["content"].as_array().unwrap())
+        .filter_map(|b| b["text"].as_str())
+        .collect();
+    assert_eq!(assistant.len(), 3, "{sent}");
+    assert!(!sent.to_string().contains("phase"), "{sent}");
+    let (sent, _) = sent_with(C, &req, EgressCtx::new(&req));
+    assert!(!sent.to_string().contains("\"phase\""), "{sent}");
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    assert_eq!(sent["input"][6]["phase"], "commentary");
+}
+
+#[test]
+fn verbosity_reaches_chat_models_that_take_it_and_is_left_out_elsewhere() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"].as_array_mut().unwrap().pop();
+    body["text"] = json!({"verbosity": "low"});
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(C, &req, EgressCtx::new(&req));
+    assert_eq!(sent["verbosity"], "low");
+    assert!(left_out.is_empty());
+    for (target, ctx) in [(C, mistral(&req)), (A, EgressCtx::new(&req))] {
+        let (sent, left_out) = sent_with(target, &req, ctx);
+        assert!(!sent.to_string().contains("verbosity"), "{target}: {sent}");
+        assert_eq!(left_out, ["text.verbosity"], "{target}");
+    }
+}
+
+#[test]
+fn xai_gets_its_own_web_search_fields() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"][1] = json!({
+        "type": "web_search",
+        "external_web_access": true,
+        "search_context_size": "medium",
+        "filters": {"allowed_domains": ["docs.kaeso.app"]},
+        "enable_image_understanding": true,
+    });
+    let req = decode(&body);
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    assert_eq!(
+        sent["tools"][1],
+        json!({
+            "type": "web_search",
+            "filters": {"allowed_domains": ["docs.kaeso.app"]},
+            "enable_image_understanding": true,
+        })
+    );
+    let (sent, _) = sent_with(R, &req, openai(&req));
+    assert_eq!(sent["tools"][1], body["tools"][1]);
+}
+
+#[test]
+fn web_search_fields_xai_has_no_equivalent_for_are_refused() {
+    for (field, value, param) in [
+        (
+            "search_context_size",
+            json!("high"),
+            "tools[1].search_context_size",
+        ),
+        (
+            "user_location",
+            json!({"type": "approximate", "city": "Berlin"}),
+            "tools[1].user_location",
+        ),
+        (
+            "filters",
+            json!({"allowed_domains": ["a.example", "b.example", "c.example", "d.example", "e.example", "f.example"]}),
+            "tools[1].filters.allowed_domains",
+        ),
+        (
+            "filters",
+            json!({"allowed_domains": ["a.example"], "excluded_domains": ["b.example"]}),
+            "tools[1].filters",
+        ),
+    ] {
+        let mut body = codex("codex-developer-resume");
+        body["tools"][1][field] = value;
+        let req = decode(&body);
+        let e = send(R, &req, &mut xai(&req)).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some(param), "{field}: {e}");
+        assert!(e.message.contains("SpaceX"), "{}", e.message);
+    }
+}
+
+#[test]
+fn xai_gets_replayed_reasoning_without_null_content() {
+    let body = codex("codex-developer-resume");
+    let req = decode(&body);
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    let mut want = body["input"][4].clone();
+    want.as_object_mut().unwrap().remove("content");
+    assert_eq!(sent["input"][4], want);
+    assert_eq!(sent["tools"][1], json!({"type": "web_search"}));
+}
+
+#[test]
+fn custom_responses_providers_get_requests_as_openai_does_but_without_namespaces() {
+    let body = codex("codex-namespace-tools");
+    let req = decode(&body);
+    let ctx = EgressCtx::new(&req).with_responses_profile(ResponsesProfile::compatible("OpenAI"));
+    let (sent, _) = sent_with(R, &req, ctx);
+    let search = sent["tools"].as_array().unwrap().last().unwrap();
+    assert_eq!(search, &body["tools"][3]);
+    assert!(!sent.to_string().contains("\"namespace\""), "{sent}");
+
+    let ctx = EgressCtx::new(&req)
+        .with_responses_profile(ResponsesProfile::compatible("OpenAI"))
+        .with_tool_namespaces(true);
+    let (sent, _) = sent_with(R, &req, ctx);
+    assert_eq!(
+        sent["tools"][1], body["tools"][1],
+        "the request's own setting wins"
+    );
+}
+
+#[test]
+fn every_tool_left_out_has_a_row_on_the_cross_format_page() {
+    for language in ["en", "de", "zh-CN"] {
+        let page = std::fs::read_to_string(format!(
+            "{}/../../apps/docs/content/{language}/development/kpp/cross-format.md",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        let rows: Vec<&str> = page.lines().filter(|l| l.starts_with("| `")).collect();
+        for (origin, tool, target, _) in kaeso_codecs::cross::TOOLS_LEFT_OUT {
+            let cells = [
+                format!("`{tool}`"),
+                format!("`{}`", origin.as_str()),
+                format!("`{}`", target.as_str()),
+            ];
+            assert!(
+                rows.iter()
+                    .any(|r| cells.iter().all(|c| r.contains(c.as_str()))),
+                "{language}: no row for {tool} from {origin} to {target}"
+            );
+        }
+    }
+}
+
+#[test]
+fn xai_gets_codexs_second_turn_as_the_request_it_answered() {
+    let xai_fixture = |path: &str| -> Value {
+        serde_json::from_slice(&fixture(R, &format!("providers/xai/{path}"))).unwrap()
+    };
+    let app = Arc::new(decode_as(R, &xai_fixture("requests/codex-turn-one.json")));
+    let reply = reply_items(
+        R,
+        &fixture(R, "providers/xai/responses/recorded-codex-turn-one.json"),
+        &app,
+        &xai(&app),
+    );
+    let codex = xai_fixture("requests/codex-turn-two-null-content.json");
+    assert_eq!(
+        reply[0]["encrypted_content"], codex["input"][4]["encrypted_content"],
+        "Codex sends back the reasoning item it received"
+    );
+    let req = decode_as(R, &codex);
+    let (sent, left_out) = sent_with(R, &req, xai(&req));
+    assert_eq!(sent, xai_fixture("requests/codex-turn-two.json"));
+    assert!(left_out.is_empty());
+}
+
+#[test]
+fn claude_gets_excluded_domains_as_blocked_domains_and_no_image_options() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"][1] = json!({
+        "type": "web_search",
+        "filters": {"allowed_domains": [], "excluded_domains": ["spam.example"]},
+        "enable_image_understanding": true,
+        "enable_image_search": false,
+    });
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(A, &req, EgressCtx::new(&req));
+    assert_eq!(
+        sent["tools"][1],
+        json!({"type": "web_search_20250305", "name": "web_search", "blocked_domains": ["spam.example"]})
+    );
+    assert_eq!(left_out, ["tools[1].enable_image_understanding"]);
+
+    body["tools"][1]["filters"]["allowed_domains"] = json!(["docs.kaeso.app"]);
+    let req = decode(&body);
+    let e = send(A, &req, &mut EgressCtx::new(&req)).unwrap_err();
+    assert_eq!(e.param.as_deref(), Some("tools[1].filters"), "{e}");
+}
+
+#[test]
+fn only_documented_verbosity_values_cross_formats() {
+    let mut body = codex("codex-developer-resume");
+    body["tools"].as_array_mut().unwrap().pop();
+    body["text"] = json!({"verbosity": "loud"});
+    let req = decode(&body);
+    for (target, mut ctx) in [
+        (A, EgressCtx::new(&req)),
+        (C, EgressCtx::new(&req)),
+        (C, mistral(&req)),
+    ] {
+        let e = send(target, &req, &mut ctx).unwrap_err();
+        assert_eq!(
+            e.unsupported_feature(),
+            Some("text.verbosity"),
+            "{target}: {e}"
+        );
+    }
 }

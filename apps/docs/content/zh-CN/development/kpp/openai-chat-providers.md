@@ -11,7 +11,7 @@ nav: Chat 服务商
 
 其他服务商使用这种格式时各有差异。`PROVIDERS`（`crates/kaeso-core/src/provider.rs`）中的每个服务商都在 `chat` 字段中指定一个 `kaeso_codecs::openai_chat::ChatProfile`。该配置包含服务商的名称，以及 Kaeso 向它发送请求时的设置（`ChatProfile::request`，即一个 `RequestProfile`），通过下面的构建方法设置。
 
-网关通过 `EgressCtx::with_chat_profile` 把该配置交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变；`ChatProfile::compatible(name)` 在添加设置之前也一样。
+网关通过 `EgressCtx::with_chat_profile` 把该配置交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变。`ChatProfile::compatible(name)` 只在 `request.verbosity` 上不同，该值为假：OpenAI Responses 应用的 `text.verbosity` 会被省略，而不是作为 `verbosity` 发送。只有 OpenAI 记载了这个字段，会拒绝未知字段的服务商也会拒绝它。出于同样的原因，自定义服务商使用 `ChatProfile::OPENAI.without_verbosity()`。
 
 | 设置 | 编码器的行为 | 为什么允许 |
 |---|---|---|
@@ -20,6 +20,7 @@ nav: Chat 服务商
 | `random_seed()` | 把 `seed` 以 `random_seed` 发送，`seed: null` 也一样。负数 seed，或同时带 `seed` 和 `random_seed`（任一可为 `null`）的请求，为 `Unsupported`（`seed`）。此规则依据 Mistral 的 `random_seed`，其 OpenAPI 文档规定 `minimum: 0`。 | `seed` 仍是语义字段：只会被改名或拒绝，绝不会被丢弃。 |
 | `without_end_user()` | 省略 KPP `user`，而不是以 `user` 或 `safety_identifier` 发送；Chat 应用与 `safety_identifier` 一起发送的第二个 `user` 以及它们的 `null` 写法也一并省略。 | `user` 是提示字段（[字段类别](index.md#字段类别)）。 |
 | `without_prefill()` | 拒绝以 assistant 消息结尾的对话，除非该消息调用工具，或是带有 `prefix: true` 的 Chat 应用消息：`Unsupported`（`assistant prefill`，param `messages[i]`）。 | 只能借助 `prefix: true` 续写此类消息的服务商会在回复中重复预填内容，应用因此得不到续写。 |
+| `without_verbosity()` | 省略 OpenAI Responses 应用的 `text.verbosity`，而不是作为 `verbosity` 发送，并在 `kaeso-left-out` 中注明。`compatible(name)` 会设置它。 | `text.verbosity` 是提示（[字段类别](index.md#字段类别)）。 |
 | `with_message_bookkeeping()` | 发送 Chat 应用助手消息中的簿记键，即 `cross::CHAT_ASSISTANT_BOOKKEEPING`（目前是 Grok CLI 的 `model_id`，包括 `null`）。没有此设置时，编码器省略它们。 | 模型从不读取它们，而多数 Chat 提供商会拒绝未声明的消息字段（Groq、Mistral 以及兼容 OpenAI 的代理），因此只有已知接受它们的提供商才会收到。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |

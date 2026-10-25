@@ -599,3 +599,60 @@ async fn token_counts_for_mistral_models_are_refused_in_the_apps_format() {
     );
     assert!(env.mock.received().is_empty());
 }
+
+#[tokio::test]
+async fn a_codex_request_reaches_mistral_without_web_search_and_says_so() {
+    let env = env().await;
+    let text = format!(
+        "Write a haiku. {}",
+        fixture("responses", "recorded-max-tokens-length")
+    );
+    let body = json!({
+        "model": SMALL,
+        "input": [
+            {"type": "message", "id": "msg_1", "role": "developer", "content": [{"type": "input_text", "text": "You are Codex."}]},
+            {"type": "message", "role": "user", "content": [{"type": "input_text", "text": text}]}
+        ],
+        "tools": [
+            {"type": "function", "name": "exec_command", "parameters": {"type": "object", "properties": {"cmd": {"type": "string"}}}},
+            {"type": "web_search", "external_web_access": true}
+        ],
+        "text": {"verbosity": "low"},
+        "store": false
+    });
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("tools[1], text.verbosity"));
+    let sent = sent_to_mistral(&env, "/v1/chat/completions", SMALL);
+    let tools: Vec<&str> = sent["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["function"]["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(tools, ["exec_command"]);
+    assert!(sent.get("verbosity").is_none(), "{sent}");
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(SMALL, &text)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), None);
+
+    let failing = json!({
+        "model": SMALL,
+        "input": format!("Hi {}", error("recorded-model-not-found")),
+        "tools": [
+            {"type": "function", "name": "exec_command", "parameters": {"type": "object", "properties": {}}},
+            {"type": "web_search"}
+        ]
+    });
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(failing)).await;
+    assert_ne!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.header("kaeso-left-out"), Some("tools[1]"));
+}

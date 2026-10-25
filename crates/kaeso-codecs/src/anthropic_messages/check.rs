@@ -1,6 +1,6 @@
 use kaeso_kpp::{
     Block, Extras, GenerateRequest, KppError, Origin, OutputSpec, ReasoningEffort, ReasoningMode,
-    Request, Role, Source, ToolDef,
+    Request, Source, ToolDef,
 };
 
 use super::common::{D, is_data_url, parse_base64_data_url, request_kind_name};
@@ -27,16 +27,6 @@ pub(crate) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
             "Anthropic Messages requires an output limit. Set `{field}` for the request."
         ))
         .with_param(field));
-    }
-    if !r.extras.is_from(D)
-        && let Some(i) = r.messages.iter().position(|m| m.role == Role::System)
-    {
-        return Err(KppError::unsupported_by(
-            "system message",
-            D,
-            "Kaeso sends mid-conversation system messages to Anthropic only from Anthropic Messages requests. Move the instructions into the leading system prompt or into a user message.",
-        )
-        .with_param(format!("messages[{i}]")));
     }
     if generate {
         check_output(r)?;

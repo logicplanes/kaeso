@@ -1,0 +1,143 @@
+{
+  "model": "grok-4.7",
+  "stream": true,
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c01-7000-8000-000000000001",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c02-7000-8000-000000000002",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c03-7000-8000-000000000003",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c04-7000-8000-000000000004",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Remember 4817. Reply ok."
+        }
+      ]
+    },
+    {
+      "type": "reasoning",
+      "id": "rs_0199f3a2-reasoning-0001",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "Thinking about the reply."
+        }
+      ],
+      "content": null,
+      "encrypted_content": "gAAAAABo-placeholder-encrypted-reasoning"
+    },
+    {
+      "type": "message",
+      "status": "completed",
+      "id": "msg_0199f3a2-assistant-0001",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "ok",
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c05-7000-8000-000000000005",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "What number?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "type": "web_search",
+      "external_web_access": true
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "medium",
+    "summary": "auto"
+  },
+  "store": false,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "prompt_cache_key": "019a0e5b-7c06-7000-8000-000000000006",
+  "client_metadata": {
+    "turn_id": "019a0e5b-7c07-7000-8000-000000000007",
+    "session_id": "019a0e5b-7c06-7000-8000-000000000006",
+    "thread_id": "019a0e5b-7c06-7000-8000-000000000006",
+    "root_turn_id": "019a0e5b-7c07-7000-8000-000000000007",
+    "x-codex-window-id": "019a0e5b-7c06-7000-8000-000000000006:0",
+    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"019a0e5b-7c06-7000-8000-000000000006\",\"thread_id\":\"019a0e5b-7c06-7000-8000-000000000006\",\"agent_name\":\"/root\",\"turn_id\":\"019a0e5b-7c07-7000-8000-000000000007\",\"window_id\":\"019a0e5b-7c06-7000-8000-000000000006:0\",\"window_number\":0,\"context_window_id\":\"019a0e5b-7c09-7000-8000-000000000009\",\"request_kind\":\"turn\",\"history_initialization\":\"cold_resume\",\"root_turn_id\":\"019a0e5b-7c07-7000-8000-000000000007\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"read-only\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"turn_started_at_unix_ms\":1792915058437,\"analytics_enabled\":true,\"model\":\"grok-4.7\",\"reasoning_effort\":\"medium\"}",
+    "x-codex-installation-id": "00000000-0000-4000-8000-000000000000"
+  }
+}
