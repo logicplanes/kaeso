@@ -33,7 +33,6 @@ const DIALECTS: Record<string, string> = {
   openai_responses: "OpenAI Responses",
   openai_embeddings: "OpenAI Embeddings",
 };
-export const DIALECT_IDS = Object.keys(DIALECTS);
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 
 const ACCESS: Record<string, () => string> = {
