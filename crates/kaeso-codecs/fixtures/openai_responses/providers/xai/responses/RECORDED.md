@@ -10,3 +10,7 @@ Written by `cargo xtask record`. Provenance: live API of xAI (`xai`).
 | `recorded-tools-parallel.json` | `openai_responses/requests/tools-parallel.json` | `grok-4.3` | 2026-10-19 00:39 |
 | `recorded-web-search.json` | `openai_responses/requests/web-search.json` | `grok-4.3` | 2026-10-19 00:39 |
 | `recorded-presence-penalty-ignored.json` | `openai_responses/providers/xai/requests/presence-penalty-ignored.json` | `grok-4.3` | 2026-10-19 00:40 |
+| `recorded-codex-turn-one.json` | `openai_responses/providers/xai/requests/codex-turn-one.json` | `grok-4.7` | 2026-10-25 10:54 |
+| `recorded-codex-turn-two.json` | `openai_responses/providers/xai/requests/codex-turn-two.json` | `grok-4.7` | 2026-10-25 10:55 |
+
+The `recorded-codex-*` files went through a Kaeso gateway; see `../README.md`.

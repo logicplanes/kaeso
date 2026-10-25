@@ -46,14 +46,17 @@ fn refusal(err: &KppError) -> (Option<&str>, Option<&str>, String) {
 }
 
 #[test]
-fn the_openai_profile_is_the_default_and_a_bare_compatible_profile_changes_nothing() {
+fn the_openai_profile_is_the_default_and_a_bare_compatible_profile_drops_only_verbosity() {
     assert_eq!(ChatProfile::default(), ChatProfile::OPENAI);
     assert_eq!(
         EgressCtx::new(&chat(json!({"model": "m", "messages": []}))).chat_profile,
         ChatProfile::OPENAI
     );
     let bare = ChatProfile::compatible("Example Cloud");
-    assert_eq!(bare.request, RequestProfile::OPENAI);
+    assert!(RequestProfile::OPENAI.verbosity && !bare.request.verbosity);
+    let mut without = RequestProfile::OPENAI;
+    without.verbosity = false;
+    assert_eq!(bare.request, without);
     assert_eq!(
         (
             bare.request.output_limit,

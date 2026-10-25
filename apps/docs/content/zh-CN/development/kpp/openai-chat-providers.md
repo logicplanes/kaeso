@@ -11,7 +11,7 @@ nav: Chat 服务商
 
 其他服务商使用这种格式时各有差异。`PROVIDERS`（`crates/kaeso-core/src/provider.rs`）中的每个服务商都在 `chat` 字段中指定一个 `kaeso_codecs::openai_chat::ChatProfile`。该配置包含服务商的名称，以及 Kaeso 向它发送请求时的设置（`ChatProfile::request`，即一个 `RequestProfile`），通过下面的构建方法设置。
 
-网关通过 `EgressCtx::with_chat_profile` 把该配置交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变；`ChatProfile::compatible(name)` 在添加设置之前也一样。
+网关通过 `EgressCtx::with_chat_profile` 把该配置交给编码器，编码器将其应用到每个请求，无论应用以哪种格式发送。默认的 `ChatProfile::OPENAI` 不做任何改变。`ChatProfile::compatible(name)` 只在 `request.verbosity` 上不同，该值为假：OpenAI Responses 应用的 `text.verbosity` 会被省略，而不是作为 `verbosity` 发送。只有 OpenAI 记载了这个字段，会拒绝未知字段的服务商也会拒绝它。
 
 | 设置 | 编码器的行为 | 为什么允许 |
 |---|---|---|

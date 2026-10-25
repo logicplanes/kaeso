@@ -9,7 +9,7 @@ order: 2
 | 来自其他格式的数据 | 在请求中 | 在回复中 |
 | --- | --- | --- |
 | extras 字段 | `Unsupported`，除非在[允许列表](#extras)中 | 省略 |
-| 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)和[托管网页搜索](#托管网页搜索)除外 | 省略未知块，网页搜索除外 |
+| 未知块、工具和工具选择 | `Unsupported`，[工具命名空间](#工具命名空间)、[托管网页搜索](#托管网页搜索)和 [Codex 工具历史](#codex-工具历史)除外 | 省略未知块，网页搜索除外 |
 | 引用 | `Unsupported` | 省略 |
 | 服务商文件 ID | `Unsupported`，除非由目标服务商签发 | — |
 | 可读推理 | 丢弃；[推理数据块](reasoning.md#推理数据块)会在其来源处恢复它 | 应用有推理形态时，以该形态展示 |
@@ -63,7 +63,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 ## Extras
 
-从方言 A 捕获的 Extras 只写回方言 A。其他方言的 `check()` 会以 `Unsupported` 拒绝它们并注明字段。下面允许列表中的字段则会被丢弃。允许列表只收录已知不会改变模型输出的字段，例如 beta 请求头和分辨率提示，以及发往没有托管搜索的目标时的托管 `web_search` 工具。
+从方言 A 捕获的 Extras 只写回方言 A。其他方言的 `check()` 会以 `Unsupported` 拒绝它们并注明字段。下面允许列表中的字段则会被丢弃。允许列表只收录已知不会改变模型输出的字段，例如 beta 请求头和分辨率提示。
 
 只有已知对模型输出没有任何影响的字段才能加入列表。每个条目都需要一行理由，以及一个展示真实客户端发送该字段的 fixture。
 
@@ -86,7 +86,6 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `prompt_cache_key` | request，来自 `openai_responses` | 同上。 | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
-| `web_search` 工具 | tool，来自 `openai_responses`，发往 `openai_chat` | 该工具只是向模型提供一次可用可不用的搜索，而 Chat Completions 没有托管搜索（参见[托管网页搜索](#托管网页搜索)）。强制使用它的 `tool_choice` 仍为 `Unsupported`。 | 网页搜索开启时，Codex 0.164 每一轮都会发送它，且无法按模型关闭；`openai_responses/requests/codex-developer-resume.json` |
 
 ### 条件条目
 
@@ -95,6 +94,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | 键 | 范围和来源 | 条件与理由 | Fixture / 客户端 |
 | --- | --- | --- | --- |
 | `context_management` | request，来自 `anthropic_messages` | 只包含 `edits`，其中至少有一个 edit，且每个 edit 都是 `clear_thinking_*`。清除思考块只决定模型能看到哪些较早的 Anthropic `thinking` 块，而这些块从不会到达其他方言（[推理](reasoning.md)）。 | Claude Code 2.1.296 在每个请求中都发送 `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}`；`anthropic_messages/requests/claude-code-mid-conversation-system.json` |
+| `text.verbosity` | request，来自 `openai_responses` | `low` 或 `high`（`medium` 是形式标记）。这是输出长度提示（[字段类别](index.md#字段类别)）：配置接受 `verbosity` 的 Chat Completions 目标会在该字段收到它（[服务商配置](openai-chat-providers.md#服务商配置)）；Anthropic 和其他 Chat Completions 目标没有对应字段，因此会省略它，并在 `kaeso-left-out` 中注明。 | Codex 对 GPT 模型发送 `low`，线程切换模型时仍保留它；`openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message（`role: "system"`），来自 `anthropic_messages` | `{}`，或只有与请求的 `output_config.effort` 相同的 `effort`。重复请求的推理强度不会改变任何内容。 | Claude Code 2.1.296 会在对话中间的系统消息里重复请求的推理强度；同一个 fixture |
 
 ## 工具命名空间
@@ -111,24 +111,58 @@ OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称�
 
 ## 托管网页搜索
 
-发往 Anthropic 的 OpenAI Responses `web_search` 工具会变为 Anthropic 的服务端工具 `web_search_20250305`，名称为 `web_search`：
+OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的名称是 `web_search_2025_08_26`、`web_search_preview` 和 `web_search_preview_2025_03_11`；Kaeso 对这四个名称一视同仁。发往 Anthropic 时，该工具变为 Anthropic 的服务端工具 `web_search_20250305`，名称为 `web_search`：
 
 | Responses | Anthropic |
 | --- | --- |
 | `filters.allowed_domains` | `allowed_domains` |
 | `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` |
-| `external_web_access: true`、`search_context_size: "medium"`（默认值） | 不写入；两者描述的正是 Anthropic 搜索的行为 |
-| `external_web_access: false`、其他 `search_context_size`、任何其他字段 | `Unsupported` |
+| `external_web_access: true`、`search_context_size: "medium"`（默认值）、`search_content_types: ["text"]` | 不写入；它们描述的正是 Anthropic 搜索的行为 |
+| 含 `image` 的 `search_content_types` | 省略，并在 `kaeso-left-out` 中注明；Anthropic 的搜索只返回文本结果 |
+| `external_web_access: false` | [省略](#省略的工具)该工具 |
+| 其他 `search_context_size`、任何其他字段 | `Unsupported` |
 
-`external_web_access: false` 要求 OpenAI 只读取其页面缓存，这是 Codex 默认设置 `web_search = "cached"` 发送的内容。Claude 总是实时搜索，因此拒绝信息会建议设置 `web_search = "live"` 或关闭网页搜索。
+发往 SpaceX 的 Responses API（`WebSearchTool::Xai`）时，该工具保留 xAI 为它记载的字段（[网页搜索](https://docs.x.ai/developers/tools/web-search)，2026-10-25 阅读）：
 
-SpaceX 的 Responses API 接受 `web_search`，但拒绝 `external_web_access`。Kaeso 会省略 `external_web_access: true`，因为 SpaceX 本来就实时搜索；对 `false` 则以与 Claude 相同的提示拒绝。`EgressCtx::web_search_access` 表示某个 Responses 目标是否接受该字段。网关根据 `Provider::web_search_access` 设置它，只有 OpenAI 为真。
+| Responses | SpaceX |
+| --- | --- |
+| `filters.allowed_domains`、`filters.excluded_domains`（各最多五个，不能同时使用） | 原样发送 |
+| `enable_image_understanding`、`enable_image_search` | 原样发送 |
+| 含 `image` 的 `search_content_types` | `enable_image_search: true` |
+| `external_web_access: true`、`search_context_size: "medium"`、`search_content_types: ["text"]` | 不写入；SpaceX 拒绝 `external_web_access`，并且总是实时搜索 |
+| `external_web_access: false` | [省略](#省略的工具)该工具 |
+| 超过五个域名、同时使用两个列表、`user_location`、其他 `search_context_size`、任何其他字段 | `Unsupported` |
 
-Chat Completions 没有托管网页搜索，因此发往它时会省略 `web_search` 工具，这是[允许列表](#允许列表)中的一项例外。网页搜索开启时，Codex 会给每个请求加上该工具，且无法只为某个模型关闭；如果拒绝它，所有没有托管搜索的模型都无法在 Codex 中使用。模型的回答与没有该工具时相同。强制搜索的 `tool_choice` 仍会被拒绝，记录的请求正文保留应用的工具。
+`external_web_access: false` 要求 OpenAI 只读取其页面缓存，这是 Codex 默认设置 `web_search = "cached"` 发送的内容。Claude 和 SpaceX 总是实时搜索。实时搜索会读取应用要求 Kaeso 不去获取的页面，因此改为省略这次搜索。Chat Completions 没有托管搜索，因此在那里也会省略该工具。OpenAI 原样收到该工具。
+
+## 省略的工具
+
+这些工具会从请求中省略，而不是被拒绝（`cross::TOOLS_LEFT_OUT`）。每个工具都只是向模型提供一项可用可不用的能力，而 Codex 这样的应用会把它加到每个请求中，且无法按模型关闭：如果拒绝它，所有不具备该工具的模型都无法在该应用中使用。模型的回答与没有该工具时相同。每个被省略的工具都会在回复的 `kaeso-left-out` 响应头（[响应头](../../api/model-api.md#响应头)）和网关日志中注明，记录的请求正文保留应用的工具。
+
+| 工具 | 来自 | 发往 | 条件 |
+| --- | --- | --- | --- |
+| `web_search` | `openai_responses` | `openai_chat` | 始终省略：Chat Completions 没有托管搜索 |
+| `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`：Claude 总是实时搜索 |
+| `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`，且服务商的配置含 `WebSearchTool::Xai`：SpaceX 总是实时搜索 |
+
+强制使用被省略工具的 `tool_choice` 仍为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，因为 Chat Completions 在没有工具时会拒绝它们。`tool_choice: "required"` 为 `Unsupported`，因为已没有可调用的工具。
 
 Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
 
 应用发回的 `web_search_call` 项在发往 Anthropic 和 Chat Completions 时会被丢弃。Anthropic 只有在带上加密搜索结果时才会重放一次搜索，而这些项不携带结果；Chat Completions 没有这种项。使用了这些结果的回答仍留在对话中。带有 Kaeso `ws_kaeso_` ID 的项在发往任何 Responses 目标时也会被丢弃，因为没有哪个 Responses 服务商签发过它们。
+
+## Codex 工具历史
+
+在 GPT 模型上开始的 Codex 线程包含只有 OpenAI Responses 才有的项。线程在 Anthropic 或 Chat Completions 上继续时，这些项变为普通的工具调用和结果，因此模型保留历史：
+
+| Responses 项 | KPP |
+| --- | --- |
+| `custom_tool_call`（自由格式工具，例如 Codex 的 `apply_patch`） | 以该工具命名的 `Block::ToolCall`（带 `namespace` 时为 `<namespace>__<name>`），其 `input` 文本作为参数 `input` |
+| `custom_tool_call_output` | `Block::ToolResult`，按 `function_call_output` 的方式读取 |
+| `local_shell_call` | 名为 `local_shell` 的 `Block::ToolCall`，其 `action` 对象作为参数 |
+| `local_shell_call_output` | 对应其 `id` 所指调用的 `Block::ToolResult`；Codex 改为发送 `function_call_output` |
+
+OpenAI 原样收到这些项。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
 
 ## 用量
 
@@ -139,7 +173,7 @@ Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_s
 对话开始之后的系统消息保存为 `Role::System` 消息。
 
 - **发往 Anthropic，来自 Anthropic Messages：** 原样发送，由 API 判断它们的位置是否合适、哪些模型支持它们。Claude Code 在每个请求中都会发送这类消息。
-- **发往 Anthropic，来自其他方言：** 第一条用户或助手消息之前的 system 和 developer 消息按顺序并入系统提示词，排在 `instructions`（如有）之后。Codex 就是这样发送它的指令的。之后的此类消息为 `Unsupported`：Anthropic 只允许部分模型使用它们，并且只能放在用户轮次之后，而 OpenAI 的 system 和 developer 消息可以出现在任何位置。
+- **发往 Anthropic，来自其他方言：** 文本并入下一个用户轮次，排在其工具结果之后；后面没有用户轮次时，并入最后一个用户轮次。线程切换模型（`<model_switch>`）或模式（`<collaboration_mode>`）时，Codex 会发送这类消息。Anthropic 只接受紧跟在用户轮次之后、紧接在助手轮次之前的系统消息，而且不是每个模型都支持（[对话中间的系统消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)）。OpenAI 应用则可以把它们放在任何位置，通常放在它们引出的轮次之前。消息的字段与任何消息的字段经过同样的检查。开头的 system 和 developer 消息不受影响：解码器会把它们作为系统提示词。
 - **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。
 
 ## 保活消息

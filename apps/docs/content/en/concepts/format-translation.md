@@ -28,12 +28,12 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 ## Three rules
 
 1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked.
-2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes.
+2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes, and the few optional tools the target lacks, which the reply's `kaeso-left-out` header names ([tools left out](../development/kpp/cross-format.md#tools-left-out)).
 3. **Signed reasoning goes home only.** Kaeso sends encrypted or signed reasoning back only to the format and provider that issued it.
 
 ## What carries across
 
-- **Conversations.** System instructions, user and assistant turns, text, images and documents. A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message.
+- **Conversations.** System instructions, user and assistant turns, text, images and documents. A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
 - **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results.
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
@@ -50,7 +50,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 
 - `seed`, frequency and presence penalties, and a temperature above 1
 - the `json_object` output format, and a JSON schema with a description or with `strict: false`
-- system messages in the middle of a conversation from another format, and refusals in the history
+- refusals in the history
 - images other than JPEG, PNG, GIF and WebP, and documents other than PDF and plain text
 - the `minimal` effort
 

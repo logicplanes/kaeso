@@ -1,0 +1,203 @@
+{
+  "model": "claude-sonnet-5-5",
+  "stream": true,
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d01-7000-8000-000000000001",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are Codex, an agent based on GPT-6. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d02-7000-8000-000000000002",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d03-7000-8000-000000000003",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<multi_agent_role>You are `/root`, the primary agent in a team of agents collaborating to fulfill the user's goals.</multi_agent_role>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d04-7000-8000-000000000004",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents.</multi_agent_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d05-7000-8000-000000000005",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d06-7000-8000-000000000006",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Create hello.txt, show it, and search the web."
+        }
+      ]
+    },
+    {
+      "type": "reasoning",
+      "id": "rs_0199f3a2-reasoning-0002",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "Create the file."
+        }
+      ],
+      "content": null,
+      "encrypted_content": "gAAAAABo-placeholder-encrypted-reasoning"
+    },
+    {
+      "type": "custom_tool_call",
+      "id": "ctc_0001",
+      "status": "completed",
+      "call_id": "call_patch_1",
+      "name": "apply_patch",
+      "input": "*** Begin Patch\n*** Add File: hello.txt\n+hello\n*** End Patch\n"
+    },
+    {
+      "type": "custom_tool_call_output",
+      "id": "ctco_019a0e5c-7d07-7000-8000-000000000007",
+      "call_id": "call_patch_1",
+      "output": "Exit code: 0\nWall time: 0 seconds\nOutput:\nSuccess. Updated the following files:\nA hello.txt\n"
+    },
+    {
+      "type": "local_shell_call",
+      "id": "lsh_0002",
+      "call_id": "call_shell_2",
+      "status": "completed",
+      "action": {
+        "type": "exec",
+        "command": [
+          "cat",
+          "hello.txt"
+        ],
+        "timeout_ms": 10000,
+        "working_directory": null,
+        "env": {},
+        "user": null
+      }
+    },
+    {
+      "type": "function_call_output",
+      "id": "fco_019a0e5c-7d08-7000-8000-000000000008",
+      "call_id": "call_shell_2",
+      "output": "aborted"
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d09-7000-8000-000000000009",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<model_switch>\nThe user was previously using a different model. Please continue the conversation according to the following instructions:\n\nYou are Codex, an agent based on Claude Sonnet 5.5.\n</model_switch>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d10-7000-8000-000000000010",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5c-7d11-7000-8000-000000000011",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "What did you do?"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "type": "web_search",
+      "external_web_access": true
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "medium",
+    "summary": "auto"
+  },
+  "store": false,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "prompt_cache_key": "019a0e5c-7d12-7000-8000-000000000012",
+  "client_metadata": {
+    "x-codex-installation-id": "00000000-0000-4000-8000-000000000000",
+    "x-codex-window-id": "019a0e5c-7d12-7000-8000-000000000012:0",
+    "turn_id": "019a0e5c-7d13-7000-8000-000000000013",
+    "root_turn_id": "019a0e5c-7d13-7000-8000-000000000013",
+    "session_id": "019a0e5c-7d12-7000-8000-000000000012",
+    "x-codex-turn-metadata": "{\"installation_id\":\"00000000-0000-4000-8000-000000000000\",\"session_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"thread_id\":\"019a0e5c-7d12-7000-8000-000000000012\",\"agent_name\":\"/root\",\"turn_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"window_id\":\"019a0e5c-7d12-7000-8000-000000000012:0\",\"window_number\":0,\"context_window_id\":\"019a0e5c-7d14-7000-8000-000000000014\",\"request_kind\":\"turn\",\"history_initialization\":\"cold_resume\",\"root_turn_id\":\"019a0e5c-7d13-7000-8000-000000000013\",\"thread_source\":\"user\",\"turn_trigger\":\"exec\",\"sandbox\":\"seatbelt\",\"sandbox_mode\":\"workspace-write\",\"auto_review_enabled\":false,\"node_repl_auto_review_required\":true,\"node_repl_disabled\":false,\"workspaces\":{\"/home/user/project\":{\"has_changes\":true}},\"turn_started_at_unix_ms\":1792923274019,\"analytics_enabled\":true,\"model\":\"claude-sonnet-5-5\",\"reasoning_effort\":\"medium\"}",
+    "thread_id": "019a0e5c-7d12-7000-8000-000000000012"
+  }
+}

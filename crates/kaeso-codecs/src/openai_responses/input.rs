@@ -110,22 +110,34 @@ fn decode_message(raw: &RawValue, origin: &Origin) -> Option<Item> {
     let overrides = Overrides::diff(&canon, raw, &["content"]);
     let mut item_overrides = Extras::new(origin.clone());
     overrides.record(&mut item_overrides, "");
+    let set = match item_overrides.form.get("set") {
+        Some(Value::Object(set)) => Some(set),
+        _ => None,
+    };
+    let id = set
+        .and_then(|set| set.get("id"))
+        .and_then(Value::as_str)
+        .filter(|id| !super::parts::is_kaeso_id(id));
     let hoistable = (role == Role::System
         && blocks.iter().all(|b| matches!(b, Block::Text(_)))
         && item_overrides.fields.is_empty()
         && !item_overrides.form.contains_key("unset")
         && match item_overrides.form.get("set") {
             None => true,
-            Some(Value::Object(set)) => set.keys().all(|k| k == "type" || k == "role"),
+            Some(Value::Object(set)) => set.keys().all(|k| k == "type" || k == "role" || k == "id"),
             Some(_) => false,
         })
     .then(|| {
-        json!({
+        let mut desc = json!({
             "n": blocks.len(),
             "role": m.role,
             "type": super::node::entries_of(raw).is_some_and(|e| e.iter().any(|(k, _)| k == "type")),
             "parts": is_list,
-        })
+        });
+        if let (Some(id), Value::Object(d)) = (id, &mut desc) {
+            d.insert("id".to_owned(), id.into());
+        }
+        desc
     });
     super::parts::strip_kaeso_id(&mut item_overrides);
     for (k, v) in item_overrides.form {
@@ -289,6 +301,9 @@ pub(super) fn encode_system(system: &[Block], req_extras: &Extras) -> (Option<St
             .and_then(Value::as_str)
             .unwrap_or("developer");
         let mut item = Node::obj();
+        if let Some(id) = desc.get("id").and_then(Value::as_str) {
+            item.insert("id", Node::str(id));
+        }
         if desc.get("type").and_then(Value::as_bool).unwrap_or(false) {
             item.insert("type", Node::str("message"));
         }

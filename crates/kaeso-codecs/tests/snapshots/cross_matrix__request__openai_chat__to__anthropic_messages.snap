@@ -14,9 +14,9 @@ expression: outcomes
     "unsupported": "modalities"
   },
   "content-array-all-roles": {
-    "message": "`system message` is not supported by Anthropic Messages. Kaeso sends mid-conversation system messages to Anthropic only from Anthropic Messages requests. Move the instructions into the leading system prompt or into a user message.",
-    "param": "messages[2]",
-    "unsupported": "system message"
+    "message": "`refusal block` is not supported by Anthropic Messages. Anthropic has no refusal content block. Remove the refusal from the conversation history or replace it with text.",
+    "param": "messages[1].blocks[0]",
+    "unsupported": "refusal block"
   },
   "explicit-nulls": {
     "body": {

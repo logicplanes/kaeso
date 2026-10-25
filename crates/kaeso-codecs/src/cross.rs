@@ -32,6 +32,66 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     (DialectId::OpenAiResponses, "image", "detail"),
 ];
 
+/// The type names of OpenAI Responses' hosted search tool, current and earlier versions.
+pub const HOSTED_SEARCH_TYPES: &[&str] = &[
+    "web_search",
+    "web_search_2025_08_26",
+    "web_search_preview",
+    "web_search_preview_2025_03_11",
+];
+
+/// When a tool of another format is left out of a request instead of refused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum LeftOutWhen {
+    /// The target has no such tool.
+    Always,
+    /// The tool asks for cached pages only (`external_web_access: false`), and the
+    /// target's search always reads live pages.
+    CachedOnly,
+}
+
+/// Tools left out of a request on its way to a target: origin, tool type, target, when.
+/// A Responses target leaves out only what its [`crate::openai_responses::ResponsesProfile`]
+/// can't send.
+pub const TOOLS_LEFT_OUT: &[(DialectId, &str, DialectId, LeftOutWhen)] = &[
+    (
+        DialectId::OpenAiResponses,
+        "web_search",
+        DialectId::OpenAiChat,
+        LeftOutWhen::Always,
+    ),
+    (
+        DialectId::OpenAiResponses,
+        "web_search",
+        DialectId::AnthropicMessages,
+        LeftOutWhen::CachedOnly,
+    ),
+    (
+        DialectId::OpenAiResponses,
+        "web_search",
+        DialectId::OpenAiResponses,
+        LeftOutWhen::CachedOnly,
+    ),
+];
+
+pub fn leaves_out_tool(
+    origin: DialectId,
+    tool: &str,
+    target: DialectId,
+    cached_only: bool,
+) -> bool {
+    TOOLS_LEFT_OUT.iter().any(|(o, t, d, when)| {
+        *o == origin
+            && *t == tool
+            && *d == target
+            && match when {
+                LeftOutWhen::Always => true,
+                LeftOutWhen::CachedOnly => cached_only,
+            }
+    })
+}
+
 pub mod reasoning_map {
     use kaeso_kpp::{ReasoningConfig, ReasoningEffort, ReasoningMode};
 
@@ -154,6 +214,7 @@ pub fn is_droppable_value(origin: DialectId, scope: &str, key: &str, value: &Raw
         (DialectId::AnthropicMessages, "request", "context_management") => {
             only_thinking_edits(value)
         }
+        (DialectId::OpenAiResponses, "request", "text.verbosity") => true,
         _ => false,
     }
 }

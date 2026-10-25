@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::openai_chat::ChatProfile;
+use crate::openai_responses::ResponsesProfile;
 use indexmap::IndexMap;
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request, RequestKind,
@@ -129,10 +130,9 @@ pub struct EgressCtx {
     pub(crate) tool_names: IndexMap<String, String>,
     pub adaptive_thinking: Option<bool>,
     pub reasoning: Option<bool>,
-    pub tool_namespaces: Option<bool>,
-    pub web_search_access: Option<bool>,
-    pub null_reasoning_content: Option<bool>,
     pub chat_profile: ChatProfile,
+    pub responses_profile: ResponsesProfile,
+    pub left_out: Vec<String>,
 }
 
 impl EgressCtx {
@@ -149,10 +149,9 @@ impl EgressCtx {
             tool_names: IndexMap::new(),
             adaptive_thinking: None,
             reasoning: None,
-            tool_namespaces: None,
-            web_search_access: None,
-            null_reasoning_content: None,
             chat_profile: ChatProfile::OPENAI,
+            responses_profile: ResponsesProfile::OPENAI,
+            left_out: Vec::new(),
         }
     }
 
@@ -169,38 +168,14 @@ impl EgressCtx {
     }
 
     #[must_use]
-    pub fn with_tool_namespaces(mut self, supported: bool) -> Self {
-        self.tool_namespaces = Some(supported);
-        self
-    }
-
-    pub fn takes_tool_namespaces(&self, dialect: DialectId) -> bool {
-        dialect == DialectId::OpenAiResponses && self.tool_namespaces != Some(false)
-    }
-
-    #[must_use]
-    pub fn with_web_search_access(mut self, supported: bool) -> Self {
-        self.web_search_access = Some(supported);
-        self
-    }
-
-    pub fn takes_web_search_access(&self, dialect: DialectId) -> bool {
-        dialect == DialectId::OpenAiResponses && self.web_search_access != Some(false)
-    }
-
-    #[must_use]
-    pub fn with_null_reasoning_content(mut self, supported: bool) -> Self {
-        self.null_reasoning_content = Some(supported);
-        self
-    }
-
-    pub fn takes_null_reasoning_content(&self, dialect: DialectId) -> bool {
-        dialect == DialectId::OpenAiResponses && self.null_reasoning_content != Some(false)
-    }
-
-    #[must_use]
     pub fn with_chat_profile(mut self, profile: ChatProfile) -> Self {
         self.chat_profile = profile;
+        self
+    }
+
+    #[must_use]
+    pub fn with_responses_profile(mut self, profile: ResponsesProfile) -> Self {
+        self.responses_profile = profile;
         self
     }
 

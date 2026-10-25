@@ -147,7 +147,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 
 | 字段 | 类别 | 说明 |
 | --- | --- | --- |
-| `role` | 语义 | 对话开始之后的 `System` 消息发往 Anthropic 时返回 `Unsupported`，除非请求来自 Anthropic Messages（[系统消息](cross-format.md#系统消息)）。 |
+| `role` | 语义 | 对话开始之后的 `System` 消息发往 Anthropic 时并入下一个用户轮次，除非请求来自 Anthropic Messages（[系统消息](cross-format.md#系统消息)）。 |
 | `blocks` | 语义 | 块的顺序保持不变。 |
 | `extras` | 与请求相同 | |
 

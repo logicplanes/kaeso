@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use kaeso_codecs::{EgressCtx, dispatch};
+use kaeso_codecs::dispatch;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{DialectId, KppError, Reply, Request};
 use kaeso_upstream::{Call, ResponseBody, Timeouts, UpstreamError};
@@ -74,13 +74,12 @@ impl InputCounter {
         };
         let app_req = Request::CountTokens(app);
         let req = Request::CountTokens(sent);
-        let mut ctx = EgressCtx::new(&app_req).with_provider(self.provider.id());
-        if let Some(a) = self.adaptive_thinking {
-            ctx = ctx.with_adaptive_thinking(a);
-        }
-        if let Some(r) = self.reasoning {
-            ctx = ctx.with_reasoning(r);
-        }
+        let mut ctx = super::pipeline::egress_ctx(
+            &app_req,
+            &self.provider,
+            self.adaptive_thinking,
+            self.reasoning,
+        );
         let encoded = dispatch::encode_request(self.dialect, &req, &mut ctx)?;
         let base = base_url(&self.state, &self.provider).ok_or_else(|| {
             KppError::provider(format!("no base URL for `{}`", self.provider.id()))

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -339,16 +340,11 @@ impl ProviderRef {
         }
     }
 
-    pub fn tool_namespaces(&self) -> bool {
-        self.built_in().is_some_and(|p| p.tool_namespaces)
-    }
-
-    pub fn web_search_access(&self) -> bool {
-        self.built_in().is_some_and(|p| p.web_search_access)
-    }
-
-    pub fn null_reasoning_content(&self) -> bool {
-        self.built_in().is_some_and(|p| p.null_reasoning_content)
+    pub fn responses(&self) -> ResponsesProfile {
+        match self {
+            ProviderRef::BuiltIn(p) => p.responses,
+            ProviderRef::Custom(_) => ResponsesProfile::compatible("OpenAI"),
+        }
     }
 
     pub fn account(&self) -> Option<AccountSignIn> {
@@ -547,13 +543,8 @@ mod tests {
         assert_eq!(r.count_tokens(), Some(DialectId::AnthropicMessages));
         assert_eq!(r.auth(), Some(AuthStyle::XApiKey));
         assert_eq!(r.chat(), ChatProfile::OPENAI);
-        assert!(
-            !r.tool_namespaces()
-                && !r.web_search_access()
-                && !r.null_reasoning_content()
-                && r.account().is_none()
-                && !r.refuses_key("Incorrect API key provided")
-        );
+        assert_eq!(r.responses(), ResponsesProfile::compatible("OpenAI"));
+        assert!(r.account().is_none() && !r.refuses_key("Incorrect API key provided"));
         assert_eq!(r.metric_label(), "custom");
     }
 

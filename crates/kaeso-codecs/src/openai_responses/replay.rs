@@ -1,8 +1,9 @@
-use kaeso_kpp::{Block, Extras, GenerateRequest};
+use kaeso_kpp::{Block, Extras};
 use serde_json::Value;
 
 use super::DIALECT;
 use super::overrides::SET;
+use crate::adapt::Draft;
 
 const CONTENT: &str = "content";
 
@@ -23,21 +24,25 @@ fn remove_null_content(extras: &mut Extras) {
     }
 }
 
-pub(crate) fn without_null_reasoning_content(r: &GenerateRequest) -> Option<GenerateRequest> {
-    if !r
+pub(crate) fn without_null_reasoning_content(d: &mut Draft<'_>) {
+    if !d
+        .get()
         .messages
         .iter()
         .any(|m| m.blocks.iter().any(has_null_content))
     {
-        return None;
+        return;
     }
-    let mut out = r.clone();
-    for block in out.messages.iter_mut().flat_map(|m| m.blocks.iter_mut()) {
+    for block in d
+        .edit()
+        .messages
+        .iter_mut()
+        .flat_map(|m| m.blocks.iter_mut())
+    {
         if has_null_content(block)
             && let Block::Reasoning(r) = block
         {
             remove_null_content(&mut r.extras);
         }
     }
-    Some(out)
 }

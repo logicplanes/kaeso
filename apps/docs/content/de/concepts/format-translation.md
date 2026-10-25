@@ -28,12 +28,12 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 ## Drei Regeln
 
 1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat.
-2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt.
+2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt, und die wenigen optionalen Tools, die dem Ziel fehlen. Diese nennt der Header `kaeso-left-out` der Antwort ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools)).
 3. **Signiertes Reasoning geht nur nach Hause.** Verschlüsseltes oder signiertes Reasoning sendet Kaeso nur an das Format und den Anbieter zurück, die es ausgegeben haben.
 
 ## Was erhalten bleibt
 
-- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente. Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht.
+- **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente. Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
 - **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse.
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
@@ -50,7 +50,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 
 - `seed`, Frequency- und Presence-Penalties und eine Temperatur über 1
 - das Ausgabeformat `json_object` und ein JSON-Schema mit einer Beschreibung oder mit `strict: false`
-- Systemnachrichten mitten in einer Unterhaltung aus einem anderen Format und Verweigerungen im Verlauf
+- Verweigerungen im Verlauf
 - Bilder außer JPEG, PNG, GIF und WebP und Dokumente außer PDF und reinem Text
 - die Aufwandsstufe `minimal`
 

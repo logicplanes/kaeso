@@ -1,0 +1,96 @@
+{
+  "model": "grok-4.7",
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c01-7000-8000-000000000001",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c02-7000-8000-000000000002",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c03-7000-8000-000000000003",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c04-7000-8000-000000000004",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Remember 4817. Reply ok."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "type": "web_search",
+      "external_web_access": true
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "low",
+    "summary": "auto"
+  },
+  "store": false,
+  "include": [
+    "reasoning.encrypted_content"
+  ]
+}

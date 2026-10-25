@@ -13,6 +13,7 @@ mod openai_models;
 pub mod sse;
 mod struct_fields;
 pub mod testing;
+mod verbosity;
 mod web_search;
 mod wire;
 

@@ -106,6 +106,172 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "codex-model-switch": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Create hello.txt, show it, and search the web.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_patch_1",
+              "input": {
+                "input": "*** Begin Patch\n*** Add File: hello.txt\n+hello\n*** End Patch\n"
+              },
+              "name": "apply_patch",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Exit code: 0\nWall time: 0 seconds\nOutput:\nSuccess. Updated the following files:\nA hello.txt\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_patch_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_shell_2",
+              "input": {
+                "command": [
+                  "cat",
+                  "hello.txt"
+                ],
+                "env": {},
+                "timeout_ms": 10000,
+                "type": "exec",
+                "user": null,
+                "working_directory": null
+              },
+              "name": "local_shell",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "aborted",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_shell_2",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "<model_switch>\nThe user was previously using a different model. Please continue the conversation according to the following instructions:\n\nYou are Codex, an agent based on Claude Sonnet 5.5.\n</model_switch>",
+              "type": "text"
+            },
+            {
+              "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+              "type": "text"
+            },
+            {
+              "text": "What did you do?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "medium"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, an agent based on GPT-6. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<multi_agent_role>You are `/root`, the primary agent in a team of agents collaborating to fulfill the user's goals.</multi_agent_role>",
+          "type": "text"
+        },
+        {
+          "text": "<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents.</multi_agent_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "codex-namespace-tools": {
     "body": {
       "max_tokens": 4096,
@@ -855,9 +1021,444 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "multi-turn-roles": {
-    "message": "`text.verbosity` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "text.verbosity"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "I'm visiting Lisbon in March. What should I pack?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Pack layers and a light rain jacket: March in Lisbon is mild but showery.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "And what about shoes?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Bring comfortable walking shoes with good grip, because the cobblestones get slippery in the rain.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "The user prefers metric units.",
+              "type": "text"
+            },
+            {
+              "text": "Is the sea warm enough to swim?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "system": [
+        {
+          "text": "You are a concise travel assistant.",
+          "type": "text"
+        },
+        {
+          "text": "Answer in at most two sentences.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-turn-one": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Remember 4817. Reply ok.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-turn-two": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Remember 4817. Reply ok.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "What number?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-turn-two-null-content": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Remember 4817. Reply ok.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "ok",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "text": "What number?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-web-search-access": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-25</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Remember 4817. Reply ok.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "low"
+      },
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "name": "web_search",
+          "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/xai/presence-penalty-ignored": {
     "message": "`presence_penalty` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",

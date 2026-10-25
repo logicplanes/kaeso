@@ -147,7 +147,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 
 | Feld | Klasse | Anmerkungen |
 | --- | --- | --- |
-| `role` | semantisch | Eine `System`-Nachricht nach dem Beginn der Unterhaltung ist für Anthropic `Unsupported`, außer die Anfrage kam aus Anthropic Messages ([Systemnachrichten](cross-format.md#systemnachrichten)). |
+| `role` | semantisch | Eine `System`-Nachricht nach dem Beginn der Unterhaltung wird für Anthropic Teil der nächsten Benutzerrunde, außer die Anfrage kam aus Anthropic Messages ([Systemnachrichten](cross-format.md#systemnachrichten)). |
 | `blocks` | semantisch | Die Reihenfolge der Blöcke bleibt erhalten. |
 | `extras` | wie bei der Anfrage | |
 

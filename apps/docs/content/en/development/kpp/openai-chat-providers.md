@@ -11,7 +11,7 @@ Other providers than OpenAI speak [OpenAI Chat Completions](openai-chat.md) with
 
 Other providers speak this format with differences of their own. Each provider in `PROVIDERS` (`crates/kaeso-core/src/provider.rs`) names a `kaeso_codecs::openai_chat::ChatProfile` in its `chat` field. The profile holds the provider's name and the settings for the requests Kaeso sends it (`ChatProfile::request`, a `RequestProfile`), set with the builders below.
 
-The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing, and neither does `ChatProfile::compatible(name)` until a setting is added.
+The gateway hands the profile to the encoder with `EgressCtx::with_chat_profile`, which applies it to every request, whatever format the app sent. `ChatProfile::OPENAI`, the default, changes nothing. `ChatProfile::compatible(name)` differs only in `request.verbosity`, which is false: an OpenAI Responses app's `text.verbosity` is left out instead of sent as `verbosity`, a field only OpenAI documents, which providers that refuse unknown fields would refuse.
 
 | Setting | What the encoder does | Why it is allowed |
 |---|---|---|

@@ -22,6 +22,7 @@ pub struct RequestProfile {
     pub seed: SeedField,
     pub end_user: bool,
     pub assistant_prefill: bool,
+    pub verbosity: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -62,6 +63,7 @@ impl RequestProfile {
         seed: SeedField::Seed,
         end_user: true,
         assistant_prefill: true,
+        verbosity: true,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -83,10 +85,13 @@ impl ChatProfile {
     };
 
     pub const fn compatible(provider: &'static str) -> Self {
-        ChatProfile {
+        let mut profile = ChatProfile {
             provider,
             ..ChatProfile::OPENAI
-        }
+        };
+        // `verbosity` is OpenAI's; providers that reject unknown fields refuse it.
+        profile.request.verbosity = false;
+        profile
     }
 
     #[must_use]

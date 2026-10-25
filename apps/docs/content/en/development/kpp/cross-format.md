@@ -9,7 +9,7 @@ An app may speak one API format while the provider speaks another. These are the
 | Data from another format | In a request | In a reply |
 | --- | --- | --- |
 | Extras fields | `Unsupported`, unless [allowlisted](#extras) | Left out |
-| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces) and [hosted web search](#hosted-web-search) | Unknown blocks left out, except web searches |
+| Unknown blocks, tools and tool choices | `Unsupported`, except [tool namespaces](#tool-namespaces), [hosted web search](#hosted-web-search) and [Codex tool history](#codex-tool-history) | Unknown blocks left out, except web searches |
 | Citations | `Unsupported` | Left out |
 | Provider file ids | `Unsupported` unless the target provider issued them | — |
 | Readable reasoning | Dropped; the [reasoning blob](reasoning.md#reasoning-blobs) restores it at its origin | Shown in the app's reasoning shape where it has one |
@@ -63,7 +63,7 @@ Stop reasons the app's format doesn't have are mapped to the closest one it has;
 
 ## Extras
 
-Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field. A field on the allowlist below is dropped instead. The allowlist holds only fields known not to change what the model writes, such as beta headers and resolution hints, and the hosted `web_search` tool for targets that have no hosted search.
+Extras captured from dialect A are written back only to dialect A. Another dialect's `check()` refuses them with `Unsupported`, naming the field. A field on the allowlist below is dropped instead. The allowlist holds only fields known not to change what the model writes, such as beta headers and resolution hints.
 
 An entry is allowed only when the field is known to have no effect on the model's output. Every entry needs a one-line reason and the fixture that shows a real client sending it.
 
@@ -86,7 +86,6 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `prompt_cache_key` | request, from `openai_responses` | As above. | `openai_responses/requests/sampling-and-ids.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
-| `web_search` tool | tool, from `openai_responses`, to `openai_chat` | The tool only offers the model a search it may use, and Chat Completions has no hosted search ([hosted web search](#hosted-web-search)). A `tool_choice` that forces it stays `Unsupported`. | Codex 0.164 sends it on every turn while web search is on, with no switch per model; `openai_responses/requests/codex-developer-resume.json` |
 
 ### Conditional entries
 
@@ -95,6 +94,7 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 | Key | Scope and origin | Condition and reason | Fixture / client |
 | --- | --- | --- | --- |
 | `context_management` | request, from `anthropic_messages` | Holds only `edits`, with at least one edit, and every edit is `clear_thinking_*`. Thinking-block clearing only decides which earlier Anthropic `thinking` blocks the model sees, and those never reach another dialect ([reasoning](reasoning.md)). | Claude Code 2.1.296 sends `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}` on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
+| `text.verbosity` | request, from `openai_responses` | `low` or `high` (`medium` is a form marker). An output length hint ([field classes](index.md#field-classes)): a Chat Completions target whose profile takes `verbosity` gets it there ([provider profiles](openai-chat-providers.md#provider-profiles)); Anthropic and other Chat Completions targets have no equivalent, so it is left out and named in `kaeso-left-out`. | Codex sends `low` for GPT models and keeps it when a thread switches models; `openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message (`role: "system"`), from `anthropic_messages` | `{}`, or only `effort` equal to the request's `output_config.effort`. Repeating the request's effort changes nothing. | Claude Code 2.1.296 repeats the request's effort on its mid-conversation system message; same fixture |
 
 ## Tool namespaces
@@ -111,24 +111,58 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 
 ## Hosted web search
 
-An OpenAI Responses `web_search` tool going to Anthropic becomes Anthropic's `web_search_20250305` server tool, named `web_search`:
+OpenAI Responses names its hosted search tool `web_search`, and earlier `web_search_2025_08_26`, `web_search_preview` and `web_search_preview_2025_03_11`; Kaeso treats all four alike. Going to Anthropic, the tool becomes Anthropic's `web_search_20250305` server tool, named `web_search`:
 
 | Responses | Anthropic |
 | --- | --- |
 | `filters.allowed_domains` | `allowed_domains` |
 | `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` |
-| `external_web_access: true`, `search_context_size: "medium"` (the default) | nothing; both describe what Anthropic's search does |
-| `external_web_access: false`, another `search_context_size`, any other field | `Unsupported` |
+| `external_web_access: true`, `search_context_size: "medium"` (the default), `search_content_types: ["text"]` | nothing; they describe what Anthropic's search does |
+| `search_content_types` with `image` | left out, named in `kaeso-left-out`; Anthropic's search returns text results only |
+| `external_web_access: false` | the tool is [left out](#tools-left-out) |
+| another `search_context_size`, any other field | `Unsupported` |
 
-`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude always searches live, so the refusal says to set `web_search = "live"` or turn web search off.
+Going to SpaceX's Responses API (`WebSearchTool::Xai`), the tool keeps the fields xAI documents for it ([web search](https://docs.x.ai/developers/tools/web-search), read 2026-10-25):
 
-SpaceX's Responses API takes `web_search` but refuses `external_web_access`. Kaeso leaves out `external_web_access: true`, because SpaceX searches live anyway, and refuses `false` with the same hint as for Claude. `EgressCtx::web_search_access` says whether a Responses target takes the field. The gateway sets it from `Provider::web_search_access`, which is true only for OpenAI.
+| Responses | SpaceX |
+| --- | --- |
+| `filters.allowed_domains`, `filters.excluded_domains` (at most five each, not both) | as sent |
+| `enable_image_understanding`, `enable_image_search` | as sent |
+| `search_content_types` with `image` | `enable_image_search: true` |
+| `external_web_access: true`, `search_context_size: "medium"`, `search_content_types: ["text"]` | nothing; SpaceX refuses `external_web_access` and always searches live |
+| `external_web_access: false` | the tool is [left out](#tools-left-out) |
+| more than five domains, both lists, `user_location`, another `search_context_size`, any other field | `Unsupported` |
 
-Chat Completions has no hosted web search, so a `web_search` tool is left out for it, an exception on the [allowlist](#allowlist). Codex adds the tool to every request while web search is on and can't turn it off for one model; refusing it would make every model without hosted search unusable from Codex. The model answers as it would without the tool. A `tool_choice` that forces the search is still refused, and a logged request body keeps the app's tools.
+`external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude and SpaceX always search live. Searching live would read pages the app asked Kaeso not to fetch, so the search is left out instead. Chat Completions has no hosted search, so the tool is left out there too. OpenAI gets the tool as sent.
+
+## Tools left out
+
+These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT`). Each only offers the model something it may use, and an app such as Codex adds it to every request with no switch per model: refusing it would make every model without it unusable from that app. The model answers as it would without the tool. Every tool left out is named in the reply's `kaeso-left-out` header ([response headers](../../api/model-api.md#response-headers)) and in the gateway's log, and a logged request body keeps the app's tools.
+
+| Tool | From | To | When |
+| --- | --- | --- | --- |
+| `web_search` | `openai_responses` | `openai_chat` | always: Chat Completions has no hosted search |
+| `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`: Claude always searches live |
+| `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`, for a provider whose profile has `WebSearchTool::Xai`: SpaceX always searches live |
+
+A `tool_choice` that forces a tool left out stays `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them, because Chat Completions refuses them without tools; `tool_choice: "required"` is `Unsupported`, since no tool would be left to call.
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
 `web_search_call` items an app sends back are dropped for Anthropic and Chat Completions. Anthropic replays a search only with its encrypted results, which these items don't carry, and Chat Completions has no such item. The answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for every Responses target as well, because no Responses provider issued them.
+
+## Codex tool history
+
+A Codex thread that started on a GPT model holds items only OpenAI Responses has. When the thread continues on Anthropic or Chat Completions, they become ordinary tool calls and results, so the model keeps the history:
+
+| Responses item | KPP |
+| --- | --- |
+| `custom_tool_call` (a freeform tool, such as Codex's `apply_patch`) | `Block::ToolCall` named as the tool (`<namespace>__<name>` with a `namespace`), its `input` text as the argument `input` |
+| `custom_tool_call_output` | `Block::ToolResult`, read like a `function_call_output` |
+| `local_shell_call` | `Block::ToolCall` named `local_shell`, its `action` object as the arguments |
+| `local_shell_call_output` | `Block::ToolResult` for the call its `id` names; Codex sends a `function_call_output` instead |
+
+OpenAI gets the items as sent. An item that doesn't have the shape above stays an unknown block and is refused like one.
 
 ## Usage
 
@@ -139,7 +173,7 @@ Claude's searches reach a Responses app as `web_search_call` items. A `server_to
 A system message after the start of a conversation is kept as a `Role::System` message.
 
 - **To Anthropic, from Anthropic Messages:** sent unchanged; the API judges their placement and which models support them. Claude Code sends such messages on every request.
-- **To Anthropic, from other dialects:** system and developer messages before the first user or assistant message join the system prompt in order, after any `instructions`. Codex sends its instructions this way. Later ones are `Unsupported`: Anthropic allows them only for some models and only after a user turn, while OpenAI system and developer messages may sit anywhere.
+- **To Anthropic, from other dialects:** the text joins the next user turn, after its tool results, or the last user turn when none follows. Codex sends such messages when a thread switches models (`<model_switch>`) or modes (`<collaboration_mode>`). Anthropic takes a system message only right after a user turn and right before an assistant turn, and not on every model ([mid-conversation system messages](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)), while OpenAI apps place them anywhere, usually before the turn they introduce. The fields of the message go through the same check as any message's. Leading system and developer messages are not affected: the decoders make them the system prompt.
 - **To OpenAI:** later `system` or `developer` messages.
 
 ## Keepalives

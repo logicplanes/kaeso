@@ -1,3 +1,4 @@
+use kaeso_codecs::cross::HOSTED_SEARCH_TYPES;
 use kaeso_kpp::{DialectId, Extras, Request, ToolDef};
 use serde_json::Value;
 
@@ -68,9 +69,12 @@ fn provider_tool(tool: &ToolDef, egress: DialectId) -> Option<Unpriced> {
         .and_then(|v| v.get("type"))
         .and_then(Value::as_str)
         .unwrap_or_default();
-    let mapped_search = ty == "web_search"
+    let cached_only =
+        raw.as_ref().and_then(|v| v.get("external_web_access")) == Some(&Value::Bool(false));
+    let mapped_search = HOSTED_SEARCH_TYPES.contains(&ty)
         && item.origin.is(DialectId::OpenAiResponses)
-        && egress == DialectId::AnthropicMessages;
+        && egress == DialectId::AnthropicMessages
+        && !cached_only;
     if !item.origin.is(egress) && !mapped_search {
         return None;
     }
@@ -303,6 +307,28 @@ mod tests {
         for egress in [DialectId::OpenAiResponses, DialectId::AnthropicMessages] {
             assert_eq!(unpriced(&without_search, egress), None, "{egress}");
         }
+    }
+
+    #[test]
+    fn every_hosted_search_type_sent_to_claude_is_unpriced_unless_it_is_left_out() {
+        let with_tool = |tool: Value| {
+            decoded(
+                DialectId::OpenAiResponses,
+                &serde_json::json!({"model": "m", "input": "Hi", "tools": [tool]}),
+                &[],
+            )
+        };
+        for ty in HOSTED_SEARCH_TYPES {
+            let live = with_tool(serde_json::json!({"type": ty}));
+            assert_eq!(
+                unpriced(&live, DialectId::AnthropicMessages),
+                found("tools", ty),
+                "{ty}"
+            );
+        }
+        let cached =
+            with_tool(serde_json::json!({"type": "web_search", "external_web_access": false}));
+        assert_eq!(unpriced(&cached, DialectId::AnthropicMessages), None);
     }
 
     #[test]

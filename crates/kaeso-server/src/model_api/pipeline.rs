@@ -724,6 +724,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let served = Served {
         model: Some(eff.model_id.clone()),
         provider: Some(eff.provider.id().to_owned()),
+        left_out: Vec::new(),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -867,18 +868,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         continuity::restore(state, key_id, g).await;
     }
 
-    let mut ectx = EgressCtx::new(&app_req)
-        .with_provider(eff.provider.id())
-        .with_tool_namespaces(eff.provider.tool_namespaces())
-        .with_web_search_access(eff.provider.web_search_access())
-        .with_null_reasoning_content(eff.provider.null_reasoning_content())
-        .with_chat_profile(eff.provider.chat());
-    if let Some(a) = plan.adaptive_thinking {
-        ectx = ectx.with_adaptive_thinking(a);
-    }
-    if let Some(r) = plan.reasoning {
-        ectx = ectx.with_reasoning(r);
-    }
+    let mut ectx = egress_ctx(
+        &app_req,
+        &eff.provider,
+        plan.adaptive_thinking,
+        plan.reasoning,
+    );
     let dialect = plan.dialect;
     let (req, ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -887,6 +882,16 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    if !ectx.left_out.is_empty() {
+        tracing::info!(
+            left_out = %ectx.left_out.join(", "),
+            "left out of the request what the provider has no equivalent for"
+        );
+    }
+    let served = Served {
+        left_out: ectx.left_out.clone(),
+        ..served.clone()
+    };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
@@ -1237,6 +1242,25 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     count_estimate(EstimateReason::Unreported, o.provider.unwrap_or_default());
 }
 
+pub(super) fn egress_ctx(
+    app_req: &Request,
+    provider: &ProviderRef,
+    adaptive_thinking: Option<bool>,
+    reasoning: Option<bool>,
+) -> EgressCtx {
+    let mut ctx = EgressCtx::new(app_req)
+        .with_provider(provider.id())
+        .with_chat_profile(provider.chat())
+        .with_responses_profile(provider.responses());
+    if let Some(a) = adaptive_thinking {
+        ctx = ctx.with_adaptive_thinking(a);
+    }
+    if let Some(r) = reasoning {
+        ctx = ctx.with_reasoning(r);
+    }
+    ctx
+}
+
 // An account's token is valid only at its own API host; the input count goes to the
 // provider's configured base URL, so no account request may reach it.
 fn counted_at_provider(
@@ -1263,6 +1287,29 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn the_providers_profiles_and_plan_reach_the_egress_context() {
+        let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+        for id in ["openai", "xai", "mistral"] {
+            let p = ProviderRef::from(kaeso_core::provider::provider(id).unwrap());
+            let ctx = egress_ctx(&req, &p, Some(true), Some(false));
+            assert_eq!(ctx.provider.as_deref(), Some(id));
+            assert_eq!(ctx.chat_profile, p.chat(), "{id}");
+            assert_eq!(ctx.responses_profile, p.responses(), "{id}");
+            assert_eq!(
+                (ctx.adaptive_thinking, ctx.reasoning),
+                (Some(true), Some(false))
+            );
+        }
+        let xai = ProviderRef::from(kaeso_core::provider::provider("xai").unwrap());
+        assert_eq!(
+            egress_ctx(&req, &xai, None, None)
+                .responses_profile
+                .web_search,
+            kaeso_codecs::openai_responses::WebSearchTool::Xai
+        );
+    }
 
     #[test]
     fn a_provider_errors_upstream_reason_reaches_its_message_without_key_fragments() {

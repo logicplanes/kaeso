@@ -4,6 +4,7 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -186,10 +187,8 @@ pub struct Provider {
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
-    pub tool_namespaces: bool,
-    pub web_search_access: bool,
-    pub null_reasoning_content: bool,
     pub chat: ChatProfile,
+    pub responses: ResponsesProfile,
     pub account: Option<AccountSignIn>,
 }
 
@@ -214,10 +213,8 @@ pub const PROVIDERS: &[Provider] = &[
         ],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: true,
-        web_search_access: true,
-        null_reasoning_content: true,
         chat: ChatProfile::OPENAI,
+        responses: ResponsesProfile::OPENAI,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -241,10 +238,8 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("Anthropic"),
+        responses: ResponsesProfile::compatible("Anthropic"),
         account: None,
     },
     Provider {
@@ -263,13 +258,11 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
             .system_role()
             .reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("DeepSeek"),
         account: None,
     },
     Provider {
@@ -288,10 +281,10 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
         reasoning_beyond_output_limit: true,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
+        responses: ResponsesProfile::compatible("SpaceX")
+            .xai_web_search()
+            .without_null_reasoning_content(),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -315,11 +308,9 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
+        responses: ResponsesProfile::compatible("Together AI"),
         account: None,
     },
     Provider {
@@ -338,14 +329,12 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
+        responses: ResponsesProfile::compatible("Groq"),
         account: None,
     },
     Provider {
@@ -364,12 +353,10 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("OpenRouter")
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
+        responses: ResponsesProfile::compatible("OpenRouter"),
         account: None,
     },
     Provider {
@@ -388,9 +375,6 @@ pub const PROVIDERS: &[Provider] = &[
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         reasoning_beyond_output_limit: false,
-        tool_namespaces: false,
-        web_search_access: false,
-        null_reasoning_content: false,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
             .system_role()
@@ -411,6 +395,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "web_search_options",
             ])
             .refusing_in_messages(&["name", "refusal"]),
+        responses: ResponsesProfile::compatible("Mistral"),
         account: None,
     },
 ];
@@ -477,25 +462,32 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaeso_codecs::openai_responses::{ReasoningReplay, WebSearchTool};
 
     #[test]
-    fn only_openai_takes_responses_tool_namespaces() {
-        let taking: Vec<&str> = PROVIDERS
+    fn only_openai_takes_tool_namespaces_and_only_spacex_changes_search_and_reasoning() {
+        let namespaces: Vec<&str> = PROVIDERS
             .iter()
-            .filter(|p| p.tool_namespaces)
+            .filter(|p| p.responses.tool_namespaces)
             .map(|p| p.id)
             .collect();
-        assert_eq!(taking, ["openai"]);
-    }
-
-    #[test]
-    fn only_openai_takes_web_search_access_and_null_reasoning_content() {
-        let taking: Vec<(&str, bool, bool)> = PROVIDERS
+        assert_eq!(namespaces, ["openai"]);
+        let different: Vec<(&str, WebSearchTool, ReasoningReplay)> = PROVIDERS
             .iter()
-            .filter(|p| p.web_search_access || p.null_reasoning_content)
-            .map(|p| (p.id, p.web_search_access, p.null_reasoning_content))
+            .filter(|p| {
+                p.responses.web_search != WebSearchTool::AsSent
+                    || p.responses.reasoning_replay != ReasoningReplay::AsSent
+            })
+            .map(|p| (p.id, p.responses.web_search, p.responses.reasoning_replay))
             .collect();
-        assert_eq!(taking, [("openai", true, true)]);
+        assert_eq!(
+            different,
+            [(
+                "xai",
+                WebSearchTool::Xai,
+                ReasoningReplay::WithoutNullContent
+            )]
+        );
     }
 
     #[test]

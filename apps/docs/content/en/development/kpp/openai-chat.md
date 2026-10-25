@@ -109,7 +109,10 @@ Budgets and `disabled` are converted ([effort and budget](reasoning.md#effort-an
 - other dialects' cache hints ([cache hints](cross-format.md#cache-hints));
 - `ToolResult::is_error`, whose information the error content carries ([tool errors](cross-format.md#tool-errors));
 - other dialects' `reasoning.summary` and `reasoning.include_encrypted`, because Chat has no field that asks for them ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries));
-- an OpenAI Responses `web_search` tool and `web_search_call` items, because Chat has no hosted web search ([hosted web search](cross-format.md#hosted-web-search)).
+- an OpenAI Responses `web_search` tool and `web_search_call` items, because Chat has no hosted web search ([tools left out](cross-format.md#tools-left-out));
+- an OpenAI Responses `text.verbosity`, unless the provider profile takes `verbosity` ([conditional entries](cross-format.md#conditional-entries)).
+
+OpenAI Responses `custom_tool_call` and `local_shell_call` items and their outputs become tool calls and `tool` messages ([Codex tool history](cross-format.md#codex-tool-history)).
 
 A body the codec can't read is `InvalidRequest` naming the field and what it must be, with `param` set, never a parser position: `` The request body is not a valid OpenAI Chat Completions request: `max_completion_tokens` must be an integer from 0 to 4294967295. ``
 
