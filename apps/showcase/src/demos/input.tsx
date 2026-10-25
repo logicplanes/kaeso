@@ -49,7 +49,7 @@ export function Addons() {
   return (
     <div className="flex w-360 flex-col gap-12">
       <Input aria-label="Email" leadingIcon={icons.mail} placeholder="ada@northwind.example" />
-      <Input aria-label="Gateway URL" prefix="https://" placeholder="gateway.northwind.example" />
+      <Input aria-label="Gateway URL" prefix="https://" placeholder="kaeso.example.com" />
       <Input aria-label="Rate limit" suffix="/ min" defaultValue="600" align="end" />
     </div>
   );

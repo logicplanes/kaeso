@@ -71,7 +71,7 @@ describe("the email step", () => {
     const { user } = await renderApp("/sign-in");
     await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@example.com");
     await user.click(screen.getByRole("button", { name: "Continue" }));
-    expect(await (await notifications()).findByText("Can't reach the gateway. Try again.")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Can't reach the gateway; try again.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
   });
 
@@ -90,7 +90,7 @@ describe("the email step", () => {
     on("POST", "auth/methods", () => new Response("{", { status: 200, headers: { "content-type": "application/json" } }));
     const { user } = await renderApp("/sign-in");
     await user.type(await screen.findByRole("textbox", { name: "Email" }), "ada@example.com{Enter}");
-    expect(await (await notifications()).findByText("Can't reach the gateway. Try again.")).toBeInTheDocument();
+    expect(await (await notifications()).findByText("Can't reach the gateway; try again.")).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Email" })).toHaveValue("ada@example.com");
   });
 

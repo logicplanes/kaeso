@@ -162,6 +162,7 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
     </>
   );
 });
+TriggerButton.displayName = "TriggerButton";
 
 export interface DatePickerProps extends FieldWrapProps {
   value?: Date | null | undefined;

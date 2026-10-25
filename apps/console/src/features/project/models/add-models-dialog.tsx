@@ -208,7 +208,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       tone="warning"
       actions={
         <Button size="sm" href={`${orgPath(org)}/providers`}>
-          {t("models.openProviders", "Open Providers")}
+          {t("models.openProviders", "Open providers")}
         </Button>
       }
     >

@@ -298,9 +298,9 @@ describe("ProviderKeyDialog", () => {
   it("asks only for the provider's key for a provider it has no hint for", async () => {
     const cohere = credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" });
     const { dialog } = await open({ keys: [cohere], replace: cohere });
-    expect(within(dialog).getByRole("heading", { name: "Paste the new Cohere key" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("heading", { name: "Paste the new cohere key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("Cohere API key")).toHaveAttribute("placeholder", "sk-…");
+    expect(within(dialog).getByLabelText("cohere API key")).toHaveAttribute("placeholder", "…");
   });
 
   it("links a provider's key page without a prefix when its keys have none", async () => {

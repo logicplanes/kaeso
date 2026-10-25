@@ -69,7 +69,7 @@ export function AliasesTab({
         <Empty
           size="lg"
           title={t("models.alias.empty", "No aliases yet")}
-          description={tRich("models.alias.emptyHint", "A name like {name} that apps send as {field}; retarget it and every app follows.", {
+          description={tRich("models.alias.emptyHint", "A name like {name} that apps send as {field}; retarget it and all apps follow.", {
             name: <Code>{t("models.alias.nameExample", "fast")}</Code>,
             field: <Code>{MODEL_FIELD}</Code>,
           })}

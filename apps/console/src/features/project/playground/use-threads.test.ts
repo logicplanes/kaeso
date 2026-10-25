@@ -155,7 +155,7 @@ describe("useThreads", () => {
     });
     act(() => result.current.send("Again", [{ column: 0, request }]));
     await waitFor(() => expect(result.current.threads[0]?.turns.at(-1)?.response.status).toBe("failed"));
-    expect(result.current.threads[0]?.turns.at(-1)?.response).toMatchObject({ error: "Can't reach the gateway. Try again.", requestId: null });
+    expect(result.current.threads[0]?.turns.at(-1)?.response).toMatchObject({ error: "Can't reach the gateway; try again.", requestId: null });
   });
 
   it("translates the model's error into the person's language", async () => {

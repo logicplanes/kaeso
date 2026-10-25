@@ -11,24 +11,24 @@ describe("SecretReveal", () => {
   it("selects the secret on a click and reports a copy", async () => {
     const user = userEvent.setup();
     const onCopied = vi.fn();
-    render(<SecretReveal baseUrl="https://gateway.example.com" secret="sk-kaeso-live-1a2b" name="production" snippets={false} onCopied={onCopied} />);
+    render(<SecretReveal baseUrl="https://kaeso.example.com" secret="sk-kso-live-1a2b" name="production" snippets={false} onCopied={onCopied} />);
     const field = screen.getByRole("textbox", { name: "Secret for production" });
     await user.click(field);
-    expect(window.getSelection()?.toString()).toBe("sk-kaeso-live-1a2b");
+    expect(window.getSelection()?.toString()).toBe("sk-kso-live-1a2b");
     await user.click(screen.getByRole("button", { name: "Copy key" }));
     expect(onCopied).toHaveBeenCalled();
-    expect(await navigator.clipboard.readText()).toBe("sk-kaeso-live-1a2b");
+    expect(await navigator.clipboard.readText()).toBe("sk-kso-live-1a2b");
   });
 
   it("names an unnamed secret plainly and shows the environment", () => {
     render(
       <>
-        <SecretReveal baseUrl="https://gateway.example.com" secret="sk" snippets={false} />
-        <EnvironmentSnippet baseUrl="https://gateway.example.com" model="gpt-5" />
+        <SecretReveal baseUrl="https://kaeso.example.com" secret="sk" snippets={false} />
+        <EnvironmentSnippet baseUrl="https://kaeso.example.com" model="gpt-5" />
       </>,
     );
     expect(screen.getByRole("textbox", { name: "Secret" })).toBeInTheDocument();
-    expect(screen.getByText("https://gateway.example.com/v1")).toBeInTheDocument();
+    expect(screen.getByText("https://kaeso.example.com/v1")).toBeInTheDocument();
   });
 });
 

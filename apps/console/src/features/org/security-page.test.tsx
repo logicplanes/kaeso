@@ -363,9 +363,7 @@ describe("connecting an identity provider", () => {
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("button", { name: "Disconnect" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Disconnect the identity provider?" });
-    expect(
-      within(confirm).getByText("Single sign-on is required: it's turned off too, and members sign in with a password or a sign-in link again."),
-    ).toBeInTheDocument();
+    expect(within(confirm).getByText("Required single sign-on turns off too; members sign in with a password or a sign-in link again.")).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Disconnect" }));
     expect((await notifications().findAllByText("The provider is still in use.")).length).toBeGreaterThan(0);
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());

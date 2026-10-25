@@ -1,7 +1,7 @@
 export interface ComponentDoc {
   readonly description: string;
   readonly props: Readonly<Record<string, string>>;
-  readonly deprecated?: Readonly<Record<string, string>>;
+  readonly deprecated?: Readonly<Record<string, string>> | undefined;
 }
 
 export type ComponentDocs = Readonly<Record<string, ComponentDoc>>;

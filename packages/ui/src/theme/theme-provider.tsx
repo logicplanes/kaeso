@@ -10,7 +10,7 @@ const modalitySource = `if(!window.__kModality){window.__kModality=1;document.ad
 
 export function installFocusModality(): void {
   if (typeof document === "undefined") return;
-  const w = window as unknown as { __kModality?: number };
+  const w = window as unknown as { __kModality?: number | undefined };
   if (w.__kModality) return;
   w.__kModality = 1;
   const d = document.documentElement;

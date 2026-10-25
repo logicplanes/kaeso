@@ -74,7 +74,7 @@
   "errors.expiryPast": "Das Ablaufdatum muss in der Zukunft liegen.",
   "errors.exportContentRight": "Zum Exportieren von Inhalten ist das Recht `logs.content.view` nötig.",
   "errors.exportFormat": "`jsonl` oder `csv` verwenden.",
-  "errors.exportStopped": "Der Export brach vor dem Ende ab. Bitte erneut versuchen.",
+  "errors.exportStopped": "Der Export brach vor dem Ende ab; bitte erneut versuchen.",
   "errors.fieldDate": "`{name}` muss ein Datum im Format JJJJ-MM-TT sein.",
   "errors.fieldGivenTwice": "`{name}` ist mehrfach angegeben.",
   "errors.fieldIdPrefix": "`{name}` muss eine ID sein, die mit `{prefix}` beginnt.",
@@ -534,5 +534,9 @@
   "errors.modelApi.customAsksForKey": "Der eigene Anbieter `{provider}` verlangt einen Schlüssel; ein Admin der Organisation legt unter Anbieter fest, wie er sich anmeldet.",
   "errors.modelApi.customKeyRefused": "Der eigene Anbieter `{provider}` hat den Schlüssel dieses Projekts abgelehnt; bitten Sie einen Admin der Organisation, ihn unter Anbieter zu prüfen.",
   "errors.modelApi.customUnreadable": "Der eigene Anbieter `{provider}` hat in einer Form geantwortet, die `{dialect}` nicht lesen kann; prüfen Sie sein API-Format.",
-  "errors.modelApi.customTurnedOff": "Eigene Anbieter sind auf dieser Installation ausgeschaltet, daher kann `{provider}` nicht aufgerufen werden."
+  "errors.modelApi.customTurnedOff": "Eigene Anbieter sind auf dieser Installation ausgeschaltet, daher kann `{provider}` nicht aufgerufen werden.",
+  "errors.signUpInvitationOnly": "Konten gibt es in dieser Installation nur auf Einladung; bitten Sie einen Administrator um eine Einladung.",
+  "errors.signUpDomainNotAllowed": "Mit dieser E-Mail-Adresse lässt sich hier kein Konto erstellen; bitten Sie einen Administrator um eine Einladung.",
+  "errors.orgCreationDomainNotAllowed": "Mit Ihrer E-Mail-Adresse lassen sich hier keine Organisationen erstellen; wenden Sie sich an einen Instanz-Admin.",
+  "errors.orgCreationInstanceAdminsOnly": "In dieser Installation können nur Instanz-Admins Organisationen erstellen."
 }

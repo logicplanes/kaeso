@@ -89,7 +89,7 @@ describe("instance model sources page", () => {
     const { user } = await renderApp(PATH);
     await screen.findByText("412 models");
     await user.click(screen.getByRole("button", { name: "Sync now" }));
-    expect(await notifications().findByText("models.dev couldn't be fetched; the current data stays in use")).toBeInTheDocument();
+    expect(await notifications().findByText("Couldn't fetch models.dev; the current data stays in use")).toBeInTheDocument();
   });
 
   it("shows the API's message when the sync is refused", async () => {
