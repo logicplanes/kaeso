@@ -485,6 +485,38 @@ async fn codes_need_the_right_verifier_client_and_redirect_once() {
 }
 
 #[tokio::test]
+async fn an_agent_whose_registration_is_gone_signs_in_again_from_its_own_machine() {
+    let (_s, app, owner) = setup().await;
+    let gone = "cli_00000000000000000000000001";
+    let request = request_token(&app, gone).await;
+    let viewed = app
+        .post(
+            "/me/agent-requests/view",
+            json!({ "request": request }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(viewed.body["client"], "MCP client");
+    assert_eq!(viewed.body["redirect_host"], "127.0.0.1");
+    let again = request_token(&app, gone).await;
+    assert_ne!(again, request);
+    let remote = authorize_url(
+        &app,
+        &form(&[
+            ("client_id", "cli_00000000000000000000000002"),
+            ("redirect_uri", "https://agent.example/cb"),
+            ("response_type", "code"),
+        ]),
+    )
+    .await;
+    assert_eq!(
+        location(&remote),
+        "https://kaeso.test/authorize#error=invalid_client"
+    );
+}
+
+#[tokio::test]
 async fn authorize_refuses_bad_requests_without_leaking_to_strangers() {
     let (_s, app, _owner) = setup().await;
     let unknown = authorize_url(

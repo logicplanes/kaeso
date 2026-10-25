@@ -30,6 +30,25 @@ pub async fn insert_client(db: impl PgExecutor<'_>, c: &Client) -> Result<(), St
     Ok(())
 }
 
+pub async fn insert_client_if_missing(
+    db: impl PgExecutor<'_>,
+    c: &Client,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "INSERT INTO agent_clients (id, name, redirect_uris, software_id, software_version, created_at) \
+         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING",
+        c.id,
+        c.name,
+        &c.redirect_uris,
+        c.software_id,
+        c.software_version,
+        c.created_at,
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn get_client(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Client>, StoreError> {
     Ok(sqlx::query_as!(
         Client,

@@ -247,6 +247,8 @@ Kaeso ist sein eigener Autorisierungsserver. Sein Issuer ist die öffentliche UR
 
 Eine Loopback-Weiterleitungs-URI darf ihren Port bei jeder Anmeldung ändern, wie RFC 8252 es erlaubt. Host und Pfad müssen wie registriert bleiben.
 
+Ein Agent behält seine `client_id` über Neustarts hinweg, aber Kaeso löscht Registrierungen, aus denen nie eine Anmeldung wurde, und eine neue Datenbank hat keine. Meldet sich ein Agent mit einer `client_id` an, die Kaeso nicht kennt, und mit einer Loopback-Weiterleitungs-URI, registriert Kaeso ihn unter dieser ID erneut als „MCP client“, und die Anmeldung geht weiter. Auf der Zustimmungsseite können Sie ihn umbenennen. Bei jeder anderen Weiterleitungs-URI sagt die Konsole, dass sie den Agenten nicht kennt.
+
 ## Richtlinien
 
 Zwei Richtlinien begrenzen jeden Agenten, und kein Agent kann sie ändern:

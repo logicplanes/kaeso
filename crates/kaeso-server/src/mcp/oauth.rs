@@ -317,6 +317,38 @@ fn with_params(uri: &str, add: &[(&str, Option<&str>)]) -> String {
     url.to_string()
 }
 
+// Agents keep their registration across restarts, while Kaeso drops registrations that never
+// signed in and loses them with a reset database. Registration is open and a loopback redirect
+// only reaches the user's own machine (RFC 8252), so taking the agent's id back is as safe as
+// registering it anew and saves it from a dead end it can't recover from by itself.
+async fn reregister(
+    state: &AppState,
+    id: AgentClientId,
+    redirect_uri: Option<&str>,
+) -> Result<Option<Client>, StoreError> {
+    let Some(redirect_uri) = redirect_uri else {
+        return Ok(None);
+    };
+    let loopback = Url::parse(redirect_uri).is_ok_and(|u| u.scheme() == "http" && is_loopback(&u))
+        && redirect_uri_allowed(redirect_uri);
+    if !loopback {
+        return Ok(None);
+    }
+    agents::insert_client_if_missing(
+        &state.pg,
+        &Client {
+            id: id.uuid(),
+            name: "MCP client".into(),
+            redirect_uris: vec![redirect_uri.to_owned()],
+            software_id: None,
+            software_version: None,
+            created_at: state.clock.now(),
+        },
+    )
+    .await?;
+    agents::get_client(&state.pg, id.uuid()).await
+}
+
 pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery) -> Response {
     let p = params(query.as_deref().unwrap_or_default());
     let get = |k: &str| p.get(k).map(String::as_str).filter(|v| !v.is_empty());
@@ -325,7 +357,14 @@ pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery)
     };
     let client = match agents::get_client(&state.pg, client_id.uuid()).await {
         Ok(Some(c)) => c,
-        Ok(None) => return console_error(&state, "invalid_client"),
+        Ok(None) => match reregister(&state, client_id, get("redirect_uri")).await {
+            Ok(Some(c)) => c,
+            Ok(None) => return console_error(&state, "invalid_client"),
+            Err(e) => {
+                tracing::error!(error = %e, "an agent sign-in step failed");
+                return console_error(&state, "server_error");
+            }
+        },
         Err(e) => {
             tracing::error!(error = %e, "an agent sign-in step failed");
             return console_error(&state, "server_error");
