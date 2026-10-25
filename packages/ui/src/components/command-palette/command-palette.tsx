@@ -1,5 +1,5 @@
 import { usePortalContainer } from "../../utils/portal-context.js";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
 import { useRestoreFocus } from "../../utils/restore-focus.js";
@@ -71,7 +71,8 @@ function Palette({
   defaultQuery = "",
   query: controlledQuery,
   counts,
-}: CommandPaletteProps & { close: () => void }) {
+  rootRef,
+}: CommandPaletteProps & { close: () => void; rootRef?: Ref<HTMLDivElement> | undefined }) {
   const t = useUiText();
   const placeholder = placeholderProp ?? t("commandPalette.placeholder", "Search or run a command");
   const [ownQuery, setOwnQuery] = useState(defaultQuery);
@@ -83,7 +84,14 @@ function Palette({
   const [pages, setPages] = useState<{ title: string; groups: CommandGroup[] }[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const [box, setBox] = useState<HTMLElement | null>(null);
-  const boxRef = useCallback((el: HTMLElement | null) => setBox(inline ? null : (el?.parentElement ?? null)), [inline]);
+  const boxRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      setBox(inline ? null : (el?.parentElement ?? null));
+      if (typeof rootRef === "function") rootRef(el);
+      else if (rootRef) rootRef.current = el;
+    },
+    [inline, rootRef],
+  );
   useResizeMotion(box);
   const page = pages[pages.length - 1];
   const source = page ? page.groups : groups;
@@ -188,7 +196,7 @@ function Palette({
   );
 }
 
-export function CommandPalette(props: CommandPaletteProps) {
+export const CommandPalette = forwardRef<HTMLDivElement, CommandPaletteProps>(function CommandPalette(props, ref) {
   const { open, onOpenChange, hotkey = true, inline } = props;
   const [inner, setInner] = useState(false);
   const isOpen = open ?? inner;
@@ -214,13 +222,14 @@ export function CommandPalette(props: CommandPaletteProps) {
   const container = usePortalContainer();
   const settled = useScopedDialog(inline ? false : isOpen);
   const session = useOpenSession(isOpen);
-  if (inline) return <Palette {...props} close={() => undefined} />;
+  if (inline) return <Palette {...props} close={() => undefined} rootRef={ref} />;
   return (
     <BaseDialog.Root open={isOpen} onOpenChange={(o: boolean) => setOpen(o)} onOpenChangeComplete={settled}>
       <BaseDialog.Portal container={container}>
         <BaseDialog.Backdrop className="fixed inset-0 z-50 bg-overlay backdrop-motion" />
         <BaseDialog.Viewport className="fixed inset-0 z-50 flex items-start justify-center px-16 pt-palette">
           <BaseDialog.Popup
+            ref={ref}
             aria-label={t("commandPalette.label", "Command palette")}
             initialFocus={focus.initialFocus}
             finalFocus={focus.finalFocus}
@@ -232,5 +241,5 @@ export function CommandPalette(props: CommandPaletteProps) {
       </BaseDialog.Portal>
     </BaseDialog.Root>
   );
-}
+});
 CommandPalette.displayName = "CommandPalette";

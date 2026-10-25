@@ -82,8 +82,13 @@ for (const file of files) {
   });
   if (/aria-current["']?\s*[:=]\s*\{?\s*["']step["']/.test(src))
     report(file, 1, `a numbered steps list (aria-current="step"); the library has no setup checklist, use StepDialog for a task in several steps`);
+}
+
+const sourceFiles = walk(join(root, "src")).filter((f) => /\.tsx?$/.test(f) && !/\.test\.tsx?$/.test(f));
+for (const file of sourceFiles) {
+  const src = readFileSync(file, "utf8");
   for (const { line, text } of optionalWithoutUndefined(file, src)) report(file, line, `optional prop without "| undefined": ${text.slice(0, 60)}`);
-  if (/forwardRef\(/.test(src)) {
+  if (/\bforwardRef\b/.test(src)) {
     const names = [...src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*forwardRef/g)].map((m) => m[1]);
     for (const name of names) if (!new RegExp(`${name}\\.displayName\\s*=`).test(src)) report(file, 1, `${name} has no displayName`);
   }
