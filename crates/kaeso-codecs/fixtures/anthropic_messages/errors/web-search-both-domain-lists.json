@@ -1,0 +1,8 @@
+{
+  "type": "error",
+  "error": {
+    "message": "tools.0.web_search_20250305: Only one of `allowed_domains` and `blocked_domains` can be provided.",
+    "type": "invalid_request_error"
+  },
+  "request_id": "req_01m5ses14qepr95th8rpfnf670"
+}

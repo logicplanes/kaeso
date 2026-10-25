@@ -319,6 +319,59 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "claude-code-web-search": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content",
+        "web_search_call.action.sources"
+      ],
+      "input": [
+        {
+          "content": [
+            {
+              "text": "x-anthropic-billing-header: cc_version=2.1.310.b1c; cc_entrypoint=sdk-cli;",
+              "type": "input_text"
+            },
+            {
+              "text": "You are a Claude agent, built on Anthropic's Claude Agent SDK.",
+              "type": "input_text"
+            },
+            {
+              "text": "You run a web search for another Claude model, which is waiting on the result and can search again. Search once, then reply with a brief summary of the results.",
+              "type": "input_text"
+            }
+          ],
+          "role": "developer"
+        },
+        {
+          "content": "Perform a web search for the query: Announcing Rust release stable latest version",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 128000,
+      "max_tool_calls": 8,
+      "model": "claude-sonnet-5-5",
+      "reasoning": {
+        "effort": "medium",
+        "summary": "auto"
+      },
+      "safety_identifier": "{\"device_id\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"account_uuid\":\"\",\"session_id\":\"00000000-0000-4000-8000-000000000000\"}",
+      "store": false,
+      "stream": true,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "filters": {
+            "allowed_domains": [
+              "blog.rust-lang.org"
+            ]
+          },
+          "type": "web_search"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "context-management-clear-tool-uses": {
     "message": "`context_management` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format. From Claude Code, set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` to stop sending it.",
     "param": null,
@@ -474,9 +527,41 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "pause-turn-continuation": {
-    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
-    "param": "messages[1].blocks[1]",
-    "unsupported": "server_tool_use content block"
+    "body": {
+      "include": [
+        "web_search_call.action.sources"
+      ],
+      "input": [
+        {
+          "content": "Who won the 2026 Nobel Prize in Physics?",
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "annotations": [],
+              "text": "Let me look up this year's laureates.",
+              "type": "output_text"
+            },
+            {
+              "annotations": [],
+              "text": "The first result is the prize overview page; I'll search for the announcement itself.",
+              "type": "output_text"
+            }
+          ],
+          "role": "assistant"
+        }
+      ],
+      "max_output_tokens": 4096,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "type": "web_search"
+        }
+      ]
+    },
+    "path": "/v1/responses"
   },
   "refusal": {
     "body": {
@@ -1445,13 +1530,78 @@ expression: outcomes
     "unsupported": "tool_choice `tool`"
   },
   "web-search-result-replay": {
-    "message": "`server_tool_use content block` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Remove the block, or send the request to a model served through its original format.",
-    "param": "messages[1].blocks[1]",
-    "unsupported": "server_tool_use content block"
+    "body": {
+      "include": [
+        "web_search_call.action.sources"
+      ],
+      "input": [
+        {
+          "content": "When was Claude Shannon born?",
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "annotations": [],
+              "text": "I'll search for when Claude Shannon was born.",
+              "type": "output_text"
+            },
+            {
+              "annotations": [],
+              "text": "Based on the search results, ",
+              "type": "output_text"
+            },
+            {
+              "annotations": [],
+              "text": "Claude Shannon was born on April 30, 1916, in Petoskey, Michigan",
+              "type": "output_text"
+            },
+            {
+              "annotations": [],
+              "text": ".",
+              "type": "output_text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": "And where did he study?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "max_tool_calls": 5,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "type": "web_search"
+        }
+      ]
+    },
+    "path": "/v1/responses"
   },
   "web-search-server-tool": {
-    "message": "`web_search_20250305 tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Responses. Input tag 'web_search_20250305' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",
-    "param": "tools[0]",
-    "unsupported": "web_search_20250305 tool"
+    "body": {
+      "include": [
+        "web_search_call.action.sources"
+      ],
+      "input": [
+        {
+          "content": "When was Claude Shannon born?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "max_tool_calls": 5,
+      "model": "claude-opus-5-5",
+      "store": false,
+      "tools": [
+        {
+          "type": "web_search"
+        }
+      ]
+    },
+    "path": "/v1/responses"
   }
 }

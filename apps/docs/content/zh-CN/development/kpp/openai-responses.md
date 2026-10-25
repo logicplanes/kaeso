@@ -52,6 +52,7 @@ order: 7
 | `tools[]` `{type: function, name, description, parameters, strict}`（`FunctionTool`） | `ToolDef::Function` 类型化（`parameters` 为原始 JSON） | 其他键（`defer_loading`、`allowed_callers`、`output_schema` 等）是该工具的 extras。来自其他方言的工具上的缓存提示会被丢弃（参见[缓存提示](cross-format.md#缓存提示)）。来自其他方言、不符合 `^[a-zA-Z0-9_-]{1,64}$` 的名称会以确定的方式改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制的 FNV-1a 哈希，总长不超过 64 个字符），记录在 `EgressCtx::tool_names` 中，并在解码时映射回原值。 |
 | `tools[]` `namespace` | `ToolDef::Unknown` | 仅限同一方言；对于不支持命名空间的目标，其中的工具变为函数工具（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `tools[]` `web_search`、`web_search_2025_08_26`、`web_search_preview`、`web_search_preview_2025_03_11` | `ToolDef::Unknown` | 仅限同一方言；发往 Anthropic 时变为 Anthropic 的网页搜索工具；发往 SpaceX 时变为 xAI 的网页搜索工具；发往 Chat Completions 时，以及只要求缓存搜索时省略（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| `max_tool_calls` 和 `include` `"web_search_call.action.sources"`（请求，来自 Anthropic） | 为 Anthropic 的 `web_search_20250305` 写入 | `max_uses` 变为 `max_tool_calls`，并请求来源，使结果能到达应用（[托管网页搜索](cross-format.md#托管网页搜索)）。SpaceX 改为收到 `max_turns`。 |
 | `tools[]` 其他类型（`file_search`、`mcp`、`custom` 等） | `ToolDef::Unknown` | 仅限同一方言。 |
 | `tool_choice` `"auto"` / `"none"` / `"required"` | `ToolChoice::Auto` / `None` / `Required` 类型化 | |
 | `tool_choice` `{type: function, name}` | `ToolChoice::Tool(name)` 类型化 | 带有其他键时：`ToolChoice::Unknown`。 |
@@ -334,6 +335,7 @@ order: 7
 `openai_responses::for_chatgpt_plan` 会为通过 Sign in with ChatGPT 提供 ChatGPT 套餐的 Responses 路由改写 `GenerateRequest`（[预览版限制](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations)）。网关会对属于 ChatGPT 账户的服务商密钥调用它。
 
 - 它会省略 `background`、`conversation`、`max_output_tokens`、`max_tool_calls`、`metadata`、`moderation`、`multi_agent`、`prompt`、`prompt_cache_retention`、`safety_identifier`、`temperature`、`top_logprobs`、`top_p`、`truncation`、`user` 和 `previous_response_id`。这涉及类型化字段、extras 字段，以及形式标记 `set`、`unset` 和 `canon` 中显式的默认值和 null。
+- 它会省略 Anthropic 网页搜索工具的 `max_uses`，否则该字段会变为 `max_tool_calls`（[托管网页搜索](cross-format.md#托管网页搜索)）。
 - 它会设置 `stream: true` 和 `store: false`。
 - 它会删除形式标记 `input`，因此 `input` 为数组。若某个开头的项角色为 `system`，它还会删除形式标记 `system_items` 和 `instructions`，开头的系统文本成为 `instructions`；Codex 发送的开头 `developer` 项保留其结构和 ID。其他系统消息会失去 `role` 覆盖，并作为 `developer` 消息写出，因为该路由拒绝 `system` 项。
 

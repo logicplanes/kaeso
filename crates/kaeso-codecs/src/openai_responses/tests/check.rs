@@ -168,9 +168,9 @@ fn foreign_data_is_refused_via_check_foreign() {
     assert_eq!(feature(r), "top_k_like");
     let r = base().with_tool(ToolDef::Unknown(RawItem::new(
         a,
-        raw(r#"{"type":"web_search_20250305"}"#),
+        raw(r#"{"type":"web_fetch_20250910"}"#),
     )));
-    assert_eq!(feature(r), "web_search_20250305 tool");
+    assert_eq!(feature(r), "web_fetch_20250910 tool");
     let r = with_block(Block::Image(ImageBlock::new(Source::file_id(
         a, "file_011",
     ))));

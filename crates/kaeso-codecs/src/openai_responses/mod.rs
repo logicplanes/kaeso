@@ -73,9 +73,13 @@ impl Codec for OpenAiResponses {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        let crate::adapt::Adapted { req, left_out } = crate::adapt::for_target(req, DIALECT, ctx)?;
+        let crate::adapt::Adapted {
+            req,
+            left_out,
+            search_limit,
+        } = crate::adapt::for_target(req, DIALECT, ctx)?;
         ctx.left_out = left_out;
-        request::encode(&req, ctx)
+        request::encode(&req, ctx, search_limit)
     }
 
     fn decode_response(

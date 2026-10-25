@@ -149,6 +149,27 @@ Going to SpaceX's Responses API (`WebSearchTool::Xai`), the tool keeps the field
 
 `external_web_access: false` asks OpenAI to read only its cache of pages, which is what Codex sends for its default `web_search = "cached"`. Claude and SpaceX always search live. Searching live would read pages the app asked Kaeso not to fetch, so the search is left out instead. Chat Completions has no hosted search, so the tool is left out there too. OpenAI gets the tool as sent.
 
+Anthropic's web search tool goes the other way: `web_search_20250305`, which Claude Code's `WebSearch` sends, `web_search_20260209` and `web_search_20260318`. A Responses target gets the hosted `web_search` tool, and the limit on searches becomes a field of the request ([web search tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)):
+
+| Anthropic | OpenAI | SpaceX |
+| --- | --- | --- |
+| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
+| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
+| `user_location` (`approximate`, with `city`, `region`, `country`, `timezone`) | `user_location` | `Unsupported` |
+| `max_uses` | `max_tool_calls` | `max_turns` |
+| `allowed_callers` that is `["direct"]` or the version's default | nothing; the hosted search is a direct search | nothing |
+| `response_inclusion` (`web_search_20260318`) | nothing; it only shapes searches run from code execution | nothing |
+| `cache_control` | nothing; Responses caches by itself ([cache hints](#cache-hints)) | nothing |
+| a location that isn't `approximate`, any other field | `Unsupported` | `Unsupported` |
+
+- **Both domain lists** in one tool are `InvalidRequest`, with Claude's own message (`anthropic_messages/errors/web-search-both-domain-lists.json`).
+- **Dynamic filtering.** From `web_search_20260209` on, Claude filters results by running code unless `allowed_callers` is `["direct"]`. A Responses model reads the results directly either way.
+- **Sources.** The request asks for `include: ["web_search_call.action.sources"]`, because OpenAI lists the pages a search found only when asked.
+- **The limit.** OpenAI's `max_tool_calls` also counts opening pages and searching within them, so it is tighter than `max_uses`. The ChatGPT plan route refuses `max_tool_calls`, so the limit is left out there ([ChatGPT plan usage](openai-responses.md#chatgpt-plan-usage)).
+- **SpaceX** ignores `max_tool_calls` and drops `blocked_domains` without an error, so it gets its own names. Its `max_turns` limits rounds of tool calls, and one round may search more than once. Its other limits apply too: at most five domains in a list.
+- **Forcing the search.** A `tool_choice` that forces `web_search` is `Unsupported`; `auto` and `any` let the model decide.
+- **Chat Completions** has no hosted search, so the tool is left out there.
+
 ## Tools left out
 
 These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT`). Each only offers the model something it may use, and an app such as Codex adds it to every request with no switch per model: refusing it would make every model without it unusable from that app. The model answers as it would without the tool. Every tool left out is named in the reply's `kaeso-left-out` header ([response headers](../../api/model-api.md#response-headers)) and in the gateway's log, and a logged request body keeps the app's tools.
@@ -158,12 +179,21 @@ These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT
 | `web_search` | `openai_responses` | `openai_chat` | always: Chat Completions has no hosted search |
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`: Claude always searches live |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`, for a provider whose profile has `WebSearchTool::Xai`: SpaceX always searches live |
+| `web_search_20250305` | `anthropic_messages` | `openai_chat` | always: Chat Completions has no hosted search |
+| `web_search_20260209` | `anthropic_messages` | `openai_chat` | always: Chat Completions has no hosted search |
+| `web_search_20260318` | `anthropic_messages` | `openai_chat` | always: Chat Completions has no hosted search |
 
 A `tool_choice` that asks for a tool left out, itself or in `allowed_tools`, is `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them and are named in `kaeso-left-out`, because providers refuse them without tools; `tool_choice: "required"` or a named tool is `Unsupported`, since no tool would be left to call.
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
 `web_search_call` items an app sends back are dropped for Anthropic and Chat Completions. Anthropic replays a search only with its encrypted results, which these items don't carry, and Chat Completions has no such item. The answer that used them stays in the conversation. Items with Kaeso's `ws_kaeso_` ids are dropped for every Responses target as well, because no Responses provider issued them. Each item dropped is named in `kaeso-left-out` by its type and id, such as `web_search_call ws_67c9…`.
+
+A Responses model's searches reach an Anthropic app as Claude's do. Each `web_search_call` item that searched and completed or failed becomes a `server_tool_use` block named `web_search`, with the id `srvtoolu_kaeso_…` and `input: {query}`, followed by a `web_search_tool_result`. A completed search lists its sources as `web_search_result` entries: `title` repeats the `url` and `encrypted_content` is empty, because Responses reports only the address, and `page_age` is `null`. A failed search becomes the error `unavailable`.
+
+Streams send a search once its item is done: the `server_tool_use` start, one `input_json_delta` with the query, and the result. Items still in progress when the reply ends, items that open or search a page (`open_page`, `find_in_page`) and the answer's `url_citation` annotations are left out, like other data the app's format can't show. `usage.server_tool_use.web_search_requests` counts the completed searches, since a failed search isn't billed.
+
+`server_tool_use` blocks named `web_search` and their `web_search_tool_result` blocks are dropped when an app sends them to another format, with the `web_search_result_location` citations that point into them, as `web_search_call` items are for Anthropic. The answer that used them stays. Claude gets its own blocks back unchanged; blocks with Kaeso's `srvtoolu_kaeso_` ids are dropped for Claude too, because Claude can't replay a result without its encrypted content. Each dropped block is named in `kaeso-left-out` by its type and id, such as `server_tool_use srvtoolu_01…`, and dropped citations by their block, such as `messages[1].blocks[2].citations`.
 
 ## Codex tool history
 

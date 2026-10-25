@@ -149,6 +149,27 @@ OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的�
 
 `external_web_access: false` 要求 OpenAI 只读取其页面缓存，这是 Codex 默认设置 `web_search = "cached"` 发送的内容。Claude 和 SpaceX 总是实时搜索。实时搜索会读取应用要求 Kaeso 不去获取的页面，因此改为省略这次搜索。Chat Completions 没有托管搜索，因此在那里也会省略该工具。OpenAI 原样收到该工具。
 
+Anthropic 的网页搜索工具走相反的方向：Claude Code 的 `WebSearch` 发送的 `web_search_20250305`，以及 `web_search_20260209` 和 `web_search_20260318`。Responses 目标收到托管的 `web_search` 工具，搜索次数上限变为请求中的一个字段（[网页搜索工具](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool)）：
+
+| Anthropic | OpenAI | SpaceX |
+| --- | --- | --- |
+| `allowed_domains` | `filters.allowed_domains` | `filters.allowed_domains` |
+| `blocked_domains` | `filters.blocked_domains` | `filters.excluded_domains` |
+| `user_location`（`approximate`，含 `city`、`region`、`country`、`timezone`） | `user_location` | `Unsupported` |
+| `max_uses` | `max_tool_calls` | `max_turns` |
+| 值为 `["direct"]` 或该版本默认值的 `allowed_callers` | 不写入；托管搜索就是直接搜索 | 不写入 |
+| `response_inclusion`（`web_search_20260318`） | 不写入；它只影响从代码执行中发起的搜索 | 不写入 |
+| `cache_control` | 不写入；Responses 会自行缓存（[缓存提示](#缓存提示)） | 不写入 |
+| 不是 `approximate` 的位置、任何其他字段 | `Unsupported` | `Unsupported` |
+
+- **两个域名列表**同时出现在一个工具中时为 `InvalidRequest`，使用 Claude 自己的消息（`anthropic_messages/errors/web-search-both-domain-lists.json`）。
+- **动态过滤。** 从 `web_search_20260209` 起，除非 `allowed_callers` 为 `["direct"]`，Claude 会通过运行代码来过滤结果。Responses 模型在两种情况下都直接读取结果。
+- **来源。** 请求会带上 `include: ["web_search_call.action.sources"]`，因为 OpenAI 只有在被要求时才会列出一次搜索找到的页面。
+- **上限。** OpenAI 的 `max_tool_calls` 也计入打开页面和在页面内搜索，因此比 `max_uses` 更严格。ChatGPT 套餐的路由会拒绝 `max_tool_calls`，因此在那里该上限会被省略（[ChatGPT 套餐用量](openai-responses.md#chatgpt-套餐用量)）。
+- **SpaceX** 会忽略 `max_tool_calls`，并且会不报错地丢弃 `blocked_domains`，因此它收到自己的字段名。它的 `max_turns` 限制的是工具调用的轮数，一轮可能搜索不止一次。它的其他限制同样适用：每个列表最多五个域名。
+- **强制搜索。** 强制使用 `web_search` 的 `tool_choice` 为 `Unsupported`；`auto` 和 `any` 让模型自行决定。
+- **Chat Completions** 没有托管搜索，因此该工具在那里会被省略。
+
 ## 省略的工具
 
 这些工具会从请求中省略，而不是被拒绝（`cross::TOOLS_LEFT_OUT`）。每个工具都只是向模型提供一项可用可不用的能力，而 Codex 这样的应用会把它加到每个请求中，且无法按模型关闭：如果拒绝它，所有不具备该工具的模型都无法在该应用中使用。模型的回答与没有该工具时相同。每个被省略的工具都会在回复的 `kaeso-left-out` 响应头（[响应头](../../api/model-api.md#响应头)）和网关日志中注明，记录的请求正文保留应用的工具。
@@ -158,12 +179,21 @@ OpenAI Responses 把它的托管搜索工具命名为 `web_search`，更早的�
 | `web_search` | `openai_responses` | `openai_chat` | 始终省略：Chat Completions 没有托管搜索 |
 | `web_search` | `openai_responses` | `anthropic_messages` | `external_web_access: false`：Claude 总是实时搜索 |
 | `web_search` | `openai_responses` | `openai_responses` | `external_web_access: false`，且服务商的配置含 `WebSearchTool::Xai`：SpaceX 总是实时搜索 |
+| `web_search_20250305` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
+| `web_search_20260209` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
+| `web_search_20260318` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
 
 要求使用被省略工具的 `tool_choice`（直接指定或在 `allowed_tools` 中）为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，并在 `kaeso-left-out` 中注明，因为服务商在没有工具时会拒绝它们。`tool_choice: "required"` 或指定某个工具为 `Unsupported`，因为已没有可调用的工具。
 
 Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
 
 应用发回的 `web_search_call` 项在发往 Anthropic 和 Chat Completions 时会被丢弃。Anthropic 只有在带上加密搜索结果时才会重放一次搜索，而这些项不携带结果；Chat Completions 没有这种项。使用了这些结果的回答仍留在对话中。带有 Kaeso `ws_kaeso_` ID 的项在发往任何 Responses 目标时也会被丢弃，因为没有哪个 Responses 服务商签发过它们。每个被丢弃的项都会在 `kaeso-left-out` 中按类型和 ID 注明，例如 `web_search_call ws_67c9…`。
+
+Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。每个进行了搜索且已完成或失败的 `web_search_call` 项都变为名为 `web_search` 的 `server_tool_use` 块，ID 为 `srvtoolu_kaeso_…`，带 `input: {query}`，其后是一个 `web_search_tool_result`。已完成的搜索把它的来源列为 `web_search_result` 条目：`title` 重复 `url`，`encrypted_content` 为空，因为 Responses 只报告地址，`page_age` 为 `null`。失败的搜索变为错误 `unavailable`。
+
+流会在某次搜索的项完成后发送它：`server_tool_use` 的开始、一个带查询的 `input_json_delta`，然后是结果。回复结束时仍在进行的项、打开页面或在页面内搜索的项（`open_page`、`find_in_page`），以及回答中的 `url_citation` 注释会被省略，与应用格式无法显示的其他数据一样。`usage.server_tool_use.web_search_requests` 统计已完成的搜索，因为失败的搜索不计费。
+
+应用把名为 `web_search` 的 `server_tool_use` 块及其 `web_search_tool_result` 块发往其他格式时，这些块会被丢弃，指向它们的 `web_search_result_location` 引用也一并丢弃，就像发往 Anthropic 时的 `web_search_call` 项一样。使用了它们的回答仍会保留。Claude 原样收回自己的块；带有 Kaeso `srvtoolu_kaeso_` ID 的块对 Claude 也会被丢弃，因为 Claude 无法在没有加密内容的情况下重放结果。每个被丢弃的块都会在 `kaeso-left-out` 中按类型和 ID 注明，例如 `server_tool_use srvtoolu_01…`；被丢弃的引用按所在块注明，例如 `messages[1].blocks[2].citations`。
 
 ## Codex 工具历史
 

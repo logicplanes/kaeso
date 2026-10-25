@@ -68,6 +68,26 @@ def test_tools(an, mock):
     assert mock.last()["body"]["tools"][0]["type"] == "function"
 
 
+def test_web_search_on_an_openai_model(an, mock):
+    tools = [{"type": "web_search_20250305", "name": "web_search", "allowed_domains": ["blog.rust-lang.org"], "max_uses": 8}]
+    with an.messages.stream(
+        model="gpt-4o",
+        max_tokens=1000,
+        tools=tools,
+        messages=user("Latest Rust? [mock:fixture=plan-web-search-sources-stream]"),
+    ) as s:
+        message = s.get_final_message()
+    sent = mock.last()["body"]
+    assert sent["tools"] == [{"type": "web_search", "filters": {"allowed_domains": ["blog.rust-lang.org"]}}]
+    assert sent["max_tool_calls"] == 8
+    assert "web_search_call.action.sources" in sent["include"]
+    use = next(b for b in message.content if b.type == "server_tool_use")
+    result = next(b for b in message.content if b.type == "web_search_tool_result")
+    assert use.name == "web_search" and use.input["query"].startswith("Announcing Rust")
+    assert result.tool_use_id == use.id
+    assert all(r.url.startswith("https://blog.rust-lang.org/") for r in result.content)
+
+
 def test_tool_search_on_an_openai_model(an, mock):
     schema = {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}
     tools = [

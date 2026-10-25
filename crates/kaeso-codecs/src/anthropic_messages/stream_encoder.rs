@@ -9,7 +9,7 @@ use serde_json::Value;
 use super::blocks::own_ext;
 use super::common::{D, internal, nested_ext, to_raw};
 use super::error::stream_error_data;
-use super::response::{UsageShape, add_default, encode_stop, encode_usage};
+use super::response::{UsageShape, add_default, encode_stop, encode_usage, with_web_searches};
 use super::stream::{
     CONTENT_BLOCK_FORM, EVENT_FORM, IN_START_FORM, INDEX_FORM, SSE_FORM, default_start_block,
 };
@@ -22,6 +22,7 @@ use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::cross::{ReplyPolicy, reasoning_reply_policy, reply_opaque_visible};
 use crate::keepalive::{self, Pacer};
 use crate::sse::{SseEvent, SseItem, write_item};
+use crate::web_search::ReplySearches;
 use crate::wire::{Ext, nested_extra_for, verbatim_from_form};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -64,6 +65,7 @@ pub(crate) struct Encoder {
     delta_sent: bool,
     last_usage: Option<Usage>,
     pacer: Pacer,
+    searches: ReplySearches,
 }
 
 impl Encoder {
@@ -84,6 +86,7 @@ impl Encoder {
             delta_sent: false,
             last_usage: None,
             pacer: Pacer::default(),
+            searches: ReplySearches::default(),
         }
     }
 
@@ -285,7 +288,11 @@ impl Encoder {
             verbatim_from_form(&d.extras, D, "delta"),
         );
         let usage = match d.usage.as_ref().or(self.last_usage.as_ref()) {
-            Some(u) => encode_usage(u, UsageShape::Delta),
+            Some(u) => with_web_searches(
+                encode_usage(u, UsageShape::Delta),
+                u,
+                self.searches.completed(),
+            ),
             None => serde_json::json!({"output_tokens": 0}),
         };
         let ev = own_ext(
@@ -310,7 +317,16 @@ impl Encoder {
 
 impl StreamEncoder for Encoder {
     fn encode(&mut self, event: &StreamEvent) -> Result<Vec<u8>, KppError> {
-        let mut out = self.encode_event(event)?;
+        let mut out = match self.searches.map(event) {
+            None => self.encode_event(event)?,
+            Some(mapped) => {
+                let mut out = Vec::new();
+                for e in &mapped {
+                    out.extend(self.encode_event(e)?);
+                }
+                out
+            }
+        };
         if !self.done {
             self.pacer.pace(event, D, &mut out, keepalive::PING_FRAME);
         }

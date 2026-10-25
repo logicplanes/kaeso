@@ -60,6 +60,7 @@ pub fn for_chatgpt_plan(req: &mut GenerateRequest) {
     req.sampling.temperature = None;
     req.sampling.top_p = None;
     req.user = None;
+    crate::web_search::without_search_limit(&mut req.tools);
     req.stream = StreamMode::on(true);
     forget(&mut req.extras, refused);
     if req.extras.is_from(DIALECT) {

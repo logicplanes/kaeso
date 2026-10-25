@@ -68,7 +68,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tools[].name`、`.description`、`.input_schema`、`.strict`、`.cache_control` | `name`、`description`、`parameters`（原始）、`strict`、`cache` | |
 | `tools[].defer_loading` | 工具的 `extras.fields` | 其他方言：延迟加载的工具会被省略，直到某个 `tool_reference` 加载它（[工具搜索](cross-format.md#工具搜索)）。 |
 | `tools[].eager_input_streaming`、`.allowed_callers`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
-| 任何其他类型的 `tools[]`（服务器工具，例如 `web_search_20250305` 或 `advisor_20260301`） | `ToolDef::Unknown`（原始） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
+| `tools[]` `{type: web_search_20250305 \| web_search_20260209 \| web_search_20260318, name: web_search}` | `ToolDef::Unknown`（原始） | 发往 OpenAI Responses 时变为托管的 `web_search` 工具，`max_uses` 变为请求的搜索次数上限；发往 Chat Completions 时省略（[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| 任何其他类型的 `tools[]`（服务器工具，例如 `advisor_20260301`） | `ToolDef::Unknown`（原始） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
 | `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
 | 请求头 `anthropic-beta` | `extras` 请求头 `header:anthropic-beta` | 出站时只转发给 Anthropic。 |
@@ -95,6 +96,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tool_result`（`tool_use_id`、`content`、`is_error`、`cache_control`） | `Block::ToolResult` | 字符串形式的 `content` → 形式标记 `content: "string"`；`[]` → `"array"`；`is_error: false` → verbatim。`toolset_name` → extras。嵌套在其他 `tool_result` 中超过 4 层的 `tool_result` 会被拒绝：在请求中为 `InvalidRequest`，在回复或流中为 `ProviderError`。 |
 | `thinking`（`thinking`、`signature`） | `Block::Reasoning { text: [thinking], opaque: [AnthropicThinkingSignature] }` | `thinking: ""`（省略显示）保持为 `[""]`。`signature: ""` 不是不透明数据，而是变为形式标记 `empty_signature`，因此该块永远不会被视为已签名的思考，并以 `""` 写回；缺失的 `signature` 保持缺失。若 `signature` 是推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，见[推理数据块](reasoning.md#推理数据块)），则解码为其中的原始块，包括来源；此时会忽略 `thinking` 文本。 |
 | `redacted_thinking`（`data`） | `Block::Reasoning { opaque: [AnthropicRedactedThinking] }` | |
+| 名为 `web_search` 的 `server_tool_use` 和 ID 为 `srvtoolu_kaeso_…` 的 `web_search_tool_result` | 为 OpenAI Responses 的 `web_search_call` 项写入 | 回复和流以这种方式携带其他格式的搜索；请求会对任何模型丢弃这些块，并在发往其他格式时丢弃 Claude 自己的 `web_search` 块（[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | `tool_reference`（`tool_name`、`cache_control`） | `Block::Unknown`（原始） | 位于 `tool_result` 中时，其他方言收到一个包含工具名称的文本块以及被引用的工具（[工具搜索](cross-format.md#工具搜索)）。 |
 | 任何其他类型（`server_tool_use`、`web_search_tool_result`、`web_fetch_tool_result`、`code_execution_tool_result`、`search_result`、`container_upload`、将来的类型） | `Block::Unknown`（原始） | 仅限同一方言。 |
 
