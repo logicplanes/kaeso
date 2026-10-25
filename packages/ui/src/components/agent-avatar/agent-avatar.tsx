@@ -17,11 +17,11 @@ export const KAESO_AGENT_AVATAR_DEFAULT_VARIANTS = { size: 24 } as const;
 
 export const KAESO_AGENT_ATTRIBUTION_VARIANTS = {
   size: {
-    20: { classes: "size-10 -right-3 -bottom-3 rounded-cell", glyph: "size-8", stroke: 3, description: "20px person, 10px agent badge" },
-    24: { classes: "size-12 -right-4 -bottom-4 rounded-cell", glyph: "size-10", stroke: 2.75, description: "24px person, 12px agent badge (default)" },
-    28: { classes: "size-14 -right-4 -bottom-4 rounded-cell", glyph: "size-10", stroke: 2.5, description: "28px person, 14px agent badge" },
-    32: { classes: "size-16 -right-5 -bottom-5 rounded-cell", glyph: "size-12", stroke: 2.25, description: "32px person, 16px agent badge" },
-    40: { classes: "size-20 -right-6 -bottom-6 rounded-avatar", glyph: "size-14", stroke: 2, description: "40px person, 20px agent badge" },
+    20: { classes: "size-10 right-0 bottom-0 rounded-cell", glyph: "size-8", stroke: 3, description: "20px person, 10px agent badge" },
+    24: { classes: "size-12 right-0 bottom-0 rounded-cell", glyph: "size-10", stroke: 2.75, description: "24px person, 12px agent badge (default)" },
+    28: { classes: "size-14 right-0 bottom-0 rounded-cell", glyph: "size-10", stroke: 2.5, description: "28px person, 14px agent badge" },
+    32: { classes: "size-16 right-0 bottom-0 rounded-cell", glyph: "size-12", stroke: 2.25, description: "32px person, 16px agent badge" },
+    40: { classes: "size-20 right-0 bottom-0 rounded-avatar", glyph: "size-14", stroke: 2, description: "40px person, 20px agent badge" },
   },
 } as const;
 export const KAESO_AGENT_ATTRIBUTION_DEFAULT_VARIANTS = { size: 24 } as const;

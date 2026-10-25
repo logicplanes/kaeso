@@ -12,7 +12,7 @@ export const docs = {
   },
   AgentAttribution: {
     description:
-      "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge reaches up to 8px past the avatar's corner, so leave 12px beside it.",
+      "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.",
     props: {
       agent: "The agent that acted, with its name and model family id from the API; the family is named in the accessible name only.",
       name: "The name of the person the agent acted for; it starts the accessible name, such as `Ada Okafor via Release helper (Claude)`.",

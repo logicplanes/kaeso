@@ -1128,5 +1128,6 @@
   "An agent acting for a person: one bot face on an ink square, the same for every agent; write its model family beside it with useModelName where it matters.": "Ein Agent, der für eine Person handelt: ein Bot-Gesicht auf einem Tintenquadrat, für jeden Agenten gleich; schreiben Sie seine Modellfamilie mit useModelName daneben, wo es darauf ankommt.",
   "Every agent looks the same; write its model family with useModelName where it matters.": "Jeder Agent sieht gleich aus; schreiben Sie seine Modellfamilie mit useModelName dazu, wo es darauf ankommt.",
   "Every size": "Jede Größe",
-  "Agent": "Agent"
+  "Agent": "Agent",
+  "A person's avatar with the agent that acted for them as a small badge on its corner, for audit rows and activity; it reads as one picture named after both. The badge stays inside the avatar's square, so a table cell never cuts it off.": "Der Avatar einer Person mit dem Agenten, der für sie gehandelt hat, als kleines Abzeichen an der Ecke, für Zeilen im Audit-Log und Aktivitäten; er wirkt als ein Bild, benannt nach beiden. Das Abzeichen bleibt im Quadrat des Avatars, sodass keine Tabellenzelle es abschneidet."
 }

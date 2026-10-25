@@ -46,6 +46,17 @@ describe("AgentAttribution", () => {
     expect(screen.getAllByRole("img")).toHaveLength(1);
   });
 
+  it("keeps the badge inside the avatar's square at every size, so no cell clips it", () => {
+    for (const size of [20, 24, 28, 32, 40] as const) {
+      const { container, unmount } = render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={size} />);
+      const badge = container.querySelector("[data-agent-badge]");
+      expect(badge?.className).toMatch(/\bright-0\b/);
+      expect(badge?.className).toMatch(/\bbottom-0\b/);
+      expect(badge?.className).not.toMatch(/-right-|-bottom-/);
+      unmount();
+    }
+  });
+
   it("shows the person's picture under the badge", () => {
     const { container } = render(
       <AgentAttribution name="Ada Okafor" src="https://example.com/ada.png" size={40} agent={{ name: "Nightly fixer", model: "falcon" }} />,
