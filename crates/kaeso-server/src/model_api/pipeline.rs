@@ -874,6 +874,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if let Some(a) = plan.adaptive_thinking {
         ectx = ectx.with_adaptive_thinking(a);
     }
+    if let Some(b) = plan.thinking_binding {
+        ectx = ectx.with_thinking_binding(b);
+    }
     if let Some(r) = plan.reasoning {
         ectx = ectx.with_reasoning(r);
     }

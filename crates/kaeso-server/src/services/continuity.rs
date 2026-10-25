@@ -4,7 +4,7 @@ use kaeso_codecs::continuity::{
     CarriedReasoning, ReasoningCollector, restore_reasoning, tool_calls_missing_reasoning,
 };
 use kaeso_crypto::Sealed;
-use kaeso_kpp::{DialectId, GenerateRequest, ReasoningBlock, StreamEvent};
+use kaeso_kpp::{DialectId, GenerateRequest, StreamEvent};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
@@ -70,7 +70,7 @@ pub async fn keep(state: &AppState, key_id: Uuid, carried: &[CarriedReasoning]) 
     let mut pipe = redis::pipe();
     let mut kept = 0;
     for c in carried {
-        let Ok(plain) = serde_json::to_vec(&c.blocks) else {
+        let Ok(plain) = serde_json::to_vec(c) else {
             continue;
         };
         let sealed = match kaeso_crypto::seal(&state.keyring, &plain, &aad(key_id, &c.tool_call_id))
@@ -147,7 +147,7 @@ pub async fn restore(state: &AppState, key_id: Uuid, req: &mut GenerateRequest) 
             continue;
         }
         match open(state, key_id, id, fields) {
-            Some(blocks) => kept.push(CarriedReasoning::new(id.clone(), blocks)),
+            Some(carried) => kept.push(carried),
             None => tracing::warn!("kept reasoning cannot be read; the request goes on without it"),
         }
     }
@@ -162,7 +162,7 @@ fn open(
     key_id: Uuid,
     tool_call_id: &str,
     mut fields: HashMap<String, Vec<u8>>,
-) -> Option<Vec<ReasoningBlock>> {
+) -> Option<CarriedReasoning> {
     let sealed = Sealed {
         key_id: String::from_utf8(fields.remove("kid")?).ok()?,
         nonce: fields.remove("nonce")?,

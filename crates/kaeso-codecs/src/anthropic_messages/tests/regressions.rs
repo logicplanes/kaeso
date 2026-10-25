@@ -635,10 +635,7 @@ fn thinking_is_left_off_for_a_tool_turn_without_thinking() {
         ],
         foreign_effort(),
     ));
-    assert_eq!(
-        body["thinking"],
-        json!({"type": "adaptive", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
-    );
+    assert_eq!(body["thinking"], json!({"type": "adaptive"}));
     let mut r = tool_loop(
         vec![Block::tool_call("call_1", "f", raw("{}"))],
         foreign_effort(),

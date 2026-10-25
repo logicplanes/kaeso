@@ -106,6 +106,7 @@ fn the_shipped_supplement_is_valid_and_names_known_models() {
     }
     assert!(Supplement::parse("[nope.x]\nadaptive_thinking = true").is_err());
     assert!(Supplement::parse("[openai.x]\nadaptive_thinking = true").is_err());
+    assert!(Supplement::parse("[openai.x]\nthinking_binding = true").is_err());
     assert!(Supplement::parse("[anthropic.x]\nunknown = 1").is_err());
 }
 
@@ -736,6 +737,18 @@ fn duties_fill_what_kpp_cannot_know() {
     let plan = prepare(&mut req, DialectId::OpenAiChat, &haiku).unwrap();
     assert_eq!(plan.dialect, DialectId::AnthropicMessages);
     assert_eq!(plan.adaptive_thinking, Some(false));
+    assert_eq!(plan.thinking_binding, None);
+    for model in [
+        "claude-fable-5-1",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+        "claude-haiku-5-5",
+    ] {
+        let checks = eff(&entry("anthropic", model));
+        let mut req = Request::Generate(user(vec![Block::text("hi")]));
+        let plan = prepare(&mut req, DialectId::OpenAiChat, &checks).unwrap();
+        assert_eq!(plan.thinking_binding, Some(true), "{model}");
+    }
     let Request::Generate(g) = &req else { panic!() };
     assert_eq!(g.sampling.max_output_tokens, Some(64_000));
     let mut own = user(vec![Block::text("hi")]);
@@ -752,6 +765,7 @@ fn duties_fill_what_kpp_cannot_know() {
         super::capability::Plan {
             dialect: DialectId::OpenAiResponses,
             adaptive_thinking: None,
+            thinking_binding: None,
             reasoning: Some(false),
         }
     );
