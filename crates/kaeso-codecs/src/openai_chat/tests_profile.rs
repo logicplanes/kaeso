@@ -453,3 +453,45 @@ fn a_refused_field_kaeso_models_is_found_as_well_as_one_it_passes_through() {
     }
     assert!(!sends_known(&ChatRequest::default(), "parallel_tool_calls"));
 }
+
+#[test]
+fn a_greedy_top_p_profile_sends_top_p_1_with_temperature_0() {
+    let greedy = ChatProfile::compatible("Example Cloud").greedy_top_p();
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/mistral/greedy-sampling")
+        .unwrap();
+    let req = decode(&body).unwrap();
+    let out = encode_with(&req, greedy).unwrap();
+    assert_eq!(
+        (&out["temperature"], &out["top_p"]),
+        (&json!(0), &json!(1.0))
+    );
+    assert!(
+        encode_with(&req, ChatProfile::compatible("Example Cloud")).unwrap()["top_p"].is_null()
+    );
+
+    let sent = |body: Value| encode_with(&chat(body), greedy);
+    let null =
+        sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": null})).unwrap();
+    assert_eq!(null["top_p"], json!(1.0));
+    for top_p in [json!(1), json!(0.9), json!(0)] {
+        let out =
+            sent(json!({"model": "m", "messages": [], "temperature": 0, "top_p": top_p})).unwrap();
+        assert_eq!(
+            out["top_p"].as_f64(),
+            Some(1.0),
+            "{top_p}: greedy ignores top_p"
+        );
+    }
+    let warm =
+        sent(json!({"model": "m", "messages": [], "temperature": 0.2, "top_p": 0.9})).unwrap();
+    assert_eq!(warm["top_p"], json!(0.9));
+    let unset = sent(json!({"model": "m", "messages": [], "temperature": 0.2})).unwrap();
+    assert!(unset.get("top_p").is_none(), "{unset}");
+
+    let mut anthropic = foreign(DialectId::AnthropicMessages);
+    anthropic.sampling.temperature = Some(0.0);
+    let out = encode_with(&Request::Generate(anthropic), greedy).unwrap();
+    assert_eq!(out["top_p"], json!(1.0));
+}

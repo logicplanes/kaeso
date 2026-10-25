@@ -234,7 +234,7 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 
 | HTTP | `error.type` | `ErrorKind` (decode) | Encode from `ErrorKind` |
 |---|---|---|---|
-| 400 | `invalid_request_error` | `InvalidRequest`; `ContextTooLong` when the message starts with `prompt is too long` | `InvalidRequest`, `ContextTooLong`, `ContentFiltered`, `Unsupported` |
+| 400 | `invalid_request_error` | `InvalidRequest`; `ContextTooLong` when the message starts with `prompt is too long` | `InvalidRequest`, `ContextTooLong`, `ContentFiltered`, `Unsupported`; a `ContextTooLong` message that doesn't start with `prompt is too long` gets `prompt is too long: ` in front, the text Claude Code reads to compact |
 | 401 | `authentication_error` | `Authentication` | `Authentication` |
 | 402 | `billing_error` | `Billing` | `Billing` |
 | 403 | `permission_error` | `PermissionDenied` | `PermissionDenied` |

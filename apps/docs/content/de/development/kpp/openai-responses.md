@@ -285,7 +285,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 
 Die Zeilen mit `type` und `code` haben Vorrang vor dem Status. Andere Codes entscheiden hier nicht, sondern der Status: `rate_limit_exceeded`, `rate_limit_error` und `slow_down` (`RateLimited`), `server_error` (`ProviderError`), `invalid_prompt`, `invalid_request_error` und die Bild-Codes (beginnend mit `invalid_image` oder `image_` oder endend auf `_image`; `InvalidRequest`). Sie entscheiden nur, wo es keinen Status gibt: in einem `error`-Event eines Streams und im `error.code` einer fehlgeschlagenen Antwort. Ein Fehlerobjekt ohne Meldung bekommt `The provider returned HTTP <status> without a message.`
 
-Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (Chat, Responses, Embeddings) stammen, zurückgespielt, solange sie unverändert sind. Unverändert ist ein Fehler, solange die aus seinem Body erneut dekodierte Art der Art des Fehlers entspricht und die Meldung dieselbe ist. Andere Fehler bekommen:
+Beim Kodieren werden Body und Status von Fehlern, die aus einem OpenAI-Dialekt (Chat, Responses, Embeddings) stammen, zurückgespielt, solange sie unverändert sind. Ein Anbieterfehler aus einem anderen Dialekt erhält kein `param`: Es nennt ein Feld der Anfrage, die Kaeso gebaut hat, nicht der App. Unverändert ist ein Fehler, solange die aus seinem Body erneut dekodierte Art der Art des Fehlers entspricht und die Meldung dieselbe ist. Andere Fehler bekommen:
 
 | `ErrorKind` | Status | `type` | `code` |
 | --- | --- | --- | --- |

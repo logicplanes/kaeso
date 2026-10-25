@@ -23,6 +23,7 @@ pub struct RequestProfile {
     pub end_user: bool,
     pub assistant_prefill: bool,
     pub verbosity: bool,
+    pub greedy_top_p: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -64,6 +65,7 @@ impl RequestProfile {
         end_user: true,
         assistant_prefill: true,
         verbosity: true,
+        greedy_top_p: false,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -130,6 +132,12 @@ impl ChatProfile {
     }
 
     #[must_use]
+    pub const fn greedy_top_p(mut self) -> Self {
+        self.request.greedy_top_p = true;
+        self
+    }
+
+    #[must_use]
     pub const fn thinking_parts(mut self) -> Self {
         self.reply.reasoning = ReplyReasoning::ThinkingParts;
         self
@@ -171,6 +179,14 @@ impl ChatProfile {
             .with_param("seed"));
         }
         Ok(seed)
+    }
+
+    pub(crate) fn sent_top_p(&self, temperature: Option<f64>, top_p: Option<f64>) -> Option<f64> {
+        if self.request.greedy_top_p && temperature == Some(0.0) {
+            Some(1.0)
+        } else {
+            top_p
+        }
     }
 
     pub(crate) fn refuse(

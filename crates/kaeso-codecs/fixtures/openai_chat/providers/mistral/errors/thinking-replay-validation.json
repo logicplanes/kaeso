@@ -1,0 +1,20 @@
+{
+  "detail": [
+    {
+      "type": "bool_type",
+      "loc": [
+        "body",
+        "messages",
+        1,
+        "assistant",
+        "content",
+        "list[tagged-union[TextChunk,ImageURLChunk,DocumentURLChunk,ReferenceChunk,FileChunk,ThinkChunk,AudioChunk,ResourceChunk,ResourceLinkChunk]]",
+        0,
+        "thinking",
+        "closed"
+      ],
+      "msg": "Input should be a valid boolean",
+      "input": "yes"
+    }
+  ]
+}

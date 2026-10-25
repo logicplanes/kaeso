@@ -234,7 +234,7 @@ Schema `ErrorResponse`. Dekodierfehler, bei Anfragen wie bei Antworten von Anbie
 
 | HTTP | `error.type` | `ErrorKind` (dekodieren) | Kodieren aus `ErrorKind` |
 |---|---|---|---|
-| 400 | `invalid_request_error` | `InvalidRequest`; `ContextTooLong`, wenn die Meldung mit `prompt is too long` beginnt | `InvalidRequest`, `ContextTooLong`, `ContentFiltered`, `Unsupported` |
+| 400 | `invalid_request_error` | `InvalidRequest`; `ContextTooLong`, wenn die Meldung mit `prompt is too long` beginnt | `InvalidRequest`, `ContextTooLong`, `ContentFiltered`, `Unsupported`; eine `ContextTooLong`-Meldung, die nicht mit `prompt is too long` beginnt, erhält `prompt is too long: ` davor, den Text, an dem Claude Code das Kompaktieren erkennt |
 | 401 | `authentication_error` | `Authentication` | `Authentication` |
 | 402 | `billing_error` | `Billing` | `Billing` |
 | 403 | `permission_error` | `PermissionDenied` | `PermissionDenied` |

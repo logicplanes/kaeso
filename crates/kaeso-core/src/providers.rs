@@ -355,6 +355,10 @@ impl ProviderRef {
         self.built_in().is_some_and(|p| p.refuses_key(message))
     }
 
+    pub fn exceeds_context(&self, message: &str) -> bool {
+        self.built_in().is_some_and(|p| p.exceeds_context(message))
+    }
+
     pub fn reasoning_beyond_output_limit(&self) -> bool {
         self.built_in()
             .is_some_and(|p| p.reasoning_beyond_output_limit)
