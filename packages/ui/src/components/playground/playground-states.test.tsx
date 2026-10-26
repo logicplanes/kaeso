@@ -214,11 +214,12 @@ describe("ResponseMetrics room and money", () => {
 
   it("reserves a typical value's room under every value, live or done", () => {
     const { container, rerender } = render(<ResponseMetrics live reasoning />);
-    const reserved = () => [...container.querySelectorAll("dd > [aria-hidden]")].map((s) => s.textContent);
+    const reserved = () => [...container.querySelectorAll("dd > [aria-hidden]")].map((s) => s.getAttribute("data-reserve"));
     const live = reserved();
     expect(live).toEqual(["8.88 s", "8.88 s", "8,888 in · 888 out", "888", "$0.008888"]);
     rerender(<ResponseMetrics reasoning timeToFirstToken={420} duration={3140} inputTokens={1204} outputTokens={856} reasoningTokens={312} cost="0.004213" />);
     expect(reserved()).toEqual(live);
+    expect(screen.getByText("Tokens").nextElementSibling).toHaveTextContent(/^1,204 in · 856 out$/);
   });
 
   it("keeps the reasoning item after a response whose reasoning wasn't reported", () => {

@@ -49,15 +49,14 @@ function known(n: number | null | undefined): n is number {
   return typeof n === "number" && Number.isFinite(n);
 }
 
-function Item({ label, reserve, children }: { label: string; reserve: ReactNode; children: ReactNode }) {
+function Item({ label, reserve, children }: { label: string; reserve: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline gap-4 whitespace-nowrap">
       <dt className="text-fg-tertiary">{label}</dt>
       <dd className="inline-grid justify-items-start text-fg-secondary tabular">
         <span className="col-start-1 row-start-1">{children}</span>
-        <span aria-hidden className="invisible col-start-1 row-start-1">
-          {reserve}
-        </span>
+        {/* The reserve is drawn by CSS so the value's text stays the value alone. */}
+        <span aria-hidden data-reserve={reserve} className="invisible col-start-1 row-start-1 reserve-text" />
       </dd>
     </div>
   );

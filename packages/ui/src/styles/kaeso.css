@@ -466,6 +466,12 @@
   }
 }
 
+@utility reserve-text {
+  &::after {
+    content: attr(data-reserve);
+  }
+}
+
 @utility markdown-text-inset {
   & > :not(.rounded-well, :has(> table), :has(> button)) {
     padding-inline: 12px;
