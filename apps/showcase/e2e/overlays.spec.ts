@@ -54,6 +54,9 @@ test("a layer dialog's title keeps its place when the second layer opens", async
   const after = (await title.boundingBox())!;
   expect(after.x).toBe(before.x);
   expect(after.y).toBe(before.y);
-  await page.keyboard.press("Escape");
+  await page.getByRole("dialog").getByRole("button", { name: "Back" }).click();
   await expect(title).toHaveText("Add model");
+  expect((await title.boundingBox())!.y).toBe(before.y);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
 });
