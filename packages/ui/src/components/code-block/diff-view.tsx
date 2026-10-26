@@ -5,8 +5,10 @@ import { Icon } from "../icon/icon.js";
 import { CopyButton } from "../copy-button/copy-button.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
+import { Text } from "../text/text.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
 import { INDENT } from "./indent.js";
+import { numberWidth } from "./numbers.js";
 import { diffLines, diffStats, foldUnchanged, largestLineNumber, unifiedDiff, type DiffKind, type DiffLine } from "./diff.js";
 
 export const KAESO_DIFF_VIEW_VARIANTS = {
@@ -90,7 +92,7 @@ function Code({ parts, kind }: { parts: Segment[]; kind: DiffKind }) {
           </span>
         ));
         return group[0]?.changed ? (
-          <span key={g} data-diff-change="" className={cn("rounded-cell", WORD[kind])}>
+          <span key={g} data-diff-change="" className={cn("rounded-cell forced-colors:underline", WORD[kind])}>
             {spans}
           </span>
         ) : (
@@ -99,11 +101,6 @@ function Code({ parts, kind }: { parts: Segment[]; kind: DiffKind }) {
       })}
     </>
   );
-}
-
-function numberWidth(count: number): string {
-  const digits = String(count).length;
-  return digits <= 2 ? "w-16" : digits === 3 ? "w-24" : digits === 4 ? "w-32" : "w-40";
 }
 
 export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffView(
@@ -126,10 +123,13 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
   const current = tokens && tokens.before === before && tokens.after === after && tokens.lang === lang ? tokens : null;
   const [open, setOpen] = useState<{ lines: DiffLine[]; at: ReadonlySet<number> }>({ lines, at: new Set() });
   const opened = open.lines === lines ? open.at : NONE_OPEN;
-  const rows = useMemo(() => foldUnchanged(lines, context, opened), [lines, context, opened]);
+  const unchanged = stats.added === 0 && stats.removed === 0;
+  const rows = useMemo(
+    () => (unchanged ? lines.map((line, index) => ({ type: "line" as const, line, index })) : foldUnchanged(lines, context, opened)),
+    [lines, context, opened, unchanged],
+  );
   const scroller = useRef<HTMLDivElement | null>(null);
   useScrollFadeX(scroller, "code");
-  const unchanged = stats.added === 0 && stats.removed === 0;
   const width = lineNumbers ? numberWidth(largestLineNumber(lines)) : "";
 
   const lineTokens = (line: DiffLine) => (line.kind === "added" ? current?.new?.[(line.newNumber ?? 0) - 1] : current?.old?.[(line.oldNumber ?? 0) - 1]);
@@ -137,7 +137,11 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
   return (
     <div ref={ref} className={cn("relative min-w-0", KAESO_DIFF_VIEW_VARIANTS.surface[surface].classes, className)}>
       <div className="flex h-44 items-center gap-4 px-8 hairline-b">
-        {title && <span className="min-w-0 truncate px-8 mono text-small text-fg-secondary">{title}</span>}
+        {title && (
+          <Text as="span" variant="small" tone="secondary" mono truncate className="px-8">
+            {title}
+          </Text>
+        )}
         <span className="ml-auto flex shrink-0 items-center gap-8 px-8 mono text-small tabular">
           {unchanged ? (
             <span className="text-fg-secondary">{t("diffView.noChanges", "No changes")}</span>
@@ -162,12 +166,12 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
             </>
           )}
         </span>
-        {copy && <CopyButton value={unifiedDiff(lines)} label={t("diffView.copy", "Copy diff")} />}
+        {copy && !unchanged && <CopyButton value={unifiedDiff(lines)} label={t("diffView.copy", "Copy diff")} />}
       </div>
       <div
         ref={scroller}
         tabIndex={0}
-        role="region"
+        role="group"
         aria-label={typeof title === "string" ? title : t("diffView.label", "Changes")}
         className="relative overflow-x-auto py-8 scrollbar-quiet scroll-fade-x focus-ring-inset"
       >
@@ -184,7 +188,7 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
                       scroller.current?.focus({ preventScroll: true });
                       setOpen({ lines, at: new Set([...opened, row.from]) });
                     }}
-                    className="flex h-32 cursor-pointer items-center bg-fill-2 font-sans text-small text-fg-secondary transition-control hover:text-fg focus-ring-inset"
+                    className="flex h-32 cursor-pointer items-center bg-fill-2 font-sans text-small text-fg-secondary transition-control hover:bg-fill-3 hover:text-fg focus-ring-inset"
                   >
                     <span className="sticky left-0 flex items-center gap-8 px-16">
                       <Icon icon={icons.unfold} size="xs" />

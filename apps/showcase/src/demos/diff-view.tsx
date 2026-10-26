@@ -56,6 +56,14 @@ export function States() {
           <Numbers />
           <DiffView title="Created" lang="json" before="" after={json(limit)} />
           <DiffView title="Unchanged" lang="json" before={json(limit)} after={json(limit)} />
+          <div className="w-320">
+            <DiffView
+              title="credentials/cred_01m5m8c02wesfvakyq92k9wtgy/projects.json"
+              lang="json"
+              before={json(credential.projects)}
+              after={json(moved.projects)}
+            />
+          </div>
         </div>
       </StateSection>
       <StateSection title="Plain text, no copy">

@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   CodeBlock: {
     description:
-      "Highlighted code on a well: Kaeso's monochrome theme, copy on hover, tabs, line numbers, collapse. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
+      "Highlighted code on a well: Kaeso's monochrome theme, copy in the header with a title or tabs and on hover without, tabs, line numbers, collapse with a fade at the cut. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
     props: {
       code: "The code to show.",
       collapseAfter: "Collapse beyond this many lines (24 by default; 0 never collapses).",
@@ -52,7 +52,8 @@ export const docs = {
     },
   },
   JsonView: {
-    description: "A folding JSON tree: copy any path, highlight a search. For request and response bodies.",
+    description:
+      "A folding JSON tree: copy any path, highlight a search. For request and response bodies. It is one tab stop: the arrow keys move between rows and open and close them, and ⌘C or Ctrl C copies the row's path.",
     props: {
       defaultDepth: "Levels open at first (2 by default).",
       query: "Highlights keys and values that contain this text.",

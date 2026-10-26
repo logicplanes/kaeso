@@ -1,8 +1,12 @@
-import { forwardRef, memo, useMemo, useState, type ReactNode } from "react";
+import { forwardRef, memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
 import { cn } from "../../utils/cn.js";
 import { safeHref } from "../../utils/safe-href.js";
 import { useUiText } from "../../i18n/context.js";
+import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
+import { observeResize } from "../../utils/observe-resize.js";
+import { icons } from "../../icons/vocabulary.js";
+import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
 import { Code } from "../code/code.js";
 import { CodeBlock } from "../code-block/code-block.js";
@@ -145,7 +149,7 @@ function inline(tokens: Token[] | undefined): ReactNode[] {
         return <del key={i}>{inline(t.tokens)}</del>;
       case "codespan":
         return (
-          <Code key={i} shape="rounded" className="wrap-anywhere">
+          <Code key={i} flow="text" className="wrap-anywhere">
             {t.text}
           </Code>
         );
@@ -182,18 +186,30 @@ function inline(tokens: Token[] | undefined): ReactNode[] {
   });
 }
 
+function Task({ done }: { done: boolean }) {
+  const t = useUiText();
+  return (
+    <span
+      role="img"
+      aria-label={done ? t("markdown.taskDone", "Done") : t("markdown.taskOpen", "Not done")}
+      className={cn("mt-3 inline-flex size-14 shrink-0 items-center justify-center rounded-checkbox", done ? "bg-ink text-on-ink" : "shadow-ring")}
+    >
+      {done && <Icon icon={icons.check} size="xs" className="size-12" />}
+    </span>
+  );
+}
+
 function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
   const Tag = list.ordered ? "ol" : "ul";
   const start = typeof list.start === "number" ? list.start : 1;
   const last = list.items.length - 1;
+  const digits = String(start + last).length;
   return (
     <Tag className="flex flex-col gap-4">
       {list.items.map((item, i) => (
         <li key={i} className="flex gap-8">
           {item.task ? (
-            <Text as="span" variant={TEXT[ctx.size]} weight="regular" tone="tertiary" mono className="shrink-0">
-              {item.checked ? "[x]" : "[ ]"}
-            </Text>
+            <Task done={!!item.checked} />
           ) : (
             <Text
               as="span"
@@ -202,7 +218,8 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
               weight="regular"
               tone="tertiary"
               tabular
-              className={list.ordered ? "min-w-16 shrink-0 text-right" : "w-8 shrink-0 text-center"}
+              className={list.ordered ? "shrink-0 text-right" : "w-8 shrink-0 text-center"}
+              {...(list.ordered ? { style: { minWidth: `${digits + 0.5}ch` } } : {})}
             >
               {list.ordered ? `${start + i}.` : "•"}
             </Text>
@@ -221,7 +238,35 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
 }
 
 const PROSE = "max-w-prose wrap-break-word";
+
+function TableScroller({ children }: { children: ReactNode }) {
+  const t = useUiText();
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [scrolls, setScrolls] = useState(false);
+  useScrollFadeX(ref, "table");
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
+    measure();
+    return observeResize([el], measure);
+  }, []);
+  return (
+    <div
+      ref={ref}
+      {...(scrolls ? { tabIndex: 0, role: "group", "aria-label": t("markdown.tableScrolls", "Table, scrolls sideways") } : {})}
+      className="max-w-full overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset"
+    >
+      {children}
+    </div>
+  );
+}
 const TEXT = { lg: "body-lg", body: "body", small: "small" } as const;
+const HEADING = {
+  lg: ["title", "title-sm", "body-lg", "body-lg"],
+  body: ["title-sm", "body-lg", "body", "body"],
+  small: ["body-lg", "body", "small", "small"],
+} as const;
 
 function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
   const tail = ctx.trailing;
@@ -230,11 +275,11 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
       return null;
     case "heading": {
       const h = t as Tokens.Heading;
-      const major = h.depth <= 2;
-      const variant = ctx.size === "lg" ? (major ? "title-sm" : "body-lg") : ctx.size === "body" ? (major ? "body-lg" : "body") : major ? "body" : "small";
+      const step = Math.min(3, h.depth - 1);
+      const variant = HEADING[ctx.size][step]!;
       const level = Math.min(6, h.depth + ctx.level - 1) as 1 | 2 | 3 | 4 | 5 | 6;
       return (
-        <Text as={`h${level}`} variant={variant} weight="semibold" tone="inherit" className="mt-4 first:mt-0 wrap-break-word">
+        <Text as={`h${level}`} variant={variant} weight={step === 3 ? "medium" : "semibold"} tone="inherit" className="mt-4 first:mt-0 wrap-break-word">
           {inline(h.tokens)}
           {tail}
         </Text>
@@ -282,7 +327,7 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
       const align = (a: Tokens.TableCell["align"]) => (a === "right" ? "end" : "start");
       return (
         <>
-          <div className="max-w-full overflow-x-auto scrollbar-quiet">
+          <TableScroller>
             <Table className={ctx.size === "small" ? "text-small" : undefined}>
               <Table.Head>
                 <Table.Row>
@@ -297,7 +342,7 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
                 {table.rows.map((row, r) => (
                   <Table.Row key={r}>
                     {row.map((c, j) => (
-                      <Table.Cell key={j} align={align(c.align)}>
+                      <Table.Cell key={j} align={align(c.align)} className={c.text.length <= 24 ? "whitespace-nowrap" : undefined}>
                         {inline(c.tokens)}
                       </Table.Cell>
                     ))}
@@ -305,7 +350,7 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
                 ))}
               </Table.Body>
             </Table>
-          </div>
+          </TableScroller>
         </>
       );
     }

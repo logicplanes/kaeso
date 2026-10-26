@@ -3,11 +3,17 @@ import { render, screen } from "@testing-library/react";
 import { Code } from "./code.js";
 
 describe("Code", () => {
-  it("keeps short code in one box, a pill for one word", () => {
-    render(<Code>gpt-5-mini</Code>);
+  it("keeps short code in one box with the same radius as longer code, so a sentence never mixes shapes", () => {
+    render(
+      <p>
+        Use <Code>gpt-5-mini</Code> or <Code>claude-haiku-4-5 with tools</Code>, or <Code shape="pill">o3</Code>.
+      </p>,
+    );
     const code = screen.getByText("gpt-5-mini");
     expect(code.tagName).toBe("CODE");
-    expect(code).toHaveClass("inline-block", "rounded-pill");
+    expect(code).toHaveClass("inline-block", "rounded-code", "max-w-full", "wrap-anywhere");
+    expect(screen.getByText("claude-haiku-4-5 with tools")).toHaveClass("rounded-code");
+    expect(screen.getByText("o3")).toHaveClass("rounded-pill");
   });
 
   it("lets long code break with the sentence around it, each line keeping its fill", () => {

@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { JsonView } from "./json-view.js";
 
@@ -26,11 +26,41 @@ describe("JsonView", () => {
     render(<JsonView value={{ usage: { input: 12, output: 40 } }} defaultDepth={0} surface="plain" />);
     await userEvent.click(screen.getByRole("button", { name: "1 key" }));
     expect(screen.getByRole("button", { name: "2 keys" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Expand usage" }));
-    expect(screen.getByRole("region", { name: "JSON" })).toHaveTextContent('"input": 12');
-    expect(screen.getByRole("button", { name: "Collapse usage" })).toHaveAttribute("aria-expanded", "true");
-    await userEvent.click(screen.getByRole("button", { name: "Collapse" }));
-    expect(screen.getByRole("button", { name: "1 key" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "2 keys" }));
+    expect(screen.getByRole("tree", { name: "JSON" })).toHaveTextContent('"input": 12');
+    expect(screen.getByRole("treeitem", { name: /"usage"/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("is one tab stop that the arrow keys walk, opening, closing and climbing back to the parent", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <JsonView value={{ usage: { input: 12, output: 40 }, model: "gpt-5" }} defaultDepth={1} />
+        <button type="button">After</button>
+      </>,
+    );
+    await user.tab();
+    const root = screen.getAllByRole("treeitem")[0]!;
+    expect(root).toHaveFocus();
+    expect(root).toHaveAttribute("aria-level", "1");
+    await user.keyboard("{ArrowDown}");
+    const usage = screen.getByRole("treeitem", { name: /"usage"/ });
+    expect(usage).toHaveFocus();
+    expect(usage).toHaveAttribute("aria-expanded", "false");
+    await user.keyboard("{ArrowRight}");
+    expect(usage).toHaveAttribute("aria-expanded", "true");
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("treeitem", { name: /"input"/ })).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(usage).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(usage).toHaveAttribute("aria-expanded", "false");
+    await user.keyboard("{End}");
+    expect(screen.getByRole("treeitem", { name: /"model"/ })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "After" })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole("treeitem", { name: /"model"/ })).toHaveFocus();
   });
 
   it("highlights the query in keys and strings", () => {
@@ -40,12 +70,20 @@ describe("JsonView", () => {
     expect(screen.getAllByText("checkout", { selector: "mark" })).toHaveLength(1);
   });
 
-  it("copies the path of a value", async () => {
-    const user = userEvent.setup();
+  it("copies the path of a value with the button or the keyboard, and says so", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<JsonView value={body} defaultDepth={3} />);
-    const row = screen.getByText((_, el) => el?.tagName === "SPAN" && el.textContent === '"content": "Summarise the checkout logs"').closest("div")!;
-    await user.click(within(row).getByRole("button", { name: "Copy path messages[0].content" }));
+    const row = screen.getByRole("treeitem", { name: /"content"/ });
+    await user.click(row.querySelector("button")!);
     expect(await navigator.clipboard.readText()).toBe("messages[0].content");
-    expect(within(row).getByRole("button", { name: "Path copied" })).toBeInTheDocument();
+    expect(row.querySelector("button")).toHaveAttribute("title", "Path copied");
+    await act(() => vi.advanceTimersByTimeAsync(60));
+    expect(screen.getByRole("status")).toHaveTextContent("Path copied");
+    const model = screen.getByRole("treeitem", { name: /"model"/ });
+    model.focus();
+    await user.keyboard("{Control>}c{/Control}");
+    expect(await navigator.clipboard.readText()).toBe("model");
+    vi.useRealTimers();
   });
 });

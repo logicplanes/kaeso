@@ -18,6 +18,14 @@ export const meta = {
   group: "Components",
   entry: "code-block",
   import: "JsonView",
+  keyboard: [
+    ["Tab", "Moves into the tree, then out of it: the tree is one tab stop"],
+    ["↑ ↓", "Moves between rows"],
+    ["→ ←", "Opens and closes an object or array, or moves into it and back to its parent"],
+    ["Enter Space", "Opens or closes an object or array"],
+    ["⌘C Ctrl C", "Copies the row's path"],
+  ],
+  a11y: ["The tree is a tree of rows with their level and open state; a copied path is announced."],
 };
 export const examples = [{ id: "basic", title: "Request body", fn: "Basic" }];
 export function Basic() {
@@ -29,13 +37,29 @@ export function Basic() {
     </div>
   );
 }
+const deep = {
+  request: {
+    id: "req_01JAR2N7Q8",
+    metadata: { team: "checkout", region: "eu-west-1", tags: { priority: "high", retries: { max: 3, backoff: "exponential" } } },
+    prompt_cache_key: "checkout-assistant-system-prompt-version-2026-10-12-production",
+  },
+  empty: {},
+};
+
 export function States() {
   return (
-    <StateSection title="Depths and search">
-      <div className="flex w-560 flex-col gap-16">
-        <JsonView value={body} defaultDepth={1} />
-        <JsonView value={body} defaultDepth={3} query="order" />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Depths and search">
+        <div className="flex w-560 flex-col gap-16">
+          <JsonView value={body} defaultDepth={1} />
+          <JsonView value={body} defaultDepth={3} query="order" />
+        </div>
+      </StateSection>
+      <StateSection title="Deep nesting, long strings and an empty object at 320px">
+        <div className="w-320">
+          <JsonView value={deep} defaultDepth={5} />
+        </div>
+      </StateSection>
+    </>
   );
 }

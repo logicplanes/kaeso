@@ -30,13 +30,15 @@ describe("Markdown", () => {
     const ordered = [...c.querySelectorAll("ol")].at(-1);
     expect(ordered?.textContent).toContain("3.three");
     expect(ordered?.textContent).toContain("4.four");
-    expect(c.textContent).toContain("[x]shipped");
+    expect(screen.getByRole("img", { name: "Done" }).parentElement).toHaveTextContent("shipped");
+    expect(screen.getByRole("img", { name: "Not done" }).parentElement).toHaveTextContent("next");
+    expect(c.textContent).not.toContain("[x]");
     expect(c.querySelector("input")).toBeNull();
   });
 
   it("shows fenced code as it was written, in a code block", () => {
     const c = md("```python\nif a < b:\n    print('<b>hi</b>')\n```");
-    expect(screen.getByRole("region", { name: "Code" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Code" })).toBeInTheDocument();
     expect(c.textContent).toContain("print('<b>hi</b>')");
     expect(c.querySelector("b")).toBeNull();
   });
@@ -153,5 +155,21 @@ describe("markdownCodeLang", () => {
     expect(markdownCodeLang("sh title=run")).toBe("bash");
     expect(markdownCodeLang("rust")).toBe("text");
     expect(markdownCodeLang(undefined)).toBe("text");
+  });
+
+  it("gives each heading level its own step, numbers from the widest number, and lets inline code break with the sentence", () => {
+    const c = md(
+      "# One\n\n## Two\n\n### Three\n\n#### Four\n\n" +
+        Array.from({ length: 10 }, (_, i) => `${i + 1}. item`).join("\n") +
+        "\n\nRun `docker compose exec gateway kaeso openapi`.",
+    );
+    const sizes = [...c.querySelectorAll("h3, h4, h5, h6")].map((h) =>
+      [...h.classList].filter((k) => k.startsWith("text-") || k.startsWith("font-")).join(" "),
+    );
+    expect(new Set(sizes.slice(0, 3)).size).toBe(3);
+    expect(sizes[3]).toContain("font-medium");
+    const numbers = [...c.querySelectorAll("ol > li > span")] as HTMLElement[];
+    expect(numbers.map((n) => n.style.minWidth)).toEqual(Array(10).fill("2.5ch"));
+    expect(screen.getByText("docker compose exec gateway kaeso openapi")).toHaveClass("inline", "box-decoration-clone");
   });
 });

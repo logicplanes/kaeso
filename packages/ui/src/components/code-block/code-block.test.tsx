@@ -30,7 +30,7 @@ describe("CodeBlock", () => {
     render(
       <CodeBlock code={'{ "error_message": "The server had an error while processing your request. Sorry about that!" }'} title="Metadata" copy={false} />,
     );
-    const region = screen.getByRole("region", { name: "Metadata code" });
+    const region = screen.getByRole("group", { name: "Metadata code" });
     expect(region).toHaveClass("overflow-x-auto", "scroll-fade-x", "py-16");
     expect(region.querySelector("code > span")).toHaveClass("px-16");
     expect(region.style.getPropertyValue("--scroll-area-overflow-x-end")).toBe("");
@@ -153,10 +153,10 @@ describe("CodeBlock", () => {
   it("keeps the code clear of the copy button on touch screens, where the button always shows", () => {
     const { rerender } = render(<CodeBlock code="echo KAESO_MAIL_TRANSPORT=log >> .env" lang="bash" />);
     expect(screen.getByRole("button", { name: "Copy code" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Code" })).toHaveClass("coarse:mr-40");
+    expect(screen.getByRole("group", { name: "Code" })).toHaveClass("coarse:mr-40");
     rerender(<CodeBlock code="echo KAESO_MAIL_TRANSPORT=log >> .env" lang="bash" copy={false} />);
     expect(screen.queryByRole("button", { name: "Copy code" })).toBeNull();
-    expect(screen.getByRole("region", { name: "Code" })).not.toHaveClass("coarse:mr-40");
+    expect(screen.getByRole("group", { name: "Code" })).not.toHaveClass("coarse:mr-40");
   });
 
   it("keeps empty lines and shows everything when collapsing is off", () => {
@@ -167,7 +167,7 @@ describe("CodeBlock", () => {
 
   it("tints added and removed lines of a diff, but not its file headers", () => {
     render(<CodeBlock code={"--- a.json\n+++ b.json\n  same\n- old\n+ new"} lang="diff" copy={false} />);
-    const rows = [...screen.getByRole("region", { name: "Code" }).querySelectorAll("code > span")];
+    const rows = [...screen.getByRole("group", { name: "Code" }).querySelectorAll("code > span")];
     expect(rows.map((r) => (r.classList.contains("bg-diff-added") ? "+" : r.classList.contains("bg-diff-removed") ? "-" : " "))).toEqual([
       " ",
       " ",
@@ -175,5 +175,40 @@ describe("CodeBlock", () => {
       "-",
       "+",
     ]);
+  });
+
+  it("marks the chosen tab apart from a hovered one, and keeps copy in the header", () => {
+    render(
+      <CodeBlock
+        tabs={[
+          { label: "Python", code: "print('hi')", lang: "python" },
+          { label: "curl", code: "curl https://kaeso.example.com", lang: "bash" },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("tab", { name: "Python" })).toHaveClass("bg-fill-3", "tap-target");
+    expect(screen.getByRole("tab", { name: "curl" })).toHaveClass("hover:bg-fill-2");
+    expect(screen.getByRole("tab", { name: "curl" })).not.toHaveClass("bg-fill-3");
+    const copy = screen.getByRole("button", { name: "Copy code" });
+    expect(copy.closest(".hairline-b")).not.toBeNull();
+    expect(copy.closest(".opacity-0")).toBeNull();
+  });
+
+  it("sizes line numbers by the largest one and keeps tertiary text legible on highlighted lines", async () => {
+    const code = Array.from({ length: 1002 }, (_, i) => `// line ${i + 1}`).join("\n");
+    const { container } = render(<CodeBlock code={code} lang="ts" lineNumbers highlightLines={[2]} collapseAfter={4} />);
+    await highlighted();
+    const numbers = [...container.querySelectorAll("code > span > span:first-child")];
+    expect(numbers[0]).toHaveClass("w-32", "text-fg-tertiary");
+    expect(numbers[1]).toHaveClass("w-32", "text-fg-secondary");
+    expect(container.querySelector("code > span:nth-child(2) .text-fg-tertiary")).toBeNull();
+    expect(container.querySelector("pre")).toHaveClass("scroll-fade-y");
+    expect(screen.getByRole("button", { name: "Show all 1002 lines" })).toHaveClass("tap-target");
+  });
+
+  it("names its code after a long title, which ends in an ellipsis with the whole title on hover", () => {
+    render(<CodeBlock title="deploy/kaeso/production/eu-west-1/gateway/compose.override.yaml" lang="yaml" code="services:" />);
+    expect(screen.getByText("deploy/kaeso/production/eu-west-1/gateway/compose.override.yaml")).toHaveClass("truncate");
+    expect(screen.getByRole("group", { name: "deploy/kaeso/production/eu-west-1/gateway/compose.override.yaml code" })).toHaveAttribute("tabindex", "0");
   });
 });
