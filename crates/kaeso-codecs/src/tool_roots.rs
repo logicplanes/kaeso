@@ -213,6 +213,13 @@ struct Merged {
 }
 
 fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
+    let original = Value::Object(root.clone());
+    if let Some(keyword) = ["$dynamicRef", "$recursiveRef"]
+        .into_iter()
+        .find(|k| has_key(&original, k))
+    {
+        return Err(Fault::Conflict(keyword.to_owned()));
+    }
     let doc = Doc(root);
     let variants = doc.object_variants(root, 0)?;
     if variants.is_empty() {
@@ -226,7 +233,6 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
     }
     let summary = (variants.len() > 1).then(|| doc.summary(&variants, &schema));
     let schema = Value::Object(schema);
-    let original = Value::Object(root.clone());
     if let Some(moved) = local_refs(&schema)
         .into_iter()
         .find(|r| !same_target(&original, &schema, r))
@@ -247,6 +253,14 @@ fn local_refs(v: &Value) -> Vec<&str> {
             .collect(),
         Value::Array(items) => items.iter().flat_map(local_refs).collect(),
         _ => Vec::new(),
+    }
+}
+
+fn has_key(v: &Value, key: &str) -> bool {
+    match v {
+        Value::Object(m) => m.contains_key(key) || m.values().any(|v| has_key(v, key)),
+        Value::Array(items) => items.iter().any(|v| has_key(v, key)),
+        _ => false,
     }
 }
 
@@ -389,6 +403,7 @@ impl<'a> Doc<'a> {
                 !matches!(k.as_str(), "$ref" | UNEVALUATED)
                     && !COMBINATORS.contains(&k.as_str())
                     && !DEFS.contains(&k.as_str())
+                    && !(depth == 0 && ROOT_ONLY.contains(&k.as_str()))
             })
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect();
@@ -604,6 +619,12 @@ impl<'a> Doc<'a> {
                 out.push_str(&format!("; with {}", only_here.join(", ")));
             }
             out.push('.');
+            if let Some(about) = v.get("description").and_then(Value::as_str)
+                && merged.get("description").and_then(Value::as_str) != Some(about)
+            {
+                out.push(' ');
+                out.push_str(about);
+            }
         }
         out
     }

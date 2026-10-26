@@ -352,6 +352,32 @@ fn enum_values_merge_only_when_their_annotations_agree() {
 }
 
 #[test]
+fn each_variant_keeps_its_own_description_in_its_line() {
+    let req = decode(
+        C,
+        &chat_tool(
+            "draw",
+            json!({
+                "description": "What to draw.",
+                "oneOf": [
+                    {"type": "object", "description": "A round shape.", "properties": {"r": {"type": "number"}}},
+                    {"type": "object", "description": "A square.", "properties": {"side": {"type": "number"}}}
+                ]
+            }),
+        ),
+    );
+    let (sent, _) = sent(A, &req, anthropic(&req));
+    let tool = tool(A, &sent, "draw");
+    assert_eq!(tool["input_schema"]["description"], "What to draw.");
+    assert_eq!(
+        tool["description"],
+        "Draws a shape.\n\nThe arguments match one of these variants:\n\
+         1. requires nothing; also takes r. A round shape.\n\
+         2. requires nothing; also takes side. A square."
+    );
+}
+
+#[test]
 fn grok_gets_a_union_of_inline_objects_as_sent() {
     let req = decode(C, &chat_tool("draw", zod_discriminated_union()));
     for target in [R, C] {
@@ -813,6 +839,25 @@ fn references_the_merge_would_move_are_refused() {
             format!(
                 "The parameters of `pick` refer to `{reference}`, which the merge for Anthropic would move or change. Move that definition into the root `$defs`."
             )
+        );
+    }
+}
+
+#[test]
+fn dynamic_references_are_refused() {
+    for keyword in ["$dynamicRef", "$recursiveRef"] {
+        let err = refusal(
+            A,
+            json!({"oneOf": [
+                {"type": "object", "properties": {"child": {keyword: "#node"}}},
+                {"type": "object", "properties": {"id": {"type": "string"}}}
+            ]}),
+        );
+        assert_eq!(err.param.as_deref(), Some("tools[0]"));
+        assert!(
+            err.message.contains(&format!("`{keyword}`")),
+            "{}",
+            err.message
         );
     }
 }
