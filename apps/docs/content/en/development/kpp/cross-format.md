@@ -124,12 +124,13 @@ Anthropic and SpaceX take a function tool's parameters only with an object at th
 The merge:
 
 - **Variants.** Each branch of a root `oneOf` or `anyOf` is a variant. A `$ref` that points into the schema's `$defs` or `definitions` is resolved, a branch that is itself a union adds its own branches, and the root's own keywords and each `allOf` part apply to every variant.
+- **Exact parts.** The root, its `allOf` parts and a branch must all hold for the same arguments, so they combine exactly: a property defined in two of them becomes an `allOf` of both definitions, their `required` lists add up, and a part with `additionalProperties: false` keeps out the properties it doesn't list.
 - **Properties.** The merged object has every variant's properties. A property that differs between variants becomes an `anyOf` of its forms, except that `enum` and `const` values of the same property become one `enum`, such as `mode`.
 - **`required`.** The properties every variant requires; `allOf` parts add theirs.
 - **`additionalProperties`** and other keywords stay when every variant has the same value, such as `additionalProperties: false`. The root's `$defs`, `definitions`, `$schema`, `title` and `description` stay as they are, so references inside properties still resolve.
 - **Description.** With more than one variant, the tool's description ends with a list of them, so the model still knows which fields go together: `1. mode "view": requires mode, id.`
 - **Unchanged.** Unions inside properties, a root union that the target takes, and the arguments of tool calls.
-- **Refused.** A root union with a branch that is not an object, such as `{"type": "string"}`, a `$ref` that doesn't point into the schema's `$defs` or `definitions`, and a root that combines into more than 64 variants are `Unsupported`. The message names the tool, and `param` is its path in the request.
+- **Refused.** A root union with a branch that is not an object, such as `{"type": "string"}`, a `$ref` that doesn't point into the schema's `$defs` or `definitions`, parts that can't be combined exactly, such as two different `minProperties` or `additionalProperties: false` against a property another part requires, and a root that combines into more than 64 variants are `Unsupported`. The message names the tool, and `param` is its path in the request.
 
 Each merged tool is named in the reply's `kaeso-adapted` header by its path in the request, such as `tools[0].tools[3]` for the fourth tool of the first namespace ([response headers](../../api/model-api.md#response-headers)), and in the gateway's log. A logged request body keeps the app's schema. `ToolSchemaRoot` on `ChatProfile` and `ResponsesProfile` says what a provider takes; Anthropic Messages always gets one object. Fixture: `openai_responses/requests/codex-desktop-root-union.json`.
 

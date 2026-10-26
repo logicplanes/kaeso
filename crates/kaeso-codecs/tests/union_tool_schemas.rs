@@ -305,35 +305,36 @@ fn grok_gets_a_union_of_inline_objects_as_sent() {
     }
 }
 
-#[test]
-fn a_root_all_of_from_an_anthropic_app_reaches_grok_merged() {
-    let body = json!({
+fn rename_tool(schema: Value) -> Value {
+    json!({
         "model": "m",
         "max_tokens": 1024,
         "messages": [{"role": "user", "content": "Rename the file."}],
-        "tools": [{
-            "name": "rename",
-            "description": "Renames a file.",
-            "input_schema": {
-                "allOf": [
-                    {"$ref": "#/definitions/Path"},
-                    {
-                        "type": "object",
-                        "properties": {"to": {"type": "string"}},
-                        "required": ["to"]
-                    }
-                ],
-                "definitions": {
-                    "Path": {
-                        "type": "object",
-                        "properties": {"path": {"type": "string"}},
-                        "required": ["path"],
-                        "additionalProperties": false
-                    }
-                }
-            }
-        }]
+        "tools": [{"name": "rename", "description": "Renames a file.", "input_schema": schema}]
+    })
+}
+
+#[test]
+fn a_root_all_of_from_an_anthropic_app_reaches_grok_as_exactly_what_it_accepts() {
+    let definitions = json!({
+        "Path": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}, "mode": {"type": "string"}},
+            "required": ["path"]
+        }
     });
+    let body = rename_tool(json!({
+        "allOf": [
+            {"$ref": "#/definitions/Path"},
+            {
+                "type": "object",
+                "properties": {"path": {"minLength": 1}, "to": {"type": "string"}},
+                "required": ["to"],
+                "additionalProperties": false
+            }
+        ],
+        "definitions": definitions
+    }));
     let req = decode(A, &body);
     for target in [R, C] {
         let (sent, adapted) = sent(target, &req, xai(&req));
@@ -343,14 +344,56 @@ fn a_root_all_of_from_an_anthropic_app_reaches_grok_merged() {
             schema(target, tool),
             &json!({
                 "type": "object",
-                "properties": {"path": {"type": "string"}, "to": {"type": "string"}},
+                "properties": {
+                    "path": {"allOf": [{"type": "string"}, {"minLength": 1}]},
+                    "to": {"type": "string"}
+                },
                 "required": ["path", "to"],
                 "additionalProperties": false,
-                "definitions": body["tools"][0]["input_schema"]["definitions"]
+                "definitions": definitions
             }),
             "{target}"
         );
         assert_eq!(description(target, tool), "Renames a file.", "{target}");
+    }
+}
+
+#[test]
+fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
+    let closed_path = json!({
+        "allOf": [
+            {
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "required": ["path"],
+                "additionalProperties": false
+            },
+            {"type": "object", "properties": {"to": {"type": "string"}}, "required": ["to"]}
+        ]
+    });
+    let counts = json!({
+        "allOf": [
+            {"type": "object", "properties": {"path": {"type": "string"}}, "minProperties": 1},
+            {"type": "object", "properties": {"to": {"type": "string"}}, "minProperties": 2}
+        ]
+    });
+    for (schema, keyword) in [
+        (closed_path, "additionalProperties"),
+        (counts, "minProperties"),
+    ] {
+        let req = decode(A, &rename_tool(schema));
+        let err = send(R, &req, &mut xai(&req)).unwrap_err();
+        assert!(
+            matches!(err.kind, ErrorKind::Unsupported { .. }),
+            "{keyword}"
+        );
+        assert_eq!(err.param.as_deref(), Some("tools[0]"));
+        assert_eq!(
+            err.message,
+            format!(
+                "The parameters of `rename` combine schemas whose `{keyword}` Kaeso cannot merge into one object for SpaceX without changing what the tool accepts. Merge them into one object."
+            )
+        );
     }
 }
 
@@ -360,8 +403,8 @@ fn shared_parts_and_differing_properties_merge_into_one_object() {
         "set",
         json!({
             "allOf": [
-                {"type": "object", "properties": {"id": {"type": "string"}}, "additionalProperties": true},
-                {"properties": {"id": {"minLength": 1}}, "additionalProperties": false}
+                {"type": "object", "properties": {"id": {"type": "string"}}},
+                {"properties": {"id": {"minLength": 1}}}
             ],
             "oneOf": [
                 {"type": ["object"], "properties": {"value": {"type": "string"}}},
@@ -385,8 +428,7 @@ fn shared_parts_and_differing_properties_merge_into_one_object() {
             "properties": {
                 "id": {"allOf": [{"type": "string"}, {"minLength": 1}]},
                 "value": {"anyOf": [{"type": "string"}, {"type": "integer"}]}
-            },
-            "additionalProperties": false
+            }
         })
     );
     assert_eq!(

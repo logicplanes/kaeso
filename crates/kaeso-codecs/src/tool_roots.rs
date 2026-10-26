@@ -34,7 +34,18 @@ const ROOT_ONLY: [&str; 6] = [
     "title",
     "description",
 ];
-const ANNOTATIONS: [&str; 3] = ["description", "title", "$comment"];
+const ANNOTATIONS: [&str; 10] = [
+    "description",
+    "title",
+    "$comment",
+    "$schema",
+    "$id",
+    "examples",
+    "default",
+    "deprecated",
+    "readOnly",
+    "writeOnly",
+];
 const MAX_VARIANTS: usize = 64;
 const MAX_DEPTH: usize = 32;
 
@@ -149,6 +160,7 @@ enum Fault {
     NotObject,
     Unresolved(String),
     Circular,
+    Conflict(String),
     TooMany,
 }
 
@@ -163,6 +175,9 @@ impl Fault {
             ),
             Fault::Circular => format!(
                 "The parameters of `{tool}` are a union whose branches refer back to themselves, so Kaeso cannot merge it for {provider}. Inline the branches."
+            ),
+            Fault::Conflict(keyword) => format!(
+                "The parameters of `{tool}` combine schemas whose `{keyword}` Kaeso cannot merge into one object for {provider} without changing what the tool accepts. Merge them into one object."
             ),
             Fault::TooMany => format!(
                 "The parameters of `{tool}` combine into more than {MAX_VARIANTS} variants, too many to merge into one object for {provider}. Simplify the root union."
@@ -490,20 +505,49 @@ fn product(
     if left.len().saturating_mul(right.len()) > MAX_VARIANTS {
         return Err(Fault::TooMany);
     }
-    Ok(left
-        .iter()
+    left.iter()
         .flat_map(|l| right.iter().map(move |r| intersect(l, r)))
-        .collect())
+        .collect()
 }
 
-fn intersect(left: &Map<String, Value>, right: &Map<String, Value>) -> Map<String, Value> {
+fn property_names(m: &Map<String, Value>) -> Vec<&str> {
+    m.get("properties")
+        .and_then(Value::as_object)
+        .map(|p| p.keys().map(String::as_str).collect())
+        .unwrap_or_default()
+}
+
+fn is_open(rule: Option<&Value>) -> bool {
+    matches!(rule, None | Some(Value::Bool(true)))
+}
+
+// Both sides must hold for the same arguments, so the result may only be a schema that
+// accepts exactly what both accept; whatever can't be written that way is refused.
+fn intersect(
+    left: &Map<String, Value>,
+    right: &Map<String, Value>,
+) -> Result<Map<String, Value>, Fault> {
+    let conflict = |key: &str| Fault::Conflict(key.to_owned());
+    if right
+        .get("unevaluatedProperties")
+        .is_some_and(|rule| *rule != Value::Bool(true))
+        && property_names(left)
+            .iter()
+            .any(|name| !property_names(right).contains(name))
+    {
+        return Err(conflict("unevaluatedProperties"));
+    }
     let mut out = left.clone();
     for (key, value) in right {
-        match (key.as_str(), out.get_mut(key)) {
-            (_, None) => {
-                out.insert(key.clone(), value.clone());
-            }
-            ("properties", Some(Value::Object(mine))) => {
+        let Some(mine) = out.get_mut(key) else {
+            out.insert(key.clone(), value.clone());
+            continue;
+        };
+        if mine == value || key == "type" || ANNOTATIONS.contains(&key.as_str()) {
+            continue;
+        }
+        match (key.as_str(), mine) {
+            ("properties", Value::Object(mine)) => {
                 for (name, schema) in value.as_object().into_iter().flatten() {
                     match mine.get_mut(name) {
                         None => {
@@ -517,18 +561,68 @@ fn intersect(left: &Map<String, Value>, right: &Map<String, Value>) -> Map<Strin
                     }
                 }
             }
-            ("required", Some(Value::Array(mine))) => {
+            ("required", Value::Array(mine)) => {
                 for name in value.as_array().into_iter().flatten() {
                     if !mine.contains(name) {
                         mine.push(name.clone());
                     }
                 }
             }
-            ("additionalProperties", Some(mine)) if *value == Value::Bool(false) => {
-                *mine = Value::Bool(false);
-            }
-            _ => {}
+            ("additionalProperties", _) => {}
+            _ => return Err(conflict(key)),
         }
     }
-    out
+    close(&mut out, left, right)?;
+    Ok(out)
+}
+
+fn close(
+    out: &mut Map<String, Value>,
+    left: &Map<String, Value>,
+    right: &Map<String, Value>,
+) -> Result<(), Fault> {
+    let conflict = || Fault::Conflict("additionalProperties".to_owned());
+    let mut allowed: Option<Vec<&str>> = None;
+    for (part, other) in [(left, right), (right, left)] {
+        let rule = part.get("additionalProperties");
+        if is_open(rule) {
+            continue;
+        }
+        let own = property_names(part);
+        if property_names(other).iter().all(|name| own.contains(name)) {
+            continue;
+        }
+        if rule != Some(&Value::Bool(false)) || part.contains_key("patternProperties") {
+            return Err(conflict());
+        }
+        allowed = Some(match allowed {
+            None => own,
+            Some(kept) => kept.into_iter().filter(|name| own.contains(name)).collect(),
+        });
+    }
+    let rules: Vec<&Value> = [left, right]
+        .iter()
+        .filter_map(|m| m.get("additionalProperties"))
+        .filter(|rule| !is_open(Some(rule)))
+        .collect();
+    if rules.contains(&&Value::Bool(false)) {
+        out.insert("additionalProperties".to_owned(), Value::Bool(false));
+    } else if let Some((first, rest)) = rules.split_first() {
+        if rest.iter().any(|rule| rule != first) {
+            return Err(conflict());
+        }
+        out.insert("additionalProperties".to_owned(), (*first).clone());
+    }
+    if let Some(allowed) = allowed {
+        if required_of(Some(out))
+            .iter()
+            .any(|name| !allowed.contains(name))
+        {
+            return Err(conflict());
+        }
+        if let Some(Value::Object(properties)) = out.get_mut("properties") {
+            properties.retain(|name, _| allowed.contains(&name.as_str()));
+        }
+    }
+    Ok(())
 }
