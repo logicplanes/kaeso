@@ -170,6 +170,7 @@ enum Fault {
     Circular,
     Conflict(String),
     RefSiblings,
+    NoVariants,
     TooMany,
 }
 
@@ -184,6 +185,9 @@ impl Fault {
             ),
             Fault::Circular => format!(
                 "The parameters of `{tool}` are a union whose branches refer back to themselves, so Kaeso cannot merge it for {provider}. Inline the branches."
+            ),
+            Fault::NoVariants => format!(
+                "The parameters of `{tool}` are a union without branches, so no arguments fit it and {provider} can't take it. Give the union a branch or remove the tool."
             ),
             Fault::RefSiblings => format!(
                 "The parameters of `{tool}` put keywords next to a `$ref`, which JSON Schema drafts read differently, so Kaeso cannot merge them for {provider}. Name the draft in `$schema`."
@@ -207,6 +211,9 @@ struct Merged {
 fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
     let doc = Doc(root);
     let variants = doc.object_variants(root, 0)?;
+    if variants.is_empty() {
+        return Err(Fault::NoVariants);
+    }
     let mut schema = doc.union(&variants);
     for key in ROOT_ONLY {
         if let Some(v) = root.get(key) {

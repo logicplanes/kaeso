@@ -726,6 +726,19 @@ fn a_root_union_whose_branches_refer_to_themselves_is_refused() {
 }
 
 #[test]
+fn a_root_union_without_branches_is_refused() {
+    for key in ["oneOf", "anyOf"] {
+        let err = refusal(A, json!({"type": "object", key: []}));
+        assert_eq!(err.param.as_deref(), Some("tools[0]"), "{key}");
+        assert!(
+            err.message.contains("a union without branches"),
+            "{}",
+            err.message
+        );
+    }
+}
+
+#[test]
 fn a_root_union_that_combines_into_too_many_variants_is_refused() {
     let branches: Vec<Value> = (0..9)
         .map(|i| json!({"type": "object", "properties": {format!("p{i}"): {"type": "string"}}}))
