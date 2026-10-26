@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { diffLines, diffStats, foldUnchanged, unifiedDiff } from "./diff.js";
+import { diffLines, diffStats, foldUnchanged, largestLineNumber, unifiedDiff } from "./diff.js";
 
 const pick = (text: string, ranges: [number, number][] | undefined) => (ranges ?? []).map(([s, e]) => text.slice(s, e));
 
@@ -44,6 +44,15 @@ describe("diffLines", () => {
     const before = Array.from({ length: 2100 }, (_, i) => `a${i}`).join("\n");
     const after = Array.from({ length: 2100 }, (_, i) => `b${i}`).join("\n");
     expect(diffStats(diffLines(before, after))).toEqual({ added: 2100, removed: 2100 });
+  });
+});
+
+describe("largestLineNumber", () => {
+  it("finds the widest line number of either side, even in a diff too long to spread into arguments", () => {
+    const text = Array.from({ length: 200_000 }, (_, i) => `line ${i}`).join("\n");
+    expect(largestLineNumber(diffLines(text, `${text}\nmore`))).toBe(200_001);
+    expect(largestLineNumber(diffLines("a\nb\nc", "a"))).toBe(3);
+    expect(largestLineNumber([])).toBe(1);
   });
 });
 

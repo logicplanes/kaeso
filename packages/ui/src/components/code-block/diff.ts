@@ -116,6 +116,12 @@ export function diffStats(lines: readonly DiffLine[]): DiffStats {
   };
 }
 
+export function largestLineNumber(lines: readonly DiffLine[]): number {
+  let largest = 1;
+  for (const l of lines) largest = Math.max(largest, l.oldNumber ?? 0, l.newNumber ?? 0);
+  return largest;
+}
+
 export function unifiedDiff(lines: readonly DiffLine[]): string {
   return lines.map((l) => `${l.kind === "added" ? "+" : l.kind === "removed" ? "-" : " "} ${l.text}`).join("\n");
 }

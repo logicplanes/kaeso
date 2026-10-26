@@ -7,7 +7,7 @@ import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { highlight, type CodeLang, type CodeToken } from "./highlighter.js";
 import { INDENT } from "./indent.js";
-import { diffLines, diffStats, foldUnchanged, unifiedDiff, type DiffKind, type DiffLine } from "./diff.js";
+import { diffLines, diffStats, foldUnchanged, largestLineNumber, unifiedDiff, type DiffKind, type DiffLine } from "./diff.js";
 
 export const KAESO_DIFF_VIEW_VARIANTS = {
   surface: {
@@ -130,7 +130,7 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
   const scroller = useRef<HTMLDivElement | null>(null);
   useScrollFadeX(scroller, "code");
   const unchanged = stats.added === 0 && stats.removed === 0;
-  const width = numberWidth(Math.max(1, ...lines.map((l) => Math.max(l.oldNumber ?? 0, l.newNumber ?? 0))));
+  const width = lineNumbers ? numberWidth(largestLineNumber(lines)) : "";
 
   const lineTokens = (line: DiffLine) => (line.kind === "added" ? current?.new?.[(line.newNumber ?? 0) - 1] : current?.old?.[(line.oldNumber ?? 0) - 1]);
 
