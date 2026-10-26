@@ -6954,39 +6954,6 @@
     "temperature": false,
     "tool_call": true
    },
-   "arcee-ai/trinity-large-thinking": {
-    "attachment": false,
-    "canonical_model_id": "arcee-ai/trinity-large-thinking",
-    "cost": {
-     "cache_read": 0.06,
-     "input": 0.25,
-     "output": 0.8
-    },
-    "description": "Reasoning-optimized 398B MoE agent model with extended thinking for long-horizon and multi-turn tool use",
-    "family": "trinity",
-    "id": "arcee-ai/trinity-large-thinking",
-    "last_updated": "2026-05-28",
-    "limit": {
-     "context": 262144,
-     "output": 80000
-    },
-    "modalities": {
-     "input": [
-      "text"
-     ],
-     "output": [
-      "text"
-     ]
-    },
-    "name": "Trinity Large Thinking",
-    "open_weights": true,
-    "reasoning": true,
-    "reasoning_options": [],
-    "release_date": "2026-04-01",
-    "structured_output": false,
-    "temperature": true,
-    "tool_call": true
-   },
    "bytedance-seed/seed-1.6": {
     "attachment": true,
     "canonical_model_id": "bytedance-seed/seed-1-6",
@@ -7940,9 +7907,9 @@
     "attachment": false,
     "canonical_model_id": "deepseek/deepseek-v4-pro",
     "cost": {
-     "cache_read": 0.0174,
-     "input": 0.2088,
-     "output": 0.4176
+     "cache_read": 0.066048,
+     "input": 0.79257,
+     "output": 1.58514
     },
     "description": "Open MoE flagship with million-token context for coding and long agent runs",
     "family": "deepseek-thinking",
@@ -9482,9 +9449,9 @@
     "attachment": true,
     "canonical_model_id": "google/gemma-4-26b-a4b-it",
     "cost": {
-     "cache_read": 0.0375,
-     "input": 0.0675,
-     "output": 0.225
+     "cache_read": 0.05,
+     "input": 0.09,
+     "output": 0.3
     },
     "description": "Open Gemma instruction model for efficient chat and self-hosted deployments",
     "family": "gemma",
@@ -12254,9 +12221,9 @@
     "attachment": true,
     "canonical_model_id": "moonshotai/kimi-k3",
     "cost": {
-     "cache_read": 0.21,
-     "input": 0.239,
-     "output": 10.8
+     "cache_read": 0.192,
+     "input": 0.202,
+     "output": 20
     },
     "description": "Kimi multimodal agent model for visual understanding, coding, and planning",
     "family": "kimi-k3",
@@ -13277,7 +13244,7 @@
     "attachment": true,
     "canonical_model_id": "openai/gpt-4.1-nano",
     "cost": {
-     "cache_read": 0.025,
+     "cache_read": 0.03,
      "input": 0.1,
      "output": 0.4
     },
@@ -13288,7 +13255,7 @@
     "last_updated": "2025-04-14",
     "limit": {
      "context": 1047576,
-     "output": 32768
+     "output": 942818
     },
     "modalities": {
      "input": [
@@ -16957,7 +16924,7 @@
     "attachment": false,
     "canonical_model_id": "alibaba/qwen3-30b-a3b-instruct-2507",
     "cost": {
-     "input": 0.09,
+     "input": 0.1,
      "output": 0.3
     },
     "description": "Qwen instruction model for multilingual chat, reasoning, and tool use",
@@ -17375,8 +17342,8 @@
     "attachment": true,
     "canonical_model_id": "alibaba/qwen3.5-122b-a10b",
     "cost": {
-     "input": 0.4,
-     "output": 3.2
+     "input": 0.26,
+     "output": 2.08
     },
     "description": "Qwen vision-language model for visual reasoning, documents, and agent tasks",
     "family": "qwen",
@@ -19112,9 +19079,9 @@
     "attachment": false,
     "canonical_model_id": "tencent/hy3",
     "cost": {
-     "cache_read": 0.020625,
-     "input": 0.0825,
-     "output": 0.33
+     "cache_read": 0.033,
+     "input": 0.132,
+     "output": 0.528
     },
     "description": "Tencent Hy reasoning model for coding, instruction following, and agent tasks",
     "family": "Hy",
@@ -19197,9 +19164,9 @@
     "attachment": false,
     "canonical_model_id": "tencent/hy4-preview",
     "cost": {
-     "cache_read": 0.0378,
-     "input": 0.7506,
-     "output": 2.2509
+     "cache_read": 0.042,
+     "input": 0.834,
+     "output": 2.501
     },
     "description": "Tencent Hy reasoning model for coding, instruction following, and agent tasks",
     "family": "Hy",
@@ -20877,8 +20844,8 @@
     "attachment": false,
     "canonical_model_id": "zhipuai/glm-5.3",
     "cost": {
-     "cache_read": 0.078,
-     "input": 0.079,
+     "cache_read": 0.0689,
+     "input": 0.0699,
      "output": 1.4
     },
     "description": "Flagship GLM model for hybrid reasoning, coding, and agentic engineering",
@@ -21326,9 +21293,9 @@
    "~deepseek/deepseek-pro-latest": {
     "attachment": false,
     "cost": {
-     "cache_read": 0.12,
-     "input": 0.1188,
-     "output": 8
+     "cache_read": 0.00525,
+     "input": 0.165,
+     "output": 0.495
     },
     "description": "Flagship DeepSeek model for coding, reasoning, and agentic work",
     "family": "deepseek",
@@ -21368,9 +21335,9 @@
    "~deepseek/deepseek-v4-flash-latest": {
     "attachment": false,
     "cost": {
-     "cache_read": 0.027,
+     "cache_read": 0.028,
      "input": 0.0422,
-     "output": 0.1763
+     "output": 0.1637
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
     "family": "deepseek",
@@ -21524,9 +21491,9 @@
    "~moonshotai/kimi-latest": {
     "attachment": true,
     "cost": {
-     "cache_read": 0.216,
-     "input": 0.226,
-     "output": 16
+     "cache_read": 0.19,
+     "input": 0.1919,
+     "output": 7.6972
     },
     "description": "Kimi multimodal agent model for visual understanding, coding, and planning",
     "family": "kimi",
@@ -21967,8 +21934,8 @@
     "attachment": true,
     "cost": {
      "cache_read": 0.03,
-     "input": 0.0513,
-     "output": 0.0701
+     "input": 0.0413,
+     "output": 0.0758
     },
     "description": "GLM vision model for visual reasoning, documents, and multimodal agents",
     "family": "glm-flash",
@@ -22009,9 +21976,9 @@
    "~z-ai/glm-latest": {
     "attachment": false,
     "cost": {
-     "cache_read": 0.0703,
-     "input": 0.0703,
-     "output": 4.3843
+     "cache_read": 0.0689,
+     "input": 0.0699,
+     "output": 1.4
     },
     "description": "Flagship GLM model for hybrid reasoning, coding, and agentic engineering",
     "family": "glm",
@@ -22019,7 +21986,7 @@
     "last_updated": "2026-08-19",
     "limit": {
      "context": 1048576,
-     "output": 131072
+     "output": 943718
     },
     "modalities": {
      "input": [
