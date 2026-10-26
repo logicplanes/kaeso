@@ -334,7 +334,14 @@ describe("AuditLog", () => {
     expect(within(sheet).getByRole("button", { name: OTHER_USER })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: "req_123" })).toBeInTheDocument();
     expect(within(sheet).getByText("203.0.113.7")).toBeInTheDocument();
-    expect(within(sheet).getByText("Before → after")).toBeInTheDocument();
+    const diff = within(sheet).getByRole("region", { name: "Before → after" });
+    expect(within(sheet).getByText("3 lines added, 2 removed")).toBeInTheDocument();
+    expect([...diff.querySelectorAll("[data-diff=added]")].map((row) => row.textContent?.replace(/\s+/g, " ").trim())).toEqual([
+      '+Added "org.view",',
+      '+Added "members.invite"',
+      '+Added "name": "Admin"',
+    ]);
+    expect([...diff.querySelectorAll("[data-diff-change]")].map((m) => m.textContent)).toEqual([",", "Member", "Admin"]);
     expect(requests("GET", `${ORG_LOG}/:event`).map((r) => r.params.event)).toEqual(["evt_role"]);
 
     await user.click(within(sheet).getByRole("button", { name: "Close" }));

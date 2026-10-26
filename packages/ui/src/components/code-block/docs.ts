@@ -36,6 +36,21 @@ export const docs = {
       wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
     },
   },
+  DiffView: {
+    description:
+      "Two versions of a text side by side in one column: removed lines on red, added lines on green, the changed words inside them marked, syntax highlighted, and long unchanged runs folded away.",
+    props: {
+      after: "The new version.",
+      before: "The old version.",
+      context: "Unchanged lines kept around each change before the rest folds (3 by default).",
+      copy: "Hide the copy circle, which copies the diff with + and - markers.",
+      lang: "The language of both versions, for highlighting (`text` by default).",
+      lineNumbers: "Shows the old and the new line numbers.",
+      surface: "On a filled well (`well`) or on the panel itself (`plain`).",
+      title: "A name in the title bar, beside the count of added and removed lines.",
+      wrap: "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.",
+    },
+  },
   JsonView: {
     description: "A folding JSON tree: copy any path, highlight a search. For request and response bodies.",
     props: {

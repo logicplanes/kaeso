@@ -1146,5 +1146,16 @@
   "Controls that stay under the title while the body scrolls, such as a search over the list below; a hairline shows once the body is scrolled.": "在正文滚动时固定于标题下方的控件，例如位于下方列表之上的搜索；正文一旦滚动便显示一条细线。",
   "The layers, each with its title, content and footer, and optionally a toolbar and a footer start; one shows at a time, and the ones below it stay mounted and hidden.": "各个层，每层都有标题、内容和页脚，并可选工具栏和页脚开头；一次显示一层，其下方的层保持挂载并隐藏。",
   "An always-open list for a dialog step, tiles with each provider's mark for a dialog's first step, or a pill that opens the list.": "用于对话框步骤的常开列表、用于对话框第一步并带有各提供商标志的图块，或打开该列表的胶囊按钮。",
-  "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.": "使用 `grid` 时：在按下或点击图块时调用，方向键移动选择时不调用，因此对话框步骤可以立即继续。"
+  "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.": "使用 `grid` 时：在按下或点击图块时调用，方向键移动选择时不调用，因此对话框步骤可以立即继续。",
+  "Two versions in one column: removed lines on red, added on green, changed words marked, unchanged runs folded.": "两个版本合在一列：删除的行为红色，新增的行为绿色，标出改动的词，折叠未更改的部分。",
+  "An audit event": "一条审计事件",
+  "With line numbers": "带行号",
+  "The new version.": "新版本。",
+  "The old version.": "旧版本。",
+  "Unchanged lines kept around each change before the rest folds (3 by default).": "每处更改前后保留的未更改行数，其余部分折叠（默认 3 行）。",
+  "Hide the copy circle, which copies the diff with + and - markers.": "隐藏复制按钮；该按钮会连同 + 和 - 标记一起复制差异。",
+  "The language of both versions, for highlighting (`text` by default).": "两个版本的语言，用于语法高亮（默认 `text`）。",
+  "Shows the old and the new line numbers.": "显示旧行号和新行号。",
+  "A name in the title bar, beside the count of added and removed lines.": "标题栏中的名称，显示在新增和删除行数的旁边。",
+  "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.": "长行自动换行而不横向滚动，并保留缩进：适用于面板等窄栏中的值。"
 }

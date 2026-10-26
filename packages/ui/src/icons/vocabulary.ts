@@ -138,6 +138,7 @@ export const icons = {
   menu: Menu01Icon,
   sort: Sorting05Icon,
   switcher: UnfoldMoreIcon,
+  unfold: UnfoldMoreIcon,
   expand: ArrowExpand01Icon,
   collapse: ArrowShrink02Icon,
   show: ViewIcon,

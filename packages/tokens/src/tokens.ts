@@ -48,6 +48,11 @@ export const semantic = {
   info: { solid: mode("#3b82f6", "#3b82f6"), text: mode("#1d4ed8", "#60a5fa"), tint: mode("#eff6ff", "color-mix(in oklab, #3b82f6 22%, #000)") },
 } as const;
 
+export const diff = {
+  added: { line: mode("#ebf9ef", "#0a2211"), word: mode("#aeeabf", "#133e26") },
+  removed: { line: mode("#fef2f2", "#2a0d0e"), word: mode("#fbcbcb", "#5a1a1c") },
+} as const;
+
 export const dangerFill = mode("#dc2626", "#dc2626");
 export const onDanger = mode("#ffffff", "#ffffff");
 
