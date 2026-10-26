@@ -22,7 +22,7 @@ export const docs = {
   },
   EffectiveAccess: {
     description:
-      'What someone can do, at a glance: a row per group with the granted rights in words ("Every right", "None", or their names) and how many of the group\'s rights that is, under the roles it comes from. The detail, with a source per right, is RightsMatrix in read-only mode.',
+      'What someone can do, at a glance: a row per group with the granted rights in words ("Every right", "None", or their names) and how many of the group\'s rights that is, under the roles it comes from; groups with nothing granted share one "No rights" row. A role chip with more to say has a dotted underline and says it in a tooltip. The detail, with a source per right, is RightsMatrix in read-only mode.',
     props: {
       action: "An action after the rows, such as a button that opens every right.",
       "aria-label": "The accessible name of the list.",
@@ -31,11 +31,11 @@ export const docs = {
     },
   },
   GrantSummary: {
-    description: "What an agent or a key may do, one short line each after a check mark, on a group surface.",
+    description: "What an agent or a key may do, one short line each after a check mark, on a group surface with 20px inside, like a settings group.",
     props: {
-      action: "A small button after the note, such as Customize.",
+      action: "A small button after the note (or alone, at the end), such as Customize.",
       "aria-label": 'The list\'s accessible name ("What it can do").',
-      footer: "A quiet note under the lines, such as how long it lasts.",
+      footer: "A note under the lines in secondary text, such as how long it lasts.",
       items: "The lines, short and without a final period.",
     },
   },
@@ -149,7 +149,7 @@ export const docs = {
   },
   RightsMatrix: {
     description:
-      'Rights by group, for a role, a member or a key. Edit mode: a checkbox per right and per group (mixed when some are granted), requirements kept (granting "edit" grants "view"; withdrawing "view" withdraws "edit"), each right\'s needs said under it, and arrow keys moving between checkboxes. Read-only mode: a mark per right and the roles that grant it. Rows keep their size whatever their state. Fits a sheet and a phone.',
+      'Rights by group, for a role, a member or a key. Edit mode: a checkbox per right and per group (checked only when every right in it is granted, mixed when some are), requirements kept (granting "edit" grants "view"; withdrawing "view" withdraws "edit"), each right\'s needs said under it, and a right that can\'t change saying why under it. The matrix is one tab stop: the arrow keys move between checkboxes, and the right arrow reaches a right\'s sensitive mark. A group\'s name toggles the group, as a right\'s row toggles the right. Read-only mode: a mark per right and the roles that grant it. Rows keep their size whatever their state. Fits a sheet and a phone.',
     props: {
       "aria-label": "The accessible name of the matrix.",
       groups: "The rights, by category, with who holds each.",

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -10,10 +10,14 @@ import { Badge } from "../badge/badge.js";
 import { Highlight } from "../combobox/combobox.js";
 import { groupCascade, rightsCascade, type RightChange } from "./rights-logic.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
+import { useInset, useRaised } from "../../utils/inset.js";
+import { TruncatedText } from "../text/truncated.js";
+
+const STOPS = '[role="checkbox"], [data-right-extra]';
 
 export const KAESO_RIGHTS_MATRIX_VARIANTS = {
   origin: {
-    preset: { classes: "text-fg-tertiary", description: "Comes from the role" },
+    preset: { classes: "text-fg-secondary", description: "Comes from the role" },
     added: { classes: "text-success-text", description: "Added on top of the role" },
     removed: { classes: "text-danger-text", description: "Removed from the role" },
     none: { classes: "", description: "Not granted" },
@@ -112,11 +116,43 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
     if (rest.length) flashTimer.current = setTimeout(() => setFlashed(new Set()), 1200);
   };
 
+  const [stop, setStop] = useState(0);
+  const roving = useRef(() => {});
+  roving.current = () => {
+    const el = root.current;
+    if (!el || readOnly) return;
+    const boxes = [...el.querySelectorAll<HTMLElement>('[role="checkbox"]')];
+    const own = boxes[Math.min(stop, boxes.length - 1)];
+    for (const w of el.querySelectorAll<HTMLElement>(STOPS)) {
+      const tabindex = w === own ? "0" : "-1";
+      if (w.getAttribute("tabindex") !== tabindex) w.setAttribute("tabindex", tabindex);
+    }
+  };
+  useLayoutEffect(() => roving.current());
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el || readOnly) return;
+    const observer = new MutationObserver(() => roving.current());
+    observer.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ["tabindex"] });
+    return () => observer.disconnect();
+  }, [readOnly]);
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (target.getAttribute("role") !== "checkbox" || !root.current) return;
+    if (!root.current || readOnly || e.altKey || e.metaKey || e.ctrlKey) return;
     const boxes = [...root.current.querySelectorAll<HTMLElement>('[role="checkbox"]')];
-    const i = boxes.indexOf(target);
+    const row = target.closest<HTMLElement>("[data-right]");
+    const box = target.getAttribute("role") === "checkbox" ? target : row?.querySelector<HTMLElement>('[role="checkbox"]');
+    if (!box) return;
+    if (target !== box) {
+      if (e.key === "ArrowLeft" || e.key === "Escape") {
+        e.preventDefault();
+        box.focus();
+      }
+      return;
+    }
+    const i = boxes.indexOf(box);
+    const extra = row?.querySelector<HTMLElement>("[data-right-extra]");
     const next =
       e.key === "ArrowDown"
         ? boxes[i + 1]
@@ -126,7 +162,9 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
             ? boxes[0]
             : e.key === "End"
               ? boxes[boxes.length - 1]
-              : undefined;
+              : e.key === "ArrowRight"
+                ? extra
+                : undefined;
     if (!next) return;
     e.preventDefault();
     next.focus();
@@ -142,6 +180,11 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
       role="group"
       aria-label={ariaLabel ?? t("rightsMatrix.rights", "Rights")}
       onKeyDown={onKeyDown}
+      onFocus={(e) => {
+        const boxes = [...(root.current?.querySelectorAll<HTMLElement>('[role="checkbox"]') ?? [])];
+        const i = boxes.indexOf(e.target as HTMLElement);
+        if (i >= 0 && i !== stop) setStop(i);
+      }}
       className={cn("@container flex min-w-0 flex-col gap-24", className)}
     >
       {searchable && (
@@ -165,11 +208,12 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
         const headingId = `${baseId}-g${gi}`;
         const grantedCount = g.rights.filter((r) => r.granted).length;
         const changeable = g.rights.filter((r) => !r.disabled);
-        const allOn = changeable.length > 0 && changeable.every((r) => r.granted);
-        const someOn = changeable.some((r) => r.granted);
+        const changeableOn = changeable.length > 0 && changeable.every((r) => r.granted);
+        const allOn = grantedCount === g.rights.length;
+        const Header = readOnly ? "div" : "label";
         return (
           <section key={g.label} aria-labelledby={headingId} className="flex min-w-0 flex-col">
-            <div className="flex items-start gap-12 px-12 pb-4">
+            <Header data-right="" className={cn("flex items-start gap-12 px-12 pb-4", !readOnly && changeable.length > 0 && "cursor-pointer")}>
               {!readOnly && (
                 <span className="flex h-20 items-center">
                   <CheckboxBox
@@ -179,9 +223,9 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
                         : t("rightsMatrix.everyRightIn", "Every right in {group}", { group: g.label })
                     }
                     checked={allOn}
-                    indeterminate={someOn && !allOn}
+                    indeterminate={grantedCount > 0 && !allOn}
                     disabled={changeable.length === 0}
-                    onCheckedChange={() => apply(groupCascade(all, g.rights, !allOn))}
+                    onCheckedChange={() => apply(groupCascade(all, g.rights, !changeableOn))}
                   />
                 </span>
               )}
@@ -190,13 +234,13 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
                   <span id={headingId} className="min-w-0 wrap-break-word text-body font-semibold text-fg">
                     {g.label}
                   </span>
-                  <span className="shrink-0 text-small text-fg-tertiary tabular">
+                  <span className="shrink-0 text-small text-fg-secondary tabular">
                     {t("rightsMatrix.grantedOfTotal", "{granted} of {total}", { granted: grantedCount, total: g.rights.length })}
                   </span>
                 </span>
                 {g.description && <span className="text-small text-fg-secondary text-pretty">{g.description}</span>}
               </span>
-            </div>
+            </Header>
             {g.rights.map((r) => (
               <RightRow
                 key={r.code}
@@ -244,6 +288,9 @@ function RightRow({
   onToggle: (granted: boolean) => void;
 }) {
   const t = useUiText();
+  const inset = useInset();
+  const raised = useRaised();
+  const onRaised = inset || raised;
   const descId = useId();
   const nameId = useId();
   const name = r.label ?? r.code;
@@ -256,20 +303,20 @@ function RightRow({
           className={cn(
             "min-w-0 wrap-break-word",
             r.label ? "text-body font-medium" : "mono text-small",
-            readOnly && !r.granted ? "text-fg-tertiary" : "text-fg",
+            (readOnly && !r.granted) || r.disabled ? "text-fg-secondary" : "text-fg",
           )}
         >
           <Highlight text={name} query={query} />
         </span>
         {r.label && (
           <span className="hidden h-20 min-w-0 items-center @auth:flex">
-            <span className="min-w-0 truncate mono text-caption text-fg-tertiary">{r.code}</span>
+            <TruncatedText className="min-w-0 mono text-caption text-fg-tertiary">{r.code}</TruncatedText>
           </span>
         )}
         {r.sensitive && (
           <span className={cn("flex shrink-0 items-center", r.label ? "h-20" : "h-18")}>
             <Tooltip content={t("rightsMatrix.sensitiveHint", "Sensitive: exposes data or is hard to undo")}>
-              <span tabIndex={0} className="inline-flex shrink-0 rounded-pill text-warning-text focus-ring">
+              <span tabIndex={0} data-right-extra="" className="inline-flex shrink-0 rounded-pill text-warning-text focus-ring">
                 <Icon icon={icons.warning} size="sm" label={t("rightsMatrix.sensitive", "Sensitive")} />
               </span>
             </Tooltip>
@@ -278,20 +325,21 @@ function RightRow({
         {hasOrigin && !readOnly && (
           <span
             className={cn(
-              "ml-auto flex w-80 shrink-0 items-center justify-end text-right text-small",
-              r.label ? "h-20" : "h-18",
+              "ml-auto flex max-w-160 min-w-80 shrink-0 items-center justify-end text-right text-small",
+              r.label ? "min-h-20" : "min-h-18",
               KAESO_RIGHTS_MATRIX_VARIANTS.origin[r.origin ?? "none"].classes,
             )}
           >
-            {originText[r.origin ?? "none"]}
+            <TruncatedText>{originText[r.origin ?? "none"]}</TruncatedText>
           </span>
         )}
       </span>
-      <span id={descId} className={cn("text-small text-pretty", readOnly && !r.granted ? "text-fg-tertiary" : "text-fg-secondary")}>
+      <span id={descId} className="text-small text-pretty text-fg-secondary">
         {r.description}
+        {r.disabled && r.disabledReason && <span className="block pt-2 text-caption text-fg-secondary">{r.disabledReason}</span>}
       </span>
       {needs.length > 0 && (
-        <span className="text-caption text-fg-tertiary">
+        <span className="text-caption text-fg-secondary">
           {t("rightsMatrix.needs", "Needs {rights}", { rights: needs.join(t("rightsMatrix.listSeparator", ", ")) })}
         </span>
       )}
@@ -300,7 +348,7 @@ function RightRow({
           {r.sources.map((s) =>
             s.detail ? (
               <Tooltip key={s.label} content={s.detail}>
-                <Badge tabIndex={0} className="focus-ring">
+                <Badge tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2 focus-ring">
                   {s.label}
                 </Badge>
               </Tooltip>
@@ -315,12 +363,12 @@ function RightRow({
 
   if (readOnly) {
     return (
-      <div className="flex min-h-52 items-start gap-12 px-12 py-8">
+      <div className="flex min-h-56 items-start gap-12 px-12 py-8">
         <span className="flex h-20 w-18 shrink-0 items-center justify-center">
           <Icon
             icon={r.granted ? icons.check : icons.minus}
             size="sm"
-            className={r.granted ? "text-fg" : "text-fg-disabled"}
+            className={r.granted ? "text-fg" : "text-fg-tertiary"}
             label={r.granted ? t("rightsMatrix.granted", "Granted") : t("rightsMatrix.notGranted", "Not granted")}
           />
         </span>
@@ -329,12 +377,13 @@ function RightRow({
     );
   }
 
-  const row = (
+  return (
     <label
+      data-right=""
       className={cn(
-        "flex min-h-52 cursor-pointer items-start gap-12 rounded-item px-12 py-8 transition-control hover:bg-fill-1",
-        flashed && "bg-fill-2 hover:bg-fill-2",
-        r.disabled && "cursor-not-allowed",
+        "flex min-h-56 items-start gap-12 rounded-item px-12 py-8 transition-control",
+        r.disabled ? "cursor-not-allowed" : cn("cursor-pointer", onRaised ? "hover:bg-raised-hover" : "hover:bg-fill-1"),
+        flashed && (onRaised ? "bg-raised-pressed hover:bg-raised-pressed" : "bg-fill-2 hover:bg-fill-2"),
       )}
     >
       <span className="flex h-20 items-center">
@@ -343,5 +392,4 @@ function RightRow({
       {text}
     </label>
   );
-  return r.disabled && r.disabledReason ? <Tooltip content={r.disabledReason}>{row}</Tooltip> : row;
 }

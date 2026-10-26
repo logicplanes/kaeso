@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { ResourceList, Avatar, Button, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { keys } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
@@ -51,19 +52,46 @@ export function Keys() {
     </div>
   );
 }
+function Searched({ query }: { query: string }) {
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const input = box.current?.querySelector<HTMLInputElement>("input[type=search]");
+    if (!input) return;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, query);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }, [query]);
+  return (
+    <div ref={box}>
+      <Keys />
+    </div>
+  );
+}
 export function States() {
   return (
-    <StateSection title="List and empty">
-      <div className="flex w-960 flex-col gap-40">
-        <Keys />
-        <ResourceList
-          aria-label="Empty"
-          groups={[]}
-          emptyTitle="No keys yet"
-          emptyDescription="Create a key so an application can call the gateway."
-          emptyAction={<Button variant="primary">Create key</Button>}
-        />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Grouped, selectable">
+        <div className="w-560">
+          <Keys />
+        </div>
+      </StateSection>
+      <StateSection title="Searching, and no matches">
+        <div className="flex w-560 flex-col gap-40">
+          <Searched query="check" />
+          <Searched query="gemini" />
+        </div>
+      </StateSection>
+      <StateSection title="Empty, with and without its own title">
+        <div className="flex w-560 flex-col gap-40">
+          <ResourceList
+            aria-label="Keys"
+            groups={[]}
+            emptyTitle="No keys yet"
+            emptyDescription="Create a key so an application can call the gateway."
+            emptyAction={<Button variant="primary">Create key</Button>}
+          />
+          <ResourceList aria-label="Aliases" groups={[]} />
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -55,6 +55,14 @@ export function States() {
           groups={withGrants(PROJECT_GROUPS, { Viewer: ["project.view", "keys.all.view", "models.view", "logs.metadata.view"] })}
         />
       </StateSection>
+      <StateSection title="Sources with more to say, and an action">
+        <EffectiveAccess
+          className="w-560"
+          sources={[{ label: "Developer", detail: "Organization role, given by Ada Okafor" }, { label: "Support bot" }]}
+          groups={withGrants(PROJECT_GROUPS.slice(0, 2), { Developer: ["project.view", "keys.all.view"] })}
+          action={<Button size="sm">Show every right</Button>}
+        />
+      </StateSection>
     </>
   );
 }

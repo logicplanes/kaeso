@@ -4,7 +4,8 @@ import { Toolbar } from "../../components/toolbar/toolbar.js";
 import { SearchInput } from "../../components/input/input.js";
 import { Empty } from "../../components/empty/empty.js";
 import type { IconData } from "../../components/icon/icon.js";
-import { useUiText } from "../../i18n/context.js";
+import { useLocale, useUiText } from "../../i18n/context.js";
+import { Button } from "../../components/button/button.js";
 
 export const KAESO_RESOURCE_LIST_VARIANTS = {
   grouping: {
@@ -34,6 +35,7 @@ export const ResourceList = forwardRef<HTMLDivElement, ResourceListProps>(functi
   ref,
 ) {
   const t = useUiText();
+  const locale = useLocale();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const q = query.trim().toLowerCase();
@@ -45,8 +47,13 @@ export const ResourceList = forwardRef<HTMLDivElement, ResourceListProps>(functi
     const shown = new Set(filtered.flatMap((g) => g.items.map((i) => i.id)));
     return new Set([...selected].filter((id) => shown.has(id)));
   }, [filtered, selected]);
+  const shown = filtered.reduce((n, g) => n + g.items.length, 0);
+  const noun = locale === "en" && /^[A-Z][a-z]/.test(ariaLabel) ? ariaLabel[0]!.toLowerCase() + ariaLabel.slice(1) : ariaLabel;
   return (
     <div ref={ref} className="flex flex-col">
+      <span role="status" className="sr-only">
+        {q ? t("resourceList.results", "{count, plural, =0 {No results} one {# result} other {# results}}", { count: shown }) : ""}
+      </span>
       <Toolbar aria-label={t("resourceList.filters", "Filters")}>
         {toolbar}
         <Toolbar.Spacer />
@@ -64,9 +71,19 @@ export const ResourceList = forwardRef<HTMLDivElement, ResourceListProps>(functi
       {filtered.length === 0 ? (
         <Empty
           size="md"
-          title={q ? t("resourceList.noMatches", "No matches") : (emptyTitle ?? t("resourceList.nothingHereYet", "Nothing here yet"))}
+          title={q ? t("resourceList.noMatches", "No matches") : (emptyTitle ?? t("resourceList.noneYet", "No {label} yet", { label: noun }))}
           {...(q ? { description: t("resourceList.tryShorterSearch", "Try a shorter search.") } : emptyDescription ? { description: emptyDescription } : {})}
-          {...(!q && emptyAction ? { actions: emptyAction } : {})}
+          {...(q
+            ? {
+                actions: (
+                  <Button size="sm" onClick={() => setQuery("")}>
+                    {t("resourceList.clearSearch", "Clear search")}
+                  </Button>
+                ),
+              }
+            : emptyAction
+              ? { actions: emptyAction }
+              : {})}
         />
       ) : (
         <List

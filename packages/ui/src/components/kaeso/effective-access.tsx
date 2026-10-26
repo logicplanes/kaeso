@@ -42,7 +42,7 @@ export const EffectiveAccess = forwardRef<HTMLDivElement, EffectiveAccessProps>(
           {sources.map((s) =>
             s.detail ? (
               <Tooltip key={s.label} content={s.detail}>
-                <Badge tabIndex={0} className="focus-ring">
+                <Badge tabIndex={0} className="cursor-help underline decoration-dotted underline-offset-2 focus-ring">
                   {s.label}
                 </Badge>
               </Tooltip>
@@ -72,7 +72,7 @@ export const EffectiveAccess = forwardRef<HTMLDivElement, EffectiveAccessProps>(
             );
           })}
         {empty.length > 0 && (
-          <Row term={empty.length === groups.length ? t("effectiveAccess.noRights", "No rights") : t("effectiveAccess.noRightsIn", "No rights in")} quiet>
+          <Row term={t("effectiveAccess.noRights", "No rights")} quiet>
             {empty.map((g) => g.label).join(t("effectiveAccess.listSeparator", ", "))}
           </Row>
         )}
@@ -88,8 +88,8 @@ function Row({ term, count, quiet, children }: { term: string; count?: string | 
     <div className="flex min-h-40 flex-col gap-2 py-8 not-first:hairline-t @auth:col-span-2 @auth:grid @auth:grid-cols-subgrid @auth:items-baseline @auth:gap-16">
       <dt className={cn("shrink-0 text-small font-medium @auth:min-w-140", quiet ? "text-fg-secondary" : "text-fg")}>{term}</dt>
       <dd className="flex min-w-0 flex-1 items-baseline gap-12">
-        <span className={cn("min-w-0 flex-1 text-small text-pretty", quiet ? "text-fg-tertiary" : "text-fg-secondary")}>{children}</span>
-        {count && <span className="shrink-0 text-small text-fg-tertiary tabular">{count}</span>}
+        <span className="min-w-0 flex-1 text-small text-pretty text-fg-secondary">{children}</span>
+        {count && <span className="shrink-0 text-small text-fg-secondary tabular">{count}</span>}
       </dd>
     </div>
   );
