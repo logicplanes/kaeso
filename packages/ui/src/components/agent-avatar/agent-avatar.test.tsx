@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { render, renderHook, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { LocaleContext } from "../../i18n/context.js";
@@ -58,6 +58,8 @@ describe("AgentAttribution", () => {
   });
 
   it("shows the person's picture under the badge", () => {
+    const loaded = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(64);
+    onTestFinished(() => loaded.mockRestore());
     const { container } = render(
       <AgentAttribution name="Ada Okafor" src="https://example.com/ada.png" size={40} agent={{ name: "Nightly fixer", model: "falcon" }} />,
     );
@@ -117,5 +119,17 @@ describe("modelName", () => {
     const { result } = renderHook(() => useModelName(), { wrapper: inLocale("zh-CN", zhCN) });
     expect(result.current("gemini")).toBe("Gemini");
     expect(result.current("falcon")).toBe("未知");
+  });
+});
+
+describe("AgentAttribution, legibility", () => {
+  it("draws a round badge of about 40% that a gap separates from the face on any surface, and says who acted in a tooltip too", () => {
+    const { container } = render(<AgentAttribution name="Ada Okafor" agent={{ name: "Release helper", model: "claude" }} size={24} />);
+    const badge = container.querySelector("[data-agent-badge]")!;
+    expect(badge).toHaveClass("size-10", "rounded-pill");
+    const face = container.querySelector<HTMLElement>(".cutout")!;
+    expect(face.style.getPropertyValue("--k-cut-r")).toBe("7px");
+    expect(face.style.getPropertyValue("--k-cut-x-ltr")).toBe("19px");
+    expect(container.querySelector(".ring-panel")).toBeNull();
   });
 });

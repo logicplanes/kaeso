@@ -1,6 +1,7 @@
-import { forwardRef, useState, type ReactNode } from "react";
+import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
+import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_AVATAR_VARIANTS = {
   size: {
@@ -40,7 +41,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({
       ref={ref}
       {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
       className={cn(
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-fill-2 font-semibold text-fg select-none",
+        "relative inline-flex shrink-0 items-center justify-center overflow-hidden mark-fill font-semibold text-fg select-none forced-colors:outline forced-colors:-outline-offset-1",
         KAESO_AVATAR_VARIANTS.size[size].classes,
         KAESO_AVATAR_VARIANTS.kind[kind].classes,
         size <= 24 && kind === "org" && "rounded-avatar",
@@ -48,7 +49,19 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({
       )}
     >
       {src && src !== failedSrc ? (
-        <img src={src} alt="" className="size-full object-cover" onError={() => setFailedSrc(src)} />
+        <>
+          <img
+            ref={(img) => {
+              // A picture that failed before hydration fired its error event before React listened for it.
+              if (img?.complete && img.naturalWidth === 0) setFailedSrc(src);
+            }}
+            src={src}
+            alt=""
+            className="size-full object-cover"
+            onError={() => setFailedSrc(src)}
+          />
+          <span aria-hidden className="pointer-events-none absolute inset-0 shadow-ring" />
+        </>
       ) : (
         initials(name, size === 20 ? 1 : 2)
       )}
@@ -65,13 +78,33 @@ export interface AvatarGroupProps {
   children?: ReactNode | undefined;
 }
 
-const GROUP_OVERLAP = { 20: "-ms-4", 24: "-ms-2", 28: "-ms-2", 32: "-ms-4", 40: "-ms-6" } as const;
+const GROUP_OVERLAP = { 20: 4, 24: 4, 28: 4, 32: 6, 40: 8 } as const;
+const OVERLAP_CLASS = { 4: "-ms-4", 6: "-ms-6", 8: "-ms-8" } as const;
+const GAP = 2;
+
+function cutFor(size: number, overlap: number): CSSProperties {
+  return {
+    "--k-cut-x-ltr": `${1.5 * size - overlap}px`,
+    "--k-cut-x-rtl": `${overlap - 0.5 * size}px`,
+    "--k-cut-r": `${size / 2 + GAP}px`,
+  } as CSSProperties;
+}
 
 export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function AvatarGroup({ people, size = 24, max = 4, className, children }, ref) {
   const t = useUiText();
   const shown = people.slice(0, max);
   const rest = people.length - shown.length;
   const overlap = GROUP_OVERLAP[size];
+  const items = shown.length + (rest > 0 ? 1 : 0);
+  const slot = (i: number, child: ReactNode, key: string) => (
+    <span
+      key={key}
+      className={cn("flex shrink-0 rounded-pill", i > 0 && OVERLAP_CLASS[overlap], i < items - 1 && "cutout")}
+      style={i < items - 1 ? cutFor(size, overlap) : undefined}
+    >
+      {child}
+    </span>
+  );
   return (
     <div
       ref={ref}
@@ -79,27 +112,28 @@ export const AvatarGroup = forwardRef<HTMLDivElement, AvatarGroupProps>(function
       aria-label={people.map((p) => p.name).join(t("avatarGroup.listSeparator", ", "))}
       className={cn("flex items-center", className)}
     >
-      {shown.map((p, i) => (
-        <Avatar
-          key={p.name + i}
-          name={p.name}
-          {...(p.src ? { src: p.src } : {})}
-          size={size}
-          decorative
-          className={cn("ring-2 ring-panel", i > 0 && overlap)}
-        />
-      ))}
-      {rest > 0 && (
-        <span
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-pill bg-fill-1 font-medium text-fg-secondary ring-2 ring-panel tabular",
-            KAESO_AVATAR_VARIANTS.size[size].classes,
-            overlap,
-          )}
-        >
-          +{rest}
-        </span>
-      )}
+      {shown.map((p, i) => slot(i, <Avatar name={p.name} {...(p.src ? { src: p.src } : {})} size={size} decorative />, p.name + i))}
+      {rest > 0 &&
+        slot(
+          shown.length,
+          <Tooltip
+            content={people
+              .slice(max)
+              .map((p) => p.name)
+              .join(t("avatarGroup.listSeparator", ", "))}
+            shape="multiline"
+          >
+            <span
+              className={cn(
+                "inline-flex shrink-0 items-center justify-center rounded-pill mark-fill font-medium text-fg-secondary tabular forced-colors:outline forced-colors:-outline-offset-1",
+                KAESO_AVATAR_VARIANTS.size[size].classes,
+              )}
+            >
+              +{rest}
+            </span>
+          </Tooltip>,
+          "rest",
+        )}
       {children && <span className="ms-8 inline-flex items-center">{children}</span>}
     </div>
   );

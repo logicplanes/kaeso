@@ -1,9 +1,9 @@
-import { AgentAvatar, Text, useModelName } from "@logicplanes/kaeso-ui";
-import { StateCell, StateMatrix, StateRow } from "~/lib/states";
+import { AgentAvatar, Avatar, Text, useModelName } from "@logicplanes/kaeso-ui";
+import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "AgentAvatar",
-  description: "An agent acting for a person: one bot face on an ink square, the same for every agent.",
+  description: "An agent acting for a person: one bot face on a square, the same for every agent.",
   group: "Components",
   entry: "agent-avatar",
   import: "AgentAvatar, useModelName",
@@ -52,14 +52,24 @@ export function Sizes() {
 const SIZES = [20, 24, 28, 32, 40] as const;
 export function States() {
   return (
-    <StateMatrix title="Every size" columns={SIZES.map((s) => `${s}px`)}>
-      <StateRow label="Agent">
-        {SIZES.map((s) => (
-          <StateCell key={s} id={`agent-${s}`}>
-            <AgentAvatar name="Release helper" size={s} />
-          </StateCell>
-        ))}
-      </StateRow>
-    </StateMatrix>
+    <>
+      <StateMatrix title="Every size" columns={SIZES.map((s) => `${s}px`)}>
+        <StateRow label="Agent">
+          {SIZES.map((s) => (
+            <StateCell key={s} id={`agent-${s}`}>
+              <AgentAvatar name="Release helper" size={s} />
+            </StateCell>
+          ))}
+        </StateRow>
+      </StateMatrix>
+      <StateSection title="Beside people, in a member list">
+        <div className="flex items-center gap-8">
+          <Avatar name="Ada Okafor" size={24} />
+          <Avatar name="Lin Park" size={24} />
+          <AgentAvatar name="Release helper" size={24} />
+          <Avatar name="Tomás Ruiz" size={24} />
+        </div>
+      </StateSection>
+    </>
   );
 }
