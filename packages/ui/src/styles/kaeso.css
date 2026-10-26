@@ -509,6 +509,9 @@
     color: HighlightText;
     forced-color-adjust: none;
   }
+  :where([role^="menuitem"][data-disabled], [role="option"][aria-disabled="true"]) {
+    color: GrayText;
+  }
   :where(.hairline-b, .hairline-b-strong) {
     border-bottom: 1px solid CanvasText;
   }

@@ -193,7 +193,7 @@ function ItemContent({
       {leading ? (
         <span className={cn("flex size-16 shrink-0 items-center justify-center", description && "self-start mt-10")}>{leading}</span>
       ) : (
-        icon && <Icon icon={icon} size="sm" className={cn(danger ? "text-danger-text" : MENU_ICON, description && "self-start mt-10")} />
+        icon && <Icon icon={icon} size="sm" className={cn(danger ? "text-danger-text forced-colors:text-current" : MENU_ICON, description && "self-start mt-10")} />
       )}
       {description ? (
         <span className="flex min-w-0 flex-1 flex-col gap-2 py-8">

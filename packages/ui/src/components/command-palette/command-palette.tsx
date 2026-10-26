@@ -111,7 +111,7 @@ function Palette({
           keywords: [item.hint ?? "", ...(item.keywords ?? [])],
           render: ({ active }: CommandListRowState) => (
             <>
-              {item.icon && <Icon icon={item.icon} size="sm" className={active ? "text-fg" : "text-fg-secondary"} />}
+              {item.icon && <Icon icon={item.icon} size="sm" className={cn(active ? "text-fg" : "text-fg-secondary", "forced-colors:text-current")} />}
               <span className="min-w-0 truncate">{item.label}</span>
               {item.hint && (
                 <span
@@ -119,6 +119,7 @@ function Palette({
                     "min-w-0 truncate font-regular dialog-narrow:hidden",
                     ID.test(item.hint) ? "mono text-small" : "text-body",
                     active ? "text-fg-secondary" : "text-fg-tertiary",
+                    "forced-colors:text-current",
                   )}
                 >
                   <span className="sr-only">, </span>

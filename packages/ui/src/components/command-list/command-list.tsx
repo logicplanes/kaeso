@@ -367,7 +367,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const header = (group: CommandListGroup, gi: number) => {
     const count = !counts || group.loading ? undefined : query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
     return (
-      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised", look.caption)}>
+      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised forced-colors:mx-1", look.caption)}>
         {group.leading}
         <span id={groupLabelId(gi)} className="min-w-0 truncate">
           {group.label}
