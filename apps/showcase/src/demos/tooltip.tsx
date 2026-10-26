@@ -57,11 +57,11 @@ export function States() {
         </div>
       </StateSection>
       <StateSection title="Open on its control">
-        <div className="flex h-160 items-end gap-160 pl-8">
-          <Tooltip content="Filter" open>
+        <div className="flex h-160 items-start gap-160 pl-8">
+          <Tooltip content="Filter" side="bottom" open>
             <IconButton icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
           </Tooltip>
-          <Tooltip content="Requests over a hard limit are refused with 429. Soft limits only send an alert." shape="multiline" open>
+          <Tooltip content="Requests over a hard limit are refused with 429. Soft limits only send an alert." shape="multiline" side="bottom" open>
             <Button>Hard limit</Button>
           </Tooltip>
         </div>
