@@ -249,6 +249,84 @@ pub fn is_droppable_value(origin: DialectId, scope: &str, key: &str, value: &Raw
     }
 }
 
+pub(crate) const OPENAI_CACHE_KEY: &str = "prompt_cache_key";
+
+pub(crate) const OPENAI_CACHE_SETTINGS: &[&str] =
+    &["prompt_cache_retention", "prompt_cache_options"];
+
+const LONGEST_SHORT_CACHE_SECONDS: u64 = 300;
+
+fn is_openai_generation(dialect: DialectId) -> bool {
+    matches!(dialect, DialectId::OpenAiChat | DialectId::OpenAiResponses)
+}
+
+pub(crate) fn cache_setting_crosses(
+    origin: DialectId,
+    target: DialectId,
+    scope: &str,
+    key: &str,
+) -> bool {
+    scope == "request"
+        && target == DialectId::AnthropicMessages
+        && is_openai_generation(origin)
+        && OPENAI_CACHE_SETTINGS.contains(&key)
+}
+
+fn openai_cache_fields(extras: &Extras) -> Option<&indexmap::IndexMap<String, RawJson>> {
+    extras
+        .origin
+        .as_ref()
+        .filter(|o| is_openai_generation(o.dialect))
+        .map(|_| &extras.fields)
+}
+
+fn cache_options(extras: &Extras) -> Option<serde_json::Map<String, Value>> {
+    openai_cache_fields(extras)?
+        .get("prompt_cache_options")?
+        .parse()
+        .ok()
+}
+
+pub(crate) fn openai_cache_is_explicit(extras: &Extras) -> bool {
+    cache_options(extras).is_some_and(|o| o.get("mode").and_then(Value::as_str) == Some("explicit"))
+}
+
+pub(crate) fn openai_cache_outlives_five_minutes(extras: &Extras) -> bool {
+    let retained = openai_cache_fields(extras)
+        .and_then(|f| f.get("prompt_cache_retention"))
+        .and_then(|r| r.parse::<String>().ok())
+        .is_some_and(|r| r == "24h");
+    let ttl = cache_options(extras)
+        .and_then(|o| {
+            o.get("ttl")
+                .and_then(Value::as_str)
+                .and_then(duration_seconds)
+        })
+        .is_some_and(|s| s > LONGEST_SHORT_CACHE_SECONDS);
+    retained || ttl
+}
+
+fn duration_seconds(text: &str) -> Option<u64> {
+    let split = text.find(|c: char| !c.is_ascii_digit())?;
+    let (number, unit) = text.split_at(split);
+    let number: u64 = number.parse().ok()?;
+    let scale = match unit {
+        "s" => 1,
+        "m" => 60,
+        "h" => 3_600,
+        "d" => 86_400,
+        _ => return None,
+    };
+    number.checked_mul(scale)
+}
+
+pub(crate) fn sibling_cache_key(extras: &Extras, target: DialectId) -> Option<&RawJson> {
+    let origin = extras.origin.as_ref()?.dialect;
+    (origin != target && is_openai_generation(origin) && is_openai_generation(target))
+        .then(|| extras.fields.get(OPENAI_CACHE_KEY))
+        .flatten()
+}
+
 fn only_thinking_edits(value: &RawJson) -> bool {
     let Ok(Value::Object(config)) = serde_json::from_str::<Value>(value.get()) else {
         return false;
@@ -551,6 +629,7 @@ fn check_extras_with(
     for (key, value) in extras.fields.iter().filter(|_| !extras.is_from(target)) {
         if is_allowlisted(origin.dialect, scope, key)
             || is_droppable_value(origin.dialect, scope, key, value)
+            || cache_setting_crosses(origin.dialect, target, scope, key)
             || droppable(key, value)
         {
             continue;

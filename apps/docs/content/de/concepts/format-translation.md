@@ -84,6 +84,14 @@ Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 `/v1/messages/count_tokens` und `/v1/responses/input_tokens` fragen den Anbieter des Modells nach der Zahl. Hat der Anbieter keinen Endpunkt zum Zählen von Token, lehnt Kaeso die Anfrage mit 400 ab, und die Meldung sagt, dass das Modell keine Token zählen kann. Kaeso schätzt die Zahl nicht, denn eine Schätzung trifft nie genau die Zahl des Anbieters.
 
+## Prompt-Caching
+
+Kaeso hält das Prompt-Caching am Laufen, wenn eine Anfrage das Format wechselt:
+
+- Claude cacht nur, worum eine Anfrage bittet, und Apps in den Formaten von OpenAI, etwa Codex, bitten nie darum. Kaeso bittet für sie: nach den Tools, nach dem System-Prompt und am Ende der Unterhaltung. Jeder Zug liest die früheren Züge dann zum Cache-Preis aus Claudes Cache, statt sie noch einmal voll zu bezahlen. Eine App, die ihre eigenen Cache-Punkte setzt, behält genau diese.
+- Bittet die App OpenAI, ihren Cache länger als fünf Minuten zu halten, mit `prompt_cache_retention` oder `prompt_cache_options`, hält Claude ihn eine Stunde.
+- Der `prompt_cache_key` einer App geht mit, wenn eine Chat-Completions-Anfrage an ein Responses-Modell geht oder umgekehrt, sodass der Anbieter die Sitzung weiter zum selben Cache schickt.
+
 ## Was Kaeso weglässt
 
 Hat das Ziel keinen Platz für sie, lässt Kaeso Hinweise weg, die nicht ändern, was das Modell schreibt:

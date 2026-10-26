@@ -733,6 +733,9 @@ pub(super) fn encode(
     let mut body = body_node(r, req.kind(), &target, &mut Names::new(ctx));
     if req.kind() == RequestKind::Generate {
         hosted_search_fields(r, search_limit, &mut body);
+        if let Some(key) = crate::cross::sibling_cache_key(&r.extras, DIALECT) {
+            body.insert(crate::cross::OPENAI_CACHE_KEY, Node::raw(key));
+        }
     }
     let mut headers = HeaderList::new().with("content-type", "application/json");
     if r.extras.is_from(DIALECT) {
