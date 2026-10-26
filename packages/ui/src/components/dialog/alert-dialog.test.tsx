@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AlertDialog, Dialog, LayerDialog } from "./dialog.js";
 import { Button } from "../button/button.js";
@@ -168,5 +168,76 @@ describe("LayerDialog", () => {
     expect(screen.getByRole("heading", { name: "Add a model" })).toBeInTheDocument();
     rerender(<LayerDialog inline layers={[]} />);
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("AlertDialog confirmation by keyboard", () => {
+  const typed = (onConfirm: () => void) =>
+    render(
+      <AlertDialog
+        open
+        title="Delete Northwind Labs?"
+        description="Its projects, keys and logs are deleted after 30 days."
+        confirmLabel="Delete organization"
+        confirmText="Northwind Labs"
+        onConfirm={onConfirm}
+      />,
+    );
+
+  it("ignores the Enter that commits an input method's text, and confirms on the next Enter", async () => {
+    const onConfirm = vi.fn();
+    typed(onConfirm);
+    await frames();
+    const field = screen.getByRole("textbox", { name: "Type Northwind Labs to confirm" });
+    fireEvent.change(field, { target: { value: "Northwind Labs" } });
+    fireEvent.keyDown(field, { key: "Enter", isComposing: true });
+    fireEvent.keyDown(field, { key: "Enter", keyCode: 229 });
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AlertDialog tones", () => {
+  it("starts on Cancel for danger and warning, and on the confirm for info", async () => {
+    const props = {
+      open: true,
+      title: "Rotate the key?",
+      description: "Applications need the new key.",
+      confirmLabel: "Rotate key",
+      onConfirm: () => undefined,
+    };
+    for (const [tone, focused] of [
+      ["danger", "Cancel"],
+      ["warning", "Cancel"],
+      ["info", "Rotate key"],
+    ] as const) {
+      const { unmount } = render(<AlertDialog {...props} tone={tone} />);
+      await frames();
+      expect(screen.getByRole("button", { name: focused })).toHaveFocus();
+      unmount();
+    }
+  });
+
+  it("names the action on a danger button only when it destroys", () => {
+    const props = { inline: true, title: "Disable this key?", description: "Requests with it fail.", confirmLabel: "Disable key", onConfirm: () => undefined };
+    const { unmount } = render(<AlertDialog {...props} tone="warning" />);
+    expect(screen.getByRole("button", { name: "Disable key" }).className).not.toMatch(/material-danger/);
+    unmount();
+    render(<AlertDialog {...props} tone="danger" />);
+    expect(screen.getByRole("button", { name: "Disable key" }).className).toMatch(/material-danger/);
+  });
+});
+
+describe("AlertDialog with long content", () => {
+  it("scrolls the title, description and field, and keeps the buttons outside the scroll", () => {
+    render(
+      <AlertDialog inline title="Delete this key?" description="Applications stop authenticating." confirmLabel="Delete key" onConfirm={() => undefined} />,
+    );
+    const heading = screen.getByRole("heading", { name: "Delete this key?" });
+    const body = heading.closest("[data-dialog-body]");
+    expect(body).toHaveClass("overflow-y-auto");
+    expect(body).not.toContainElement(screen.getByRole("button", { name: "Delete key" }));
   });
 });

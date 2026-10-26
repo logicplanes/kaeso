@@ -11,7 +11,11 @@ export const meta = {
     ["Escape", "Cancels"],
     ["Enter", "Confirms once the typed text matches"],
   ],
-  a11y: ["role=alertdialog; focus starts on Cancel.", "The confirm names the verb and object (“Delete key”)."],
+  a11y: [
+    "role=alertdialog. The focus starts on the typed field when there is one; otherwise on Cancel, or on the confirm for an info confirmation.",
+    "The confirm names the verb and object (“Delete key”).",
+    "The Enter that finishes typing in an input method never confirms.",
+  ],
 };
 export const examples = [
   { id: "delete", title: "Delete a key", fn: "Delete" },
@@ -66,6 +70,21 @@ export function States() {
           description="Requests with it fail until you enable it again."
           confirmLabel="Disable key"
           loading
+          onConfirm={() => undefined}
+        />
+        <AlertDialog
+          inline
+          tone="info"
+          title="Send the invitation again?"
+          description="ana@northwind.example gets a new link; the old one stops working."
+          confirmLabel="Send invitation"
+          onConfirm={() => undefined}
+        />
+        <AlertDialog
+          inline
+          title="Revoke sk-kso-AbC123dEf456gHi789jKl012mNo345pQr678?"
+          description="Applications using sk-kso-AbC123dEf456gHi789jKl012mNo345pQr678 stop authenticating with the gateway at once."
+          confirmLabel="Revoke key"
           onConfirm={() => undefined}
         />
       </div>

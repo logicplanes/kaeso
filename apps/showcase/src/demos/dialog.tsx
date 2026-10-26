@@ -339,85 +339,201 @@ export function Form() {
     </>
   );
 }
+const sizes = [
+  { size: "sm", open: "Open small dialog", width: "440" },
+  { size: "md", open: "Open medium dialog", width: "560" },
+  { size: "lg", open: "Open large dialog", width: "720" },
+] as const;
 export function Sizes() {
   return (
-    <div className="flex gap-12">
-      {(["sm", "md", "lg"] as const).map((s) => (
+    <div className="flex flex-wrap gap-12">
+      {sizes.map((s) => (
         <Dialog
-          key={s}
-          size={s}
-          trigger={<Button>{s}</Button>}
-          title={`A ${s} dialog`}
+          key={s.size}
+          size={s.size}
+          trigger={<Button>{s.open}</Button>}
+          title={`${s.width} pixels wide`}
           description="Sizes are 440, 560 and 720 pixels."
-          footer={
-            <Dialog.Close>
-              <Button>Close</Button>
-            </Dialog.Close>
-          }
         />
       ))}
     </div>
   );
 }
+const createKeyFooter = (
+  <>
+    <Button>Cancel</Button>
+    <Button variant="primary">Create key</Button>
+  </>
+);
 export function States() {
   return (
-    <StateSection title="Inline frames">
-      <div className="flex flex-col gap-24">
-        <Dialog
-          inline
-          size="md"
-          title="Create key"
-          description="Applications use this key to call the gateway."
-          footer={
-            <>
-              <Button>Cancel</Button>
-              <Button variant="primary">Create key</Button>
-            </>
-          }
-        >
-          <div className="flex flex-col gap-20">
+    <>
+      <StateSection title="Inline frames">
+        <div className="flex flex-col gap-24">
+          <Dialog
+            inline
+            size="md"
+            title="Create key"
+            description="Applications use this key to call the gateway."
+            footer={
+              <>
+                <Button>Cancel</Button>
+                <Button variant="primary">Create key</Button>
+              </>
+            }
+          >
+            <div className="flex flex-col gap-20">
+              <Input label="Name" defaultValue="checkout-web" />
+              <Select label="Expires" options={[{ value: "90", label: "In 90 days" }]} defaultValue="90" fullWidth />
+            </div>
+          </Dialog>
+          <StepDialog
+            inline
+            title="Create key"
+            submitLabel="Create key"
+            onSubmit={() => undefined}
+            steps={[
+              {
+                id: "name",
+                title: "What is it for?",
+                description: "Shown in request logs and alerts.",
+                content: <Input aria-label="Name" defaultValue="checkout-web" />,
+              },
+              { id: "expiry", title: "When does it expire?", content: <Select aria-label="Expires" options={expiry} defaultValue="90" fullWidth /> },
+            ]}
+          />
+          <StepDialog inline size="md" title="Add limit" submitLabel="Add limit" onSubmit={() => undefined} steps={limitSteps("project", () => undefined)} />
+          <StepDialog
+            inline
+            size="md"
+            title="Add limit"
+            submitLabel="Add limit"
+            onSubmit={() => undefined}
+            defaultStep={1}
+            steps={limitSteps("project", () => undefined)}
+          />
+          <Dialog
+            inline
+            size="sm"
+            title="Leave Support triage?"
+            description="You lose access to its keys and logs until an owner invites you again."
+            footer={
+              <>
+                <Button>Cancel</Button>
+                <Button variant="primary">Leave project</Button>
+              </>
+            }
+          />
+        </div>
+      </StateSection>
+      <StateSection title="Busy, toolbar, footer start, without the close circle">
+        <div className="flex flex-col gap-24">
+          <Dialog
+            inline
+            busy
+            title="Create key"
+            description="Applications use this key to call the gateway."
+            footer={
+              <>
+                <Button disabled>Cancel</Button>
+                <Button variant="primary" loading>
+                  Create key
+                </Button>
+              </>
+            }
+          >
+            <Input label="Name" defaultValue="checkout-web" readOnly />
+          </Dialog>
+          <Dialog
+            inline
+            title="Add model"
+            description="Pick a model from the models.dev catalogue."
+            toolbar={<Input aria-label="Search models" placeholder="Search" />}
+            footerStart={<Button variant="ghost">Add a custom model</Button>}
+            footer={<Button variant="primary">Add model</Button>}
+          >
+            <p className="text-body text-fg-secondary">claude-sonnet-4-5, gpt-5-mini and 412 more.</p>
+          </Dialog>
+          <Dialog
+            inline
+            size="sm"
+            hideClose
+            title="Session expired"
+            description="Sign in again to keep working."
+            footer={<Button variant="primary">Sign in</Button>}
+          />
+        </div>
+      </StateSection>
+      <StateSection title="Body under the footer, an error">
+        <div className="flex flex-col gap-24">
+          <Dialog inline title="Add limit" description="Budgets refuse requests once used up." className="h-360" footer={createKeyFooter}>
+            <div className="flex flex-col gap-20">
+              <Input label="Amount" prefix="$" defaultValue="500" />
+              <Input label="Alert at" suffix="%" defaultValue="180" error="Enter a percentage up to 100" />
+              <Select label="Resets" options={periods} defaultValue="month" fullWidth />
+            </div>
+          </Dialog>
+        </div>
+      </StateSection>
+      <StateSection title="Long words and narrow frames">
+        <div className="flex flex-col gap-24">
+          <Dialog
+            inline
+            size="sm"
+            title="Retry req_01JAR4X2KQZ8M3N7P5V6W9Y2T4?"
+            description="The request goes to anthropic/claude-sonnet-4-5-20250929 again with the same body."
+            footer={
+              <>
+                <Button>Cancel</Button>
+                <Button variant="primary">Retry request</Button>
+              </>
+            }
+          />
+          <Dialog inline title="Create key" description="Applications use this key to call the gateway." className="w-320" footer={createKeyFooter}>
             <Input label="Name" defaultValue="checkout-web" />
-            <Select label="Expires" options={[{ value: "90", label: "In 90 days" }]} defaultValue="90" fullWidth />
-          </div>
-        </Dialog>
-        <StepDialog
-          inline
-          title="Create key"
-          submitLabel="Create key"
-          onSubmit={() => undefined}
-          steps={[
-            {
-              id: "name",
-              title: "What is it for?",
-              description: "Shown in request logs and alerts.",
-              content: <Input aria-label="Name" defaultValue="checkout-web" />,
-            },
-            { id: "expiry", title: "When does it expire?", content: <Select aria-label="Expires" options={expiry} defaultValue="90" fullWidth /> },
-          ]}
-        />
-        <StepDialog inline size="md" title="Add limit" submitLabel="Add limit" onSubmit={() => undefined} steps={limitSteps("project", () => undefined)} />
-        <StepDialog
-          inline
-          size="md"
-          title="Add limit"
-          submitLabel="Add limit"
-          onSubmit={() => undefined}
-          defaultStep={1}
-          steps={limitSteps("project", () => undefined)}
-        />
-        <Dialog
-          inline
-          size="sm"
-          title="Leave Support triage?"
-          description="You will lose access to its keys and logs."
-          footer={
-            <>
-              <Button>Cancel</Button>
-              <Button variant="primary">Leave project</Button>
-            </>
-          }
-        />
-      </div>
-    </StateSection>
+          </Dialog>
+        </div>
+      </StateSection>
+      <StateSection title="Steps: last step, danger, submitting, result">
+        <div className="flex flex-col gap-24">
+          <StepDialog
+            inline
+            title="Delete organization"
+            tone="danger"
+            submitLabel="Delete organization"
+            onSubmit={() => undefined}
+            defaultStep={1}
+            steps={[
+              { id: "why", title: "Why are you leaving?", content: <Input aria-label="Reason" defaultValue="Moving to one organization" /> },
+              {
+                id: "confirm",
+                title: "Delete Northwind Labs?",
+                description: "Its projects, keys and logs are deleted after 30 days.",
+                content: <Input aria-label="Organization name" defaultValue="Northwind Labs" />,
+              },
+            ]}
+          />
+          <StepDialog
+            inline
+            title="Create key"
+            submitLabel="Create key"
+            submitting
+            onSubmit={() => undefined}
+            defaultStep={1}
+            steps={[
+              { id: "name", title: "What is it for?", content: <Input aria-label="Name" defaultValue="checkout-web" /> },
+              { id: "expiry", title: "When does it expire?", content: <Select aria-label="Expires" options={expiry} defaultValue="90" fullWidth /> },
+            ]}
+          />
+          <StepDialog
+            inline
+            title="Create key"
+            submitLabel="Create key"
+            onSubmit={() => undefined}
+            steps={[{ id: "name", title: "What is it for?", blockedReason: "Enter a name", content: <Input aria-label="Name" placeholder="checkout-web" /> }]}
+          />
+        </div>
+      </StateSection>
+    </>
   );
 }

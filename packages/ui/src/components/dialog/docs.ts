@@ -15,8 +15,8 @@ export const docs = {
         "Called when the action is confirmed; return a promise to keep the dialog busy until it ends. It closes when the promise resolves and stays open for another try when it rejects, so toast the error there.",
       onOpenChange: "Called when it opens or closes.",
       open: "Whether it is open, when you control it.",
-      title: 'Names the action: "Delete this key?"',
-      tone: "How serious the confirmation is; `danger` for actions that can't be undone.",
+      title: 'Names the action and the object: "Delete “checkout-web”?"',
+      tone: "How serious the confirmation is: `danger` for an action that can't be undone (a danger confirm, the focus on Cancel), `warning` for a risky one that can (a primary confirm, the focus still on Cancel), `info` for a neutral one (the focus on the confirm).",
       trigger: "The element that opens it.",
     },
   },
@@ -41,9 +41,9 @@ export const docs = {
         "Enter in a single-line field and ⌘/Ctrl+Enter anywhere call this (usually the primary action); Enter in a text area, a search field, a combobox or a picker, and the Enter that confirms an input method's text, keep their own meaning.",
       open: "Whether it is open, when you control it.",
       persistent:
-        "A press outside doesn't close it, for forms that would lose what was typed; Escape and the close circle still do. Every StepDialog is persistent.",
+        "A press outside doesn't close it or move the focus, for forms that would lose what was typed; Escape and the close circle still close it. Every StepDialog is persistent.",
       size: "The dialog's width.",
-      title: "The dialog's heading, also its accessible name.",
+      title: "The dialog's heading, also its accessible name; a long one, or an id, wraps.",
       trigger: "The trigger, a single element.",
     },
   },
@@ -57,9 +57,9 @@ export const docs = {
   },
   LayerDialog: {
     description:
-      "A stacked dialog: a second layer slides over the first (add model → review values); back returns. The layers below stay as they were. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. Enter in a single-line field and ⌘/Ctrl+Enter call onSubmit on every layer.",
+      "A stacked dialog: a second layer slides over the first (add model → review values); Back, or Escape, returns. The layers below stay as they were. The close circle sits in a bar above the title, with Back at its start from the second layer, so the title keeps its place on every layer. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. Enter in a single-line field and ⌘/Ctrl+Enter call onSubmit on every layer.",
     props: {
-      anchor: "Where it sits: centered, or with a fixed top edge for layers of different heights.",
+      anchor: "Where it sits: with a fixed top edge (default), so the title stays put on layers of different heights, or centered.",
       busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close, Enter and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       hideClose: "Hide the close circle (rare).",
@@ -90,7 +90,7 @@ export const docs = {
         "What the last step made, shown in the same dialog once it exists: its title, description, content, footer and size. Pass it after `onSubmit` succeeds, such as the created key with SecretReveal.",
       size: "The dialog's width.",
       steps:
-        'The steps, each with its title, content and whether it can be continued; `onContinue` checks a step before the next opens, such as asking a server, and `continueLabel` names that check: "Detect settings".',
+        'The steps, each with its title, content and whether it can be continued: with `blockedReason`, Continue waits, and Enter shows and announces the reason under the step; `onContinue` checks a step before the next opens, such as asking a server, and `continueLabel` names that check: "Detect settings".',
       submitLabel: 'The last step\'s button: "Create key".',
       submitting: "Shows that the submission is underway; until it ends, the dialog stays open and Back and Cancel wait.",
       title: 'What the whole dialog does: "Create key".',
