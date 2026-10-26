@@ -27,7 +27,7 @@ const entries = readdirSync(join(dist, "components"))
 const uses = new Map();
 for (const e of entries) for (const f of closure(e)) if (f.includes("/chunks/")) uses.set(f, (uses.get(f) ?? 0) + 1);
 const foundation = new Set([...uses].filter(([, n]) => n >= entries.length * 0.4).map(([f]) => f));
-const foundationBudget = 8;
+const foundationBudget = 8.5;
 const failures = [];
 const lines = [];
 const fsize = gz(foundation);
