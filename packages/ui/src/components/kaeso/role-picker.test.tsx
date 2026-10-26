@@ -30,7 +30,7 @@ describe("RolePicker", () => {
   it("keeps a role the person can't give, disabled, with the reason", () => {
     render(<RolePicker aria-label="Role" roles={roles} value="developer" />);
     expect(screen.getByRole("radio", { name: "Owner" })).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByText("Only owners can make someone an owner")).toBeInTheDocument();
+    expect(screen.getByText("Only owners can make someone an owner", { ignore: "script, style, [hidden]" })).toBeVisible();
   });
   it("has no captions without custom roles", () => {
     render(<RolePicker aria-label="Role" roles={roles.filter((r) => !r.custom)} />);

@@ -15,6 +15,8 @@ export const meta = {
     "Opens after 500ms, instantly when moving between tooltipped siblings.",
     "Never the only place for essential information.",
     "Disabled controls show a tooltip only with a disabledReason.",
+    "role=tooltip. When it says more than the control's name, it is also the control's accessible description.",
+    "A single-line tooltip too long for the screen wraps into the box of several lines.",
   ],
 };
 export const examples = [
@@ -45,13 +47,25 @@ export function Multiline() {
 }
 export function States() {
   return (
-    <StateSection title="Surfaces">
-      <div className="flex flex-col items-start gap-16">
-        <TooltipSurface>Filter</TooltipSurface>
-        <TooltipSurface shortcut={[["g"], ["l"]]}>Go to request logs</TooltipSurface>
-        <TooltipSurface shortcut={["mod", "k"]}>Search</TooltipSurface>
-        <TooltipSurface shape="multiline">Requests over a hard limit are refused with 429. Soft limits only send an alert.</TooltipSurface>
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Surfaces">
+        <div className="flex flex-col items-start gap-16">
+          <TooltipSurface>Filter</TooltipSurface>
+          <TooltipSurface shortcut={[["g"], ["l"]]}>Go to request logs</TooltipSurface>
+          <TooltipSurface shortcut={["mod", "k"]}>Search</TooltipSurface>
+          <TooltipSurface shape="multiline">Requests over a hard limit are refused with 429. Soft limits only send an alert.</TooltipSurface>
+        </div>
+      </StateSection>
+      <StateSection title="Open on its control">
+        <div className="flex h-160 items-end gap-160 pl-8">
+          <Tooltip content="Filter" open>
+            <IconButton icon={icons.filter} aria-label="Filter" variant="secondary" tooltip={false} />
+          </Tooltip>
+          <Tooltip content="Requests over a hard limit are refused with 429. Soft limits only send an alert." shape="multiline" open>
+            <Button>Hard limit</Button>
+          </Tooltip>
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -1,7 +1,22 @@
-import { forwardRef, isValidElement, useState, type FocusEvent, type PointerEvent, type ReactElement, type ReactNode } from "react";
+import {
+  forwardRef,
+  isValidElement,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type PointerEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
+import { usePortalContainer } from "../../utils/portal-context.js";
+import { joinIds } from "../../utils/hidden-description.js";
 import { cn } from "../../utils/cn.js";
 import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
-import { HandedTrigger, triggerPropsStore } from "./trigger-props.js";
+import { HandedTrigger, triggerPropsStore, type TriggerPropsStore } from "./trigger-props.js";
 import { KbdSequence } from "../kbd/kbd.js";
 
 export const KAESO_TOOLTIP_VARIANTS = {
@@ -13,11 +28,11 @@ export const KAESO_TOOLTIP_VARIANTS = {
   },
   shape: {
     pill: {
-      classes: "rounded-pill h-32 px-12 whitespace-nowrap",
+      classes: "rounded-pill h-28 px-12 whitespace-nowrap",
       description: "Single line: a pill (default)",
     },
     multiline: {
-      classes: "rounded-tooltip px-12 py-8 max-w-280 text-pretty",
+      classes: "rounded-tooltip px-12 py-8 max-w-280 text-pretty wrap-anywhere",
       description: "Several lines: radius 12, max 280px",
     },
   },
@@ -40,17 +55,59 @@ export interface TooltipProps {
 
 const tooltipRoot = lazyModule(() => import("./tooltip-root.js"), { base: () => import.meta.url });
 
+const words = (text: string | null | undefined) => (text ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+
+function accessibleName(el: Element): string {
+  const labelledBy = el.getAttribute("aria-labelledby");
+  if (labelledBy)
+    return labelledBy
+      .split(/\s+/)
+      .map((id) => el.ownerDocument.getElementById(id)?.textContent ?? "")
+      .join(" ");
+  return el.getAttribute("aria-label") ?? el.textContent ?? "";
+}
+
+function useDescription(content: ReactNode, store: TriggerPropsStore, off: boolean) {
+  const id = useId();
+  const container = usePortalContainer();
+  const node = useRef<HTMLSpanElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [describes, setDescribes] = useState(false);
+  const plain = typeof content === "string" || typeof content === "number" ? String(content) : null;
+  useEffect(() => setMounted(true), []);
+  useLayoutEffect(() => {
+    const trigger = store.element();
+    const text = words(plain ?? node.current?.textContent);
+    const next = !off && !!trigger && text !== "" && text !== words(accessibleName(trigger));
+    if (next !== describes) setDescribes(next);
+  }, [plain, off, mounted, content, describes, store]);
+  const hidden =
+    mounted && (plain === null || describes) && typeof document !== "undefined"
+      ? createPortal(
+          <span ref={node} id={id} hidden>
+            {content}
+          </span>,
+          container ?? document.body,
+        )
+      : null;
+  return { id: describes ? id : undefined, node: hidden };
+}
+
 export function Tooltip(props: TooltipProps) {
   const [mod, retry] = useLazyModuleRetried(tooltipRoot, true);
   const [store] = useState(triggerPropsStore);
+  const description = useDescription(props.content, store, !!props.disabled);
   if (!isValidElement(props.children)) return props.children;
   const own = props.children.props as {
     onPointerEnter?: ((e: PointerEvent<Element>) => void) | undefined;
     onFocus?: ((e: FocusEvent<Element>) => void) | undefined;
+    "aria-describedby"?: string | undefined;
   };
+  const describedBy = description.id ? { "aria-describedby": joinIds(own["aria-describedby"], description.id) } : undefined;
   const retryOnIntent = mod
-    ? undefined
+    ? describedBy
     : {
+        ...describedBy,
         onPointerEnter: (e: PointerEvent<Element>) => {
           own.onPointerEnter?.(e);
           retry();
@@ -65,6 +122,7 @@ export function Tooltip(props: TooltipProps) {
       <HandedTrigger store={store} merge={mod?.mergeTriggerProps} extra={retryOnIntent}>
         {props.children}
       </HandedTrigger>
+      {description.node}
       {mod && <mod.TooltipRoot {...props} triggerProps={store} />}
     </>
   );
