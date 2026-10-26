@@ -4,8 +4,15 @@ import { formatDate, formatDuration, formatRelative, formatTokens, formatUSD, fo
 import { StatusDot, type StatusDotProps } from "../status-dot/status-dot.js";
 import { Avatar } from "../avatar/avatar.js";
 import { Tooltip } from "../tooltip/tooltip.js";
+import { TruncatedText } from "../text/truncated.js";
 import type { StatusTone } from "../../utils/tone.js";
 import { useUiText } from "../../i18n/context.js";
+import { TIME_COLUMNS } from "./time-columns.js";
+
+function time<C extends object>(column: C): C {
+  TIME_COLUMNS.add(column);
+  return column;
+}
 
 type Base<T = never> = {
   id: string;
@@ -82,24 +89,39 @@ export const col = {
   tokens: <T,>(b: Base<T>, get: Accessor<T, number>) => make(b, get, (v) => <Tokens value={v} />, { align: "end" }),
   duration: <T,>(b: Base<T>, get: Accessor<T, number>) => make(b, get, (v) => formatDuration(v), { align: "end" }),
   date: <T,>(b: Base<T>, get: Accessor<T, string | Date>) =>
-    make(b, get, (v) => <time dateTime={new Date(v).toISOString()}>{formatDate(v, { time: true })}</time>, {}, "datetime"),
+    time(
+      make(
+        b,
+        get,
+        (v) => <time dateTime={new Date(v).toISOString()}>{formatDate(v, { time: true })}</time>,
+        { text: (r: T) => formatDate(get(r), { time: true }) },
+        "datetime",
+      ),
+    ),
   relative: <T,>(b: Base<T>, get: Accessor<T, string | Date>, options: { now?: Date | number | undefined } = {}) =>
-    make(
-      b,
-      get,
-      (v) => <RelativeTime value={v} now={options.now ?? Date.now()} />,
-      {},
-      (a, c, id) => new Date(a.getValue(id) as string).getTime() - new Date(c.getValue(id) as string).getTime(),
+    time(
+      make(
+        b,
+        get,
+        (v) => <RelativeTime value={v} now={options.now ?? Date.now()} />,
+        { text: (r: T) => formatDate(get(r), { time: true }) },
+        (a, c, id) => new Date(a.getValue(id) as string).getTime() - new Date(c.getValue(id) as string).getTime(),
+      ),
     ),
   status: <T,>(b: Base<T>, get: Accessor<T, { tone: NonNullable<StatusDotProps["tone"]>; label: string }>) =>
     make(b, get, (v) => <StatusDot tone={v.tone}>{v.label}</StatusDot>, { text: undefined }),
   avatar: <T,>(b: Base<T>, get: Accessor<T, { name: string; src?: string | undefined }>) =>
-    make(b, get, (v) => (
-      <span className="inline-flex min-w-0 items-center gap-8">
-        <Avatar name={v.name} {...(v.src ? { src: v.src } : {})} size={24} decorative />
-        <span className="truncate">{v.name}</span>
-      </span>
-    )),
+    make(
+      b,
+      get,
+      (v) => (
+        <span className="inline-flex min-w-0 items-center gap-8">
+          <Avatar name={v.name} {...(v.src ? { src: v.src } : {})} size={24} decorative />
+          <TruncatedText>{v.name}</TruncatedText>
+        </span>
+      ),
+      { text: (r: T) => get(r).name },
+    ),
   custom: <T, V>(
     b: Base<T>,
     get: Accessor<T, V>,

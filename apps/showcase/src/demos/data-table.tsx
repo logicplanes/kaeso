@@ -11,6 +11,7 @@ import {
   RequestTimeline,
   Button,
   IconButton,
+  InsetContent,
   Pill,
   VisuallyHidden,
   icons,
@@ -145,17 +146,23 @@ export const meta = {
   entry: "data-table",
   import: "DataTable, col",
   keyboard: [
-    ["Tab", "Moves into the table, to the row last in focus, and out again"],
-    ["Up Down", "Move between rows"],
-    ["Home End", "First and last row"],
+    ["Tab", "Moves into the table, to the row or header last in focus, and out again: the table is one tab stop"],
+    ["Up Down", "Move between rows; Up from the first row reaches the header"],
+    ["Left Right", "Move between the header's sort buttons; on a row, Right reaches the row's controls and Left comes back"],
+    ["shift Left Right", "Resize the column, on its header"],
+    ["Home End", "First and last row, or first and last header"],
     ["Page Up Page Down", "A screen of rows up or down"],
     ["Enter", "Opens the row"],
-    ["Space", "Selects the row, in a selectable table"],
-    ["Left Right", "Resize a column, on its handle"],
-    ["shift F10", "Opens the row menu"],
+    ["Space", "Selects the row, in a selectable table (also x)"],
+    ["shift Up Down", "Extends the selection"],
+    ["mod A", "Selects every row"],
+    ["Escape", "Returns from a row's control to its row; on a row, clears the selection"],
+    ["shift F10", "Opens the row menu, or the column's width menu on its header"],
   ],
   a11y: [
-    "role=table with column headers; sorted columns carry aria-sort.",
+    "An ARIA grid when rows can be opened or selected, a table otherwise; sorted columns carry aria-sort, the open row aria-current.",
+    "One tab stop: checkboxes, row controls and resize handles stay out of the tab order and are reached with the arrow keys.",
+    "A column's width changes by dragging its handle, with Shift and the arrow keys on its header, or from the header's context menu (Widen, Narrow, Reset width), so no drag is required.",
     "Columns declare a priority; low-priority columns hide first when space is short. A growing column then shrinks to its readable minimum (minWidth, 136px by default) and truncates. On a screen narrower still, the other priority 1 columns give way from the row's end backwards, keeping its last column (the actions) and the selection boxes; only a row with nothing left to give way scrolls sideways, its last column pinned at the end.",
     "Over 100 rows render virtually; the row count is in aria-rowcount and each row's place in aria-rowindex.",
   ],
@@ -266,25 +273,88 @@ export function LoadingStates() {
     </div>
   );
 }
+const allKept: ColumnDef<LogRow, any>[] = columns.map((c) => ({ ...c, meta: { ...c.meta, priority: 1, grow: false } }));
+
+function Cell({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <span className="text-caption font-medium text-fg-tertiary">{label}</span>
+      <div data-cell={id}>{children}</div>
+    </div>
+  );
+}
+
+const oneKey = keys.slice(0, 1);
+const ROW_STATES: { id: string; label: string; force?: string; selected?: boolean; active?: boolean }[] = [
+  { id: "rest", label: "Rest" },
+  { id: "hover", label: "Hover", force: "hover" },
+  { id: "pressed", label: "Pressed", force: "pressed" },
+  { id: "focus", label: "Keyboard focus", force: "focus" },
+];
+function RowStates({ prefix }: { prefix: string }) {
+  const table = (label: string, extra: object, force?: string) => (
+    <DataTable
+      aria-label={label}
+      data={oneKey}
+      columns={keyColumns}
+      getRowId={(k) => k.id}
+      selectable
+      onRowClick={() => undefined}
+      {...extra}
+      {...(force ? { "data-force-row": force } : {})}
+    />
+  );
+  return (
+    <div className="flex w-560 flex-col gap-12">
+      {ROW_STATES.map((s) => (
+        <Cell key={s.id} id={`${prefix}-${s.id}`} label={s.label}>
+          {table(s.label, {}, s.force)}
+        </Cell>
+      ))}
+      {ROW_STATES.slice(0, 3).map((s) => (
+        <Cell key={s.id} id={`${prefix}sel-${s.id}`} label={s.id === "rest" ? "Selected" : `Selected, ${s.label.toLowerCase()}`}>
+          {table(s.label, { selection: { [oneKey[0]!.id]: true } }, s.force)}
+        </Cell>
+      ))}
+      {ROW_STATES.slice(0, 2).map((s) => (
+        <Cell key={s.id} id={`${prefix}active-${s.id}`} label={s.id === "rest" ? "Active (open in a sheet)" : "Active, hover"}>
+          {table(s.label, { activeRowId: oneKey[0]!.id }, s.force)}
+        </Cell>
+      ))}
+    </div>
+  );
+}
+
 export function States() {
   return (
     <>
-      <StateSection title="Rows">
-        <div className="w-1200">
+      <StateSection title="Rows on the panel">
+        <RowStates prefix="panel" />
+      </StateSection>
+      <StateSection title="Rows in a card">
+        <InsetContent>
+          <RowStates prefix="card" />
+        </InsetContent>
+      </StateSection>
+      <StateSection title="Sorted; a row that can't be selected; a fresh row; more to load">
+        <div className="w-560">
           <DataTable
-            aria-label="Logs"
-            data={logs.slice(0, 8)}
-            columns={columns}
-            getRowId={(r) => r.id}
+            aria-label="Keys"
+            data={keys}
+            columns={keyColumns}
+            getRowId={(k) => k.id}
             selectable
-            selection={{ [logs[1]!.id]: true }}
-            activeRowId={logs[3]!.id}
-            sorting={[{ id: "latency", desc: true }]}
+            canSelectRow={(k) => k.state !== "archived"}
+            selection={{ [keys[1]!.id]: true }}
+            activeRowId={keys[3]!.id}
+            sorting={[{ id: "name", desc: false }]}
+            freshRowIds={new Set([keys[0]!.id])}
+            hasMore
           />
         </div>
       </StateSection>
-      <StateSection title="Secondary controls on a row's fill (the active and selected rows)">
-        <div className="w-960">
+      <StateSection title="Controls on the active and selected rows">
+        <div className="w-560">
           <DataTable
             aria-label="Members"
             data={members.slice(0, 4)}
@@ -297,43 +367,38 @@ export function States() {
         </div>
       </StateSection>
       <StateSection title="Densities">
-        <div className="flex w-960 flex-col gap-24">
+        <div className="flex w-560 flex-col gap-24">
           {(["compact", "default", "comfortable"] as const).map((d) => (
-            <DataTable key={d} aria-label={d} density={d} data={logs.slice(0, 3)} columns={columns.slice(0, 6)} />
+            <DataTable key={d} aria-label={d} density={d} data={logs.slice(0, 2)} columns={phoneColumns} getRowId={(r) => r.id} />
           ))}
         </div>
       </StateSection>
-      <StateSection title="Tones on a column, on the panel and on hovered and selected rows">
-        <div className="w-960">
-          <DataTable
-            aria-label="Keys"
-            data={keys}
-            columns={keyColumns}
-            getRowId={(k) => k.id}
-            selectable
-            selection={{ [keys[4]!.id]: true }}
-            activeRowId={keys[3]!.id}
-          />
+      <StateSection title="Wider than its room: a sticky first column, a fade">
+        <div className="w-560">
+          <DataTable aria-label="Request logs, scrolling" data={logs.slice(0, 4)} columns={allKept} getRowId={(r) => r.id} stickyFirstColumn />
         </div>
       </StateSection>
-      <StateSection title="At a phone's width (390px): the lower-priority columns drop, the model keeps a readable width and truncates, the actions stay">
-        <div className="flex flex-wrap items-start gap-40">
+      <StateSection title="At 390px and 320px: low-priority columns drop, the actions stay">
+        <div className="flex flex-col gap-32">
           <Phone>
-            <DataTable aria-label="Request logs at 390px" data={logs.slice(0, 6)} columns={phoneColumns} getRowId={(r) => r.id} activeRowId={logs[2]!.id} />
+            <DataTable aria-label="Request logs at 390px" data={logs.slice(0, 4)} columns={phoneColumns} getRowId={(r) => r.id} activeRowId={logs[2]!.id} />
           </Phone>
-          <Phone>
-            <DataTable aria-label="Models at 390px" data={models} columns={modelColumns} getRowId={(m) => m.id} />
+          <Phone width={320}>
+            <DataTable aria-label="Request logs at 320px" data={logs.slice(0, 4)} columns={phoneColumns} getRowId={(r) => r.id} activeRowId={logs[2]!.id} />
           </Phone>
         </div>
       </StateSection>
-      <StateSection title="Narrower than the columns that always stay (320px): the status gives way so the model stays readable; the actions stay">
-        <Phone width={320}>
-          <DataTable aria-label="Request logs at 320px" data={logs.slice(0, 6)} columns={phoneColumns} getRowId={(r) => r.id} activeRowId={logs[2]!.id} />
-        </Phone>
+      <StateSection title="Loading, empty, errors with and without Try again">
+        <div className="flex w-560 flex-col gap-32">
+          <DataTable aria-label="Loading" data={[]} columns={phoneColumns} loading />
+          <DataTable aria-label="Empty" data={[]} columns={phoneColumns} />
+          <DataTable aria-label="Error" data={[]} columns={phoneColumns} error="The gateway answered 503." onRetry={() => undefined} />
+          <DataTable aria-label="Error without retry" data={[]} columns={phoneColumns} error="The gateway answered 503." />
+        </div>
       </StateSection>
-      <StateSection title="Loading, empty and error">
-        <div className="w-960">
-          <LoadingStates />
+      <StateSection title="Over 100 rows: virtualized in its scroller">
+        <div className="h-240 w-560 overflow-y-auto">
+          <DataTable aria-label="Request logs, long" data={logs} columns={phoneColumns} getRowId={(r) => r.id} />
         </div>
       </StateSection>
     </>
