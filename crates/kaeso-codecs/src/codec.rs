@@ -135,6 +135,7 @@ pub struct EgressCtx {
     pub chat_profile: ChatProfile,
     pub responses_profile: ResponsesProfile,
     pub left_out: Vec<String>,
+    pub adapted: Vec<String>,
 }
 
 impl EgressCtx {
@@ -156,6 +157,7 @@ impl EgressCtx {
             chat_profile: ChatProfile::OPENAI,
             responses_profile: ResponsesProfile::OPENAI,
             left_out: Vec::new(),
+            adapted: Vec::new(),
         }
     }
 

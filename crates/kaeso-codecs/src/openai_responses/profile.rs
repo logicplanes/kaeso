@@ -1,3 +1,5 @@
+use crate::ToolSchemaRoot;
+
 /// How a provider's OpenAI Responses API differs from OpenAI's own.
 ///
 /// [`ResponsesProfile::OPENAI`] sends a request as the app wrote it. Other providers
@@ -16,6 +18,8 @@ pub struct ResponsesProfile {
     /// Whether reasoning items with OpenAI's `encrypted_content` reach the provider;
     /// otherwise they are left out.
     pub openai_encrypted_reasoning: bool,
+    /// What the provider takes at the root of a function tool's parameter schema.
+    pub tool_schema_root: ToolSchemaRoot,
 }
 
 /// The hosted `web_search` tool a Responses provider takes.
@@ -47,6 +51,7 @@ impl ResponsesProfile {
         web_search: WebSearchTool::AsSent,
         reasoning_replay: ReasoningReplay::AsSent,
         openai_encrypted_reasoning: true,
+        tool_schema_root: ToolSchemaRoot::AsSent,
     };
 
     /// Another provider's Responses API: as OpenAI's, but without tool namespaces, which
@@ -78,6 +83,14 @@ impl ResponsesProfile {
     #[must_use]
     pub const fn without_openai_encrypted_reasoning(mut self) -> Self {
         self.openai_encrypted_reasoning = false;
+        self
+    }
+
+    /// What the provider takes at the root of a function tool's parameter schema; Kaeso
+    /// merges other roots into one object schema.
+    #[must_use]
+    pub const fn tool_schema_root(mut self, root: ToolSchemaRoot) -> Self {
+        self.tool_schema_root = root;
         self
     }
 }

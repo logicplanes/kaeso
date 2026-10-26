@@ -120,9 +120,14 @@ impl Codec for OpenAiChat {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
-        let crate::adapt::Adapted { req, left_out, .. } =
-            crate::adapt::for_target(req, DIALECT, ctx)?;
+        let crate::adapt::Adapted {
+            req,
+            left_out,
+            adapted,
+            ..
+        } = crate::adapt::for_target(req, DIALECT, ctx)?;
         ctx.left_out = left_out;
+        ctx.adapted = adapted;
         check::check(&req, &ctx.origin(DIALECT))?;
         let Request::Generate(generate) = req.as_ref() else {
             return Err(KppError::unsupported_by(

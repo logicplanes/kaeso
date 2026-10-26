@@ -111,6 +111,28 @@ Ein `namespace`-Tool von OpenAI Responses fasst Funktions-Tools unter einem Name
 
 `ResponsesProfile::tool_namespaces` sagt, ob ein Responses-Ziel Namespaces annimmt; nur `ResponsesProfile::OPENAI` tut das. `EgressCtx::with_tool_namespaces` überschreibt es für eine Anfrage.
 
+## Tool-Schemas mit Union-Wurzel
+
+Anthropic und SpaceX nehmen die Parameter eines Funktions-Tools nur mit einem Objekt an der Wurzel des Schemas an. Manche Apps setzen dort ein `oneOf`, `anyOf` oder `allOf`: das Tool `automation_update` von Codex Desktop (im Namespace `mcp__codex_app`), MCP-Tools aus Zods `z.union` oder `z.discriminatedUnion` und Pydantic-Modelle mit einer `Union` an der Wurzel. Für diese Ziele führt Kaeso eine solche Wurzel zu einem einzigen Objekt-Schema zusammen. Das Tool behält seinen Namen, und die Aufrufe des Modells gehen so an die App zurück, wie das Modell sie geschrieben hat; die App prüft die Argumente gegen ihr eigenes Schema.
+
+| Ziel | Wurzel, die es annimmt | Quelle |
+| --- | --- | --- |
+| Anthropic | Ein Objekt ohne `oneOf`, `anyOf` oder `allOf` an der Wurzel | Die [Referenz der Messages API](https://platform.claude.com/docs/en/api/messages/create) gibt `input_schema` den `type` `"object"`; jedes der drei an der Wurzel beantwortet Anthropic mit 400, `input_schema does not support oneOf, allOf, or anyOf at the top level` (live von Codex Desktop am 2026-10-26 gesehen). |
+| SpaceX, Responses und Chat Completions (`ToolSchemaRoot::ObjectUnions`) | Ein Objekt oder ein `oneOf` oder `anyOf`, dessen Zweige alle eingebettete Objekte sind; `allOf` nur an einer Objekt-Wurzel | xAIs [Leitfaden zu Function Calling](https://docs.x.ai/docs/guides/function-calling), Tool Schema Reference, gelesen am 2026-10-26. Live über ein Kaeso-Gateway am 2026-10-26 geprüft: `$ref`-Zweige, ein `string`-Zweig und eine `allOf`-Wurzel ohne `type: "object"` werden mit `invalid_client_tool_schema` abgelehnt; eine Union eingebetteter Objekte wird angenommen. |
+| OpenAI und die anderen Chat-Completions-Anbieter | Unverändert | OpenAI und Mistral beantworten `automation_update` von Codex Desktop unverändert (live am 2026-10-26 gesehen), daher behalten ihre Profile `ToolSchemaRoot::AsSent`. |
+
+Das Zusammenführen:
+
+- **Varianten.** Jeder Zweig eines `oneOf` oder `anyOf` an der Wurzel ist eine Variante. Ein `$ref` in die `$defs` oder `definitions` des Schemas wird aufgelöst, ein Zweig, der selbst eine Union ist, steuert seine eigenen Zweige bei, und die eigenen Schlüsselwörter der Wurzel und jeder `allOf`-Teil gelten für jede Variante.
+- **Properties.** Das zusammengeführte Objekt hat die Properties aller Varianten. Eine Property, die sich zwischen Varianten unterscheidet, wird zu einem `anyOf` ihrer Formen; `enum`- und `const`-Werte derselben Property werden dagegen zu einem `enum`, etwa `mode`.
+- **`required`.** Die Properties, die jede Variante verlangt; `allOf`-Teile fügen ihre hinzu.
+- **`additionalProperties`** und andere Schlüsselwörter bleiben, wenn jede Variante denselben Wert hat, etwa `additionalProperties: false`. `$defs`, `definitions`, `$schema`, `title` und `description` der Wurzel bleiben, wie sie sind, damit Verweise in Properties weiter aufgelöst werden.
+- **Beschreibung.** Bei mehr als einer Variante endet die Beschreibung des Tools mit einer Liste der Varianten, damit das Modell weiter weiß, welche Felder zusammengehören: `1. mode "view": requires mode, id.`
+- **Unverändert.** Unions in Properties, eine Union an der Wurzel, die das Ziel annimmt, und die Argumente von Tool-Aufrufen.
+- **Abgelehnt.** Eine Union an der Wurzel mit einem Zweig, der kein Objekt ist, etwa `{"type": "string"}`, ein `$ref`, der nicht in die `$defs` oder `definitions` des Schemas zeigt, und eine Wurzel, die mehr als 64 Varianten ergibt, sind `Unsupported`. Die Meldung nennt das Tool, und `param` ist sein Pfad in der Anfrage.
+
+Jedes zusammengeführte Tool nennt der Header `kaeso-adapted` der Antwort mit seinem Pfad in der Anfrage, etwa `tools[0].tools[3]` für das vierte Tool des ersten Namespace ([Antwort-Header](../../api/model-api.md#antwort-header)), ebenso das Log des Gateways. Ein protokollierter Anfrage-Body behält das Schema der App. `ToolSchemaRoot` an `ChatProfile` und `ResponsesProfile` sagt, was ein Anbieter annimmt; Anthropic Messages bekommt immer ein einziges Objekt. Fixture: `openai_responses/requests/codex-desktop-root-union.json`.
+
 ## Tool-Suche
 
 Anthropics Tool-Suche lädt Tools bei Bedarf. Ein Tool mit `defer_loading: true` bleibt aus dem Kontext des Modells, bis eine Suche einen `tool_reference`-Block mit seinem Namen liefert; ab dann sieht das Modell seine Definition in jedem Zug ([Tool-Suche](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)). Claude Code sucht mit seinem eigenen Tool `ToolSearch`: Jede Sitzung beginnt mit einem zurückgestellten `DeferredToolPlaceholder`, und sobald `ToolSearch` ein Tool findet, sendet jede spätere Anfrage dieses Tool zurückgestellt und ein `tool_result` mit seiner `tool_reference`. Andere Formate kennen keine zurückgestellten Tools, daher tut Kaeso für sie, was Anthropic tut:

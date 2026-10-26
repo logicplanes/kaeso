@@ -27,7 +27,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 
 ## Drei Regeln
 
-1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat.
+1. **Gleiches Format, kein Verlust.** Eine Anfrage, die den Anbieter im selben Format erreicht, in dem sie kam, kommt so an, wie sie gesendet wurde. Nur der Modellname wird zur Modell-ID des Anbieters. Ein Stream fordert immer die Nutzung an, doch die App sieht sie nur, wenn sie danach gefragt hat. Die einzige Ausnahme ist ein Tool, dessen Schema der Anbieter in keiner Form annimmt: Eine Union an der Wurzel seiner Parameter wird zu einem Objekt, das der Header `kaeso-adapted` der Antwort nennt ([Tool-Schemas mit Union-Wurzel](../development/kpp/cross-format.md#tool-schemas-mit-union-wurzel)).
 2. **Ablehnen, nie weglassen.** Wechselt eine Anfrage das Format, lehnt Kaeso ein Feld, das das Ziel nicht umsetzen kann, mit einem Fehler ab, der es nennt. Weg lässt es nur Hinweise, die nicht ändern, was das Modell schreibt, und die wenigen optionalen Tools, die dem Ziel fehlen. Diese nennt der Header `kaeso-left-out` der Antwort ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools)).
 3. **Signiertes Reasoning geht nur nach Hause.** Verschlüsseltes oder signiertes Reasoning sendet Kaeso nur an das Format und den Anbieter zurück, die es ausgegeben haben.
 

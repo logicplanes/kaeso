@@ -111,6 +111,28 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 
 `ResponsesProfile::tool_namespaces` says whether a Responses target takes namespaces; only `ResponsesProfile::OPENAI` does. `EgressCtx::with_tool_namespaces` overrides it for one request.
 
+## Union tool schemas
+
+Anthropic and SpaceX take a function tool's parameters only with an object at the root of the schema. Some apps put a `oneOf`, `anyOf` or `allOf` there: Codex Desktop's `automation_update` tool (in the `mcp__codex_app` namespace), MCP tools built from Zod's `z.union` or `z.discriminatedUnion`, and Pydantic models with a `Union` root. For these targets Kaeso merges such a root into one object schema. The tool keeps its name, and the model's calls go back to the app as the model wrote them; the app checks the arguments against its own schema.
+
+| Target | Root it takes | Source |
+| --- | --- | --- |
+| Anthropic | An object without `oneOf`, `anyOf` or `allOf` at the root | The [Messages API reference](https://platform.claude.com/docs/en/api/messages/create) gives `input_schema` the `type` `"object"`; Anthropic answers any of the three at the root with a 400, `input_schema does not support oneOf, allOf, or anyOf at the top level` (seen live from Codex Desktop on 2026-10-26). |
+| SpaceX, Responses and Chat Completions (`ToolSchemaRoot::ObjectUnions`) | An object, or a `oneOf` or `anyOf` whose every branch is an inline object; `allOf` only on an object root | xAI's [function calling guide](https://docs.x.ai/docs/guides/function-calling), Tool Schema Reference, read 2026-10-26. Checked live through a Kaeso gateway on 2026-10-26: `$ref` branches, a `string` branch and an `allOf` root without `type: "object"` are refused with `invalid_client_tool_schema`; a union of inline objects is accepted. |
+| OpenAI and the other Chat Completions providers | As sent | OpenAI and Mistral answer Codex Desktop's `automation_update` as sent (seen live on 2026-10-26), so their profiles keep `ToolSchemaRoot::AsSent`. |
+
+The merge:
+
+- **Variants.** Each branch of a root `oneOf` or `anyOf` is a variant. A `$ref` that points into the schema's `$defs` or `definitions` is resolved, a branch that is itself a union adds its own branches, and the root's own keywords and each `allOf` part apply to every variant.
+- **Properties.** The merged object has every variant's properties. A property that differs between variants becomes an `anyOf` of its forms, except that `enum` and `const` values of the same property become one `enum`, such as `mode`.
+- **`required`.** The properties every variant requires; `allOf` parts add theirs.
+- **`additionalProperties`** and other keywords stay when every variant has the same value, such as `additionalProperties: false`. The root's `$defs`, `definitions`, `$schema`, `title` and `description` stay as they are, so references inside properties still resolve.
+- **Description.** With more than one variant, the tool's description ends with a list of them, so the model still knows which fields go together: `1. mode "view": requires mode, id.`
+- **Unchanged.** Unions inside properties, a root union that the target takes, and the arguments of tool calls.
+- **Refused.** A root union with a branch that is not an object, such as `{"type": "string"}`, a `$ref` that doesn't point into the schema's `$defs` or `definitions`, and a root that combines into more than 64 variants are `Unsupported`. The message names the tool, and `param` is its path in the request.
+
+Each merged tool is named in the reply's `kaeso-adapted` header by its path in the request, such as `tools[0].tools[3]` for the fourth tool of the first namespace ([response headers](../../api/model-api.md#response-headers)), and in the gateway's log. A logged request body keeps the app's schema. `ToolSchemaRoot` on `ChatProfile` and `ResponsesProfile` says what a provider takes; Anthropic Messages always gets one object. Fixture: `openai_responses/requests/codex-desktop-root-union.json`.
+
 ## Tool search
 
 Anthropic's tool search loads tools on demand. A tool with `defer_loading: true` stays out of the model's context until a search returns a `tool_reference` block that names it, and from then on the model sees its definition in every turn ([tool search tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)). Claude Code searches with its own `ToolSearch` tool: every session starts with a deferred `DeferredToolPlaceholder`, and once `ToolSearch` finds a tool, each later request sends that tool deferred and a `tool_result` with its `tool_reference`. Other formats have no deferred tools, so Kaeso does for them what Anthropic does:

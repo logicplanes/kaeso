@@ -27,7 +27,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 
 ## Three rules
 
-1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked.
+1. **Same format, no loss.** A request that reaches the provider in the format it came in arrives as it was sent. Only the model name becomes the provider's model id. A stream always asks for usage, but the app sees it only if it asked. A tool whose schema the provider takes in no form is the one exception: a union at the root of its parameters becomes one object, which the reply's `kaeso-adapted` header names ([union tool schemas](../development/kpp/cross-format.md#union-tool-schemas)).
 2. **Refuse, never drop.** When a request crosses formats, Kaeso refuses a field the target can't honor, with an error that names it. It leaves out only hints that don't change what the model writes, and the few optional tools the target lacks, which the reply's `kaeso-left-out` header names ([tools left out](../development/kpp/cross-format.md#tools-left-out)).
 3. **Signed reasoning goes home only.** Kaeso sends encrypted or signed reasoning back only to the format and provider that issued it.
 

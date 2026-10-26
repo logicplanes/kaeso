@@ -145,6 +145,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | OpenAI Responses 的 `custom_tool_call`、`local_shell_call` 及其输出 | `tool_use` 和 `tool_result` 块 | [Codex 工具历史](cross-format.md#codex-工具历史)。 |
 | OpenAI Responses 的 `text.verbosity` | 省略 | 没有对应字段；在 `kaeso-left-out` 中注明（参见[条件条目](cross-format.md#条件条目)）。 |
 | OpenAI Responses 的 `namespace` 工具 | 命名空间中的每个工具一个函数工具，名为 `<namespace>__<name>` | [工具命名空间](cross-format.md#工具命名空间)。 |
+| 根部带有 `oneOf`、`anyOf` 或 `allOf` 的工具参数，来自任何方言 | 一个对象 schema，其变体列在工具描述的末尾；在 `kaeso-adapted` 中注明 | Anthropic 拒绝 `input_schema` 根部的这些关键字（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | 外来 extras、未知的块、工具和工具选择、引用、外来文件 ID | `Unsupported` | `cross::check_foreign`（[请求](cross-format.md#请求)）。 |
 
 ## 回复

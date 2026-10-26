@@ -3,6 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use kaeso_codecs::ToolSchemaRoot;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
@@ -288,11 +289,13 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: true,
         chat: ChatProfile::compatible("SpaceX")
             .reasoning_fields(&["reasoning_content"])
-            .with_message_bookkeeping(),
+            .with_message_bookkeeping()
+            .tool_schema_root(ToolSchemaRoot::ObjectUnions),
         responses: ResponsesProfile::compatible("SpaceX")
             .xai_web_search()
             .without_null_reasoning_content()
-            .without_openai_encrypted_reasoning(),
+            .without_openai_encrypted_reasoning()
+            .tool_schema_root(ToolSchemaRoot::ObjectUnions),
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -505,6 +508,32 @@ mod tests {
                 "xai",
                 WebSearchTool::Xai,
                 ReasoningReplay::WithoutNullContent
+            )]
+        );
+    }
+
+    #[test]
+    fn only_spacex_merges_tool_schema_roots_in_both_formats() {
+        let merging: Vec<(&str, ToolSchemaRoot, ToolSchemaRoot)> = PROVIDERS
+            .iter()
+            .filter(|p| {
+                p.chat.request.tool_schema_root != ToolSchemaRoot::AsSent
+                    || p.responses.tool_schema_root != ToolSchemaRoot::AsSent
+            })
+            .map(|p| {
+                (
+                    p.id,
+                    p.chat.request.tool_schema_root,
+                    p.responses.tool_schema_root,
+                )
+            })
+            .collect();
+        assert_eq!(
+            merging,
+            [(
+                "xai",
+                ToolSchemaRoot::ObjectUnions,
+                ToolSchemaRoot::ObjectUnions
             )]
         );
     }

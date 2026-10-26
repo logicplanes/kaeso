@@ -13,6 +13,7 @@ mod openai_models;
 pub mod sse;
 mod struct_fields;
 pub mod testing;
+mod tool_roots;
 mod tool_search;
 mod verbosity;
 mod web_search;
@@ -33,3 +34,4 @@ pub use codec::{
     StreamDecoder, StreamEncoder, is_forwarded_header, parse_retry_after,
 };
 pub use keepalive::HIDDEN_TEXT_PER_KEEPALIVE;
+pub use tool_roots::ToolSchemaRoot;
