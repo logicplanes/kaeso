@@ -1,4 +1,15 @@
-import { forwardRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactElement, type ReactNode, type Ref } from "react";
+import {
+  forwardRef,
+  useId,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type FocusEvent,
+  type MouseEvent,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent, isExternalHref } from "../../utils/link-provider.js";
 import { warnMissingName, warnStylingClassName } from "../../utils/dev.js";
@@ -7,6 +18,7 @@ import { Spinner, useDelayedLoading } from "../loader/loader.js";
 import { KbdSequence } from "../kbd/kbd.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { SwapText } from "../swap-text/swap-text.js";
+import { useTruncated } from "../../hooks/use-truncated.js";
 
 export const KAESO_BUTTON_VARIANTS = {
   variant: {
@@ -22,7 +34,7 @@ export const KAESO_BUTTON_VARIANTS = {
     "danger-secondary": { classes: "material-danger-secondary", description: "Raised with danger text; tints on hover. Destructive triggers." },
     link: {
       classes:
-        "bg-transparent text-fg underline decoration-line-strong decoration-1 underline-offset-3 hover:decoration-current active:decoration-current open:decoration-current disabled:text-fg-disabled",
+        "bg-transparent text-fg underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current active:decoration-current open:decoration-current disabled:text-fg-disabled",
       description: "Text with an underline, for actions inside sentences",
     },
   },
@@ -52,6 +64,31 @@ const TRAILING_ICON_PADDING: Record<ButtonSize, string> = { xs: "pr-8", sm: "pr-
 const CIRCLE: Record<ButtonSize, string> = { xs: "size-24", sm: "size-32", md: "size-36", lg: "size-40", xl: "size-48" };
 export const BUTTON_ICON_SIZE: Record<ButtonSize, IconSize> = { xs: "xs", sm: "sm", md: "sm", lg: "md", xl: "lg" };
 
+const ARIA_KEY: Record<string, string> = {
+  cmd: "Meta",
+  ctrl: "Control",
+  alt: "Alt",
+  option: "Alt",
+  shift: "Shift",
+  enter: "Enter",
+  esc: "Escape",
+  backspace: "Backspace",
+  tab: "Tab",
+  up: "ArrowUp",
+  down: "ArrowDown",
+  left: "ArrowLeft",
+  right: "ArrowRight",
+};
+
+// aria-keyshortcuts lists chords only, so a sequence ("G then L") gets none; "mod" is offered as both platforms' chord.
+function ariaKeyShortcuts(keys: string[] | string[][]): string | undefined {
+  const chord = (Array.isArray(keys[0]) ? (keys.length === 1 ? keys[0] : []) : keys) as string[];
+  if (!chord.length) return undefined;
+  const join = (mod: string) =>
+    chord.map((k) => (k.toLowerCase() === "mod" ? mod : (ARIA_KEY[k.toLowerCase()] ?? (k.length === 1 ? k.toUpperCase() : k)))).join("+");
+  return chord.some((k) => k.toLowerCase() === "mod") ? `${join("Meta")} ${join("Control")}` : join("");
+}
+
 export function buttonClasses({
   variant = KAESO_BUTTON_DEFAULT_VARIANTS.variant,
   size = KAESO_BUTTON_DEFAULT_VARIANTS.size,
@@ -68,14 +105,14 @@ export function buttonClasses({
   fullWidth?: boolean | undefined;
 } = {}) {
   return cn(
-    "relative inline-flex shrink-0 select-none items-center justify-center whitespace-nowrap no-underline",
+    "relative inline-flex max-w-full shrink-0 select-none items-center justify-center whitespace-nowrap no-underline",
     "cursor-pointer transition-control focus-ring tap-target disabled:cursor-not-allowed",
     KAESO_BUTTON_VARIANTS.size[size].classes,
     KAESO_BUTTON_VARIANTS.shape[shape].classes,
     shape === "circle" && CIRCLE[size],
     shape === "pill" && leading && variant !== "link" && LEADING_ICON_PADDING[size],
     shape === "pill" && trailing && variant !== "link" && TRAILING_ICON_PADDING[size],
-    variant === "link" && "-mx-4 px-4",
+    variant === "link" && "-mx-2 h-auto rounded-code px-2 align-baseline",
     KAESO_BUTTON_VARIANTS.variant[variant].classes,
     fullWidth && "w-full",
   );
@@ -132,6 +169,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   } = props;
   const LinkComp = useLinkComponent();
   const [focused, setFocused] = useState(false);
+  const labelRef = useRef<HTMLSpanElement>(null);
   warnStylingClassName("Button", className);
 
   const spinning = useDelayedLoading(loading);
@@ -151,6 +189,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
 
   // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.
   const softDisabled = (!!disabledReason || focused) && disabled;
+  const cut = useTruncated(labelRef, !isCircle);
+  const describe = !!disabledReason && disabled && disabledReason !== (props as { "aria-label"?: string | undefined })["aria-label"];
   const inert = busy || softDisabled;
   const classes = cn(
     buttonClasses({
@@ -162,6 +202,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
       fullWidth: !!fullWidth,
     }),
     busy && "cursor-progress",
+    size === "xs" && count !== undefined && !trailingIcon && !shortcut && "pr-2",
     className,
   );
 
@@ -174,7 +215,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   ) : (
     <>
       {spinning && leadingIcon ? <Spinner size={spinnerSize} /> : leadingIcon ? <Icon icon={leadingIcon} size={iconSize} /> : null}
-      <span className={cn("inline-flex min-w-0 items-center", spinning && !leadingIcon && "opacity-0")}>
+      <span ref={labelRef} className={cn("min-w-0 truncate", spinning && !leadingIcon && "opacity-0")}>
         {reserveLabels ? <SwapText reserve={reserveLabels}>{(props as PillButtonProps).children}</SwapText> : (props as PillButtonProps).children}
       </span>
       {count !== undefined && (
@@ -187,7 +228,14 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
           {count}
         </span>
       )}
-      {shortcut && <KbdSequence keys={shortcut} tone={variant === "primary" || variant === "danger" ? "onInk" : "default"} />}
+      {shortcut && (
+        <KbdSequence
+          aria-hidden
+          keys={shortcut}
+          tone={variant === "primary" || variant === "danger" ? "onInk" : "default"}
+          className={cn(variant === "danger" && "kbd-on-danger")}
+        />
+      )}
       {trailingIcon && <Icon icon={trailingIcon} size={iconSize} />}
       {spinning && !leadingIcon && <Spinner size={spinnerSize} className="absolute inset-0 m-auto" />}
     </>
@@ -221,6 +269,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         {...(target ? { target } : external ? { target: "_blank" } : {})}
         {...(rel ? { rel } : external ? { rel: "noopener noreferrer" } : {})}
         {...(domProps as object)}
+        {...(shortcut ? { "aria-keyshortcuts": ariaKeyShortcuts(shortcut) } : {})}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         onClick={handleClick}
         onFocus={handleFocus}
@@ -237,9 +286,11 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         className={classes}
         disabled={disabled && !softDisabled}
         {...(domProps as object)}
+        {...(shortcut ? { "aria-keyshortcuts": ariaKeyShortcuts(shortcut) } : {})}
         {...(softDisabled ? { "aria-disabled": true } : {})}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         {...(softDisabled ? { "data-disabled": "" } : {})}
+        {...(describe ? { "aria-description": disabledReason } : {})}
         onClick={handleClick}
         onFocus={handleFocus}
         onBlur={handleBlur}
@@ -251,6 +302,9 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
 
   if (disabledReason && disabled) {
     return <Tooltip content={disabledReason}>{el as ReactElement}</Tooltip>;
+  }
+  if (cut) {
+    return <Tooltip content={(props as PillButtonProps).children}>{el as ReactElement}</Tooltip>;
   }
   return el;
 });

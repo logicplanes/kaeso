@@ -237,71 +237,137 @@ export function DontTwoPrimaries() {
 
 const VARIANTS = Object.keys(KAESO_BUTTON_VARIANTS.variant) as ButtonVariant[];
 const SIZES = Object.keys(KAESO_BUTTON_VARIANTS.size) as ButtonSize[];
-const STATES: [string, Record<string, unknown>][] = [
-  ["Rest", {}],
-  ["Hover", { "data-force": "hover" }],
-  ["Focus", { "data-force": "focus" }],
-  ["Pressed", { "data-force": "pressed" }],
-  ["Open", { "data-force": "open" }],
-  ["Disabled", { disabled: true }],
-  ["Loading", { loading: true }],
+const STATE_SETS: [string, Record<string, unknown>][][] = [
+  [
+    ["Rest", {}],
+    ["Hover", { "data-force": "hover" }],
+    ["Focus", { "data-force": "focus" }],
+    ["Pressed", { "data-force": "pressed" }],
+  ],
+  [
+    ["Open", { "data-force": "open" }],
+    ["Disabled", { disabled: true }],
+    ["Soft-disabled", { disabled: true, disabledReason: "Ask an owner to create keys" }],
+    ["Loading", { loading: true }],
+  ],
 ];
 
 export function States() {
   return (
     <>
-      <StateMatrix title="Variants × states" columns={STATES.map(([s]) => s)}>
-        {VARIANTS.map((v) => (
+      {STATE_SETS.map((states, i) => (
+        <StateMatrix key={i} title={i === 0 ? "Variants × states" : "Variants × more states"} columns={states.map(([s]) => s)}>
+          {VARIANTS.map((v) => (
+            <StateRow key={v} label={v}>
+              {states.map(([s, p]) => (
+                <StateCell key={s} id={`${v}-${s.toLowerCase()}`}>
+                  <Button variant={v} {...p}>
+                    Add key
+                  </Button>
+                </StateCell>
+              ))}
+            </StateRow>
+          ))}
+        </StateMatrix>
+      ))}
+      <StateMatrix title="Variants × content" columns={["Shortcut", "Count", "As a link"]}>
+        {VARIANTS.filter((v) => v !== "link").map((v) => (
           <StateRow key={v} label={v}>
-            {STATES.map(([s, p]) => (
-              <StateCell key={s} id={`${v}-${s.toLowerCase()}`}>
-                <Button variant={v} {...p}>
-                  Create key
-                </Button>
-              </StateCell>
-            ))}
-          </StateRow>
-        ))}
-      </StateMatrix>
-      <StateMatrix title="Sizes × content" columns={["Label", "Leading icon", "Trailing icon", "Circle", "Count", "Loading"]}>
-        {SIZES.map((s) => (
-          <StateRow key={s} label={s}>
             <StateCell>
-              <Button size={s}>Save</Button>
-            </StateCell>
-            <StateCell>
-              <Button size={s} leadingIcon={icons.add}>
-                Add
+              <Button variant={v} size="lg" shortcut={["mod", "enter"]}>
+                Send
               </Button>
             </StateCell>
             <StateCell>
-              <Button size={s} trailingIcon={icons.chevronDown}>
-                Period
-              </Button>
-            </StateCell>
-            <StateCell>
-              <Button size={s} shape="circle" icon={icons.filter} aria-label="Filter" />
-            </StateCell>
-            <StateCell>
-              <Button size={s} count={8}>
+              <Button variant={v} count={3}>
                 Logs
               </Button>
             </StateCell>
             <StateCell>
-              <Button size={s} variant="primary" loading leadingIcon={icons.add}>
-                Add
+              <Button variant={v} href="/docs/keys">
+                Open docs
               </Button>
             </StateCell>
           </StateRow>
         ))}
       </StateMatrix>
-      <StateSection title="Long labels and full width">
+      {[
+        ["Label", "Leading icon", "Trailing icon"],
+        ["Circle", "Count", "Loading"],
+      ].map((cols, i) => (
+        <StateMatrix key={cols[0]} title={i === 0 ? "Sizes × content" : "Sizes × more content"} columns={cols}>
+          {SIZES.map((s) => (
+            <StateRow key={s} label={s}>
+              {i === 0 ? (
+                <>
+                  <StateCell>
+                    <Button size={s}>Save</Button>
+                  </StateCell>
+                  <StateCell>
+                    <Button size={s} leadingIcon={icons.add}>
+                      Add
+                    </Button>
+                  </StateCell>
+                  <StateCell>
+                    <Button size={s} trailingIcon={icons.chevronDown}>
+                      Period
+                    </Button>
+                  </StateCell>
+                </>
+              ) : (
+                <>
+                  <StateCell>
+                    <Button size={s} shape="circle" icon={icons.filter} aria-label="Filter" />
+                  </StateCell>
+                  <StateCell>
+                    <Button size={s} count={8}>
+                      Logs
+                    </Button>
+                  </StateCell>
+                  <StateCell>
+                    <Button size={s} variant="primary" loading leadingIcon={icons.add}>
+                      Add
+                    </Button>
+                  </StateCell>
+                </>
+              )}
+            </StateRow>
+          ))}
+        </StateMatrix>
+      ))}
+      <StateSection title="Inside a sentence">
+        <div className="flex max-w-320 flex-col gap-12">
+          <p className="text-body text-fg-secondary">
+            No keys yet.{" "}
+            <Button variant="link" size="sm">
+              Create the first key
+            </Button>{" "}
+            to send a request.
+          </p>
+          <p className="text-body text-fg-secondary">
+            No keys yet.{" "}
+            <Button variant="link" size="sm" data-force="focus">
+              Create the first key
+            </Button>{" "}
+            to send a request.
+          </p>
+        </div>
+      </StateSection>
+      <StateSection title="Long labels and narrow containers">
         <div className="flex w-320 flex-col gap-12">
           <Button fullWidth variant="primary">
             Create key for production
           </Button>
           <div className="w-160">
             <Button>Read the gateway setup guide</Button>
+          </div>
+          <div className="w-160">
+            <Button variant="danger-secondary">Projektschlüssel endgültig löschen</Button>
+          </div>
+          <div className="w-160">
+            <Button leadingIcon={icons.add} variant="primary">
+              Dienstkonto hinzufügen
+            </Button>
           </div>
         </div>
       </StateSection>

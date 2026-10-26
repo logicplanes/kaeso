@@ -4,9 +4,10 @@ export const docs = {
   Button: {
     description: "The button. Every one is a pill; icon-only buttons are circles (see `IconButton`).",
     props: {
-      children: "The button's label: a verb first, in sentence case.",
+      children: "The button's label: a verb first, in sentence case. A label wider than its container is cut with an ellipsis and shown whole in a tooltip.",
       count: "A count after the label.",
-      disabledReason: "Why the button is disabled, shown as a tooltip. The button stays focusable so people can read it.",
+      disabledReason:
+        "Why the button is disabled, shown as a tooltip and read out as the button's description. The button stays focusable so people can reach it.",
       fullWidth: "Fills the width of its container.",
       href: "Renders a link that looks like the button.",
       icon: "The only content of an icon button; give it an `aria-label`.",
@@ -17,7 +18,7 @@ export const docs = {
       reserveLabels: 'Every label this button can show ("Copy key", "Copied"). The button keeps the width of the widest, so a state change never resizes it.',
       shape: "Icon-only buttons are circles and need an accessible name.",
       shortcut: "A shortcut hint after the label (lg and xl, and in menus).",
-      size: "The height, from `xs` (24px) to `xl` (44px).",
+      size: "The height, from `xs` (24px) to `xl` (48px).",
       target: "Where the link opens, as on an `a` element.",
       trailingIcon: "An icon after the text.",
       variant:

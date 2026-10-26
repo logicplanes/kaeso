@@ -6,18 +6,18 @@ Inter for the interface, Geist Mono for ids, keys and code. Fourteen pixels is t
 
 Ten steps, each with its own line height and tracking. Larger sizes tighten; small sizes open up slightly.
 
-| Utility         | Use                                       |
-| --------------- | ----------------------------------------- |
-| `text-micro`    | Key caps, tiny counts                     |
-| `text-caption`  | Group labels, column headers, field hints |
-| `text-small`    | Descriptions, secondary cells, metadata   |
-| `text-body`     | The base: labels, rows, controls          |
-| `text-body-lg`  | Lead sentences, settings titles           |
-| `text-title-sm` | Section titles                            |
-| `text-title`    | Dialog and sheet titles                   |
-| `text-title-lg` | Page titles                               |
-| `text-display`  | The home page only                        |
-| `text-metric`   | Big numbers, tabular                      |
+| Utility         | Use                                     |
+| --------------- | --------------------------------------- |
+| `text-micro`    | Chart ticks, avatar initials            |
+| `text-caption`  | Group labels, column headers, key caps  |
+| `text-small`    | Descriptions, secondary cells, metadata |
+| `text-body`     | The base: labels, rows, controls        |
+| `text-body-lg`  | Lead sentences, settings titles         |
+| `text-title-sm` | Section titles                          |
+| `text-title`    | Dialog and sheet titles                 |
+| `text-title-lg` | Page titles                             |
+| `text-display`  | The home page only                      |
+| `text-metric`   | Big numbers, tabular                    |
 
 ## Families
 

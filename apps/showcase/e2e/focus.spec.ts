@@ -29,7 +29,7 @@ test.describe("no focus ring after a click", () => {
       let checked = 0;
       for (const target of targets.slice(0, 24)) {
         const reachable = await target.evaluate((el: Element) => {
-          if (!el.isConnected) return false;
+          if (!el.isConnected || el.matches(":disabled, [aria-disabled=true]")) return false;
           el.scrollIntoView({ block: "nearest", inline: "nearest" });
           const r = el.getBoundingClientRect();
           const hit = r.width && r.height ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;

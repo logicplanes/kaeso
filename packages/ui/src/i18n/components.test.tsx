@@ -94,7 +94,7 @@ describe("components in German and Chinese", () => {
 
   it("speaks key names in the language", () => {
     inLanguage("de", de, <Kbd>shift</Kbd>);
-    expect(screen.getByLabelText("Umschalttaste")).toBeInTheDocument();
+    expect(screen.getByText("Umschalttaste")).toHaveClass("sr-only");
   });
 
   it("stays English without a provider", () => {

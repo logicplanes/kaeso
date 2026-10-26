@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { lazyModulesSettled } from "../../utils/lazy-module.js";
 import userEvent from "@testing-library/user-event";
 import { Button } from "./button.js";
 import { SwapText } from "../swap-text/swap-text.js";
@@ -81,5 +82,43 @@ describe("SwapText", () => {
     render(<SwapText reserve={["Copied"]}>Copy</SwapText>);
     expect(screen.getByText("Copy")).toBeVisible();
     expect(screen.getByText("Copied")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("reads out why a soft-disabled button is unavailable", () => {
+    render(
+      <Button disabled disabledReason="Ask an owner to add models">
+        Add model
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Add model" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).toHaveAttribute("aria-description", "Ask an owner to add models");
+  });
+
+  it("keeps the shortcut out of the name, so the name is the visible label, and announces it as its key shortcut", () => {
+    render(
+      <>
+        <Button shortcut={["mod", "k"]}>Search</Button>
+        <Button shortcut={["shift", "enter"]}>Send</Button>
+        <Button shortcut={[["g"], ["l"]]}>Logs</Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-keyshortcuts", "Meta+K Control+K");
+    expect(screen.getByRole("button", { name: "Send" })).toHaveAttribute("aria-keyshortcuts", "Shift+Enter");
+    expect(screen.getByRole("button", { name: "Logs" })).not.toHaveAttribute("aria-keyshortcuts");
+  });
+
+  it("shows a cut label whole in a tooltip", async () => {
+    const width = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(240);
+    const client = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
+    render(<Button>Read the gateway setup guide</Button>);
+    await act(() => lazyModulesSettled());
+    const trigger = screen.getByRole("button", { name: "Read the gateway setup guide" });
+    expect(trigger).toHaveAttribute("data-base-ui-tooltip-trigger");
+    await userEvent.tab();
+    expect(trigger).toHaveFocus();
+    await waitFor(() => expect([...document.querySelectorAll("[data-side]")].some((el) => el.textContent === "Read the gateway setup guide")).toBe(true));
+    width.mockRestore();
+    client.mockRestore();
   });
 });

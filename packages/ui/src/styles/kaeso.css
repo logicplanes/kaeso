@@ -181,6 +181,10 @@
   }
 }
 
+@utility kbd-on-danger {
+  --k-on-ink: var(--k-on-danger);
+}
+
 @utility controls-on-fill {
   --k-fill-control: var(--k-control-on-fill);
   --k-fill-control-hover: var(--k-control-on-fill-hover);
@@ -294,8 +298,7 @@
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
-    background-color: var(--k-danger-tint);
-    filter: brightness(0.94);
+    background-color: color-mix(in srgb, var(--k-danger) 12%, var(--k-danger-tint));
     transform: scale(0.985);
   }
   &:disabled,
@@ -338,7 +341,7 @@
   }
   &:disabled,
   &[data-disabled],
-  &:has(:disabled),
+  &:has(:is(input, textarea):disabled),
   &[data-force~="disabled"] {
     background-color: var(--k-fill-1);
     color: var(--k-text-disabled);
@@ -452,6 +455,14 @@
   }
   :where(.material-field, .material-selector):is([aria-invalid="true"], [data-invalid], :has([aria-invalid="true"]), [data-force~="invalid"]) {
     outline-style: dashed;
+  }
+  :where(.material-field):is(:disabled, [data-disabled], :has(:is(input, textarea):disabled), [data-force~="disabled"]) {
+    outline-color: GrayText;
+    &,
+    & :where(*),
+    & ::placeholder {
+      color: GrayText;
+    }
   }
   :root:not([data-k-pointer]) :where(.focus-ring):focus-visible,
   :where(.focus-ring)[data-force~="focus"] {
@@ -924,6 +935,9 @@
 
 @utility divider-l {
   box-shadow: inset 1px 0 0 var(--k-line);
+  @media (forced-colors: active) {
+    border-inline-start: 1px solid CanvasText;
+  }
 }
 
 @utility grid-cols-label {

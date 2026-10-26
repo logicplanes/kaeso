@@ -50,18 +50,27 @@ export const Kbd = forwardRef<HTMLElement, KbdProps>(function Kbd({ children, to
   const t = useUiText();
   const mac = useMac();
   const label = typeof children === "string" ? keyLabel(children, t, mac) : null;
+  const spoken = label && label.spoken.toLowerCase() !== label.visual.toLowerCase() ? label.spoken : null;
   return (
     <kbd
       ref={ref}
       className={cn(
-        "inline-flex h-20 min-w-20 shrink-0 items-center justify-center rounded-kbd px-5 font-sans text-micro font-medium tabular",
+        "relative inline-flex h-20 min-w-20 shrink-0 items-center justify-center rounded-kbd px-5 font-sans text-caption font-medium tabular",
         KAESO_KBD_VARIANTS.tone[tone].classes,
         className,
       )}
-      {...(label && label.spoken !== label.visual ? { "aria-label": label.spoken, title: label.spoken } : {})}
       {...props}
     >
-      {label ? label.visual : children}
+      {spoken ? (
+        <>
+          <span aria-hidden="true">{label?.visual}</span>
+          <span className="sr-only">{spoken}</span>
+        </>
+      ) : label ? (
+        label.visual
+      ) : (
+        children
+      )}
     </kbd>
   );
 });
@@ -81,8 +90,8 @@ export const KbdSequence = forwardRef<HTMLSpanElement, KbdSequenceProps>(functio
         <Fragment key={i}>
           {i > 0 && <span className={cn("text-caption font-medium", tone === "onInk" ? "text-on-ink/70" : "text-fg-secondary")}>{t("kbd.then", "then")}</span>}
           <span className="inline-flex items-center gap-2">
-            {chord.map((k) => (
-              <Kbd key={k} tone={tone}>
+            {chord.map((k, j) => (
+              <Kbd key={`${k}-${j}`} tone={tone}>
                 {k}
               </Kbd>
             ))}

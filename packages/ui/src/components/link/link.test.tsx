@@ -58,3 +58,29 @@ describe("Link", () => {
     expect(link.querySelector("svg")).toBeNull();
   });
 });
+
+describe("Link with an external icon", () => {
+  it("keeps a card's height: the icon sits in the corner, not on a row of its own", () => {
+    render(
+      <Link href="https://docs.kaeso.example.com/sdk" variant="card">
+        <span>SDK reference</span>
+        <span>Every request and response field.</span>
+      </Link>,
+    );
+    const link = screen.getByRole("link", { name: /SDK reference/ });
+    expect(link.querySelector("svg")?.parentElement).toHaveClass("absolute", "end-16", "top-12");
+    expect(link).toHaveClass("pe-36");
+  });
+
+  it("puts a heading's # after the external icon, so the icon stays beside the words", () => {
+    render(
+      <Link href="https://docs.kaeso.example.com/keys" variant="heading">
+        Provider keys
+      </Link>,
+    );
+    const link = screen.getByRole("link", { name: /Provider keys/ });
+    const icon = link.querySelector("svg");
+    const hash = [...link.querySelectorAll("span")].find((s) => s.textContent === "#");
+    expect(icon && hash && icon.compareDocumentPosition(hash) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

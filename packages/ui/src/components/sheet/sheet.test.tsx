@@ -198,7 +198,7 @@ describe("Sheet", () => {
         <p>Language</p>
       </Sheet>,
     );
-    expect(watched.map((el) => el.textContent)).toEqual(["Menu", "Theme", "Language", "Done"]);
+    expect(watched.filter((el) => !el.closest("button")).map((el) => el.textContent)).toEqual(["Menu", "Theme", "Language", "Done"]);
     unmount();
     watched.length = 0;
     render(
