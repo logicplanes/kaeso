@@ -112,6 +112,29 @@ OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称�
 
 `ResponsesProfile::tool_namespaces` 表示 Responses 目标是否接受命名空间；只有 `ResponsesProfile::OPENAI` 接受。`EgressCtx::with_tool_namespaces` 可为单个请求覆盖该设置。
 
+## 联合类型的工具 schema
+
+Anthropic 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有些应用会在根部放置 `oneOf`、`anyOf` 或 `allOf`：Codex Desktop 的 `automation_update` 工具（位于 `mcp__codex_app` 命名空间中）、由 Zod 的 `z.union` 或 `z.discriminatedUnion` 生成的 MCP 工具，以及根部为 `Union` 的 Pydantic 模型。对于这些目标，Kaeso 会把这样的根部合并为一个对象 schema。工具保留其名称，模型的调用按模型写出的样子返回给应用；应用会根据自己的 schema 校验参数。
+
+| 目标 | 接受的根部 | 来源 |
+| --- | --- | --- |
+| Anthropic | 根部没有 `oneOf`、`anyOf` 或 `allOf` 的对象 | [Messages API 参考](https://platform.claude.com/docs/en/api/messages/create)把 `input_schema` 的 `type` 定为 `"object"`；根部出现这三者中的任何一个时，Anthropic 会以 400 回应 `input_schema does not support oneOf, allOf, or anyOf at the top level`（2026-10-26 在 Codex Desktop 上实际看到）。 |
+| SpaceX，Responses 和 Chat Completions（`ToolSchemaRoot::ObjectUnions`） | 对象，或每个分支都是内联对象的 `oneOf` 或 `anyOf`；`allOf` 只能出现在对象根部 | xAI 的[函数调用指南](https://docs.x.ai/docs/guides/function-calling)中的 Tool Schema Reference，2026-10-26 阅读。2026-10-26 通过 Kaeso 网关实际验证：`$ref` 分支、`string` 分支以及既没有 `type: "object"` 也没有 `properties` 的 `allOf` 根部会被以 `invalid_client_tool_schema` 拒绝；由内联对象组成的联合会被接受，带有 `properties` 但没有 `type` 的 schema 在根部和分支中都会被 SpaceX 视为对象。 |
+| OpenAI 和其他 Chat Completions 服务商 | 原样 | OpenAI 和 Mistral 会原样响应 Codex Desktop 的 `automation_update`（2026-10-26 实际看到），因此它们的配置保持 `ToolSchemaRoot::AsSent`。 |
+
+合并方式：
+
+- **变体。** 根部 `oneOf` 或 `anyOf` 的每个分支是一个变体。指向 schema 的 `$defs` 或 `definitions` 的 `$ref` 会被解析，本身是联合的分支会贡献它自己的分支，根部自身的关键字和每个 `allOf` 部分适用于每个变体。
+- **精确组合。** 根部、它的 `allOf` 部分和一个分支必须对同一组参数同时成立，因此它们会被精确组合：其中两者都定义的属性会变为这两个定义的 `allOf`，它们的 `required` 列表会合并，带有 `additionalProperties: false` 的部分会排除它没有列出的属性。它们的 `description`、`title` 和 `$comment` 会被拼接，`examples` 会合并列出。`unevaluatedProperties: false` 也以同样方式封闭它所在的对象，范围是该对象内定义的所有属性；但当 `$schema` 指定 draft 7 或更早的版本时除外，这些版本会忽略该关键字。`$ref` 旁边的关键字遵循 `$schema` 所指定的草案：draft 7 及更早的版本会忽略它们，2019-09 及更新的版本会应用它们。
+- **属性。** 合并后的对象包含所有变体的属性。在不同变体之间有差异的属性会变为其各种形式的 `anyOf`；但同一属性的 `enum` 和 `const` 值在其注解（例如 `description`，包括 `$ref` 旁边的注解）一致时会合并为一个 `enum`，例如 `mode`。只有部分变体定义的属性会保留这些定义，即使另一个变体只是因为不限制额外属性才会接受它；因此遵循合并后 schema 的每次调用仍然符合某个变体。
+- **`required`。** 每个变体都要求的属性；`allOf` 部分会加入它们自己的。
+- **`additionalProperties`** 和其他关键字在每个变体的值都相同时保留，例如 `additionalProperties: false`。根部的 `$defs`、`definitions`、`$schema`、`title` 和 `description` 保持不变，因此属性中的引用仍能解析。
+- **描述。** 有多个变体时，工具描述的末尾会列出这些变体，让模型仍然知道哪些字段要一起使用：`1. mode "view": requires mode, id.` 只有部分变体才有、因而合并后的对象无法携带的关键字，会在其变体那一行中注明，例如 `; with minProperties 1`；分支自己的 `description` 位于该行末尾。合并后的对象接受所有组合；工具接受哪些参数仍由应用自己的 schema 决定。
+- **不变。** 属性内部的联合、目标接受的根部联合，以及工具调用的参数。
+- **拒绝。** 没有分支、因而没有任何参数符合的根部联合，根部联合中有不是对象的分支（例如 `{"type": "string"}`）、`$ref` 没有指向 schema 的 `$defs` 或 `definitions`、按所在位置解析的 `$dynamicRef` 和 `$recursiveRef`、根部以下设定相对引用基准的 `$id`、合并会移动或改变其目标的本地 `$ref`（例如指向某个分支自己的 `$defs` 或指向 `#`）、无法精确组合的部分（例如两个不同的 `minProperties`，或 `additionalProperties: false` 与另一部分要求的属性或另一部分的 `patternProperties` 相冲突）、与 `patternProperties` 或条件关键字并存的 `unevaluatedProperties`、`$schema` 未指定草案时 `$ref` 旁边除注解以外的关键字，以及根部组合出超过 64 个变体时，都是 `Unsupported`。错误消息会注明该工具，`param` 是它在请求中的路径。
+
+每个被合并的工具都会以它在请求中的路径出现在回复的 `kaeso-adapted` 响应头中，例如第一个命名空间的第四个工具为 `tools[0].tools[3]`（[响应头](../../api/model-api.md#响应头)），网关日志中也会记录。记录下来的请求正文保留应用的 schema。`ChatProfile` 和 `ResponsesProfile` 上的 `ToolSchemaRoot` 说明服务商接受什么；Anthropic Messages 总是收到一个对象。Fixture：`openai_responses/requests/codex-desktop-root-union.json`。
+
 ## 工具搜索
 
 Anthropic 的工具搜索按需加载工具。带 `defer_loading: true` 的工具不进入模型的上下文，直到某次搜索返回指名它的 `tool_reference` 块；此后模型在每一轮都能看到它的定义（[工具搜索工具](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool)）。Claude Code 用自己的 `ToolSearch` 工具搜索：每个会话都以一个延迟加载的 `DeferredToolPlaceholder` 开始；`ToolSearch` 找到某个工具后，之后的每个请求都会以延迟加载方式发送该工具，并附上一个带其 `tool_reference` 的 `tool_result`。其他格式没有延迟加载的工具，因此 Kaeso 替它们做 Anthropic 所做的事：

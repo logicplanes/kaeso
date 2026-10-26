@@ -133,6 +133,58 @@ async fn an_openai_chat_app_keeps_xai_reasoning_content_on_the_chat_dialect() {
 }
 
 #[tokio::test]
+async fn codex_desktops_union_tool_reaches_xai_as_one_object_and_says_so() {
+    let env = env().await;
+    let fixture = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../kaeso-codecs/fixtures/openai_responses/requests/codex-desktop-root-union.json"
+    ))
+    .unwrap();
+    let mut body: Value = serde_json::from_str(&fixture).unwrap();
+    body["model"] = json!("grok-4.3");
+    body["stream"] = json!(false);
+    body["input"][2]["content"][0]["text"] =
+        json!("Weather in Boston? [mock:fixture=providers/xai/recorded-tools-function]");
+    let r = call(&env, "/v1/responses", Some(&env.key), false, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("tools[0].tools[0]"));
+    assert_eq!(r.header("kaeso-left-out"), None);
+    let (_, _, sent) = sent(&env).unwrap();
+    let tools: Vec<(&str, bool)> = sent["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| {
+            (
+                t["name"].as_str().unwrap(),
+                t["parameters"].get("oneOf").is_some(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        tools,
+        [
+            ("mcp__codex_app__automation_update", false),
+            ("mcp__codex_app__list_threads", false)
+        ]
+    );
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            "grok-4.3",
+            "Hi [mock:fixture=providers/xai/recorded-text-input-string]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), None);
+}
+
+#[tokio::test]
 async fn an_anthropic_app_gets_xai_tool_calls_and_streams_in_its_own_format() {
     let env = env().await;
     let r = call(

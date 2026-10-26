@@ -7,12 +7,13 @@ use crate::codec::EgressCtx;
 use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, check_extras, is_chat_bookkeeping};
 use crate::openai_responses::{ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
-use crate::{tool_search, verbosity, web_search};
+use crate::{tool_roots, tool_search, verbosity, web_search};
 
 pub(crate) struct Draft<'a> {
     base: &'a GenerateRequest,
     edited: Option<GenerateRequest>,
     left_out: Vec<String>,
+    adapted: Vec<String>,
     search_limit: Option<(&'static str, u64)>,
 }
 
@@ -22,8 +23,13 @@ impl<'a> Draft<'a> {
             base,
             edited: None,
             left_out: Vec::new(),
+            adapted: Vec::new(),
             search_limit: None,
         }
+    }
+
+    pub(crate) fn original(&self) -> &'a GenerateRequest {
+        self.base
     }
 
     pub(crate) fn get(&self) -> &GenerateRequest {
@@ -42,6 +48,10 @@ impl<'a> Draft<'a> {
         self.left_out.push(path);
     }
 
+    pub(crate) fn adapt(&mut self, path: String) {
+        self.adapted.push(path);
+    }
+
     pub(crate) fn set_search_limit(&mut self, field: &'static str, limit: u64) {
         self.search_limit = Some((field, limit));
     }
@@ -50,6 +60,7 @@ impl<'a> Draft<'a> {
 pub(crate) struct Adapted<'a> {
     pub(crate) req: Cow<'a, Request>,
     pub(crate) left_out: Vec<String>,
+    pub(crate) adapted: Vec<String>,
     pub(crate) search_limit: Option<(&'static str, u64)>,
 }
 
@@ -70,6 +81,7 @@ pub(crate) fn for_target<'a>(
         return Ok(Adapted {
             req: Cow::Borrowed(req),
             left_out: Vec::new(),
+            adapted: Vec::new(),
             search_limit: None,
         });
     };
@@ -101,6 +113,7 @@ pub(crate) fn for_target<'a>(
     if !ctx.takes_tool_namespaces(target) {
         namespaces::flatten(&mut draft, target)?;
     }
+    tool_roots::for_target(&mut draft, target, ctx)?;
     if target == DialectId::OpenAiChat
         && !ctx.chat_profile.request.message_bookkeeping
         && has_bookkeeping(draft.get())
@@ -111,6 +124,7 @@ pub(crate) fn for_target<'a>(
     let Draft {
         edited,
         left_out,
+        adapted,
         search_limit,
         ..
     } = draft;
@@ -122,6 +136,7 @@ pub(crate) fn for_target<'a>(
     Ok(Adapted {
         req,
         left_out,
+        adapted,
         search_limit,
     })
 }

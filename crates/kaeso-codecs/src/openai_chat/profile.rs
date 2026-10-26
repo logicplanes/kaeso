@@ -3,6 +3,7 @@ use kaeso_kpp::{Block, GenerateRequest, KppError, Role};
 
 use super::DIALECT;
 use super::wire::ChatRequest;
+use crate::ToolSchemaRoot;
 use crate::wire::Ext;
 use serde_json::value::RawValue;
 
@@ -25,6 +26,7 @@ pub struct RequestProfile {
     pub verbosity: bool,
     pub message_bookkeeping: bool,
     pub greedy_top_p: bool,
+    pub tool_schema_root: ToolSchemaRoot,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -68,6 +70,7 @@ impl RequestProfile {
         verbosity: true,
         message_bookkeeping: false,
         greedy_top_p: false,
+        tool_schema_root: ToolSchemaRoot::AsSent,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -142,6 +145,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn greedy_top_p(mut self) -> Self {
         self.request.greedy_top_p = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn tool_schema_root(mut self, root: ToolSchemaRoot) -> Self {
+        self.request.tool_schema_root = root;
         self
     }
 

@@ -76,9 +76,11 @@ impl Codec for OpenAiResponses {
         let crate::adapt::Adapted {
             req,
             left_out,
+            adapted,
             search_limit,
         } = crate::adapt::for_target(req, DIALECT, ctx)?;
         ctx.left_out = left_out;
+        ctx.adapted = adapted;
         request::encode(&req, ctx, search_limit)
     }
 

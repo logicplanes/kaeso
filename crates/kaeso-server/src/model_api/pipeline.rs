@@ -725,6 +725,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         model: Some(eff.model_id.clone()),
         provider: Some(eff.provider.id().to_owned()),
         left_out: Vec::new(),
+        adapted: Vec::new(),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -883,8 +884,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             "left out of the request what the provider has no equivalent for"
         );
     }
+    if !ectx.adapted.is_empty() {
+        tracing::info!(
+            adapted = %ectx.adapted.join(", "),
+            "merged root unions of tool schemas into one object for the provider"
+        );
+    }
     let served = Served {
         left_out: ectx.left_out.clone(),
+        adapted: ectx.adapted.clone(),
         ..served.clone()
     };
     let fail = |stage: Stage| {

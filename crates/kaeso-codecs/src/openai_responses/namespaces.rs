@@ -80,6 +80,21 @@ fn flatten_tool(item: &RawItem, path: &str, target: DialectId) -> Result<Vec<Too
     Ok(out)
 }
 
+pub(crate) fn app_path(r: &GenerateRequest, sent_name: &str) -> Option<String> {
+    r.tools.iter().enumerate().find_map(|(i, tool)| match tool {
+        ToolDef::Function(f) if f.name == sent_name => Some(format!("tools[{i}]")),
+        ToolDef::Unknown(item) => {
+            let ns = namespace_tool(item)?;
+            ns.tools.iter().enumerate().find_map(|(j, child)| {
+                let own = serde_json::from_str::<Named>(child.get()).ok()?;
+                (flat_name(&ns.name, &own.name) == sent_name)
+                    .then(|| format!("tools[{i}].tools[{j}]"))
+            })
+        }
+        _ => None,
+    })
+}
+
 fn call_namespace(call: &kaeso_kpp::ToolCallBlock) -> Option<String> {
     if !call.extras.is_from(DIALECT) {
         return None;

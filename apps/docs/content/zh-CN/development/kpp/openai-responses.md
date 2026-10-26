@@ -351,6 +351,7 @@ order: 7
 |---|---|
 | `xai_web_search()` | 把托管搜索作为 xAI 的 `web_search` 工具发送（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | `without_null_reasoning_content()` | 省略应用发回的推理项上显式的 `content: null`。 |
+| `tool_schema_root(root)` | 把服务商不接受的函数工具根部联合合并为一个对象 schema；`ToolSchemaRoot::ObjectUnions` 保留由内联对象组成的联合（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | `without_openai_encrypted_reasoning()` | 省略应用发回的、带 OpenAI 的 `encrypted_content` 的推理项。它是一个 Fernet 令牌（[Fernet 规范](https://github.com/fernet/spec/blob/master/Spec.md)），因此以 `gAAAAA` 开头，`fixtures/openai_responses/` 中 OpenAI 的每份录制都是如此。 |
 
 ### SpaceX
@@ -363,6 +364,7 @@ order: 7
 | `web_search_call` 项、`url_citation` 标注 | 与 OpenAI 相同 | |
 | `namespace` 工具（请求） | 展开为函数工具 | SpaceX 以 422 拒绝它们（`unknown variant namespace`）；它的配置是 `compatible`（参见[工具命名空间](cross-format.md#工具命名空间)）。 |
 | `web_search` 工具（请求） | xAI 的工具（`xai_web_search()`） | SpaceX 拒绝 `external_web_access`（`Argument not supported: external_web_access`），并且总是实时搜索（参见[托管网页搜索](cross-format.md#托管网页搜索)）。 |
+| 根部联合的分支并非都是内联对象、或根部带有 `allOf` 的工具参数（请求） | 一个对象 schema（`tool_schema_root(ToolSchemaRoot::ObjectUnions)`） | SpaceX 会以 `invalid_client_tool_schema` 拒绝它们（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | 发回的 `reasoning` 项上的 `content: null`（请求） | 省略（`without_null_reasoning_content()`） | Codex 以这种方式发回之前的推理项。带着这个 `null` 时，SpaceX 无法读取该项的 `encrypted_content`（`Could not decode the compaction blob`）。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
