@@ -118,8 +118,13 @@ export function States() {
       </StateSection>
       <StateSection title="Labels">
         <div className="flex flex-col gap-12">
-          <Loader label="Saving provider…" />
-          <Loader size="xs" label="Loading results" className="text-small" />
+          <Loader label="Saving provider…" delay={false} />
+          <Loader size="xs" label="Loading results" className="text-small" delay={false} />
+          <Loader label="Anbieter wird gespeichert…" delay={false} />
+          <Loader label="Loading request logs" hideLabel delay={false} />
+          <span className="flex items-center gap-8 text-small text-fg-tertiary">
+            Waiting out the delay: <Loader label="Saving provider…" delay={600000} />
+          </span>
         </div>
       </StateSection>
       <StateSection title="On fills">

@@ -16,7 +16,18 @@ export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton({ shape = "block", className, ...props }, ref) {
-  return <div ref={ref} aria-hidden className={cn("bg-fill-2 animate-pulse-quiet", KAESO_SKELETON_VARIANTS.shape[shape].classes, className)} {...props} />;
+  return (
+    <div
+      ref={ref}
+      aria-hidden
+      className={cn(
+        "bg-fill-2 animate-pulse-quiet forced-colors:outline forced-colors:-outline-offset-1",
+        KAESO_SKELETON_VARIANTS.shape[shape].classes,
+        className,
+      )}
+      {...props}
+    />
+  );
 });
 Skeleton.displayName = "Skeleton";
 

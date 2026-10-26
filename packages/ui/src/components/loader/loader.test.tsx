@@ -54,8 +54,10 @@ describe("Loader", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("is a status region that announces Loading without a label, in secondary text", () => {
+  it("is a status region that announces Loading without a label, in secondary text, once the spinner's delay has passed", () => {
     render(<Loader />);
+    expect(screen.getByRole("status")).toHaveTextContent("");
+    act(() => vi.advanceTimersByTime(300));
     expect(screen.getByRole("status")).toHaveTextContent("Loading");
     expect(screen.getByRole("status").className).toContain("text-fg-secondary");
   });
@@ -65,19 +67,25 @@ describe("Loader", () => {
     expect(container.querySelector(".k-spinner")!.getAttribute("class")).toContain("size-32");
   });
   it("can keep its label for assistive technology only", () => {
-    render(<Loader label="Signing you in" hideLabel />);
+    render(<Loader label="Signing you in" hideLabel delay={false} />);
     expect(screen.getByRole("status")).toHaveTextContent("Signing you in");
     expect(screen.getByText("Signing you in").className).toContain("sr-only");
   });
-  it("keeps its place while it waits out the delay, then shows", () => {
-    render(<Loader label="Saving provider…" delay />);
+  it("keeps its place while it waits out the delay, then shows, putting its words into the region it rendered empty", () => {
+    render(<Loader label="Saving provider…" />);
     const inner = screen.getByRole("status").firstElementChild!;
+    const live = screen.getByRole("status").lastElementChild!;
     expect(inner.className).toContain("invisible");
+    expect(live).toHaveTextContent("");
     act(() => vi.advanceTimersByTime(299));
     expect(inner.className).toContain("invisible");
     act(() => vi.advanceTimersByTime(1));
     expect(inner.className).not.toContain("invisible");
-    expect(screen.getByText("Saving provider…")).toBeInTheDocument();
+    expect(live).toHaveTextContent("Saving provider…");
+  });
+  it("shows at once with delay={false}", () => {
+    render(<Loader label="Saving provider…" delay={false} />);
+    expect(screen.getByRole("status").firstElementChild!.className).not.toContain("invisible");
   });
 });
 

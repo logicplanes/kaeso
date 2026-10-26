@@ -3,14 +3,14 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Loader: {
     description:
-      'A status region with the spinner and a label: "Saving provider…", or a page or region that is loading. Its place is kept while it waits out `delay`, so nothing moves when it shows.',
+      'A status region with the spinner and a label: "Saving provider…", or a page or region that is loading. Its place is kept while it waits out `delay`, so nothing moves when it shows; the status region is there, empty, from the start, and its words arrive when the spinner shows, so screen readers announce them.',
     props: {
       delay:
-        "Waits before the spinner and its label show, so quick work shows nothing: `true` for the library's 300ms (`useDelayedLoading`), or milliseconds. None by default.",
+        "Waits before the spinner and its label show, so quick work shows nothing: the library's 300ms by default (`useDelayedLoading`), a number of milliseconds, or `false` to show at once.",
       hideLabel: "Keeps `label` for assistive technology only, where the page around it already says what is happening.",
       label: 'Shown beside the spinner ("Saving provider…"); without one, "Loading" is announced in the provider\'s language.',
       loading: "Whether the work is underway; true by default. With `delay` and `minDuration`, it times the spinner.",
-      minDuration: "Once shown, they stay at least this many milliseconds: 400 with a delay, 0 without.",
+      minDuration: "Once shown, they stay at least this many milliseconds: 400 by default, 0 with `delay={false}`.",
       size: "The loader's size on the type scale.",
       tone: "The spinner's and the label's color: `secondary` by default.",
     },

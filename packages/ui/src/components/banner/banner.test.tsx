@@ -77,3 +77,27 @@ describe("Banner", () => {
     expect(screen.queryByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
   });
 });
+
+describe("Banner, details", () => {
+  it("warns when a banner that can't be dismissed is given onDismiss, and shows no dismiss button", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    render(
+      <Banner tone="danger" onDismiss={() => undefined}>
+        The provider key was revoked.
+      </Banner>,
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("can't be dismissed"));
+    expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+    warn.mockRestore();
+  });
+  it("tells neutral from information by more than the tint: only information carries the info icon", () => {
+    const { container, rerender } = render(<Banner>Maintenance is planned for Sunday.</Banner>);
+    expect(container.querySelector("svg")).toBeNull();
+    rerender(<Banner tone="info">New models are available.</Banner>);
+    expect(container.querySelector("svg")).not.toBeNull();
+  });
+  it("keeps one height whether or not it has an action, and an outline in forced colours", () => {
+    render(<Banner>Maintenance is planned for Sunday.</Banner>);
+    expect(screen.getByRole("status")).toHaveClass("min-h-56", "forced-colors:outline");
+  });
+});

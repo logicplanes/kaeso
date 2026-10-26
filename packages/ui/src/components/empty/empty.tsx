@@ -21,10 +21,11 @@ export interface EmptyProps {
 
 export const Empty = forwardRef<HTMLDivElement, EmptyProps>(function Empty({ title, description, actions, size = "lg", children, className }, ref) {
   const compact = size === "compact";
+  const Title = size === "lg" ? "h2" : "p";
   return (
     <div ref={ref} className={cn("flex flex-col items-center text-center", KAESO_EMPTY_VARIANTS.size[size].classes, className)}>
       <div className={cn("flex flex-col items-center", compact ? "gap-2" : "gap-6")}>
-        <h2 className={cn("font-semibold text-fg text-balance", compact ? "text-body" : "text-title")}>{title}</h2>
+        <Title className={cn("font-semibold text-fg text-balance", compact ? "text-body" : "text-title")}>{title}</Title>
         {description && <p className={cn("max-w-44ch text-fg-secondary text-pretty", compact ? "text-small" : "text-body")}>{description}</p>}
       </div>
       {actions && <div className={cn("flex flex-wrap items-center justify-center gap-8", !compact && "mt-8")}>{actions}</div>}
