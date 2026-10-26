@@ -88,13 +88,18 @@ function useDescription(content: ReactNode, store: TriggerPropsStore, off: boole
   // aria-describedby overrides aria-description, so only a trigger without its own describedby can take plain text as an attribute.
   const asAttribute = plain !== null && !own["aria-describedby"];
   useEffect(() => setMounted(true), []);
+  const { "aria-describedby": describedBy, "aria-description": description } = own;
   useLayoutEffect(() => {
     const trigger = store.element();
     const text = words(plain ?? node.current?.textContent);
     const next =
-      !off && !!trigger && text !== "" && text !== words(accessibleName(trigger)) && !words(ownDescription(trigger.ownerDocument, own)).includes(text);
+      !off &&
+      !!trigger &&
+      text !== "" &&
+      text !== words(accessibleName(trigger)) &&
+      !words(ownDescription(trigger.ownerDocument, { "aria-describedby": describedBy, "aria-description": description })).includes(text);
     if (next !== describes) setDescribes(next);
-  });
+  }, [plain, off, mounted, content, describes, store, describedBy, description]);
   const hidden =
     mounted && (plain === null || (describes && !asAttribute)) && typeof document !== "undefined"
       ? createPortal(
