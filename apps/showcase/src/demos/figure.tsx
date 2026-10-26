@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Figure",
-  description: "A diagram or image set apart from the text: centred on a well, with a caption, scrolling sideways only when it can't shrink to fit.",
+  description: "A diagram or image set apart from the text: centred on a well, with a caption, scrolling sideways when it is wider than its column.",
   group: "Components",
   entry: "figure",
   import: "Figure",
@@ -24,20 +24,13 @@ export function States() {
   return (
     <>
       <StateSection title="Without a caption">
-        <Figure label="Diagram: route of a request" className="w-full">
+        <Figure label="Diagram: route of a request, without a caption" className="w-full">
           <ThemeImage light="/demos/route.light.svg" dark="/demos/route.dark.svg" alt="Route of a request: app, Kaeso, provider" width={364} height={49} />
         </Figure>
       </StateSection>
       <StateSection title="Wider than its column">
         <Figure label="Diagram: route of a request, wider than its column" caption="Route of a request" className="w-280">
-          <ThemeImage
-            light="/demos/route.light.svg"
-            dark="/demos/route.dark.svg"
-            alt="Route of a request: app, Kaeso, provider"
-            width={364}
-            height={49}
-            className="min-w-360"
-          />
+          <ThemeImage light="/demos/route.light.svg" dark="/demos/route.dark.svg" alt="Route of a request: app, Kaeso, provider" width={364} height={49} />
         </Figure>
       </StateSection>
     </>

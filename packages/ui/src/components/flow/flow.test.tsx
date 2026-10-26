@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { createRef } from "react";
 import { Flow } from "./flow.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -52,7 +52,11 @@ describe("Flow", () => {
     ).toEqual(["App to Kaeso", "Kaeso to OpenAI", "Kaeso to Anthropic"]);
     const d = [...container.querySelectorAll("svg.absolute path")].map((p) => p.getAttribute("d"));
     expect(d).toEqual(["M80 58.5H160", expect.stringMatching(/^M240 58\.5H\d+Q/), expect.stringMatching(/^M240 58\.5H\d+Q/)]);
-    expect(container.querySelectorAll("animateMotion")).toHaveLength(3);
+    expect(container.querySelectorAll("[data-flow-dot]")).toHaveLength(0);
+    expect(container.querySelector("svg.absolute path")).toHaveAttribute("stroke", "var(--k-text-tertiary)");
+    expect(container.querySelector('[data-flow-node="kaeso"]')).toHaveClass("ring-step", "bg-panel");
+    expect(container.querySelector('[data-flow-node="app"]')).toHaveClass("shadow-ring", "bg-panel");
+    expect(figure).not.toHaveClass("-m-4");
     expect(screen.getByText("Gateway")).toBeInTheDocument();
     expect(container.querySelector("svg.absolute")).toHaveAttribute("width", "400");
   });
@@ -67,5 +71,51 @@ describe("Flow", () => {
     expect(screen.queryByText("Hidden on a pill")).toBeNull();
     rerender(<Flow ref={fnRef} columns={columns} edges={[]} />);
     expect(fnRef).toHaveBeenCalled();
+  });
+
+  describe("a changed route", () => {
+    const columns = [
+      [{ id: "app", label: "App" }],
+      [{ id: "kaeso", label: "Kaeso" }],
+      [
+        { id: "openai", label: "OpenAI" },
+        { id: "anthropic", label: "Anthropic" },
+      ],
+    ];
+    const route = (to: string): [string, string][] => [
+      ["app", "kaeso"],
+      ["kaeso", to],
+    ];
+    const reduce = (on: boolean) =>
+      vi.spyOn(window, "matchMedia").mockImplementation((q: string) => ({ matches: on && q.includes("reduce") }) as MediaQueryList);
+    const geometry = () => {
+      const proto = SVGElement.prototype as unknown as { getTotalLength?: () => number; getPointAtLength?: (n: number) => { x: number; y: number } };
+      proto.getTotalLength = () => 100;
+      proto.getPointAtLength = (n: number) => ({ x: n, y: 10 });
+    };
+    it("sends one dot along each connector once, never on first render", () => {
+      geometry();
+      reduce(false);
+      vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"] });
+      const { container, rerender } = render(<Flow animated columns={columns} edges={route("openai")} />);
+      act(() => void vi.advanceTimersByTime(200));
+      expect(container.querySelectorAll("[data-flow-dot]")).toHaveLength(0);
+      rerender(<Flow animated columns={columns} edges={route("anthropic")} />);
+      act(() => void vi.advanceTimersByTime(400));
+      expect(container.querySelectorAll("[data-flow-dot]").length).toBeGreaterThan(0);
+      act(() => void vi.advanceTimersByTime(2000));
+      expect(container.querySelectorAll("[data-flow-dot]")).toHaveLength(0);
+      vi.useRealTimers();
+    });
+    it("moves nothing with reduced motion", () => {
+      geometry();
+      reduce(true);
+      vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"] });
+      const { container, rerender } = render(<Flow animated columns={columns} edges={route("openai")} />);
+      rerender(<Flow animated columns={columns} edges={route("anthropic")} />);
+      act(() => void vi.advanceTimersByTime(400));
+      expect(container.querySelectorAll("[data-flow-dot]")).toHaveLength(0);
+      vi.useRealTimers();
+    });
   });
 });

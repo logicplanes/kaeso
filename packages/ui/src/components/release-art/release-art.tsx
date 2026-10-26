@@ -1,5 +1,4 @@
 import { createElement, forwardRef, useId, useMemo, useState, type ReactNode } from "react";
-import { font } from "@logicplanes/kaeso-tokens";
 import { cn } from "../../utils/cn.js";
 import { drawReleaseArt, releaseArtFor, releaseArtText, serializeArt, RELEASE_ART_VIEW, type ArtNode, type ReleaseArtSpec } from "./drawing.js";
 
@@ -38,8 +37,9 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const spec = art ?? releaseArtFor(seed);
   const drawn = useMemo(() => drawReleaseArt(spec, { shape, idPrefix: prefix }), [spec, shape, prefix]);
   const text = releaseArtText(spec);
+  const clear = 236;
   return (
-    <span className={cn("relative block w-full", className)}>
+    <span className={cn("@container relative block w-full", className)}>
       <svg
         ref={ref}
         viewBox={`0 0 ${w} ${h}`}
@@ -53,26 +53,31 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
         ) : (
           drawn.children?.map(toElement)
         )}
-        {eyebrow && (
-          <text
-            x={text.eyebrow.x}
-            y={h - text.eyebrow.bottom}
-            fill={text.color}
-            fillOpacity={0.7}
-            fontSize={16}
-            fontWeight={500}
-            letterSpacing={0.1}
-            fontFamily={font.sans}
-          >
-            {eyebrow}
-          </text>
-        )}
-        {title && (
-          <text x={text.title.x} y={h - text.title.bottom} fill={text.color} fontSize={52} fontWeight={600} letterSpacing={-1.5} fontFamily={font.sans}>
-            {title}
-          </text>
-        )}
       </svg>
+      {(eyebrow || title) && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute flex flex-col items-start gap-4 text-balance wrap-anywhere"
+          style={{
+            left: `${(text.eyebrow.x / w) * 100}cqw`,
+            bottom: `${(text.title.bottom / w) * 100}cqw`,
+            maxWidth: `${(clear / w) * 100}cqw`,
+            hyphens: "auto",
+            color: text.color,
+          }}
+        >
+          {eyebrow && (
+            <span className="font-medium opacity-70" style={{ fontSize: `max(12px, ${(16 / w) * 100}cqw)`, lineHeight: 1.2 }}>
+              {eyebrow}
+            </span>
+          )}
+          {title && (
+            <span className="font-semibold" style={{ fontSize: `max(17px, ${(52 / w) * 100}cqw)`, lineHeight: 1, letterSpacing: "-0.03em" }}>
+              {title}
+            </span>
+          )}
+        </span>
+      )}
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />
     </span>
   );

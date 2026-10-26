@@ -1,12 +1,14 @@
-import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { motion } from "@logicplanes/kaeso-tokens";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
+import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_FLOW_VARIANTS = {
   node: {
-    pill: { classes: "h-36 rounded-pill px-14", description: "A raised pill (default)" },
+    pill: { classes: "h-36 rounded-pill px-14", description: "A pill with a hairline (default)" },
     box: { classes: "min-h-56 rounded-well px-16 py-10", description: "A rounded-14 box with a description line" },
   },
 } as const;
@@ -35,6 +37,33 @@ interface Path {
   key: string;
 }
 
+const routeKey = (edges: [string, string][]) => edges.map(([a, b]) => `${a}>${b}`).join("|");
+const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const PASS = motion.duration.fresh;
+
+function useRoutePass(route: string, enabled: boolean) {
+  const seen = useRef(route);
+  const [progress, setProgress] = useState<number | null>(null);
+  useEffect(() => {
+    if (seen.current === route) return;
+    seen.current = route;
+    if (!enabled || reducedMotion()) return;
+    const start = performance.now();
+    let raf = 0;
+    const step = () => {
+      const t = (performance.now() - start) / PASS;
+      setProgress(t >= 1 ? null : t);
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(raf);
+      setProgress(null);
+    };
+  }, [route, enabled]);
+  return progress;
+}
+
 export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
   { columns, edges, node = "pill", animated = false, className, "aria-label": ariaLabel },
   ref,
@@ -45,15 +74,22 @@ export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
   const labels = new Map(columns.flat().map((n) => [n.id, n.label]));
   const connections = edges.filter(([a, b]) => labels.has(a) && labels.has(b));
   const root = useRef<HTMLDivElement | null>(null);
+  const content = useRef<HTMLDivElement | null>(null);
+  const lines = useRef<SVGSVGElement | null>(null);
   const [paths, setPaths] = useState<Path[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [scrolls, setScrolls] = useState(false);
+  useScrollFadeX(root, "[data-flow-content]");
+  const progress = useRoutePass(routeKey(connections), animated);
   useLayoutEffect(() => {
-    const el = root.current;
-    if (!el) return;
+    const el = content.current;
+    const outer = root.current;
+    if (!el || !outer) return;
     const measure = () => {
       const box = el.getBoundingClientRect();
       const pos = (id: string) => el.querySelector<HTMLElement>(`[data-flow-node="${id}"]`)?.getBoundingClientRect();
       setSize({ w: Math.round(box.width), h: Math.round(box.height) });
+      setScrolls(outer.scrollWidth > outer.clientWidth + 1);
       setPaths(
         edges.flatMap(([a, b]) => {
           const p = pos(a);
@@ -72,10 +108,19 @@ export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
       );
     };
     measure();
-    const stop = observeResize([el], measure);
+    const stop = observeResize([outer, el], measure);
     document.fonts?.ready.then(measure);
     return stop;
   }, [columns, edges]);
+  const dots =
+    progress === null
+      ? []
+      : paths.flatMap((p) => {
+          const line = lines.current?.querySelector<SVGPathElement>(`[data-flow-edge="${p.key}"]`);
+          if (!line?.getTotalLength) return [];
+          const at = line.getPointAtLength(line.getTotalLength() * progress);
+          return [{ key: p.key, x: at.x, y: at.y }];
+        });
   return (
     <div
       ref={(e) => {
@@ -85,42 +130,50 @@ export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
       }}
       role="figure"
       aria-label={ariaLabel ?? t("flow.label", "Flow diagram")}
-      className={cn("relative -m-4 inline-flex max-w-full-bleed-4 items-center gap-64 overflow-x-auto p-4 scrollbar-quiet", className)}
+      {...(scrolls ? { tabIndex: 0 } : {})}
+      className={cn("relative inline-block max-w-full overflow-x-auto overflow-y-hidden align-top scrollbar-quiet scroll-fade-x focus-ring-inset", className)}
     >
-      <svg aria-hidden className="pointer-events-none absolute inset-0 overflow-visible" width={size.w} height={size.h}>
-        {paths.map((p) => (
-          <g key={p.key}>
-            <path d={p.d} fill="none" stroke="var(--k-line-strong)" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-            {animated && (
-              <circle r={2.5} fill="var(--k-text-secondary)">
-                <animateMotion dur="2.4s" repeatCount="indefinite" path={p.d} />
-              </circle>
-            )}
-          </g>
-        ))}
-      </svg>
-      {columns.map((col, ci) => (
-        <div key={ci} className="relative flex shrink-0 flex-col items-start gap-16">
-          {col.map((n) => (
-            <div
-              key={n.id}
-              data-flow-node={n.id}
-              className={cn(
-                "inline-flex items-center gap-8 bg-raised text-body font-medium text-fg",
-                KAESO_FLOW_VARIANTS.node[node].classes,
-                n.emphasis ? "ring-step" : "shadow-control",
-              )}
-            >
-              {n.leading}
-              {n.icon && <Icon icon={n.icon} size="sm" className="text-fg-secondary" />}
-              <span className="flex flex-col whitespace-nowrap">
-                <span>{n.label}</span>
-                {n.description && node === "box" && <span className="text-small font-regular text-fg-secondary">{n.description}</span>}
-              </span>
-            </div>
+      <div ref={content} data-flow-content="" className="relative flex w-max items-center gap-64">
+        <svg ref={lines} aria-hidden className="pointer-events-none absolute inset-0 overflow-visible" width={size.w} height={size.h}>
+          {paths.map((p) => (
+            <path
+              key={p.key}
+              data-flow-edge={p.key}
+              d={p.d}
+              fill="none"
+              stroke="var(--k-text-tertiary)"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           ))}
-        </div>
-      ))}
+          {dots.map((dot) => (
+            <circle key={dot.key} data-flow-dot="" cx={dot.x} cy={dot.y} r={2.5} fill="var(--k-text-secondary)" />
+          ))}
+        </svg>
+        {columns.map((col, ci) => (
+          <div key={ci} className="relative flex shrink-0 flex-col items-start gap-16">
+            {col.map((n) => (
+              <div
+                key={n.id}
+                data-flow-node={n.id}
+                className={cn(
+                  "inline-flex items-center gap-8 bg-panel text-body font-medium text-fg",
+                  KAESO_FLOW_VARIANTS.node[node].classes,
+                  n.emphasis ? "ring-step forced-colors:outline-2 forced-colors:-outline-offset-2" : "shadow-ring",
+                )}
+              >
+                {n.leading}
+                {n.icon && <Icon icon={n.icon} size="sm" className="text-fg-secondary" />}
+                <span className="flex flex-col whitespace-nowrap">
+                  <span>{n.label}</span>
+                  {n.description && node === "box" && <span className="text-small font-regular text-fg-secondary">{n.description}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
       {connections.length > 0 && (
         <ul className="sr-only">
           {connections.map(([a, b]) => (

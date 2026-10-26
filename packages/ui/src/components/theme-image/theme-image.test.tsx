@@ -23,4 +23,9 @@ describe("ThemeImage", () => {
     expect(container.firstElementChild).toHaveClass("min-w-320");
     expect(screen.getAllByRole("img", { name: "Logo" })[0]).not.toHaveAttribute("width");
   });
+
+  it("keeps its own width inside a figure, so its text never shrinks", () => {
+    const { container } = render(<ThemeImage light="/l.svg" dark="/d.svg" alt="Route" width={364} height={49} />);
+    expect(container.querySelector("img")?.style.minWidth).toBe("calc(364px * var(--k-figure-floor, 0))");
+  });
 });

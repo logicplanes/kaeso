@@ -117,11 +117,13 @@ describe("release artwork", () => {
 
 describe("ReleaseArt", () => {
   it("is an image with a label that shows its title and eyebrow", () => {
-    render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
+    const { container } = render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
     const img = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
-    expect(img).toHaveTextContent("0.1.0");
-    expect(img).toHaveTextContent("What's new in Kaeso");
+    const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.shadow-ring)")!;
+    expect(text).toHaveTextContent("What's new in Kaeso0.1.0");
+    expect(text.firstElementChild).toHaveStyle({ fontSize: `max(12px, ${(16 / 840) * 100}cqw)` });
+    expect(text.style.maxWidth).toBe(`${(236 / 840) * 100}cqw`);
   });
 
   it("draws the stored art when it has one, and the seed's art otherwise", () => {
@@ -141,7 +143,7 @@ describe("ReleaseArt", () => {
     expect(image).toHaveAttribute("href", "https://update.kaeso.app/art/0.1.0.svg");
     expect(image).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
     expect(svg).toHaveAttribute("viewBox", "0 0 840 360");
-    expect(svg).toHaveTextContent("0.1.0");
+    expect(container).toHaveTextContent("0.1.0");
     expect(container.querySelectorAll("rect")).toHaveLength(0);
     fireEvent.error(image as Element);
     expect(svg.querySelector("image")).toBeNull();

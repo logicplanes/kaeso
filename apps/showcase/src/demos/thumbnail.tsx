@@ -34,6 +34,12 @@ export function States() {
       <StateSection title="Sizes">
         <Sizes />
       </StateSection>
+      <StateSection title="A white image on the panel">
+        <div className="flex flex-wrap items-end gap-12">
+          <Thumbnail src="/demos/screenshot.svg" alt="A white settings screen" size="sm" />
+          <Thumbnail src="/demos/screenshot.svg" alt="A white settings screen" />
+        </div>
+      </StateSection>
       <StateSection title="Can't load">
         <div className="flex flex-wrap items-end gap-12">
           <Thumbnail src="data:image/png;base64,AAAA" alt="A receipt from Northwind Labs" size="sm" />

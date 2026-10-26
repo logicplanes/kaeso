@@ -46,6 +46,28 @@ export function States() {
           ))}
         </div>
       </StateSection>
+      <StateSection title="320px, and a long title in German">
+        <div className="flex flex-col gap-16">
+          <div className="w-320">
+            <ReleaseArt
+              seed="0.3.0"
+              art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
+              label="Kaeso 0.3.0"
+              eyebrow="What's new in Kaeso"
+              title="0.3.0"
+            />
+          </div>
+          <div className="w-320">
+            <ReleaseArt
+              seed="0.3.0"
+              art={{ version: 1, seed: 2886621037, style: "stripes", palette: 6 }}
+              label="Kaeso 0.3.0"
+              eyebrow="Neuigkeiten in Kaeso"
+              title="Veröffentlichung 0.3.0"
+            />
+          </div>
+        </div>
+      </StateSection>
       <StateSection title="Wide, without text">
         <div className="w-full max-w-640">
           <ReleaseArt seed="0.4.0" label="Artwork for Kaeso 0.4.0" shape="wide" />

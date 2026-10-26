@@ -26,9 +26,9 @@ export function Vocabulary() {
   return (
     <div className="grid w-full grid-cols-2 gap-x-16 gap-y-4 sm:grid-cols-4">
       {(Object.keys(icons) as IconName[]).map((n) => (
-        <div key={n} className="flex h-32 items-center gap-8 text-small text-fg-secondary">
+        <div key={n} className="flex min-h-32 items-center gap-8 text-small text-fg-secondary">
           <Icon icon={icons[n]} size="sm" className="text-fg" />
-          <span className="mono truncate">{n}</span>
+          <span className="mono min-w-0 wrap-anywhere">{n}</span>
         </div>
       ))}
     </div>
