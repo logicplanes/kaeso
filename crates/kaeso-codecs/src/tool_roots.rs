@@ -220,6 +220,11 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
     {
         return Err(Fault::Conflict(keyword.to_owned()));
     }
+    // A nested `$id` sets the base URI its relative references resolve against, which
+    // the merge would change (2020-12 Core §8.2.1).
+    if root.values().any(|v| has_key(v, "$id")) {
+        return Err(Fault::Conflict("$id".to_owned()));
+    }
     let doc = Doc(root);
     let variants = doc.object_variants(root, 0)?;
     if variants.is_empty() {

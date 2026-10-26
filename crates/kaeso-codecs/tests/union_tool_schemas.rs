@@ -863,6 +863,26 @@ fn dynamic_references_are_refused() {
 }
 
 #[test]
+fn a_nested_base_uri_is_refused() {
+    let err = refusal(
+        A,
+        json!({
+            "$id": "https://kaeso.example.com/schemas/pick.json",
+            "oneOf": [
+                {
+                    "$id": "https://kaeso.example.com/schemas/move.json",
+                    "type": "object",
+                    "properties": {"to": {"$ref": "common.json#/$defs/Path"}}
+                },
+                {"type": "object", "properties": {"id": {"type": "string"}}}
+            ]
+        }),
+    );
+    assert_eq!(err.param.as_deref(), Some("tools[0]"));
+    assert!(err.message.contains("`$id`"), "{}", err.message);
+}
+
+#[test]
 fn a_root_union_without_branches_is_refused() {
     for key in ["oneOf", "anyOf"] {
         let err = refusal(A, json!({"type": "object", key: []}));
