@@ -282,7 +282,7 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
       <>
         {providerFilter}
         {hasDeprecated && (
-          <Switch size="sm" label={t("modelPicker.showDeprecated", "Deprecated")} checked={showDeprecated} onCheckedChange={setShowDeprecated} />
+          <Switch size="sm" label={t("modelPicker.showDeprecated", "Show deprecated")} checked={showDeprecated} onCheckedChange={setShowDeprecated} />
         )}
       </>
     ) : undefined;
@@ -298,7 +298,10 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
           {...(first.name ? { name: first.name } : {})}
         />
       ) : (
-        t("modelPicker.firstAndMore", "{first} +{count}", { first: first.name ?? first.model ?? first.value, count: String(chosen.length - 1) })
+        <span className="flex min-w-0 items-center">
+          <span className="min-w-0 truncate">{first.name ?? first.model ?? first.value}</span>{" "}
+          <span className="shrink-0 pl-4 tabular">{t("select.more", "+{count}", { count: String(chosen.length - 1) })}</span>
+        </span>
       )
     ) : undefined
   ) : first ? (
@@ -330,6 +333,12 @@ export const ModelPicker = forwardRef<HTMLButtonElement, ModelPickerProps>(funct
           {...(invalid ? { invalid } : {})}
           {...(fullWidth ? { fullWidth } : {})}
           {...(force ? { "data-force": force } : {})}
+          {...(first && !props.multiple
+            ? {
+                title:
+                  first.name && first.name !== (first.model ?? first.value) ? `${first.name} · ${first.model ?? first.value}` : (first.model ?? first.value),
+              }
+            : {})}
           placeholder={placeholder ?? (props.multiple ? t("modelPicker.chooseSome", "Choose models") : t("modelPicker.choose", "Choose a model"))}
           className={cn("max-w-full", !(label || description || error) && className)}
         >

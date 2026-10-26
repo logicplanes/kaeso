@@ -16,7 +16,7 @@ export const KAESO_INPUT_GROUP_VARIANTS = {
 export const KAESO_INPUT_GROUP_DEFAULT_VARIANTS = { size: "md" } as const;
 export type InputSize = keyof typeof KAESO_INPUT_GROUP_VARIANTS.size;
 
-const LEADING: Record<InputSize, string> = { sm: "pl-10", md: "pl-14", lg: "pl-16", xl: "pl-20" };
+export const LEADING: Record<InputSize, string> = { sm: "pl-10", md: "pl-14", lg: "pl-16", xl: "pl-20" };
 const TRAILING_BUTTON: Record<InputSize, string> = { sm: "pr-4", md: "pr-2", lg: "pr-4", xl: "pr-6" };
 export const INPUT_ICON_SIZE: Record<InputSize, IconSize> = { sm: "sm", md: "sm", lg: "md", xl: "lg" };
 

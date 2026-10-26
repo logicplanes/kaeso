@@ -1,4 +1,4 @@
-import { forwardRef, useSyncExternalStore, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from "react";
+import { forwardRef, useState, useSyncExternalStore, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from "react";
 import { Popover as BasePopover } from "@base-ui/react/popover";
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import { cn } from "../../utils/cn.js";
@@ -121,10 +121,17 @@ export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(f
     type = "button",
     "aria-label": ariaLabel,
     "aria-describedby": describedBy,
+    disabled,
+    onFocus,
+    onBlur,
+    onClickCapture,
     ...props
   },
   ref,
 ) {
+  const [focused, setFocused] = useState(false);
+  // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.
+  const held = !!disabled && focused;
   const empty = children === undefined || children === null || children === false;
   const shows = showsText(empty ? placeholder : children);
   const purpose = useHiddenDescription(shows ? ariaLabel : undefined);
@@ -136,11 +143,27 @@ export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(f
         type={type}
         data-picker=""
         {...props}
+        {...(held ? { "aria-disabled": true, "data-disabled": "" } : { disabled })}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
+        onClickCapture={(e) => {
+          if (held) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          onClickCapture?.(e);
+        }}
         {...(!shows && ariaLabel ? { "aria-label": ariaLabel } : {})}
         {...(descriptions ? { "aria-describedby": descriptions } : {})}
         {...(invalid ? { "aria-invalid": true } : {})}
         className={cn(
-          "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
+          "group/picker inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
           invalid && appearance !== "default" && "ring-invalid",
@@ -148,10 +171,15 @@ export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(f
           className,
         )}
       >
-        <span className={cn("flex min-w-0 flex-1 items-center truncate text-left", empty && "font-regular text-fg-tertiary")}>
+        <span
+          className={cn(
+            "flex min-w-0 flex-1 items-center truncate text-left group-disabled/picker:opacity-40",
+            empty ? "font-regular text-fg-tertiary" : "group-disabled/picker:text-fg",
+          )}
+        >
           {empty ? placeholder : children}
         </span>
-        <span className="flex shrink-0 text-fg-tertiary">
+        <span className="flex shrink-0 text-fg-tertiary group-disabled/picker:opacity-40">
           <Icon icon={icons.chevronDown} size="sm" />
         </span>
       </button>
