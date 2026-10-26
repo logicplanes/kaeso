@@ -282,10 +282,12 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 - **Anthropic** 只缓存到 `cache_control` 断点为止（[提示词缓存](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)）。来自其他方言、且不带任何缓存提示的生成请求会得到三个断点：
   - 一个在最后一个函数工具上，这样即使系统提示词变化，工具列表也能从缓存读取；
   - 一个在最后一个系统块上，这样即使某一轮新增的块超过 Anthropic 从断点向前查找的 20 个块，工具和系统提示词也能从缓存读取；
-  - 顶层自动缓存，即请求上的 `cache_control`，它会随着每一轮对话的结尾移动。
-- **应用自己的提示优先。**带有缓存提示的请求只保留这些提示。OpenAI 的 `prompt_cache_options` 设为 `mode: explicit` 且没有断点时不缓存任何内容，与 OpenAI 上的行为一致。Token 计数不会得到断点。
+  - 一个在对话的最后一个内容块上，它会随着每一轮向前移动。
+
+  这三个断点都放在块上，而不是使用顶层自动缓存，因此只认识块级断点（即 Claude Code 发送的形式）的 Anthropic 兼容服务商也能接受。
+- **应用自己的提示优先。**带有缓存提示的请求只保留这些提示。Anthropic 最多接受 4 个断点，应用发送更多时会省略最早的那些。OpenAI 的 `prompt_cache_options` 设为 `mode: explicit` 且没有断点时不缓存任何内容，与 OpenAI 上的行为一致。Token 计数不会得到断点。
 - **有效期。**Anthropic 会把缓存保留 5 分钟或 1 小时。当应用要求 OpenAI 保留超过 5 分钟时（`prompt_cache_retention: "24h"`，或 `30m` 这样的 `prompt_cache_options.ttl`），发往 Anthropic 的每个断点都会请求 `1h`。
-- **每一轮都重复上一轮。**对话的第 *n+1* 轮编码后的工具、系统提示词、思考设置和消息与第 *n* 轮相同，后面再接新的消息，因此每一轮都能读取上一轮写入的缓存（`crates/kaeso-codecs/tests/prompt_cache.rs`）。
+- **每一轮都重复上一轮。**对话的第 *n+1* 轮编码后的工具、系统提示词、思考设置和消息与第 *n* 轮相同，后面再接新的消息；只有对话断点会移动，而 Anthropic 不把断点计入前缀，因此每一轮都能读取上一轮写入的缓存（`crates/kaeso-codecs/tests/prompt_cache.rs`）。
 
 ## 工具错误
 

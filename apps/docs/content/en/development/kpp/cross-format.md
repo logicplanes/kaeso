@@ -282,10 +282,12 @@ Cache hints are hints, but a target that caches only when asked still gets asked
 - **Anthropic** caches only up to a `cache_control` breakpoint ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)). A generation request from another dialect that carries no cache hint gets three:
   - one on the last function tool, so the tool list is read from the cache even when the system prompt changes;
   - one on the last system block, so tools and system prompt are read from the cache even when a turn adds more than the 20 blocks Anthropic looks back from a breakpoint;
-  - top-level automatic caching, `cache_control` on the request, which moves with the end of the conversation from turn to turn.
-- **The app's own hints win.** A request that carries cache hints keeps only those. OpenAI's `prompt_cache_options` with `mode: explicit` and no breakpoint caches nothing, as on OpenAI. Token counts get no breakpoints.
+  - one on the last content block of the conversation, which moves forward from turn to turn.
+
+  All three sit on blocks rather than using top-level automatic caching, so Anthropic-compatible providers that only know block breakpoints, as Claude Code sends them, take them too.
+- **The app's own hints win.** A request that carries cache hints keeps only those. Anthropic takes at most 4 breakpoints, so when an app sends more, the earliest are left out. OpenAI's `prompt_cache_options` with `mode: explicit` and no breakpoint caches nothing, as on OpenAI. Token counts get no breakpoints.
 - **Lifetime.** Anthropic keeps a cache for 5 minutes or for 1 hour. When the app asks OpenAI to keep it for longer than 5 minutes, with `prompt_cache_retention: "24h"` or a `prompt_cache_options.ttl` such as `30m`, every breakpoint sent to Anthropic asks for `1h`.
-- **Each turn repeats the one before.** Turn *n+1* of a conversation encodes to the same tools, system prompt, thinking setting and messages as turn *n*, followed by the new messages, so every turn reads what the turn before wrote (`crates/kaeso-codecs/tests/prompt_cache.rs`).
+- **Each turn repeats the one before.** Turn *n+1* of a conversation encodes to the same tools, system prompt, thinking setting and messages as turn *n*, followed by the new messages; only the conversation breakpoint moves, and Anthropic doesn't count breakpoints as part of the prefix, so every turn reads what the turn before wrote (`crates/kaeso-codecs/tests/prompt_cache.rs`).
 
 ## Tool errors
 
