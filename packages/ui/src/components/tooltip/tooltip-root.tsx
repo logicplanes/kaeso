@@ -8,7 +8,7 @@ import { KbdSequence } from "../kbd/kbd.js";
 import { KAESO_TOOLTIP_DEFAULT_VARIANTS, KAESO_TOOLTIP_VARIANTS, type TooltipProps } from "./tooltip.js";
 import type { TriggerProps, TriggerPropsStore } from "./trigger-props.js";
 
-const popupClasses = "z-70 flex max-w-(--available-width) items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised popup-motion";
+const popupClasses = "z-70 flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised popup-motion";
 
 export function TooltipRoot({
   content,
@@ -69,7 +69,12 @@ function TooltipPopup({ shape, children }: { shape: keyof typeof KAESO_TOOLTIP_V
     return observeResize([el], check);
   }, [shape, wraps]);
   return (
-    <BaseTooltip.Popup ref={ref} role="tooltip" className={cn(popupClasses, KAESO_TOOLTIP_VARIANTS.shape[wraps ? "multiline" : shape].classes)}>
+    <BaseTooltip.Popup
+      ref={ref}
+      role="tooltip"
+      className={cn(popupClasses, KAESO_TOOLTIP_VARIANTS.shape[wraps ? "multiline" : shape].classes)}
+      style={{ maxWidth: wraps || shape === "multiline" ? "min(var(--k-width-tooltip), var(--available-width))" : "var(--available-width)" }}
+    >
       {children}
     </BaseTooltip.Popup>
   );
