@@ -212,7 +212,7 @@ KPP 字段遵循[用量](cross-format.md#用量)中的约定。
 
 chunk 分组：每个 chunk 的第一个事件带有形式标记 `chunk`，其余事件带有 `in_chunk`，这样编码器会把它们重新写成一帧。该标记包含 `n`（来自该 chunk 的事件数），另加上面的结构标记。
 
-一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]` 或错误），打开的 chunk 就会被写出。因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后。`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。
+一旦到达不属于当前 chunk 的事件（其他方言的事件、`[DONE]` 或错误），打开的 chunk 就会被写出。因此被丢弃的事件绝不会让某个 chunk 落到 `[DONE]` 之后。`[DONE]` 或错误之后不再写出任何 chunk。Chat 无法显示的块的工具参数会被省略。来自其他方言、参数始终为空白的工具调用（例如 Claude 对无参数工具的调用）会在其块结束时多收到一个带 `arguments: "{}"` 的 chunk（[工具调用参数](cross-format.md#工具调用参数)）。
 
 SSE 帧的处理遵循规范（[服务器发送事件](codec-design.md#服务器发送事件)）：包含 NUL 的 `id`，或不是能放进 `u64` 的 ASCII 数字的 `retry`，算作未知字段。OpenAI 不会发送 SSE `id`、`retry` 和未知字段。chunk 带有这些字段时，它们以 `{"id", "retry", "other": [[name, value], …]}` 的形式保留在形式标记 `chunk.sse` 中。该 chunk 与其他 chunk 一样解码，这些字段会写回给 Chat 应用。
 

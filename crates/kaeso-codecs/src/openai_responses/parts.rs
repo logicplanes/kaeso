@@ -14,6 +14,7 @@ use crate::wire::{StringOr, type_tag};
 
 pub(super) const BREAKPOINT: &str = "breakpoint";
 pub(super) const ARGS_STRING: &str = "args_string";
+pub(super) const ARGS_BLANK: &str = "args_blank";
 pub(super) const PARTS: &str = "parts";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -280,6 +281,10 @@ pub(super) fn content_node(blocks: &[&Block], kind: TextKind, owner: &Extras) ->
 }
 
 pub(super) fn arguments_from(text: String, extras: &mut Extras) -> RawJson {
+    if text.trim().is_empty() {
+        extras.form.insert(ARGS_BLANK.to_owned(), text.into());
+        return RawJson::empty_object();
+    }
     if serde_json::from_str::<&RawValue>(&text).is_ok()
         && let Ok(raw) = RawJson::from_string(text.clone())
     {
@@ -290,6 +295,11 @@ pub(super) fn arguments_from(text: String, extras: &mut Extras) -> RawJson {
 }
 
 pub(super) fn arguments_text(call: &ToolCallBlock) -> String {
+    if call.extras.is_from(DIALECT)
+        && let Some(blank) = call.extras.form_str(DIALECT, ARGS_BLANK)
+    {
+        return blank.to_owned();
+    }
     let wrapped = call.extras.form_flag(DIALECT, ARGS_STRING)
         || (!call.extras.is_from(DIALECT) && call.arguments.get().trim_start().starts_with('"'));
     if wrapped && let Ok(s) = call.arguments.parse::<String>() {

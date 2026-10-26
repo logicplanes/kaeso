@@ -248,9 +248,16 @@ fn stream_meaning(events: &[StreamEvent]) -> Value {
     }
     let calls: Vec<Value> = calls
         .into_values()
-        .map(|(n, a)| json!({"name": n, "args": serde_json::from_str::<Value>(&a).ok()}))
+        .map(|(n, a)| json!({"name": n, "args": arguments_meaning(&a)}))
         .collect();
     json!({"text": text, "refusal": refusal, "calls": calls, "error": error})
+}
+
+fn arguments_meaning(text: &str) -> Option<Value> {
+    if text.trim().is_empty() {
+        return Some(json!({}));
+    }
+    serde_json::from_str(text).ok()
 }
 
 fn visible(meaning: &Value) -> String {

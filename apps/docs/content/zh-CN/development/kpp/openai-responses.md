@@ -109,7 +109,7 @@ order: 7
 | `message` item，角色 `user` / `assistant` | `Message { role: User / Assistant }` 的内容块 | 支持 `EasyInputMessage`、`InputMessage` 和 `OutputMessage` 三种结构。item 的 `type`、`id`、`status` 和 `role` 的写法：消息上的形式标记；`phase` 和未知键：消息的 extras；发往其他格式时省略 `phase`（[允许列表](cross-format.md#允许列表)）。一条 KPP 消息最多包含一个消息 item。 |
 | `message` item，角色 `system` / `developer`（不在开头） | `Message { role: System }`（参见[系统消息](cross-format.md#系统消息)） | 规范角色为 `developer`；`system`：形式标记。 |
 | `content` 为字符串或部分列表 | 消息上的形式标记 `parts` | 对单个纯文本块而言，字符串是规范写法。空的部分列表：形式标记 `empty_at`。 |
-| `function_call`（`FunctionToolCall`） | 当前助手消息中的 `Block::ToolCall` | `call_id` → `id`，`name`，`arguments`（一个 JSON 字符串）→ 原始 JSON。不是 JSON 的参数按 KPP 约定保存为 JSON 字符串，并带形式标记 `args_string`；来自其他方言、本身是 JSON 字符串的 `arguments` 值以其文本发送。`id`、`status`：形式标记；`namespace`、`caller`、未知键：该块的 extras。来自其他方言、超过 64 个字符的调用 ID 会缩短为前 55 个字符加 `_` 和 FNV-1a 哈希的 8 位十六进制数，记录在 `EgressCtx::tool_ids` 中，并在解码时映射回原值。 |
+| `function_call`（`FunctionToolCall`） | 当前助手消息中的 `Block::ToolCall` | `call_id` → `id`，`name`，`arguments`（一个 JSON 字符串）→ 原始 JSON。空白的 `arguments` 为 `{}`，其文本保存在形式标记 `args_blank` 中（[工具调用参数](cross-format.md#工具调用参数)）。不是 JSON 的参数按 KPP 约定保存为 JSON 字符串，并带形式标记 `args_string`；来自其他方言、本身是 JSON 字符串的 `arguments` 值以其文本发送。`id`、`status`：形式标记；`namespace`、`caller`、未知键：该块的 extras。来自其他方言、超过 64 个字符的调用 ID 会缩短为前 55 个字符加 `_` 和 FNV-1a 哈希的 8 位十六进制数，记录在 `EgressCtx::tool_ids` 中，并在解码时映射回原值。 |
 | `function_call_output`（`FunctionCallOutputItemParam`） | 当前用户消息中的 `Block::ToolResult` | `call_id`；`output` 字符串 → 一个文本块，部分列表 → 文本、图像和文档块（本可用字符串表示时带形式标记 `parts`）。`id`、`status`：形式标记；`name`、`namespace`、未知键：extras。来自其他方言的 `is_error` 会被丢弃。来自其他方言的空内容：`output: ""`。 |
 | `reasoning`（`ReasoningItem`） | 当前助手消息中的 `Block::Reasoning`（来源 `openai_responses`） | Kaeso 生成的 ID（`rs_kaeso_…`）不会保留（形式标记 `kaeso_id`）；这类 item 如果没有 `encrypted_content`，根本不会发给服务商，因为它既没有 `id`，也没有 OpenAI 能用的内容。`id` → 不透明的 `OpenAiReasoningItemId`，`encrypted_content` → 不透明的 `OpenAiEncryptedReasoning`，`summary[].text` → `summary`，`content[].text` → `text`；`status` 和各部分的 `type`：形式标记；未知键：extras。只回放给同一服务商的 `openai_responses`（参见[推理](reasoning.md)）。如果 item 的 `encrypted_content` 是一个推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，参见[推理数据块](reasoning.md#推理数据块)），无论 item 其余部分写了什么，都会解码为其中的原始块，连同来源（例如 Claude 的签名思考）。在 Kaeso 以 `store: false` 发送的请求中（来自其他方言的请求，参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发送，因为 OpenAI 无法解析该 item ID。 |
 | `custom_tool_call`、`custom_tool_call_output`、`local_shell_call`、`local_shell_call_output` | 同下；发往 Anthropic 和 Chat Completions 时变为工具调用和结果（参见 [Codex 工具历史](cross-format.md#codex-工具历史)） | |
@@ -217,7 +217,7 @@ order: 7
 
 - `response.created` 和 `response.in_progress`，各自带有含回显字段的回复对象和 `usage: null`；
 - 消息 item 的第一个部分开始时的 `output_item.added`，以及每个部分的 `BlockStart` 处的 `content_part.added`；
-- 每个 `BlockStop` 处的 `.done` 事件和 `content_part.done`；
+- 每个 `BlockStop` 处的 `.done` 事件和 `content_part.done`；参数始终为空白的函数调用（例如 Claude 对无参数工具的调用）会先收到一个内容为 `{}` 的 `function_call_arguments.delta`，因此其参数为 `"{}"`（[工具调用参数](cross-format.md#工具调用参数)）；
 - 下一个非文本块开始或回复结束时，消息的 `output_item.done`；
 - 摘要前后的 `reasoning_summary_*` 部分事件，以及推理文本前后的 `content_part.*` 和 `reasoning_text.*`；
 - 最后是 `response.completed`（`MaxTokens` 和 `ContentFilter` 时为 `response.incomplete`），带有所有输出 item 和用量。
@@ -318,6 +318,7 @@ order: 7
 | `empty_at` | 消息 | 空消息 item 的块索引。 |
 | `raw_item` | 消息 | 该消息是一个未知 item。 |
 | `args_string` | 工具调用 | `arguments` 不是 JSON；原始值是一个 JSON 字符串。 |
+| `args_blank` | 工具调用 | `arguments` 为空白；原始值为 `{}`，该标记保存其文本。 |
 | `breakpoint` | 缓存提示 | 它是一个显式的 `prompt_cache_breakpoint`。 |
 | `native` | 请求 | 从本方言解码（不会添加 `store: false`）。 |
 | `canon` | 任何元素 | 解码时覆盖项路径上的规范值，用于检查覆盖项是否过时。 |

@@ -182,7 +182,7 @@ Chat Completions 没有存放模型推理内容的字段。Chat Completions 应�
 | `kaeso-provider` | 处理该请求的服务商，例如 `anthropic`；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-model` | 服务商的模型 ID；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)） |
-| `kaeso-adapted` | 因模型不接受参数 schema 根部的联合、Kaeso 把参数 schema 合并为一个对象的工具，按它们在请求中的路径列出，例如 `tools[0].tools[3]`。模型会在工具描述中看到各个变体，它的调用原样到达应用。只出现在调整了工具的响应上（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)） |
+| `kaeso-adapted` | 因模型不接受参数 schema 根部的联合、Kaeso 把参数 schema 合并为一个对象的工具，按它们在请求中的路径列出，例如 `tools[0].tools[3]`。模型会在工具描述中看到各个变体，它的调用原样到达应用。还包括对话中 Kaeso 为只接受对象的模型把参数变为对象的工具调用，以 `tool call` 加调用 ID 列出，例如 `tool call call_abc`。只出现在调整了工具或调用的响应上（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)、[工具调用参数](../development/kpp/cross-format.md#工具调用参数)） |
 | `server-timing` | `kaeso;dur=…`：Kaeso 调用服务商之前自身花费的毫秒数；请求未到达服务商时，则是到 Kaeso 作出响应为止的时间。随后是 `upstream;dur=…`：服务商返回第一个字节所用的时间，得知后即带有。流式回复随响应头一起发送它，因此 Kaeso 转换流所花的时间只记录在[请求日志](../console/request-logs.md#查看请求)中 |
 
 ## 从浏览器调用

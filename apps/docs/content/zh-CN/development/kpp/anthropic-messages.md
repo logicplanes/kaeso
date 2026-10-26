@@ -137,7 +137,8 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `Role::System` | 对从 Anthropic Messages 解码的请求，写为 `role: "system"` 消息；来自其他方言时，作为下一个用户轮次的文本，排在其工具结果之后 | [系统消息](cross-format.md#系统消息)。 |
 | JPEG、PNG、GIF 或 WebP 以外的 base64 图像；文本形式的图像来源 | `Unsupported` | `Base64ImageSource`。 |
 | `application/pdf` 以外的 base64 文档；`text/plain` 以外的文本文档 | `Unsupported` | `Base64PDFSource`、`PlainTextSource`。 |
-| 不是对象的工具调用参数；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
+| 来自其他方言、不是对象的工具调用参数 | 一个对象：文本为 `{"input": text}`，其他值为 `{"input": value}`，`null` 为 `{}`；在 `kaeso-adapted` 中注明 | 否则 Anthropic 会拒绝整个请求（[工具调用参数](cross-format.md#工具调用参数)）。 |
+| 来自 Anthropic 应用、不是对象的 `tool_use.input`；不是对象的工具参数定义 | `Unsupported` | `input` 和 `input_schema` 都是对象。 |
 | 来自其他方言的 `Request::CountTokens` | 不带 `max_tokens`、采样参数、`metadata` 和 `stream` 的 `/v1/messages/count_tokens` | 它们不改变输入 Token 数，而且该端点会拒绝它们。Anthropic 应用自己的 Token 计数请求按收到时的原样发送。 |
 | `check()` 在生成请求中会拒绝的 `Request::CountTokens` 输出和推理设置（JSON 模式、schema 描述、`strict: false`、推理强度 `minimal` 等） | 省略，不拒绝 | 只拒绝会改变所计数输入的内容。 |
 | `Request::Embed` | `Unsupported` | |
@@ -174,7 +175,7 @@ Schema `Message`。
 
 - **停止原因。** `ContentFilter` 变为 `refusal`，因为 Anthropic 没有内容过滤类的停止原因。若 `Other(s)` 是 Anthropic 文档中的值，则写为 `s`；否则 `length`、`max_output_tokens` 和 `max_completion_tokens` 变为 `max_tokens`，`function_call` 和 `tool_calls` 变为 `tool_use`，`content_filter` 变为 `refusal`，其余一律变为 `end_turn`。自有的 `Other` 值按收到时的原样写出。
 - **拒绝回复。** `Refusal` 块变为 `text` 块。
-- **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。其他 JSON 值保持原样。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具。因此，来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）。网关仍会记录该回复及其用量。带有此类参数的请求会被 `check()` 拒绝。
+- **不是对象的工具参数。** 对于不是有效 JSON 的工具调用参数（例如被输出上限截断），KPP 会将其保存为 JSON 字符串。其他 JSON 值保持原样。`tool_use.input` 必须是对象，而空的 `input` 会用模型从未写过的参数调用工具。因此，来自其他方言的这类回复会以 `ProviderError` 拒绝（`` The provider returned arguments for the tool call `…` that are not a JSON object, … ``）。网关仍会记录该回复及其用量。在请求中，来自其他方言的此类调用会变为对象（[工具调用参数](cross-format.md#工具调用参数)）。
 - **推理**：来自其他方言的推理会变为 `thinking` 块（[推理数据块](reasoning.md#推理数据块)）。其 `thinking` 先是摘要，然后是推理文本，段落之间以空行分隔。其 `signature` 是原始块的推理数据块。Anthropic 永远不会看到这个块：请求解码器会恢复原始块，而原始块只会发回它自己的服务商。
 - **省略的内容**（[回复](cross-format.md#回复)）：图像、文档和工具结果块，它们不属于 `Message` 的内容联合类型；以及外来的不透明数据、引用、extras 和未知块。没有签名的 Anthropic 推理也会被省略，除非它是从 Anthropic Messages 读取的：自有的未签名思考按收到时的原样写出。
 

@@ -232,6 +232,14 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 
 OpenAI und SpaceX bekommen die Items wie gesendet: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
 
+## Argumente von Tool-Aufrufen
+
+Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Completions und Responses übertragen sie als String, sodass ein Aufruf mit Text ankommen kann, der keines ist. Kaeso behandelt solchen Text auf jedem Weg gleich:
+
+- **Leere Argumente.** Ein Aufruf eines Tools ohne Parameter, etwa `get_goal` von Codex, hat `{}` als Argumente. Claude streamt einen solchen Aufruf ohne Argumenttext, daher bekommen Chat-Completions- und Responses-Apps dafür `"{}"`, wenn der Block endet, denn `arguments` enthält die Argumente des Aufrufs als JSON (`ChatCompletionMessageToolCall`, `FunctionToolCall`). Leere `arguments`, die eine App zurückschickt, werden als `{}` gelesen; ein Anbieter im eigenen Format der App bekommt sie so zurück, wie sie gesendet wurden. Fixtures: `anthropic_messages/streams/tools-no-input.sse`, `openai_responses/requests/codex-desktop-blank-arguments.json`.
+- **Andere Werte im Gespräch, für Anthropic.** `tool_use.input` muss ein Objekt sein, und Anthropic lehnt die ganze Anfrage ab, wenn eines im Verlauf keines ist. Ein Aufruf aus einem anderen Format, dessen Argumente etwas anderes sind, wird deshalb zu einem Objekt: Text, der kein JSON ist, etwa von einem Ausgabelimit abgeschnittene Argumente, wird zu `{"input": "<der Text>"}`, wie die [Eingabe eines Freiform-Tools](#tool-verlauf-von-codex); ein Array, eine Zahl oder ein Wahrheitswert wird zu `{"input": <der Wert>}`; und `null` wird zu `{}`. Das Modell sieht, was es geschrieben hat, und das Tool-Ergebnis danach. Jeder solche Aufruf wird in `kaeso-adapted` als `tool call` mit seiner ID genannt, etwa `tool call call_abc`. Anbieter von Chat Completions und Responses bekommen die Argumente wie gesendet. Ein eigenes `tool_use` einer Anthropic-App mit einem `input`, das kein Objekt ist, bleibt `Unsupported`.
+- **Antworten.** Eine Antwort an eine Anthropic-App mit einem Tool-Aufruf, dessen Argumente kein Objekt sind, wird abgelehnt, weil die App das Tool mit Argumenten ausführen würde, die das Modell nie geschrieben hat ([Antworten bei Anthropic](anthropic-messages.md#antworten)).
+
 ## Nutzung
 
 `Usage::input_tokens` schließt Cache-Lesevorgänge und Cache-Schreibvorgänge aus, die eigene Felder sind. Das entspricht den Preisspalten von models.dev, sodass sich die Kosten als Summe aus jeder Anzahl mal ihrem Preis ergeben. Das rohe Nutzungsobjekt des Anbieters bleibt immer erhalten.

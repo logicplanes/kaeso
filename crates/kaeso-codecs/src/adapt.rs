@@ -1,13 +1,17 @@
 use std::borrow::Cow;
 
-use kaeso_kpp::{Block, DialectId, GenerateRequest, KppError, Message, Request, Role};
-use serde_json::Value;
+use kaeso_kpp::{
+    Block, DialectId, GenerateRequest, KppError, Message, RawJson, Request, Role, ToolCallBlock,
+};
+use serde_json::{Map, Value};
 
 use crate::codec::EgressCtx;
 use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, check_extras, is_chat_bookkeeping};
 use crate::openai_responses::{ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
 use crate::{tool_roots, tool_search, verbosity, web_search};
+
+const INPUT: &str = "input";
 
 pub(crate) struct Draft<'a> {
     base: &'a GenerateRequest,
@@ -92,6 +96,7 @@ pub(crate) fn for_target<'a>(
             web_search::for_anthropic(&mut draft)?;
             web_search::for_claude(&mut draft);
             history::as_function_calls(&mut draft)?;
+            object_arguments(&mut draft, target)?;
             fold_later_system(&mut draft, target)?;
         }
         DialectId::OpenAiChat => {
@@ -139,6 +144,62 @@ pub(crate) fn for_target<'a>(
         adapted,
         search_limit,
     })
+}
+
+fn takes_object(c: &ToolCallBlock, target: DialectId) -> bool {
+    !c.extras.is_from(target) && !c.arguments.is_object()
+}
+
+fn calls_without_object(
+    r: &GenerateRequest,
+    target: DialectId,
+) -> impl Iterator<Item = &ToolCallBlock> {
+    r.messages
+        .iter()
+        .flat_map(|m| &m.blocks)
+        .filter_map(move |b| match b {
+            Block::ToolCall(c) if takes_object(c, target) => Some(c),
+            _ => None,
+        })
+}
+
+fn as_object(arguments: &RawJson) -> Result<RawJson, KppError> {
+    let invalid = |e: serde_json::Error| {
+        KppError::invalid_request(format!("A tool call's arguments cannot be sent: {e}."))
+    };
+    match arguments.to_value().map_err(invalid)? {
+        Value::Null => Ok(RawJson::empty_object()),
+        value => {
+            RawJson::from_serialize(&Map::from_iter([(INPUT.to_owned(), value)])).map_err(invalid)
+        }
+    }
+}
+
+// Anthropic refuses a whole request when one `tool_use.input` in its history is not an
+// object; calls other formats made with text, arrays or `null` would leave the thread stuck.
+fn object_arguments(d: &mut Draft<'_>, target: DialectId) -> Result<(), KppError> {
+    let ids: Vec<String> = calls_without_object(d.get(), target)
+        .map(|c| c.id.clone())
+        .collect();
+    if ids.is_empty() {
+        return Ok(());
+    }
+    for block in d
+        .edit()
+        .messages
+        .iter_mut()
+        .flat_map(|m| m.blocks.iter_mut())
+    {
+        if let Block::ToolCall(c) = block
+            && takes_object(c, target)
+        {
+            c.arguments = as_object(&c.arguments)?;
+        }
+    }
+    for id in ids {
+        d.adapt(format!("tool call {id}"));
+    }
+    Ok(())
 }
 
 fn foreign_system(d: &Draft<'_>, target: DialectId) -> Result<bool, KppError> {

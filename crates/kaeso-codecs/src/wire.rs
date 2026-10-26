@@ -318,6 +318,7 @@ impl<T: Serialize> Serialize for StringOr<T> {
 }
 
 pub(crate) const VERBATIM_FORM_KEY: &str = "verbatim";
+pub(crate) const NO_ARGUMENTS: &str = "{}";
 
 pub(crate) fn extras_from(
     origin: &Origin,

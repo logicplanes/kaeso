@@ -21,6 +21,7 @@ use super::response::{
 };
 use crate::cross::{ReplyPolicy, reasoning_reply_policy, reply_opaque_visible};
 use crate::web_search;
+use crate::wire::NO_ARGUMENTS;
 
 pub(super) const NEW_ITEM: &str = "new_item";
 pub(crate) const NEW_PART: &str = "new_part";
@@ -664,8 +665,19 @@ impl Engine {
                 id,
                 call_id,
                 name,
-                args,
+                mut args,
             } => {
+                if !self.native && args.trim().is_empty() {
+                    self.emit(
+                        em,
+                        "",
+                        ev("response.function_call_arguments.delta")
+                            .with("item_id", Node::str(&id))
+                            .with("output_index", int(output_index))
+                            .with("delta", Node::str(NO_ARGUMENTS)),
+                    )?;
+                    args.push_str(NO_ARGUMENTS);
+                }
                 self.emit(
                     em,
                     &sc(prefix, "@done"),

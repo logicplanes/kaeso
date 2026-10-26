@@ -18,6 +18,7 @@ use super::stream::{
 use crate::codec::{EncodeCtx, StreamEncoder};
 use crate::keepalive::{self, Pacer};
 use crate::sse::write_event;
+use crate::wire::NO_ARGUMENTS;
 
 #[derive(Default)]
 struct Entry {
@@ -52,6 +53,7 @@ pub(crate) struct ChatStreamEncoder {
     role_pending: bool,
     tool_index: HashMap<u32, u32>,
     unknown_tools: HashSet<u32>,
+    blank_tools: HashSet<u32>,
     next_tool: u32,
     pending: Option<Chunk>,
     start_usage: Option<Usage>,
@@ -77,6 +79,7 @@ impl ChatStreamEncoder {
             role_pending: false,
             tool_index: HashMap::new(),
             unknown_tools: HashSet::new(),
+            blank_tools: HashSet::new(),
             next_tool: 0,
             pending: None,
             start_usage: None,
@@ -130,6 +133,7 @@ impl ChatStreamEncoder {
                         }
                         if !own {
                             function.insert("arguments".to_owned(), to_raw("")?);
+                            self.blank_tools.insert(start.index);
                         }
                         entry.function = Some(function);
                     }
@@ -170,6 +174,9 @@ impl ChatStreamEncoder {
                     chunk.has_choice = true;
                 }
                 Delta::ToolArguments(arguments) => {
+                    if !arguments.trim().is_empty() {
+                        self.blank_tools.remove(&delta.index);
+                    }
                     let Some(index) = self.tool_index.get(&delta.index).copied() else {
                         return Ok(out);
                     };
@@ -217,7 +224,19 @@ impl ChatStreamEncoder {
                 }
                 _ => {}
             },
-            StreamEvent::BlockStop(_) => {}
+            StreamEvent::BlockStop(stop) => {
+                if self.blank_tools.remove(&stop.index)
+                    && let Some(index) = self.tool_index.get(&stop.index)
+                {
+                    let mut entry = Entry::default();
+                    entry.obj.insert("index".to_owned(), to_raw(index)?);
+                    let mut function = Obj::new();
+                    function.insert("arguments".to_owned(), to_raw(NO_ARGUMENTS)?);
+                    entry.function = Some(function);
+                    chunk.tool_calls.push(entry);
+                    chunk.has_choice = true;
+                }
+            }
             StreamEvent::ResponseDelta(delta) => {
                 if let Some(stop) = &delta.stop {
                     chunk.finish = Some(encode_finish(stop, own).to_owned());
