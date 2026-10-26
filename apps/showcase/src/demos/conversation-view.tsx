@@ -39,19 +39,28 @@ export function WithMarkdown() {
     />
   );
 }
+const PIXEL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAJ0lEQVR4nGNgYGD4z0AEYBxVSFUBRgYGBgYGZgZiASNCIUMNTDUAAKYdAhHzMr5fAAAAAElFTkSuQmCC";
 export function States() {
   return (
-    <StateSection title="Blocks">
-      <div className="flex w-640 flex-col gap-40">
-        <Basic />
-        <WithMarkdown />
+    <div className="flex w-640 flex-col">
+      <StateSection title="Blocks">
+        <div className="flex flex-col gap-40">
+          <Basic />
+          <WithMarkdown />
+        </div>
+      </StateSection>
+      <StateSection title="Inputs, reasoning and a refusal (compact)">
         <ConversationView
           density="compact"
           messages={[
+            { role: "developer", content: "Answer in the customer's language. Never quote card numbers." },
             {
               role: "user",
               content: [
                 { type: "text", text: "What is in this receipt?" },
+                { type: "image", src: PIXEL, alt: "Receipt photo" },
+                { type: "image", src: "https://cdn.example.com/uploads/receipt-4471.png" },
                 { type: "image", media_type: "image/png" },
                 { type: "document", name: "receipt-4471.pdf" },
               ],
@@ -65,7 +74,41 @@ export function States() {
             },
           ]}
         />
-      </div>
-    </StateSection>
+      </StateSection>
+      <StateSection title="Tool results: JSON, an error, nested blocks">
+        <ConversationView
+          messages={[
+            {
+              role: "tool",
+              content: [
+                { type: "tool_result", tool_call_id: "call_8f2k", content: '{"status":"packed","order":"4471","carrier":"DHL","eta":"2026-10-29"}' },
+                { type: "tool_result", tool_call_id: "call_9a1c", is_error: true, content: "Shipping service timed out after 10 s." },
+                {
+                  type: "tool_result",
+                  tool_call_id: "call_9b3d",
+                  content: [
+                    { type: "text", text: "Two attachments were found." },
+                    { type: "document", name: "invoice-4471.pdf" },
+                  ],
+                },
+              ],
+            },
+          ]}
+        />
+      </StateSection>
+      <StateSection title="A long unbroken line">
+        <ConversationView
+          messages={[
+            {
+              role: "user",
+              content: "https://kaeso.example.com/orgs/northwind/projects/checkout-web/logs?model=gpt-5&status=429&from=2026-10-01T00:00:00Z&to=2026-10-26",
+            },
+          ]}
+        />
+      </StateSection>
+      <StateSection title="No messages">
+        <ConversationView messages={[]} />
+      </StateSection>
+    </div>
   );
 }
