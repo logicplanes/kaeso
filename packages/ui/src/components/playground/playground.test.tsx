@@ -236,7 +236,7 @@ describe("CompareGrid", () => {
     expect(onActiveChange).toHaveBeenLastCalledWith(1);
     expect(screen.getByText("2 of 3")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Next column" }));
-    expect(screen.getByRole("button", { name: "Next column" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next column" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("follows a column it adds when the active column is controlled", async () => {
@@ -516,7 +516,7 @@ describe("ParameterPanel", () => {
     render(<ParameterPanel value={{}} onValueChange={() => undefined} sampling={false} instructions={false} />);
     expect(screen.queryByRole("slider")).toBeNull();
     expect(screen.queryByRole("textbox", { name: "System instructions" })).toBeNull();
-    expect(screen.getByRole("textbox", { name: "Max output tokens" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Max output tokens" })).toBeInTheDocument();
   });
 });
 

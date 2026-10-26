@@ -219,15 +219,15 @@ describe("AddModelsDialog", () => {
     const review = await screen.findByRole("dialog", { name: /Review gpt-5/ });
     expect(within(review).getByRole("textbox", { name: "Display name" })).toHaveValue("GPT-5");
     expect(within(review).queryByRole("switch", { name: "Adaptive thinking" })).not.toBeInTheDocument();
-    const output = within(review).getByRole("textbox", { name: "Output price" });
+    const output = within(review).getByRole("spinbutton", { name: "Output price" });
     await user.clear(output);
     await user.type(output, "12");
-    await user.type(within(review).getByRole("textbox", { name: "Timeout" }), "1.5");
+    await user.type(within(review).getByRole("spinbutton", { name: "Timeout" }), "1.5");
     await hoverReason(user, within(review).getByRole("button", { name: "Add model" }), "Limits and the timeout are whole numbers.");
-    await user.click(within(review).getByRole("textbox", { name: "Timeout" }));
+    await user.click(within(review).getByRole("spinbutton", { name: "Timeout" }));
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(requests("POST", MODELS)).toEqual([]);
-    await user.clear(within(review).getByRole("textbox", { name: "Timeout" }));
+    await user.clear(within(review).getByRole("spinbutton", { name: "Timeout" }));
     await user.click(within(review).getByRole("switch", { name: "Tool calling" }));
     await user.click(within(review).getByRole("button", { name: "Add model" }));
 
@@ -281,18 +281,18 @@ describe("AddModelsDialog", () => {
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[0] as HTMLElement);
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[1] as HTMLElement);
     await hoverReason(user, add(), "A custom model needs its context and output limits.");
-    await fill(user, within(custom).getByRole("textbox", { name: "Context" }), "32000");
-    await fill(user, within(custom).getByRole("textbox", { name: "Output limit" }), "4000");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Context" }), "32000");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Output limit" }), "4000");
     await hoverReason(user, add(), "A custom model needs its input and output prices.");
-    await fill(user, within(custom).getByRole("textbox", { name: "Input price" }), "0.5");
-    await fill(user, within(custom).getByRole("textbox", { name: "Output price" }), "1.5");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Input price" }), "0.5");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Output price" }), "1.5");
     await hoverReason(user, add(), "A custom model needs the format Kaeso sends it.");
     await user.click(within(custom).getByRole("combobox", { name: "Sends as" }));
     await user.click(await screen.findByRole("option", { name: "OpenAI Chat Completions" }));
     await user.click(within(custom).getByRole("combobox", { name: "Effort levels" }));
     await user.click(await screen.findByRole("option", { name: "low" }));
     await user.keyboard("{Escape}");
-    await fill(user, within(custom).getByRole("textbox", { name: "Timeout" }), "60");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Timeout" }), "60");
     await user.click(add());
 
     expect(await notifications().findByText("Added my-model")).toBeInTheDocument();

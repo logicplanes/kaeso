@@ -51,7 +51,7 @@ test("organizations: one is created with an owner and opens with its metadata", 
 
 test("logging and system: retention defaults change and a test email is sent", async ({ page }) => {
   await openInstance(page, "Logging");
-  await page.getByRole("textbox", { name: "Default content retention" }).fill("14");
+  await page.getByRole("spinbutton", { name: "Default content retention" }).fill("14");
   await page.getByRole("button", { name: "Save default content retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
@@ -62,7 +62,7 @@ test("logging and system: retention defaults change and a test email is sent", a
 
 test("general: the deletion grace period changes, and with deletion off no organization offers it", async ({ page }) => {
   await openInstance(page, "General");
-  await page.getByRole("textbox", { name: "Grace period" }).fill("3");
+  await page.getByRole("spinbutton", { name: "Grace period" }).fill("3");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(toastText(page, "Deletions wait 3 days")).toBeVisible();
 
@@ -78,7 +78,7 @@ test("general: the deletion grace period changes, and with deletion off no organ
   await page.goto("/settings/instance/general");
   await page.getByRole("switch", { name: "Organizations can be deleted" }).click();
   await expect(toastText(page, "Organizations can be deleted")).toBeVisible();
-  await page.getByRole("textbox", { name: "Grace period" }).fill("7");
+  await page.getByRole("spinbutton", { name: "Grace period" }).fill("7");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(toastText(page, "Deletions wait 7 days")).toBeVisible();
 });

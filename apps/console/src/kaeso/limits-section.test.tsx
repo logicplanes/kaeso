@@ -57,7 +57,7 @@ const addButton = (section: HTMLElement) => within(section).getAllByRole("button
 
 async function startDraft(user: UserEvent, section: HTMLElement) {
   await user.click(within(section).getByRole("button", { name: "Add limit" }));
-  return within(section).getByRole("textbox", { name: "Amount" });
+  return within(section).getByRole("spinbutton", { name: "Amount" });
 }
 
 describe("LimitsSection", () => {
@@ -101,7 +101,7 @@ describe("LimitsSection", () => {
     expect(requests("POST", LIMITS).map((r) => r.body)).toEqual([
       { level: "member", user: "usr_grace", kind: "spend_budget", amount: "40", period: "month", hard: true, alert_thresholds: [50, 80, 100] },
     ]);
-    await waitFor(() => expect(within(section).queryByRole("textbox", { name: "Amount" })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(section).queryByRole("spinbutton", { name: "Amount" })).not.toBeInTheDocument());
   });
 
   it("drafts a per-model token budget that only alerts", async () => {
@@ -186,12 +186,12 @@ describe("LimitsSection", () => {
     await startDraft(user, section);
     const cancel = within(section).getByRole("button", { name: "Cancel" });
     await user.click(cancel);
-    expect(within(section).queryByRole("textbox", { name: "Amount" })).not.toBeInTheDocument();
+    expect(within(section).queryByRole("spinbutton", { name: "Amount" })).not.toBeInTheDocument();
     const amount = await startDraft(user, section);
     await user.type(amount, "10");
     await user.click(addButton(section));
     expect((await notifications().findAllByText("The amount is too large.")).length).toBeGreaterThan(0);
-    expect(within(section).getByRole("textbox", { name: "Amount" })).toHaveValue("10");
+    expect(within(section).getByRole("spinbutton", { name: "Amount" })).toHaveValue("10");
   });
 
   it("edits a limit's amount, alerts and hardness", async () => {
@@ -203,7 +203,7 @@ describe("LimitsSection", () => {
     expect(within(dialog).getByText("The monthly spend budget of 20 USD; to change its kind, period or model, remove it and add another.")).toBeInTheDocument();
     expect(within(dialog).queryByRole("combobox", { name: "What it limits" })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole("radio", { name: "Day" })).not.toBeInTheDocument();
-    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    const amount = within(dialog).getByRole("spinbutton", { name: "Amount" });
     await user.clear(amount);
     await hoverReason(user, within(dialog).getByRole("button", { name: "Save limit" }), "Enter an amount above zero.");
     await user.type(amount, "25");
@@ -234,8 +234,8 @@ describe("LimitsSection", () => {
     await user.click(within(section).getByRole("button", { name: "Edit the request rate of 60 requests per minute" }));
     dialog = await screen.findByRole("dialog", { name: "Edit limit" });
     expect(within(dialog).queryByRole("textbox", { name: "Alert at" })).not.toBeInTheDocument();
-    await user.clear(within(dialog).getByRole("textbox", { name: "Amount" }));
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "90");
+    await user.clear(within(dialog).getByRole("spinbutton", { name: "Amount" }));
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "90");
     await user.click(within(dialog).getByRole("button", { name: "Save limit" }));
     await waitFor(() => expect(requests("PATCH", LIMIT).map((r) => r.body)).toEqual([{ amount: "90", alert_thresholds: [] }]));
   });

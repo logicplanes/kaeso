@@ -31,12 +31,12 @@ export const docs = {
   },
   NumberInput: {
     description:
-      "Numbers that stay exact: right-aligned tabular digits, a unit, stepper circles on hover, thousands separators on blur, and a decimal string value.",
+      "Numbers that stay exact: end-aligned tabular digits, a unit, quiet stepper circles, thousands separators on blur, and a decimal string value.",
     props: {
       align: "Text alignment of the value; numbers align to the end with tabular digits.",
       defaultValue: "The number on first render, as text.",
       description: "One sentence of help under the label.",
-      hideStepper: "Hide the stepper circles.",
+      hideStepper: "Hide the stepper circles, where a value is typed rather than nudged, such as an id or a year.",
       integer: "Whole numbers only, such as a count of days: a numeric keypad on phones and no thousands separators in the field.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",
       label: "The visible label.",

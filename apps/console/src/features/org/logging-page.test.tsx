@@ -14,8 +14,8 @@ describe("log settings", () => {
     const { user } = await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "Logging", level: 1 })).toBeInTheDocument();
     expect(await screen.findByRole("switch", { name: "Log request content" })).toBeChecked();
-    expect(screen.getByRole("textbox", { name: "Metadata retention" })).toHaveValue("90");
-    expect(screen.getByRole("textbox", { name: "Content retention" })).toHaveValue("30");
+    expect(screen.getByRole("spinbutton", { name: "Metadata retention" })).toHaveValue("90");
+    expect(screen.getByRole("spinbutton", { name: "Content retention" })).toHaveValue("30");
     expect(screen.getByText("Timing, tokens, cost and errors; up to 365 days.")).toBeInTheDocument();
     expect(screen.getByText("Bodies, up to 180 days, no longer than metadata.")).toBeInTheDocument();
     await hoverReason(user, screen.getByRole("button", { name: "Save metadata retention" }), "No change to save");
@@ -54,7 +54,7 @@ describe("log settings", () => {
     held.shift()?.();
     expect(await notifications().findByText("Content logging turned off")).toBeInTheDocument();
     await waitFor(() => expect(toggle()).not.toHaveAttribute("aria-busy"));
-    const metadata = screen.getByRole("textbox", { name: "Metadata retention" });
+    const metadata = screen.getByRole("spinbutton", { name: "Metadata retention" });
     await user.clear(metadata);
     await user.type(metadata, "60");
     await user.click(save());
@@ -69,8 +69,8 @@ describe("log settings", () => {
     on("GET", "orgs/:org/logs/settings", logSettings());
     on("PATCH", "orgs/:org/logs/settings", logSettings({ metadata_retention_days: 60, content_retention_days: 14 }));
     const { user } = await renderApp(PATH);
-    const metadata = await screen.findByRole("textbox", { name: "Metadata retention" });
-    const content = screen.getByRole("textbox", { name: "Content retention" });
+    const metadata = await screen.findByRole("spinbutton", { name: "Metadata retention" });
+    const content = screen.getByRole("spinbutton", { name: "Content retention" });
     const saveMetadata = () => screen.getByRole("button", { name: "Save metadata retention" });
     const saveContent = () => screen.getByRole("button", { name: "Save content retention" });
     await user.clear(metadata);
@@ -101,8 +101,8 @@ describe("log settings", () => {
     const { user } = await renderApp(`${PATH}?tab=storage`);
     const toggle = await screen.findByRole("switch", { name: "Log request content" });
     await hoverReason(user, toggle, "You need Manage log settings; ask an owner or admin for it.");
-    expect(screen.getByRole("textbox", { name: "Metadata retention" })).toBeDisabled();
-    expect(screen.getByRole("textbox", { name: "Content retention" })).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: "Metadata retention" })).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: "Content retention" })).toBeDisabled();
     await hoverReason(user, screen.getByRole("button", { name: "Save metadata retention" }), "You need Manage log settings; ask an owner or admin for it.");
     expect(screen.getByRole("tab", { name: "Storage" })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("tab", { name: "Deletions" })).toHaveAttribute("aria-disabled", "true");

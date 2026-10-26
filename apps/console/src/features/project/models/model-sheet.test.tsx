@@ -191,12 +191,12 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Sonnet");
     await user.click(await within(s).findByRole("button", { name: "Edit overrides" }));
-    const context = within(s).getByRole("textbox", { name: "Context" });
+    const context = within(s).getByRole("spinbutton", { name: "Context" });
     await user.clear(context);
     await user.type(context, "1.5");
     await hoverReason(user, within(s).getByRole("button", { name: "Save overrides" }), "Limits and the timeout are whole numbers.");
     await user.clear(context);
-    const price = within(s).getByRole("textbox", { name: "Output price" });
+    const price = within(s).getByRole("spinbutton", { name: "Output price" });
     await user.clear(price);
     await user.type(price, "2.");
     await hoverReason(user, within(s).getByRole("button", { name: "Save overrides" }), "Prices are decimal amounts in USD, like 3.00.");

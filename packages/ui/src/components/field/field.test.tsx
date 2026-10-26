@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { Input } from "../input/input.js";
 import { Textarea } from "../input/textarea.js";
 import { Select } from "../select/select.js";
-import { Field } from "./field.js";
+import { Field, Fieldset } from "./field.js";
 
 describe("labels", () => {
   it("Input's label names its input", () => {
@@ -60,5 +60,29 @@ describe("required", () => {
     expect(screen.getByRole("textbox", { name: "Search projects" })).toBeRequired();
     expect(screen.getByRole("textbox", { name: "Notes" })).toBeRequired();
     expect(screen.getByRole("textbox", { name: "Reason" })).toBeRequired();
+  });
+
+  it("names a fieldset by its legend and describes it by its description", () => {
+    render(
+      <Fieldset legend="New key" description="Keys authenticate your applications.">
+        <Field label="Name">
+          <Input />
+        </Field>
+      </Fieldset>,
+    );
+    const group = screen.getByRole("group", { name: "New key" });
+    expect(group).toHaveAccessibleDescription("Keys authenticate your applications.");
+  });
+
+  it("dims a disabled field's label and says when it is optional", () => {
+    const { container } = render(
+      <Field label="Rate limit" optional disabled>
+        <Input />
+      </Field>,
+    );
+    const label = container.querySelector("label");
+    expect(label).toHaveAttribute("data-disabled");
+    expect(label).toHaveTextContent("Rate limitOptional");
+    expect(screen.getByRole("textbox", { name: "Rate limit Optional" })).toBeInTheDocument();
   });
 });

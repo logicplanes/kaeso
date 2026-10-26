@@ -19,9 +19,15 @@ export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
 export const Label = forwardRef<HTMLLabelElement, LabelProps>(function Label({ size = "md", optional, className, children, ...props }, ref) {
   const t = useUiText();
   return (
-    <label ref={ref} className={cn("inline-flex items-baseline gap-6 text-fg", KAESO_LABEL_VARIANTS.size[size].classes, className)} {...props}>
+    <label
+      ref={ref}
+      className={cn("inline-flex items-baseline gap-6 text-fg disabled:text-fg-disabled", KAESO_LABEL_VARIANTS.size[size].classes, className)}
+      {...props}
+    >
       {children}
-      {optional && <span className="text-small font-regular text-fg-tertiary">{t("label.optional", "Optional")}</span>}
+      {optional && (
+        <span className={cn("font-regular text-fg-tertiary", size === "sm" ? "text-caption" : "text-small")}>{t("label.optional", "Optional")}</span>
+      )}
     </label>
   );
 });

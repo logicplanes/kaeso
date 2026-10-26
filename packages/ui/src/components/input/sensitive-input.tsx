@@ -2,7 +2,7 @@ import { forwardRef, useState, type KeyboardEvent } from "react";
 import { Input, type InputProps } from "./input.js";
 import { InputGroup } from "./input-group.js";
 import { icons } from "../../icons/vocabulary.js";
-import { cn } from "../../utils/cn.js";
+import { Icon } from "../icon/icon.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_SENSITIVE_INPUT_VARIANTS = {
@@ -19,7 +19,7 @@ export interface SensitiveInputProps extends Omit<InputProps, "type" | "trailing
 }
 
 export const SensitiveInput = forwardRef<HTMLInputElement, SensitiveInputProps>(function SensitiveInput(
-  { kind = "secret", defaultRevealed = false, description, onKeyDown, onKeyUp, className, ...props },
+  { kind = "secret", defaultRevealed = false, onKeyDown, onKeyUp, onBlur, ...props },
   ref,
 ) {
   const t = useUiText();
@@ -36,8 +36,11 @@ export const SensitiveInput = forwardRef<HTMLInputElement, SensitiveInputProps>(
       spellCheck={false}
       data-1p-ignore={kind === "secret" ? true : undefined}
       data-lpignore={kind === "secret" ? "true" : undefined}
-      className={cn(className, revealed && "mono")}
-      description={caps ? t("sensitiveInput.capsLock", "Caps Lock is on.") : description}
+      data-mono={revealed || undefined}
+      onBlur={(e) => {
+        setCaps(false);
+        onBlur?.(e);
+      }}
       onKeyDown={(e) => {
         checkCaps(e);
         onKeyDown?.(e);
@@ -47,20 +50,31 @@ export const SensitiveInput = forwardRef<HTMLInputElement, SensitiveInputProps>(
         onKeyUp?.(e);
       }}
       trailing={
-        <InputGroup.Button
-          icon={revealed ? icons.hide : icons.show}
-          aria-label={
-            kind === "password"
-              ? revealed
-                ? t("sensitiveInput.hidePassword", "Hide password")
-                : t("sensitiveInput.showPassword", "Show password")
-              : revealed
-                ? t("sensitiveInput.hide", "Hide")
-                : t("sensitiveInput.show", "Show")
-          }
-          onClick={() => setRevealed((r) => !r)}
-          disabled={props.disabled}
-        />
+        <>
+          {kind === "password" && (
+            <span className="inline-flex shrink-0 items-center gap-4 text-small text-warning-text select-none">
+              {caps && <Icon icon={icons.warning} size="sm" />}
+              {caps && t("sensitiveInput.capsLockShort", "Caps Lock")}
+              <span role="status" className="sr-only">
+                {caps ? t("sensitiveInput.capsLock", "Caps Lock is on.") : ""}
+              </span>
+            </span>
+          )}
+          <InputGroup.Button
+            icon={revealed ? icons.hide : icons.show}
+            aria-label={
+              kind === "password"
+                ? revealed
+                  ? t("sensitiveInput.hidePassword", "Hide password")
+                  : t("sensitiveInput.showPassword", "Show password")
+                : revealed
+                  ? t("sensitiveInput.hideKey", "Hide key")
+                  : t("sensitiveInput.showKey", "Show key")
+            }
+            onClick={() => setRevealed((r) => !r)}
+            disabled={props.disabled}
+          />
+        </>
       }
       {...props}
     />

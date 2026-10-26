@@ -179,7 +179,7 @@ describe("LimitsPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     expect(await within(dialog).findByText("What's the limit?")).toBeInTheDocument();
     await hoverReason(user, within(dialog).getByRole("button", { name: "Add limit" }), "Enter an amount");
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "25");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "25");
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
 
     expect(await notifications().findByText("Added the monthly spend budget of 25 USD")).toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("LimitsPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await within(dialog).findByText("What's the limit?");
 
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "80");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "80");
     await hoverReason(
       user,
       within(dialog).getByRole("button", { name: "Add limit" }),
@@ -239,10 +239,10 @@ describe("LimitsPage", () => {
     await user.click(within(dialog).getByRole("combobox", { name: "What it limits" }));
     await user.click(await screen.findByRole("option", { name: /Token budget/ }));
     await user.click(within(dialog).getByRole("radio", { name: "Day" }));
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "1.5");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "1.5");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Add limit" }), "Requests and tokens are whole numbers.");
-    await user.clear(within(dialog).getByRole("textbox", { name: "Amount" }));
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "5000");
+    await user.clear(within(dialog).getByRole("spinbutton", { name: "Amount" }));
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "5000");
     expect(within(dialog).getByText("A hard budget: requests are refused once it is used up.")).toBeInTheDocument();
     const hard = within(dialog).getByRole("switch");
     await user.click(hard);
@@ -279,7 +279,7 @@ describe("LimitsPage", () => {
     await waitFor(() =>
       expect(requests("GET", LIMITS).map((r) => Object.fromEntries(r.query))).toContainEqual({ level: "member", service_account: "sa_deploy" }),
     );
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "20");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "20");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Add limit" }), /Higher than the member's monthly spend budget of 10 USD/);
     expect(requests("POST", LIMITS)).toHaveLength(0);
   });
@@ -331,7 +331,7 @@ describe("LimitsPage", () => {
     const dialog = await screen.findByRole("dialog", { name: /Add limit/ });
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await within(dialog).findByText("What's the limit?");
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "25{Enter}");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "25{Enter}");
     expect((await notifications().findAllByText("That limit already exists.")).length).toBeGreaterThan(0);
     expect(screen.getByRole("dialog", { name: /Add limit/ })).toBeInTheDocument();
   });
@@ -344,7 +344,7 @@ describe("LimitsPage", () => {
 
     await user.click(await screen.findByRole("gridcell", { name: /^Spend budget/ }));
     let dialog = await screen.findByRole("dialog", { name: "Edit limit" });
-    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    const amount = within(dialog).getByRole("spinbutton", { name: "Amount" });
     await user.clear(amount);
     await user.type(amount, "75");
     await user.click(within(dialog).getByRole("button", { name: "Save limit" }));
@@ -369,7 +369,7 @@ describe("LimitsPage", () => {
 
     await user.click(await screen.findByRole("gridcell", { name: /^Spend budget/ }));
     const dialog = await screen.findByRole("dialog", { name: "Edit limit" });
-    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    const amount = within(dialog).getByRole("spinbutton", { name: "Amount" });
     await user.clear(amount);
     await user.type(amount, "75");
     const loads = requests("GET", LIMITS).length;
@@ -390,7 +390,7 @@ describe("LimitsPage", () => {
     const { user } = await renderApp(projectPath("limits"));
     await user.click(await screen.findByRole("gridcell", { name: /^Spend budget/ }));
     const dialog = await screen.findByRole("dialog", { name: "Edit limit" });
-    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    const amount = within(dialog).getByRole("spinbutton", { name: "Amount" });
     await user.clear(amount);
     await user.type(amount, "75");
     await user.click(within(dialog).getByRole("button", { name: "Save limit" }));
@@ -412,7 +412,7 @@ describe("LimitsPage", () => {
 
     await user.click(await screen.findByRole("gridcell", { name: /^Spend budget/ }));
     const dialog = await screen.findByRole("dialog", { name: "Edit limit" });
-    const amount = within(dialog).getByRole("textbox", { name: "Amount" });
+    const amount = within(dialog).getByRole("spinbutton", { name: "Amount" });
     await user.clear(amount);
     await user.type(amount, "75");
     await user.click(within(dialog).getByRole("button", { name: "Save limit" }));

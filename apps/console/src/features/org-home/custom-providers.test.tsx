@@ -546,10 +546,10 @@ describe("a custom provider's models", () => {
     expect(within(custom).queryByText("Saved values override models.dev for this project only.")).not.toBeInTheDocument();
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[0] as HTMLElement);
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[1] as HTMLElement);
-    await fill(user, within(custom).getByRole("textbox", { name: "Context" }), "131072");
-    await fill(user, within(custom).getByRole("textbox", { name: "Output limit" }), "8192");
-    await fill(user, within(custom).getByRole("textbox", { name: "Input price" }), "0.2");
-    await fill(user, within(custom).getByRole("textbox", { name: "Output price" }), "0.6");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Context" }), "131072");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Output limit" }), "8192");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Input price" }), "0.2");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Output price" }), "0.6");
     await user.click(within(custom).getByRole("button", { name: "Add model" }));
 
     expect(await notifications().findByText("Added meta-llama/Llama-3.3-70B")).toBeInTheDocument();
@@ -617,9 +617,9 @@ describe("a custom provider's models", () => {
     expect(
       within(custom).getByText("Kaeso filled in what Research vLLM and models.dev say about meta-llama/Llama-3.3-70B-Instruct; check it and set its prices."),
     ).toBeInTheDocument();
-    expect(within(custom).getByRole("textbox", { name: "Context" })).toHaveValue("131,072");
-    expect(within(custom).getByRole("textbox", { name: "Output limit" })).toHaveValue("16,384");
-    expect(within(custom).getByRole("textbox", { name: "Input price" })).toHaveValue("");
+    expect(within(custom).getByRole("spinbutton", { name: "Context" })).toHaveValue("131,072");
+    expect(within(custom).getByRole("spinbutton", { name: "Output limit" })).toHaveValue("16,384");
+    expect(within(custom).getByRole("spinbutton", { name: "Input price" })).toHaveValue("");
     const modelId = within(custom).getByRole("combobox", { name: "Model id" });
     await user.clear(modelId);
     await user.type(modelId, "qwen/qwen3-32b");
@@ -629,8 +629,8 @@ describe("a custom provider's models", () => {
     expect(within(custom).getByLabelText("Context")).toHaveValue("131,072");
     await user.click(within(custom).getByLabelText("Context"));
     await hoverReason(user, within(custom).getByRole("button", { name: "Add model" }), "A custom model needs its input and output prices.");
-    await fill(user, within(custom).getByRole("textbox", { name: "Input price" }), "0");
-    await fill(user, within(custom).getByRole("textbox", { name: "Output price" }), "0");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Input price" }), "0");
+    await fill(user, within(custom).getByRole("spinbutton", { name: "Output price" }), "0");
     await user.click(within(custom).getByRole("button", { name: "Add model" }));
 
     expect(await notifications().findByText("Added meta-llama/Llama-3.3-70B-Instruct")).toBeInTheDocument();

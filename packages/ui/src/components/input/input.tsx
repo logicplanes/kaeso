@@ -72,7 +72,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(pro
         disabled={disabled}
         readOnly={readOnly}
         required={required}
-        className={align === "end" ? "text-right tabular" : undefined}
+        className={align === "end" ? "text-end tabular" : undefined}
         {...(id ? { id } : {})}
         {...fc.controlProps}
         {...(invalid || error ? { "aria-invalid": true } : {})}
@@ -122,7 +122,7 @@ function InputGroupFromField({
       {...(force ? { "data-force": force } : {})}
     >
       {leadingIcon && <Icon icon={leadingIcon} size={INPUT_ICON_SIZE[size]} className="text-fg-tertiary" />}
-      {prefix && <InputGroup.Addon>{prefix}</InputGroup.Addon>}
+      {prefix && <InputGroup.Addon data-join>{prefix}</InputGroup.Addon>}
       {children}
       {suffix && <InputGroup.Addon>{suffix}</InputGroup.Addon>}
       {trailing}
@@ -190,8 +190,16 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
         }
         onKeyDown?.(e);
       }}
-      trailing={current ? <InputGroup.Button icon={icons.close} aria-label={t("searchInput.clear", "Clear search")} onClick={clear} /> : undefined}
-      suffix={!current && shortcut ? <KbdSequence keys={shortcut} /> : undefined}
+      trailing={
+        current && !props.readOnly && !props.disabled ? (
+          <InputGroup.Button icon={icons.close} aria-label={t("searchInput.clear", "Clear search")} onClick={clear} />
+        ) : undefined
+      }
+      suffix={
+        !current && shortcut ? (
+          <KbdSequence keys={shortcut} className={props["data-force"]?.includes("focus") ? "invisible" : "group-focus-within/field:invisible"} />
+        ) : undefined
+      }
       {...props}
     />
   );

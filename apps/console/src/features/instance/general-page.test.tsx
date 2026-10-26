@@ -31,7 +31,7 @@ async function choose(user: UserEvent, select: string, option: string) {
 }
 
 async function setNumber(user: UserEvent, name: string, value: string) {
-  const input = screen.getByRole("textbox", { name });
+  const input = screen.getByRole("spinbutton", { name });
   await user.clear(input);
   if (value) await user.type(input, value);
 }
@@ -46,13 +46,13 @@ describe("instance general page", () => {
     expect(screen.getByRole("combobox", { name: "Organization creation" })).toHaveTextContent("Instance admins only");
     expect(screen.queryByRole("button", { name: "Edit domains" })).not.toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Organizations can be deleted" })).toBeChecked();
-    expect(screen.getByRole("textbox", { name: "Grace period" })).toHaveValue("7");
+    expect(screen.getByRole("spinbutton", { name: "Grace period" })).toHaveValue("7");
     expect(screen.getAllByText("On")).toHaveLength(2);
     expect(screen.queryByText("Off")).not.toBeInTheDocument();
     expect(screen.queryByText("Single sign-on")).not.toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Time zone" })).toHaveValue("UTC");
     expect(screen.getByText(/\(GMT\+0\)$/)).toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Default metadata retention" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Default metadata retention" })).not.toBeInTheDocument();
     expect(screen.queryByText("SMTP server")).not.toBeInTheDocument();
   });
 
@@ -117,7 +117,7 @@ describe("deleting organizations", () => {
     signedIn();
     settingsApi();
     const { user } = await renderApp(PATH);
-    await screen.findByRole("textbox", { name: "Grace period" });
+    await screen.findByRole("spinbutton", { name: "Grace period" });
     const save = () => screen.getByRole("button", { name: "Save" });
     await hoverReason(user, save(), "No change to save");
     await setNumber(user, "Grace period", "91");
@@ -142,15 +142,15 @@ describe("request log retention", () => {
     settingsApi();
     await renderApp(LOGGING);
     expect(await screen.findByRole("heading", { name: "Logging", level: 1 })).toBeInTheDocument();
-    expect(await screen.findByRole("textbox", { name: "Default metadata retention" })).toHaveValue("90");
-    expect(screen.getByRole("textbox", { name: "Maximum content retention" })).toHaveValue("90");
+    expect(await screen.findByRole("spinbutton", { name: "Default metadata retention" })).toHaveValue("90");
+    expect(screen.getByRole("spinbutton", { name: "Maximum content retention" })).toHaveValue("90");
   });
 
   it("explains what keeps each retention from being saved", async () => {
     signedIn();
     settingsApi();
     const { user } = await renderApp(LOGGING);
-    await screen.findByRole("textbox", { name: "Default metadata retention" });
+    await screen.findByRole("spinbutton", { name: "Default metadata retention" });
     const save = (name: string) => screen.getByRole("button", { name });
     await hoverReason(user, save("Save default metadata retention"), "No change to save");
     await setNumber(user, "Default content retention", "");
@@ -168,7 +168,7 @@ describe("request log retention", () => {
     signedIn();
     settingsApi();
     const { user } = await renderApp(LOGGING);
-    const metadata = await screen.findByRole("textbox", { name: "Default metadata retention" });
+    const metadata = await screen.findByRole("spinbutton", { name: "Default metadata retention" });
     expect(metadata).toHaveAttribute("inputmode", "numeric");
     await setNumber(user, "Default metadata retention", "60");
     await user.click(screen.getByRole("button", { name: "Save default metadata retention" }));
