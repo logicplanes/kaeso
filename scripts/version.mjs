@@ -12,6 +12,7 @@ export const requirement = (version) => (version.includes("-") ? version : versi
 export const ALLOWED = [
   { path: "CHANGELOG.md", why: "the sections of released versions" },
   { path: "pnpm-lock.yaml", why: "the versions of npm dependencies" },
+  { path: "e2e/requirements.txt", why: "the versions of Python dependencies" },
   { path: "scripts/version.mjs", why: "the versions this list names" },
   { path: "scripts/changelog.test.mjs", why: "the versions of changelog fixtures" },
   { path: "scripts/version.test.mjs", why: "the versions of fixtures" },
