@@ -211,6 +211,14 @@ describe("CommandPalette pages", () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
+  it("closes on Escape from the first page, even with a search typed", async () => {
+    const onOpenChange = vi.fn();
+    render(<CommandPalette open onOpenChange={onOpenChange} hotkey={false} groups={groups()} />);
+    await userEvent.type(await screen.findByRole("combobox"), "logs");
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("names a result by its label first, with its hint after a pause", () => {
     render(<CommandPalette inline groups={groups()} />);
     expect(screen.getByRole("option", { name: /^Request logs\s*,\s*Every call\s*,\s*G\s*L$/i })).toBeInTheDocument();

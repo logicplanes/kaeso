@@ -39,7 +39,7 @@ export const meta = {
     ["Up Down", "Moves"],
     ["Enter", "Opens the item or its page"],
     ["Backspace", "Goes back a page when the search is empty"],
-    ["Escape", "Clears the search, then goes back a page, then closes"],
+    ["Escape", "Closes; on a nested page, clears the search, then goes back a page"],
   ],
   a11y: [
     "The input is a combobox controlling the results listbox; the active result is announced.",

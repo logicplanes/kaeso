@@ -181,6 +181,7 @@ function Palette({
         autoFocus
         query={query}
         onQueryChange={setQuery}
+        escapeClears={pages.length > 0}
         onSelect={select}
         loading={loading}
         placeholder={placeholder}

@@ -86,7 +86,7 @@ function useDescription(content: ReactNode, store: TriggerPropsStore, off: boole
     const text = words(plain ?? node.current?.textContent);
     const next = !off && !!trigger && text !== "" && text !== words(accessibleName(trigger)) && !words(ownDescription(trigger, id)).includes(text);
     if (next !== describes) setDescribes(next);
-  }, [plain, off, mounted, content, describes, store]);
+  }, [plain, off, mounted, content, describes, store, id]);
   const hidden =
     mounted && (plain === null || describes) && typeof document !== "undefined"
       ? createPortal(
