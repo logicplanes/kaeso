@@ -17,9 +17,7 @@ export function arrowFocus(e: KeyboardEvent<HTMLElement>, { byItem = false }: { 
   const target = e.target as HTMLElement;
   if (target.tagName === "INPUT" && (target as HTMLInputElement).value) return;
   const all = focusables(e.currentTarget);
-  const groups = byItem
-    ? [...e.currentTarget.children].map((child) => all.filter((el) => child.contains(el))).filter((g) => g.length)
-    : all.map((el) => [el]);
+  const groups = byItem ? [...e.currentTarget.children].map((child) => all.filter((el) => child.contains(el))).filter((g) => g.length) : all.map((el) => [el]);
   const i = groups.findIndex((g) => g.includes(target));
   if (i < 0) return;
   e.preventDefault();
