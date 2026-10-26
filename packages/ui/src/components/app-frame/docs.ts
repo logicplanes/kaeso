@@ -21,7 +21,7 @@ export const docs = {
       children: "The navigation, usually the app's `Sidebar`.",
       onOpenChange: "Called when the navigation opens or closes.",
       open: "Whether the navigation is shown on phones.",
-      peek: "Slides the sheet in a little, to hint that it can be opened.",
+      peek: "Shows the sheet as a preview that doesn't trap focus or dim the page, and closes when the pointer leaves it.",
       returnFocus: "The element that gets focus back when the sheet closes.",
     },
   },

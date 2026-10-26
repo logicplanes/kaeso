@@ -9,7 +9,7 @@ export const docs = {
       mono: "Geist Mono, for keys, ids, model ids and code.",
       tabular: "Tabular numerals. On by default for `metric`.",
       tone: "The text color role; status tones go next to words that say the same.",
-      truncate: "One line with an ellipsis; the full text appears in a tooltip when it is cut.",
+      truncate: "One line with an ellipsis; when it is cut, plain text becomes a focus stop whose tooltip shows all of it.",
       variant: "The type style, from `micro` to `display`.",
       weight: "The weight, when it differs from the type style's.",
     },

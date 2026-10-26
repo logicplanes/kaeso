@@ -245,15 +245,15 @@ function Still({
                     Members
                   </Sidebar.Item>
                 </Sidebar.Group>
+                <div ref={forceIn("button[aria-expanded]", "focus")}>
+                  <Sidebar.Group label="Archive" defaultOpen={false}>
+                    <Sidebar.Item icon={icons.stack}>Old keys</Sidebar.Item>
+                  </Sidebar.Group>
+                </div>
                 <div ref={forceIn("button[aria-expanded]", "hover")}>
                   <Sidebar.Group label="Settings">
                     <Sidebar.Item icon={icons.settings}>General</Sidebar.Item>
                     <Sidebar.Item icon={icons.audit}>Audit log</Sidebar.Item>
-                  </Sidebar.Group>
-                </div>
-                <div ref={forceIn("button[aria-expanded]", "focus")}>
-                  <Sidebar.Group label="Archive" defaultOpen={false}>
-                    <Sidebar.Item icon={icons.stack}>Old keys</Sidebar.Item>
                   </Sidebar.Group>
                 </div>
               </>
@@ -299,6 +299,20 @@ function Still({
 export function States() {
   return (
     <>
+      <StateSection title="The switcher's menu">
+        <div className="h-320">
+          <Menu open>
+            <Menu.Trigger>
+              <Button data-force="open">Northwind Labs</Button>
+            </Menu.Trigger>
+            <Menu.Content>
+              <DeletionOrgs />
+              <Menu.Separator />
+              <Menu.Item icon={icons.settings}>Organization settings</Menu.Item>
+            </Menu.Content>
+          </Menu>
+        </div>
+      </StateSection>
       <StateSection title="Items, groups and rail">
         <div className="flex items-start gap-24">
           <Still groups />
@@ -319,20 +333,8 @@ export function States() {
         </div>
       </StateSection>
       <StateSection title="Long German labels">
-        <Still german />
-      </StateSection>
-      <StateSection title="The switcher's menu">
-        <div className="h-320">
-          <Menu open>
-            <Menu.Trigger>
-              <Button data-force="open">Northwind Labs</Button>
-            </Menu.Trigger>
-            <Menu.Content>
-              <DeletionOrgs />
-              <Menu.Separator />
-              <Menu.Item icon={icons.settings}>Organization settings</Menu.Item>
-            </Menu.Content>
-          </Menu>
+        <div className="flex">
+          <Still german />
         </div>
       </StateSection>
     </>

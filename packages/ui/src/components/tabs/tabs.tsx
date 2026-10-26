@@ -122,7 +122,7 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>(function TabsTab({ value, ch
         "relative inline-flex shrink-0 cursor-pointer items-center gap-6 text-body font-medium whitespace-nowrap text-fg-secondary transition-control tap-target hover:text-fg selected:text-fg disabled:cursor-not-allowed disabled:text-fg-disabled selected:disabled:text-fg-disabled",
         variant === "underline"
           ? "group/tab h-40 outline-none"
-          : "h-32 rounded-pill px-12 hover:bg-fill-1 active:bg-fill-2 selected:bg-fill-2 focus-ring-inset",
+          : "h-32 rounded-pill px-12 hover:bg-fill-1 active:bg-fill-2 selected:bg-fill-2 selected:hover:bg-fill-3 selected:active:bg-fill-3 focus-ring-inset",
         className,
       )}
     >

@@ -1,5 +1,20 @@
-import type { ReactNode } from "react";
-import { AppFrame, Sidebar, PageHeader, PillTabs, IconButton, Avatar, Empty, Button, FilterRow, List, Badge, Select, icons } from "@logicplanes/kaeso-ui";
+import { useEffect, type ReactNode } from "react";
+import {
+  AppFrame,
+  Sidebar,
+  useSidebar,
+  PageHeader,
+  PillTabs,
+  IconButton,
+  Avatar,
+  Empty,
+  Button,
+  FilterRow,
+  List,
+  Badge,
+  Select,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { members } from "~/fixtures/kaeso";
 import { StateSection } from "~/lib/states";
 
@@ -12,11 +27,21 @@ export const meta = {
   a11y: [
     "The sidebar is a nav landmark and the panel is main.",
     "The first Tab stop is Skip to content, shown only while it has focus; it moves the focus to the panel, so the next Tab reaches the page's first control without passing the navigation.",
-    "Below 1024px a bar above the panel shows the wordmark alone at the top left, 28px in and 28px down, and the navigation toggle at the right; the toggle is named Open navigation, says whether the sheet is open (aria-expanded), and takes the focus back when the sheet closes.",
-    "A collapsed sidebar peeks when its expand button is held under the pointer for 750ms.",
+    "Below 1024px a bar above the panel shows the wordmark alone at the top left, on the page's 24px gutter and 28px down, and the navigation toggle at the right; the toggle is named Open navigation, says whether the sheet is open (aria-expanded), and takes the focus back when the sheet closes.",
+    "A collapsed sidebar peeks when its expand button is held under the pointer for 750ms; the peek closes when the pointer leaves for the page, never dims it, and stays inside an embedded frame.",
+    "Expanding the sidebar with the button or [ gives the focus back to the item that collapsed it, or to its collapse button.",
   ],
 };
-export function Frame({ settings = false, page }: { settings?: boolean; page?: ReactNode }) {
+function Collapsed({ peek }: { peek: boolean }) {
+  const { setCollapsed, setPeeking } = useSidebar();
+  useEffect(() => {
+    setCollapsed(true);
+    if (peek) setPeeking(true);
+  }, [peek, setCollapsed, setPeeking]);
+  return null;
+}
+
+export function Frame({ settings = false, page, collapsed }: { settings?: boolean; page?: ReactNode; collapsed?: "collapsed" | "peek" }) {
   return (
     <div className="h-560 w-full overflow-hidden rounded-frame shadow-frame">
       <Sidebar.Provider shortcut={false}>
@@ -58,6 +83,7 @@ export function Frame({ settings = false, page }: { settings?: boolean; page?: R
             </Sidebar>
           }
         >
+          {collapsed && <Collapsed peek={collapsed === "peek"} />}
           {page ??
             (settings ? (
               <AppFrame.Settings title="Preferences">
@@ -153,13 +179,19 @@ export function States() {
   return (
     <>
       <StateSection title="Frames">
-        <div className="flex w-1200 flex-col gap-24">
+        <div className="flex w-640 flex-col gap-24">
           <Frame />
           <Frame settings />
         </div>
       </StateSection>
-      <StateSection title="Settings lists: header action on the title's line, filter row, list card, empty card">
-        <div className="flex w-1200 flex-col gap-24">
+      <StateSection title="Collapsed, and peeking inside the frame">
+        <div className="flex w-640 flex-col gap-24">
+          <Frame collapsed="collapsed" />
+          <Frame collapsed="peek" />
+        </div>
+      </StateSection>
+      <StateSection title="Settings lists">
+        <div className="flex w-640 flex-col gap-24">
           <Frame settings page={<MembersPage />} />
           <Frame settings page={<MembersPage empty />} />
         </div>

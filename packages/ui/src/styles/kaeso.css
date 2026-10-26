@@ -532,7 +532,8 @@
 
 @utility forced-line {
   @media (forced-colors: active) {
-    background-color: CanvasText;
+    /* The element also carries a bg-* utility, which Tailwind may emit after this one. */
+    background-color: CanvasText !important;
     forced-color-adjust: none;
   }
 }

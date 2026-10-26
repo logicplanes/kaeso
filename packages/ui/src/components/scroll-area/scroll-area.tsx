@@ -47,6 +47,7 @@ export const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(function S
         </BaseScrollArea.Viewport>
         <span
           aria-hidden
+          style={{ borderRadius: "inherit" }}
           className="pointer-events-none absolute inset-0 peer-focus-visible/viewport:outline-2 peer-focus-visible/viewport:-outline-offset-2 peer-focus-visible/viewport:outline-focus peer-focus-visible/viewport:outline-solid"
         />
         {orientation !== "horizontal" && <Bar orientation="vertical" />}

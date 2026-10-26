@@ -57,7 +57,19 @@ export function Pills() {
 }
 type Force = "hover" | "pressed" | "focus" | undefined;
 
-function OnePill({ label, selected, force, disabled, count }: { label: string; selected?: boolean; force?: Force; disabled?: boolean; count?: number }) {
+function OnePill({
+  label,
+  selected,
+  force,
+  disabled,
+  count,
+}: {
+  label: string;
+  selected?: boolean;
+  force?: Force;
+  disabled?: boolean | undefined;
+  count?: number;
+}) {
   return (
     <PillTabs value={selected ? "t" : "other"}>
       <PillTabs.List aria-label={label}>
@@ -69,7 +81,7 @@ function OnePill({ label, selected, force, disabled, count }: { label: string; s
   );
 }
 
-function OneUnderline({ label, selected, force, disabled }: { label: string; selected?: boolean; force?: Force; disabled?: boolean }) {
+function OneUnderline({ label, selected, force, disabled }: { label: string; selected?: boolean; force?: Force; disabled?: boolean | undefined }) {
   return (
     <Tabs value={selected ? "t" : "other"}>
       <Tabs.List aria-label={label}>

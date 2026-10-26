@@ -1,5 +1,5 @@
 import { SettingsGroup, SettingsRow, SettingsSection, Select, Switch, Button, Link, Input, InlineCopyText, icons } from "@logicplanes/kaeso-ui";
-import { StateSection } from "~/lib/states";
+import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "SettingsGroup",
@@ -16,7 +16,7 @@ export const examples = [
 ];
 export function Preferences() {
   return (
-    <div className="w-720">
+    <div className="w-560">
       <SettingsSection title="General">
         <SettingsGroup>
           <SettingsRow
@@ -77,7 +77,7 @@ export function Preferences() {
 }
 export function Navigation() {
   return (
-    <div className="w-720">
+    <div className="w-560">
       <SettingsGroup>
         <SettingsRow icon={icons.members} title="Members" description="Who can use this organization." value="5 members" href="#" />
         <SettingsRow icon={icons.providerKey} title="Provider keys" description="Credentials the gateway uses upstream." value="2" href="#" />
@@ -86,36 +86,58 @@ export function Navigation() {
     </div>
   );
 }
+function OneRow({ force }: { force?: string }) {
+  return (
+    <div className="w-360">
+      <SettingsGroup>
+        <SettingsRow title="Sessions" description="Signed in on 3 devices" value="3 active" href="#" {...(force ? { "data-force": force } : {})} />
+      </SettingsGroup>
+    </div>
+  );
+}
+
 export function States() {
   return (
-    <StateSection title="Groups">
-      <div className="flex flex-col gap-24">
-        <Preferences />
-        <Navigation />
-        <Narrow />
-        <div className="w-720">
-          <SettingsGroup>
-            <SettingsRow title="Hover" description="A navigation row under the pointer." value="Value" href="#" data-force="hover" />
-            <SettingsRow title="Focus" value="Value" href="#" data-force="focus" />
-            <SettingsRow
-              title="Organization id"
-              description="Used by the Platform API."
-              control={<InlineCopyText value="org_01m5btmm86ee096rh834eenxs1" label="Copy organization id" />}
-            />
-            <SettingsRow
-              title="Delete organization"
-              description="Projects, keys and logs are deleted after 30 days."
-              danger
-              control={
-                <Button size="sm" variant="danger-secondary">
-                  Delete
-                </Button>
-              }
-            />
-          </SettingsGroup>
+    <>
+      <StateMatrix title="A navigating row" columns={["Row"]}>
+        {(["rest", "hover", "pressed", "focus"] as const).map((f) => (
+          <StateRow key={f} label={f[0]!.toUpperCase() + f.slice(1)}>
+            <StateCell id={`nav-${f}`}>
+              <OneRow {...(f === "rest" ? {} : { force: f })} />
+            </StateCell>
+          </StateRow>
+        ))}
+      </StateMatrix>
+      <StateSection title="Groups">
+        <div className="flex flex-col gap-24">
+          <Preferences />
+          <Navigation />
+          <Narrow />
+          <div className="w-560">
+            <SettingsGroup>
+              <SettingsRow title="Hover" description="A navigation row under the pointer." value="Value" href="#" data-force="hover" />
+              <SettingsRow title="Focus" value="Value" href="#" data-force="focus" />
+              <SettingsRow title="Pressed" value="Value" href="#" data-force="pressed" />
+              <SettingsRow
+                title="Organization id"
+                description="Used by the Platform API."
+                control={<InlineCopyText value="org_01m5btmm86ee096rh834eenxs1" label="Copy organization id" />}
+              />
+              <SettingsRow
+                title="Delete organization"
+                description="Projects, keys and logs are deleted after 30 days."
+                danger
+                control={
+                  <Button size="sm" variant="danger-secondary">
+                    Delete
+                  </Button>
+                }
+              />
+            </SettingsGroup>
+          </div>
         </div>
-      </div>
-    </StateSection>
+      </StateSection>
+    </>
   );
 }
 export function Narrow() {

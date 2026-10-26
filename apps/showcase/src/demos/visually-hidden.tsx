@@ -34,9 +34,17 @@ export function Surfaces() {
 }
 export function States() {
   return (
-    <StateSection title="Surfaces">
-      <Surfaces />
-    </StateSection>
+    <>
+      <StateSection title="A button whose accessible name says more than its label">
+        <div className="flex items-center gap-16">
+          <Basic />
+          <span className="text-small text-fg-secondary">Read as “Export request logs as CSV”</span>
+        </div>
+      </StateSection>
+      <StateSection title="Surfaces">
+        <Surfaces />
+      </StateSection>
+    </>
   );
 }
 void Portal;
