@@ -29,7 +29,7 @@ Each component's keys are in the registry and on its page. Across the library:
 
 ## Screen readers
 
-Icon-only buttons require an accessible name; their tooltip repeats it. A control without a visible label takes `aria-label`. Toasts are status messages, errors are alerts. Loading regions are marked busy. Charts have a text summary and a table view.
+Icon-only buttons require an accessible name; their tooltip repeats it. A control without a visible label takes `aria-label`. Toasts are status messages, errors are alerts; an error, or a toast with an action such as Undo, stays until it is dismissed. A tooltip that says more than its control's name is also the control's description. Loading regions are marked busy. Charts have a text summary and a table view.
 
 ## Preferences
 

@@ -15,7 +15,7 @@ Pills for everything on one line, concentric corners for everything that holds s
 | `rounded-sheet`                           | Sheets, on the side that faces the content                                     |
 | `rounded-group`                           | Settings groups                                                                |
 | `rounded-well`                            | Code wells, preview frames and image thumbnails                                |
-| `rounded-tooltip`                         | Single-line tooltips                                                           |
+| `rounded-tooltip`                         | Tooltips that wrap; a single-line tooltip is a pill                            |
 | `rounded-palette`, `rounded-palette-item` | The command palette and its rows                                               |
 | `rounded-checkbox`                        | Checkboxes                                                                     |
 | `rounded-org`                             | Organization avatars                                                           |
@@ -26,7 +26,7 @@ Pills for everything on one line, concentric corners for everything that holds s
 | `rounded-field`                           | Token fields that wrap                                                         |
 | `rounded-textarea`                        | Textareas                                                                      |
 | `rounded-cell-lg`                         | One-time code cells                                                            |
-| `rounded-tooltip-lg`                      | Tooltips that wrap                                                             |
+| `rounded-tooltip-lg`                      | Not used by tooltips any more; use `rounded-tooltip`                           |
 | `rounded-frame`                           | An app frame embedded in a page                                                |
 | `rounded-toast`                           | A toast that wraps                                                             |
 

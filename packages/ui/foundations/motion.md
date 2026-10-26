@@ -32,7 +32,7 @@ Loading keeps one beat of 800ms on the pulse easing. The spinner is three routes
 
 ## Rules
 
-- Overlays scale from 0.96 and fade from their trigger; dialogs from 0.98 in the center; sheets slide from their edge.
+- Overlays scale from 0.97 and fade from their trigger; dialogs from 0.98 in the center; sheets slide from their edge.
 - A dialog whose content changes stays centered and grows or shrinks to its new size from the size it has, in `--k-duration-dialog` on the `standard` curve; a sheet from the bottom grows upwards. Keep one dialog open through a task, and change its content, rather than closing one dialog and opening another.
 - No page-enter animation and no loops but loading's.
 - Never `transition: all`; only the properties that change.

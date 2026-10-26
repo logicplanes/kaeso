@@ -21,3 +21,4 @@ Few levels, each with one job. Lines are rings drawn with shadows; depth comes f
 - A hairline is the same on all four sides. Controls and small marks draw it inside their own edge, so a scroller or a truncating table cell never cuts a side off; cards, tables and overlays, whose content reaches their edge, draw it outside, opaque and above their shadow. No top light: a highlight along one edge reads as that side drawn thicker.
 - In light mode, shadows carry the lift. In dark mode they disappear into black, so a lighter ring does it instead.
 - One overlay level at a time. A menu inside a dialog uses the raised level, not a deeper one.
+- A modal sheet dims the page half as much as a dialog does, so the list it inspects stays readable behind it.
