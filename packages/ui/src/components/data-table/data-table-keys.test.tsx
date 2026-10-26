@@ -29,7 +29,7 @@ const columns = [
 const row = (name: string) => screen.getByText(name).closest<HTMLElement>("[role=row]")!;
 
 describe("DataTable keyboard model", () => {
-  it("is a grid with one tab stop: header buttons and row controls stay out of the tab order", async () => {
+  it("is a table with one tab stop: header buttons and row controls stay out of the tab order", async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -37,14 +37,14 @@ describe("DataTable keyboard model", () => {
         <button type="button">After</button>
       </>,
     );
-    const grid = screen.getByRole("table", { name: "Keys" });
-    expect(grid).toHaveAttribute("aria-multiselectable", "true");
-    expect(within(grid).getAllByRole("cell").length).toBeGreaterThan(0);
+    const table = screen.getByRole("table", { name: "Keys" });
+    expect(table).not.toHaveAttribute("aria-multiselectable");
+    expect(within(table).getAllByRole("cell").length).toBeGreaterThan(0);
     await user.tab();
     expect(row("checkout-web")).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: "After" })).toHaveFocus();
-    for (const el of grid.querySelectorAll<HTMLElement>("button, [role=checkbox], [role=separator]")) expect(el).toHaveAttribute("tabindex", "-1");
+    for (const el of table.querySelectorAll<HTMLElement>("button, [role=checkbox], [role=separator]")) expect(el).toHaveAttribute("tabindex", "-1");
   });
 
   it("names row checkboxes after the first text column, not the timestamp before it", () => {

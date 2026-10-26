@@ -650,7 +650,6 @@ function DataTableInner<T>(
         aria-label={ariaLabel}
         aria-rowcount={rows.length + 1}
         aria-busy={loading || undefined}
-        aria-multiselectable={selectable || undefined}
         className={cn("w-full overflow-clip", inset && "rounded-group bg-raised shadow-xs")}
       >
         <div
