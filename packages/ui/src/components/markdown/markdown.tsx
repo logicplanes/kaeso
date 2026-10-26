@@ -1,10 +1,8 @@
-import { forwardRef, memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, memo, useMemo, useState, type ReactNode } from "react";
 import { Lexer, Tokenizer, type Token, type Tokens } from "marked";
 import { cn } from "../../utils/cn.js";
 import { safeHref } from "../../utils/safe-href.js";
 import { useUiText } from "../../i18n/context.js";
-import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
-import { observeResize } from "../../utils/observe-resize.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { Button } from "../button/button.js";
@@ -239,28 +237,6 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
 
 const PROSE = "max-w-prose wrap-break-word";
 
-function TableScroller({ children }: { children: ReactNode }) {
-  const t = useUiText();
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [scrolls, setScrolls] = useState(false);
-  useScrollFadeX(ref, "table");
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
-    measure();
-    return observeResize([el], measure);
-  }, []);
-  return (
-    <div
-      ref={ref}
-      {...(scrolls ? { tabIndex: 0, role: "group", "aria-label": t("markdown.tableScrolls", "Table, scrolls sideways") } : {})}
-      className="max-w-full overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset"
-    >
-      {children}
-    </div>
-  );
-}
 const TEXT = { lg: "body-lg", body: "body", small: "small" } as const;
 const HEADING = {
   lg: ["title", "title-sm", "body-lg", "body-lg"],
@@ -326,32 +302,28 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
       const table = t as Tokens.Table;
       const align = (a: Tokens.TableCell["align"]) => (a === "right" ? "end" : "start");
       return (
-        <>
-          <TableScroller>
-            <Table className={ctx.size === "small" ? "text-small" : undefined}>
-              <Table.Head>
-                <Table.Row>
-                  {table.header.map((c, j) => (
-                    <Table.HeaderCell key={j} align={align(c.align)}>
-                      {inline(c.tokens)}
-                    </Table.HeaderCell>
-                  ))}
-                </Table.Row>
-              </Table.Head>
-              <Table.Body>
-                {table.rows.map((row, r) => (
-                  <Table.Row key={r}>
-                    {row.map((c, j) => (
-                      <Table.Cell key={j} align={align(c.align)} className={c.text.length <= 24 ? "whitespace-nowrap" : undefined}>
-                        {inline(c.tokens)}
-                      </Table.Cell>
-                    ))}
-                  </Table.Row>
+        <Table className={ctx.size === "small" ? "text-small" : undefined}>
+          <Table.Head>
+            <Table.Row>
+              {table.header.map((c, j) => (
+                <Table.HeaderCell key={j} align={align(c.align)}>
+                  {inline(c.tokens)}
+                </Table.HeaderCell>
+              ))}
+            </Table.Row>
+          </Table.Head>
+          <Table.Body>
+            {table.rows.map((row, r) => (
+              <Table.Row key={r}>
+                {row.map((c, j) => (
+                  <Table.Cell key={j} align={align(c.align)} className={c.text.length <= 24 ? "whitespace-nowrap" : undefined}>
+                    {inline(c.tokens)}
+                  </Table.Cell>
                 ))}
-              </Table.Body>
-            </Table>
-          </TableScroller>
-        </>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
       );
     }
     default:
