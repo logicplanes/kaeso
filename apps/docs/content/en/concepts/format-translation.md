@@ -84,6 +84,14 @@ Kaeso refuses these in every format, even when the format stays the same:
 
 `/v1/messages/count_tokens` and `/v1/responses/input_tokens` ask the model's provider for the count. When the provider has no endpoint for counting tokens, Kaeso refuses the request with 400 and a message that says the model can't count tokens. Kaeso doesn't estimate the count, because an estimate never matches the provider's own.
 
+## Prompt caching
+
+Kaeso keeps prompt caching working when a request changes format:
+
+- Claude caches only what a request asks it to cache, and apps in OpenAI's formats, such as Codex, never ask. Kaeso asks for them: after the tools, after the system prompt and at the end of the conversation. Each turn then reads the earlier turns from Claude's cache at the cache price instead of paying full price for them again. An app that marks its own cache points keeps exactly those.
+- When the app asks OpenAI to keep its cache for longer than five minutes, with `prompt_cache_retention` or `prompt_cache_options`, Claude keeps it for an hour.
+- An app's `prompt_cache_key` goes along when a Chat Completions request goes to a Responses model or the other way round, so the provider keeps sending the session to the same cache.
+
 ## What Kaeso leaves out
 
 When the target has no place for them, Kaeso leaves out hints that don't change what the model writes:

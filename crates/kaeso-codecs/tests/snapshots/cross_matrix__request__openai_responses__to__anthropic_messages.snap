@@ -5,6 +5,9 @@ expression: outcomes
 {
   "codex-developer-resume": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -63,6 +66,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
           "type": "text"
         }
@@ -77,6 +83,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -108,6 +117,9 @@ expression: outcomes
   },
   "codex-model-switch": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -224,6 +236,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents.</multi_agent_mode>",
           "type": "text"
         }
@@ -238,6 +253,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -269,6 +287,9 @@ expression: outcomes
   },
   "codex-namespace-tools": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -329,6 +350,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are Codex, a coding agent. You and the user share one workspace.",
           "type": "text"
         }
@@ -490,6 +514,9 @@ expression: outcomes
           "strict": false
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Tools in the mcp__fake namespace.\n\nEcho text back",
           "input_schema": {
             "properties": {
@@ -515,6 +542,9 @@ expression: outcomes
   },
   "codex-web-search-resume": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -561,6 +591,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are Codex, a coding agent. You and the user share one workspace.",
           "type": "text"
         }
@@ -722,6 +755,9 @@ expression: outcomes
           "strict": false
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Tools in the mcp__fake namespace.\n\nEcho text back",
           "input_schema": {
             "properties": {
@@ -747,6 +783,9 @@ expression: outcomes
   },
   "error-mid-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -766,6 +805,9 @@ expression: outcomes
   },
   "explicit-nulls": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -787,6 +829,9 @@ expression: outcomes
   },
   "failed-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -811,6 +856,9 @@ expression: outcomes
   },
   "file-input-url": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -836,6 +884,9 @@ expression: outcomes
   },
   "function-call-output-array": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -901,6 +952,9 @@ expression: outcomes
       "model": "gpt-5.5",
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Render a line chart of a numeric series and return the image.",
           "input_schema": {
             "additionalProperties": false,
@@ -940,6 +994,9 @@ expression: outcomes
   },
   "image-url": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -964,9 +1021,9 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "item-reference-breakpoint": {
-    "message": "`prompt_cache_options` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "prompt_cache_options"
+    "message": "`item_reference content block` comes from an OpenAI Responses request and has no equivalent in Anthropic Messages. Remove the block, or send the request to a model served through its original format.",
+    "param": "messages[0].blocks[0]",
+    "unsupported": "item_reference content block"
   },
   "json-object-mode": {
     "message": "`json_object output` is not supported by Anthropic Messages. Anthropic has no JSON mode without a schema. Send a JSON schema (structured outputs) instead.",
@@ -980,6 +1037,9 @@ expression: outcomes
   },
   "max-output-tokens-incomplete": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 16,
       "messages": [
         {
@@ -998,6 +1058,9 @@ expression: outcomes
   },
   "max-output-tokens-incomplete-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 16,
       "messages": [
         {
@@ -1017,6 +1080,9 @@ expression: outcomes
   },
   "multi-turn-roles": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1076,6 +1142,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "Answer in at most two sentences.",
           "type": "text"
         }
@@ -1085,6 +1154,9 @@ expression: outcomes
   },
   "providers/xai/codex-gpt-history": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1200,6 +1272,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<multi_agent_mode>Any earlier instruction enabling proactive multi-agent delegation no longer applies. Do not spawn sub-agents.</multi_agent_mode>",
           "type": "text"
         }
@@ -1214,6 +1289,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -1245,6 +1323,9 @@ expression: outcomes
   },
   "providers/xai/codex-turn-one": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1284,6 +1365,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
           "type": "text"
         }
@@ -1298,6 +1382,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -1329,6 +1416,9 @@ expression: outcomes
   },
   "providers/xai/codex-turn-two": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1386,6 +1476,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
           "type": "text"
         }
@@ -1400,6 +1493,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -1431,6 +1527,9 @@ expression: outcomes
   },
   "providers/xai/codex-turn-two-null-content": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1488,6 +1587,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
           "type": "text"
         }
@@ -1502,6 +1604,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -1533,6 +1638,9 @@ expression: outcomes
   },
   "providers/xai/codex-web-search-access": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1572,6 +1680,9 @@ expression: outcomes
           "type": "text"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
           "type": "text"
         }
@@ -1586,6 +1697,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
           "input_schema": {
             "additionalProperties": false,
@@ -1622,6 +1736,9 @@ expression: outcomes
   },
   "providers/xai/reasoning-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1647,6 +1764,9 @@ expression: outcomes
   },
   "reasoning-effort-high": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1671,6 +1791,9 @@ expression: outcomes
   },
   "reasoning-encrypted": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1722,6 +1845,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a city.",
           "input_schema": {
             "additionalProperties": false,
@@ -1753,6 +1879,9 @@ expression: outcomes
   },
   "reasoning-summary-sampling-forced-tool": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 800,
       "messages": [
         {
@@ -1779,6 +1908,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a city.",
           "input_schema": {
             "additionalProperties": false,
@@ -1801,6 +1933,9 @@ expression: outcomes
   },
   "reasoning-summary-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1827,6 +1962,9 @@ expression: outcomes
   },
   "reasoning-text-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1852,6 +1990,9 @@ expression: outcomes
   },
   "refusal": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1891,6 +2032,9 @@ expression: outcomes
   },
   "refusal-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1953,6 +2097,9 @@ expression: outcomes
   },
   "text-basic-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1969,6 +2116,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a helpful assistant.",
           "type": "text"
         }
@@ -1978,6 +2128,9 @@ expression: outcomes
   },
   "text-input-string": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2001,6 +2154,9 @@ expression: outcomes
   },
   "tool-choice-none": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2019,6 +2175,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a city.",
           "input_schema": {
             "additionalProperties": false,
@@ -2050,6 +2209,9 @@ expression: outcomes
   },
   "tool-result-error": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2094,6 +2256,9 @@ expression: outcomes
       "model": "gpt-5.5",
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a city.",
           "input_schema": {
             "additionalProperties": false,
@@ -2125,6 +2290,9 @@ expression: outcomes
   },
   "tools-function": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2143,6 +2311,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather in a given location",
           "input_schema": {
             "properties": {
@@ -2172,6 +2343,9 @@ expression: outcomes
   },
   "tools-parallel": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2217,6 +2391,9 @@ expression: outcomes
           "strict": true
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current local time in an IANA time zone.",
           "input_schema": {
             "additionalProperties": false,
@@ -2240,6 +2417,9 @@ expression: outcomes
   },
   "tools-parallel-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2286,6 +2466,9 @@ expression: outcomes
           "strict": true
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current local time in an IANA time zone.",
           "input_schema": {
             "additionalProperties": false,
@@ -2309,6 +2492,9 @@ expression: outcomes
   },
   "unknown-event-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {

@@ -46,6 +46,7 @@ expression: outcomes
       ],
       "model": "grok-4.7",
       "parallel_tool_calls": true,
+      "prompt_cache_key": "019a0e5b-7c06-7000-8000-000000000006",
       "reasoning_effort": "medium",
       "stream": true,
       "stream_options": {
@@ -169,6 +170,7 @@ expression: outcomes
       ],
       "model": "claude-sonnet-5-5",
       "parallel_tool_calls": true,
+      "prompt_cache_key": "019a0e5c-7d11-7000-8000-000000000011",
       "reasoning_effort": "medium",
       "stream": true,
       "stream_options": {
@@ -251,6 +253,7 @@ expression: outcomes
       ],
       "model": "claude-sonnet-5-5",
       "parallel_tool_calls": true,
+      "prompt_cache_key": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01",
       "reasoning_effort": "medium",
       "stream": true,
       "stream_options": {
@@ -463,6 +466,7 @@ expression: outcomes
       ],
       "model": "claude-sonnet-5-5",
       "parallel_tool_calls": true,
+      "prompt_cache_key": "0199f3a2-6c4e-7d10-9b2a-1c3d5e7f9a01",
       "reasoning_effort": "medium",
       "stream": true,
       "stream_options": {

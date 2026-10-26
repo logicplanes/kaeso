@@ -82,8 +82,8 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `display`（`thinking.display`） | reasoning，来自 `anthropic_messages` | 只控制是否返回思考文本（`summarized` 或 `omitted`）。发往 OpenAI Responses 时改为 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 | `anthropic_messages/requests/thinking-display-omitted.json`、`thinking-adaptive-effort.json` |
 | `image_url.detail` | image，来自 `openai_chat` | 图像分辨率提示（`low`、`high`、`auto`）：它改变的是图像的 Token 成本，而不是提问内容；没有该字段的目标会自行选择分辨率。 | `openai_chat/requests/image-base64-detail.json` |
 | `file.filename` | document，来自 `openai_chat` | OpenAI 要求随内联 `file_data` 一起提供的文件名。属于元数据，不是指令。 | `openai_chat/requests/file-pdf-data.json` |
-| `prompt_cache_key` | request，来自 `openai_chat` | 把请求路由到某个提示缓存。属于缓存提示（[缓存提示](#缓存提示)）。 | `openai_chat/requests/all-params-sdk.json` |
-| `prompt_cache_key` | request，来自 `openai_responses` | 同上。 | `openai_responses/requests/sampling-and-ids.json` |
+| `prompt_cache_key` | request，来自 `openai_chat` | 把请求路由到某个提示缓存。会传给同样按它路由的 OpenAI Responses，发往其他目标时丢弃（[缓存提示](#缓存提示)）。 | `openai_chat/requests/all-params-sdk.json` |
+| `prompt_cache_key` | request，来自 `openai_responses` | 把请求路由到某个提示缓存。会传给 Chat Completions，发往其他目标时丢弃（[缓存提示](#缓存提示)）。 | `openai_responses/requests/sampling-and-ids.json` |
 | `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
@@ -98,6 +98,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `context_management` | request，来自 `anthropic_messages` | 只包含 `edits`，其中至少有一个 edit，且每个 edit 都是 `clear_thinking_*`。清除思考块只决定模型能看到哪些较早的 Anthropic `thinking` 块，而这些块从不会到达其他方言（[推理](reasoning.md)）。 | Claude Code 2.1.296 在每个请求中都发送 `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}`；`anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `text.verbosity` | request，来自 `openai_responses` | `low` 或 `high`（`medium` 是形式标记）。这是输出长度提示（[字段类别](index.md#字段类别)）：配置接受 `verbosity` 的 Chat Completions 目标会在该字段收到它（[服务商配置](openai-chat-providers.md#服务商配置)）；Anthropic 和其他 Chat Completions 目标没有对应字段，因此会省略它，并在 `kaeso-left-out` 中注明。 | Codex 对 GPT 模型发送 `low`，线程切换模型时仍保留它；`openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message（`role: "system"`），来自 `anthropic_messages` | `{}`，或只有与请求的 `output_config.effort` 相同的 `effort`。重复请求的推理强度不会改变任何内容。 | Claude Code 2.1.296 会在对话中间的系统消息里重复请求的推理强度；同一个 fixture |
+| `prompt_cache_retention`、`prompt_cache_options` | request，来自 `openai_chat` 和 `openai_responses` | 仅限发往 Anthropic，用于设置缓存保留多久（[缓存提示](#缓存提示)）；其他所有目标仍会拒绝它们。 | `openai_chat/requests/prompt-cache-breakpoint.json`、`openai_responses/requests/item-reference-breakpoint.json` |
 
 ## 工具命名空间
 
@@ -275,7 +276,16 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 ## 缓存提示
 
-缓存提示属于提示字段。OpenAI 会自行缓存，因此来自其他方言的缓存提示发往 OpenAI 时会被丢弃。OpenAI 自己的 `prompt_cache_breakpoint` 解码为 KPP 的 `CacheHint`，并且只写回它的来源方言。
+缓存提示属于提示字段，但对于只在被要求时才缓存的目标，Kaeso 仍会提出要求。
+
+- **OpenAI 以及其他 Chat Completions 和 Responses 服务商**会自行缓存，因此来自其他方言的缓存提示发往它们时会被丢弃。OpenAI 自己的 `prompt_cache_breakpoint` 解码为 KPP 的 `CacheHint`，并且只写回它的来源方言。`prompt_cache_key` 会随请求在 Chat Completions 和 Responses 之间传递，使服务商继续把同一会话发往同一个缓存。
+- **Anthropic** 只缓存到 `cache_control` 断点为止（[提示词缓存](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)）。来自其他方言、且不带任何缓存提示的生成请求会得到三个断点：
+  - 一个在最后一个函数工具上，这样即使系统提示词变化，工具列表也能从缓存读取；
+  - 一个在最后一个系统块上，这样即使某一轮新增的块超过 Anthropic 从断点向前查找的 20 个块，工具和系统提示词也能从缓存读取；
+  - 顶层自动缓存，即请求上的 `cache_control`，它会随着每一轮对话的结尾移动。
+- **应用自己的提示优先。**带有缓存提示的请求只保留这些提示。OpenAI 的 `prompt_cache_options` 设为 `mode: explicit` 且没有断点时不缓存任何内容，与 OpenAI 上的行为一致。Token 计数不会得到断点。
+- **有效期。**Anthropic 会把缓存保留 5 分钟或 1 小时。当应用要求 OpenAI 保留超过 5 分钟时（`prompt_cache_retention: "24h"`，或 `30m` 这样的 `prompt_cache_options.ttl`），发往 Anthropic 的每个断点都会请求 `1h`。
+- **每一轮都重复上一轮。**对话的第 *n+1* 轮编码后的工具、系统提示词、思考设置和消息与第 *n* 轮相同，后面再接新的消息，因此每一轮都能读取上一轮写入的缓存（`crates/kaeso-codecs/tests/prompt_cache.rs`）。
 
 ## 工具错误
 
