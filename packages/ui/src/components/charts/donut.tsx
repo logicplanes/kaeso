@@ -138,7 +138,7 @@ export const Donut = forwardRef<
   );
   const table = {
     columns: [t("donut.slice", "Slice"), t("donut.value", "Value"), t("donut.share", "Share")],
-    rows: data.map((d, i) => [d.label, formatValue(d.value), shares[i] ?? ""]),
+    rows: data.map((d) => [d.label, formatValue(d.value), formatPercent(sum ? d.value / sum : 0)]),
   };
   const box = useRef<HTMLDivElement | null>(null);
   const width = useLayoutWidth(box);

@@ -1,6 +1,8 @@
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import { Thumbnail } from "./thumbnail.js";
 
 const loaded = (width: number) => vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(width);
@@ -45,7 +47,23 @@ describe("Thumbnail", () => {
   it("shows the text alternative for an image that failed before the page came alive", () => {
     loaded(0);
     vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
-    render(<Thumbnail src="/missing.png" alt="A chart of last week's spend" />);
+    const thumbnail = <Thumbnail src="/missing.png" alt="A chart of last week's spend" />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(thumbnail);
+    document.body.append(container);
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    act(() => {
+      root = hydrateRoot(container, thumbnail);
+    });
     expect(screen.getByRole("img", { name: "A chart of last week's spend" }).tagName).toBe("SPAN");
+    act(() => root?.unmount());
+    container.remove();
+  });
+
+  it("keeps an image it renders itself until the image reports an error", () => {
+    loaded(0);
+    vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    render(<Thumbnail src="/receipt.png" alt="A receipt" />);
+    expect(screen.getByRole("img", { name: "A receipt" }).tagName).toBe("IMG");
   });
 });

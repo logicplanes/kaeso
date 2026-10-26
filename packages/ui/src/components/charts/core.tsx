@@ -6,7 +6,6 @@ import { mergeRefs } from "../../utils/merge-refs.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
-import { ScrollArea } from "../scroll-area/scroll-area.js";
 import { SwapText } from "../swap-text/swap-text.js";
 import { Table } from "../table/table.js";
 import { edgeColor } from "./marks.js";
@@ -201,9 +200,14 @@ export const ChartFrame = forwardRef<HTMLElement, ChartFrameProps>(function Char
         </div>
       ) : showTable ? (
         <div style={{ height }}>
-          <ScrollArea className="h-full" aria-label={t("chartFrame.tableLabel", "{label}, table", { label })}>
+          <div
+            role="region"
+            tabIndex={0}
+            aria-label={t("chartFrame.tableLabel", "{label}, table", { label })}
+            className="h-full overflow-auto overscroll-contain scrollbar-quiet focus-ring-inset"
+          >
             <DataTablePlain table={table} sticky />
-          </ScrollArea>
+          </div>
         </div>
       ) : (
         <div className="relative" style={{ height }}>
