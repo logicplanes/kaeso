@@ -6,7 +6,7 @@ export const docs = {
     props: {
       children: "The word that carries the meaning.",
       icon: "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.",
-      size: "The text size.",
+      size: "The text size: 14px, or 13px (`sm`) with a 14px icon.",
       tone: "The status it marks.",
     },
   },
@@ -15,8 +15,8 @@ export const docs = {
     props: {
       children: "The word that carries the meaning.",
       icon: "A mark before the word in the same color, e.g. `icons.success` for “Up to date”.",
-      size: "The dot's size.",
-      tone: "The status the dot marks; keep it next to words that say the same.",
+      size: "The text size: 14px, or 13px (`sm`) with a 14px icon.",
+      tone: "The status the word marks; keep it next to words that say the same.",
     },
   },
 } satisfies ComponentDocs;

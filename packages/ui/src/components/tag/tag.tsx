@@ -35,6 +35,7 @@ export const KAESO_TAG_VARIANTS = {
     soft: { classes: "bg-fill-2 text-fg", description: "Filled: selected toggle pills" },
   },
 } as const;
+
 export const KAESO_TAG_DEFAULT_VARIANTS = { size: "md", variant: "raised" } as const;
 
 export interface TagProps extends Omit<HTMLAttributes<HTMLElement>, "children"> {
@@ -65,8 +66,10 @@ export const Tag = forwardRef<HTMLElement, TagProps>(function Tag(
       {children}
     </span>
   );
+  const look = pressed ? "soft" : variant;
   const content = (
     <>
+      {invalid && <Icon icon={icons.error} size="xs" label={t("tag.invalid", "Not accepted")} className="text-danger-text" />}
       {icon && <Icon icon={icon} size="xs" className="text-fg-secondary" />}
       {tip ? (
         <Tooltip content={children} shape="multiline">
@@ -92,13 +95,18 @@ export const Tag = forwardRef<HTMLElement, TagProps>(function Tag(
       className={cn(
         "inline-flex max-w-full shrink-0 items-center rounded-pill font-medium whitespace-nowrap transition-control",
         KAESO_TAG_VARIANTS.size[size].classes,
-        KAESO_TAG_VARIANTS.variant[variant].classes,
-        icon && (size === "md" ? "pl-8" : "pl-6"),
+        clickable
+          ? {
+              raised: "material-secondary",
+              outline: "material-ghost shadow-ring text-fg-secondary hover:text-fg active:text-fg",
+              soft: "material-soft bg-fill-2 hover:bg-fill-3",
+            }[look]
+          : KAESO_TAG_VARIANTS.variant[look].classes,
+        look !== "raised" && "forced-colors:outline forced-colors:-outline-offset-1",
+        (icon || invalid) && (size === "md" ? "pl-8" : "pl-6"),
         onRemove && "pr-2",
         clickable && !split && "relative cursor-pointer focus-ring tap-target",
         split && "pl-0",
-        clickable && (variant === "soft" ? "hover:bg-fill-3 active:bg-fill-3" : "hover:bg-fill-1 active:bg-fill-2"),
-        clickable && variant === "outline" && "hover:text-fg",
         invalid && "ring-invalid text-danger-text",
         className,
       )}
@@ -111,7 +119,7 @@ export const Tag = forwardRef<HTMLElement, TagProps>(function Tag(
           className={cn(
             "relative inline-flex h-full min-w-0 cursor-pointer items-center rounded-pill focus-ring tap-target",
             size === "md" ? "gap-6" : "gap-4",
-            icon ? (size === "md" ? "pl-8" : "pl-6") : size === "md" ? "pl-10" : "pl-8",
+            icon || invalid ? (size === "md" ? "pl-8" : "pl-6") : size === "md" ? "pl-10" : "pl-8",
           )}
         >
           {content}

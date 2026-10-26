@@ -35,7 +35,7 @@ export const StatusDot = forwardRef<HTMLSpanElement, StatusDotProps>(function St
         className,
       )}
     >
-      {icon && <Icon icon={icon} size="sm" />}
+      {icon && <Icon icon={icon} size={size === "sm" ? "xs" : "sm"} />}
       {children}
     </span>
   );
