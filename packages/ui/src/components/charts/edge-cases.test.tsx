@@ -6,6 +6,7 @@ import { TimeseriesChart } from "./timeseries.js";
 import { Donut } from "./donut.js";
 import { Sparkline } from "./sparkline.js";
 import { Sankey } from "./sankey.js";
+import { Heatmap } from "./heatmap.js";
 import { Legend, Swatch, assignSeries } from "./core.js";
 import { valueExtent } from "./domain.js";
 
@@ -243,5 +244,163 @@ describe("tooltip", () => {
     const tip = container.querySelector<HTMLElement>("div[role=presentation]")!;
     act(() => void fireEvent.pointerMove(container.querySelector("rect[fill=transparent]")!, { clientY: 118 }));
     expect(Number.parseFloat(tip.style.top)).toBeLessThanOrEqual(120);
+  });
+});
+
+describe("BarChart stacks across zero", () => {
+  const days = ["Mon", "Tue", "Wed"];
+  const series = [
+    { id: "credit", label: "Credit", values: [5, -2, 3] },
+    { id: "debit", label: "Debit", values: [-4, -1, 2] },
+    { id: "fee", label: "Fee", values: [0.01, 0, 1] },
+  ];
+
+  it("stacks positives up and negatives down, rounding only the outer segment, with tiny segments kept visible", async () => {
+    const { container } = render(<BarChart aria-label="Balance" layout="stacked" categories={days} series={series} partial={{ first: true }} />);
+    const paths = [...container.querySelectorAll("path")];
+    expect(paths.length).toBeGreaterThanOrEqual(7);
+    const heights = paths.map((p) => [...p.getAttribute("d")!.matchAll(/[MV]([\d.]+)/g)].map((m) => Number(m[1])));
+    expect(heights.every((h) => h.length > 0)).toBe(true);
+    expect(container.querySelectorAll("path[data-partial]").length).toBeGreaterThan(0);
+    await userEvent.tab();
+    await userEvent.keyboard("{Home}");
+    expect(live()).toMatch(/^Mon, partial: Credit 5, Debit -4, Fee 0\.01/);
+  });
+
+  it("stacks across in a ranking, writes the total at the end, and puts a negative total on the left", async () => {
+    const { container } = render(
+      <BarChart
+        aria-label="Net by key"
+        layout="horizontal"
+        categories={["web", "worker"]}
+        series={[
+          { id: "a", label: "A", values: [6, -5] },
+          { id: "b", label: "B", values: [2, -3] },
+        ]}
+        highlight={1}
+      />,
+    );
+    const values = [...container.querySelectorAll("text")].filter((t) => !t.querySelector("title"));
+    const negative = values.find((t) => t.textContent === "-5")!;
+    expect(negative).toHaveAttribute("text-anchor", "end");
+    expect(container.querySelector("div[role=presentation]")).toHaveTextContent("worker");
+    await userEvent.tab();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(live()).toMatch(/^worker/);
+  });
+
+  it("follows the pointer across categories and lets go when it leaves", () => {
+    const { container } = render(<BarChart aria-label="Tokens" categories={days} series={series.slice(0, 2)} />);
+    const hit = [...container.querySelectorAll("rect[fill=transparent]")];
+    fireEvent.pointerMove(hit[1]!, { clientY: 40 });
+    expect(container.querySelector("div[role=presentation]")).toHaveTextContent("Tue");
+    fireEvent.pointerLeave(hit[1]!);
+    expect(container.querySelector("div[role=presentation]")).toBeNull();
+  });
+
+  it("stays quiet while it fails, with no tooltip and nothing to step through", async () => {
+    render(<BarChart aria-label="Tokens" categories={days} series={series} error highlight={1} />);
+    expect(screen.queryByRole("group", { name: "Tokens" })).toBeNull();
+    expect(screen.queryByRole("list", { name: "Legend" })).toBeNull();
+  });
+});
+
+describe("Heatmap from the pointer and keys", () => {
+  it("walks every direction, clamps at the edges and lets go on blur", async () => {
+    render(
+      <>
+        <Heatmap
+          aria-label="Requests"
+          rows={["Mon", "Tue"]}
+          columns={["00", "01"]}
+          values={[
+            [1, 2],
+            [3, 4],
+          ]}
+        />
+        <button type="button">After</button>
+      </>,
+    );
+    await userEvent.tab();
+    await userEvent.keyboard("{ArrowLeft}{ArrowUp}");
+    expect(live()).toBe("Mon 00: 1");
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{End}{ArrowRight}");
+    expect(live()).toBe("Tue 01: 4");
+    await userEvent.keyboard("{Home}");
+    expect(live()).toBe("Tue 00: 3");
+    await userEvent.keyboard("x");
+    expect(live()).toBe("Tue 00: 3");
+    await userEvent.tab();
+    expect(live()).toBe("");
+  });
+
+  it("clears the pointer's cell when the pointer leaves or the grid scrolls", () => {
+    const { container } = render(<Heatmap aria-label="Requests" rows={["Mon"]} columns={["00", "01"]} values={[[1, Number.NaN]]} />);
+    fireEvent.pointerEnter(container.querySelector('[data-cell="0-1"]')!);
+    expect(container.querySelector("div[role=presentation]")).toHaveTextContent("Mon 01");
+    fireEvent.scroll(screen.getByRole("group", { name: "Requests" }));
+    expect(container.querySelector("div[role=presentation]")).toBeNull();
+    fireEvent.pointerEnter(container.querySelector('[data-cell="0-0"]')!);
+    fireEvent.pointerLeave(container.querySelector("[data-heatmap-grid]")!);
+    expect(container.querySelector("div[role=presentation]")).toBeNull();
+  });
+});
+
+describe("TimeseriesChart kinds across zero", () => {
+  const points = (vs: number[]) => vs.map((v, i) => ({ t: day(6 + i), v }));
+  it("stacks negatives below the zero line and fills an area down to zero", () => {
+    const series = [
+      { id: "a", label: "A", points: points([3, -2, 4]) },
+      { id: "b", label: "B", points: points([-1, -3, 2]) },
+    ];
+    const { container, rerender } = render(<TimeseriesChart aria-label="Net" timeZone="UTC" kind="stacked" series={series} highlight={1} />);
+    expect(container.querySelectorAll(".chart-stack-fill")).toHaveLength(2);
+    expect(container.querySelector("div[role=presentation]")).toHaveTextContent("A-2");
+    rerender(<TimeseriesChart aria-label="Net" timeZone="UTC" kind="area" series={series.slice(0, 1)} hideLegend threshold={{ value: 5, label: "Limit" }} />);
+    expect(screen.getByText("Limit")).toBeInTheDocument();
+    expect(container.querySelector("path[fill^='url(']")).not.toBeNull();
+  });
+});
+
+describe("Sankey squeezed hard", () => {
+  it("shortens every label to its column and keeps the names whole on hover", () => {
+    width = 140;
+    const { container } = render(
+      <Sankey
+        aria-label="Routes"
+        nodes={[
+          { id: "a", label: "checkout-web-production" },
+          { id: "b", label: "claude-sonnet-4-5-20250929" },
+          { id: "c", label: "Anthropic" },
+        ]}
+        links={[
+          { source: "a", target: "b", value: 10 },
+          { source: "b", target: "c", value: 10 },
+        ]}
+      />,
+    );
+    const labels = [...container.querySelectorAll("text")];
+    expect(labels.some((t) => t.firstChild?.textContent?.endsWith("…"))).toBe(true);
+    expect(labels.every((t) => t.querySelector("title"))).toBe(true);
+  });
+});
+
+describe("Sparkline at full width", () => {
+  it("fills its width with no dot unless it has one value", () => {
+    const { container, rerender } = render(<Sparkline aria-label="Requests" fluid values={[1, 3, 2]} color="var(--k-viz-3)" />);
+    expect(container.querySelector("svg")).toHaveAttribute("width", "100%");
+    expect(container.querySelector("[data-dot]")).toBeNull();
+    rerender(<Sparkline aria-label="Requests" fluid values={[4]} />);
+    expect(container.querySelector("[data-dot]")).not.toBeNull();
+  });
+});
+
+describe("Donut with a long total", () => {
+  it("steps the total down a size until it fits the ring", () => {
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.className.includes("text-body-lg") ? 80 : 400;
+    });
+    render(<Donut aria-label="Spend" slices={[{ id: "a", label: "Checkout", value: 2_222_222.21 }]} formatValue={(v) => `$${v.toFixed(2)}`} />);
+    expect(screen.getAllByText("$2222222.21")[0]).toHaveClass("text-body-lg");
   });
 });

@@ -87,3 +87,22 @@ describe("JsonView", () => {
     vi.useRealTimers();
   });
 });
+
+describe("JsonView keys", () => {
+  it("opens and closes with Enter and Space and walks back up", async () => {
+    const user = userEvent.setup();
+    render(<JsonView value={{ a: { b: 1 }, c: [1, 2] }} defaultDepth={1} />);
+    await user.tab();
+    await user.keyboard("{End}");
+    const c = screen.getByRole("treeitem", { name: /"c"/ });
+    expect(c).toHaveFocus();
+    await user.keyboard("{Enter}");
+    expect(c).toHaveAttribute("aria-expanded", "true");
+    await user.keyboard(" ");
+    expect(c).toHaveAttribute("aria-expanded", "false");
+    await user.keyboard("{ArrowUp}{Home}");
+    expect(screen.getAllByRole("treeitem")[0]).toHaveFocus();
+    await user.keyboard("{ArrowUp}x");
+    expect(screen.getAllByRole("treeitem")[0]).toHaveFocus();
+  });
+});

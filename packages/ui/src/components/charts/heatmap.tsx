@@ -56,10 +56,11 @@ export const Heatmap = forwardRef<
     grid.current?.querySelector(`[data-cell="${cell.r}-${cell.c}"]`)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, [cell, keyboard]);
   const value = (r: number, c: number) => values[r]?.[c] ?? 0;
+  const write = (v: number) => (Number.isFinite(v) ? formatValue(v) : "–");
   const line = (r: number, c: number) =>
-    t("heatmap.cell", "{row} {column}: {value}", { row: rows[r] ?? "", column: columns[c] ?? "", value: formatValue(value(r, c)) });
+    t("heatmap.cell", "{row} {column}: {value}", { row: rows[r] ?? "", column: columns[c] ?? "", value: write(value(r, c)) });
   const height = HEAD + GAP + rows.length * (CELL + GAP) + 8;
-  const table = { columns: ["", ...columns], rows: rows.map((r, ri) => [r, ...columns.map((_, ci) => formatValue(value(ri, ci)))]) };
+  const table = { columns: ["", ...columns], rows: rows.map((r, ri) => [r, ...columns.map((_, ci) => write(value(ri, ci)))]) };
   const move = (key: string) => {
     const at = cell ?? { r: 0, c: 0 };
     const next =
@@ -191,7 +192,7 @@ export const Heatmap = forwardRef<
                 width={scroller.current?.clientWidth ?? 0}
                 visible
                 heading={t("heatmap.cellHeading", "{row} {column}", { row: rows[cell.r] ?? "", column: columns[cell.c] ?? "" })}
-                rows={[{ id: "v", label: "", color: RAMP[level(value(cell.r, cell.c))]!, value: formatValue(value(cell.r, cell.c)) }]}
+                rows={[{ id: "v", label: "", color: RAMP[level(value(cell.r, cell.c))]!, value: write(value(cell.r, cell.c)) }]}
               />
             )}
             <ChartLive>{keyboard && cell ? line(cell.r, cell.c) : null}</ChartLive>
