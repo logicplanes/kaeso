@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { formatDuration, formatNumber, formatUSD } from "../../format/index.js";
+import { formatDuration, formatNumber, formatPrice, formatUSD } from "../../format/index.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_RESPONSE_METRICS_VARIANTS = {
@@ -42,18 +42,23 @@ function useElapsed(from: number | undefined) {
 }
 
 function requestCost(amount: string): string {
-  return /[1-9]/.test(amount) ? formatUSD(amount, { decimals: 6 }) : formatUSD("0", { decimals: 0 });
+  return /[1-9]/.test(amount) ? formatPrice(amount) : formatUSD("0", { decimals: 0 });
 }
 
 function known(n: number | null | undefined): n is number {
   return typeof n === "number" && Number.isFinite(n);
 }
 
-function Item({ label, width, children }: { label: string; width: string; children: ReactNode }) {
+function Item({ label, reserve, children }: { label: string; reserve: ReactNode; children: ReactNode }) {
   return (
     <div className="flex items-baseline gap-4 whitespace-nowrap">
       <dt className="text-fg-tertiary">{label}</dt>
-      <dd className={cn("text-fg-secondary tabular", width)}>{children}</dd>
+      <dd className="inline-grid justify-items-start text-fg-secondary tabular">
+        <span className="col-start-1 row-start-1">{children}</span>
+        <span aria-hidden className="invisible col-start-1 row-start-1">
+          {reserve}
+        </span>
+      </dd>
     </div>
   );
 }
@@ -75,23 +80,33 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
   const dash = (
     <span className="text-fg-tertiary">
       <span aria-hidden>—</span>
-      <span className="sr-only">{t("responseMetrics.notYetKnown", "not yet known")}</span>
+      <span className="sr-only">{live ? t("responseMetrics.notYetKnown", "not yet known") : t("responseMetrics.notReported", "not reported")}</span>
     </span>
   );
+  const seconds = (ms: number) =>
+    ms < 10_000
+      ? t("format.seconds", "{s} s", { s: formatNumber(Math.floor(ms / 100) / 10, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
+      : ms < 60_000
+        ? t("format.seconds", "{s} s", { s: formatNumber(Math.floor(ms / 1000)) })
+        : formatDuration(Math.floor(ms / 1000) * 1000);
+  const time = formatLatency(8880);
   return (
     <dl ref={ref} aria-label={t("responseMetrics.metrics", "Metrics")} className={line}>
       {show(known(timeToFirstToken)) && (
-        <Item label={t("responseMetrics.firstToken", "First token")} width="min-w-40">
+        <Item label={t("responseMetrics.firstToken", "First token")} reserve={time}>
           {known(timeToFirstToken) ? formatLatency(timeToFirstToken) : dash}
         </Item>
       )}
       {show(known(duration)) && (
-        <Item label={t("responseMetrics.total", "Total")} width="min-w-40">
-          {known(duration) ? formatLatency(duration) : elapsed !== undefined ? <span className="text-fg-tertiary">{formatLatency(elapsed)}</span> : dash}
+        <Item label={t("responseMetrics.total", "Total")} reserve={time}>
+          {known(duration) ? formatLatency(duration) : elapsed !== undefined ? <span className="text-fg-tertiary">{seconds(elapsed)}</span> : dash}
         </Item>
       )}
       {show(tokens) && (
-        <Item label={t("responseMetrics.tokens", "Tokens")} width="min-w-48">
+        <Item
+          label={t("responseMetrics.tokens", "Tokens")}
+          reserve={t("responseMetrics.tokensValue", "{input} in · {output} out", { input: formatNumber(8888), output: formatNumber(888) })}
+        >
           {tokens
             ? t("responseMetrics.tokensValue", "{input} in · {output} out", {
                 input: known(inputTokens) ? formatNumber(inputTokens) : "—",
@@ -100,13 +115,13 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
             : dash}
         </Item>
       )}
-      {(known(reasoningTokens) || (live && reasoning)) && (
-        <Item label={t("responseMetrics.reasoning", "Reasoning")} width="min-w-24">
+      {(known(reasoningTokens) || reasoning) && (
+        <Item label={t("responseMetrics.reasoning", "Reasoning")} reserve={formatNumber(888)}>
           {known(reasoningTokens) ? formatNumber(reasoningTokens) : dash}
         </Item>
       )}
       {show(hasCost) && (
-        <Item label={t("responseMetrics.cost", "Cost")} width="min-w-40">
+        <Item label={t("responseMetrics.cost", "Cost")} reserve={formatPrice("0.008888")}>
           {hasCost ? requestCost(cost) : dash}
         </Item>
       )}

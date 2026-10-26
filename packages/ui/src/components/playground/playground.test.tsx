@@ -206,12 +206,12 @@ describe("CompareGrid", () => {
   it("adds columns up to four, then disables add with a reason", async () => {
     render(<Grid />);
     const adds = () => screen.getAllByRole("button", { name: "Add model" });
-    expect(within(screen.getByRole("region", { name: "Claude Sonnet 4.5" })).getByRole("button", { name: "Add model" })).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Claude Sonnet 4.5" })).queryByRole("button", { name: "Add model" })).toBeNull();
     await userEvent.click(adds()[0]!);
     await userEvent.click(adds()[0]!);
     expect(screen.getAllByRole("region", { name: /^(GPT-5|Claude Sonnet 4.5|Model \d)$/ })).toHaveLength(4);
     for (const b of adds()) expect(b).toHaveAttribute("aria-disabled", "true");
-    expect(within(screen.getByRole("region", { name: "Model 4" })).getByRole("button", { name: "Add model" })).toBeInTheDocument();
+    expect(adds().at(-1)!.closest("[role=region]")).toBeNull();
   });
 
   it("removes a column, and hides remove on the last one", async () => {
@@ -368,7 +368,7 @@ describe("ResponseView", () => {
     const { rerender } = render(<ResponseView status="error" error="Budget used up: the project's $5.00 per month." onRetry={onRetry} />);
     expect(screen.getByRole("alert")).toHaveTextContent("No responseBudget used up: the project's $5.00 per month.");
     rerender(<ResponseView status="error" text="Half" error="The stream ended before the model finished. Try again." />);
-    expect(screen.getByRole("alert")).toHaveTextContent("The response stopped early");
+    expect(screen.getByRole("alert")).toHaveTextContent("The response failed partway");
     rerender(<ResponseView status="incomplete" incompleteReason="max_output_tokens" text="The first half" onRetry={onRetry} />);
     expect(screen.getByText("Stopped at the output limit")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
@@ -425,12 +425,12 @@ describe("ResponseMetrics", () => {
 
   it("holds placeholders in place while live, then shows what is known", () => {
     const { rerender, container } = render(<ResponseMetrics live reasoning />);
-    const items = () => [...container.querySelectorAll("dd")].map((d) => d.textContent?.replace("not yet known", ""));
+    const items = () => [...container.querySelectorAll("dd")].map((d) => d.firstElementChild?.textContent?.replace("not yet known", ""));
     expect(items()).toEqual(["—", "—", "—", "—", "—"]);
     rerender(<ResponseMetrics live reasoning timeToFirstToken={380} />);
     expect(items()).toEqual(["380 ms", "—", "—", "—", "—"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={65_000} inputTokens={12} outputTokens={0} reasoningTokens={0} cost="12.5" />);
-    expect(items()).toEqual(["380 ms", "1 min 5 s", "12 in · 0 out", "0", "$12.500000"]);
+    expect(items()).toEqual(["380 ms", "1 min 5 s", "12 in · 0 out", "0", "$12.50"]);
     rerender(<ResponseMetrics timeToFirstToken={380} duration={900} inputTokens={12} outputTokens={4} />);
     expect(items()).toEqual(["380 ms", "900 ms", "12 in · 4 out"]);
     rerender(<ResponseMetrics inputTokens={12} outputTokens={4} cost="0.0000630" />);
@@ -443,11 +443,14 @@ describe("ResponseMetrics", () => {
     vi.useFakeTimers();
     try {
       const { container, rerender } = render(<ResponseMetrics live startedAt={Date.now() - 1500} />);
-      expect(container.querySelectorAll("dd")[1]?.textContent).toBe("1.50 s");
-      act(() => void vi.advanceTimersByTime(500));
-      expect(container.querySelectorAll("dd")[1]?.textContent).toBe("2.00 s");
+      const shown = (i: number) => container.querySelectorAll("dd")[i]?.firstElementChild?.textContent;
+      expect(shown(1)).toBe("1.5 s");
+      act(() => void vi.advanceTimersByTime(530));
+      expect(shown(1)).toBe("2.0 s");
+      act(() => void vi.advanceTimersByTime(9_000));
+      expect(shown(1)).toBe("11 s");
       rerender(<ResponseMetrics startedAt={Date.now() - 2000} duration={2140} />);
-      expect(container.querySelectorAll("dd")[0]?.textContent).toBe("2.14 s");
+      expect(shown(0)).toBe("2.14 s");
     } finally {
       vi.useRealTimers();
     }
@@ -481,7 +484,7 @@ describe("ParameterPanel", () => {
   it("shows model defaults while unset, and changes a value", async () => {
     const onChange = vi.fn();
     render(<Panel onChange={onChange} />);
-    expect(screen.getAllByText("1.00 default")).toHaveLength(2);
+    expect(screen.getAllByText("1.00 (default)")).toHaveLength(2);
     const temperature = screen.getByRole("slider", { name: "Temperature" });
     temperature.focus();
     await userEvent.keyboard("{ArrowLeft}");

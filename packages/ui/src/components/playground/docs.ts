@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   CompareGrid: {
-    description: "Columns side by side to compare models: equal widths, a header, a body that scrolls on its own and a footer each.",
+    description:
+      "Columns side by side to compare models: equal widths of at least 320px, a header, a body that scrolls on its own and a footer each. When the columns don't fit, Previous column and Next column reach the hidden ones. Removing a column is instant, so offer Undo in a toast.",
     props: {
       active: "The column on screen on a phone, or scrolled to when the columns don't fit.",
       addLabel: "The add circle's name. Defaults to \"Add model\" in the provider's language.",
@@ -11,14 +12,15 @@ export const docs = {
       divider: "A hairline between columns, or none.",
       max: "Columns at most (4 by default): the add circle is disabled there, with the reason in its tooltip.",
       onActiveChange: "Called with the index of the column in focus.",
-      onAdd: "Adds a column: a circle at the end of the last column's header (and in the phone's switcher).",
+      onAdd:
+        "Adds a column: a circle in a narrow rail after the columns (on a phone, in the switcher, or in the header of a single column). Focus moves to the new column's header.",
     },
   },
   Composer: {
     description:
-      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls; Send, which becomes Stop while a response streams. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends.",
+      "The prompt box: a text box that grows with what is written up to `maxRows`, then scrolls, its edge fading where more lines wait; Send, which becomes Stop while a response streams. Enter sends and Shift Enter adds a line (`submitOn`); ⌘ Enter or Ctrl Enter also sends. On a touch screen Enter adds a line and the button sends. A click anywhere in the box, the button row included, puts the cursor in the text.",
     props: {
-      actions: "Controls at the start of the button row: parameters, clear.",
+      actions: "Controls at the start of the button row: parameters, clear. Ghost and secondary buttons there take tones made for the composer's surface.",
       "aria-label": 'The text box\'s accessible name ("Prompt" by default).',
       autoFocus: "Focuses the composer when it appears.",
       clearOnSubmit: "Clears an uncontrolled composer after Send (true by default).",
@@ -33,9 +35,10 @@ export const docs = {
       onValueChange: "Called with the message as it is typed.",
       placeholder: "Text shown while there is no value.",
       size: "The composer's height.",
-      stopLabel: "The stop button's accessible name, shown while a reply streams.",
-      streaming: "A response is arriving: Send becomes Stop. The text box stays editable for the next prompt.",
-      submitLabel: "The send button's accessible name.",
+      stopLabel: 'The Stop button\'s label, shown while a response streams ("Stop" by default).',
+      streaming:
+        "A response is arriving: Send becomes Stop. The text box stays editable for the next prompt; Enter waits, and the text box's description says to stop the response to send.",
+      submitLabel: 'The Send button\'s label ("Send" by default).',
       submitOn:
         'The key that sends from the text box. `"enter"` (default): Enter sends and Shift Enter adds a line; on a touch screen Enter adds a line and the Send button sends. `"mod-enter"`: Enter adds a line and only ⌘ Enter (Ctrl Enter) sends. ⌘ Enter and Ctrl Enter send with either.',
       value: "The message being written, when you control it.",
@@ -78,13 +81,13 @@ export const docs = {
   },
   ParameterPanel: {
     description:
-      "A request's parameters: system instructions, temperature, top P, most output tokens, and, for a model that reasons, reasoning effort and summary. Unset values are the model's defaults; Reset returns to them (instructions stay).",
+      "A request's parameters: system instructions, temperature, top P, maximum output tokens, and, for a model that reasons, reasoning effort and summary. Unset values are the model's defaults; Reset returns to them (instructions stay).",
     props: {
       defaults: "What unset shows (temperature 1 and top P 1 unless given): the model's defaults.",
       disabled: "Turns off every parameter.",
       instructions: "Shows the system instructions field (true by default).",
       layout: "Compact inside a popover, or roomier in a side panel.",
-      maxOutputTokensLimit: "The model's most output tokens: the field's maximum.",
+      maxOutputTokensLimit: "The model's maximum output tokens: the field's maximum, named in a hint under it.",
       onValueChange: "Called with the changed parameters.",
       reasoning: "The reasoning efforts the model takes, or false (the default) when it doesn't reason: no effort and no summary.",
       sampling: "Shows temperature and top P; models that reason often take neither (true by default).",
@@ -92,14 +95,15 @@ export const docs = {
     },
   },
   ParameterPopover: {
-    description: "ParameterPanel in a 320px popover from a sliders circle (or any trigger).",
+    description:
+      "ParameterPanel in a 320px popover from a sliders circle (or any trigger), with a Close button beside its title. Focus stays inside until it closes.",
     props: {
       align: "How it lines up with what it belongs to.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       defaults: "What unset shows (temperature 1 and top P 1 unless given): the model's defaults.",
       disabled: "Turns off the button that opens the parameters.",
       instructions: "Shows the system instructions field (true by default).",
-      maxOutputTokensLimit: "The model's most output tokens: the field's maximum.",
+      maxOutputTokensLimit: "The model's maximum output tokens: the field's maximum, named in a hint under it.",
       onOpenChange: "Called when it opens or closes.",
       onValueChange: "Called with the changed parameters.",
       open: "Whether it is open, when you control it.",
@@ -113,17 +117,17 @@ export const docs = {
   },
   PromptSuggestions: {
     description:
-      "Example prompts before a thread starts: up to three lines of plain secondary text that take a quiet fill on hover. No outlines, no icons; leave them out once a prompt is sent.",
+      "Example prompts before a thread starts: up to three pill rows of secondary text that take a quiet fill on hover. No outlines, no icons; a prompt too long for its row shows in full in a tooltip. Leave them out once a prompt is sent.",
     props: {
       align: "Aligns the suggestions at the start or in the center.",
       "aria-label": "The list's accessible name. Defaults to \"Example prompts\" in the provider's language.",
-      onSelect: "Puts the prompt in the composer (or sends it).",
+      onSelect: "Puts the prompt in the composer (or sends it). The list usually goes away then, so move focus to the composer.",
       suggestions: "Up to three short prompts; more are left out.",
     },
   },
   Reasoning: {
     description:
-      "A model's reasoning behind a quiet disclosure, closed by default: “Thought for 4.2 s” when it is done, “Thinking” with the latest line beside it while it streams. Opened, the reasoning reads in small secondary text beside a line. The Playground and the request log show reasoning with it.",
+      "A model's reasoning behind a quiet disclosure, closed by default: a chevron, then “Thought for 4.2 s” when it is done, or “Thinking” with the latest line beside it while it streams. Opened, the reasoning reads in small secondary text under the title, beside a line under the chevron. The Playground and the request log (ConversationView) show reasoning with it.",
     props: {
       children: "What the open disclosure shows in place of `text`, such as why the reasoning can't be shown.",
       defaultOpen: "Whether it starts open.",
@@ -138,33 +142,34 @@ export const docs = {
   },
   ResponseMetrics: {
     description:
-      'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost to the millionth of a dollar, as request logs show it. Tabular figures, labels in tertiary text. While `live`, values not known yet show "—" in the room they will take; before any response the line is empty, its height kept.',
+      'A response\'s numbers on one line: time to first token, total time, tokens ("412 in · 168 out", and reasoning), cost with the decimals it was given, as request logs show it. Tabular figures, labels in tertiary text. Every value keeps the room a typical value takes, so nothing moves when values arrive; while `live`, values not known yet show "—"; before any response the line is empty, its height kept.',
     props: {
-      cost: 'USD as a decimal string: "0.004213" reads "$0.004213", and zero reads "$0".',
+      cost: 'USD as a decimal string, shown with its own decimals (two at least, six at most): "0.004213" reads "$0.004213", "1.2311" reads "$1.2311", zero reads "$0" and less than a millionth reads "< $0.000001".',
       duration: "Milliseconds from sending to the last token.",
       inputTokens: "The tokens sent, once known.",
       live: 'A response is arriving: values not known yet show a quiet "—" in the room they will take.',
       outputTokens: "The tokens received, once known.",
       reasoning: "The model reasons: while `live`, the reasoning item waits with a placeholder.",
-      reasoningTokens: "Of the output tokens, those spent reasoning. Shown when given, or when `reasoning` is set.",
+      reasoningTokens: 'Of the output tokens, those spent reasoning. Shown when given, or when `reasoning` is set ("—" when the provider didn\'t report them).',
       size: "The text size.",
-      startedAt: "When the request was sent (Date.now()): while live, Total counts up quietly until `duration` arrives.",
+      startedAt:
+        "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.",
       timeToFirstToken: "Milliseconds from sending to the first token.",
     },
   },
   ResponseView: {
     description:
-      'A model\'s response as it arrives: Markdown text for reading (15/22), the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams), and calm states for a stop, a cut-off reply or a failure, which shows its error in place.',
+      'A model\'s response as it arrives: a quiet caret where the text will start until the first token, then Markdown text for reading (15/22) with the caret at its end while it streams; the reasoning summary in a "Thinking" disclosure (closed by default, live while it streams); and calm states for a stop, a cut-off reply or a failure, which shows its error in place. Text sits 12px in, code and tables on the edge; screen readers hear when a response finishes or stops.',
     props: {
       "aria-label": 'The response\'s accessible name ("GPT-5 response" in a comparison). Defaults to "Response" in the provider\'s language.',
       defaultReasoningOpen: "Whether the reasoning starts expanded.",
       error:
         'Why the reply failed, shown under "No response" with status "error": the gateway\'s message in the reader\'s language; `code` spans render as code.',
-      footer: "Under the response: its metrics, actions.",
+      footer: "Under the response, on its text line: its metrics, actions.",
       incompleteReason:
         'Why the model cut the reply off, with status "incomplete": `max_output_tokens` reads "Stopped at the output limit", `content_filter` names the filter.',
       onReasoningOpenChange: "Called when the reasoning is expanded or collapsed.",
-      onRetry: "Sends the turn again; shown with an error, a stop or a cut-off reply.",
+      onRetry: "Sends the turn again: a Retry button after a stop, a cut-off reply or an error.",
       reasoning: 'The reasoning summary so far, as Markdown. A "Thinking" disclosure shows it, closed by default.',
       reasoningDuration: 'How long the model reasoned, in milliseconds: "Thought for 4.2 s".',
       reasoningOpen: "Whether the reasoning is expanded, when you control it.",
@@ -179,7 +184,8 @@ export const docs = {
     },
   },
   UserMessage: {
-    description: 'A person\'s turn: their prompt as quiet text that opens the turn, no bubble. A long prompt shows its first lines until "Show all".',
+    description:
+      'A person\'s turn: their prompt as quiet text that opens the turn, no bubble. A long prompt shows its first lines until "Show all", a disclosure button under them.',
     props: {
       "aria-label": "The message's accessible name. Defaults to \"Prompt\" in the provider's language.",
       children: "The prompt as it was written: plain text, line breaks kept.",
