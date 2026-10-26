@@ -181,6 +181,11 @@ export function States() {
       <StateSection title="Compact">
         <Compact />
       </StateSection>
+      <StateSection title="At 320px: it scrolls sideways in its own box, under a fade">
+        <div className="w-320">
+          <Prices />
+        </div>
+      </StateSection>
     </>
   );
 }

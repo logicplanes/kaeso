@@ -90,7 +90,7 @@ test("the home page counts the components the sidebar lists, each with its own p
   await expect(listed).toHaveCount(componentPages.length);
 });
 
-test("table rows keep their padding when text and links wrap, and one-line rows stay 44px", async ({ page }) => {
+test("table rows keep their padding when text and links wrap, and one-line rows stay 40px, like DataTable's", async ({ page }) => {
   await open(page, "/components/table/examples");
   const rows = await page.locator("main table tbody tr").evaluateAll((trs) =>
     trs.map((tr) => {
@@ -114,7 +114,7 @@ test("table rows keep their padding when text and links wrap, and one-line rows 
   );
   expect(rows.some((r) => r.wraps)).toBe(true);
   for (const row of rows) {
-    if (!row.wraps) expect(row.height).toBe(44);
+    if (!row.wraps) expect(row.height).toBe(40);
     for (const padding of row.padding) expect(padding).toBeGreaterThanOrEqual(10);
   }
   const links = await page
