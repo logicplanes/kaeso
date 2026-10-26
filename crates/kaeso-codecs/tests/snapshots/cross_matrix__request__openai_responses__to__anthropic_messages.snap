@@ -3,6 +3,176 @@ source: crates/kaeso-codecs/tests/cross_matrix.rs
 expression: outcomes
 ---
 {
+  "codex-desktop-blank-arguments": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "<environment_context>\n  <cwd>/home/user/project</cwd>\n  <shell>zsh</shell>\n  <current_date>2026-10-26</current_date>\n  <timezone>Europe/Berlin</timezone>\n</environment_context>",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "<codex_apps_client_time_context><timezone>Europe/Berlin</timezone>\n<current_date>2026-10-26</current_date>\nUse this client time context for user-facing dates, times, and schedules instead of the execution host's timezone and current date.</codex_apps_client_time_context>",
+              "type": "text"
+            },
+            {
+              "text": "/goal Referenced pasted text files:\n- pasted text file: /home/user/.codex/attachments/00000000-0000-4000-8000-000000000001/pasted-text-1.txt. Read this file before continuing.\n",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "I'll read the pasted file first to see what the goal is.",
+              "type": "text"
+            },
+            {
+              "id": "toolu_01GtrXhD5GoEnUhCCW1fRitv",
+              "input": {
+                "cmd": "cat /home/user/.codex/attachments/00000000-0000-4000-8000-000000000001/pasted-text-1.txt"
+              },
+              "name": "exec_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "Chunk ID: 02bae9\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 16094\nOutput:\nWarning: truncated output (original token count: 16094)\nTotal output lines: 555\n\n# Prompt: Build a study app\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_01GtrXhD5GoEnUhCCW1fRitv",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "toolu_016JRGCFdy7aegTehRXRsbmH",
+              "input": {},
+              "name": "get_goal",
+              "type": "tool_use"
+            },
+            {
+              "id": "toolu_01HqEcvnD295JaWcncws9Yuh",
+              "input": {
+                "cmd": "sed -n 150,330p /home/user/.codex/attachments/00000000-0000-4000-8000-000000000001/pasted-text-1.txt",
+                "max_output_tokens": 20000
+              },
+              "name": "exec_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "{\"goal\":{\"threadId\":\"00000000-0000-7000-8000-00000000000b\",\"objective\":\"Referenced pasted text files:\\n- pasted text file: /home/user/.codex/attachments/00000000-0000-4000-8000-000000000001/pasted-text-1.txt. Read this file before continuing.\",\"status\":\"active\",\"tokensUsed\":0,\"timeUsedSeconds\":17,\"createdAt\":1793040242,\"updatedAt\":1793040260},\"remainingTokens\":null,\"completionBudgetReport\":null}",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_016JRGCFdy7aegTehRXRsbmH",
+              "type": "tool_result"
+            },
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Chunk ID: cb5e27\nWall time: 0.0000 seconds\nProcess exited with code 0\nOriginal token count: 4792\nOutput:\n## 2. Features\n",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "toolu_01HqEcvnD295JaWcncws9Yuh",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-opus-5-5",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "<app-context>\n# Codex desktop context\n- You are running inside the Codex (desktop) app, which allows some additional features not available in the CLI alone.\n</app-context>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "max_output_tokens": {
+                "description": "Maximum number of tokens to return.",
+                "type": "number"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current goal for this thread, including status, budgets, token and elapsed-time usage, and remaining token budget.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object"
+          },
+          "name": "get_goal",
+          "strict": false
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "codex-desktop-root-union": {
     "body": {
       "max_tokens": 4096,

@@ -232,6 +232,14 @@ Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。
 
 OpenAI 和 SpaceX 原样收到这些项：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
 
+## 工具调用参数
+
+在每种格式中，工具调用的参数都是一个 JSON 对象。Chat Completions 和 Responses 以字符串传递参数，因此调用到达时携带的文本可能不是对象。Kaeso 在每条路径上都以相同方式处理这类文本：
+
+- **空白参数。** 调用没有参数的工具（例如 Codex 的 `get_goal`）时，参数为 `{}`。Claude 流式传输这类调用时不带参数文本，因此 Chat Completions 和 Responses 应用会在该块结束时收到 `"{}"`，因为 `arguments` 以 JSON 形式保存调用的参数（`ChatCompletionMessageToolCall`、`FunctionToolCall`）。应用发回的空白 `arguments` 读取为 `{}`；与应用格式相同的提供商按原样收到它们。Fixture：`anthropic_messages/streams/tools-no-input.sse`、`openai_responses/requests/codex-desktop-blank-arguments.json`。
+- **对话中的其他值（发往 Anthropic 时）。** `tool_use.input` 必须是对象，只要历史中有一个不是，Anthropic 就会拒绝整个请求。因此，来自其他格式、参数为其他值的调用会变为对象：不是 JSON 的文本（例如被输出上限截断的参数）变为 `{"input": "<该文本>"}`，与[自由格式工具的输入](#codex-工具历史)相同；数组、数字或布尔值变为 `{"input": <该值>}`；`null` 变为 `{}`。模型能看到它写下的内容以及随后的工具结果。每个这样的调用都会在 `kaeso-adapted` 中以 `tool call` 加其 ID 注明，例如 `tool call call_abc`。Chat Completions 和 Responses 的提供商按原样收到参数。Anthropic 应用自己的 `tool_use` 若 `input` 不是对象，仍为 `Unsupported`。
+- **回复。** 发给 Anthropic 应用的回复中，若工具调用的参数不是对象，会被拒绝，因为应用会用模型从未写过的参数运行工具（[Anthropic 回复](anthropic-messages.md#回复)）。
+
 ## 用量
 
 `Usage::input_tokens` 不含缓存读取和缓存写入，它们是单独的字段。这与 models.dev 的价格列一致，因此费用就是每项计数乘以其价格之和。服务商的原始用量对象总会保留。

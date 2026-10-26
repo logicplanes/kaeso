@@ -497,9 +497,7 @@ fn summarize_stream(events: &[StreamEvent]) -> Value {
     }
     let tools: Vec<Value> = tools
         .into_values()
-        .map(|(name, args)| {
-            json!({"name": name, "arguments": serde_json::from_str::<Value>(&args).unwrap_or(Value::String(args))})
-        })
+        .map(|(name, args)| json!({"name": name, "arguments": streamed_arguments(args)}))
         .collect();
     let reasoning: Vec<String> = reasoning
         .into_values()
@@ -507,6 +505,13 @@ fn summarize_stream(events: &[StreamEvent]) -> Value {
         .filter(|r| !r.is_empty())
         .collect();
     json!({"text": text, "refusal": refusal, "tool_calls": tools, "reasoning": reasoning, "stream_error": error})
+}
+
+fn streamed_arguments(text: String) -> Value {
+    if text.trim().is_empty() {
+        return json!({});
+    }
+    serde_json::from_str(&text).unwrap_or(Value::String(text))
 }
 
 async fn scenarios(State(app): State<App>) -> Response {

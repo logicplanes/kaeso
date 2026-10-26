@@ -2,7 +2,7 @@ use kaeso_kpp::{
     Block, CacheTtl, DialectId, DocumentBlock, Extras, FunctionTool, GenerateRequest,
     JsonSchemaSpec, Message, OpaqueKind, Origin, OutputSpec, RawJson, ReasoningBlock,
     ReasoningConfig, ReasoningEffort, ReasoningMode, ReasoningSummary, Request, RequestKind, Role,
-    Source, StreamMode, ToolChoice, ToolDef,
+    Source, StreamMode, ToolCallBlock, ToolChoice, ToolDef,
 };
 use serde_json::{Value, json};
 

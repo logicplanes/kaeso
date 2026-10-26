@@ -269,9 +269,11 @@ fn check_refuses_content_anthropic_cannot_carry() {
         "text document media type `text/markdown`"
     );
     let mut r = chat_request();
+    let mut own_call = ToolCallBlock::new("c", "f", raw("[1]"));
+    own_call.extras = Extras::new(A);
     r.messages.push(Message::new(
         Role::Assistant,
-        vec![Block::tool_call("c", "f", raw("[1]"))],
+        vec![Block::ToolCall(own_call)],
     ));
     assert_eq!(feature(r), "tool call arguments that are not a JSON object");
     let mut r = chat_request();

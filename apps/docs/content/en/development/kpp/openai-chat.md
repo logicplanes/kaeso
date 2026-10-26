@@ -212,7 +212,7 @@ Bare `data:` frames, one JSON chunk each, ending with `data: [DONE]`.
 
 Chunk grouping: the first event of each chunk carries the form marker `chunk`, and the others carry `in_chunk`, so the encoder writes them back as one frame. The marker holds `n`, the number of events from that chunk, plus the shape markers above.
 
-An open chunk is written as soon as an event arrives that is not part of it: another dialect's event, `[DONE]` or an error. This way a dropped event never puts a chunk after `[DONE]`. No chunk is written after `[DONE]` or an error. Tool arguments for a block Chat cannot show are left out.
+An open chunk is written as soon as an event arrives that is not part of it: another dialect's event, `[DONE]` or an error. This way a dropped event never puts a chunk after `[DONE]`. No chunk is written after `[DONE]` or an error. Tool arguments for a block Chat cannot show are left out. A tool call from another dialect whose arguments stayed blank, such as Claude's call to a tool without parameters, gets one more chunk with `arguments: "{}"` when its block stops ([tool call arguments](cross-format.md#tool-call-arguments)).
 
 SSE framing follows the spec ([server-sent events](codec-design.md#server-sent-events)): an `id` that contains NUL, or a `retry` that is not ASCII digits fitting a `u64`, counts as an unknown field. OpenAI sends no SSE `id`, `retry` or unknown fields. A chunk that has them keeps them in form `chunk.sse` as `{"id", "retry", "other": [[name, value], …]}`. The chunk is decoded like any other, and the fields are written back to Chat apps.
 
