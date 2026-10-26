@@ -33,12 +33,10 @@ export const TruncatedText = forwardRef<HTMLSpanElement, TruncatedTextProps>(fun
       {children}
     </span>
   );
-  return cut && full ? (
-    <Tooltip content={full} shape="multiline">
+  return (
+    <Tooltip content={full} shape="multiline" disabled={!(cut && full)}>
       {el}
     </Tooltip>
-  ) : (
-    el
   );
 });
 TruncatedText.displayName = "TruncatedText";

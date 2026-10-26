@@ -486,7 +486,6 @@ function DataTableInner<T>(
     }
   };
 
-  const cellRole = focusable ? "gridcell" : "cell";
   const renderRow = (row: Row<T>, i: number, style?: CSSProperties) => {
     const cells = row.getVisibleCells().filter((c) => !hidden.has(c.column.id));
     const active = row.id === activeRowId;
@@ -532,7 +531,7 @@ function DataTableInner<T>(
           return (
             <div
               key={cell.id}
-              role={cellRole}
+              role="cell"
               className={cn(
                 cellPad(i),
                 meta?.align === "end" && "justify-end text-right tabular",
@@ -647,7 +646,7 @@ function DataTableInner<T>(
       className={cn("relative w-full min-w-0", !inset && !padded && "px-24", className)}
     >
       <div
-        role={focusable ? "grid" : "table"}
+        role="table"
         aria-label={ariaLabel}
         aria-rowcount={rows.length + 1}
         aria-busy={loading || undefined}
@@ -685,7 +684,7 @@ function DataTableInner<T>(
         >
           {error ? (
             <div role="row">
-              <div role={cellRole} aria-colspan={cols.length} className="block">
+              <div role="cell" aria-colspan={cols.length} className="block">
                 <div role="alert">
                   <Empty
                     size="compact"
@@ -706,7 +705,7 @@ function DataTableInner<T>(
             Array.from({ length: 8 }, (_, r) => (
               <div key={r} role="row" className={cn("grid", KAESO_DATA_TABLE_VARIANTS.density[density].classes)} style={gridStyle}>
                 {cols.map((c, i) => (
-                  <div key={c.id} role={cellRole} className={cn(cellPad(i), c.columnDef.meta?.align === "end" && "justify-end")}>
+                  <div key={c.id} role="cell" className={cn(cellPad(i), c.columnDef.meta?.align === "end" && "justify-end")}>
                     <Skeleton shape="line" style={{ width: `${40 + ((r * 7 + i * 13) % 45)}%` }} />
                   </div>
                 ))}
@@ -714,7 +713,7 @@ function DataTableInner<T>(
             ))
           ) : rows.length === 0 ? (
             <div role="row">
-              <div role={cellRole} aria-colspan={cols.length} className="block">
+              <div role="cell" aria-colspan={cols.length} className="block">
                 {empty ?? <Empty size="compact" title={t("dataTable.noRows", "No rows")} />}
               </div>
             </div>

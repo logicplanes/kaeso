@@ -160,7 +160,7 @@ export const meta = {
     ["shift F10", "Opens the row menu, or the column's width menu on its header"],
   ],
   a11y: [
-    "An ARIA grid when rows can be opened or selected, a table otherwise; sorted columns carry aria-sort, the open row aria-current.",
+    "An ARIA table whose rows are one tab stop, moved through with the arrow keys; sorted columns carry aria-sort, the open row aria-current.",
     "One tab stop: checkboxes, row controls and resize handles stay out of the tab order and are reached with the arrow keys.",
     "A column's width changes by dragging its handle, with Shift and the arrow keys on its header, or from the header's context menu (Widen, Narrow, Reset width), so no drag is required.",
     "Columns declare a priority; low-priority columns hide first when space is short. A growing column then shrinks to its readable minimum (minWidth, 136px by default) and truncates. On a screen narrower still, the other priority 1 columns give way from the row's end backwards, keeping its last column (the actions) and the selection boxes; only a row with nothing left to give way scrolls sideways, its last column pinned at the end.",

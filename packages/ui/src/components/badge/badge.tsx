@@ -4,7 +4,7 @@ import { TruncatedText } from "../text/truncated.js";
 
 export const KAESO_BADGE_VARIANTS = {
   tone: {
-    neutral: { classes: "mark-fill text-fg-secondary", description: "Neutral (default): fill-2, or the control fill on a hovered or selected row" },
+    neutral: { classes: "bg-fill-2 mark-fill text-fg-secondary", description: "Neutral (default): fill-2, or the control fill on a hovered or selected row" },
     success: { classes: "bg-success-tint text-success-text", description: "Success" },
     warning: { classes: "bg-warning-tint text-warning-text", description: "Warning" },
     danger: { classes: "bg-danger-tint text-danger-text", description: "Danger" },
@@ -22,18 +22,18 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge({ tone = "neutral", className, children, ...props }, ref) {
   return (
-    <span
+    <TruncatedText
       ref={ref}
       className={cn(
-        "inline-flex h-22 max-w-full min-w-0 shrink-0 items-center rounded-pill px-8 text-caption font-medium whitespace-nowrap tabular",
+        "inline-block h-22 max-w-full min-w-0 shrink-0 rounded-pill px-8 py-3 align-middle text-caption font-medium tabular",
         "forced-colors:outline forced-colors:-outline-offset-1",
         KAESO_BADGE_VARIANTS.tone[tone].classes,
         className,
       )}
       {...props}
     >
-      <TruncatedText>{children}</TruncatedText>
-    </span>
+      {children}
+    </TruncatedText>
   );
 });
 Badge.displayName = "Badge";

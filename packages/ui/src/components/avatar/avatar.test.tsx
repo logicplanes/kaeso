@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import { Avatar, AvatarGroup, initials } from "./avatar.js";
 
 describe("Avatar", () => {
@@ -11,8 +13,23 @@ describe("Avatar", () => {
 
   it("shows the initials for a picture that failed before the page became interactive", () => {
     loaded?.mockReturnValue(0);
-    render(<Avatar name="Ada Okafor" src="https://example.com/missing.png" />);
+    const avatar = <Avatar name="Ada Okafor" src="https://example.com/missing.png" />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(avatar);
+    document.body.append(container);
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    act(() => {
+      root = hydrateRoot(container, avatar);
+    });
     expect(screen.getByRole("img", { name: "Ada Okafor" })).toHaveTextContent("AO");
+    act(() => root?.unmount());
+    container.remove();
+  });
+
+  it("keeps a picture it renders itself until the picture reports an error", () => {
+    loaded?.mockReturnValue(0);
+    render(<Avatar name="Ada Okafor" src="/avatars/ada.webp" />);
+    expect(screen.getByRole("img", { name: "Ada Okafor" }).querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
   });
 
   it("takes the first letters of the first and last word", () => {

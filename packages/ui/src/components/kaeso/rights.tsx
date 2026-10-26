@@ -336,7 +336,6 @@ function RightRow({
       </span>
       <span id={descId} className="text-small text-pretty text-fg-secondary">
         {r.description}
-        {r.disabled && r.disabledReason && <span className="block pt-2 text-caption text-fg-secondary">{r.disabledReason}</span>}
       </span>
       {needs.length > 0 && (
         <span className="text-caption text-fg-secondary">
@@ -377,7 +376,7 @@ function RightRow({
     );
   }
 
-  return (
+  const row = (
     <label
       data-right=""
       className={cn(
@@ -392,4 +391,5 @@ function RightRow({
       {text}
     </label>
   );
+  return r.disabled && r.disabledReason ? <Tooltip content={r.disabledReason}>{row}</Tooltip> : row;
 }

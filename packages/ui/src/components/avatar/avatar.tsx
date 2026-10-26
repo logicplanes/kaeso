@@ -1,7 +1,11 @@
-import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
 import { Tooltip } from "../tooltip/tooltip.js";
+
+const noSubscription = () => () => undefined;
+const notHydrating = () => false;
+const isHydrating = () => true;
 
 export const KAESO_AVATAR_VARIANTS = {
   size: {
@@ -36,6 +40,7 @@ export interface AvatarProps {
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({ name, src, size = 24, kind = "person", decorative, className }, ref) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined);
+  const hydrating = useSyncExternalStore(noSubscription, notHydrating, isHydrating);
   return (
     <span
       ref={ref}
@@ -52,8 +57,8 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({
         <>
           <img
             ref={(img) => {
-              // A picture that failed before hydration fired its error event before React listened for it.
-              if (img?.complete && img.naturalWidth === 0) setFailedSrc(src);
+              // A server-rendered picture that failed before hydration fired its error event before React listened for it.
+              if (hydrating && img?.complete && img.naturalWidth === 0) setFailedSrc(src);
             }}
             src={src}
             alt=""

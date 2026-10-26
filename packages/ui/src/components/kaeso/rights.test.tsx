@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RightsMatrix, type RightsGroup } from "./rights.js";
 import { groupCascade, rightsCascade, type RightChange } from "./rights-logic.js";
@@ -211,10 +211,11 @@ describe("RightsMatrix, review fixes", () => {
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Every right in Members" })).toHaveAttribute("aria-checked", "mixed");
   });
-  it("says why a right can't be changed in words under it, for every pointer and screen reader", () => {
+  it("says why a right can't be changed in the tooltip on its row, once", async () => {
     render(<RightsMatrix groups={withLocked} onChange={() => undefined} />);
     const box = screen.getByRole("checkbox", { name: "Remove members" });
-    expect(box).toHaveAccessibleDescription(/Only rights you hold can be granted/);
+    await waitFor(() => expect(box.closest("label")).toHaveAttribute("aria-description", expect.stringMatching(/Only rights you hold can be granted/)));
+    expect(screen.queryAllByText(/Only rights you hold can be granted/)).toHaveLength(0);
     expect(box.closest("label")).not.toHaveClass("hover:bg-fill-1");
   });
   it("is one tab stop: Tab enters on a checkbox and leaves, and the right arrow reaches a right's warning", async () => {

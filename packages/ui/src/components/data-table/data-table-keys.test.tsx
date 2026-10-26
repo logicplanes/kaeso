@@ -37,9 +37,9 @@ describe("DataTable keyboard model", () => {
         <button type="button">After</button>
       </>,
     );
-    const grid = screen.getByRole("grid", { name: "Keys" });
+    const grid = screen.getByRole("table", { name: "Keys" });
     expect(grid).toHaveAttribute("aria-multiselectable", "true");
-    expect(within(grid).getAllByRole("gridcell").length).toBeGreaterThan(0);
+    expect(within(grid).getAllByRole("cell").length).toBeGreaterThan(0);
     await user.tab();
     expect(row("checkout-web")).toHaveFocus();
     await user.tab();

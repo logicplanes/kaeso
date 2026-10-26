@@ -5,9 +5,7 @@ import { Badge } from "./badge.js";
 describe("Badge", () => {
   it("shows its words in one line and keeps them inside a narrow cell", () => {
     render(<Badge tone="success">Active</Badge>);
-    const badge = screen.getByText("Active").closest("span.rounded-pill")!;
-    expect(badge).toHaveClass("whitespace-nowrap", "max-w-full", "min-w-0", "text-success-text");
-    expect(screen.getByText("Active")).toHaveClass("truncate");
+    expect(screen.getByText("Active")).toHaveClass("truncate", "max-w-full", "min-w-0", "rounded-pill", "text-success-text");
   });
   it("lets a cut label be read in full: it takes focus and names itself in a tooltip", () => {
     const spy = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(200);

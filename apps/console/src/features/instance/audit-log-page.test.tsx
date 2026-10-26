@@ -142,8 +142,8 @@ describe("instance audit log", () => {
     const everyone = [instanceUser({ id: USER, name: "Ada Okafor", email: "owner@example.com" }), instanceUser({ avatar_url: "/avatars/grace.webp" })];
     instanceAudit(EVENTS, { listed: everyone, users: everyone });
     const { user } = await renderApp(PATH);
-    const self = (await within(table()).findByText("Ada Okafor (you)")).closest('[role="row"]') as HTMLElement;
-    expect(self.querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
+    const self = () => within(table()).getByText("Ada Okafor (you)").closest('[role="row"]') as HTMLElement;
+    await waitFor(() => expect(self().querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull());
     await waitFor(() => expect(row("198.51.100.4").querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull());
     expect(within(row("198.51.100.6")).getByText("U")).toBeInTheDocument();
     expect(row("198.51.100.6").querySelector("img")).toBeNull();
