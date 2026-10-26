@@ -21,6 +21,7 @@ expression: outcomes
       ],
       "model": "claude-opus-5-5",
       "parallel_tool_calls": true,
+      "prompt_cache_key": "00000000-0000-7000-8000-00000000000a",
       "reasoning_effort": "high",
       "stream": true,
       "stream_options": {

@@ -359,6 +359,51 @@ fn a_root_all_of_from_an_anthropic_app_reaches_grok_as_exactly_what_it_accepts()
 }
 
 #[test]
+fn unevaluated_properties_close_the_object_they_stand_in() {
+    let part = json!({
+        "allOf": [
+            {
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "unevaluatedProperties": false
+            },
+            {"type": "object", "properties": {"x": {"type": "string"}}}
+        ]
+    });
+    let root = json!({
+        "type": "object",
+        "oneOf": [
+            {"properties": {"path": {"type": "string"}}, "required": ["path"]},
+            {"properties": {"id": {"type": "integer"}}, "required": ["id"]}
+        ],
+        "unevaluatedProperties": false
+    });
+    for (schema, want) in [
+        (
+            part,
+            json!({
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "additionalProperties": false
+            }),
+        ),
+        (
+            root,
+            json!({
+                "type": "object",
+                "properties": {"id": {"type": "integer"}, "path": {"type": "string"}},
+                "additionalProperties": false
+            }),
+        ),
+    ] {
+        let req = decode(A, &rename_tool(schema));
+        let (sent, adapted) = sent(A, &req, anthropic(&req));
+        assert_eq!(adapted, ["tools[0]"]);
+        assert_eq!(tool(A, &sent, "rename")["input_schema"], want);
+    }
+}
+
+#[test]
 fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
     let closed_path = json!({
         "allOf": [
@@ -377,9 +422,28 @@ fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
             {"type": "object", "properties": {"to": {"type": "string"}}, "minProperties": 2}
         ]
     });
+    let unevaluated_path = json!({
+        "allOf": [
+            {
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "unevaluatedProperties": false
+            },
+            {"type": "object", "properties": {"to": {"type": "string"}}, "required": ["to"]}
+        ]
+    });
+    let patterned = json!({
+        "type": "object",
+        "patternProperties": {"^x-": {"type": "string"}},
+        "oneOf": [{"$ref": "#/$defs/Path"}],
+        "$defs": {"Path": {"properties": {"path": {"type": "string"}}}},
+        "unevaluatedProperties": false
+    });
     for (schema, keyword) in [
         (closed_path, "additionalProperties"),
         (counts, "minProperties"),
+        (unevaluated_path, "additionalProperties"),
+        (patterned, "unevaluatedProperties"),
     ] {
         let req = decode(A, &rename_tool(schema));
         let err = send(R, &req, &mut xai(&req)).unwrap_err();

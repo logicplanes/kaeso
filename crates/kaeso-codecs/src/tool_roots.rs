@@ -46,6 +46,14 @@ const ANNOTATIONS: [&str; 10] = [
     "readOnly",
     "writeOnly",
 ];
+const UNEVALUATED: &str = "unevaluatedProperties";
+const UNLISTED_EVALUATION: [&str; 5] = [
+    "patternProperties",
+    "dependentSchemas",
+    "if",
+    "then",
+    "else",
+];
 const MAX_VARIANTS: usize = 64;
 const MAX_DEPTH: usize = 32;
 
@@ -277,7 +285,7 @@ impl<'a> Doc<'a> {
         let own: Map<String, Value> = m
             .iter()
             .filter(|(k, _)| {
-                k.as_str() != "$ref"
+                !matches!(k.as_str(), "$ref" | UNEVALUATED)
                     && !COMBINATORS.contains(&k.as_str())
                     && !DEFS.contains(&k.as_str())
             })
@@ -305,6 +313,11 @@ impl<'a> Doc<'a> {
                 }
             }
             out = product(&out, &alternatives)?;
+        }
+        if let Some(rule) = m.get(UNEVALUATED) {
+            for variant in &mut out {
+                seal(variant, rule)?;
+            }
         }
         Ok(out)
     }
@@ -521,6 +534,22 @@ fn is_open(rule: Option<&Value>) -> bool {
     matches!(rule, None | Some(Value::Bool(true)))
 }
 
+// `unevaluatedProperties` sees every property evaluated inside its own object, which after
+// merging are the variant's properties, unless a keyword whose evaluation can't be listed
+// decides it.
+fn seal(variant: &mut Map<String, Value>, rule: &Value) -> Result<(), Fault> {
+    match rule {
+        Value::Bool(true) => Ok(()),
+        Value::Bool(false) if !UNLISTED_EVALUATION.iter().any(|k| variant.contains_key(*k)) => {
+            variant
+                .entry("additionalProperties")
+                .or_insert(Value::Bool(false));
+            Ok(())
+        }
+        _ => Err(Fault::Conflict(UNEVALUATED.to_owned())),
+    }
+}
+
 // Both sides must hold for the same arguments, so the result may only be a schema that
 // accepts exactly what both accept; whatever can't be written that way is refused.
 fn intersect(
@@ -528,15 +557,6 @@ fn intersect(
     right: &Map<String, Value>,
 ) -> Result<Map<String, Value>, Fault> {
     let conflict = |key: &str| Fault::Conflict(key.to_owned());
-    if right
-        .get("unevaluatedProperties")
-        .is_some_and(|rule| *rule != Value::Bool(true))
-        && property_names(left)
-            .iter()
-            .any(|name| !property_names(right).contains(name))
-    {
-        return Err(conflict("unevaluatedProperties"));
-    }
     let mut out = left.clone();
     for (key, value) in right {
         let Some(mine) = out.get_mut(key) else {

@@ -125,13 +125,13 @@ Anthropic 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有
 合并方式：
 
 - **变体。** 根部 `oneOf` 或 `anyOf` 的每个分支是一个变体。指向 schema 的 `$defs` 或 `definitions` 的 `$ref` 会被解析，本身是联合的分支会贡献它自己的分支，根部自身的关键字和每个 `allOf` 部分适用于每个变体。
-- **精确组合。** 根部、它的 `allOf` 部分和一个分支必须对同一组参数同时成立，因此它们会被精确组合：其中两者都定义的属性会变为这两个定义的 `allOf`，它们的 `required` 列表会合并，带有 `additionalProperties: false` 的部分会排除它没有列出的属性。
+- **精确组合。** 根部、它的 `allOf` 部分和一个分支必须对同一组参数同时成立，因此它们会被精确组合：其中两者都定义的属性会变为这两个定义的 `allOf`，它们的 `required` 列表会合并，带有 `additionalProperties: false` 的部分会排除它没有列出的属性。`unevaluatedProperties: false` 也以同样方式封闭它所在的对象，范围是该对象内定义的所有属性。
 - **属性。** 合并后的对象包含所有变体的属性。在不同变体之间有差异的属性会变为其各种形式的 `anyOf`；但同一属性的 `enum` 和 `const` 值会合并为一个 `enum`，例如 `mode`。
 - **`required`。** 每个变体都要求的属性；`allOf` 部分会加入它们自己的。
 - **`additionalProperties`** 和其他关键字在每个变体的值都相同时保留，例如 `additionalProperties: false`。根部的 `$defs`、`definitions`、`$schema`、`title` 和 `description` 保持不变，因此属性中的引用仍能解析。
 - **描述。** 有多个变体时，工具描述的末尾会列出这些变体，让模型仍然知道哪些字段要一起使用：`1. mode "view": requires mode, id.`
 - **不变。** 属性内部的联合、目标接受的根部联合，以及工具调用的参数。
-- **拒绝。** 根部联合中有不是对象的分支（例如 `{"type": "string"}`）、`$ref` 没有指向 schema 的 `$defs` 或 `definitions`、无法精确组合的部分（例如两个不同的 `minProperties`，或 `additionalProperties: false` 与另一部分要求的属性相冲突），以及根部组合出超过 64 个变体时，都是 `Unsupported`。错误消息会注明该工具，`param` 是它在请求中的路径。
+- **拒绝。** 根部联合中有不是对象的分支（例如 `{"type": "string"}`）、`$ref` 没有指向 schema 的 `$defs` 或 `definitions`、无法精确组合的部分（例如两个不同的 `minProperties`，或 `additionalProperties: false` 与另一部分要求的属性相冲突）、与 `patternProperties` 或条件关键字并存的 `unevaluatedProperties`，以及根部组合出超过 64 个变体时，都是 `Unsupported`。错误消息会注明该工具，`param` 是它在请求中的路径。
 
 每个被合并的工具都会以它在请求中的路径出现在回复的 `kaeso-adapted` 响应头中，例如第一个命名空间的第四个工具为 `tools[0].tools[3]`（[响应头](../../api/model-api.md#响应头)），网关日志中也会记录。记录下来的请求正文保留应用的 schema。`ChatProfile` 和 `ResponsesProfile` 上的 `ToolSchemaRoot` 说明服务商接受什么；Anthropic Messages 总是收到一个对象。Fixture：`openai_responses/requests/codex-desktop-root-union.json`。
 
