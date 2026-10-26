@@ -662,6 +662,11 @@
 }
 @utility animate-indeterminate {
   animation: k-indeterminate var(--k-skeleton-duration) var(--k-ease-pulse) infinite;
+  /* A still third of a line reads as 33% done; with reduced motion the whole line pulses instead. */
+  @media (prefers-reduced-motion: reduce) {
+    width: 100% !important;
+    animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
+  }
 }
 @utility reduced-pulse {
   @media (prefers-reduced-motion: reduce) {
@@ -1607,8 +1612,22 @@
 @utility ring-mark {
   box-shadow: inset 0 0 0 1px var(--k-warning);
 }
+@utility cutout {
+  --k-cut-x: var(--k-cut-x-ltr);
+  mask-image: radial-gradient(circle at var(--k-cut-x) var(--k-cut-y, 50%), transparent var(--k-cut-r), black calc(var(--k-cut-r) + 0.5px));
+  &:dir(rtl) {
+    --k-cut-x: var(--k-cut-x-rtl, var(--k-cut-x-ltr));
+  }
+}
+@utility raised-selected-hover {
+  /* A step past raised-pressed toward the text, so a selected row in a card answers the pointer in both themes. */
+  background-color: color-mix(in oklab, var(--k-raised-pressed) 95%, var(--k-text));
+}
+@utility mark-fill {
+  background-color: var(--k-fill-control, var(--k-fill-2));
+}
 @utility grid-cols-kv {
-  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  grid-template-columns: fit-content(var(--k-width-field-label)) minmax(0, 1fr);
 }
 
 @utility chart-fill-top {

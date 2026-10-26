@@ -143,6 +143,7 @@ export function kaesoMergeConfig() {
       "text-decoration": ["underline", "overline", "line-through", "no-underline"],
       "text-transform": ["uppercase", "lowercase", "capitalize", "normal-case"],
       "text-decoration-thickness": [{ decoration: [isNumber, "from-font", "auto", isArbitraryVariable, isArbitraryLength] }],
+      "text-decoration-style": [{ decoration: ["solid", "dashed", "dotted", "double", "wavy"] }],
       "text-decoration-color": [{ decoration: color }],
       "underline-offset": [{ "underline-offset": [isNumber, "auto", ...arbitrary] }],
       "text-overflow": ["truncate", "text-ellipsis", "text-clip"],
