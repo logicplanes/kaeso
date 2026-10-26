@@ -52,7 +52,6 @@ const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden round
 
 const DialogBusy = createContext(false);
 const LayerSlots = createContext({ toolbar: true, footerStart: true });
-const EscapeBack = createContext<(() => boolean) | null>(null);
 
 function isComposing(e: KeyboardEvent): boolean {
   // Safari ends composition before the Enter that confirms it, leaving only keyCode 229: https://bugs.webkit.org/show_bug.cgi?id=165004
@@ -260,7 +259,6 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
   const container = usePortalContainer();
   const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : open);
-  const escapeBack = use(EscapeBack);
   if (inline) return <DialogFrame {...props} rootRef={ref} />;
   return (
     <BaseDialog.Root
@@ -268,7 +266,6 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       onOpenChange={(o: boolean, details: BaseDialog.Root.ChangeEventDetails) => {
         if (!o && busy) return details.cancel();
-        if (!o && details.reason === "escape-key" && escapeBack?.()) return details.cancel();
         onOpenChange?.(o);
       }}
       onOpenChangeComplete={settled}
@@ -510,11 +507,6 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
     if (layer === undefined) setInner(i);
     onLayerChange?.(i);
   };
-  const escapeBack = () => {
-    if (index === 0 || props.busy) return false;
-    go(index - 1);
-    return true;
-  };
   const stack = layers.slice(0, index + 1);
   const current = stack[index];
   if (!current) return null;
@@ -523,74 +515,72 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
   };
   return (
     <LayerSlots value={{ toolbar: !!current.toolbar, footerStart: !!current.footerStart }}>
-      <EscapeBack value={escapeBack}>
-        <Dialog
-          ref={ref}
-          {...props}
-          anchor={anchor}
-          title={current.title}
-          description={current.description}
-          toolbar={
-            stack.some((l) => l.toolbar)
-              ? stack.map((l, i) =>
-                  l.toolbar ? (
-                    <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
-                      {l.toolbar}
-                    </div>
-                  ) : null,
-                )
-              : undefined
-          }
-          footerStart={
-            stack.some((l) => l.footerStart)
-              ? stack.map((l, i) =>
-                  l.footerStart ? (
-                    <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
-                      {l.footerStart}
-                    </div>
-                  ) : null,
-                )
-              : undefined
-          }
-          footer={
-            current.footer
-              ? stack.map((l, i) =>
-                  l.footer ? (
-                    <div key={i} hidden={i !== index} className="contents dialog-narrow:*:flex-auto" onFocus={remember(i)}>
-                      {l.footer}
-                    </div>
-                  ) : null,
-                )
-              : undefined
-          }
-          headerStart={
-            index > 0 ? (
-              <IconButton
-                key="back"
-                icon={icons.chevronLeft}
-                aria-label={t("dialog.back", "Back")}
-                onClick={() => go(index - 1)}
-                disabled={!!props.busy}
-                className="animate-layer-in"
-              />
-            ) : null
-          }
-        >
-          {stack.map((l, i) => (
-            <div
-              key={i}
-              ref={(el) => {
-                sections.current[i] = el;
-              }}
-              hidden={i !== index}
+      <Dialog
+        ref={ref}
+        {...props}
+        anchor={anchor}
+        title={current.title}
+        description={current.description}
+        toolbar={
+          stack.some((l) => l.toolbar)
+            ? stack.map((l, i) =>
+                l.toolbar ? (
+                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                    {l.toolbar}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        footerStart={
+          stack.some((l) => l.footerStart)
+            ? stack.map((l, i) =>
+                l.footerStart ? (
+                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                    {l.footerStart}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        footer={
+          current.footer
+            ? stack.map((l, i) =>
+                l.footer ? (
+                  <div key={i} hidden={i !== index} className="contents dialog-narrow:*:flex-auto" onFocus={remember(i)}>
+                    {l.footer}
+                  </div>
+                ) : null,
+              )
+            : undefined
+        }
+        headerStart={
+          index > 0 ? (
+            <IconButton
+              key="back"
+              icon={icons.chevronLeft}
+              aria-label={t("dialog.back", "Back")}
+              onClick={() => go(index - 1)}
+              disabled={!!props.busy}
               className="animate-layer-in"
-              onFocus={remember(i)}
-            >
-              {l.content}
-            </div>
-          ))}
-        </Dialog>
-      </EscapeBack>
+            />
+          ) : null
+        }
+      >
+        {stack.map((l, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              sections.current[i] = el;
+            }}
+            hidden={i !== index}
+            className="animate-layer-in"
+            onFocus={remember(i)}
+          >
+            {l.content}
+          </div>
+        ))}
+      </Dialog>
     </LayerSlots>
   );
 });

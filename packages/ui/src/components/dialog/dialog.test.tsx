@@ -641,7 +641,7 @@ describe("LayerDialog", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(trigger).toHaveFocus();
   });
-  it("steps back one layer on Escape, as Back would, and closes on Escape from the first layer", async () => {
+  it("closes on Escape from a second layer, as a cancel of the whole task", async () => {
     const onOpenChange = vi.fn();
     render(<AddModels onSubmit={() => undefined} onOpenChange={onOpenChange} />);
     const trigger = screen.getByRole("button", { name: "New models" });
@@ -649,11 +649,6 @@ describe("LayerDialog", () => {
     await frames();
     await userEvent.click(screen.getByRole("button", { name: "Add a custom model" }));
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Add a custom model");
-    await userEvent.keyboard("{Escape}");
-    await frames();
-    expect(onOpenChange).not.toHaveBeenCalledWith(false);
-    expect(screen.getByRole("dialog")).toHaveAccessibleName("Add models");
-    expect(screen.getByRole("button", { name: "Add a custom model" })).toHaveFocus();
     await userEvent.keyboard("{Escape}");
     await frames();
     expect(onOpenChange).toHaveBeenLastCalledWith(false);

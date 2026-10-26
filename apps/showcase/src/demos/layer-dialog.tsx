@@ -10,7 +10,7 @@ export const meta = {
   entry: "dialog",
   import: "LayerDialog",
   keyboard: [
-    ["Escape", "Goes back a layer; on the first layer, closes and returns focus to the trigger"],
+    ["Escape", "Closes the dialog from any layer and returns focus to the trigger"],
     ["Tab", "Moves within the layer shown"],
     ["mod Enter", "Calls onSubmit, on every layer"],
   ],

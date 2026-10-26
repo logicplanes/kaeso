@@ -57,7 +57,7 @@ export const docs = {
   },
   LayerDialog: {
     description:
-      "A stacked dialog: a second layer slides over the first (add model → review values); Back, or Escape, returns. The layers below stay as they were. The close circle sits in a bar above the title, with Back at its start from the second layer, so the title keeps its place on every layer. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. Enter in a single-line field and ⌘/Ctrl+Enter call onSubmit on every layer.",
+      "A stacked dialog: a second layer slides over the first (add model → review values); Back returns, and Escape closes the dialog from any layer. The layers below stay as they were. The close circle sits in a bar above the title, with Back at its start from the second layer, so the title keeps its place on every layer. Moving to a layer puts the focus on its first field, or its primary action; Back returns it to the control that opened the layer, scrolled where it was. Enter in a single-line field and ⌘/Ctrl+Enter call onSubmit on every layer.",
     props: {
       anchor: "Where it sits: with a fixed top edge (default), so the title stays put on layers of different heights, or centered.",
       busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close, Enter and ⌘Enter do nothing, so a request is never abandoned or sent twice.",
