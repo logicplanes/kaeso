@@ -238,6 +238,7 @@ const MenuButton = forwardRef<HTMLButtonElement, { className?: string | undefine
     <IconButton
       ref={ref}
       onPointerEnter={() => {
+        clearTimeout(intent.current);
         if (collapsed && wide()) intent.current = setTimeout(() => setPeeking(true), PEEK_DELAY);
       }}
       onPointerLeave={() => {
