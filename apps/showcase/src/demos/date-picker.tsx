@@ -1,5 +1,5 @@
 import { Calendar, DatePicker, DateRangePicker, TimeInput } from "@logicplanes/kaeso-ui";
-import { StateSection } from "~/lib/states";
+import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "DatePicker",
@@ -38,30 +38,57 @@ export function Range() {
 export function Time() {
   return <TimeInput label="Daily report at" defaultValue="09:30" utc />;
 }
+const day = new Date(2026, 9, 12);
+const range = { from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) };
+
+function Trigger({ row, props }: { row: string; props: Record<string, unknown> }) {
+  if (row === "range") return <DateRangePicker aria-label="Period" size="sm" defaultValue={range} {...props} />;
+  return <DatePicker aria-label="Expires" size="sm" {...(row === "date" ? { defaultValue: day } : {})} {...props} />;
+}
+
 export function States() {
   return (
     <>
-      <StateSection title="Triggers">
-        <div className="flex flex-wrap items-center gap-12">
-          <DatePicker aria-label="Empty" />
-          <DatePicker aria-label="Value" defaultValue={new Date(2026, 9, 12)} />
-          <DatePicker aria-label="Hover" defaultValue={new Date(2026, 9, 12)} data-force="hover" />
-          <DatePicker aria-label="Focus" defaultValue={new Date(2026, 9, 12)} data-force="focus" />
-          <DateRangePicker aria-label="Range" defaultValue={{ from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) }} />
-          <DatePicker aria-label="Disabled" disabled defaultValue={new Date(2026, 9, 12)} />
+      <Matrix
+        title="Trigger"
+        rows={[{ label: "date" }, { label: "range" }, { label: "empty" }]}
+        columns={[
+          { label: "Rest", props: {} },
+          { label: "Hover", props: { "data-force": "hover" } },
+          { label: "Pressed", props: { "data-force": "pressed" } },
+        ]}
+        render={(r, p) => <Trigger row={r.label} props={p} />}
+      />
+      <Matrix
+        title="Focus, open and off"
+        rows={[{ label: "date" }, { label: "range" }, { label: "empty" }]}
+        columns={[
+          { label: "Focus", props: { "data-force": "focus" } },
+          { label: "Open", props: { "data-force": "open" } },
+          { label: "Disabled", props: { disabled: true } },
+        ]}
+        render={(r, p) => <Trigger row={r.label} props={p} />}
+      />
+      <StateSection title="Sizes and errors">
+        <div className="flex flex-col items-start gap-12">
+          <DatePicker aria-label="Small" size="sm" defaultValue={day} />
+          <DatePicker aria-label="Medium" defaultValue={day} />
+          <DatePicker aria-label="Large" size="lg" defaultValue={day} />
+          <DatePicker label="Expires" error="Choose a date after today." defaultValue={new Date(2026, 9, 1)} />
         </div>
       </StateSection>
       <StateSection title="Calendar">
         <div className="flex flex-wrap gap-32">
-          <Calendar month={new Date(2026, 9, 1)} selected={new Date(2026, 9, 14)} />
-          <Calendar mode="range" month={new Date(2026, 9, 1)} selected={{ from: new Date(2026, 9, 5), to: new Date(2026, 9, 16) }} />
+          <Calendar month={new Date(2026, 9, 1)} selected={new Date(2026, 9, 14)} disabled={(d) => d > new Date(2026, 9, 24)} />
+          <Calendar mode="range" month={new Date(2026, 9, 1)} selected={{ from: new Date(2026, 9, 4), to: new Date(2026, 9, 12) }} />
         </div>
       </StateSection>
       <StateSection title="Time">
-        <div className="flex items-center gap-12">
+        <div className="flex flex-col items-start gap-12">
           <TimeInput aria-label="Time" defaultValue="09:30" />
           <TimeInput aria-label="Focus" defaultValue="23:05" data-force="focus" utc />
           <TimeInput aria-label="Disabled" defaultValue="09:30" disabled />
+          <TimeInput label="Send at" defaultValue="07:45" error="Choose a time inside the maintenance window." />
         </div>
       </StateSection>
     </>

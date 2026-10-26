@@ -67,7 +67,7 @@ describe("components in German and Chinese", () => {
     expect(screen.getByText("Oktober 2026")).toBeInTheDocument();
     expect(screen.getByText("Mo")).toBeInTheDocument();
     expect(screen.getByText("So")).toBeInTheDocument();
-    expect(screen.getByText("Zeitraum wählen")).toBeInTheDocument();
+    expect(screen.getByText("Zeitraum auswählen")).toBeInTheDocument();
     expect(screen.getByText("Letzte 7 Tage")).toBeInTheDocument();
   });
 

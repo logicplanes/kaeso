@@ -5,15 +5,19 @@ import { TimeInput } from "./time-input.js";
 import { Field } from "../field/field.js";
 
 describe("TimeInput", () => {
-  it("steps hours and minutes with the arrows, wrapping around", async () => {
+  it("steps hours and minutes with the arrows, carrying minutes into hours and wrapping the day", async () => {
     const onChange = vi.fn();
     render(<TimeInput defaultValue="23:59" onValueChange={onChange} utc />);
     await userEvent.type(screen.getByRole("textbox", { name: "Hours" }), "{ArrowUp}");
     expect(onChange).toHaveBeenLastCalledWith("00:59");
     await userEvent.type(screen.getByRole("textbox", { name: "Minutes" }), "{ArrowUp}");
-    expect(onChange).toHaveBeenLastCalledWith("00:00");
+    expect(onChange).toHaveBeenLastCalledWith("01:00");
     await userEvent.type(screen.getByRole("textbox", { name: "Minutes" }), "{ArrowDown}{ArrowLeft}");
     expect(onChange).toHaveBeenLastCalledWith("00:59");
+    await userEvent.type(screen.getByRole("textbox", { name: "Hours" }), "{ArrowDown}");
+    expect(onChange).toHaveBeenLastCalledWith("23:59");
+    await userEvent.type(screen.getByRole("textbox", { name: "Minutes" }), "{ArrowUp}");
+    expect(onChange).toHaveBeenLastCalledWith("00:00");
     expect(screen.getByText("UTC")).toBeInTheDocument();
   });
 

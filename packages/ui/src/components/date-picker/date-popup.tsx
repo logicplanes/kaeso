@@ -1,7 +1,9 @@
 import { Calendar, type CalendarProps } from "../calendar/calendar.js";
 import { Popover } from "../popover/popover.js";
-import { IsoField } from "./iso-field.js";
+import { useId, useState } from "react";
+import { ISO_PROBLEM, IsoField, isoProblemText, type IsoProblem } from "./iso-field.js";
 import { useUiText } from "../../i18n/context.js";
+import { useFocusDay } from "./focus-day.js";
 
 export interface DatePopupProps {
   date: Date | null;
@@ -13,9 +15,13 @@ export interface DatePopupProps {
 
 export function DatePopup({ date, onDateChange, onClose, weekStartsOn, disabledDays }: DatePopupProps) {
   const t = useUiText();
+  const calendar = useFocusDay();
+  const errorId = useId();
+  const [problem, setProblem] = useState<IsoProblem>(null);
   return (
     <Popover.Content padding="form" aria-label={t("datePicker.chooseDate", "Choose a date")}>
       <Calendar
+        ref={calendar}
         mode="single"
         selected={date ?? undefined}
         {...(date ? { defaultMonth: date } : {})}
@@ -30,6 +36,9 @@ export function DatePopup({ date, onDateChange, onClose, weekStartsOn, disabledD
         <IsoField
           label={t("datePicker.date", "Date")}
           value={date ?? undefined}
+          invalid={problem !== null}
+          errorId={errorId}
+          onProblem={setProblem}
           onCommit={(d) => {
             if (disabledDays?.(d)) return false;
             onDateChange(d);
@@ -37,6 +46,9 @@ export function DatePopup({ date, onDateChange, onClose, weekStartsOn, disabledD
           }}
         />
       </div>
+      <p id={errorId} role="alert" className={ISO_PROBLEM}>
+        {isoProblemText(t, problem)}
+      </p>
     </Popover.Content>
   );
 }

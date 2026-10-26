@@ -1,11 +1,12 @@
-import { useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { useId, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import type { DateRange } from "react-day-picker";
 import { Calendar, type CalendarProps } from "../calendar/calendar.js";
 import { cn } from "../../utils/cn.js";
 import { Popover } from "../popover/popover.js";
 import { Button } from "../button/button.js";
-import { MENU_ITEM } from "../menu/styles.js";
-import { IsoField } from "./iso-field.js";
+import { Icon } from "../icon/icon.js";
+import { icons } from "../../icons/vocabulary.js";
+import { ISO_PROBLEM, IsoField, isoProblemText, type IsoProblem } from "./iso-field.js";
 import type { DateRangePreset } from "./date-picker.js";
 import { useUiText } from "../../i18n/context.js";
 
@@ -51,11 +52,15 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
   const [draft, setDraft] = useState<DateRange | undefined>(range ?? undefined);
   const [custom, setCustom] = useState(preset === null);
   const [last, setLast] = useState(() => monthOf(range?.to ?? range?.from ?? new Date()));
+  const errorId = useId();
+  const [problem, setProblem] = useState<{ field: "from" | "to"; problem: IsoProblem } | null>(null);
+  const fields = useRef<HTMLDivElement | null>(null);
   const first = addMonths(last, 1 - months);
   const shows = (d: Date) => d >= first && monthOf(d) <= last;
   const selected = custom ? null : preset;
   const edit = (next: DateRange | undefined) => {
     setDraft(next);
+    if (next?.from) setProblem((was) => (was?.problem === "missing" ? null : was));
     setCustom(true);
   };
   const typed = (which: "from" | "to", d: Date) => {
@@ -67,7 +72,14 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
     return true;
   };
   const unchanged = sameDay(draft?.from, range?.from) && sameDay(draft?.to ?? draft?.from, range?.to);
-  const item = cn(MENU_ITEM, "cursor-pointer hover:bg-fill-1 focus-ring-inset aria-selected:bg-fill-2", wide && "coarse:min-h-40");
+  const item = cn(
+    "flex min-h-34 w-full cursor-pointer items-center justify-between gap-10 rounded-item px-10 text-left text-body font-medium text-fg transition-control select-none coarse:min-h-44",
+    "hover:bg-item-hover active:bg-item-pressed focus-ring-inset",
+    wide && "coarse:min-h-40",
+  );
+  const check = (on: boolean) => <Icon icon={icons.check} size="sm" className={cn("shrink-0 text-fg", !on && "invisible")} />;
+  const problemOf = (field: "from" | "to") => (problem?.field === field ? problem.problem : null);
+  const report = (field: "from" | "to") => (p: IsoProblem) => setProblem(p ? { field, problem: p } : problem?.field === field ? null : problem);
 
   return (
     <Popover.Content padding="none" aria-label={t("datePicker.chooseRange", "Choose a date range")} className={cn(!wide && "w-360 max-w-(--available-width)")}>
@@ -91,7 +103,8 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
                 className={item}
                 onClick={() => onPick(p.range(), id)}
               >
-                {p.label}
+                <span className="min-w-0">{p.label}</span>
+                {check(selected === id)}
               </button>
             );
           })}
@@ -103,7 +116,8 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
             className={item}
             onClick={() => setCustom(true)}
           >
-            {t("datePicker.custom", "Custom")}
+            <span className="min-w-0">{t("datePicker.custom", "Custom")}</span>
+            {check(selected === null)}
           </button>
         </div>
         <div className={cn("flex flex-col p-12", !wide && "items-center")}>
@@ -117,18 +131,35 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
             weekStartsOn={weekStartsOn}
             disabled={disabledDays}
           />
-          <div className="mt-12 flex items-center gap-8 self-stretch">
-            <IsoField label={t("datePicker.startDate", "Start date")} value={draft?.from} onCommit={(d) => typed("from", d)} />
+          <div ref={fields} className="mt-12 flex items-center gap-8 self-stretch">
+            <IsoField
+              label={t("datePicker.startDate", "Start date")}
+              value={draft?.from}
+              invalid={problemOf("from") !== null}
+              errorId={errorId}
+              onProblem={report("from")}
+              onCommit={(d) => typed("from", d)}
+            />
             <span className="text-fg-tertiary" aria-hidden>
               –
             </span>
-            <IsoField label={t("datePicker.endDate", "End date")} value={draft?.to} onCommit={(d) => typed("to", d)} />
+            <IsoField
+              label={t("datePicker.endDate", "End date")}
+              value={draft?.to}
+              invalid={problemOf("to") !== null}
+              errorId={errorId}
+              onProblem={report("to")}
+              onCommit={(d) => typed("to", d)}
+            />
             <Button
               size="sm"
               variant="primary"
-              disabled={!draft?.from}
               onClick={() => {
-                if (!draft?.from) return;
+                if (!draft?.from) {
+                  setProblem({ field: "from", problem: "missing" });
+                  fields.current?.querySelector("input")?.focus();
+                  return;
+                }
                 if (unchanged && !custom) onClose();
                 else onPick({ from: draft.from, to: draft.to ?? draft.from }, null);
               }}
@@ -136,6 +167,9 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
               {t("datePicker.apply", "Apply")}
             </Button>
           </div>
+          <p id={errorId} role="alert" className={cn(ISO_PROBLEM, "w-0 min-w-full")}>
+            {problem ? isoProblemText(t, problem.problem) : ""}
+          </p>
         </div>
       </div>
     </Popover.Content>

@@ -5,6 +5,7 @@ import { cn } from "../../utils/cn.js";
 import { useControllable } from "../../utils/use-controllable.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { Icon } from "../icon/icon.js";
+import { Spinner, useDelayedLoading } from "../loader/loader.js";
 import { icons } from "../../icons/vocabulary.js";
 import { PopoverRoot, PopoverTrigger } from "../popover/popover-root.js";
 import { formatDate, formatDateRange } from "../../format/index.js";
@@ -90,6 +91,10 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
   ref,
 ) {
   const valueId = useId();
+  const [focused, setFocused] = useState(false);
+  const spinning = useDelayedLoading(pending);
+  // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.
+  const held = !!disabled && focused;
   const purpose = useHiddenDescription(labelledBy ? undefined : ariaLabel);
   const self = useRef<HTMLButtonElement | null>(null);
   const setRef = useCallback(
@@ -133,14 +138,21 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
           rest.onPointerEnter?.(e);
         }}
         onFocus={(e) => {
+          setFocused(true);
           preload();
           rest.onFocus?.(e);
         }}
+        onClickCapture={(e) => {
+          if (!held) return;
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onBlur={(e) => {
+          setFocused(false);
           if (pending && e.relatedTarget && !e.currentTarget.contains(e.relatedTarget)) onCancel();
           rest.onBlur?.(e);
         }}
-        disabled={disabled}
+        {...(held ? { "aria-disabled": true, "data-disabled": "" } : { disabled })}
         {...control}
         {...(labelledBy ? { "aria-labelledby": `${labelledBy} ${valueId}` } : {})}
         {...(describedBy ? { "aria-describedby": describedBy } : {})}
@@ -148,13 +160,17 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
         {...(invalid ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "inline-flex min-w-0 cursor-pointer items-center rounded-pill font-medium whitespace-nowrap material-selector transition-control disabled:cursor-not-allowed",
+          "group/date inline-flex min-w-0 cursor-pointer items-center rounded-pill font-medium whitespace-nowrap material-selector transition-control disabled:cursor-not-allowed",
           KAESO_DATE_PICKER_VARIANTS.size[size].classes,
           className,
         )}
       >
-        <Icon icon={icons.calendar} size="sm" className="text-fg-secondary" />
-        <span id={valueId} className={cn("truncate tabular", placeholder && "font-regular text-fg-tertiary")}>
+        {spinning ? (
+          <Spinner className="text-fg-secondary" />
+        ) : (
+          <Icon icon={icons.calendar} size="sm" className="text-fg-secondary group-disabled/date:text-fg-disabled" />
+        )}
+        <span id={valueId} className={cn("truncate tabular", placeholder && "font-regular text-fg-tertiary group-disabled/date:text-fg-disabled")}>
           {children}
         </span>
       </button>
@@ -229,7 +245,7 @@ export const DatePicker = forwardRef<HTMLDivElement, DatePickerProps>(function D
             labelled={labelled}
             {...naming}
           >
-            {date ? formatDate(date) : (placeholder ?? t("datePicker.pickDate", "Pick a date"))}
+            {date ? formatDate(date) : (placeholder ?? t("datePicker.chooseDate", "Choose a date"))}
           </TriggerButton>
         </PopoverTrigger>
         {DatePopup && <DatePopup date={date} onDateChange={setDate} onClose={() => setOpen(false)} weekStartsOn={weekStartsOn} disabledDays={disabledDays} />}
@@ -341,7 +357,7 @@ export const DateRangePicker = forwardRef<HTMLDivElement, DateRangePickerProps>(
       ? formatDateRange(range.from, range.to)
       : range?.from
         ? formatDate(range.from)
-        : (placeholder ?? t("datePicker.pickRange", "Pick a range")));
+        : (placeholder ?? t("datePicker.chooseRange", "Choose a date range")));
   const control = (
     <div ref={ref} className={cn("inline-flex", !(label || description || error) && className)}>
       <PopoverRoot open={open} onOpenChange={openRange}>

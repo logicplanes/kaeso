@@ -20,9 +20,9 @@ const CAL_CLASSES = {
   caption_label: "",
   nav: "absolute top-0 right-0 flex items-center gap-2",
   button_previous:
-    "inline-flex size-32 items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring disabled:opacity-40",
+    "inline-flex size-32 items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-item-hover hover:text-fg focus-ring disabled:opacity-40",
   button_next:
-    "inline-flex size-32 items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring disabled:opacity-40",
+    "inline-flex size-32 items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-item-hover hover:text-fg focus-ring disabled:opacity-40",
   month_grid: "border-collapse",
   weekdays: "",
   weekday: "h-32 w-36 text-caption font-medium text-fg-tertiary",
