@@ -78,7 +78,7 @@ order: 7
 | `store` | `false`/`null`：形式标记；`true`：**Unsupported**（`store`，参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | 来自其他方言的请求以 `store: false` 发送（参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)）。本方言的请求保留原有写法，因此省略 `store` 仍意味着 OpenAI 会存储该响应。形式标记 `native` 标记从本方言解码的请求。 |
 | `previous_response_id`、`conversation` | `null`：形式标记；任何值：**Unsupported**（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
 | `background` | `false`/`null`：形式标记；`true`：**Unsupported**（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
-| `metadata`、`truncation`、`service_tier`、`top_logprobs`、`max_tool_calls`、`prompt_cache_key`、`prompt_cache_retention`、`prompt_cache_options`、`prompt`、`context_management`、`moderation`、`access_programs`、`personality`（仅计数）、未知键 | extras | 显式写出的默认值和 `null` 是形式标记（参见[原始写法如何保留](#原始写法如何保留)）。 |
+| `metadata`、`truncation`、`service_tier`、`top_logprobs`、`max_tool_calls`、`prompt_cache_key`、`prompt_cache_retention`、`prompt_cache_options`、`prompt`、`context_management`、`moderation`、`access_programs`、`personality`（仅计数）、未知键 | extras | 显式写出的默认值和 `null` 是形式标记（参见[原始写法如何保留](#原始写法如何保留)）。`prompt_cache_key` 会传给 Chat Completions，发往其他格式时丢弃；`prompt_cache_retention` 和 `prompt_cache_options` 用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只转发给 Responses。 |
 
 请求体符合以下任一情况时，结果是 `InvalidRequest`：

@@ -1,7 +1,7 @@
 use kaeso_kpp::{
-    Block, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec, KppError, Message, OpaqueKind,
-    Origin, OutputSpec, RawItem, RawJson, ReasoningBlock, ReasoningConfig, ReasoningEffort,
-    ReasoningMode, Request, RequestKind, Role, StreamMode, ToolChoice, ToolDef,
+    Block, CacheHint, CacheTtl, Extras, FunctionTool, GenerateRequest, JsonSchemaSpec, KppError,
+    Message, OpaqueKind, Origin, OutputSpec, RawItem, RawJson, ReasoningBlock, ReasoningConfig,
+    ReasoningEffort, ReasoningMode, Request, RequestKind, Role, StreamMode, ToolChoice, ToolDef,
 };
 use serde_json::Value;
 
@@ -16,7 +16,7 @@ use super::wire::{
 };
 use super::{ANTHROPIC_VERSION, COUNT_TOKENS_PATH, MESSAGES_PATH};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
-use crate::cross::{reasoning_map, reasoning_replayable};
+use crate::cross::{self, reasoning_map, reasoning_replayable};
 use crate::wire::without_position;
 use crate::wire::{
     Ext, StringOr, add_nested_extra, extras_from, nested_extra_for, to_body, type_tag,
@@ -26,6 +26,7 @@ use crate::wire::{
 const OBJECTS_FORM: &str = "objects";
 const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 const SYSTEM_FORM: &str = "system";
+const CACHE_CONTROL: &str = "cache_control";
 
 fn invalid_body(detail: impl std::fmt::Display) -> KppError {
     KppError::invalid_request(format!(
@@ -325,6 +326,13 @@ pub(crate) fn encode_request(
         }
     };
     let own = r.extras.is_from(D);
+    let lengthened;
+    let r = if !own && asks_for_cache(r) && cross::openai_cache_outlives_five_minutes(&r.extras) {
+        lengthened = hints_kept_for_an_hour(r);
+        &lengthened
+    } else {
+        r
+    };
     let count_only = matches!(req, Request::CountTokens(_)) && !own;
     let mut enc = BlockEncoder::new(ctx.origin(D), Side::Request);
     let mut w = RequestW {
@@ -332,16 +340,27 @@ pub(crate) fn encode_request(
         ..RequestW::default()
     };
 
+    let breakpoint = (matches!(req, Request::Generate(_)) && !own)
+        .then(|| cross_format_breakpoint(r))
+        .flatten();
+    let marked_system;
+    let system = match &breakpoint {
+        Some(hint) => {
+            marked_system = with_last_breakpoint(&r.system, hint);
+            &marked_system
+        }
+        None => &r.system,
+    };
     let system_form = r.extras.form_str(D, SYSTEM_FORM);
     w.system = if system_form == Some("string")
-        && let [kaeso_kpp::Block::Text(t)] = r.system.as_slice()
+        && let [kaeso_kpp::Block::Text(t)] = system.as_slice()
         && t.cache.is_none()
         && t.citations.is_empty()
         && t.extras.is_empty()
     {
         Some(StringOr::String(t.text.clone()))
     } else {
-        let list = enc.blocks(&r.system)?;
+        let list = enc.blocks(system)?;
         (!list.is_empty() || system_form == Some("array")).then_some(StringOr::List(list))
     };
 
@@ -514,9 +533,17 @@ pub(crate) fn encode_request(
         None => None,
     };
 
-    for t in &r.tools {
+    let last_function = r
+        .tools
+        .iter()
+        .rposition(|t| matches!(t, ToolDef::Function(_)));
+    for (i, t) in r.tools.iter().enumerate() {
         match t {
             ToolDef::Function(f) => {
+                let cache = f
+                    .cache
+                    .as_ref()
+                    .or(breakpoint.as_ref().filter(|_| last_function == Some(i)));
                 let w_tool = ToolW {
                     name: enc.name(&f.name),
                     description: f.description.clone(),
@@ -524,7 +551,7 @@ pub(crate) fn encode_request(
                         .parameters
                         .as_ref()
                         .map_or_else(empty_parameters, |p| p.clone().into_inner()),
-                    cache_control: f.cache.as_ref().map(super::blocks::encode_cache),
+                    cache_control: cache.map(super::blocks::encode_cache),
                     strict: f.strict,
                     ..ToolW::default()
                 };
@@ -541,7 +568,13 @@ pub(crate) fn encode_request(
         }
     }
 
-    let body = to_body(&own_ext(w, &r.extras))?;
+    let mut out = own_ext(w, &r.extras);
+    if let Some(hint) = &breakpoint {
+        let automatic =
+            RawJson::from_serialize(&super::blocks::encode_cache(hint)).map_err(internal)?;
+        out.extra.insert(CACHE_CONTROL.to_owned(), automatic);
+    }
+    let body = to_body(&out)?;
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
     let betas: &[&str] = match rebuilt {
@@ -553,6 +586,77 @@ pub(crate) fn encode_request(
         request_headers(&r.extras, betas),
         body,
     ))
+}
+
+fn cross_format_breakpoint(r: &GenerateRequest) -> Option<CacheHint> {
+    if asks_for_cache(r) || cross::openai_cache_is_explicit(&r.extras) {
+        return None;
+    }
+    let ttl = cross::openai_cache_outlives_five_minutes(&r.extras).then_some(CacheTtl::OneHour);
+    Some(CacheHint::new(ttl))
+}
+
+fn hints_kept_for_an_hour(r: &GenerateRequest) -> GenerateRequest {
+    fn lengthen(hint: &mut Option<CacheHint>) {
+        if let Some(h) = hint
+            && h.ttl.is_none()
+        {
+            h.ttl = Some(CacheTtl::OneHour);
+        }
+    }
+    fn lengthen_all(blocks: &mut [Block]) {
+        for b in blocks {
+            match b {
+                Block::Text(t) => lengthen(&mut t.cache),
+                Block::Image(i) => lengthen(&mut i.cache),
+                Block::Document(d) => lengthen(&mut d.cache),
+                Block::ToolCall(c) => lengthen(&mut c.cache),
+                Block::ToolResult(t) => {
+                    lengthen_all(&mut t.content);
+                    lengthen(&mut t.cache);
+                }
+                _ => {}
+            }
+        }
+    }
+    let mut r = r.clone();
+    lengthen_all(&mut r.system);
+    for m in &mut r.messages {
+        lengthen_all(&mut m.blocks);
+    }
+    for t in &mut r.tools {
+        if let ToolDef::Function(f) = t {
+            lengthen(&mut f.cache);
+        }
+    }
+    r
+}
+
+fn asks_for_cache(r: &GenerateRequest) -> bool {
+    fn marked(blocks: &[Block]) -> bool {
+        blocks
+            .iter()
+            .any(|b| b.cache().is_some() || matches!(b, Block::ToolResult(t) if marked(&t.content)))
+    }
+    marked(&r.system)
+        || r.messages.iter().any(|m| marked(&m.blocks))
+        || r.tools
+            .iter()
+            .any(|t| matches!(t, ToolDef::Function(f) if f.cache.is_some()))
+}
+
+fn with_last_breakpoint(blocks: &[Block], hint: &CacheHint) -> Vec<Block> {
+    let mut marked = blocks.to_vec();
+    let last = marked.iter_mut().rev().find_map(|b| match b {
+        Block::Text(t) => Some(&mut t.cache),
+        Block::Image(i) => Some(&mut i.cache),
+        Block::Document(d) => Some(&mut d.cache),
+        _ => None,
+    });
+    if let Some(cache) = last {
+        *cache = Some(hint.clone());
+    }
+    marked
 }
 
 #[derive(Default)]

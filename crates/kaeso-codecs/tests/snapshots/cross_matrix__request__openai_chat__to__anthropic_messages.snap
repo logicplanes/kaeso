@@ -20,6 +20,9 @@ expression: outcomes
   },
   "explicit-nulls": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -38,6 +41,9 @@ expression: outcomes
   },
   "file-pdf-data": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -69,6 +75,9 @@ expression: outcomes
   },
   "functions-tool-choice-auto-doc": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -87,6 +96,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather in a given location",
           "input_schema": {
             "properties": {
@@ -115,6 +127,9 @@ expression: outcomes
   },
   "grok-cli-model-id": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -178,12 +193,18 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
           "type": "text"
         }
       ],
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Run a bash command and return its output.",
           "input_schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -220,6 +241,9 @@ expression: outcomes
   },
   "grok-cli-reasoning-content": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -283,12 +307,18 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are Grok released by xAI. You are an autonomous agent that completes software engineering tasks.",
           "type": "text"
         }
       ],
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Run a bash command and return its output.",
           "input_schema": {
             "$schema": "http://json-schema.org/draft-07/schema#",
@@ -321,6 +351,9 @@ expression: outcomes
   },
   "image-base64-detail": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -362,6 +395,9 @@ expression: outcomes
   },
   "image-url-doc": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 300,
       "messages": [
         {
@@ -415,6 +451,9 @@ expression: outcomes
   },
   "max-completion-tokens-legacy-null": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -433,6 +472,9 @@ expression: outcomes
   },
   "max-tokens-length": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 16,
       "messages": [
         {
@@ -451,6 +493,9 @@ expression: outcomes
   },
   "max-tokens-null": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -477,6 +522,9 @@ expression: outcomes
   },
   "plain-developer-string": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -492,6 +540,9 @@ expression: outcomes
       "model": "gpt-6-astra",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a helpful assistant.",
           "type": "text"
         }
@@ -505,12 +556,38 @@ expression: outcomes
     "unsupported": "prediction"
   },
   "prompt-cache-breakpoint": {
-    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "prompt_cache_options"
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Can I keep my roaming add-on after cancelling?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.6-sol",
+      "system": [
+        {
+          "cache_control": {
+            "ttl": "1h",
+            "type": "ephemeral"
+          },
+          "text": "You are the support assistant for Northwind Mobile. Policy summary: plans renew monthly on the signup date; customers may cancel online at any time before renewal; no fees apply for cancellation; partial months are not refunded; roaming add-ons expire with the plan. Always answer in plain language and cite the relevant policy point.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
   },
   "providers/deepseek/authentication-fails": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -534,6 +611,9 @@ expression: outcomes
   },
   "providers/deepseek/max-completion-tokens-limit": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 20,
       "messages": [
         {
@@ -552,6 +632,9 @@ expression: outcomes
   },
   "providers/deepseek/missing-model": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -620,6 +703,9 @@ expression: outcomes
   },
   "providers/groq/model-not-found": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -666,6 +752,9 @@ expression: outcomes
   },
   "providers/groq/stream-tools-system-role": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -685,6 +774,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -698,6 +790,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "additionalProperties": false,
@@ -733,6 +828,9 @@ expression: outcomes
   },
   "providers/groq/tools-system-role": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -751,6 +849,9 @@ expression: outcomes
       },
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -764,6 +865,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "additionalProperties": false,
@@ -799,6 +903,9 @@ expression: outcomes
   },
   "providers/mistral/assistant-prefill": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 30,
       "messages": [
         {
@@ -851,6 +958,9 @@ expression: outcomes
   },
   "providers/mistral/greedy-sampling": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -870,6 +980,9 @@ expression: outcomes
   },
   "providers/mistral/invalid-api-key": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -888,6 +1001,9 @@ expression: outcomes
   },
   "providers/mistral/magistral-medium": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 1500,
       "messages": [
         {
@@ -911,6 +1027,9 @@ expression: outcomes
   },
   "providers/mistral/model-not-found": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -933,14 +1052,47 @@ expression: outcomes
     "unsupported": "moderation"
   },
   "providers/mistral/prompt-cache-options-field": {
-    "message": "`prompt_cache_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "prompt_cache_options"
+    "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/prompt-cache-retention-field": {
-    "message": "`prompt_cache_retention` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "prompt_cache_retention"
+    "body": {
+      "cache_control": {
+        "ttl": "1h",
+        "type": "ephemeral"
+      },
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Say hello.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral-small-latest"
+    },
+    "path": "/v1/messages"
   },
   "providers/mistral/prompt-mode-reasoning": {
     "message": "`prompt_mode` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
@@ -949,6 +1101,9 @@ expression: outcomes
   },
   "providers/mistral/reasoning-effort-high": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 1500,
       "messages": [
         {
@@ -973,6 +1128,9 @@ expression: outcomes
   },
   "providers/mistral/reasoning-effort-high-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 1500,
       "messages": [
         {
@@ -998,6 +1156,9 @@ expression: outcomes
   },
   "providers/mistral/reasoning-then-tool-call": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 200,
       "messages": [
         {
@@ -1017,6 +1178,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -1026,6 +1190,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Current weather for a city.",
           "input_schema": {
             "properties": {
@@ -1052,6 +1219,9 @@ expression: outcomes
   },
   "providers/mistral/safety-identifier-field": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -1078,6 +1248,9 @@ expression: outcomes
   },
   "providers/mistral/stream-no-options": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -1097,6 +1270,9 @@ expression: outcomes
   },
   "providers/mistral/stream-tool-call": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 200,
       "messages": [
         {
@@ -1113,12 +1289,18 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
       ],
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Current weather for a city.",
           "input_schema": {
             "properties": {
@@ -1150,6 +1332,9 @@ expression: outcomes
   },
   "providers/mistral/user-field": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 10,
       "messages": [
         {
@@ -1181,6 +1366,9 @@ expression: outcomes
   },
   "providers/openrouter/free-basic": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 256,
       "messages": [
         {
@@ -1196,6 +1384,9 @@ expression: outcomes
       "model": "google/gemma-4-31b-it:free",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a helpful assistant. Answer in one short sentence.",
           "type": "text"
         }
@@ -1220,6 +1411,9 @@ expression: outcomes
   },
   "providers/openrouter/free-stream-rate-limited": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 256,
       "messages": [
         {
@@ -1239,6 +1433,9 @@ expression: outcomes
   },
   "providers/openrouter/free-tools": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1254,6 +1451,9 @@ expression: outcomes
       "model": "google/gemma-4-31b-it:free",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -1263,6 +1463,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "properties": {
@@ -1292,6 +1495,9 @@ expression: outcomes
   },
   "providers/openrouter/invalid-messages": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [],
       "model": "google/gemma-4-31b-it:free"
@@ -1300,6 +1506,9 @@ expression: outcomes
   },
   "providers/openrouter/keepalive-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 200,
       "messages": [
         {
@@ -1324,6 +1533,9 @@ expression: outcomes
   },
   "providers/openrouter/unknown-model": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1347,6 +1559,9 @@ expression: outcomes
   },
   "providers/togetherai/non-serverless-model": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 300,
       "messages": [
         {
@@ -1365,6 +1580,9 @@ expression: outcomes
   },
   "providers/togetherai/reasoning-reply": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 60,
       "messages": [
         {
@@ -1383,6 +1601,9 @@ expression: outcomes
   },
   "providers/togetherai/reasoning-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 60,
       "messages": [
         {
@@ -1412,6 +1633,9 @@ expression: outcomes
   },
   "providers/togetherai/stream-usage-short": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 300,
       "messages": [
         {
@@ -1431,6 +1655,9 @@ expression: outcomes
   },
   "providers/togetherai/tool-call-auto": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 400,
       "messages": [
         {
@@ -1446,6 +1673,9 @@ expression: outcomes
       "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "Use the tools for live data.",
           "type": "text"
         }
@@ -1455,6 +1685,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "properties": {
@@ -1489,6 +1722,9 @@ expression: outcomes
   },
   "providers/xai/max-completion-tokens-reasoning": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 20,
       "messages": [
         {
@@ -1512,6 +1748,9 @@ expression: outcomes
   },
   "providers/xai/reasoning-content": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1536,6 +1775,9 @@ expression: outcomes
   },
   "providers/xai/reasoning-content-stream": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1561,6 +1803,9 @@ expression: outcomes
   },
   "qwen-code-tool-loop": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 64000,
       "messages": [
         {
@@ -1635,6 +1880,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are Qwen Code, a non-interactive CLI agent developed by Alibaba Group, specializing in software engineering tasks.",
           "type": "text"
         }
@@ -1678,6 +1926,9 @@ expression: outcomes
           "name": "read_file"
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Writes content to a specified file in the local filesystem. A request to create or generate a file does not establish that the target path is new. Unless the target's absence or current text contents have already been established in this session, you MUST use the read_file tool first; if the file does not exist, then create it. With prior-read enforcement enabled, blind overwrites are rejected. The file_path argument MUST be an absolute path. Always construct it by combining the project root with the file's relative path (e.g. project root '/path/to/project/' + relative 'foo/bar.txt' = '/path/to/project/foo/bar.txt'). If the user provides a relative path, resolve it against the project root first.",
           "input_schema": {
             "properties": {
@@ -1713,6 +1964,9 @@ expression: outcomes
   },
   "refusal": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1755,6 +2009,9 @@ expression: outcomes
   },
   "response-format-text": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1773,6 +2030,9 @@ expression: outcomes
   },
   "stop-array": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1802,6 +2062,9 @@ expression: outcomes
   },
   "stream-doc": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1818,6 +2081,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a helpful assistant.",
           "type": "text"
         }
@@ -1827,6 +2093,9 @@ expression: outcomes
   },
   "stream-include-usage": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1843,6 +2112,9 @@ expression: outcomes
       "stream": true,
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a helpful assistant.",
           "type": "text"
         }
@@ -1862,6 +2134,9 @@ expression: outcomes
   },
   "tool-choice-function": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1912,6 +2187,9 @@ expression: outcomes
           "strict": true
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current local time for an IANA time zone.",
           "input_schema": {
             "additionalProperties": false,
@@ -1935,6 +2213,9 @@ expression: outcomes
   },
   "tool-choice-none": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1953,6 +2234,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "additionalProperties": false,
@@ -1993,6 +2277,9 @@ expression: outcomes
   },
   "tools-parallel": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2008,6 +2295,9 @@ expression: outcomes
       "model": "gpt-5.6-terra",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -2048,6 +2338,9 @@ expression: outcomes
           "strict": true
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current local time for an IANA time zone.",
           "input_schema": {
             "additionalProperties": false,
@@ -2071,6 +2364,9 @@ expression: outcomes
   },
   "tools-results-parallel-error": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2133,6 +2429,9 @@ expression: outcomes
       "model": "gpt-5.6-terra",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -2169,6 +2468,9 @@ expression: outcomes
           "strict": true
         },
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current local time for an IANA time zone.",
           "input_schema": {
             "additionalProperties": false,
@@ -2192,6 +2494,9 @@ expression: outcomes
   },
   "tools-single": {
     "body": {
+      "cache_control": {
+        "type": "ephemeral"
+      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2207,6 +2512,9 @@ expression: outcomes
       "model": "gpt-5.6-terra",
       "system": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "text": "You are a concise travel assistant. Use the tools for live data.",
           "type": "text"
         }
@@ -2217,6 +2525,9 @@ expression: outcomes
       },
       "tools": [
         {
+          "cache_control": {
+            "type": "ephemeral"
+          },
           "description": "Get the current weather for a location.",
           "input_schema": {
             "additionalProperties": false,

@@ -70,7 +70,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `tools[].eager_input_streaming`、`.allowed_callers`、`.input_examples` | 工具的 `extras.fields` | 其他方言 → `Unsupported`；错误消息会提示 Claude Code 用户设置 `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`，这样就不会再发送这些 beta 工具字段。 |
 | `tools[]` `{type: web_search_20250305 \| web_search_20260209 \| web_search_20260318, name: web_search}` | `ToolDef::Unknown`（原始） | 发往 OpenAI Responses 时变为托管的 `web_search` 工具，`max_uses` 变为请求的搜索次数上限；发往 Chat Completions 时省略（[托管网页搜索](cross-format.md#托管网页搜索)）。 |
 | 任何其他类型的 `tools[]`（服务器工具，例如 `advisor_20260301`） | `ToolDef::Unknown`（原始） | 仅限同一方言。对于其他方言，`Unsupported` 消息会在 `Input tag` 后注明类型（`Input tag 'advisor_20260301' found using 'type' is not a function tool, …`），这是 API 自己的措辞，因此 Claude Code 会去掉 advisor 工具后重试（[网关协议](https://code.claude.com/docs/en/llm-gateway-protocol)，“Automatic retry and error forwarding”）。 |
-| `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。 |
+| `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。来自其他方言、不带缓存提示的请求会由编码器加上它（[缓存提示](cross-format.md#缓存提示)）。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
 | 请求头 `anthropic-beta` | `extras` 请求头 `header:anthropic-beta` | 出站时只转发给 Anthropic。 |
 | 请求头 `anthropic-version` | 不为 `2023-06-01` 时存为 `extras` 请求头 | 总是发送固定的版本，除非转发了更新的版本（[Anthropic 版本](cross-format.md#anthropic-版本)）。 |
@@ -113,7 +113,7 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | 带 base64 `data:` URL 的 `Source::Url`（来自其他方言） | `source: {type: base64, media_type, data}` | 不是 base64 的 `data:` URL → `Unsupported`；媒体类型的检查方式与 base64 相同。 |
 | 文本、图像或文档以外的 `ToolResult` 内容（以及自有的未知块） | `Unsupported` | `RequestToolResultBlock.content`。 |
 | `Block::Refusal` | `Unsupported`（`refusal block`） | |
-| `Text.cache`、任何 `CacheHint` | `cache_control {type: ephemeral, ttl?}` | 外来提示的 extras 会被丢弃。 |
+| `Text.cache`、任何 `CacheHint` | `cache_control {type: ephemeral, ttl?}` | 外来提示的 extras 会被丢弃。来自其他方言、不带提示的请求会在最后一个函数工具和最后一个系统块上各得到一个；当应用要求 OpenAI 延长缓存时为 `ttl: 1h`（[缓存提示](cross-format.md#缓存提示)）。 |
 | 不匹配 `^[a-zA-Z0-9_-]+$` 的 `ToolCall.id` 或 `ToolResult.call_id` | 改写（其他字符变为 `_`，再追加 `_` 和 16 位十六进制 FNV-1a 哈希），并记录在 `EgressCtx::tool_ids` 中 | 在回复和流中映射回原值。 |
 | 不匹配 `^[a-zA-Z0-9_-]{1,128}$` 的工具名称 | 以同样方式改写，包括哈希在内最多 128 个字符，记录在 `EgressCtx::tool_names` 中 | 应用于 `tools[].name`、`tool_choice.name` 和 `tool_use.name`。 |
 | `FunctionTool.parameters: None` | `input_schema: {"type":"object","properties":{}}` | 在 OpenAI 中，没有参数即表示参数列表为空。 |

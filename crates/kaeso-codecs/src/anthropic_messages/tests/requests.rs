@@ -370,7 +370,7 @@ fn a_foreign_request_encodes_from_typed_fields() {
         json!({
             "model": "claude-sonnet-4-6",
             "max_tokens": 100,
-            "system": [{"type": "text", "text": "Be brief."}],
+            "system": [{"type": "text", "text": "Be brief.", "cache_control": {"type": "ephemeral"}}],
             "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
             "stop_sequences": ["\n\n"],
             "stream": true,
@@ -378,7 +378,9 @@ fn a_foreign_request_encodes_from_typed_fields() {
             "output_config": {"effort": "high", "format": {"type": "json_schema", "schema": {"type": "object"}}},
             "thinking": {"type": "adaptive"},
             "tool_choice": {"type": "tool", "name": name, "disable_parallel_tool_use": true},
-            "tools": [{"name": name, "description": "Weather", "input_schema": {"type": "object", "properties": {}}}],
+            "tools": [{"name": name, "description": "Weather", "input_schema": {"type": "object", "properties": {}},
+                "cache_control": {"type": "ephemeral"}}],
+            "cache_control": {"type": "ephemeral"},
         })
     );
 }

@@ -23,7 +23,7 @@ use super::wire::{
     JsonSchemaWire, ResponseFormat, StreamOptions, ToolMessage, UserMessage,
 };
 use crate::codec::EgressCtx;
-use crate::cross::reasoning_replayable;
+use crate::cross::{self, reasoning_replayable};
 use crate::verbosity;
 use crate::wire::{Ext, StringOr};
 
@@ -154,6 +154,9 @@ pub(crate) fn encode_generate(
         .collect();
     if let Some(v) = verbosity::of_responses(req).filter(|_| rules.verbosity) {
         extra.insert("verbosity".to_owned(), v.clone());
+    }
+    if let Some(key) = cross::sibling_cache_key(&req.extras, DIALECT) {
+        extra.insert(cross::OPENAI_CACHE_KEY.to_owned(), key.clone());
     }
     let mut out = Ext::with(w, extra, verbatim);
     apply_profile(&profile, seed, &req.extras, &mut out)?;
