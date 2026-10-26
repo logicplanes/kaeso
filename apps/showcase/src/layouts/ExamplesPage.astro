@@ -3,7 +3,7 @@ import Base from "./Base.astro";
 import { docsText } from "~/lib/locale";
 import { docsLangOf, localizedPath } from "~/lib/languages";
 import type { DemoPage } from "~/lib/demos";
-import { Toaster } from "@logicplanes/kaeso-ui/toast";
+import { ExamplesToaster } from "~/components/ExamplesToaster";
 interface Props {
   page: DemoPage;
 }
@@ -28,5 +28,5 @@ const lang = docsLangOf(Astro.params.lang);
       <slot />
     </div>
   </main>
-  <Toaster client:load />
+  <ExamplesToaster client:load />
 </Base>
