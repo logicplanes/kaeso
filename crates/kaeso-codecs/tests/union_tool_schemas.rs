@@ -329,6 +329,29 @@ fn keywords_a_variant_alone_has_are_named_in_its_line() {
 }
 
 #[test]
+fn enum_values_merge_only_when_their_annotations_agree() {
+    let kind = |value: &str, description: &str| json!({"type": "object", "properties": {"kind": {"const": value, "description": description}}});
+    let merged_kind = |schema: Value| {
+        let req = decode(C, &chat_tool("draw", schema));
+        let (sent, _) = sent(A, &req, anthropic(&req));
+        tool(A, &sent, "draw")["input_schema"]["properties"]["kind"].clone()
+    };
+    assert_eq!(
+        merged_kind(json!({"oneOf": [kind("circle", "The shape."), kind("square", "The shape.")]})),
+        json!({"description": "The shape.", "enum": ["circle", "square"]})
+    );
+    assert_eq!(
+        merged_kind(
+            json!({"oneOf": [kind("circle", "Round."), kind("square", "Four equal sides.")]})
+        ),
+        json!({"anyOf": [
+            {"const": "circle", "description": "Round."},
+            {"const": "square", "description": "Four equal sides."}
+        ]})
+    );
+}
+
+#[test]
 fn grok_gets_a_union_of_inline_objects_as_sent() {
     let req = decode(C, &chat_tool("draw", zod_discriminated_union()));
     for target in [R, C] {

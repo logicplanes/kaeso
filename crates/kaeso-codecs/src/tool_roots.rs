@@ -474,11 +474,27 @@ impl<'a> Doc<'a> {
                 }
             }
         }
+        let notes: Vec<Map<String, Value>> = schemas
+            .iter()
+            .map(|s| {
+                self.resolved(s)
+                    .as_object()
+                    .into_iter()
+                    .flatten()
+                    .filter(|(k, _)| ANNOTATIONS.contains(&k.as_str()))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect()
+            })
+            .collect();
+        let (first_notes, other_notes) = notes.split_first()?;
+        if other_notes.iter().any(|n| n != first_notes) {
+            return None;
+        }
         let types: Vec<Option<&Value>> = schemas
             .iter()
             .map(|s| self.resolved(s).get("type"))
             .collect();
-        let mut out = Map::new();
+        let mut out = first_notes.clone();
         if let Some(Some(t)) = types.first()
             && types.iter().all(|other| *other == Some(*t))
         {
