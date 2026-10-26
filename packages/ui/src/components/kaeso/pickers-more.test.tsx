@@ -12,11 +12,12 @@ describe("SecretReveal", () => {
     const user = userEvent.setup();
     const onCopied = vi.fn();
     render(<SecretReveal baseUrl="https://kaeso.example.com" secret="sk-kso-live-1a2b" name="production" snippets={false} onCopied={onCopied} />);
-    const field = screen.getByRole("textbox", { name: "Secret for production" });
+    const field = screen.getByRole("textbox", { name: "Key for production" });
     await user.click(field);
     expect(window.getSelection()?.toString()).toBe("sk-kso-live-1a2b");
     await user.click(screen.getByRole("button", { name: "Copy key" }));
     expect(onCopied).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Key copied" })).toBeInTheDocument();
     expect(await navigator.clipboard.readText()).toBe("sk-kso-live-1a2b");
   });
 
@@ -27,7 +28,8 @@ describe("SecretReveal", () => {
         <EnvironmentSnippet baseUrl="https://kaeso.example.com" model="gpt-5" />
       </>,
     );
-    expect(screen.getByRole("textbox", { name: "Secret" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Key" })).toBeInTheDocument();
+    expect(screen.getByText("API key variable")).toBeInTheDocument();
     expect(screen.getByText("https://kaeso.example.com/v1")).toBeInTheDocument();
   });
 });

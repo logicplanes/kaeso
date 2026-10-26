@@ -193,7 +193,7 @@ export const KeyDisplay = forwardRef<HTMLSpanElement, KeyDisplayProps>(function 
     <span ref={ref} className={cn("group/key inline-flex max-w-full min-w-0 items-center gap-8", className)}>
       <span className={cn("min-w-0 truncate mono text-small", state === "active" ? "text-fg" : "text-fg-secondary")}>{redacted}</span>
       {stateBadge && state !== "active" && <Badge tone={KEY_TONE[state] === "warning" ? "warning" : "neutral"}>{stateLabels(t)[state]}</Badge>}
-      {access && <Badge tone={access === "inference" ? "neutral" : "outline"}>{accessLabels(t)[access]}</Badge>}
+      {access && <Badge tone="outline">{accessLabels(t)[access]}</Badge>}
       {copy && (
         <span className="opacity-0 transition-control group-hover/key:opacity-100 coarse:opacity-100 focus-within:opacity-100">
           <CopyButton value={redacted} size="xs" label={t("keyDisplay.copyRedactedKey", "Copy redacted key")} />

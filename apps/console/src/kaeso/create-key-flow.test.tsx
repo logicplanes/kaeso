@@ -78,7 +78,7 @@ describe("CreateKeyDialog", () => {
       await next(user, dialog, "Models and limits");
       await user.click(within(dialog).getByRole("button", { name: "Create key" }));
       const reveal = await screen.findByRole("dialog", { name: "Key created" });
-      expect(within(reveal).getByRole("textbox", { name: /^Secret for/ })).toHaveTextContent(SECRET);
+      expect(within(reveal).getByRole("textbox", { name: /^Key for/ })).toHaveTextContent(SECRET);
       await user.click(within(reveal).getByRole("button", { name: "Finish" }));
       await user.click(
         within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }),
@@ -163,7 +163,7 @@ describe("CreateKeyDialog", () => {
     expect(screen.getByRole("dialog", { name: /Create key/ })).toBe(dialog);
     respond(createdKey());
     expect(await screen.findByRole("dialog", { name: "Key created" })).toBe(dialog);
-    expect(within(dialog).getByText(SECRET)).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: /^Key for/ })).toHaveTextContent(SECRET);
     expect(requests("POST", KEYS)).toHaveLength(1);
   });
 
@@ -249,7 +249,7 @@ describe("CreateKeyDialog", () => {
     expect(within(dialog).getByRole("heading", { name: "Limit" })).toBeInTheDocument();
     const create = () => within(dialog).getByRole("button", { name: "Create key" });
     expect(create()).toHaveAttribute("aria-disabled", "true");
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "5");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "5");
     await waitFor(() => expect(create()).not.toHaveAttribute("aria-disabled", "true"));
     await user.click(create());
 
@@ -287,7 +287,7 @@ describe("CreateKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
     await user.click(within(dialog).getByRole("button", { name: "Model" }));
     await user.click(await screen.findByRole("option", { name: /GPT-5 mini/ }));
-    await user.type(within(dialog).getByRole("textbox", { name: "Amount" }), "5");
+    await user.type(within(dialog).getByRole("spinbutton", { name: "Amount" }), "5");
 
     for (let i = 0; i < 3; i++) await user.click(within(dialog).getByRole("button", { name: "Back" }));
     await user.click(within(dialog).getByRole("combobox", { name: "For" }));
@@ -323,9 +323,9 @@ describe("CreateKeyDialog", () => {
     await next(user, dialog, "What can it call?");
     await next(user, dialog, "Models and limits");
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
-    expect(within(dialog).getByRole("textbox", { name: "Amount" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("spinbutton", { name: "Amount" })).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Remove this limit" }));
-    expect(within(dialog).queryByRole("textbox", { name: "Amount" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("spinbutton", { name: "Amount" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Create key" }));
     await screen.findByRole("dialog", { name: "Key created" });
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ name: "checkout-web", access: "inference", expires_in_days: 90 }]);
@@ -342,7 +342,7 @@ describe("CreateKeyDialog", () => {
     await next(user, dialog, "Models and limits");
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
     await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
-    const [first, second] = within(dialog).getAllByRole("textbox", { name: "Amount" }) as [HTMLElement, HTMLElement];
+    const [first, second] = within(dialog).getAllByRole("spinbutton", { name: "Amount" }) as [HTMLElement, HTMLElement];
     await user.type(first, "5");
     await user.type(second, "7");
     const create = within(dialog).getByRole("button", { name: "Create key" });

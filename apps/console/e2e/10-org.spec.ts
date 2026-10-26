@@ -285,10 +285,10 @@ test("custom providers: one is detected from its base URL and key, added with th
   await listed.click();
   const values = page.getByRole("dialog", { name: "Add a Research vLLM model" });
   await expect(values.getByText(`Kaeso filled in what Research vLLM and models.dev say about ${model}; check it and set its prices.`)).toBeVisible();
-  await expect(values.getByRole("textbox", { name: "Context" })).not.toHaveValue("");
-  await expect(values.getByRole("textbox", { name: "Input price" })).toHaveValue("");
-  await values.getByRole("textbox", { name: "Input price" }).fill("0.1");
-  await values.getByRole("textbox", { name: "Output price" }).fill("0.2");
+  await expect(values.getByRole("spinbutton", { name: "Context" })).not.toHaveValue("");
+  await expect(values.getByRole("spinbutton", { name: "Input price" })).toHaveValue("");
+  await values.getByRole("spinbutton", { name: "Input price" }).fill("0.1");
+  await values.getByRole("spinbutton", { name: "Output price" }).fill("0.2");
   await values.getByRole("button", { name: "Add model" }).click();
   await expect(toastText(page, `Added ${model}`)).toBeVisible();
 
@@ -309,7 +309,7 @@ test("security: the maximum key lifetime is set; requiring two-factor authentica
 
   await page.getByRole("switch", { name: "No limit" }).click();
   await expect(toastText(page, "Key lifetime saved")).toBeVisible();
-  const days = page.getByRole("textbox", { name: "Maximum key lifetime" });
+  const days = page.getByRole("spinbutton", { name: "Maximum key lifetime" });
   await days.fill("30");
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("New keys expire within 30 days at most.")).toBeVisible();
@@ -332,7 +332,7 @@ test("platform keys: one is created and shown once, calls the Platform API, and 
   await dialog.getByLabel("Name").fill("Terraform");
   await submitSteps(dialog, "Create key");
   const reveal = page.getByRole("dialog", { name: "Platform key created" });
-  const secret = (await reveal.getByRole("textbox", { name: "Secret for Terraform" }).textContent()) ?? "";
+  const secret = (await reveal.getByRole("textbox", { name: "Key for Terraform" }).textContent()) ?? "";
   expect(secret).toMatch(/^sk-kso-org-/);
   await expect(reveal.getByText("Authorization: Bearer")).toBeVisible();
   await reveal.getByRole("button", { name: "Copy key" }).click();
@@ -351,7 +351,7 @@ test("platform keys: one is created and shown once, calls the Platform API, and 
 
 test("logging: retention is shortened, storage is listed, and a deletion is queued", async ({ page }) => {
   await openOrgSettings(page, "Logging");
-  const content = page.getByRole("textbox", { name: "Content retention" });
+  const content = page.getByRole("spinbutton", { name: "Content retention" });
   await content.fill("7");
   await page.getByRole("button", { name: "Save content retention" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
@@ -408,7 +408,7 @@ test("platform keys: a rotated key stops at once when there is no grace period",
   await create.getByLabel("Name").fill("Pulumi");
   await submitSteps(create, "Create key");
   const created = page.getByRole("dialog", { name: "Platform key created" });
-  const old = (await created.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
+  const old = (await created.getByRole("textbox", { name: "Key for Pulumi" }).textContent()) ?? "";
   await created.getByRole("button", { name: "Copy key" }).click();
   await created.getByRole("button", { name: "Finish" }).click();
 
@@ -419,7 +419,7 @@ test("platform keys: a rotated key stops at once when there is no grace period",
   await dialog.getByRole("radio", { name: /Immediately/ }).check();
   await submitSteps(dialog, "Rotate key");
   const reveal = page.getByRole("dialog", { name: "Platform key rotated" });
-  const rotated = (await reveal.getByRole("textbox", { name: "Secret for Pulumi" }).textContent()) ?? "";
+  const rotated = (await reveal.getByRole("textbox", { name: "Key for Pulumi" }).textContent()) ?? "";
   expect(rotated).toMatch(/^sk-kso-org-/);
   await reveal.getByRole("button", { name: "Copy key" }).click();
   await reveal.getByRole("button", { name: "Finish" }).click();

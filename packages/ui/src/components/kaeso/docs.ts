@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   ClientButton: {
-    description: "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.",
+    description:
+      "An agent client's mark, such as Claude, Cursor or GitHub Copilot, in a raised circle beside the other header buttons, as a button that opens how to connect it.",
     props: {
       "aria-label": "The client's name; also the tooltip.",
       client: "Which client's mark it shows.",
@@ -47,7 +48,7 @@ export const docs = {
     },
   },
   KeyDisplay: {
-    description: "A redacted key: mono 13 with its state dot, copy of the redacted form, and its access.",
+    description: "A redacted key: mono 13, a word badge for any state but active, a copy of the redacted form, and its access in an outline badge.",
     props: {
       access: '"Inference", "Platform", or both.',
       copy: "Hide the copy circle.",

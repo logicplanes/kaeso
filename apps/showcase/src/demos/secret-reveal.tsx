@@ -4,15 +4,16 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "SecretReveal",
-  description: "The one-time secret: calm, centered, certain. Copy it, store it, see how to use it.",
+  description: "The one-time key: calm, centered, certain. Copy it, store it, see how to use it.",
   group: "Kaeso",
   entry: "kaeso",
   import: "SecretReveal, EnvironmentSnippet",
   variants: "MOMENTS",
   a11y: [
-    "The secret is a read-only text box; a click selects all of it.",
-    "“Copy key” becomes “Copied” without changing size.",
-    "The warning is text, not only color.",
+    "The key is a read-only text box named “Key for …”; a click selects all of it.",
+    "“Copy key” becomes “Key copied” without changing size.",
+    "The warning comes before the button, so it is read before the key is copied; it is text, not only color.",
+    "The snippets start with a .env line and read the key from the environment, so no code example hard-codes it.",
   ],
 };
 export const examples = [
@@ -61,11 +62,18 @@ export function InDialog() {
 }
 export function States() {
   return (
-    <StateSection title="Reveal and environment">
-      <div className="flex flex-col gap-40">
-        <Reveal />
-        <Environment />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Reveal and environment">
+        <div className="flex flex-col gap-40">
+          <Reveal />
+          <Environment />
+        </div>
+      </StateSection>
+      <StateSection title="Phone width, no snippets">
+        <div className="w-320">
+          <SecretReveal secret={SECRET} name="checkout-web" baseUrl="https://kaeso.example.com" snippets={false} />
+        </div>
+      </StateSection>
+    </>
   );
 }

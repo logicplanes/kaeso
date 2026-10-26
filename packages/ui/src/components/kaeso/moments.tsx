@@ -56,7 +56,11 @@ export const SecretReveal = forwardRef<HTMLDivElement, SecretRevealProps>(functi
   const t = useUiText();
   const { copied, copy } = useCopy(2400);
   const copyKey = t("secretReveal.copyKey", "Copy key");
-  const done = t("secretReveal.copied", "Copied");
+  const done = t("secretReveal.copied", "Key copied");
+  const tabs = snippets || [
+    { label: ".env", lang: "bash" as const, code: `KAESO_API_KEY=${secret}` },
+    ...sdkSnippets({ baseUrl, ...(model ? { model } : {}) }),
+  ];
   return (
     <div ref={ref} className={cn("flex flex-col gap-24", className)}>
       <div className="flex flex-col items-center gap-16 text-center">
@@ -64,7 +68,7 @@ export const SecretReveal = forwardRef<HTMLDivElement, SecretRevealProps>(functi
           tabIndex={0}
           role="textbox"
           aria-readonly
-          aria-label={typeof name === "string" ? t("secretReveal.secretFor", "Secret for {name}", { name }) : t("secretReveal.secret", "Secret")}
+          aria-label={typeof name === "string" ? t("secretReveal.keyFor", "Key for {name}", { name }) : t("secretReveal.key", "Key")}
           onClick={(e) => {
             const range = document.createRange();
             range.selectNodeContents(e.currentTarget);
@@ -76,6 +80,10 @@ export const SecretReveal = forwardRef<HTMLDivElement, SecretRevealProps>(functi
         >
           {secret}
         </div>
+        <p className="inline-flex items-center gap-6 text-body text-warning-text">
+          <Icon icon={icons.warning} size="sm" />
+          {t("secretReveal.shownOnce", "Shown once. Store it now.")}
+        </p>
         <Button
           variant="primary"
           size="xl"
@@ -87,12 +95,8 @@ export const SecretReveal = forwardRef<HTMLDivElement, SecretRevealProps>(functi
         >
           {copied ? done : copyKey}
         </Button>
-        <p className="inline-flex items-center gap-6 text-body text-warning-text">
-          <Icon icon={icons.warning} size="sm" />
-          {t("secretReveal.shownOnce", "Shown once. Store it now.")}
-        </p>
       </div>
-      {snippets !== false && <CodeBlock tabs={snippets ?? sdkSnippets({ baseUrl, apiKey: secret, ...(model ? { model } : {}) })} copy />}
+      {snippets !== false && <CodeBlock tabs={tabs} copy />}
     </div>
   );
 });
@@ -111,7 +115,7 @@ export const EnvironmentSnippet = forwardRef<HTMLDivElement, SnippetOptions & { 
           <ClipboardText value={`${baseUrl}/v1`} label={t("environmentSnippet.copyBaseUrl", "Copy base URL")} />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
-          <span className="text-small font-medium text-fg-secondary">{t("environmentSnippet.apiKey", "API key")}</span>
+          <span className="text-small font-medium text-fg-secondary">{t("environmentSnippet.apiKeyVariable", "API key variable")}</span>
           <ClipboardText value={apiKey} label={t("environmentSnippet.copyVariableName", "Copy variable name")} />
         </div>
       </div>
