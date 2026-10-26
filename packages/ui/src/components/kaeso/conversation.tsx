@@ -3,7 +3,7 @@ import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { Banner } from "../banner/banner.js";
-import { Collapsible } from "../collapsible/collapsible.js";
+import { ReasoningFrame } from "../playground/reasoning-frame.js";
 import { JsonView } from "../code-block/json-view.js";
 import { Badge } from "../badge/badge.js";
 import { Link } from "../link/link.js";
@@ -105,7 +105,7 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
             );
           case "tool_result":
             return (
-              <div key={i} className="flex flex-col gap-8 pl-16 hairline-l">
+              <div key={i} className="flex flex-col gap-8 pl-12 hairline-l">
                 <span className="inline-flex items-center gap-8 text-small font-medium text-fg-secondary">
                   {t("conversationView.result", "Result")}
                   {b.tool_call_id && <span className="mono text-fg-tertiary">{b.tool_call_id}</span>}
@@ -113,19 +113,21 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
                 </span>
                 {typeof b.content !== "string" ? (
                   <Blocks blocks={b.content} markdown={markdown} />
-                ) : markdown && !isJson(b.content) ? (
+                ) : isJson(b.content) ? (
+                  <JsonView value={JSON.parse(b.content)} defaultDepth={3} />
+                ) : markdown ? (
                   <Prose text={b.content} markdown />
                 ) : (
-                  <pre className="mono text-small whitespace-pre-wrap wrap-anywhere text-fg">{b.content}</pre>
+                  <pre className="mono text-small whitespace-pre-wrap wrap-break-word text-fg">{b.content}</pre>
                 )}
               </div>
             );
           case "reasoning":
             return (
-              <Collapsible
+              <ReasoningFrame
                 key={i}
-                title={<span className="text-fg-secondary">{t("conversationView.reasoning", "Reasoning")}</span>}
-                hint={b.redacted ? t("conversationView.redacted", "Redacted by the provider") : undefined}
+                heading={t("conversationView.reasoning", "Reasoning")}
+                preview={b.redacted ? t("conversationView.redacted", "Redacted by the provider") : undefined}
               >
                 {b.redacted ? (
                   <p className="max-w-prose text-small text-fg-secondary">
@@ -134,7 +136,7 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
                 ) : (
                   <Prose text={b.text} markdown={markdown} small />
                 )}
-              </Collapsible>
+              </ReasoningFrame>
             );
           case "image": {
             if (b.src && DATA_IMAGE.test(b.src))
@@ -149,15 +151,17 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
                 {t("conversationView.imageFrom", "Image from {host}", { host: new URL(href).host })}
               </Link>
             ) : (
-              <span key={i} className="inline-flex h-32 w-max items-center gap-8 rounded-pill bg-fill-1 px-12 text-small text-fg-secondary">
-                <Icon icon={icons.vision} size="xs" /> {t("conversationView.image", "Image")} {b.media_type && <span className="mono">{b.media_type}</span>}
+              <span key={i} className="inline-flex w-max max-w-full items-center gap-8 text-small text-fg-secondary">
+                <Icon icon={icons.vision} size="xs" /> {t("conversationView.image", "Image")}
+                {b.media_type && <span className="mono text-fg-tertiary">{b.media_type}</span>}
               </span>
             );
           }
           case "document":
             return (
-              <span key={i} className="inline-flex h-32 w-max items-center gap-8 rounded-pill bg-fill-1 px-12 text-small text-fg-secondary">
-                <Icon icon={icons.pdf} size="xs" /> {b.name ?? t("conversationView.document", "Document")}
+              <span key={i} className="inline-flex w-max max-w-full items-center gap-8 text-small text-fg-secondary">
+                <Icon icon={icons.pdf} size="xs" />
+                <span className="min-w-0 wrap-break-word">{b.name ?? t("conversationView.document", "Document")}</span>
               </span>
             );
           case "refusal":
@@ -188,10 +192,11 @@ export const ConversationView = forwardRef<HTMLDivElement, ConversationViewProps
   const role = roleNames(t);
   return (
     <div ref={ref} className={cn("flex flex-col", KAESO_CONVERSATION_VARIANTS.density[density].classes, className)}>
+      {messages.length === 0 && <p className="text-small text-fg-secondary">{t("conversationView.empty", "This request has no messages.")}</p>}
       {messages.map((m, i) => (
         <section key={i} aria-label={role[m.role]} className="flex flex-col gap-8">
           <span className={cn("text-caption font-medium", m.role === "assistant" ? "text-fg" : "text-fg-secondary")}>{role[m.role]}</span>
-          <div className={cn(m.role === "system" || m.role === "developer" ? "rounded-well bg-fill-1 px-16 py-12" : "")}>
+          <div className={cn(m.role === "system" || m.role === "developer" ? "rounded-well bg-fill-1 px-12 py-12" : "")}>
             <Blocks blocks={typeof m.content === "string" ? [{ type: "text", text: m.content }] : m.content} markdown={markdown} />
           </div>
         </section>
