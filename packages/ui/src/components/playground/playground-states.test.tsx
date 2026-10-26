@@ -110,6 +110,21 @@ describe("CompareGrid focus and headers", () => {
     expect(rail).toHaveClass("hairline-l", "md:flex");
   });
 
+  it("keeps the focus on Next column when it reaches the last column", async () => {
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(() => undefined);
+    try {
+      render(<Grid />);
+      const next = screen.getByRole("button", { name: "Next column" });
+      next.focus();
+      await userEvent.keyboard("{Enter}");
+      expect(next).toHaveFocus();
+      expect(next).toHaveAttribute("aria-disabled", "true");
+      expect(screen.getByText("Claude Sonnet 4.5, 2 of 2")).toBeInTheDocument();
+    } finally {
+      scroll.mockRestore();
+    }
+  });
+
   it("announces the column's name with its place in one sentence", () => {
     render(<Grid />);
     expect(screen.getByText("GPT-5, 1 of 2")).toHaveClass("sr-only");
