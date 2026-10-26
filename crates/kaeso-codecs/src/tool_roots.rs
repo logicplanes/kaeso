@@ -171,6 +171,7 @@ enum Fault {
     Conflict(String),
     RefSiblings,
     NoVariants,
+    Moved(String),
     TooMany,
 }
 
@@ -185,6 +186,9 @@ impl Fault {
             ),
             Fault::Circular => format!(
                 "The parameters of `{tool}` are a union whose branches refer back to themselves, so Kaeso cannot merge it for {provider}. Inline the branches."
+            ),
+            Fault::Moved(reference) => format!(
+                "The parameters of `{tool}` refer to `{reference}`, which the merge for {provider} would move or change. Move that definition into the root `$defs`."
             ),
             Fault::NoVariants => format!(
                 "The parameters of `{tool}` are a union without branches, so no arguments fit it and {provider} can't take it. Give the union a branch or remove the tool."
@@ -221,10 +225,56 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
         }
     }
     let summary = (variants.len() > 1).then(|| doc.summary(&variants, &schema));
-    Ok(Merged {
-        schema: Value::Object(schema),
-        summary,
-    })
+    let schema = Value::Object(schema);
+    let original = Value::Object(root.clone());
+    if let Some(moved) = local_refs(&schema)
+        .into_iter()
+        .find(|r| !same_target(&original, &schema, r))
+    {
+        return Err(Fault::Moved(moved.to_owned()));
+    }
+    Ok(Merged { schema, summary })
+}
+
+fn local_refs(v: &Value) -> Vec<&str> {
+    match v {
+        Value::Object(m) => m
+            .get("$ref")
+            .and_then(Value::as_str)
+            .filter(|r| r.starts_with('#'))
+            .into_iter()
+            .chain(m.values().flat_map(local_refs))
+            .collect(),
+        Value::Array(items) => items.iter().flat_map(local_refs).collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn has_anchor(v: &Value, name: &str) -> bool {
+    match v {
+        Value::Object(m) => {
+            ["$anchor", "$dynamicAnchor"]
+                .iter()
+                .any(|k| m.get(*k).and_then(Value::as_str) == Some(name))
+                || m.values().any(|v| has_anchor(v, name))
+        }
+        Value::Array(items) => items.iter().any(|v| has_anchor(v, name)),
+        _ => false,
+    }
+}
+
+// A local `$ref` must still point at what it pointed at in the app's schema; the merge
+// reshapes the root, so a pointer into a branch, `properties` or `#` itself may not.
+fn same_target(original: &Value, merged: &Value, reference: &str) -> bool {
+    let fragment = reference.trim_start_matches('#');
+    if fragment.is_empty() || fragment.starts_with('/') {
+        match original.pointer(fragment) {
+            Some(target) => merged.pointer(fragment) == Some(target),
+            None => true,
+        }
+    } else {
+        !has_anchor(original, fragment) || has_anchor(merged, fragment)
+    }
 }
 
 struct Doc<'a>(&'a Map<String, Value>);

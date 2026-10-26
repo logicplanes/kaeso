@@ -774,6 +774,50 @@ fn a_root_union_whose_branches_refer_to_themselves_is_refused() {
 }
 
 #[test]
+fn references_the_merge_would_move_are_refused() {
+    for (reference, schema) in [
+        (
+            "#/oneOf/0/$defs/Point",
+            json!({"oneOf": [
+                {
+                    "type": "object",
+                    "properties": {"at": {"$ref": "#/oneOf/0/$defs/Point"}},
+                    "$defs": {"Point": {"type": "array"}}
+                },
+                {"type": "object", "properties": {"id": {"type": "string"}}}
+            ]}),
+        ),
+        (
+            "#point",
+            json!({"oneOf": [
+                {
+                    "type": "object",
+                    "properties": {"at": {"$ref": "#point"}},
+                    "$defs": {"Point": {"$anchor": "point", "type": "array"}}
+                },
+                {"type": "object", "properties": {"id": {"type": "string"}}}
+            ]}),
+        ),
+        (
+            "#",
+            json!({"oneOf": [
+                {"type": "object", "properties": {"child": {"$ref": "#"}}},
+                {"type": "object", "properties": {"id": {"type": "string"}}}
+            ]}),
+        ),
+    ] {
+        let err = refusal(A, schema);
+        assert_eq!(err.param.as_deref(), Some("tools[0]"), "{reference}");
+        assert_eq!(
+            err.message,
+            format!(
+                "The parameters of `pick` refer to `{reference}`, which the merge for Anthropic would move or change. Move that definition into the root `$defs`."
+            )
+        );
+    }
+}
+
+#[test]
 fn a_root_union_without_branches_is_refused() {
     for key in ["oneOf", "anyOf"] {
         let err = refusal(A, json!({"type": "object", key: []}));

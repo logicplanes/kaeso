@@ -5,9 +5,6 @@ expression: outcomes
 {
   "codex-desktop-root-union": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -22,6 +19,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hey\n",
               "type": "text"
             }
