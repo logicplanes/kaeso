@@ -22,6 +22,26 @@ function contrast(a: Rgb, b: Rgb): number {
   return (high + 0.05) / (low + 0.05);
 }
 
+function lightness(hex: string): number {
+  const colour = rgb(hex);
+  if (!colour) throw new Error(`${hex} is not a #rrggbb colour`);
+  const y = luminance(colour);
+  return y > 216 / 24389 ? 116 * Math.cbrt(y) - 16 : (24389 / 27) * y;
+}
+
+function apca(text: string, background: string): number {
+  const screen = (hex: string) => {
+    const colour = rgb(hex);
+    if (!colour) throw new Error(`${hex} is not a #rrggbb colour`);
+    const [r, g, b] = colour.map((c) => c ** 2.4) as unknown as Rgb;
+    const y = 0.2126729 * r + 0.7151522 * g + 0.072175 * b;
+    return y > 0.022 ? y : y + (0.022 - y) ** 1.414;
+  };
+  const [t, b] = [screen(text), screen(background)];
+  const contrast = b > t ? (b ** 0.56 - t ** 0.57) * 1.14 : (b ** 0.65 - t ** 0.62) * 1.14;
+  return Math.abs(contrast) < 0.1 ? 0 : Math.abs(contrast) * 100 - 2.7;
+}
+
 function ratio(foreground: string, background: string): number {
   const fg = rgb(foreground);
   const bg = rgb(background);
@@ -32,15 +52,25 @@ function ratio(foreground: string, background: string): number {
 const surfaces = ["bg-panel", "bg-chrome", "bg-raised", "fill-1", "fill-2"] as const;
 const neutralRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = [
   ...(["text", "text-secondary"] as const).flatMap((fg) => surfaces.map((bg) => [fg, bg, 4.5] as const)),
-  ...surfaces.filter((s) => s !== "fill-2").map((bg) => ["text-tertiary", bg, 4.5] as const),
+  ...surfaces.map((bg) => ["text-tertiary", bg, 4.5] as const),
   ...(["text", "text-secondary"] as const).flatMap((fg) => (["item-hover", "item-pressed"] as const).map((bg) => [fg, bg, 4.5] as const)),
-  ["on-ink", "ink", 4.5],
+  ...(["ink", "ink-hover", "ink-pressed"] as const).map((bg) => ["on-ink", bg, 4.5] as const),
+  ...(["text", "text-secondary"] as const).flatMap((fg) => (["raised-hover", "raised-pressed"] as const).map((bg) => [fg, bg, 4.5] as const)),
   ["toast-fg", "toast-bg", 4.5],
   ["toast-fg-secondary", "toast-bg", 4.5],
   ["focus", "bg-panel", 3],
   ["line-strong", "bg-panel", 1.3],
   ...(["line-field", "line-field-hover"] as const).flatMap((edge) => surfaces.map((bg) => [edge, bg, 3] as const)),
   ...(["item-hover", "item-pressed"] as const).map((row) => ["line-field", row, 3] as const),
+];
+const stateSteps: readonly (readonly [keyof typeof neutral, keyof typeof neutral])[] = [
+  ["ink", "ink-hover"],
+  ["ink-hover", "ink-pressed"],
+  ["bg-raised", "raised-hover"],
+  ["raised-hover", "raised-pressed"],
+  ["bg-panel", "fill-1"],
+  ["fill-1", "fill-2"],
+  ["fill-2", "fill-3"],
 ];
 const darkSwitchThumbRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = (
   ["fill-3", "line-strong", "bg-panel", "bg-raised"] as const
@@ -49,6 +79,17 @@ const darkSwitchThumbRules: readonly (readonly [keyof typeof neutral, keyof type
 describe.each(MODES)("contrast in %s mode", (mode) => {
   it.each(neutralRules)("%s on %s reaches %d:1", (fg, bg, min) => {
     expect(ratio(neutral[fg][mode], neutral[bg][mode])).toBeGreaterThanOrEqual(min);
+  });
+
+  it.each([
+    ["text-secondary", 60],
+    ["text-tertiary", 45],
+  ] as const)("%s reaches APCA Lc %d on the panel, so small text never feels faint", (role, min) => {
+    expect(apca(neutral[role][mode], neutral["bg-panel"][mode])).toBeGreaterThanOrEqual(min);
+  });
+
+  it.each(stateSteps)("%s and %s are at least 3 L* apart, so the state change is visible", (from, to) => {
+    expect(Math.abs(lightness(neutral[from][mode]) - lightness(neutral[to][mode]))).toBeGreaterThanOrEqual(3);
   });
 
   it.each(Object.keys(semantic) as (keyof typeof semantic)[])("%s text is readable on every surface and its tint", (role) => {
@@ -78,7 +119,8 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
   });
 
   it.each(viz.map((v) => [v.name, v] as const))("chart colour %s stands out from the panel", (_, colour) => {
-    expect(ratio(mode === "light" ? colour.thin : colour.dark, neutral["bg-panel"][mode])).toBeGreaterThanOrEqual(3);
+    expect(ratio(colour[mode], neutral["bg-panel"][mode])).toBeGreaterThanOrEqual(3);
+    expect(ratio(colour[mode], neutral["fill-1"][mode])).toBeGreaterThanOrEqual(3);
   });
 });
 

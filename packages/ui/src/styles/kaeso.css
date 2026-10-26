@@ -44,49 +44,69 @@
 
 @utility focus-ring {
   outline: 2px solid transparent;
+  @media (forced-colors: active) {
+    outline-style: none;
+  }
   outline-offset: 2px;
   :root:not([data-k-pointer]) &:focus-visible,
   &[data-force~="focus"] {
     outline-color: var(--k-focus);
+    outline-style: solid;
   }
 }
 @utility focus-ring-inset {
   outline: 2px solid transparent;
+  @media (forced-colors: active) {
+    outline-style: none;
+  }
   outline-offset: -2px;
   :root:not([data-k-pointer]) &:focus-visible,
   &[data-force~="focus"] {
     outline-color: var(--k-focus);
+    outline-style: solid;
   }
 }
 @utility focus-ring-segment {
   outline: 2px solid transparent;
+  @media (forced-colors: active) {
+    outline-style: none;
+  }
   outline-offset: -2px;
   :root:not([data-k-pointer]) &:focus-visible,
   &[data-force~="focus"] {
     outline-color: var(--k-focus);
+    outline-style: solid;
     border-radius: var(--radius-pill);
   }
 }
 @utility focus-ring-card-row {
   outline: 2px solid transparent;
+  @media (forced-colors: active) {
+    outline-style: none;
+  }
   outline-offset: -2px;
   :root:not([data-k-pointer]) &:focus-visible,
   &[data-force~="focus"] {
     outline-color: var(--k-focus);
+    outline-style: solid;
     border-radius: calc(var(--radius-group) - 2px);
   }
 }
 
 @utility tap-target {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 32px);
+    height: max(100%, 32px);
+    transform: translate(-50%, -50%);
+  }
   @media (pointer: coarse) {
     &::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: max(100%, 32px);
-      height: max(100%, 32px);
-      transform: translate(-50%, -50%);
+      width: max(100%, 44px);
+      height: max(100%, 44px);
     }
   }
 }
@@ -104,15 +124,19 @@
   box-shadow: var(--k-primary-shadow);
   @media (hover: hover) {
     &:hover:not(:disabled, [data-disabled], [aria-disabled="true"]) {
-      filter: brightness(var(--k-hover-brightness));
+      background-color: var(--k-ink-hover);
     }
   }
   &[data-force~="hover"] {
-    filter: brightness(var(--k-hover-brightness));
+    background-color: var(--k-ink-hover);
+  }
+  &[data-popup-open],
+  &[data-force~="open"] {
+    background-color: var(--k-ink-pressed);
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
-    filter: brightness(var(--k-pressed-brightness));
+    background-color: var(--k-ink-pressed);
     transform: scale(0.985);
   }
   &:disabled,
@@ -137,6 +161,10 @@
   }
   &[data-force~="hover"] {
     filter: brightness(1.08);
+  }
+  &[data-popup-open],
+  &[data-force~="open"] {
+    filter: brightness(0.94);
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
@@ -165,19 +193,20 @@
   box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control));
   @media (hover: hover) {
     &:hover:not(:disabled, [data-disabled], [aria-disabled="true"]) {
-      background-color: var(--k-fill-control-hover, var(--k-fill-1));
+      background-color: var(--k-fill-control-hover, var(--k-raised-hover));
       box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
     }
   }
   &[data-force~="hover"],
   &[data-popup-open],
   &[data-force~="open"] {
-    background-color: var(--k-fill-control-hover, var(--k-fill-1));
+    background-color: var(--k-fill-control-hover, var(--k-raised-hover));
     box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
-    background-color: var(--k-fill-2);
+    background-color: var(--k-raised-pressed);
+    transform: scale(0.985);
   }
   &:disabled,
   &[data-disabled],
@@ -206,6 +235,10 @@
   &[data-force~="open"] {
     background-color: var(--k-fill-2);
   }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
+  &[data-force~="pressed"] {
+    transform: scale(0.985);
+  }
   &:disabled,
   &[data-disabled],
   &[aria-disabled="true"],
@@ -231,6 +264,10 @@
   &[data-force~="open"] {
     background-color: var(--k-fill-3);
   }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
+  &[data-force~="pressed"] {
+    transform: scale(0.985);
+  }
   &:disabled,
   &[data-disabled],
   &[aria-disabled="true"],
@@ -249,14 +286,17 @@
       box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
     }
   }
-  &[data-force~="hover"] {
+  &[data-force~="hover"],
+  &[data-popup-open],
+  &[data-force~="open"] {
     background-color: var(--k-danger-tint);
     box-shadow: var(--k-fill-control-shadow, var(--k-shadow-control-hover));
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
   &[data-force~="pressed"] {
     background-color: var(--k-danger-tint);
-    filter: brightness(0.97);
+    filter: brightness(0.94);
+    transform: scale(0.985);
   }
   &:disabled,
   &[data-disabled],
@@ -303,12 +343,18 @@
     background-color: var(--k-fill-1);
     color: var(--k-text-disabled);
     box-shadow: none;
+    & :where(*),
+    & ::placeholder,
+    &::placeholder {
+      color: var(--k-text-disabled);
+    }
   }
+  &[readonly],
   &[data-readonly],
   &:has([readonly]),
   &[data-force~="readonly"] {
     background-color: var(--k-fill-1);
-    box-shadow: none;
+    box-shadow: var(--k-shadow-ring);
   }
 }
 
@@ -374,6 +420,80 @@
     background-color: var(--k-fill-1);
     color: var(--k-text-disabled);
     box-shadow: none;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(
+    .material-primary,
+    .material-danger,
+    .material-secondary,
+    .material-soft,
+    .material-danger-secondary,
+    .material-field,
+    .material-selector,
+    .material-composer,
+    .shadow-ring,
+    .shadow-frame,
+    .shadow-xs,
+    .shadow-control,
+    .shadow-segment,
+    .shadow-panel,
+    .shadow-raised,
+    .shadow-dialog,
+    .shadow-toast
+  ) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+  :where(.material-field, .material-selector, .material-composer):is(:focus-visible, :has(:focus-visible), [data-focused], [data-force~="focus"]) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  :where(.material-field, .material-selector):is([aria-invalid="true"], [data-invalid], :has([aria-invalid="true"]), [data-force~="invalid"]) {
+    outline-style: dashed;
+  }
+  :root:not([data-k-pointer]) :where(.focus-ring):focus-visible,
+  :where(.focus-ring)[data-force~="focus"] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+  :root:not([data-k-pointer]) :where(.focus-ring-inset, .focus-ring-segment, .focus-ring-card-row):focus-visible,
+  :where(.focus-ring-inset, .focus-ring-segment, .focus-ring-card-row)[data-force~="focus"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  :where([aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-pressed="true"], [data-selected]) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  :where([data-highlighted], [data-force~="highlighted"]) {
+    background-color: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+  :where(.hairline-b, .hairline-b-strong) {
+    border-bottom: 1px solid CanvasText;
+  }
+  :where(.hairline-t, .hairline-t-strong) {
+    border-top: 1px solid CanvasText;
+  }
+  :where(.hairline-l, .divider-l) {
+    border-inline-start: 1px solid CanvasText;
+  }
+  :where(.hairline-r) {
+    border-inline-end: 1px solid CanvasText;
+  }
+}
+
+@utility data-mark {
+  forced-color-adjust: none;
+}
+
+@utility forced-line {
+  @media (forced-colors: active) {
+    background-color: CanvasText;
+    forced-color-adjust: none;
   }
 }
 

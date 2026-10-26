@@ -18,9 +18,11 @@ export const neutral = {
   "switch-thumb": mode("#ffffff", "#c7c7c7"),
   text: mode(brand.color.light.text, brand.color.dark.text),
   "text-secondary": mode(brand.color.light.textSecondary, brand.color.dark.textSecondary),
-  "text-tertiary": mode("#707070", "#858585"),
+  "text-tertiary": mode("#696969", "#999999"),
   "text-disabled": mode(brand.color.light.textDisabled, brand.color.dark.textDisabled),
   ink: mode(brand.color.light.ink, brand.color.dark.ink),
+  "ink-hover": mode("#262626", "#e0e0e0"),
+  "ink-pressed": mode("#1a1a1a", "#d4d4d4"),
   "on-ink": mode(brand.color.light.onStrong, brand.color.dark.onStrong),
   focus: mode(brand.color.light.focus, brand.color.dark.focus),
   overlay: mode("rgb(0 0 0 / 0.24)", "rgb(0 0 0 / 0.72)"),
@@ -36,16 +38,18 @@ export const neutral = {
   "toast-danger": mode("#f87171", "#f87171"),
   "item-hover": mode("#f5f5f5", "#222222"),
   "item-pressed": mode("#ebebeb", "#2b2b2b"),
+  "raised-hover": mode("#f5f5f5", "#1c1c1c"),
+  "raised-pressed": mode("#ebebeb", "#262626"),
   "control-on-fill": mode("#ffffff", "#222222"),
   "control-on-fill-hover": mode("#fafafa", "#2b2b2b"),
   "bg-tooltip": mode("#ffffff", "#1c1c1c"),
 } as const;
 
 export const semantic = {
-  success: { solid: mode("#22c55e", "#22c55e"), text: mode("#166534", "#4ade80"), tint: mode("#f0fdf4", "color-mix(in oklab, #22c55e 20%, #000)") },
-  warning: { solid: mode("#f59e0b", "#f59e0b"), text: mode("#92400e", "#fbbf24"), tint: mode("#fffbeb", "color-mix(in oklab, #f59e0b 20%, #000)") },
-  danger: { solid: mode("#ef4444", "#ef4444"), text: mode("#b91c1c", "#f87171"), tint: mode("#fef2f2", "color-mix(in oklab, #ef4444 22%, #000)") },
-  info: { solid: mode("#3b82f6", "#3b82f6"), text: mode("#1d4ed8", "#60a5fa"), tint: mode("#eff6ff", "color-mix(in oklab, #3b82f6 22%, #000)") },
+  success: { solid: mode("#22c55e", "#22c55e"), text: mode("#166534", "#4ade80"), tint: mode("#f0fdf4", "#18231a") },
+  warning: { solid: mode("#f59e0b", "#f59e0b"), text: mode("#92400e", "#fbbf24"), tint: mode("#fffbeb", "#272017") },
+  danger: { solid: mode("#ef4444", "#ef4444"), text: mode("#b91c1c", "#f87171"), tint: mode("#fef2f2", "#281918") },
+  info: { solid: mode("#3b82f6", "#3b82f6"), text: mode("#1d4ed8", "#60a5fa"), tint: mode("#eff6ff", "#171d28") },
 } as const;
 
 export const diff = {
@@ -58,12 +62,12 @@ export const onDanger = mode("#ffffff", "#ffffff");
 
 export const viz = [
   { name: "blue", light: "#3b82f6", dark: "#60a5fa", thin: "#3b82f6" },
-  { name: "amber", light: "#f59e0b", dark: "#fbbf24", thin: "#d97706" },
-  { name: "emerald", light: "#10b981", dark: "#34d399", thin: "#059669" },
+  { name: "amber", light: "#cc6d05", dark: "#fbbf24", thin: "#cc6d05" },
+  { name: "emerald", light: "#059669", dark: "#34d399", thin: "#059669" },
   { name: "rose", light: "#f43f5e", dark: "#fb7185", thin: "#f43f5e" },
   { name: "violet", light: "#8b5cf6", dark: "#a78bfa", thin: "#8b5cf6" },
-  { name: "teal", light: "#14b8a6", dark: "#2dd4bf", thin: "#0d9488" },
-  { name: "orange", light: "#f97316", dark: "#fb923c", thin: "#ea580c" },
+  { name: "teal", light: "#0d9488", dark: "#2dd4bf", thin: "#0d9488" },
+  { name: "orange", light: "#ea580c", dark: "#fb923c", thin: "#ea580c" },
   { name: "fuchsia", light: "#d946ef", dark: "#e879f9", thin: "#d946ef" },
 ] as const;
 
@@ -232,8 +236,6 @@ export const material = {
     "inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 2px rgb(0 0 0 / 0.24)",
     "inset 0 1px 0 rgb(255 255 255 / 0.24), 0 1px 2px rgb(0 0 0 / 0.5)",
   ),
-  "hover-brightness": mode("1.12", "0.94"),
-  "pressed-brightness": mode("0.96", "0.9"),
 } as const;
 
 export const motion = {

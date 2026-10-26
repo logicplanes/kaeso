@@ -6,6 +6,32 @@ import { SwapText } from "../swap-text/swap-text.js";
 import { icons } from "../../icons/vocabulary.js";
 
 describe("Button", () => {
+  it("keeps focus when it becomes disabled while focused, and disables natively once focus leaves", async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(
+      <>
+        <Button onClick={onClick}>Stop</Button>
+        <Button>Next</Button>
+      </>,
+    );
+    const stop = screen.getByRole("button", { name: "Stop" });
+    stop.focus();
+    rerender(
+      <>
+        <Button onClick={onClick} disabled>
+          Stop
+        </Button>
+        <Button>Next</Button>
+      </>,
+    );
+    expect(document.activeElement).toBe(stop);
+    expect(stop).toHaveAttribute("aria-disabled", "true");
+    expect(stop).not.toBeDisabled();
+    await userEvent.keyboard("{Enter}");
+    expect(onClick).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeDisabled();
+  });
   it("is a pill button that calls onClick", async () => {
     const onClick = vi.fn();
     render(<Button onClick={onClick}>Create key</Button>);

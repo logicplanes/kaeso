@@ -493,9 +493,13 @@ describe("ParameterPanel", () => {
   it("resets parameters to defaults and keeps the instructions", async () => {
     const onChange = vi.fn();
     render(<Panel onChange={onChange} initial={{ instructions: "Be brief.", temperature: 0.2, maxOutputTokens: 512 }} />);
-    await userEvent.click(screen.getByRole("button", { name: "Reset to defaults" }));
+    const reset = screen.getByRole("button", { name: "Reset to defaults" });
+    await userEvent.click(reset);
     expect(onChange).toHaveBeenLastCalledWith({ instructions: "Be brief." });
-    expect(screen.getByRole("button", { name: "Reset to defaults" })).toBeDisabled();
+    expect(reset).toHaveAttribute("aria-disabled", "true");
+    expect(reset).toHaveFocus();
+    await userEvent.tab();
+    expect(reset).toBeDisabled();
   });
 
   it("asks about reasoning only for a model that reasons", () => {
