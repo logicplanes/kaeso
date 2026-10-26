@@ -362,7 +362,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
   await page.getByRole("tab", { name: "Deletions" }).click();
   await page.getByRole("button", { name: "Delete logs" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete request logs" });
-  await dialog.getByRole("button", { description: "Period" }).click();
+  await dialog.getByRole("button", { description: /^Period$/ }).click();
   await page.getByRole("option", { name: "Last 7 days" }).click();
   const typed = dialog.getByRole("textbox", { name: "Type delete to confirm" });
   await stepTo(dialog, typed);
