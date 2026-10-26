@@ -36,7 +36,7 @@ const stateTabs = (value: string, onChange: (v: string) => void) => (
   </PillTabs>
 );
 
-function Column({ width = "w-760", children }: { width?: string; children: ReactNode }) {
+function Column({ width = "w-640", children }: { width?: string; children: ReactNode }) {
   return (
     <div className={`${width} bg-panel p-24`}>
       <h2 className="text-title-lg font-semibold text-fg">Members</h2>
@@ -127,7 +127,7 @@ export function States() {
         </Column>
       </StateSection>
       <StateSection title="On an edge-to-edge page">
-        <div className="w-960">
+        <div className="w-640">
           <Page />
         </div>
       </StateSection>

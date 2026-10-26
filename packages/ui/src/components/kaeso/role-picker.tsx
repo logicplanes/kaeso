@@ -3,7 +3,6 @@ import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "../../utils/cn.js";
 import { RadioCircle } from "../radio/radio.js";
 import { Select } from "../select/select.js";
-import { Tooltip } from "../tooltip/tooltip.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_ROLE_PICKER_VARIANTS = {
@@ -25,6 +24,7 @@ export interface RoleOption {
   hint?: string | undefined;
   disabled?: boolean | undefined;
   disabledReason?: string | undefined;
+  "data-force"?: string | undefined;
 }
 
 export interface RolePickerProps {
@@ -95,48 +95,51 @@ export const RolePicker = forwardRef<HTMLDivElement, RolePickerProps>(function R
         .map((s, si) => (
           <Fragment key={s.caption ?? "all"}>
             <div className="flex flex-col gap-8">
-              {s.caption && <span className="px-4 text-caption font-medium text-fg-secondary">{s.caption}</span>}
+              {s.caption && <span className="text-caption font-medium text-fg-secondary">{s.caption}</span>}
               <div className="flex flex-col overflow-hidden rounded-group bg-raised shadow-xs">
                 {s.items.map((r, i) => {
                   const id = `${baseId}-${si}-${i}`;
                   const off = disabled || r.disabled;
-                  const row = (
+                  return (
                     <label
+                      key={r.value}
                       htmlFor={id}
+                      data-choice-row=""
+                      {...(r["data-force"] ? { "data-force": r["data-force"] } : {})}
                       className={cn(
-                        "flex min-h-56 cursor-pointer items-center gap-16 px-16 py-12 transition-control hover:bg-fill-1 not-first:hairline-t",
-                        off && "cursor-not-allowed hover:bg-transparent",
+                        "flex min-h-56 cursor-pointer items-center gap-16 px-20 py-12 transition-control not-first:hairline-t",
+                        off ? "cursor-not-allowed" : "hover:bg-raised-hover active:bg-raised-pressed focus-ring-card-row-within",
                       )}
                     >
                       <span className="flex min-w-0 flex-1 flex-col gap-2">
                         <span className="flex min-w-0 items-baseline gap-8">
-                          <span id={`${id}-name`} className={cn("min-w-0 wrap-break-word text-body font-medium", off ? "text-fg-disabled" : "text-fg")}>
+                          <span id={`${id}-name`} className={cn("min-w-0 wrap-break-word text-body-lg font-medium", off ? "text-fg-disabled" : "text-fg")}>
                             {r.label}
                           </span>
-                          {r.hint && <span className="ml-auto shrink-0 text-small text-fg-tertiary tabular">{r.hint}</span>}
+                          {r.hint && <span className={cn("ml-auto shrink-0 text-small tabular", off ? "text-fg-disabled" : "text-fg-tertiary")}>{r.hint}</span>}
                         </span>
                         {r.description && (
-                          <span id={`${id}-desc`} className={cn("text-small text-pretty", off ? "text-fg-tertiary" : "text-fg-secondary")}>
+                          <span id={`${id}-desc`} className={cn("text-small text-pretty", off ? "text-fg-disabled" : "text-fg-secondary")}>
                             {r.description}
                           </span>
                         )}
-                        {r.disabled && r.disabledReason && <span className="text-caption text-fg-tertiary">{r.disabledReason}</span>}
+                        {r.disabled && r.disabledReason && (
+                          <span id={`${id}-reason`} className="text-small text-pretty text-fg-secondary">
+                            {r.disabledReason}
+                          </span>
+                        )}
                       </span>
                       <RadioCircle
                         id={id}
                         value={r.value}
                         {...(r.disabled ? { disabled: true } : {})}
+                        {...(r["data-force"] ? { "data-force": r["data-force"] } : {})}
                         aria-labelledby={`${id}-name`}
-                        {...(r.description ? { "aria-describedby": `${id}-desc` } : {})}
+                        {...(r.description || (r.disabled && r.disabledReason)
+                          ? { "aria-describedby": [r.description && `${id}-desc`, r.disabled && r.disabledReason && `${id}-reason`].filter(Boolean).join(" ") }
+                          : {})}
                       />
                     </label>
-                  );
-                  return r.disabled && r.disabledReason ? (
-                    <Tooltip key={r.value} content={r.disabledReason}>
-                      {row}
-                    </Tooltip>
-                  ) : (
-                    <Fragment key={r.value}>{row}</Fragment>
                   );
                 })}
               </div>

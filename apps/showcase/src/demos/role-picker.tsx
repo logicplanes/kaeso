@@ -33,15 +33,22 @@ export function Compact() {
 export function States() {
   return (
     <>
-      <StateSection title="Built-in only">
+      <StateSection title="Chosen, hovered, focused and unavailable">
         <RolePicker
           className="w-480"
           aria-label="Role in the project"
           value="viewer"
           roles={[
-            { value: "admin", label: "Admin", description: "Everything in the project" },
-            { value: "developer", label: "Developer", description: "Call models, own keys, see logs with content" },
+            { value: "admin", label: "Admin", description: "Everything in the project", "data-force": "hover" },
+            { value: "developer", label: "Developer", description: "Call models, own keys, see logs with content", "data-force": "focus" },
             { value: "viewer", label: "Viewer", description: "Read-only, without request content" },
+            {
+              value: "owner",
+              label: "Owner",
+              description: "Billing and deleting the project",
+              disabled: true,
+              disabledReason: "Only an owner can make someone an owner.",
+            },
           ]}
         />
       </StateSection>

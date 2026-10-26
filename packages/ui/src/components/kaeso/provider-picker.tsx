@@ -25,6 +25,7 @@ export interface ProviderPickerOption {
   hint?: ReactNode | undefined;
   keywords?: readonly string[] | undefined;
   disabled?: boolean | undefined;
+  "data-force"?: string | undefined;
 }
 
 export interface ProviderPickerProps extends FieldWrapProps {
@@ -48,6 +49,7 @@ const SEARCH_ABOVE = 9;
 
 function ProviderTiles({
   providers,
+  disabled,
   value,
   onValueChange,
   onChoose,
@@ -56,6 +58,7 @@ function ProviderTiles({
   className,
 }: {
   providers: ProviderPickerOption[];
+  disabled: boolean | undefined;
   value: string | null | undefined;
   onValueChange: ((id: string | null) => void) | undefined;
   onChoose: ((id: string) => void) | undefined;
@@ -86,6 +89,7 @@ function ProviderTiles({
         <SearchInput
           aria-label={t("providerPicker.search", "Search providers")}
           placeholder={t("providerPicker.search", "Search providers")}
+          {...(disabled ? { disabled: true } : {})}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           {...(autoFocus ? { autoFocus: true } : {})}
@@ -97,6 +101,7 @@ function ProviderTiles({
         <BaseRadioGroup
           aria-label={label}
           value={value ?? null}
+          {...(disabled ? { disabled: true } : {})}
           onValueChange={(v: unknown) => onValueChange?.(v ? String(v) : null)}
           className="flex flex-col gap-20"
         >
@@ -114,11 +119,13 @@ function ProviderTiles({
                     key={p.id}
                     value={p.id}
                     {...(p.disabled ? { disabled: true } : {})}
+                    {...(p["data-force"] ? { "data-force": p["data-force"] } : {})}
                     {...(autoFocus && !searchable && si === 0 && i === 0 && !value ? { autoFocus: true } : {})}
-                    onClick={() => onChoose?.(p.id)}
+                    onClick={() => !disabled && !p.disabled && onChoose?.(p.id)}
                     className={cn(
-                      "group/tile flex min-h-64 min-w-0 cursor-pointer items-center gap-10 rounded-group bg-raised px-10 py-12 sm:gap-12 sm:px-12 text-left shadow-control transition-control focus-ring",
-                      "hover:shadow-control-hover data-checked:ring-step data-checked:bg-fill-1 data-disabled:cursor-not-allowed data-disabled:opacity-50",
+                      "group/tile flex min-h-64 min-w-0 cursor-pointer items-center gap-10 rounded-group bg-raised px-10 py-12 sm:gap-12 sm:px-12 text-left shadow-control transition-control focus-ring forced-checked",
+                      "hover:not-data-checked:bg-raised-hover hover:not-data-checked:shadow-control-hover active:bg-raised-pressed",
+                      "data-checked:bg-item-hover data-checked:ring-step data-disabled:cursor-not-allowed data-disabled:opacity-40",
                     )}
                   >
                     <span aria-hidden className="flex">
@@ -126,7 +133,7 @@ function ProviderTiles({
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-body font-medium text-fg">{nameOf(p)}</span>
-                      {p.hint !== undefined && <span className="truncate text-small text-fg-secondary">{p.hint}</span>}
+                      {p.hint !== undefined && <span className="line-clamp-2 text-small text-pretty text-fg-secondary">{p.hint}</span>}
                     </span>
                   </BaseRadio.Root>
                 ))}
@@ -195,7 +202,11 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
   const field = useField();
   const fc = useFieldControl(props);
   const [open, setOpen] = useState(false);
-  const groups = useProviderGroups(providers, appearance === "select" ? allLabel : undefined);
+  const offered = useMemo(
+    () => (disabled && appearance === "list" ? providers.map((p) => ({ ...p, disabled: true })) : providers),
+    [providers, disabled, appearance],
+  );
+  const groups = useProviderGroups(offered, appearance === "select" ? allLabel : undefined);
   const listLabel = ariaLabel ?? (typeof label === "string" ? label : t("providerPicker.providers", "Providers"));
   const search = placeholder ?? t("providerPicker.search", "Search providers");
   const empty = t("providerPicker.noMatch", "No providers match");
@@ -221,6 +232,7 @@ export const ProviderPicker = forwardRef<HTMLElement, ProviderPickerProps>(funct
     const control = (
       <ProviderTiles
         providers={providers}
+        disabled={disabled}
         value={value}
         onValueChange={onValueChange}
         onChoose={onChoose}

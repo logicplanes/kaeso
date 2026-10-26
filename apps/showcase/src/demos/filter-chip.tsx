@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FilterChip, Button, icons } from "@logicplanes/kaeso-ui";
-import { StateSection } from "~/lib/states";
+import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "FilterChip",
@@ -72,14 +72,46 @@ export function Searched() {
     />
   );
 }
+function Chip(props: Record<string, unknown>) {
+  return <FilterChip property="Model" operator="is" operators={["is", "is not"]} value="gpt-5" values={[{ value: "gpt-5", label: "gpt-5" }]} {...props} />;
+}
+
 export function States() {
   return (
-    <StateSection title="Chips">
-      <div className="flex flex-col items-start gap-12">
-        <FilterChip property="Model" operator="is" value="gpt-5" onRemove={() => undefined} />
-        <FilterChip property="Key" operator="is any of" value="2 keys" propertyIcon={icons.key} onRemove={() => undefined} />
-        <FilterChip property="Latency" operator="over" value="2 s" data-force="hover" />
-      </div>
-    </StateSection>
+    <>
+      <Matrix
+        title="Value"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Rest", props: {} },
+          { label: "Hover", props: { "data-force": "hover" } },
+          { label: "Pressed", props: { "data-force": "pressed" } },
+        ]}
+        render={(_, p) => <Chip {...p} />}
+      />
+      <Matrix
+        title="Keyboard and open"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Focus", props: { "data-force": "focus" } },
+          { label: "Open", props: { "data-force": "open" } },
+        ]}
+        render={(_, p) => <Chip {...p} />}
+      />
+      <StateSection title="Chips">
+        <div className="flex w-320 flex-col items-start gap-12">
+          <FilterChip property="Model" operator="is" value="gpt-5" onRemove={() => undefined} />
+          <FilterChip
+            property="Key"
+            operator="is any of"
+            operators={["is any of", "is none of"]}
+            value="2 keys"
+            propertyIcon={icons.key}
+            onRemove={() => undefined}
+          />
+          <FilterChip property="Model" operator="is" value="claude-sonnet-4-5-20250929-with-extended-thinking" onRemove={() => undefined} />
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -11,6 +11,7 @@ import { Tag } from "../tag/tag.js";
 import type { IconData } from "../icon/icon.js";
 import { Icon } from "../icon/icon.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
+import { RaisedContent } from "../../utils/inset.js";
 
 export const KAESO_DISPLAY_OPTIONS_VARIANTS = {
   trigger: {
@@ -43,82 +44,92 @@ export interface DisplayOptionsProps {
   footer?: ReactNode | undefined;
 }
 
-function Panel({ view, rows, toggles, properties, footer }: DisplayOptionsProps) {
+function focusFirst(panel: HTMLDivElement | null) {
+  if (!panel) return;
+  // Base UI focuses the popup box when it opens; the first control takes focus on the next frame, after that.
+  const frame = requestAnimationFrame(() =>
+    panel.querySelector<HTMLElement>('[role="radio"][tabindex="0"], button:not([disabled]), [tabindex="0"]')?.focus({ preventScroll: true }),
+  );
+  return () => cancelAnimationFrame(frame);
+}
+
+function Panel({ view, rows, toggles, properties, footer, inline }: DisplayOptionsProps) {
   const t = useUiText();
   const locale = useLocale();
   const squeezed = properties ? properties.options.filter((o) => properties.value.includes(o.value) && properties.hidden?.includes(o.value)) : [];
   return (
-    <div className="flex w-320 flex-col">
-      {view && (
-        <div className="p-12 pb-8">
-          <Segmented
-            aria-label={t("displayOptions.view", "View")}
-            options={view.options}
-            value={view.value}
-            onValueChange={view.onChange}
-            fullWidth
-            size="sm"
-            className="bg-item-hover"
-          />
-        </div>
-      )}
-      {rows && rows.length > 0 && (
-        <div className="flex flex-col px-12 py-4">
-          {rows.map((r) => (
-            <div key={r.label} className="flex h-40 items-center justify-between gap-12">
-              <span className="flex items-center gap-8 text-body text-fg-secondary">
-                {r.icon && <Icon icon={r.icon} size="sm" />}
-                {r.label}
-              </span>
-              <Select size="sm" appearance="default" aria-label={r.label} options={r.options} value={r.value} onValueChange={r.onChange} />
-            </div>
-          ))}
-        </div>
-      )}
-      {toggles && toggles.length > 0 && (
-        <div className="flex flex-col px-12 py-4 hairline-t">
-          {toggles.map((toggle) => (
-            <Switch key={toggle.label} size="sm" label={toggle.label} checked={toggle.checked} onCheckedChange={toggle.onChange} className="h-40" />
-          ))}
-        </div>
-      )}
-      {properties && (
-        <div className="flex flex-col gap-8 p-12 hairline-t">
-          <span className="text-caption font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
-          <div className="flex flex-wrap gap-6">
-            {properties.options.map((o) => {
-              const on = properties.value.includes(o.value);
-              const out = on && squeezed.includes(o);
-              return (
-                <Tag
-                  key={o.value}
-                  size="sm"
-                  variant={on ? "soft" : "outline"}
-                  pressed={on}
-                  {...(out ? { icon: icons.hide, "aria-description": t("displayOptions.doesNotFit", "Doesn't fit at this width") } : {})}
-                  onClick={() => properties.onChange(on ? properties.value.filter((v) => v !== o.value) : [...properties.value, o.value])}
-                >
-                  {o.label}
-                </Tag>
-              );
-            })}
+    <RaisedContent>
+      <div ref={inline ? undefined : focusFirst} className="flex w-320 max-w-(--available-width) flex-col">
+        {view && (
+          <div className="p-12 pb-8">
+            <Segmented
+              aria-label={t("displayOptions.view", "View")}
+              options={view.options}
+              value={view.value}
+              onValueChange={view.onChange}
+              fullWidth
+              size="sm"
+            />
           </div>
-          {squeezed.length > 0 && (
-            <span className="text-caption text-fg-tertiary">
-              {t(
-                "displayOptions.hiddenProperties",
-                "{count, plural, one {{properties} doesn't fit at this width.} other {{properties} don't fit at this width.}}",
-                {
-                  count: squeezed.length,
-                  properties: new Intl.ListFormat(locale, { type: "conjunction" }).format(squeezed.map((o) => o.label)),
-                },
-              )}
-            </span>
-          )}
-        </div>
-      )}
-      {footer && <div className="p-12 hairline-t">{footer}</div>}
-    </div>
+        )}
+        {rows && rows.length > 0 && (
+          <div className="flex flex-col px-12 py-4">
+            {rows.map((r) => (
+              <div key={r.label} className="flex h-40 items-center justify-between gap-12">
+                <span className="flex min-w-0 items-center gap-8 text-body text-fg">
+                  {r.icon && <Icon icon={r.icon} size="sm" className="shrink-0 text-fg-secondary" />}
+                  <span className="min-w-0 truncate">{r.label}</span>
+                </span>
+                <Select size="sm" appearance="default" aria-label={r.label} options={r.options} value={r.value} onValueChange={r.onChange} />
+              </div>
+            ))}
+          </div>
+        )}
+        {toggles && toggles.length > 0 && (
+          <div className="flex flex-col px-12 py-4 not-first:hairline-t">
+            {toggles.map((toggle) => (
+              <Switch key={toggle.label} label={toggle.label} checked={toggle.checked} onCheckedChange={toggle.onChange} className="h-40" />
+            ))}
+          </div>
+        )}
+        {properties && (
+          <div className="flex flex-col gap-8 p-12 not-first:hairline-t">
+            <span className="text-caption font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
+            <div className="flex flex-wrap gap-6">
+              {properties.options.map((o) => {
+                const on = properties.value.includes(o.value);
+                const out = on && squeezed.includes(o);
+                return (
+                  <Tag
+                    key={o.value}
+                    size="sm"
+                    variant={on ? "soft" : "outline"}
+                    pressed={on}
+                    {...(out ? { icon: icons.hide, "aria-description": t("displayOptions.doesNotFit", "Doesn't fit at this width") } : {})}
+                    onClick={() => properties.onChange(on ? properties.value.filter((v) => v !== o.value) : [...properties.value, o.value])}
+                  >
+                    {o.label}
+                  </Tag>
+                );
+              })}
+            </div>
+            {squeezed.length > 0 && (
+              <span className="text-caption text-fg-tertiary">
+                {t(
+                  "displayOptions.hiddenProperties",
+                  "{count, plural, one {{properties} doesn't fit at this width.} other {{properties} don't fit at this width.}}",
+                  {
+                    count: squeezed.length,
+                    properties: new Intl.ListFormat(locale, { type: "conjunction" }).format(squeezed.map((o) => o.label)),
+                  },
+                )}
+              </span>
+            )}
+          </div>
+        )}
+        {footer && <div className="p-12 hairline-t">{footer}</div>}
+      </div>
+    </RaisedContent>
   );
 }
 
@@ -129,7 +140,7 @@ export const DisplayOptions = forwardRef<HTMLElement, DisplayOptionsProps>(funct
   if (inline) {
     return (
       <div ref={ref as Ref<HTMLDivElement>} className={cn("rounded-popover bg-raised shadow-raised")}>
-        <Panel {...props} />
+        <Panel {...props} inline />
       </div>
     );
   }
