@@ -48,8 +48,33 @@ export function States() {
           </RadioGroup>
         )}
       />
+      <StateSection title="With labels">
+        <div className="flex flex-col gap-24">
+          <RadioGroup defaultValue="30" aria-label="Retention">
+            <Radio value="7" label="7 days" description="Enough to debug yesterday's requests." />
+            <Radio value="30" label="30 days" description="The default for new projects." />
+            <Radio value="90" label="90 days" description="Only on the Business plan." disabled />
+          </RadioGroup>
+          <RadioGroup defaultValue="eu" aria-label="Region" orientation="horizontal">
+            <Radio value="eu" label="Europe" />
+            <Radio value="us" label="United States" />
+            <Radio value="ap" label="Asia Pacific" data-force="hover" />
+          </RadioGroup>
+          <RadioGroup defaultValue="eu" aria-label="Region, disabled" disabled>
+            <Radio value="eu" label="Europe" />
+            <Radio value="us" label="United States" />
+          </RadioGroup>
+        </div>
+      </StateSection>
       <StateSection title="Cards">
-        <Cards />
+        <div className="w-480">
+          <RadioCards defaultValue="responses" aria-label="OpenAI dialect">
+            <Radio value="responses" label="Responses" description="The default. Reasoning and tools work best here." />
+            <Radio value="chat" label="Chat Completions" description="For models or proxies that only speak the older API." data-force="hover" />
+            <Radio value="anthropic" label="Anthropic Messages" description="Focus moves with the arrow keys." data-force="focus" />
+            <Radio value="legacy" label="Completions" description="Retired by the provider." disabled />
+          </RadioCards>
+        </div>
       </StateSection>
     </>
   );

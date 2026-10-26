@@ -15,7 +15,7 @@ export const KAESO_RADIO_VARIANTS = {
 } as const;
 export const KAESO_RADIO_DEFAULT_VARIANTS = { variant: "default" } as const;
 
-const Ctx = createContext<{ variant: keyof typeof KAESO_RADIO_VARIANTS.variant }>({ variant: "default" });
+const Ctx = createContext<{ variant: keyof typeof KAESO_RADIO_VARIANTS.variant; disabled: boolean }>({ variant: "default", disabled: false });
 
 export interface RadioGroupProps {
   value?: string | undefined;
@@ -36,7 +36,7 @@ const Group = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
   ref,
 ) {
   return (
-    <Ctx.Provider value={{ variant }}>
+    <Ctx.Provider value={{ variant, disabled: !!disabled }}>
       <BaseRadioGroup
         ref={ref}
         {...(value !== undefined ? { value } : {})}
@@ -85,18 +85,21 @@ export const RadioCircle = forwardRef<HTMLButtonElement, RadioProps>(function Ra
       {...(labelledBy ? { "aria-labelledby": labelledBy } : {})}
       {...(describedBy ? { "aria-describedby": describedBy } : {})}
       {...(force ? { "data-force": force } : {})}
+      data-choice=""
       className={cn(
-        "relative inline-flex size-18 shrink-0 cursor-pointer items-center justify-center rounded-pill bg-raised shadow-selector radio-donut focus-ring tap-target",
-        "not-checked:hover:shadow-selector-hover disabled:cursor-not-allowed disabled:bg-fill-1 disabled:shadow-none",
+        "relative -m-3 inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill outline-none tap-target disabled:cursor-not-allowed",
         className,
       )}
-    />
+    >
+      <span aria-hidden data-shape="dot" className="size-18 rounded-pill choice-mark" />
+    </BaseRadio.Root>
   );
 });
 RadioCircle.displayName = "Radio.Circle";
 
 const Root = forwardRef<HTMLButtonElement, RadioProps>(function Radio({ label, description, id, className, ...props }, ref) {
-  const { variant } = useContext(Ctx);
+  const { variant, disabled: groupDisabled } = useContext(Ctx);
+  const off = !!props.disabled || groupDisabled;
   const auto = useId();
   const rid = id ?? `k-radio-${auto}`;
   const named = labelled(rid, label, description, props);
@@ -104,17 +107,20 @@ const Root = forwardRef<HTMLButtonElement, RadioProps>(function Radio({ label, d
     return (
       <label
         htmlFor={rid}
+        data-choice-row=""
+        {...(props["data-force"] ? { "data-force": props["data-force"] } : {})}
         className={cn(
-          "flex min-h-56 cursor-pointer items-center gap-16 px-20 py-12 transition-control hover:bg-fill-1 not-first:hairline-t has-[:disabled]:cursor-not-allowed",
+          "flex min-h-56 cursor-pointer items-center gap-16 px-20 py-12 transition-control not-first:hairline-t",
+          off ? "cursor-not-allowed" : "hover:bg-raised-hover active:bg-raised-pressed focus-ring-card-row-within",
           className,
         )}
       >
         <span className="flex min-w-0 flex-1 flex-col gap-2">
-          <span id={named.labelId} className={cn("text-body-lg font-medium text-fg", props.disabled && "text-fg-disabled")}>
+          <span id={named.labelId} className={cn("text-body-lg font-medium text-fg", off && "text-fg-disabled")}>
             {label}
           </span>
           {description && (
-            <span id={named.descriptionId} className="text-small text-fg-secondary">
+            <span id={named.descriptionId} className={cn("text-small text-pretty", off ? "text-fg-disabled" : "text-fg-secondary")}>
               {description}
             </span>
           )}
@@ -127,17 +133,22 @@ const Root = forwardRef<HTMLButtonElement, RadioProps>(function Radio({ label, d
   return (
     <label
       htmlFor={rid}
-      className={cn("inline-flex min-h-32 cursor-pointer items-start gap-10 py-6 select-none", props.disabled && "cursor-not-allowed", className)}
+      data-choice-row=""
+      className={cn(
+        "inline-flex min-h-32 cursor-pointer items-start gap-10 py-6 select-none coarse:min-h-44 coarse:py-12",
+        off && "cursor-not-allowed",
+        className,
+      )}
     >
       <span className="flex h-20 items-center">
         <RadioCircle ref={ref} id={rid} {...props} {...named.aria} />
       </span>
       <span className="flex flex-col">
-        <span id={named.labelId} className={cn("text-body text-fg", props.disabled && "text-fg-disabled")}>
+        <span id={named.labelId} className={cn("text-body text-fg", off && "text-fg-disabled")}>
           {label}
         </span>
         {description && (
-          <span id={named.descriptionId} className="text-small text-fg-secondary">
+          <span id={named.descriptionId} className={cn("text-small text-pretty", off ? "text-fg-disabled" : "text-fg-secondary")}>
             {description}
           </span>
         )}

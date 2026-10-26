@@ -6,6 +6,7 @@ import { useControllable } from "../../utils/use-controllable.js";
 import { useIndicator } from "../../hooks/use-indicator.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { Tooltip } from "../tooltip/tooltip.js";
+import { useRaised } from "../../utils/inset.js";
 
 export const KAESO_SEGMENTED_VARIANTS = {
   size: {
@@ -17,6 +18,7 @@ export const KAESO_SEGMENTED_DEFAULT_VARIANTS = { size: "md" } as const;
 
 const ITEM = { sm: "h-28 px-10 text-body", md: "h-32 px-12 text-body" } as const;
 const ITEM_ICON = { sm: "w-32 px-0", md: "w-36 px-0" } as const;
+const ITEM_LEADING_ICON = { sm: "pl-8", md: "pl-10" } as const;
 
 export interface SegmentedOption {
   value: string;
@@ -24,6 +26,7 @@ export interface SegmentedOption {
   icon?: IconData | undefined;
   "aria-label"?: string | undefined;
   disabled?: boolean | undefined;
+  "data-force"?: string | undefined;
 }
 
 export interface SegmentedProps {
@@ -46,6 +49,7 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
   const [current, setCurrent] = useControllable(value, defaultValue ?? options[0]?.value ?? "", onValueChange);
   const track = useRef<HTMLDivElement | null>(null);
   const ind = useIndicator(track, "[data-checked]", `${current}|${options.length}|${size}`);
+  const raised = useRaised();
   return (
     <BaseRadioGroup
       ref={(el: HTMLDivElement | null) => {
@@ -59,7 +63,8 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
       aria-label={ariaLabel}
       {...(force ? { "data-force": force } : {})}
       className={cn(
-        "relative isolate inline-flex items-center rounded-pill bg-fill-1",
+        "relative isolate inline-flex items-center rounded-pill",
+        raised ? "bg-fill-2" : "bg-fill-1",
         KAESO_SEGMENTED_VARIANTS.size[size].classes,
         fullWidth && "flex w-full",
         disabled && "opacity-40",
@@ -68,7 +73,12 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
     >
       <span
         aria-hidden
-        className={cn("absolute top-0 left-0 -z-10 rounded-pill bg-raised shadow-segment", ind.animate && "indicator-motion", !ind.ready && "opacity-0")}
+        className={cn(
+          "absolute top-0 left-0 -z-10 rounded-pill shadow-segment",
+          raised ? "segment-indicator-raised" : "bg-raised",
+          ind.animate && "indicator-motion",
+          !ind.ready && "opacity-0",
+        )}
         style={{ transform: `translate(${ind.x}px, ${ind.y}px)`, width: ind.w, height: ind.h }}
       />
       {options.map((o) => {
@@ -78,12 +88,15 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
             key={o.value}
             value={o.value}
             {...(o.disabled ? { disabled: true } : {})}
+            {...(o["data-force"] ? { "data-force": o["data-force"] } : {})}
             {...(iconOnly && o["aria-label"] ? { "aria-label": o["aria-label"] } : {})}
             className={cn(
-              "relative inline-flex cursor-pointer items-center justify-center gap-6 rounded-pill font-medium whitespace-nowrap text-fg-secondary transition-control focus-ring tap-target",
-              "hover:text-fg checked:text-fg disabled:cursor-not-allowed disabled:text-fg-disabled",
+              "relative inline-flex cursor-pointer items-center justify-center gap-6 rounded-pill font-medium whitespace-nowrap text-fg-secondary transition-control focus-ring-segment tap-target",
+              "hover:text-fg not-checked:active:bg-fill-2 checked:text-fg disabled:cursor-not-allowed",
+              !disabled && "disabled:text-fg-disabled checked:disabled:text-fg-disabled",
               ITEM[size],
               iconOnly && ITEM_ICON[size],
+              o.icon && o.label && ITEM_LEADING_ICON[size],
               fullWidth && "flex-1",
             )}
           >

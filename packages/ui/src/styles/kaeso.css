@@ -93,6 +93,26 @@
   }
 }
 
+@utility focus-ring-card-row-within {
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  @media (forced-colors: active) {
+    outline-style: none;
+  }
+  & .choice-mark {
+    outline-style: none;
+  }
+  :root:not([data-k-pointer]) &:has(:focus-visible),
+  &[data-force~="focus"] {
+    outline-color: var(--k-focus);
+    outline-style: solid;
+    border-radius: calc(var(--radius-group) - 2px);
+    @media (forced-colors: active) {
+      outline-color: Highlight;
+    }
+  }
+}
+
 @utility tap-target {
   &::after {
     content: "";
@@ -373,6 +393,11 @@
   &[data-force~="hover"],
   &[data-popup-open],
   &[data-force~="open"] {
+    box-shadow: var(--k-shadow-selector-hover);
+  }
+  &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
+  &[data-force~="pressed"] {
+    background-color: var(--k-raised-pressed);
     box-shadow: var(--k-shadow-selector-hover);
   }
   :root:not([data-k-pointer]) &:focus-visible,
@@ -967,38 +992,269 @@
   --k-ring-over: var(--k-shadow-ring);
 }
 
-@utility ring-thumb {
-  box-shadow:
-    0 0 0 2px var(--k-bg-panel),
-    0 1px 2px rgb(0 0 0 / 0.2);
+@utility choice-mark {
+  --choice-off: var(--k-bg-raised);
+  --choice-ring: var(--k-shadow-selector);
+  --choice-ring-hover: var(--k-shadow-selector-hover);
+  --choice-off-pressed: var(--k-raised-pressed);
+  --choice-on: var(--k-ink);
+  --choice-on-hover: var(--k-ink-hover);
+  --choice-on-pressed: var(--k-ink-pressed);
+  --choice-glyph: var(--k-on-ink);
+  --choice-center: var(--k-bg-panel);
+  --choice-off-disabled: var(--k-fill-1);
+  --choice-ring-disabled: inset 0 0 0 1px var(--k-line);
+  --choice-on-disabled: var(--k-text-disabled);
+  --choice-glyph-disabled: var(--k-bg-panel);
+  --choice-invalid: inset 0 0 0 1px var(--k-danger);
+  --choice-invalid-hover: inset 0 0 0 1px var(--k-danger), 0 0 0 3px color-mix(in srgb, var(--k-danger) 16%, transparent);
+  --choice-focus: var(--k-focus);
+  --choice-tone: var(--choice-on);
+  background-color: var(--choice-off);
+  box-shadow: var(--choice-ring);
+  color: var(--choice-glyph);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition-property: background-color, box-shadow, outline-color, color, scale;
+  transition-duration: var(--k-duration-fast);
+  transition-timing-function: var(--k-ease-standard);
+  &[data-shape="dot"] {
+    transition-duration: var(--k-duration-fast), var(--k-duration-radio), var(--k-duration-fast), var(--k-duration-fast), var(--k-duration-fast);
+  }
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    outline-style: none;
+    --choice-off: Canvas;
+    --choice-ring: inset 0 0 0 1px CanvasText;
+    --choice-ring-hover: inset 0 0 0 2px CanvasText;
+    --choice-off-pressed: Canvas;
+    --choice-on: Highlight;
+    --choice-on-hover: Highlight;
+    --choice-on-pressed: Highlight;
+    --choice-glyph: HighlightText;
+    --choice-center: Canvas;
+    --choice-off-disabled: Canvas;
+    --choice-ring-disabled: inset 0 0 0 1px GrayText;
+    --choice-on-disabled: GrayText;
+    --choice-glyph-disabled: Canvas;
+    --choice-invalid: inset 0 0 0 2px CanvasText;
+    --choice-invalid-hover: inset 0 0 0 2px CanvasText;
+    --choice-focus: Highlight;
+  }
+  @media (hover: hover) {
+    :where([data-choice]:not([data-disabled], [data-readonly]):hover) > &,
+    :where([data-choice-row]:hover) :where([data-choice]:not([data-disabled], [data-readonly])) > & {
+      box-shadow: var(--choice-ring-hover);
+      --choice-tone: var(--choice-on-hover);
+    }
+  }
+  :where([data-choice][data-force~="hover"]) > & {
+    box-shadow: var(--choice-ring-hover);
+    --choice-tone: var(--choice-on-hover);
+  }
+  :where([data-choice]:not([data-disabled], [data-readonly]):active) > &,
+  :where([data-choice-row]:active) :where([data-choice]:not([data-disabled], [data-readonly])) > &,
+  :where([data-choice][data-force~="pressed"]) > & {
+    background-color: var(--choice-off-pressed);
+    box-shadow: var(--choice-ring-hover);
+    --choice-tone: var(--choice-on-pressed);
+    @media (prefers-reduced-motion: no-preference) {
+      scale: 0.9;
+    }
+  }
+  :where([data-choice][aria-invalid="true"]) > & {
+    box-shadow: var(--choice-invalid);
+  }
+  @media (hover: hover) {
+    :where([data-choice][aria-invalid="true"]:not([data-disabled], [data-readonly]):hover) > &,
+    :where([data-choice-row]:hover) :where([data-choice][aria-invalid="true"]:not([data-disabled], [data-readonly])) > & {
+      box-shadow: var(--choice-invalid-hover);
+    }
+  }
+  :where([data-choice][aria-invalid="true"]:is([data-force~="hover"], [data-force~="pressed"])) > & {
+    box-shadow: var(--choice-invalid-hover);
+  }
+  :where([data-choice]:is([data-disabled], [data-force~="disabled"])) > & {
+    background-color: var(--choice-off-disabled);
+    box-shadow: var(--choice-ring-disabled);
+    color: var(--choice-glyph-disabled);
+    --choice-tone: var(--choice-on-disabled);
+  }
+  :where([data-choice]:is([data-checked], [data-indeterminate], [data-force~="checked"])) > & {
+    background-color: var(--choice-tone);
+    box-shadow: none;
+  }
+  :where([data-choice]:is([data-checked], [data-force~="checked"])) > &[data-shape="dot"] {
+    background-color: var(--choice-center);
+    box-shadow: inset 0 0 0 5px var(--choice-tone);
+  }
+  :where(:root:not([data-k-pointer]) [data-choice]:focus-visible, [data-choice][data-force~="focus"]) > & {
+    outline-style: solid;
+    outline-color: var(--choice-focus);
+  }
 }
 
-@keyframes k-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
 @utility check-draw {
   stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-  animation: k-draw var(--k-duration-check) var(--k-ease-overlay);
+  stroke-dashoffset: 1;
+  opacity: 0;
+  :where([data-checked]) & {
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transition-property: stroke-dashoffset;
+    transition-duration: var(--k-duration-check);
+    transition-timing-function: var(--k-ease-overlay);
+  }
 }
 
-@utility radio-donut {
-  transition-property: box-shadow, background-color;
-  transition-duration: var(--k-duration-radio);
-  transition-timing-function: var(--k-ease-overlay);
-  &[data-checked],
-  &[data-force~="checked"] {
-    background-color: var(--k-bg-panel);
-    box-shadow: inset 0 0 0 5px var(--k-ink);
+@utility choice-track {
+  --track-off: var(--k-fill-3);
+  --track-ring: var(--k-shadow-selector);
+  --track-ring-hover: var(--k-shadow-selector-hover);
+  --track-on: var(--k-ink);
+  --track-on-hover: var(--k-ink-hover);
+  --track-on-pressed: var(--k-ink-pressed);
+  --thumb-off: var(--k-switch-thumb);
+  --thumb-on: var(--k-on-ink);
+  --thumb-shadow: var(--k-shadow-thumb);
+  background-color: var(--track-off);
+  box-shadow: var(--track-ring);
+  transition-property: background-color, box-shadow, outline-color, opacity;
+  transition-duration: var(--k-duration-fast);
+  transition-timing-function: var(--k-ease-standard);
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    --track-off: Canvas;
+    --track-ring: inset 0 0 0 1px CanvasText;
+    --track-ring-hover: inset 0 0 0 2px CanvasText;
+    --track-on: Highlight;
+    --track-on-hover: Highlight;
+    --track-on-pressed: Highlight;
+    --thumb-off: CanvasText;
+    --thumb-on: HighlightText;
+    --thumb-shadow: none;
+    &:is([data-disabled], [aria-disabled="true"], [data-force~="disabled"]) {
+      --track-ring: inset 0 0 0 1px GrayText;
+      --track-on: GrayText;
+      --thumb-off: GrayText;
+      --thumb-on: Canvas;
+    }
   }
-  &[data-checked][data-disabled] {
-    box-shadow: inset 0 0 0 5px var(--k-fill-3);
+  @media (hover: hover) {
+    &:not([data-disabled], [data-readonly]):hover,
+    :where([data-choice-row]:hover) &:not([data-disabled], [data-readonly]) {
+      box-shadow: var(--track-ring-hover);
+      --track-on: var(--track-on-hover);
+    }
   }
+  &[data-force~="hover"] {
+    box-shadow: var(--track-ring-hover);
+    --track-on: var(--track-on-hover);
+  }
+  &:not([data-disabled], [data-readonly]):active,
+  :where([data-choice-row]:active) &:not([data-disabled], [data-readonly]),
+  &[data-force~="pressed"] {
+    box-shadow: var(--track-ring-hover);
+    --track-on: var(--track-on-pressed);
+  }
+  &:is([data-checked], [data-force~="checked"]) {
+    background-color: var(--track-on);
+    box-shadow: none;
+  }
+}
+
+@utility choice-thumb {
+  background-color: var(--thumb-off);
+  box-shadow: var(--thumb-shadow);
+  transition-property: translate, transform, scale;
+  transition-duration: var(--k-duration-indicator), var(--k-duration-indicator), var(--k-duration-fast);
+  transition-timing-function: var(--k-ease-overlay), var(--k-ease-overlay), var(--k-ease-standard);
+  @media (prefers-reduced-motion: no-preference) {
+    :where([data-choice]:not([data-disabled], [data-readonly]):active) > &,
+    :where([data-choice-row]:active) :where([data-choice]:not([data-disabled], [data-readonly])) > &,
+    :where([data-choice][data-force~="pressed"]) > & {
+      scale: 0.85;
+    }
+  }
+  :where([data-checked], [data-force~="checked"]) > & {
+    background-color: var(--thumb-on);
+    box-shadow: none;
+  }
+}
+
+@utility slider-track {
+  background-color: var(--k-fill-3);
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    background-color: Canvas;
+    box-shadow: inset 0 0 0 1px CanvasText;
+  }
+}
+
+@utility slider-range {
+  background-color: var(--k-ink);
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    [data-disabled] & {
+      background-color: GrayText;
+    }
+  }
+}
+
+@utility slider-thumb {
+  background-color: var(--k-ink);
+  box-shadow:
+    0 0 0 2px var(--k-bg-panel),
+    var(--k-shadow-thumb);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition-property: box-shadow, outline-color, scale;
+  transition-duration: var(--k-duration-fast);
+  transition-timing-function: var(--k-ease-standard);
+  :root:not([data-k-pointer]) &:has(:focus-visible),
+  &[data-force~="focus"] {
+    outline-color: var(--k-focus);
+  }
+  @media (hover: hover) {
+    &:not([data-disabled]):hover {
+      box-shadow:
+        0 0 0 2px var(--k-bg-panel),
+        0 0 0 6px var(--k-fill-2);
+    }
+  }
+  &[data-force~="hover"],
+  &[data-dragging],
+  &[data-force~="dragging"] {
+    box-shadow:
+      0 0 0 2px var(--k-bg-panel),
+      0 0 0 6px var(--k-fill-2);
+  }
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    outline-style: none;
+    background-color: CanvasText;
+    box-shadow: 0 0 0 2px Canvas;
+    &:hover,
+    &[data-force~="hover"],
+    &[data-dragging],
+    &[data-force~="dragging"] {
+      box-shadow:
+        0 0 0 2px Canvas,
+        0 0 0 4px CanvasText;
+    }
+    [data-disabled] & {
+      background-color: GrayText;
+    }
+    :root:not([data-k-pointer]) &:has(:focus-visible),
+    &[data-force~="focus"] {
+      outline: 2px solid Highlight;
+    }
+  }
+}
+
+@utility segment-indicator-raised {
+  background-color: var(--k-control-on-fill);
 }
 
 @utility collapse-motion {
@@ -1038,7 +1294,7 @@
     outline-offset: 2px;
   }
   .k-cal td.k-day > button:hover {
-    background: var(--k-fill-1);
+    background: var(--k-item-hover);
   }
   :root:not([data-k-pointer]) .k-cal td.k-day > button:focus-visible {
     outline-color: var(--k-focus);
@@ -1090,6 +1346,50 @@
   .k-cal td.k-range-middle.k-selected > button {
     background: transparent;
     color: var(--k-text);
+  }
+  .k-cal td.k-range-start:not(.k-range-end):last-child,
+  .k-cal td.k-range-end:not(.k-range-start):first-child {
+    background: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .forced-checked:is([data-checked], [data-force~="checked"]) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .material-selector:is(:disabled, [data-disabled], [aria-disabled="true"], [data-force~="disabled"]),
+  .material-selector:is(:disabled, [data-disabled], [aria-disabled="true"], [data-force~="disabled"]) * {
+    color: GrayText;
+    outline-color: GrayText;
+  }
+  .k-cal td:is(.k-selected, .k-range-start, .k-range-end) > button {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+  .k-cal td.k-range-middle,
+  .k-cal td:is(.k-range-start, .k-range-end) {
+    background: none;
+  }
+  .k-cal td.k-range-middle > button,
+  .k-cal td.k-range-middle.k-selected > button {
+    forced-color-adjust: none;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: inset 0 0 0 1px Highlight;
+  }
+  .k-cal td.k-disabled > button {
+    color: GrayText;
+  }
+  .k-cal td.k-day {
+    outline: none;
+  }
+  .k-cal td.k-day > button {
+    outline-style: none;
+  }
+  :root:not([data-k-pointer]) .k-cal td.k-day > button:focus-visible {
+    outline: 2px solid Highlight;
   }
 }
 

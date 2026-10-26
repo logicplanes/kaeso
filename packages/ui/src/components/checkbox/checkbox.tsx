@@ -1,8 +1,9 @@
-import { forwardRef, useId, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useId, type ReactNode } from "react";
 import { Checkbox as BaseCheckbox } from "@base-ui/react/checkbox";
 import { CheckboxGroup as BaseCheckboxGroup } from "@base-ui/react/checkbox-group";
 import { cn } from "../../utils/cn.js";
 import { labelled } from "../radio/labelled.js";
+import { useField } from "../field/field.js";
 
 export const KAESO_CHECKBOX_VARIANTS = {
   size: {
@@ -31,6 +32,8 @@ export interface CheckboxProps {
   className?: string | undefined;
   "data-force"?: string | undefined;
 }
+
+const GroupDisabled = createContext(false);
 
 export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { parent?: boolean | undefined }>(function CheckboxBox(
   {
@@ -73,23 +76,14 @@ export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { paren
       {...(labelledBy ? { "aria-labelledby": labelledBy } : {})}
       {...(invalid ? { "aria-invalid": true } : {})}
       {...(force ? { "data-force": force } : {})}
+      data-choice=""
       className={cn(
         "group/cb relative -m-3 inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-checkbox outline-none tap-target disabled:cursor-not-allowed",
         className,
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "flex items-center justify-center bg-raised shadow-selector outline-2 outline-offset-2 outline-transparent transition-control",
-          KAESO_CHECKBOX_VARIANTS.size.md.classes,
-          invalid ? "group-focus-visible/cb:outline-focus" : "group-hover/cb:shadow-selector-hover group-focus-visible/cb:outline-focus",
-          "group-checked/cb:bg-ink group-checked/cb:shadow-none group-indeterminate/cb:bg-ink group-indeterminate/cb:shadow-none",
-          "group-invalid/cb:ring-invalid",
-          "group-disabled/cb:bg-fill-1 group-disabled/cb:shadow-none group-disabled/cb:group-checked/cb:bg-fill-3",
-        )}
-      >
-        <BaseCheckbox.Indicator keepMounted className="flex items-center justify-center text-on-ink group-data-disabled/cb:text-fg-disabled">
+      <span aria-hidden className={cn("flex items-center justify-center choice-mark", KAESO_CHECKBOX_VARIANTS.size.md.classes)}>
+        <BaseCheckbox.Indicator keepMounted className="flex items-center justify-center">
           <svg viewBox="0 0 12 12" className="size-12" fill="none" aria-hidden>
             <path
               d="M2.5 6.25 4.9 8.5 9.5 3.75"
@@ -98,7 +92,7 @@ export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { paren
               strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={1}
-              className="check-draw hidden group-data-checked/cb:block"
+              className="check-draw"
             />
             <path d="M3 6h6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" className="hidden group-data-indeterminate/cb:block" />
           </svg>
@@ -109,15 +103,29 @@ export const CheckboxBox = forwardRef<HTMLButtonElement, CheckboxProps & { paren
 });
 CheckboxBox.displayName = "Checkbox.Box";
 
-const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ label, description, id, className, ...props }, ref) {
+const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ label, description, id, className, ...own }, ref) {
   const auto = useId();
   const boxId = id ?? `k-cb-${auto}`;
+  const field = useField();
+  const groupDisabled = useContext(GroupDisabled);
+  const fieldDescribedBy = [own["aria-describedby"], field?.descriptionId, field?.errorId].filter(Boolean).join(" ");
+  const props = {
+    ...own,
+    ...(field?.invalid && own.invalid === undefined ? { invalid: true } : {}),
+    ...((field?.disabled || groupDisabled) && own.disabled === undefined ? { disabled: true } : {}),
+    ...(fieldDescribedBy ? { "aria-describedby": fieldDescribedBy } : {}),
+  };
   if (!label) return <CheckboxBox ref={ref} id={boxId} className={className} {...props} />;
   const named = labelled(boxId, label, description, props);
   return (
     <label
       htmlFor={boxId}
-      className={cn("group/row inline-flex min-h-32 cursor-pointer items-start gap-10 py-6 select-none", props.disabled && "cursor-not-allowed", className)}
+      data-choice-row=""
+      className={cn(
+        "inline-flex min-h-32 cursor-pointer items-start gap-10 py-6 select-none coarse:min-h-44 coarse:py-12",
+        props.disabled && "cursor-not-allowed",
+        className,
+      )}
     >
       <span className="flex h-20 items-center">
         <CheckboxBox ref={ref} id={boxId} {...props} {...named.aria} />
@@ -127,7 +135,7 @@ const Root = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox({ la
           {label}
         </span>
         {description && (
-          <span id={named.descriptionId} className="text-small text-fg-secondary">
+          <span id={named.descriptionId} className={cn("text-small text-pretty", props.disabled ? "text-fg-disabled" : "text-fg-secondary")}>
             {description}
           </span>
         )}
@@ -157,18 +165,20 @@ const Group = forwardRef<HTMLDivElement, CheckboxGroupProps>(function CheckboxGr
   ref,
 ) {
   return (
-    <BaseCheckboxGroup
-      ref={ref}
-      {...(value !== undefined ? { value } : {})}
-      {...(defaultValue !== undefined ? { defaultValue } : {})}
-      {...(onValueChange ? { onValueChange: (v: string[]) => onValueChange(v) } : {})}
-      {...(allValues ? { allValues } : {})}
-      {...(disabled !== undefined ? { disabled } : {})}
-      className={cn("flex flex-col", className)}
-      {...props}
-    >
-      {children}
-    </BaseCheckboxGroup>
+    <GroupDisabled.Provider value={!!disabled}>
+      <BaseCheckboxGroup
+        ref={ref}
+        {...(value !== undefined ? { value } : {})}
+        {...(defaultValue !== undefined ? { defaultValue } : {})}
+        {...(onValueChange ? { onValueChange: (v: string[]) => onValueChange(v) } : {})}
+        {...(allValues ? { allValues } : {})}
+        {...(disabled !== undefined ? { disabled } : {})}
+        className={cn("flex flex-col", className)}
+        {...props}
+      >
+        {children}
+      </BaseCheckboxGroup>
+    </GroupDisabled.Provider>
   );
 });
 Group.displayName = "CheckboxGroup";

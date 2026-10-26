@@ -71,22 +71,18 @@ describe("Segmented", () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
-  it("draws an off switch with a text input's ring and a light thumb, and keeps both while disabled", () => {
+  it("draws the track and thumb from the shared choice utilities, rung like a field and ink when on", () => {
     render(
       <>
         <Switch aria-label="Require two-factor authentication" />
-        <Switch aria-label="Require single sign-on" disabled />
         <Switch aria-label="No limit" defaultChecked />
       </>,
     );
-    for (const name of ["Require two-factor authentication", "Require single sign-on"]) {
+    for (const name of ["Require two-factor authentication", "No limit"]) {
       const track = screen.getByRole("switch", { name });
-      expect(track).toHaveClass("shadow-selector", "hover:shadow-selector-hover");
-      expect(track.className).not.toMatch(/disabled:shadow-none/);
-      expect(track.firstElementChild).toHaveClass("bg-switch-thumb");
+      expect(track).toHaveClass("choice-track", "focus-ring");
+      expect(track).toHaveAttribute("data-choice");
+      expect(track.firstElementChild).toHaveClass("choice-thumb");
     }
-    const on = screen.getByRole("switch", { name: "No limit" });
-    expect(on).toHaveClass("checked:bg-ink", "checked:shadow-none");
-    expect(on.firstElementChild).toHaveClass("data-checked:bg-on-ink");
   });
 });

@@ -1,5 +1,5 @@
 import { Slider } from "@logicplanes/kaeso-ui";
-import { StateSection } from "~/lib/states";
+import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Slider",
@@ -33,16 +33,44 @@ export function Range() {
     </div>
   );
 }
+function Threshold(props: Record<string, unknown>) {
+  return (
+    <div className="w-140 pt-32">
+      <Slider aria-label="Alert threshold" defaultValue={60} formatValue={(v) => `${v}%`} {...props} />
+    </div>
+  );
+}
+
 export function States() {
   return (
-    <StateSection title="States">
-      <div className="flex w-320 flex-col gap-32 pt-24">
-        <Slider aria-label="Rest" defaultValue={40} />
-        <Slider aria-label="Focus" defaultValue={40} data-force="focus" />
-        <Slider aria-label="Dragging" defaultValue={64} data-force="dragging" />
-        <Slider aria-label="Ticks" defaultValue={30} step={10} ticks />
-        <Slider aria-label="Disabled" defaultValue={40} disabled />
-      </div>
-    </StateSection>
+    <>
+      <Matrix
+        title="Thumb"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Rest", props: {} },
+          { label: "Hover", props: { "data-force": "hover" } },
+          { label: "Disabled", props: { disabled: true } },
+        ]}
+        render={(_, p) => <Threshold {...p} />}
+      />
+      <Matrix
+        title="Keyboard and pointer"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Focus", props: { "data-force": "focus" } },
+          { label: "Dragging", props: { "data-force": "dragging" } },
+        ]}
+        render={(_, p) => <Threshold {...p} />}
+      />
+      <StateSection title="Ends, ticks and ranges">
+        <div className="flex w-320 flex-col gap-24">
+          <Slider aria-label="Minimum" defaultValue={0} />
+          <Slider aria-label="Maximum" defaultValue={100} />
+          <Slider aria-label="Ticks" defaultValue={30} step={10} ticks />
+          <Slider getAriaLabel={(i) => (i === 0 ? "Minimum" : "Maximum")} defaultValue={[20, 60]} step={10} ticks />
+        </div>
+      </StateSection>
+    </>
   );
 }
