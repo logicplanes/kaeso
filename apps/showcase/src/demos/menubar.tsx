@@ -1,5 +1,5 @@
 import { Menubar, icons } from "@logicplanes/kaeso-ui";
-import { StateSection } from "~/lib/states";
+import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Menubar",
@@ -33,23 +33,48 @@ export function Basic() {
     </Menubar>
   );
 }
+const TRIGGERS = [
+  ["rest", {}],
+  ["hover", { "data-force": "hover" }],
+  ["focus", { "data-force": "focus" }],
+  ["pressed", { "data-force": "pressed" }],
+  ["open", { "data-force": "open" }],
+] as const;
 export function States() {
   return (
-    <StateSection title="Triggers">
-      <Menubar aria-label="States">
-        <Menubar.Menu>
-          <Menubar.Trigger>Rest</Menubar.Trigger>
-        </Menubar.Menu>
-        <Menubar.Menu>
-          <Menubar.Trigger data-force="hover">Hover</Menubar.Trigger>
-        </Menubar.Menu>
-        <Menubar.Menu>
-          <Menubar.Trigger data-force="open">Open</Menubar.Trigger>
-        </Menubar.Menu>
-        <Menubar.Menu>
-          <Menubar.Trigger data-force="focus">Focus</Menubar.Trigger>
-        </Menubar.Menu>
-      </Menubar>
-    </StateSection>
+    <>
+      <StateMatrix title="Triggers" columns={TRIGGERS.map(([s]) => s[0]!.toUpperCase() + s.slice(1))}>
+        <StateRow label="Trigger">
+          {TRIGGERS.map(([s, p]) => (
+            <StateCell key={s} id={`trigger-${s}`}>
+              <Menubar aria-label="Request">
+                <Menubar.Menu>
+                  <Menubar.Trigger {...p}>Request</Menubar.Trigger>
+                </Menubar.Menu>
+              </Menubar>
+            </StateCell>
+          ))}
+        </StateRow>
+      </StateMatrix>
+      <StateSection title="Side by side, focused, and an open menu">
+        <div className="flex h-160 flex-col gap-24">
+          <Menubar aria-label="Request">
+            <Menubar.Menu>
+              <Menubar.Trigger data-force="focus">Request</Menubar.Trigger>
+            </Menubar.Menu>
+            <Menubar.Menu>
+              <Menubar.Trigger data-force="hover">View</Menubar.Trigger>
+            </Menubar.Menu>
+            <Menubar.Menu open>
+              <Menubar.Trigger>Export</Menubar.Trigger>
+              <Menubar.Content>
+                <Menubar.Item icon={icons.copy}>Copy as curl</Menubar.Item>
+                <Menubar.Item icon={icons.download}>Download JSON</Menubar.Item>
+              </Menubar.Content>
+            </Menubar.Menu>
+          </Menubar>
+        </div>
+      </StateSection>
+    </>
   );
 }

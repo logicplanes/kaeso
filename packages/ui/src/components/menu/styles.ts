@@ -6,7 +6,7 @@ export const MENU_ITEM =
 
 export const MENU_ICON = "text-fg-secondary group-data-highlighted/item:text-fg group-data-disabled/item:text-fg-disabled";
 
-export const MENU_DANGER = "text-danger-text highlighted:bg-danger-tint";
+export const MENU_DANGER = "text-danger-text highlighted:bg-danger-tint active:bg-danger-tint";
 
 export const MENU_LABEL = "flex h-28 items-center px-10 text-caption font-medium text-fg-secondary";
 

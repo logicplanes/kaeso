@@ -57,7 +57,7 @@ describe("FilterChip", () => {
     const menu = screen.getByRole("menu");
     const result = await axe.run(menu, { runOnly: { type: "rule", values: ["aria-required-children"] } });
     expect(result.violations).toEqual([]);
-    expect(menu.parentElement).toHaveAttribute("tabindex", "0");
+    expect(menu.parentElement).not.toHaveAttribute("tabindex");
   });
   it("moves from its search field to the values with the arrow keys, the menu's items in a list named by the chip", async () => {
     render(<FilterChip property="Model" operator="is" value="any" values={MODELS.map((m) => ({ value: m, label: m }))} defaultValuesOpen />);
