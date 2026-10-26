@@ -378,6 +378,49 @@ fn each_variant_keeps_its_own_description_in_its_line() {
 }
 
 #[test]
+fn referenced_enum_values_keep_the_annotations_next_to_their_ref() {
+    let req = decode(
+        C,
+        &chat_tool(
+            "draw",
+            json!({
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "oneOf": [
+                    {"type": "object", "properties": {"kind": {"$ref": "#/$defs/Circle", "description": "Round."}}},
+                    {"type": "object", "properties": {"kind": {"$ref": "#/$defs/Square", "description": "Four equal sides."}}}
+                ],
+                "$defs": {"Circle": {"const": "circle"}, "Square": {"const": "square"}}
+            }),
+        ),
+    );
+    let (sent, _) = sent(A, &req, anthropic(&req));
+    assert_eq!(
+        tool(A, &sent, "draw")["input_schema"]["properties"]["kind"],
+        json!({"anyOf": [
+            {"$ref": "#/$defs/Circle", "description": "Round."},
+            {"$ref": "#/$defs/Square", "description": "Four equal sides."}
+        ]})
+    );
+}
+
+#[test]
+fn all_of_parts_keep_every_description_and_example() {
+    let req = decode(
+        A,
+        &rename_tool(json!({
+            "allOf": [
+                {"type": "object", "description": "Where the file is.", "examples": [{"path": "a"}], "properties": {"path": {"type": "string"}}},
+                {"type": "object", "description": "Where it goes.", "examples": [{"to": "b"}], "properties": {"to": {"type": "string"}}}
+            ]
+        })),
+    );
+    let (sent, _) = sent(A, &req, anthropic(&req));
+    let input = &tool(A, &sent, "rename")["input_schema"];
+    assert_eq!(input["description"], "Where the file is.\n\nWhere it goes.");
+    assert_eq!(input["examples"], json!([{"path": "a"}, {"to": "b"}]));
+}
+
+#[test]
 fn grok_gets_a_union_of_inline_objects_as_sent() {
     let req = decode(C, &chat_tool("draw", zod_discriminated_union()));
     for target in [R, C] {

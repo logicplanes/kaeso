@@ -365,6 +365,35 @@ impl<'a> Doc<'a> {
         v
     }
 
+    fn notes<'s>(&self, mut v: &'s Value) -> Map<String, Value>
+    where
+        'a: 's,
+    {
+        let mut notes = Map::new();
+        for _ in 0..MAX_DEPTH {
+            let Some(m) = v.as_object() else {
+                break;
+            };
+            for (k, value) in m {
+                if ANNOTATIONS.contains(&k.as_str()) && !notes.contains_key(k) {
+                    notes.insert(k.clone(), value.clone());
+                }
+            }
+            let only_ref = m
+                .keys()
+                .all(|k| k == "$ref" || ANNOTATIONS.contains(&k.as_str()));
+            match m
+                .get("$ref")
+                .and_then(Value::as_str)
+                .map(|r| self.lookup(r))
+            {
+                Some(Ok(target)) if only_ref => v = target,
+                _ => break,
+            }
+        }
+        notes
+    }
+
     fn variants(&self, v: &'a Value, depth: usize) -> Result<Vec<Map<String, Value>>, Fault> {
         if depth > MAX_DEPTH {
             return Err(Fault::Circular);
@@ -502,7 +531,7 @@ impl<'a> Doc<'a> {
         for s in schemas {
             if !distinct
                 .iter()
-                .any(|d| self.resolved(d) == self.resolved(s))
+                .any(|d| self.resolved(d) == self.resolved(s) && self.notes(d) == self.notes(s))
             {
                 distinct.push(s);
             }
@@ -548,18 +577,7 @@ impl<'a> Doc<'a> {
                 }
             }
         }
-        let notes: Vec<Map<String, Value>> = schemas
-            .iter()
-            .map(|s| {
-                self.resolved(s)
-                    .as_object()
-                    .into_iter()
-                    .flatten()
-                    .filter(|(k, _)| ANNOTATIONS.contains(&k.as_str()))
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect()
-            })
-            .collect();
+        let notes: Vec<Map<String, Value>> = schemas.iter().map(|s| self.notes(s)).collect();
         let (first_notes, other_notes) = notes.split_first()?;
         if other_notes.iter().any(|n| n != first_notes) {
             return None;
@@ -721,7 +739,11 @@ fn intersect(
             out.insert(key.clone(), value.clone());
             continue;
         };
-        if mine == value || key == "type" || ANNOTATIONS.contains(&key.as_str()) {
+        if mine == value || key == "type" {
+            continue;
+        }
+        if ANNOTATIONS.contains(&key.as_str()) {
+            combine_note(key, mine, value);
             continue;
         }
         match (key.as_str(), mine) {
@@ -752,6 +774,24 @@ fn intersect(
     }
     close(&mut out, left, right)?;
     Ok(out)
+}
+
+fn combine_note(key: &str, mine: &mut Value, theirs: &Value) {
+    match (key, &mut *mine, theirs) {
+        ("examples", Value::Array(kept), Value::Array(more)) => {
+            for example in more {
+                if !kept.contains(example) {
+                    kept.push(example.clone());
+                }
+            }
+        }
+        ("description" | "title" | "$comment", Value::String(kept), Value::String(more)) => {
+            let joint = if key == "title" { " / " } else { "\n\n" };
+            kept.push_str(joint);
+            kept.push_str(more);
+        }
+        _ => {}
+    }
 }
 
 fn close(
