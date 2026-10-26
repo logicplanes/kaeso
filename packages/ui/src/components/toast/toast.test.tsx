@@ -1,6 +1,6 @@
 import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -61,5 +61,57 @@ describe("Toaster's ref", () => {
     unmount();
     render(<Toast ref={ref} />);
     expect(ref.current).toBe(screen.getByRole("region", { name: "Notifications" }));
+  });
+});
+
+describe("toasts that carry the fix or the way back", () => {
+  it("keep an error and an Undo on screen until they are dismissed, while a plain toast leaves after five seconds", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      render(<Toaster />);
+      act(() => {
+        toast("Key copied");
+        toast.error("Couldn't reach the provider.", { description: "Check the provider key, then try again." });
+        toast("Key disabled", { action: { label: "Undo", onClick: () => undefined } });
+      });
+      await act(() => vi.advanceTimersByTimeAsync(6000));
+      expect(screen.queryByText("Key copied")).toBeNull();
+      expect(screen.getAllByText("Couldn't reach the provider.").length).toBeGreaterThan(0);
+      expect(screen.getByText("Key disabled").closest(".k-toast")).toHaveAttribute("data-stays");
+      act(() => toast.dismiss());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still leaves after its own timeout when one is given", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      render(<Toaster />);
+      act(() => {
+        toast.error("Couldn't copy the key.", { timeout: 2000 });
+      });
+      await act(() => vi.advanceTimersByTimeAsync(3000));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.queryByText("Couldn't copy the key.")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("the toast's close button", () => {
+  it("sits at the end of a toast that stays and dismisses it, while a toast that leaves by itself has none", async () => {
+    render(<Toaster />);
+    act(() => {
+      toast("Key copied");
+      toast.error("Couldn't copy the key.");
+    });
+    const error = (await screen.findAllByText("Couldn't copy the key.")).map((el) => el.closest(".k-toast")).find(Boolean)!;
+    const copied = screen.getByText("Key copied").closest(".k-toast")!;
+    expect(within(copied as HTMLElement).queryByLabelText("Dismiss")).toBeNull();
+    await userEvent.click(within(error as HTMLElement).getByLabelText("Dismiss"));
+    await waitFor(() => expect(error).not.toBeInTheDocument());
+    act(() => toast.dismiss());
   });
 });

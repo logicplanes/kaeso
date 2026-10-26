@@ -58,7 +58,7 @@ describe("ToastCapsule", () => {
     render(<ToastCapsule tone="success" title="Key created" description="Copy it now." action="Undo" closable data-force="hover" />);
     expect(screen.getByRole("status")).toHaveTextContent("Key created Copy it now.");
     expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveAttribute("data-force", "visible hover");
+    expect(screen.getByRole("button", { name: "Dismiss" })).toHaveAttribute("data-force", "hover");
     render(<ToastCapsule title="Plain" />);
     expect(screen.getByText("Plain")).toBeInTheDocument();
   });
