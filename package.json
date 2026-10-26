@@ -1,6 +1,6 @@
 {
   "name": "kaeso",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "private": true,
   "description": "Kaeso, the open-source, self-hosted AI gateway: the TypeScript workspace of the console, the documentation and the UI library.",
   "license": "MIT",

@@ -4,6 +4,27 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-10-26
+
+Kaeso 0.4.4 makes Claude work better behind OpenAI-format apps such as Codex: their prompts are cached, and tools whose schema has a root union reach Claude and Grok. Fresh installs start from the model catalogue of 26 October 2026, with 554 models. The release has no breaking changes, and the audit log now shows changes as a highlighted diff.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.4.3...v0.4.4](https://github.com/logicplanes/kaeso/compare/v0.4.3...v0.4.4)
+
+### Changed
+
+- The audit log shows a change as a diff, with added and removed lines tinted, only the changed words marked, and unchanged lines folded away behind a button. A small edit to a long event now stands out at a glance. ([#496](https://github.com/logicplanes/kaeso/pull/496))
+
+#### Gateway
+
+- A fresh install starts with the model catalogue snapshot of 26 October 2026, which holds 554 models and their prices for the providers Kaeso supports. OpenRouter drops one model, and fourteen OpenRouter models have new prices. ([#498](https://github.com/logicplanes/kaeso/pull/498))
+
+### Fixed
+
+- Tools whose parameter schema has a union at its root, such as Codex Desktop's `automation_update`, now work on Claude and Grok models instead of failing every turn. Kaeso merges the union into one object schema, and the tool description lists each variant. Each merged tool is named in the `kaeso-adapted` response header. ([#494](https://github.com/logicplanes/kaeso/pull/494))
+- Requests to Claude from Chat Completions and Responses apps, such as Codex, now cache the tool list, system prompt and conversation, so repeated turns cost less input. Cache breakpoints stay within Anthropic's limit of four, and `prompt_cache_retention` set to `24h` asks for a one-hour cache lifetime instead of failing. Cache reads are counted in the usage the app receives. ([#495](https://github.com/logicplanes/kaeso/pull/495), [#497](https://github.com/logicplanes/kaeso/pull/497))
+
 ## [0.4.3] - 2026-10-25
 
 Kaeso 0.4.3 lets agents such as Claude Code and Codex connect to an instance's remote MCP server, sign in with OAuth and act under rights that the user and the instance and organization policies allow. A new custom provider now needs only a base URL and a key, because Kaeso detects its format, key style, embeddings, token counting and models. Codex, Claude Code and Grok CLI work with Claude, GPT, Grok and Mistral models in more cases, and Mistral's answers reach Chat Completions apps as plain text. The design tokens package no longer exports `brandVersion`, the one change that asks integrators to act, and a fresh install starts from the model catalogue's data as of 25 October 2026.
@@ -870,7 +891,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.4...HEAD
+[0.4.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.4
 [0.4.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.3
 [0.4.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.2
 [0.4.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.1

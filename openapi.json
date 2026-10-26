@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.4.3"
+    "version": "0.4.4"
   },
   "paths": {
     "/platform/v1/auth/invites/accept": {
@@ -29264,7 +29264,7 @@
           "version": {
             "type": "string",
             "description": "The gateway version.",
-            "example": "0.4.3"
+            "example": "0.4.4"
           }
         }
       },
@@ -29794,7 +29794,7 @@
           "current": {
             "type": "string",
             "description": "The version the gateway runs.",
-            "example": "0.4.3"
+            "example": "0.4.4"
           },
           "job": {
             "oneOf": [
@@ -30133,7 +30133,7 @@
           "current": {
             "type": "string",
             "description": "The version the gateway runs.",
-            "example": "0.4.3"
+            "example": "0.4.4"
           },
           "releases": {
             "type": "array",
