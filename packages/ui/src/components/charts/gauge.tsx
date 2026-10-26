@@ -2,7 +2,7 @@ import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { formatPercent } from "../../format/index.js";
 import { useTweened } from "./core.js";
-import { useLocale } from "../../i18n/context.js";
+import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_GAUGE_VARIANTS = {
   size: { md: { classes: "w-180", description: "180px (default)" } },
@@ -20,10 +20,10 @@ export const Gauge = forwardRef<
     className?: string | undefined;
   }
 >(function Gauge({ value, thresholds = [0.8], label, valueLabel, className, "aria-label": ariaLabel }, ref) {
-  useLocale();
+  const t = useUiText();
   const W = 180;
   const R = 82;
-  const [t] = useTweened([Math.max(0, Math.min(1, value))]);
+  const [drawn] = useTweened([Math.max(0, Math.min(1, value))]);
   const a = (f: number) => Math.PI * (1 - f);
   const pt = (f: number, r: number) => [W / 2 + r * Math.cos(a(f)), 94 - r * Math.sin(a(f))] as const;
   const path = (from: number, to: number) => {
@@ -32,30 +32,39 @@ export const Gauge = forwardRef<
     return `M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}`;
   };
   const now = Math.round(value * 100);
-  const tone = value >= 1 ? "var(--k-danger)" : value >= Math.min(...thresholds, 1) ? "var(--k-warning)" : "var(--k-viz-1)";
+  const over = value >= 1;
+  const near = !over && value >= Math.min(...thresholds, 1);
+  const tone = over ? "var(--k-danger)" : near ? "var(--k-warning)" : "var(--k-viz-1)";
+  const status = over ? t("gauge.over", "Over the limit") : near ? t("gauge.near", "Near the limit") : null;
+  const shown = valueLabel ?? formatPercent(value, 0);
+  const spoken = [typeof shown === "string" ? shown : formatPercent(value, 0), typeof label === "string" ? label : null, status].filter(Boolean).join(", ");
   return (
     <div
       ref={ref}
       role="meter"
       aria-label={ariaLabel}
       aria-valuemin={0}
-      aria-valuemax={Math.max(100, now)}
-      aria-valuenow={now}
-      className={cn("relative inline-flex flex-col items-center", className)}
+      aria-valuemax={100}
+      aria-valuenow={Math.max(0, Math.min(100, now))}
+      aria-valuetext={spoken}
+      className={cn("relative inline-flex w-180 flex-col items-center", className)}
     >
-      <svg width={W} height={104} role="presentation">
-        <path d={path(0, 1)} fill="none" stroke="var(--k-fill-3)" strokeWidth={12} strokeLinecap="round" />
-        {(t ?? 0) > 0 && <path d={path(0, Math.max(0.005, t ?? 0))} fill="none" stroke={tone} strokeWidth={12} strokeLinecap="round" />}
-        {thresholds.map((th) => {
-          const [x1, y1] = pt(th, R - 9);
-          const [x2, y2] = pt(th, R + 9);
-          return <line key={th} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--k-bg-panel)" strokeWidth={2} />;
-        })}
-      </svg>
-      <div className="absolute inset-x-0 bottom-0 flex flex-col items-center">
-        <span className="text-title font-semibold text-fg tabular">{valueLabel ?? formatPercent(value, 0)}</span>
-        {label && <span className="text-caption font-medium text-fg-tertiary">{label}</span>}
+      <div className="relative">
+        <svg width={W} height={104} role="presentation" className="block data-mark">
+          <path d={path(0, 1)} fill="none" stroke="var(--k-fill-3)" strokeWidth={12} strokeLinecap="round" />
+          {(drawn ?? 0) > 0 && <path d={path(0, Math.max(0.005, drawn ?? 0))} fill="none" stroke={tone} strokeWidth={12} strokeLinecap="round" />}
+          {thresholds.map((th) => {
+            const [x1, y1] = pt(th, R - 6);
+            const [x2, y2] = pt(th, R + 10);
+            return <line key={th} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--k-text-tertiary)" strokeWidth={2} strokeLinecap="round" />;
+          })}
+        </svg>
+        <div className="absolute inset-x-0 bottom-0 mx-auto flex max-w-140 flex-col items-center text-center">
+          {status && <span className={cn("text-caption font-medium", over ? "text-danger-text" : "text-warning-text")}>{status}</span>}
+          <span className="max-w-full text-title font-semibold text-fg tabular wrap-anywhere">{shown}</span>
+        </div>
       </div>
+      {label && <span className="mt-4 max-w-full text-center text-caption font-medium text-pretty text-fg-tertiary">{label}</span>}
     </div>
   );
 });

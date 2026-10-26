@@ -228,7 +228,7 @@ describe("partial points and shares", () => {
     expect(tooltip(container)).not.toContain("%");
   });
 
-  it("draws an unfinished last bar lighter, says so, and can leave shares out", () => {
+  it("draws an unfinished last bar faint with a dashed edge, says so, and can leave shares out", () => {
     const series = [
       { id: "r", label: "Requests", values: [90, 90, 30] },
       { id: "e", label: "Errors", values: [10, 10, 3] },
@@ -236,9 +236,13 @@ describe("partial points and shares", () => {
     const { container } = render(
       <BarChart aria-label="Requests" categories={["18 Oct", "19 Oct", "20 Oct"]} series={series} partial={{ ongoing: true }} shares={false} />,
     );
-    const opacities = [...container.querySelectorAll("path")].map((p) => p.getAttribute("opacity"));
-    expect(opacities.slice(-2)).toEqual(["0.5", "0.5"]);
-    expect(opacities[0]).toBe("1");
+    const partial = [...container.querySelectorAll("path[data-partial]")];
+    expect(partial).toHaveLength(2);
+    expect(partial.map((p) => [p.getAttribute("fill-opacity"), p.getAttribute("stroke-dasharray")])).toEqual([
+      ["0.32", "4 4"],
+      ["0.32", "4 4"],
+    ]);
+    expect(container.querySelectorAll("path:not([data-partial])")[0]).not.toHaveAttribute("fill-opacity");
     fireEvent.keyDown(screen.getByRole("group", { name: "Requests" }), { key: "End" });
     expect(tooltip(container)).toMatch(/^20 Oct, so far/);
     expect(tooltip(container)).not.toContain("%");

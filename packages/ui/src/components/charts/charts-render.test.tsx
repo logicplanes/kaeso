@@ -76,18 +76,28 @@ describe("TimeseriesChart", () => {
   it("shows loading, empty and failed states", async () => {
     const onRetry = vi.fn();
     const { rerender } = render(<TimeseriesChart aria-label="Spend" series={series(hours(4))} loading />);
-    expect(screen.getByRole("group", { name: "Spend" })).not.toHaveTextContent("150");
+    expect(screen.getByRole("figure", { name: "Spend" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("group", { name: "Spend" })).toHaveTextContent("02:00");
     rerender(<TimeseriesChart aria-label="Spend" series={[]} loading />);
     expect(screen.queryByRole("group", { name: "Spend" })).not.toBeInTheDocument();
     expect(screen.getByRole("figure", { name: "Spend" }).querySelector("svg")).toBeNull();
     expect(screen.queryByText("No data for this period")).not.toBeInTheDocument();
     rerender(<TimeseriesChart aria-label="Spend" series={[{ id: "a", label: "A", points: [] }]} />);
     expect(screen.getByText("No data for this period")).toBeInTheDocument();
-    expect([...screen.getByRole("figure", { name: "Spend" }).querySelectorAll("text")].map((t) => t.textContent)).toEqual(["0", "1"]);
-    rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4))} error="down" onRetry={onRetry} />);
+    expect([...screen.getByRole("figure", { name: "Spend" }).querySelectorAll("text")].map((t) => t.textContent)).toEqual([]);
+    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
+    rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4)).map((s) => ({ ...s, points: s.points.map((p) => ({ ...p, v: 0 })) }))} />);
+    expect(screen.queryByText("No data for this period")).toBeNull();
+    expect([...screen.getByRole("group", { name: "Spend" }).querySelectorAll("text")].map((t) => t.textContent)).toContain("0");
+    expect([...screen.getByRole("group", { name: "Spend" }).querySelectorAll("text")].map((t) => t.textContent)).not.toContain("1");
+    rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4))} error onRetry={onRetry} />);
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this chart");
+    expect(screen.queryByRole("button", { name: "View as table" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetry).toHaveBeenCalled();
+    rerender(<TimeseriesChart aria-label="Spend" series={series(hours(4))} error />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this chart. Reload the page to try again.");
+    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   });
 });
 
@@ -124,7 +134,8 @@ describe("BarChart", () => {
 
   it("keeps quiet while loading and with no data", () => {
     const { rerender } = render(<BarChart aria-label="Tokens" categories={categories} series={bars} loading />);
-    expect(screen.getByRole("group", { name: "Tokens" })).not.toHaveTextContent("40");
+    expect(screen.getByRole("figure", { name: "Tokens" })).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("group", { name: "Tokens" })).toHaveTextContent("Mon");
     rerender(<BarChart aria-label="Tokens" categories={[]} series={[]} empty />);
     expect(screen.getByText("No data for this period")).toBeInTheDocument();
   });
@@ -156,8 +167,10 @@ describe("Donut and ShareBar", () => {
     const { container, rerender } = render(
       <ShareBar aria-label="Spend by project" slices={[...slices, { id: "d", label: "Unused", value: 0 }]} formatValue={(v) => `$${v}`} />,
     );
-    expect(screen.getByRole("img", { name: /Checkout assistant 99%/ })).toBeInTheDocument();
-    expect(screen.getByTitle("Checkout assistant: $990")).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Spend by project: Checkout assistant $990 (99%), Docs search $9 (1%), Fraud screening $1 (<1%), Unused $0 (0%)" }),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll("[role=img] > span")).toHaveLength(3);
     rerender(<ShareBar aria-label="Spend by project" slices={[]} legend={false} />);
     expect(container.querySelector("ul")).toBeNull();
   });

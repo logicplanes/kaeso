@@ -90,7 +90,7 @@ describe("TimeseriesChart from the keyboard", () => {
     expect(live()).toMatch(/11 Oct: GPT-5 7$/);
   });
   it("has nothing to step through while empty", async () => {
-    render(<TimeseriesChart aria-label="Spend" series={series.map((s) => ({ ...s, points: s.points.map((p) => ({ ...p, v: 0 })) }))} />);
+    render(<TimeseriesChart aria-label="Spend" series={series.map((s) => ({ ...s, points: [] }))} />);
     await userEvent.tab();
     await userEvent.keyboard("{End}");
     expect(live()).toBe("");

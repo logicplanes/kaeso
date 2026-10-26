@@ -15,12 +15,17 @@ describe("Gauge", () => {
   });
 
   it("turns to warning from the lowest threshold and to danger when full", () => {
-    const { container, rerender } = render(<Gauge aria-label="Budget" value={0.6} thresholds={[0.9, 0.5]} />);
+    const { container, rerender } = render(<Gauge aria-label="Budget" value={0.6} thresholds={[0.9, 0.5]} label="of $500.00 budget" />);
     expect(arc(container)).toBe("var(--k-warning)");
+    expect(screen.getByText("Near the limit")).toHaveClass("text-warning-text");
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "60%, of $500.00 budget, Near the limit");
     rerender(<Gauge aria-label="Budget" value={1.3} valueLabel="$650.00" />);
     expect(arc(container)).toBe("var(--k-danger)");
     expect(screen.getByRole("meter")).toHaveTextContent("$650.00");
-    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuemax", "130");
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuemax", "100");
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuenow", "100");
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "$650.00, Over the limit");
+    expect(screen.getByRole("meter")).toHaveTextContent("Over the limit");
   });
 
   it("draws no arc at zero", () => {

@@ -58,14 +58,15 @@ export const docs = {
     },
   },
   LimitMeter: {
-    description: "A limit: its kind, scope and window, hard or soft, the meter with alert ticks, and when it resets.",
+    description:
+      "A limit: its kind, scope and window, hard or soft, the meter with alert ticks, and when it resets. Over the limit it says so, and what happens to requests.",
     props: {
       alerts: "Alert thresholds as ratios.",
       hard: "Whether requests are refused at the limit (`true`) or only alerted (`false`).",
       kind: "What is limited: requests, tokens or spend, and over which period.",
       limit: "The limit.",
       resets: '"Resets in 12 days".',
-      scope: '"Project", "Key ci-runner", "Member Ada".',
+      scope: '"Project", "Key ci-runner", "Member Ada". A text scope also names the meter for screen readers, and shows whole on hover when it doesn\'t fit.',
       used: "How much is used.",
       valueLabel: 'Formatted values: "$32.10 of $50.00".',
       window: '"Per minute", "Per month".',
@@ -197,7 +198,8 @@ export const docs = {
     },
   },
   UsageBreakdown: {
-    description: "A stacked bar of token kinds with the numbers under it, in the fixed series mapping.",
+    description:
+      "A stacked bar of token kinds with the numbers under it, in the fixed series mapping; cache read is a soft blue edged in input's blue. Each rounded count shows the exact one on hover and focus.",
     props: {
       tokens:
         "Tokens by kind: input, output, cache reads and writes, reasoning. A kind left out isn't listed, for kinds that can't apply, such as output for embeddings; pass 0 to list it.",

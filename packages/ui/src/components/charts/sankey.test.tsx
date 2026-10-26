@@ -22,13 +22,14 @@ describe("Sankey", () => {
     expect(container.querySelectorAll("rect")).toHaveLength(3);
     const paths = container.querySelectorAll("path");
     expect(paths).toHaveLength(2);
-    expect(paths[0]).toHaveAttribute("stroke-opacity", "0.24");
+    expect(paths[0]).toHaveAttribute("opacity", "0.48");
+    expect(paths[0]).toHaveClass("opacity-motion");
     expect(screen.getByText("Checkout assistant → OpenAI: 1,200")).toBeInTheDocument();
     fireEvent.mouseEnter(container.querySelectorAll("rect")[2]!.parentElement!);
-    const lit = [...container.querySelectorAll("path")].map((p) => p.getAttribute("stroke-opacity"));
-    expect(lit.sort()).toEqual(["0.06", "0.5"]);
+    const lit = [...container.querySelectorAll("path")].map((p) => p.getAttribute("opacity"));
+    expect(lit.sort()).toEqual(["0.12", "1"]);
     fireEvent.mouseLeave(container.querySelectorAll("rect")[2]!.parentElement!);
-    expect(container.querySelectorAll("path")[0]).toHaveAttribute("stroke-opacity", "0.24");
+    expect(container.querySelectorAll("path")[0]).toHaveAttribute("opacity", "0.48");
   });
 
   it("draws nothing before it has a width and offers the flows as a table", async () => {

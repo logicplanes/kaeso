@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   BarChart: {
     description:
-      "Bars for comparing values across categories: grouped, stacked, or horizontal for rankings. The category under the pointer, or reached with the arrow keys, shows its tooltip.",
+      "Bars for comparing values across categories: grouped, stacked, or horizontal for rankings. The category under the pointer, or reached with the arrow keys, shows its tooltip; the legend pills show and hide series.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       axisLabels:
@@ -11,27 +11,30 @@ export const docs = {
       categories: "The names along the category axis, one per bar group, in order. They also head the tooltip and the data table.",
       dates:
         'The day each category begins, one per category: a `Date`, or an ISO day ("2026-01-05"). Where the axis thins its labels, it keeps the ones where a year begins (the month after December, the first week in January), read from these, so every language keeps the same labels.',
-      empty: "Shows the empty state (`emptyText`) in place of the data. Pass it when the period has no data.",
+      empty:
+        "Shows the empty state (`emptyText`) in place of the data, over the baseline and the category axis. By default it shows when there is no value at all; zeros are data.",
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
-        "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
-      formatValue: "Formats values on the axis and in the tooltip.",
+        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
+      formatValue:
+        "Formats values in the tooltip, the table and beside horizontal bars. Without it, values are written in full and the axis in short form (1.2M); the axis takes the room its widest label needs, and long category names in a ranking end in an ellipsis with the full name on hover.",
       height: "The plot's height in px (240 by default).",
       highlight: "Highlight a category as the pointer does, with its tooltip: a linked view, or the states pages.",
       layout: "`grouped` puts each category's bars side by side (default), `stacked` stacks them, and `horizontal` draws bars across for rankings.",
-      loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
+      loading:
+        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       partial:
-        'Marks the `first` or `last` category as covering only part of its span: its bars are drawn lighter and its tooltip says "partial". `ongoing` marks the last one as still counting, such as today, and says "so far".',
+        'Marks the `first` or `last` category as covering only part of its span: its bars are drawn faint with a dashed edge, like a partial line, and its tooltip says "partial". `ongoing` marks the last one as still counting, such as today, and says "so far".',
       series:
-        "The bars' series, each with an `id`, a `label`, one value per category and an optional `color`. Colors otherwise come from the series order by `id`.",
+        "The bars' series, each with an `id`, a `label`, one value per category and an optional `color`. Colors otherwise come from the series order by `id`; one series takes series 1. Negative values grow down from the zero line. With two or more, the legend shows and hides them.",
       shares:
         "Shows each series' share of the category's total in the tooltip (on by default). Turn it off when one series is part of another, such as errors within requests.",
     },
   },
   ChartFrame: {
     description:
-      'The frame every chart draws in: a hidden data table for assistive technology, a "View as table" toggle, and the empty, loading and error states. The toggle sits at the right end of the last line of the legend; when the frame is narrower than 480px (the `chart-legend` container size, a phone), it moves to its own line under the legend, so it never reads as one of the series. Use it to build a chart of your own that behaves like the others.',
+      'The frame every chart draws in: a hidden data table for assistive technology, a "View as table" toggle that shows the table at the chart\'s height, scrolling inside, and the empty, loading and error states. The toggle sits at the right end of the last line of the legend; when the frame is narrower than 480px (the `chart-legend` container size, a phone), it moves to its own line under the legend, so it never reads as one of the series. Use it to build a chart of your own that behaves like the others.',
     props: {
       children: "The plot, usually an SVG, drawn at `height`.",
       height: "The plot's height in px. The empty, loading and error states keep it, so nothing below moves.",
@@ -66,38 +69,43 @@ export const docs = {
     description: "A ring of shares with the total in the center and a legend beside it, or under it when narrow. Use it for a few parts of one whole.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      empty: "Shows the empty state (`emptyText`) in place of the data. By default it shows when every value is 0.",
+      empty:
+        "Shows the empty state (`emptyText`) in place of the ring and legend. By default it shows when every value is 0, since a ring of nothing has no shares.",
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
-        "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
       formatValue: "Formats the total in the center and the values in the legend. Defaults to `formatNumber`.",
-      loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
+      loading:
+        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       size: "The ring's diameter: `sm` 140px, `md` 160px (default) or `lg` 180px.",
       slices:
-        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.",
-      total: "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`.",
+        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more, and past the eighth slice the rest are grouped too, so no two slices share a color.",
+      total:
+        "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`. A long total steps down a size to fit the ring.",
       totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
     },
   },
   Gauge: {
-    description: 'A semicircle meter for one share of a limit, such as "budget used". It turns to warning at the first threshold and to danger at 100%.',
+    description:
+      'A semicircle meter for one share of a limit, such as "budget used". At the first threshold it says "Near the limit" and turns to warning; at 100% it says "Over the limit" and turns to danger.',
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      label: 'A caption under the value ("of $500.00 budget").',
+      label: 'A caption under the arc ("of $500.00 budget"); it wraps when long.',
       thresholds: "Fractions marked as ticks on the arc (`[0.8]` by default). From the lowest one, the arc turns to warning.",
       value: "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.",
-      valueLabel: "Replaces the value in the center, which is otherwise the percentage.",
+      valueLabel: "Replaces the value in the center, which is otherwise the percentage. Pass a string so screen readers hear it with the unit.",
     },
   },
   Heatmap: {
-    description: "A grid of cells shaded on a five-step ramp, for one value across two dimensions such as hour by weekday.",
+    description:
+      "A grid of cells shaded on a five-step ramp, for one value across two dimensions such as hour by weekday. One tab stop: the arrow keys move between cells and show each value, the table toggle lists them all, and a grid wider than its column scrolls with a fade at the edge.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       columnLabelEvery: "Labels every nth column, starting with the first (3 by default), so dense columns stay readable.",
       columns: "The column labels, left to right (hours, or weeks).",
-      formatValue: "Formats a cell's value for its tooltip and screen readers. Defaults to `formatNumber`.",
-      rows: "The row labels, top to bottom (weekdays).",
+      formatValue: "Formats a cell's value for its tooltip, the table and screen readers. Defaults to `formatNumber`.",
+      rows: "The row labels, top to bottom (weekdays). With no rows or columns the chart shows its empty state.",
       values: "The values by row, then column: `values[row][column]`. The darkest step is the largest value.",
     },
   },
@@ -115,32 +123,37 @@ export const docs = {
     description: "The same component as `Donut` under another name, with the same props.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      empty: "Shows the empty state (`emptyText`) in place of the data. By default it shows when every value is 0.",
+      empty:
+        "Shows the empty state (`emptyText`) in place of the ring and legend. By default it shows when every value is 0, since a ring of nothing has no shares.",
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
-        "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
       formatValue: "Formats the total in the center and the values in the legend. Defaults to `formatNumber`.",
-      loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
+      loading:
+        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       size: "The ring's diameter: `sm` 140px, `md` 160px (default) or `lg` 180px.",
       slices:
-        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more.",
-      total: "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`.",
+        "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more, and past the eighth slice the rest are grouped too, so no two slices share a color.",
+      total:
+        "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`. A long total steps down a size to fit the ring.",
       totalLabel: 'The word under the total. Defaults to "Total" in the provider\'s language.',
     },
   },
   Sankey: {
-    description: "A flow diagram, such as requests from keys to models to providers, with ribbons as wide as each flow. Hovering a node highlights its paths.",
+    description:
+      "A flow diagram, such as requests from keys to models to providers, with ribbons as wide as each flow. Hovering a node, or reaching it with the arrow keys, highlights its paths. Each column keeps room for its labels; when narrow, the values go first, then long names end in an ellipsis.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      empty: "Shows the empty state (`emptyText`) in place of the data. Pass it when the period has no data.",
+      empty: "Shows the empty state (`emptyText`) in place of the data. By default it shows when no link carries a value.",
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
-        "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
       formatValue: "Formats the values beside the nodes and in the data table. Defaults to `formatNumber`.",
       height: "The diagram's height in px (320 by default).",
       links: "The flows, each with a `source` and a `target` node `id` and a `value`.",
-      loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
+      loading:
+        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
       nodes: "The nodes, each with an `id` and a `label`. Columns follow from the links.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
     },
@@ -149,7 +162,7 @@ export const docs = {
     description: "One pill split into segments by share, with a legend under it. Use it for a compact breakdown of one whole in a row or a card.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      formatValue: "Formats a segment's value in its tooltip. Defaults to `formatNumber`.",
+      formatValue: "Formats each segment's value for screen readers, beside its share. Defaults to `formatNumber`.",
       legend: "Shows the legend with each share under the bar (on by default).",
       slices: "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`.",
     },
@@ -160,14 +173,14 @@ export const docs = {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       color: "The line's color (`var(--k-viz-1)` by default). Pass `seriesColor(id)` to match the series elsewhere.",
       fluid: "Fills the container's width at 32px high, without the last point's dot, as in a stat tile. Otherwise it is 80×24.",
-      values: "The values in order, oldest first.",
+      values: "The values in order, oldest first. One value is a dot at the newest end; none is a quiet flat line.",
     },
   },
   Swatch: {
     description: "The mark that keys a series: a short stroke for lines, a small rounded square for filled marks. Never a dot.",
     props: {
       color: "The series color.",
-      off: "Draws the swatch as off, for a hidden series.",
+      off: "Draws the swatch as an outline in the series color, for a hidden series.",
       shape: "`square` for filled marks (default) or `line` for lines.",
     },
   },
@@ -176,19 +189,22 @@ export const docs = {
       "A line or area chart of values over time, such as usage, with a crosshair and tooltip. The point under the pointer, or reached with the arrow keys, shows its values.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
-      empty: "Shows the empty state (`emptyText`) in place of the data. By default it shows when every value is 0.",
+      empty:
+        "Shows the empty state (`emptyText`) in place of the data, over the baseline and the time axis. By default it shows when there are no points; zeros are data and draw a flat line on the baseline.",
       emptyText: 'What the empty state says. Defaults to "No data for this period" in the provider\'s language.',
       error:
-        "The data failed to load: the chart keeps its height, says so quietly and offers Try again. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+        "The data failed to load: the chart keeps its height, hides its legend and table toggle, and says so quietly, with Try again when there is `onRetry` and otherwise a hint to reload the page. Errors are toasts, so the value isn't shown; pass `true` and toast the message where the request fails.",
       formatTick: 'Names the times under the axis ("3 Aug", "2026"). Defaults to calendar ticks in `timeZone`; pass it with `tickAt="points"` for buckets.',
       formatTime:
         'Names a point\'s time in the tooltip, the table and for screen readers, where a point stands for more than its instant: "Week of 3 Aug", "Aug 2026".',
-      formatValue: "Formats values on the axis and in the tooltip.",
+      formatValue:
+        "Formats values in the tooltip, the table and on the axis. Without it, values are written in full and the axis in short form (1.2M), and the axis takes the room its widest label needs.",
       height: "The plot's height in px (240 by default).",
       hideLegend: "Hide the legend (one series).",
       highlight: "Highlight a point in time as the pointer does, with the crosshair and tooltip: a linked view, or the states pages.",
       kind: "`line` draws lines (default), `area` adds a light fill under each line, and `stacked` stacks the areas.",
-      loading: "The data is loading: the chart keeps its height and shows a quiet loading bar.",
+      loading:
+        "The data is loading: the chart keeps its height and is marked busy; data already on screen dims and breathes, and with none yet the plot is a skeleton.",
       onRetry: "Called when Try again is pressed after `error`; without it, the button doesn't show.",
       partial:
         'Marks the `first` or `last` point as covering only part of its span: the line to it is dashed and its tooltip says "partial". `ongoing` marks the last one as still counting, such as today, and says "so far".',

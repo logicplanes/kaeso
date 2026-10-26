@@ -33,13 +33,20 @@ export function InlineDemo() {
 }
 export function States() {
   return (
-    <StateSection title="Colors">
+    <StateSection title="Colors, flat, one value, none">
       <div className="flex flex-col gap-12">
         <Sparkline aria-label="Blue" values={[3, 5, 4, 8, 7, 9, 12]} />
         <Sparkline aria-label="Emerald" color="var(--k-viz-3)" values={[9, 7, 8, 6, 7, 5, 4]} />
+        <Sparkline aria-label="Amber" color="var(--k-viz-2)" values={[2, 4, 3, 6, 5, 7, 8]} />
         <Sparkline aria-label="Flat" values={[5, 5, 5, 5, 5]} />
+        <Sparkline aria-label="Negative and positive" values={[-2, 1, -1, 3, 2, -3, 4]} />
+        <Sparkline aria-label="One value" values={[5]} />
+        <Sparkline aria-label="No values" values={[]} />
         <div className="w-320">
           <Sparkline fluid aria-label="Fluid" values={[3, 5, 4, 8, 7, 9, 12]} />
+        </div>
+        <div className="w-320">
+          <Sparkline fluid aria-label="Fluid, one value" values={[5]} />
         </div>
       </div>
     </StateSection>

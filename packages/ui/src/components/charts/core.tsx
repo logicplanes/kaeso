@@ -6,6 +6,10 @@ import { mergeRefs } from "../../utils/merge-refs.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
+import { ScrollArea } from "../scroll-area/scroll-area.js";
+import { SwapText } from "../swap-text/swap-text.js";
+import { Table } from "../table/table.js";
+import { edgeColor } from "./marks.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
 
 export function wholeTicks(ticks: number[], values: number[]): number[] {
@@ -45,6 +49,7 @@ export function seriesIndex(id: string): number {
 
 export function assignSeries(ids: string[]): Map<string, number> {
   const out = new Map<string, number>();
+  if (new Set(ids).size === 1) return new Map([[ids[0]!, 0]]);
   const used = new Set<number>();
   const clash = (k: number) => used.has(k) || (NEAR[k] !== undefined && used.has(NEAR[k]!));
   for (const id of ids) {
@@ -169,50 +174,68 @@ export const ChartFrame = forwardRef<HTMLElement, ChartFrameProps>(function Char
 ) {
   const [asTable, setAsTable] = useState(false);
   const t = useUiText();
+  const failed = !!state.error;
+  const blank = !!state.empty;
+  const showTable = asTable && !!table && !failed && !blank;
+  const toTable = t("chartFrame.viewAsTable", "View as table");
+  const toChart = t("chartFrame.viewAsChart", "View as chart");
   return (
-    <figure ref={ref} className={cn("@container flex min-w-0 flex-col gap-12", className)} aria-label={label}>
-      {state.error ? (
-        <div className="flex flex-col items-center justify-center gap-8 text-center" style={{ height }}>
-          <p role="alert" className="text-body text-fg-secondary">
-            {t("chartFrame.loadFailed", "Couldn't load this chart")}
+    <figure
+      ref={ref}
+      className={cn("@container flex w-full min-w-0 flex-col gap-12", className)}
+      aria-label={label}
+      {...(state.loading ? { "aria-busy": true } : {})}
+    >
+      {failed ? (
+        <div className="flex flex-col items-center justify-center gap-12 px-24 text-center" style={{ height }}>
+          <p role="alert" className="text-body text-pretty text-fg-secondary">
+            {state.onRetry
+              ? t("chartFrame.loadFailed", "Couldn't load this chart")
+              : t("chartFrame.loadFailedReload", "Couldn't load this chart. Reload the page to try again.")}
           </p>
           {state.onRetry && (
-            <Button size="sm" onClick={state.onRetry}>
+            <Button size="sm" variant="secondary" onClick={state.onRetry}>
               {t("chartFrame.tryAgain", "Try again")}
             </Button>
           )}
         </div>
-      ) : asTable && table ? (
-        <div className="overflow-auto scrollbar-quiet" style={{ minHeight: height }}>
-          <DataTablePlain table={table} />
+      ) : showTable ? (
+        <div style={{ height }}>
+          <ScrollArea className="h-full" aria-label={t("chartFrame.tableLabel", "{label}, table", { label })}>
+            <DataTablePlain table={table} sticky />
+          </ScrollArea>
         </div>
       ) : (
         <div className="relative" style={{ height }}>
-          {state.loading && state.empty ? <Skeleton className="absolute inset-0" /> : children}
-          {state.loading && !state.empty && <Skeleton className="absolute inset-x-0 bottom-0 h-2 rounded-pill" />}
+          {state.loading && state.empty ? (
+            <Skeleton className="absolute inset-0" />
+          ) : (
+            <div className={cn("absolute inset-0", state.loading && "opacity-40")}>
+              <div className={cn("absolute inset-0", state.loading && "animate-pulse-quiet")}>{children}</div>
+            </div>
+          )}
           {state.empty && !state.loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-body text-fg-secondary">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-24 text-center text-body text-pretty text-fg-secondary">
               {state.emptyText ?? t("chartFrame.noData", "No data for this period")}
             </div>
           )}
         </div>
       )}
-      {(legend || (toggle && table)) && (
+      {!failed && (legend || (toggle && table && !blank)) && (
         <div className="flex flex-col gap-8 @chart-legend:flex-row @chart-legend:gap-12">
-          {!asTable && legend && <div className="min-w-0 @chart-legend:flex-1">{legend}</div>}
-          {toggle && table && (
+          {!showTable && legend && <div className="min-w-0 @chart-legend:flex-1">{legend}</div>}
+          {toggle && table && !blank && (
             <button
               type="button"
               onClick={() => setAsTable((v) => !v)}
-              aria-pressed={asTable}
               className="relative ml-auto inline-flex h-28 shrink-0 cursor-pointer items-center self-end rounded-pill px-10 text-small font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring tap-target"
             >
-              {asTable ? t("chartFrame.viewAsChart", "View as chart") : t("chartFrame.viewAsTable", "View as table")}
+              <SwapText reserve={[toTable, toChart]}>{showTable ? toChart : toTable}</SwapText>
             </button>
           )}
         </div>
       )}
-      {table && !asTable && (
+      {table && !showTable && (
         <div className="sr-only">
           <DataTablePlain table={table} caption={label} />
         </div>
@@ -222,31 +245,36 @@ export const ChartFrame = forwardRef<HTMLElement, ChartFrameProps>(function Char
 });
 ChartFrame.displayName = "ChartFrame";
 
-function DataTablePlain({ table, caption }: { table: TableData; caption?: string | undefined }) {
+const NUMERIC = /^[^\p{L}]*\d[^\p{L}]*\p{L}{0,3}$/u;
+
+function DataTablePlain({ table, caption, sticky }: { table: TableData; caption?: string | undefined; sticky?: boolean | undefined }) {
+  const end = table.columns.map(
+    (_, j) => j > 0 && table.rows.every((r) => typeof r[j] === "number" || NUMERIC.test(String(r[j] ?? "").trim()) || r[j] === "–"),
+  );
   return (
-    <table className="w-full text-body">
+    <Table>
       {caption && <caption className="sr-only">{caption}</caption>}
-      <thead>
-        <tr className="hairline-b-strong">
+      <Table.Head>
+        <Table.Row>
           {table.columns.map((c, i) => (
-            <th key={c} scope="col" className={cn("h-36 px-12 text-caption font-medium text-fg-secondary first:pl-0", i > 0 ? "text-right" : "text-left")}>
+            <Table.HeaderCell key={c} align={end[i] ? "end" : "start"} className={cn(sticky && "sticky top-0 z-10 bg-panel")}>
               {c}
-            </th>
+            </Table.HeaderCell>
           ))}
-        </tr>
-      </thead>
-      <tbody>
+        </Table.Row>
+      </Table.Head>
+      <Table.Body>
         {table.rows.map((r, i) => (
-          <tr key={i} className="hairline-b">
+          <Table.Row key={i}>
             {r.map((v, j) => (
-              <td key={j} className={cn("h-36 px-12 first:pl-0", j > 0 ? "text-right tabular" : "text-left")}>
+              <Table.Cell key={j} align={end[j] ? "end" : "start"}>
                 {v}
-              </td>
+              </Table.Cell>
             ))}
-          </tr>
+          </Table.Row>
         ))}
-      </tbody>
-    </table>
+      </Table.Body>
+    </Table>
   );
 }
 
@@ -264,12 +292,20 @@ export interface SwatchProps {
 }
 
 export const Swatch = forwardRef<HTMLSpanElement, SwatchProps>(function Swatch({ color, shape = "square", off }, ref) {
+  const edge = edgeColor(color);
   return (
     <span
       ref={ref}
       aria-hidden
-      className={cn("shrink-0 transition-control", shape === "line" ? "h-2 w-12 rounded-pill" : "size-10 rounded-bar", off && "opacity-30")}
-      style={{ background: color }}
+      data-off={off ? "" : undefined}
+      className={cn("shrink-0 data-mark transition-control", shape === "line" ? "h-2 w-12 rounded-pill" : "size-10 rounded-bar")}
+      style={
+        off
+          ? shape === "line"
+            ? { outline: `1px solid ${edge ?? color}`, outlineOffset: 1 }
+            : { boxShadow: `inset 0 0 0 1px ${edge ?? color}` }
+          : { background: color, ...(edge && shape === "square" ? { boxShadow: `inset 0 0 0 1px ${edge}` } : {}) }
+      }
     />
   );
 });
@@ -382,7 +418,7 @@ export interface LegendProps {
 export const Legend = forwardRef<HTMLUListElement, LegendProps>(function Legend({ items, hidden, onToggle, onHover, shape = "square" }, ref) {
   const t = useUiText();
   return (
-    <ul ref={ref} className="flex flex-wrap items-center gap-4" aria-label={t("chartLegend.label", "Legend")}>
+    <ul ref={ref} className={cn("flex flex-wrap items-center", onToggle ? "gap-4" : "gap-x-16 gap-y-4")} aria-label={t("chartLegend.label", "Legend")}>
       {items.map((it) => {
         const off = hidden?.has(it.id);
         const Comp = onToggle ? "button" : "span";
@@ -395,8 +431,8 @@ export const Legend = forwardRef<HTMLUListElement, LegendProps>(function Legend(
               onFocus={() => onHover?.(it.id)}
               onBlur={() => onHover?.(null)}
               className={cn(
-                "inline-flex h-28 items-center gap-8 rounded-pill px-10 text-small font-medium transition-control",
-                onToggle && "relative cursor-pointer hover:bg-fill-1 focus-ring tap-target",
+                "inline-flex h-28 items-center gap-8 text-small font-medium transition-control",
+                onToggle && "relative cursor-pointer rounded-pill px-10 hover:bg-fill-1 focus-ring tap-target",
                 off ? "text-fg-tertiary" : "text-fg",
               )}
             >
@@ -433,26 +469,28 @@ export interface ChartTooltipProps {
 export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(function ChartTooltip({ x, xLeft = x, y, width, heading, rows, visible }, ref) {
   const el = useRef<HTMLDivElement | null>(null);
   const root = useMemo(() => mergeRefs(el, ref), [ref]);
-  const [own, setOwn] = useState(0);
+  const [own, setOwn] = useState({ w: 0, h: 0, room: Infinity });
   useLayoutEffect(() => {
-    const w = el.current?.offsetWidth ?? 0;
-    if (w !== own) setOwn(w);
+    const node = el.current;
+    const next = { w: node?.offsetWidth ?? 0, h: node?.offsetHeight ?? 0, room: (node?.offsetParent as HTMLElement | null)?.clientHeight ?? Infinity };
+    if (next.w !== own.w || next.h !== own.h || next.room !== own.room) setOwn(next);
   }, [own, heading, rows, visible]);
   const flip = x > width / 2;
-  const wanted = flip ? xLeft - 16 - own : x + 16;
-  const left = own ? Math.round(Math.max(0, Math.min(wanted, width - own))) : undefined;
+  const wanted = flip ? xLeft - 16 - own.w : x + 16;
+  const left = own.w ? Math.round(Math.max(0, Math.min(wanted, width - own.w))) : undefined;
+  const top = Math.round(Math.max(0, Math.min(y - 24, own.room - own.h)));
   return (
     <div
       ref={root}
       role="presentation"
       aria-hidden
       className={cn(
-        "pointer-events-none absolute z-10 w-max min-w-200 max-w-360 rounded-tooltip bg-raised p-10 text-small shadow-raised opacity-motion",
-        visible && own ? "opacity-100" : "opacity-0",
+        "pointer-events-none absolute z-10 w-max min-w-160 max-w-360 rounded-tooltip bg-raised p-10 text-small shadow-raised opacity-motion @chart-legend:min-w-200",
+        visible && own.w ? "opacity-100" : "opacity-0",
       )}
       style={{
         ...(left !== undefined ? { left } : flip ? { right: Math.round(width - xLeft + 16) } : { left: Math.round(x + 16) }),
-        top: Math.round(Math.max(0, y - 24)),
+        top,
       }}
     >
       <div className="mb-6 text-caption font-medium text-fg tabular">{heading}</div>
