@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { art } from "@logicplanes/kaeso-tokens";
 import { ReleaseArt, releaseArtSvg } from "./release-art.js";
@@ -122,8 +122,22 @@ describe("ReleaseArt", () => {
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
     const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.shadow-ring)")!;
     expect(text).toHaveTextContent("What's new in Kaeso0.1.0");
-    expect(text.firstElementChild).toHaveStyle({ fontSize: `max(12px, ${(16 / 840) * 100}cqw)` });
+    expect(text.firstElementChild).toHaveClass("text-caption", "@cell-lg:text-body-lg");
+    expect(text.lastElementChild?.className).toMatch(/\btext-(display|title-lg|title|title-sm)\b/);
     expect(text.style.maxWidth).toBe(`${(236 / 840) * 100}cqw`);
+  });
+
+  it("steps a title that doesn't fit down the type scale, wrapping only at the smallest", () => {
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(600);
+    const wide = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return /text-(display|title-lg)\b/.test(this.className) ? 500 : 100;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
+    const { container } = render(<ReleaseArt seed="0.3.0" label="Kaeso 0.3.0" title="Veröffentlichung 0.3.0" />);
+    const title = container.querySelector("span.font-semibold")!;
+    expect(title).toHaveClass("text-title", "whitespace-nowrap");
+    wide.mockRestore();
+    vi.restoreAllMocks();
   });
 
   it("draws the stored art when it has one, and the seed's art otherwise", () => {

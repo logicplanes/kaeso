@@ -181,6 +181,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "heatmap.cellHeading": "{row} {column}",
   "heatmap.less": "少",
   "heatmap.more": "多",
+  "heatmap.rows": "行",
   "jsonView.copyPath": "复制路径：{path}",
   "jsonView.items": "{count, plural, other {{n} 项}}",
   "jsonView.keys": "{count, plural, other {{n} 个键}}",

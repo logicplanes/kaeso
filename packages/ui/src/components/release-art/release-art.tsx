@@ -1,4 +1,5 @@
-import { createElement, forwardRef, useId, useMemo, useState, type ReactNode } from "react";
+import { createElement, forwardRef, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { cn } from "../../utils/cn.js";
 import { drawReleaseArt, releaseArtFor, releaseArtText, serializeArt, RELEASE_ART_VIEW, type ArtNode, type ReleaseArtSpec } from "./drawing.js";
 
@@ -27,6 +28,22 @@ function toElement(n: ArtNode, key: number): ReactNode {
   return createElement(n.tag, { ...n.attrs, key }, n.text ?? n.children?.map(toElement));
 }
 
+const TITLE_SIZES = ["text-display", "text-title-lg", "text-title", "text-title-sm"] as const;
+const WRAP = "text-title-sm";
+
+function useTitleFit(ref: { current: HTMLSpanElement | null }, width: number | null, title: string): string | null {
+  const start = width === null ? null : width >= 512 ? 0 : width >= 320 ? 1 : width >= 208 ? 2 : 3;
+  const [step, setStep] = useState<{ key: string; at: number } | null>(null);
+  const key = `${start}|${title}`;
+  const at = start === null ? null : step?.key === key ? step.at : start;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || at === null || at >= TITLE_SIZES.length - 1) return;
+    if (el.scrollWidth > el.clientWidth + 1) setStep({ key, at: at + 1 });
+  }, [at, key, ref]);
+  return at === null ? null : TITLE_SIZES[at]!;
+}
+
 export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function ReleaseArt(
   { seed, label, art, src, title, eyebrow, shape = "banner", className },
   ref,
@@ -38,8 +55,12 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const drawn = useMemo(() => drawReleaseArt(spec, { shape, idPrefix: prefix }), [spec, shape, prefix]);
   const text = releaseArtText(spec);
   const clear = 236;
+  const frame = useRef<HTMLSpanElement | null>(null);
+  const heading = useRef<HTMLSpanElement | null>(null);
+  const width = useLayoutWidth(frame);
+  const fit = useTitleFit(heading, width, typeof title === "string" ? title : "");
   return (
-    <span className={cn("@container relative block w-full", className)}>
+    <span ref={frame} className={cn("@container relative block w-full", className)}>
       <svg
         ref={ref}
         viewBox={`0 0 ${w} ${h}`}
@@ -57,7 +78,7 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
       {(eyebrow || title) && (
         <span
           aria-hidden
-          className="pointer-events-none absolute flex flex-col items-start gap-4 text-balance wrap-anywhere"
+          className="pointer-events-none absolute flex flex-col items-start gap-4 text-balance"
           style={{
             left: `${(text.eyebrow.x / w) * 100}cqw`,
             bottom: `${(text.title.bottom / w) * 100}cqw`,
@@ -66,13 +87,16 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
             color: text.color,
           }}
         >
-          {eyebrow && (
-            <span className="font-medium opacity-70" style={{ fontSize: `max(12px, ${(16 / w) * 100}cqw)`, lineHeight: 1.2 }}>
-              {eyebrow}
-            </span>
-          )}
+          {eyebrow && <span className="text-caption font-medium opacity-70 @cell-lg:text-body-lg">{eyebrow}</span>}
           {title && (
-            <span className="font-semibold" style={{ fontSize: `max(17px, ${(52 / w) * 100}cqw)`, lineHeight: 1, letterSpacing: "-0.03em" }}>
+            <span
+              ref={heading}
+              className={cn(
+                "max-w-full font-semibold",
+                fit ?? "text-title-sm @cell-sm:text-title @cell-md:text-title-lg @cell-lg:text-display",
+                fit && fit !== WRAP && "whitespace-nowrap",
+              )}
+            >
               {title}
             </span>
           )}

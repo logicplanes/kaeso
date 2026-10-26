@@ -181,6 +181,7 @@ const de: Readonly<Record<string, string>> = {
   "heatmap.cellHeading": "{row} {column}",
   "heatmap.less": "Weniger",
   "heatmap.more": "Mehr",
+  "heatmap.rows": "Zeile",
   "jsonView.copyPath": "Pfad {path} kopieren",
   "jsonView.items": "{count, plural, one {{n} Element} other {{n} Elemente}}",
   "jsonView.keys": "{count, plural, one {{n} Schlüssel} other {{n} Schlüssel}}",

@@ -60,7 +60,7 @@ export const Heatmap = forwardRef<
   const line = (r: number, c: number) =>
     t("heatmap.cell", "{row} {column}: {value}", { row: rows[r] ?? "", column: columns[c] ?? "", value: write(value(r, c)) });
   const height = HEAD + GAP + rows.length * (CELL + GAP) + 8;
-  const table = { columns: ["", ...columns], rows: rows.map((r, ri) => [r, ...columns.map((_, ci) => write(value(ri, ci)))]) };
+  const table = { columns: [t("heatmap.rows", "Row"), ...columns], rows: rows.map((r, ri) => [r, ...columns.map((_, ci) => write(value(ri, ci)))]) };
   const move = (key: string) => {
     const at = cell ?? { r: 0, c: 0 };
     const next =
