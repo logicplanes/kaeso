@@ -1,6 +1,6 @@
 import { createRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommandList, type CommandListGroup } from "./command-list.js";
 import { PickerPopover, PickerTrigger } from "./picker-popover.js";
@@ -125,7 +125,7 @@ describe("CommandList", () => {
     await user.type(screen.getByRole("combobox"), "mini");
     expect(screen.getAllByRole("option")[0]).toHaveTextContent("GPT-5 mini");
     await user.type(screen.getByRole("combobox"), "zzz");
-    expect(screen.getByRole("status")).toHaveTextContent("No results");
+    expect(screen.getByRole("listbox", { name: "Models" })).toHaveTextContent("No results for “minizzz”");
     expect(screen.queryByRole("option")).not.toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(screen.getByRole("combobox")).toHaveValue("");
@@ -306,7 +306,7 @@ describe("CommandList rows", () => {
   it("keep the same 6px edge below the last row as above the first", () => {
     render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} />);
     const rows = screen.getByRole("listbox", { name: "Models" }).querySelector<HTMLElement>(":scope > [role=presentation]");
-    expect(rows?.style.height).toBe(`${2 * 6 + 2 * 28 + 4 * 34}px`);
+    expect(rows?.style.height).toBe(`${2 * 6 + 2 * 28 + 8 + 4 * 34}px`);
   });
 });
 
@@ -314,15 +314,15 @@ describe("CommandList inline in a dialog step", () => {
   it("is as tall as its rows, with no room left below the last one, and keeps that height while searching", async () => {
     const { container } = render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} height="inline" />);
     const frame = container.firstElementChild as HTMLElement;
-    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 8 + 4 * 34}px`);
     await userEvent.type(screen.getByRole("combobox"), "claude");
-    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+    expect(frame.style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 8 + 4 * 34}px`);
   });
 
   it("leaves no room for a labelled group with no rows", () => {
     const withEmpty = [...groups, { id: "mistral", label: "Mistral", items: [] }];
     const { container } = render(<CommandList aria-label="Models" groups={withEmpty} value={null} onSelect={() => {}} height="inline" />);
-    expect((container.firstElementChild as HTMLElement).style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 4 * 34}px`);
+    expect((container.firstElementChild as HTMLElement).style.height).toBe(`${44 + 2 * 6 + 2 * 28 + 8 + 4 * 34}px`);
   });
 
   it("stops at 360px and scrolls when the rows are taller", () => {
@@ -367,5 +367,26 @@ describe("PickerPopover's ref", () => {
     const popover = await screen.findByRole("dialog", { name: "Provider" });
     expect(ref.current).toBe(popover);
     expect(popover).toContainElement(screen.getByRole("listbox", { name: "Providers" }));
+  });
+});
+
+describe("CommandList announcements", () => {
+  it("tells a screen reader how many rows match once typing pauses, and when none do", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      render(<CommandList aria-label="Models" groups={groups} value={null} onSelect={() => {}} />);
+      const status = screen.getByRole("status");
+      expect(status).toBeEmptyDOMElement();
+      fireEvent.change(screen.getByRole("combobox"), { target: { value: "claude" } });
+      expect(status).toBeEmptyDOMElement();
+      await act(() => vi.advanceTimersByTimeAsync(500));
+      expect(status).toHaveTextContent(/^\d+ results?$/);
+      fireEvent.change(screen.getByRole("combobox"), { target: { value: "zzz" } });
+      await act(() => vi.advanceTimersByTimeAsync(500));
+      expect(status).toHaveTextContent("No results for “zzz”");
+      expect(screen.getByRole("listbox", { name: "Models" })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

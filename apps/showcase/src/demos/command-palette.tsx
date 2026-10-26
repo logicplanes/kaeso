@@ -39,9 +39,14 @@ export const meta = {
     ["Up Down", "Moves"],
     ["Enter", "Opens the item or its page"],
     ["Backspace", "Goes back a page when the search is empty"],
-    ["Escape", "Closes"],
+    ["Escape", "Clears the search, then goes back a page, then closes"],
   ],
-  a11y: ["The input is a combobox controlling the results listbox; the active result is announced."],
+  a11y: [
+    "The input is a combobox controlling the results listbox; the active result is announced.",
+    "A result is named by its label, with its hint and shortcut after a pause.",
+    "On a nested page, the chip before the search goes back a page.",
+    "After typing pauses, a screen reader hears how many results match.",
+  ],
 };
 export const examples = [{ id: "basic", title: "Basic", fn: "Basic" }];
 export function Basic() {
@@ -64,8 +69,8 @@ export function States() {
       <StateSection title="Filtered and loading">
         <div className="flex flex-col gap-24">
           <CommandPalette inline groups={groups} defaultQuery="claude" />
-          <CommandPalette inline groups={[{ label: "Logs", items: [], loading: true }]} defaultQuery="req_01" />
-          <CommandPalette inline groups={groups} defaultQuery="zzz" emptyText="No pages or actions match" />
+          <CommandPalette inline groups={[{ label: "Logs", items: [], loading: true }, groups[2]!]} defaultQuery="" />
+          <CommandPalette inline groups={groups} defaultQuery="zzz" />
         </div>
       </StateSection>
       <StateSection title="Key hints, where they were asked for">

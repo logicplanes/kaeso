@@ -34,6 +34,7 @@ export const meta = {
     ["Escape", "Clears the search, then closes"],
   ],
   a11y: [
+    "After typing pauses, a screen reader hears how many rows match, or that none do.",
     "The search field is a combobox that points at the active row; the list is a listbox with one group per caption.",
     "Each row says its position in the whole list, so a screen reader counts every row, not just those drawn.",
   ],
@@ -92,8 +93,33 @@ export function States() {
   return (
     <>
       <StateSection title="Nothing matches">
-        <div className="w-400 max-w-full">
-          <CommandList height="inline" aria-label="Models" groups={groups} defaultQuery="llama" emptyText="No models match" />
+        <div className="flex flex-col gap-24">
+          <div className="w-320">
+            <CommandList height="inline" aria-label="Models" groups={groups} defaultQuery="llama" emptyText="No models match" />
+          </div>
+          <div className="w-320">
+            <CommandList height="inline" aria-label="Models" groups={groups} defaultQuery="llama" />
+          </div>
+        </div>
+      </StateSection>
+      <StateSection title="One chosen, a disabled row, loading">
+        <div className="flex flex-col gap-24">
+          <div className="w-320">
+            <CommandList
+              height="inline"
+              aria-label="Models"
+              groups={groups.map((g, i) => (i === 0 ? { ...g, items: g.items.map((m, j) => (j === 1 ? { ...m, disabled: true } : m)) } : g))}
+              value="gpt-5"
+            />
+          </div>
+          <div className="w-320">
+            <CommandList
+              height="inline"
+              aria-label="Models"
+              loading
+              groups={[{ id: "more", label: "models.dev", items: [], loading: true }, ...groups.slice(0, 1)]}
+            />
+          </div>
         </div>
       </StateSection>
       <StateSection title="Several">

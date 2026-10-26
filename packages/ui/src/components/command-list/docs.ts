@@ -10,11 +10,12 @@ export const docs = {
       autoFocus: "Focuses the search field when it appears, as in a popover or a dialog step.",
       defaultQuery: "The search text on first render.",
       escapeClears: "Escape first clears the search, and only an empty search lets Escape close what holds the list (true by default).",
-      emptyText: 'What the list says when nothing matches: "No models match".',
+      emptyText:
+        'What the list says when nothing matches: "No models match". Defaults to "No results for “claude”", naming the query, in the provider\'s language.',
       footer: "A line under the list, such as key hints.",
       groups:
-        "The rows, in groups; a group with a label gets a sticky caption with its mark and count, and a loading group keeps its caption while it has no rows yet.",
-      loading: "Shows a quiet progress line at the top while more rows load.",
+        "The rows, in groups; a group with a label gets a sticky caption with its mark and count, and a loading group keeps its caption, without a count, over a Loading… row while it has no rows yet.",
+      loading: "Shows a quiet progress line at the top while more rows load; with reduced motion it breathes instead of moving.",
       height:
         "How tall it is: bounded in a popover, a fixed raised frame in a dialog, or filling a phone sheet. Inside `PickerPopover` it follows the popover.",
       inputProps: "Data attributes for the search field, such as a marker other code looks for.",

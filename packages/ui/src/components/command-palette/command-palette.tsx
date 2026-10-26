@@ -50,6 +50,8 @@ export interface CommandPaletteProps {
   counts?: boolean | undefined;
 }
 
+const ID = /^[a-z]+_[0-9A-Za-z]+$/;
+
 function matches(item: CommandListItem, q: string) {
   const hay = [item.label, ...(item.keywords ?? [])].join(" ").toLowerCase();
   return q
@@ -74,14 +76,14 @@ function Palette({
   rootRef,
 }: CommandPaletteProps & { close: () => void; rootRef?: Ref<HTMLDivElement> | undefined }) {
   const t = useUiText();
-  const placeholder = placeholderProp ?? t("commandPalette.placeholder", "Search or run a command");
+  const [pages, setPages] = useState<{ title: string; groups: CommandGroup[] }[]>([]);
+  const placeholder = placeholderProp ?? (pages.length ? t("commandList.search", "Search") : t("commandPalette.placeholder", "Search or run a command"));
   const [ownQuery, setOwnQuery] = useState(defaultQuery);
   const query = controlledQuery ?? ownQuery;
   const setQuery = (next: string) => {
     setOwnQuery(next);
     onQueryChange?.(next);
   };
-  const [pages, setPages] = useState<{ title: string; groups: CommandGroup[] }[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const [box, setBox] = useState<HTMLElement | null>(null);
   const boxRef = useCallback(
@@ -112,10 +114,24 @@ function Palette({
               {item.icon && <Icon icon={item.icon} size="sm" className={active ? "text-fg" : "text-fg-secondary"} />}
               <span className="min-w-0 truncate">{item.label}</span>
               {item.hint && (
-                <span className={cn("min-w-0 truncate text-body font-regular", active ? "text-fg-secondary" : "text-fg-tertiary")}>{item.hint}</span>
+                <span
+                  className={cn(
+                    "min-w-0 truncate font-regular dialog-narrow:hidden",
+                    ID.test(item.hint) ? "mono text-small" : "text-body",
+                    active ? "text-fg-secondary" : "text-fg-tertiary",
+                  )}
+                >
+                  <span className="sr-only">, </span>
+                  {item.hint}
+                </span>
               )}
               <span className="ml-auto flex shrink-0 items-center gap-8">
-                {item.shortcut && <KbdSequence keys={item.shortcut} />}
+                {item.shortcut && (
+                  <>
+                    <span className="sr-only">, </span>
+                    <KbdSequence keys={item.shortcut} />
+                  </>
+                )}
                 {item.children && <Icon icon={icons.chevronRight} size="sm" className="text-fg-tertiary" />}
               </span>
             </>
@@ -125,6 +141,11 @@ function Palette({
     [source],
   );
 
+  const back = () => {
+    setPages((p) => p.slice(0, -1));
+    setQuery("");
+    input.current?.focus();
+  };
   const select = (id: string) => {
     const item = byId.get(id);
     if (!item) return;
@@ -142,7 +163,10 @@ function Palette({
   return (
     <div
       ref={boxRef}
-      className={cn("relative flex palette-limits min-h-0 flex-col overflow-hidden", inline ? "w-640 rounded-palette bg-raised shadow-dialog" : "flex-1")}
+      className={cn(
+        "@container relative flex palette-limits min-h-0 flex-col overflow-hidden",
+        inline ? "w-640 rounded-palette bg-raised shadow-dialog" : "flex-1",
+      )}
     >
       <CommandList
         ref={input}
@@ -150,7 +174,6 @@ function Palette({
         aria-label={t("commandPalette.results", "Results")}
         size="lg"
         height="fill"
-        escapeClears={false}
         match={matches}
         counts={counts}
         inputProps={{ "data-palette-input": "" }}
@@ -160,14 +183,25 @@ function Palette({
         onSelect={select}
         loading={loading}
         placeholder={placeholder}
-        emptyText={emptyText ?? t("commandPalette.noResults", "No results")}
+        emptyText={emptyText}
         searchPrefix={
-          page && <span className="inline-flex h-24 shrink-0 items-center rounded-pill bg-fill-2 px-10 text-caption font-medium text-fg">{page.title}</span>
+          page && (
+            <button
+              type="button"
+              aria-label={t("commandPalette.backFrom", "{page}, go back", { page: page.title })}
+              onClick={back}
+              className="relative inline-flex h-24 max-w-1/2 shrink-0 cursor-pointer items-center gap-2 rounded-pill bg-fill-2 pr-10 pl-6 text-caption font-medium text-fg transition-control tap-target hover:bg-fill-3 focus-ring"
+            >
+              <Icon icon={icons.chevronLeft} size="xs" className="text-fg-secondary" />
+              <span className="min-w-0 truncate">{page.title}</span>
+            </button>
+          )
         }
         onInputKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-          if (e.key === "Backspace" && !query && pages.length) {
+          if ((e.key === "Backspace" || e.key === "Escape") && !query && pages.length) {
             e.preventDefault();
-            setPages((p) => p.slice(0, -1));
+            e.stopPropagation();
+            back();
           }
         }}
         footer={
@@ -196,6 +230,8 @@ function Palette({
   );
 }
 
+const OTHER_MODAL = "[role=dialog][data-open]:not([data-side]), [role=alertdialog][data-open]";
+
 export const CommandPalette = forwardRef<HTMLDivElement, CommandPaletteProps>(function CommandPalette(props, ref) {
   const { open, onOpenChange, hotkey = true, inline } = props;
   const [inner, setInner] = useState(false);
@@ -206,10 +242,13 @@ export const CommandPalette = forwardRef<HTMLDivElement, CommandPaletteProps>(fu
   };
   const toggle = useRef(() => setOpen(!isOpen));
   toggle.current = () => setOpen(!isOpen);
+  const openRef = useRef(isOpen);
+  openRef.current = isOpen;
   useEffect(() => {
     if (!hotkey || inline) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        if (!openRef.current && document.querySelector(OTHER_MODAL)) return;
         e.preventDefault();
         toggle.current();
       }

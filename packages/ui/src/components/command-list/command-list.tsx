@@ -40,8 +40,8 @@ export const KAESO_COMMAND_LIST_VARIANTS = {
 export const KAESO_COMMAND_LIST_DEFAULT_VARIANTS = { height: "popover", size: "md" } as const;
 
 const SIZES = {
-  md: { search: "h-44 gap-10 px-16", input: "text-body", row: 34, item: "" },
-  lg: { search: "h-56 gap-12 px-20", input: "text-body-lg font-regular", row: 40, item: "rounded-palette-item gap-12 px-12" },
+  md: { search: "h-44 gap-10 px-16", input: "text-body", row: 34, item: "", caption: "px-16" },
+  lg: { search: "h-56 gap-12 px-20", input: "text-body-lg font-regular", row: 40, item: "rounded-palette-item gap-12 px-12", caption: "px-18" },
 } as const;
 
 export type CommandListHeight = keyof typeof KAESO_COMMAND_LIST_VARIANTS.height;
@@ -109,7 +109,9 @@ const subscribeCoarse = (onChange: () => void) => {
 const isCoarse = () => typeof window !== "undefined" && !!window.matchMedia?.(COARSE).matches;
 
 const HEADER = 28;
+const GROUP_GAP = 8;
 const EDGE = 6;
+const ANNOUNCE_AFTER = 500;
 const SEARCH = { md: 44, lg: 56 } as const;
 const EMPTY = 80;
 const FALLBACK_VIEWPORT = 480;
@@ -117,7 +119,36 @@ const VIRTUALIZE_ABOVE = 200;
 
 export const CommandListHeightContext = createContext<CommandListHeight | null>(null);
 
-type Row = { kind: "header"; group: CommandListGroup; gi: number } | { kind: "item"; item: CommandListItem; gi: number; option: number; score: number };
+type Row =
+  | { kind: "header"; group: CommandListGroup; gi: number }
+  | { kind: "loading"; gi: number }
+  | { kind: "item"; item: CommandListItem; gi: number; option: number; score: number };
+
+function buildRows(shown: { group: CommandListGroup; items: { item: CommandListItem; score: number }[] }[]) {
+  const rows: Row[] = [];
+  const options: { row: number; item: CommandListItem; gi: number }[] = [];
+  const spans: { first: number; last: number }[] = [];
+  shown.forEach(({ group, items }, gi) => {
+    const first = rows.length;
+    if (group.label) rows.push({ kind: "header", group, gi });
+    if (group.loading && items.length === 0) rows.push({ kind: "loading", gi });
+    for (const { item, score } of items) {
+      options.push({ row: rows.length, item, gi });
+      rows.push({ kind: "item", item, gi, option: options.length - 1, score });
+    }
+    spans.push({ first, last: rows.length - 1 });
+  });
+  return { rows, options, spans };
+}
+
+const sizeOf = (row: Row | undefined, rowHeight: number) => (row?.kind === "header" ? HEADER : rowHeight);
+const gapAfter = (rows: Row[], i: number) => (rows[i + 1]?.kind === "header" ? GROUP_GAP : 0);
+
+function rowOffsets(rows: Row[], rowHeight: number) {
+  const out = [EDGE];
+  rows.forEach((row, i) => out.push((out[i] ?? EDGE) + sizeOf(row, rowHeight) + gapAfter(rows, i)));
+  return out;
+}
 
 const fuzzy = (item: CommandListItem, query: string) => commandMatch(query, [item.label, ...(item.keywords ?? [])]);
 
@@ -186,33 +217,16 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const selected = useMemo(() => new Set(value == null ? [] : typeof value === "string" ? [value] : value), [value]);
 
   const shown = useMemo(() => visibleGroups(groups, query, match), [groups, query, match]);
-  const { rows, options, spans } = useMemo(() => {
-    const rows: Row[] = [];
-    const options: { row: number; item: CommandListItem; gi: number }[] = [];
-    const spans: { first: number; last: number }[] = [];
-    shown.forEach(({ group, items }, gi) => {
-      const first = rows.length;
-      if (group.label) rows.push({ kind: "header", group, gi });
-      for (const { item, score } of items) {
-        options.push({ row: rows.length, item, gi });
-        rows.push({ kind: "item", item, gi, option: options.length - 1, score });
-      }
-      spans.push({ first, last: rows.length - 1 });
-    });
-    return { rows, options, spans };
-  }, [shown]);
+  const { rows, options, spans } = useMemo(() => buildRows(shown), [shown]);
   const labelled = shown.some((g) => g.group.label);
   const fits = height === "inline" && !toolbar && !footer;
-  const unfiltered = useMemo(
-    () => (fits ? visibleGroups(groups, "", match).reduce((sum, { group, items }) => sum + (group.label ? HEADER : 0) + items.length * rowHeight, 0) : 0),
-    [fits, groups, match, rowHeight],
-  );
+  const unfiltered = useMemo(() => {
+    if (!fits) return 0;
+    const all = buildRows(visibleGroups(groups, "", match)).rows;
+    return (rowOffsets(all, rowHeight)[all.length] ?? EDGE) - EDGE;
+  }, [fits, groups, match, rowHeight]);
   const fitted = fits ? { height: SEARCH[size] + 2 * EDGE + Math.max(unfiltered, EMPTY) } : undefined;
-  const offsets = useMemo(() => {
-    const out = [EDGE];
-    for (const row of rows) out.push((out[out.length - 1] ?? EDGE) + (row.kind === "header" ? HEADER : rowHeight));
-    return out;
-  }, [rows, rowHeight]);
+  const offsets = useMemo(() => rowOffsets(rows, rowHeight), [rows, rowHeight]);
 
   const firstEnabled = useCallback(
     (from: number, step: 1 | -1) => {
@@ -241,7 +255,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     enabled: virtual,
     count: rows.length,
     getScrollElement: () => scroller.current,
-    estimateSize: (i) => (rows[i]?.kind === "header" ? HEADER : rowHeight),
+    estimateSize: (i) => sizeOf(rows[i], rowHeight) + gapAfter(rows, i),
     overscan: 8,
     useFlushSync: false,
     paddingStart: EDGE,
@@ -351,9 +365,9 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
   const optionId = (i: number) => `${uid}-${i}-${(options[i]?.item.value ?? "").replace(/\s/g, "_")}`;
   const groupLabelId = (gi: number) => `${uid}-g-${gi}`;
   const header = (group: CommandListGroup, gi: number) => {
-    const count = !counts ? undefined : query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
+    const count = !counts || group.loading ? undefined : query.trim() ? (shown[gi]?.items.length ?? 0) : group.count;
     return (
-      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised px-16")}>
+      <div aria-hidden className={cn(MENU_LABEL, "sticky top-0 z-10 gap-10 bg-raised", look.caption)}>
         {group.leading}
         <span id={groupLabelId(gi)} className="min-w-0 truncate">
           {group.label}
@@ -408,10 +422,25 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     const row = rows[index];
     if (!row) continue;
     const list = rendered.get(row.gi) ?? [];
-    if (row.kind === "item") list.push(index);
+    if (row.kind !== "header") list.push(index);
     rendered.set(row.gi, list);
   }
   const empty = rows.length === 0;
+  const trimmed = query.trim();
+  const emptyMessage = loading
+    ? t("commandList.loading", "Loading…")
+    : (emptyText ?? (trimmed ? t("commandList.noResultsFor", "No results for “{query}”", { query: trimmed }) : t("commandList.noResults", "No results")));
+  const [heard, setHeard] = useState<{ query: string; count: number; empty: boolean } | null>(null);
+  const typedFrom = useRef(query);
+  useEffect(() => {
+    if (query === typedFrom.current) return;
+    const timer = setTimeout(() => setHeard({ query: trimmed, count: options.length, empty }), ANNOUNCE_AFTER);
+    return () => clearTimeout(timer);
+  }, [query, trimmed, options.length, empty]);
+  const fade = useCallback((el: HTMLElement | null) => {
+    if (el) el.style.setProperty("--scroll-area-overflow-y-end", `${Math.max(0, el.scrollHeight - el.scrollTop - el.clientHeight)}px`);
+  }, []);
+  useLayoutEffect(() => fade(scroller.current));
   return (
     <div
       {...(force ? { "data-force": force } : {})}
@@ -420,7 +449,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     >
       {loading && (
         <span aria-hidden className="absolute inset-x-0 top-0 h-2 overflow-hidden">
-          <span className="block h-full w-1/3 animate-indeterminate bg-fg-tertiary" />
+          <span className="block h-full w-1/3 animate-indeterminate bg-fg-tertiary reduced:w-full reduced-pulse" />
         </span>
       )}
       <div
@@ -457,16 +486,21 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
       <div
         ref={scroller}
         id={listId}
-        {...(empty
-          ? { role: "status" }
-          : { role: "listbox", "aria-label": ariaLabel, ...(multiple ? { "aria-multiselectable": true } : {}), ...(loading ? { "aria-busy": true } : {}) })}
+        role="listbox"
+        aria-label={ariaLabel}
+        {...(multiple ? { "aria-multiselectable": true } : {})}
+        {...(loading ? { "aria-busy": true } : {})}
         data-dialog-body=""
+        onScroll={(e) => fade(e.currentTarget)}
         {...(labelled ? { style: { scrollPaddingTop: HEADER } } : {})}
-        className={cn("min-h-0 overflow-y-auto overscroll-contain scrollbar-quiet", height === "popover" ? "flex-initial" : "flex-1")}
+        className={cn("min-h-0 overflow-y-auto overscroll-contain scroll-fade-y scrollbar-quiet", height === "popover" ? "flex-initial" : "flex-1")}
       >
         {empty ? (
-          <div className="flex h-80 items-center justify-center px-16 text-center text-body text-fg-secondary">
-            {loading ? t("commandList.loading", "Loading…") : (emptyText ?? t("commandList.noResults", "No results"))}
+          <div
+            aria-hidden
+            className="flex h-full min-h-80 items-center justify-center px-16 text-center text-body text-fg-secondary text-balance wrap-anywhere"
+          >
+            {emptyMessage}
           </div>
         ) : (
           <div role="presentation" className="relative w-full" style={{ height: (offsets[rows.length] ?? 0) + EDGE }}>
@@ -475,7 +509,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
               const group = shown[gi]?.group;
               if (!span || !group) return null;
               const top = offsets[span.first] ?? 0;
-              const bottom = offsets[span.last + 1] ?? top;
+              const bottom = (offsets[span.last] ?? top) + sizeOf(rows[span.last], rowHeight);
               return (
                 <div
                   key={group.id}
@@ -486,16 +520,23 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
                   {group.label && header(group, gi)}
                   {indexes.map((index) => {
                     const row = rows[index];
-                    return row?.kind === "item" ? (
+                    if (row?.kind !== "item" && row?.kind !== "loading") return null;
+                    return (
                       <div
                         key={index}
                         role="presentation"
                         className="absolute left-0 w-full"
-                        style={{ top: (offsets[index] ?? 0) - top, height: (offsets[index + 1] ?? 0) - (offsets[index] ?? 0) }}
+                        style={{ top: (offsets[index] ?? 0) - top, height: sizeOf(row, rowHeight) }}
                       >
-                        {option(row)}
+                        {row.kind === "item" ? (
+                          option(row)
+                        ) : (
+                          <div aria-hidden className={cn("flex h-full items-center text-body text-fg-tertiary", look.caption)}>
+                            {t("commandList.loading", "Loading…")}
+                          </div>
+                        )}
                       </div>
-                    ) : null;
+                    );
                   })}
                 </div>
               );
@@ -503,6 +544,9 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
           </div>
         )}
       </div>
+      <span role="status" className="sr-only">
+        {heard && (heard.empty ? emptyMessage : t("commandList.results", "{count, plural, one {# result} other {# results}}", { count: heard.count }))}
+      </span>
       {footer}
     </div>
   );

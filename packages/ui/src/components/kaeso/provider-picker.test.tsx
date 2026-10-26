@@ -43,7 +43,7 @@ describe("ProviderPicker", () => {
     await user.keyboard("tgt");
     expect(names(screen.getByRole("listbox"))).toEqual(["Together AI"]);
     await user.keyboard("zz");
-    expect(screen.getByRole("status")).toHaveTextContent("No providers match");
+    expect(screen.getByRole("listbox", { name: "Provider" })).toHaveTextContent("No providers match");
   });
 
   it("chooses with the keyboard in a dialog step", async () => {
