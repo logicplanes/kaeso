@@ -7,7 +7,10 @@ import { warnMissingName } from "../../utils/dev.js";
 
 export const KAESO_BUTTON_GROUP_VARIANTS = {
   attached: {
-    true: { classes: "inline-flex rounded-pill bg-raised ring-over isolate", description: "Connected: one outer pill with inner hairline dividers (default)" },
+    true: {
+      classes: "inline-flex rounded-pill bg-raised ring-over isolate forced-colors:outline forced-colors:-outline-offset-1",
+      description: "Connected: one outer pill with inner hairline dividers (default)",
+    },
     false: { classes: "inline-flex gap-8", description: "Spaced: separate pills 8px apart" },
   },
   size: {
@@ -21,6 +24,9 @@ export const KAESO_BUTTON_GROUP_DEFAULT_VARIANTS = { attached: "true", size: "md
 
 type GroupSize = Exclude<ButtonSize, "xl">;
 const ICON_ONLY: Record<GroupSize, string> = { xs: "w-28 px-0", sm: "w-36 px-0", md: "w-40 px-0", lg: "w-44 px-0" };
+
+const SELECTED =
+  "aria-pressed:bg-ink aria-pressed:text-on-ink aria-pressed:shadow-none aria-pressed:hover:bg-ink-hover aria-pressed:active:bg-ink-pressed aria-pressed:disabled:bg-ink aria-pressed:disabled:text-on-ink aria-pressed:disabled:opacity-40";
 
 const Ctx = createContext<{ size: GroupSize; attached: boolean }>({ size: "md", attached: true });
 
@@ -61,12 +67,13 @@ const Item = forwardRef<HTMLButtonElement, ButtonGroupItemProps>(function Button
       {...(pressed !== undefined ? { "aria-pressed": pressed } : {})}
       className={cn(
         "relative inline-flex items-center justify-center whitespace-nowrap select-none transition-control focus-visible:z-10 cursor-pointer disabled:cursor-not-allowed",
-        attached ? "focus-ring-segment" : "focus-ring",
+        attached ? "focus-ring-inset aria-pressed:focus-visible:outline-on-ink aria-pressed:focus-visible:-outline-offset-4" : "focus-ring",
         sizeClasses,
         iconOnly && ICON_ONLY[size],
         attached
-          ? "rounded-none text-fg first:rounded-l-pill last:rounded-r-pill not-first:divider-l hover:bg-fill-1 active:bg-fill-2 aria-pressed:bg-fill-2 disabled:text-fg-disabled"
-          : "rounded-pill material-secondary aria-pressed:bg-fill-2",
+          ? "rounded-none text-fg first:rounded-s-pill last:rounded-e-pill not-first:divider-l hover:bg-raised-hover active:bg-raised-pressed disabled:text-fg-disabled"
+          : "rounded-pill material-secondary",
+        SELECTED,
         className,
       )}
       {...props}
