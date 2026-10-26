@@ -685,7 +685,7 @@
   "The floating selection bar; off where the host shows the count itself, as in a dialog.": "浮动选择栏；宿主自行显示数量时关闭，例如在对话框中。",
   "The flows, each with a `source` and a `target` node `id` and a `value`.": "流向，每个包含 `source` 和 `target` 节点的 `id` 以及 `value`。",
   "The full secret, shown once.": "完整的密钥，只显示一次。",
-  "The gateway's address, for the code snippet that uses the key.": "网关的地址，用于使用该密钥的代码片段。",
+  "The gateway's address, for the `.env` tab and the code snippets.": "网关的地址，用于 `.env` 标签页和代码片段。",
   "The grid layout's items to a row, from 480px of its container's width.": "网格布局中每行的项目数，容器宽度达到 480px 起生效。",
   "The grid's accessible name (\"Models\").": "网格的无障碍名称（“模型”）。",
   "The heading level `#` becomes (3 by default: below a page's and a section's own headings).": "`#` 对应的标题级别（默认 3：低于页面和区块自身的标题）。",

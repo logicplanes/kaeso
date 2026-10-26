@@ -5,10 +5,11 @@ import { SecretReveal, sdkSnippets } from "./moments.js";
 const SECRET = "sk-kso-test-0123456789abcdef";
 
 describe("SecretReveal", () => {
-  it("puts the key in a .env file and has the SDK snippets read it from the environment", () => {
+  it("puts the gateway's URL and the key in a .env file and has the SDK snippets read the key from the environment", () => {
     render(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" />);
     expect(screen.getByRole("textbox", { name: "Key" })).toHaveTextContent(SECRET);
     expect(screen.getByRole("tab", { name: ".env" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("KAESO_BASE_URL=https://kaeso.example.com/v1")).toBeInTheDocument();
     expect(screen.getByText(`KAESO_API_KEY=${SECRET}`)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Python" })).toBeInTheDocument();
   });

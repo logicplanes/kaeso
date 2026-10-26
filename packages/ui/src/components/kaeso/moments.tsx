@@ -58,7 +58,7 @@ export const SecretReveal = forwardRef<HTMLDivElement, SecretRevealProps>(functi
   const copyKey = t("secretReveal.copyKey", "Copy key");
   const done = t("secretReveal.copied", "Key copied");
   const tabs = snippets || [
-    { label: ".env", lang: "bash" as const, code: `KAESO_API_KEY=${secret}` },
+    { label: ".env", lang: "bash" as const, code: `KAESO_BASE_URL=${baseUrl}/v1\nKAESO_API_KEY=${secret}` },
     ...sdkSnippets({ baseUrl, ...(model ? { model } : {}) }),
   ];
   return (

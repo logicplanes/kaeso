@@ -178,10 +178,10 @@ export const docs = {
   },
   SecretReveal: {
     description:
-      'The one-time secret: calm, centered, certain. The secret on a well (selected on click), a large "Copy key" that becomes "Copied" without changing size, a plain warning, and snippets that use it.',
+      'The one-time secret: calm, centered, certain. The secret on a well (selected on click), a plain warning, a large "Copy key" that becomes "Key copied" without changing size, and a `.env` tab with the gateway\'s URL and the key beside SDK snippets that read the key from the environment.',
     props: {
       apiKey: "What stands in for the key: the real key right after creation, a placeholder elsewhere.",
-      baseUrl: "The gateway's address, for the code snippet that uses the key.",
+      baseUrl: "The gateway's address, for the `.env` tab and the code snippets.",
       model: "A model id for the code snippet.",
       name: "The key's name, for the heading.",
       onCopied: "Called when the secret was copied.",

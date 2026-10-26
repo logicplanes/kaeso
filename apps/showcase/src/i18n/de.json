@@ -685,7 +685,7 @@
   "The floating selection bar; off where the host shows the count itself, as in a dialog.": "Die schwebende Auswahlleiste; aus, wo der Host die Anzahl selbst zeigt, etwa in einem Dialog.",
   "The flows, each with a `source` and a `target` node `id` and a `value`.": "Die Flüsse, jeder mit `source`- und `target`-Knoten-`id` und einem `value`.",
   "The full secret, shown once.": "Das vollständige Geheimnis, einmal angezeigt.",
-  "The gateway's address, for the code snippet that uses the key.": "Die Adresse des Gateways, für das Code-Snippet, das den Schlüssel verwendet.",
+  "The gateway's address, for the `.env` tab and the code snippets.": "Die Adresse des Gateways, für den `.env`-Tab und die Code-Snippets.",
   "The grid layout's items to a row, from 480px of its container's width.": "Einträge pro Zeile im Rasterlayout, ab 480px Breite des Containers.",
   "The grid's accessible name (\"Models\").": "Der zugängliche Name des Rasters („Modelle“).",
   "The heading level `#` becomes (3 by default: below a page's and a section's own headings).": "Die Überschriftenebene, zu der `#` wird (standardmäßig 3: unter den Überschriften der Seite und des Abschnitts).",
