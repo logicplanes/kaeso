@@ -11,13 +11,17 @@ const A: DialectId = DialectId::AnthropicMessages;
 const C: DialectId = DialectId::OpenAiChat;
 const R: DialectId = DialectId::OpenAiResponses;
 
-fn fixture(dialect: DialectId, name: &str) -> Value {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+fn fixture_path(dialect: DialectId, folder: &str, name: &str) -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("fixtures")
         .join(dialect.as_str())
-        .join("requests")
-        .join(name);
-    serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap()
+        .join(folder)
+        .join(name)
+}
+
+fn fixture(dialect: DialectId, name: &str) -> Value {
+    serde_json::from_slice(&std::fs::read(fixture_path(dialect, "requests", name)).unwrap())
+        .unwrap()
 }
 
 fn try_send(
@@ -82,6 +86,19 @@ fn collect(value: &Value, found: &mut Vec<Value>) {
     }
 }
 
+fn without_cache_control(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .filter(|(key, _)| *key != "cache_control")
+                .map(|(key, inner)| (key.clone(), without_cache_control(inner)))
+                .collect(),
+        ),
+        Value::Array(items) => Value::Array(items.iter().map(without_cache_control).collect()),
+        other => other.clone(),
+    }
+}
+
 fn last_function_tool(body: &Value) -> &Value {
     body["tools"]
         .as_array()
@@ -94,6 +111,26 @@ fn last_function_tool(body: &Value) -> &Value {
 
 fn last_system_block(body: &Value) -> &Value {
     body["system"].as_array().unwrap().last().unwrap()
+}
+
+fn last_message_block(body: &Value) -> &Value {
+    let messages = body["messages"].as_array().unwrap();
+    messages.last().unwrap()["content"]
+        .as_array()
+        .unwrap()
+        .last()
+        .unwrap()
+}
+
+fn assert_same_prefix(first: &Value, second: &Value, label: &str) {
+    assert_eq!(first["tools"], second["tools"], "{label}");
+    assert_eq!(first["system"], second["system"], "{label}");
+    assert_eq!(first["thinking"], second["thinking"], "{label}");
+    let earlier = without_cache_control(&first["messages"]);
+    let later = without_cache_control(&second["messages"]);
+    let (earlier, later) = (earlier.as_array().unwrap(), later.as_array().unwrap());
+    assert!(later.len() > earlier.len(), "{label}");
+    assert_eq!(earlier[..], later[..earlier.len()], "{label}");
 }
 
 fn codex_next_turn(turn: &Value) -> Value {
@@ -115,14 +152,14 @@ fn codex_next_turn(turn: &Value) -> Value {
 fn codex_on_claude_caches_the_tools_the_system_prompt_and_the_conversation() {
     let body = send(R, A, &fixture(R, "codex-developer-resume.json"));
     let ephemeral = json!({"type": "ephemeral"});
-    assert_eq!(body["cache_control"], ephemeral);
     assert_eq!(last_function_tool(&body)["cache_control"], ephemeral);
     assert_eq!(last_system_block(&body)["cache_control"], ephemeral);
+    assert_eq!(last_message_block(&body)["cache_control"], ephemeral);
     assert_eq!(breakpoints(&body).len(), 3);
 }
 
 #[test]
-fn every_codex_turn_on_claude_is_cached() {
+fn breakpoints_sit_on_blocks_so_anthropic_compatible_providers_take_them() {
     for name in [
         "codex-developer-resume.json",
         "codex-model-switch.json",
@@ -130,8 +167,9 @@ fn every_codex_turn_on_claude_is_cached() {
         "codex-web-search-resume.json",
     ] {
         let body = send(R, A, &fixture(R, name));
+        assert_eq!(body.get("cache_control"), None, "{name}");
         assert_eq!(
-            body["cache_control"],
+            last_message_block(&body)["cache_control"],
             json!({"type": "ephemeral"}),
             "{name}"
         );
@@ -140,17 +178,15 @@ fn every_codex_turn_on_claude_is_cached() {
 }
 
 #[test]
-fn a_codex_turn_repeats_the_previous_turn_byte_for_byte() {
+fn a_codex_turn_repeats_the_previous_turn() {
     let turn = fixture(R, "codex-developer-resume.json");
     let first = send(R, A, &turn);
     let second = send(R, A, &codex_next_turn(&turn));
-    assert_eq!(first["tools"], second["tools"]);
-    assert_eq!(first["system"], second["system"]);
-    assert_eq!(first["thinking"], second["thinking"]);
-    let earlier = first["messages"].as_array().unwrap();
-    let later = second["messages"].as_array().unwrap();
-    assert!(later.len() > earlier.len());
-    assert_eq!(earlier[..], later[..earlier.len()]);
+    assert_same_prefix(&first, &second, "codex");
+    assert_eq!(
+        last_message_block(&second)["cache_control"],
+        json!({"type": "ephemeral"})
+    );
 }
 
 #[test]
@@ -166,16 +202,35 @@ fn chat_apps_on_claude_are_cached() {
                 {"type": "function", "function": {"name": "list_files", "parameters": {"type": "object"}}}]}),
     );
     let ephemeral = json!({"type": "ephemeral"});
-    assert_eq!(body["cache_control"], ephemeral);
     assert_eq!(body["tools"][0].get("cache_control"), None);
     assert_eq!(body["tools"][1]["cache_control"], ephemeral);
     assert_eq!(last_system_block(&body)["cache_control"], ephemeral);
+    assert_eq!(last_message_block(&body)["cache_control"], ephemeral);
+}
+
+#[test]
+fn a_tool_loop_caches_up_to_the_latest_tool_result() {
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [
+            {"role": "user", "content": "Weather in Oslo?"},
+            {"type": "function_call", "call_id": "toolu_01", "name": "get_weather", "arguments": "{\"city\":\"Oslo\"}"},
+            {"type": "function_call_output", "call_id": "toolu_01", "output": "rain"}],
+            "tools": [{"type": "function", "name": "get_weather", "parameters": {"type": "object", "properties": {}}}]}),
+    );
+    let last = last_message_block(&body);
+    assert_eq!(last["type"], "tool_result");
+    assert_eq!(last["cache_control"], json!({"type": "ephemeral"}));
 }
 
 #[test]
 fn a_request_without_tools_or_system_prompt_still_caches_the_conversation() {
     let body = send(R, A, &json!({"model": "claude", "input": "Hello"}));
-    assert_eq!(body["cache_control"], json!({"type": "ephemeral"}));
+    assert_eq!(
+        last_message_block(&body)["cache_control"],
+        json!({"type": "ephemeral"})
+    );
     assert_eq!(breakpoints(&body).len(), 1);
 }
 
@@ -189,12 +244,28 @@ fn an_app_that_places_its_own_breakpoints_keeps_only_those() {
                 {"type": "input_text", "text": "A long shared document.", "prompt_cache_breakpoint": {"mode": "explicit"}},
                 {"type": "input_text", "text": "Summarise it."}]}]}),
     );
-    assert_eq!(body.get("cache_control"), None);
     assert_eq!(breakpoints(&body), vec![json!({"type": "ephemeral"})]);
     assert_eq!(
         body["messages"][0]["content"][0]["cache_control"],
         json!({"type": "ephemeral"})
     );
+}
+
+#[test]
+fn no_more_breakpoints_reach_claude_than_it_accepts() {
+    let marked = |text: &str| json!({"type": "input_text", "text": text, "prompt_cache_breakpoint": {"mode": "explicit"}});
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked("one"), marked("two"), marked("three"), marked("four"), marked("five"), marked("six")]}]}),
+    );
+    let content = body["messages"][0]["content"].as_array().unwrap();
+    let kept: Vec<bool> = content
+        .iter()
+        .map(|b| b.get("cache_control").is_some())
+        .collect();
+    assert_eq!(kept, [false, false, true, true, true, true]);
 }
 
 #[test]
@@ -243,6 +314,19 @@ fn a_cache_meant_to_outlive_five_minutes_is_kept_for_an_hour() {
         let body = send(from, A, &request);
         assert_eq!(breakpoints(&body), vec![expected.clone(); 3], "{settings}");
     }
+}
+
+#[test]
+fn an_app_breakpoint_keeps_the_lifetime_the_app_asked_for() {
+    let body = send(C, A, &fixture(C, "prompt-cache-breakpoint.json"));
+    assert_eq!(
+        breakpoints(&body),
+        vec![json!({"type": "ephemeral", "ttl": "1h"})]
+    );
+    assert_eq!(
+        last_system_block(&body)["cache_control"],
+        json!({"type": "ephemeral", "ttl": "1h"})
+    );
 }
 
 #[test]
@@ -316,41 +400,49 @@ fn no_cache_key_is_made_up() {
     assert_eq!(body.get("prompt_cache_key"), None);
 }
 
-fn claude_turn_as_responses_output(stream: &str) -> Vec<Value> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("fixtures")
-        .join(A.as_str())
-        .join("streams")
-        .join(stream);
+fn decode_anthropic_stream(bytes: &[u8]) -> Vec<StreamEvent> {
     let ctx =
         EgressCtx::for_kind(RequestKind::Generate, StreamMode::on(true)).with_provider("anthropic");
     let mut dec = dispatch::stream_decoder(A, &ctx).unwrap();
-    let mut events: Vec<StreamEvent> = dec.feed(&std::fs::read(path).unwrap());
+    let mut events = dec.feed(bytes);
     events.extend(dec.finish());
-    let app = dispatch::decode_request(
-        R,
-        RequestKind::Generate,
-        br#"{"model":"claude","input":"q","reasoning":{"effort":"medium","summary":"auto"},"stream":true}"#,
-        &HeaderList::new(),
-    )
-    .unwrap();
+    events
+}
+
+fn app_stream(dialect: DialectId, request: &[u8], events: &[StreamEvent]) -> Vec<Value> {
+    let app = dispatch::decode_request(dialect, RequestKind::Generate, request, &HeaderList::new())
+        .unwrap();
     let mut enc =
-        dispatch::stream_encoder(R, &EncodeCtx::for_request(app).with_created_at(1)).unwrap();
+        dispatch::stream_encoder(dialect, &EncodeCtx::for_request(app).with_created_at(1)).unwrap();
     let mut out = Vec::new();
-    for e in &events {
+    for e in events {
         out.extend(enc.encode(e).unwrap());
     }
     out.extend(enc.finish().unwrap());
-    let last = parse_all(&out)
+    parse_all(&out)
         .unwrap()
         .into_iter()
         .filter_map(|item| match item {
-            SseItem::Event(e) => Some(serde_json::from_str::<Value>(&e.data).unwrap()),
+            SseItem::Event(e) if e.data != "[DONE]" => {
+                Some(serde_json::from_str::<Value>(&e.data).unwrap())
+            }
             _ => None,
         })
-        .next_back()
-        .unwrap();
-    last["response"]["output"].as_array().unwrap().clone()
+        .collect()
+}
+
+fn claude_turn_as_responses_output(stream: &str) -> Vec<Value> {
+    let events =
+        decode_anthropic_stream(&std::fs::read(fixture_path(A, "streams", stream)).unwrap());
+    let responses = app_stream(
+        R,
+        br#"{"model":"claude","input":"q","reasoning":{"effort":"medium","summary":"auto"},"stream":true}"#,
+        &events,
+    );
+    responses.last().unwrap()["response"]["output"]
+        .as_array()
+        .unwrap()
+        .clone()
 }
 
 #[test]
@@ -380,25 +472,95 @@ fn a_tool_loop_with_replayed_claude_thinking_keeps_every_turn_cacheable() {
     for binding in [None, Some(true)] {
         let first = try_send_with(R, A, RequestKind::Generate, &tool_turn, binding).unwrap();
         let second = try_send_with(R, A, RequestKind::Generate, &next_turn, binding).unwrap();
-        assert_eq!(first["tools"], second["tools"], "{binding:?}");
-        assert_eq!(first["system"], second["system"], "{binding:?}");
-        assert_eq!(first["thinking"], second["thinking"], "{binding:?}");
-        let earlier = first["messages"].as_array().unwrap();
-        let later = second["messages"].as_array().unwrap();
-        assert_eq!(earlier[..], later[..earlier.len()], "{binding:?}");
+        assert_same_prefix(&first, &second, &format!("{binding:?}"));
         assert_eq!(breakpoints(&second).len(), 3, "{binding:?}");
     }
 }
 
 #[test]
-fn an_app_breakpoint_keeps_the_lifetime_the_app_asked_for() {
-    let body = send(C, A, &fixture(C, "prompt-cache-breakpoint.json"));
+fn openai_apps_see_what_claude_read_from_the_cache() {
+    let recorded = String::from_utf8(
+        std::fs::read(fixture_path(
+            A,
+            "streams",
+            "recorded-thinking-display-omitted.sse",
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let cached = recorded
+        .replace(
+            r#""cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"#,
+            r#""cache_creation_input_tokens":300,"cache_read_input_tokens":5000,"cache_creation":{"ephemeral_5m_input_tokens":300,"#,
+        )
+        .replace(
+            r#""cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens""#,
+            r#""cache_creation_input_tokens":300,"cache_read_input_tokens":5000,"output_tokens""#,
+        );
+    assert_ne!(cached, recorded);
+    let events = decode_anthropic_stream(cached.as_bytes());
+
+    let responses = app_stream(
+        R,
+        br#"{"model":"claude","input":"q","stream":true}"#,
+        &events,
+    );
+    let usage = &responses.last().unwrap()["response"]["usage"];
+    assert_eq!(usage["input_tokens"], 5317);
+    assert_eq!(usage["input_tokens_details"]["cached_tokens"], 5000);
+
+    let chat = app_stream(
+        C,
+        br#"{"model":"claude","messages":[{"role":"user","content":"q"}],"stream":true,"stream_options":{"include_usage":true}}"#,
+        &events,
+    );
+    let usage = chat
+        .iter()
+        .rev()
+        .find_map(|c| c.get("usage").filter(|u| !u.is_null()))
+        .unwrap();
+    assert_eq!(usage["prompt_tokens"], 5317);
+    assert_eq!(usage["prompt_tokens_details"]["cached_tokens"], 5000);
+}
+
+#[test]
+fn hints_on_empty_text_neither_reach_claude_nor_count() {
+    let marked = |text: &str| json!({"type": "input_text", "text": text, "prompt_cache_breakpoint": {"mode": "explicit"}});
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked(""), marked("one"), marked(""), marked("two"), marked("three"), marked("four"), marked("five")]}]}),
+    );
+    let content = body["messages"][0]["content"].as_array().unwrap();
+    let sent: Vec<(&str, bool)> = content
+        .iter()
+        .map(|b| {
+            (
+                b["text"].as_str().unwrap(),
+                b.get("cache_control").is_some(),
+            )
+        })
+        .collect();
     assert_eq!(
-        breakpoints(&body),
-        vec![json!({"type": "ephemeral", "ttl": "1h"})]
+        sent,
+        [
+            ("one", false),
+            ("two", true),
+            ("three", true),
+            ("four", true),
+            ("five", true)
+        ]
+    );
+
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked(""), {"type": "input_text", "text": "Hello"}]}]}),
     );
     assert_eq!(
-        last_system_block(&body)["cache_control"],
-        json!({"type": "ephemeral", "ttl": "1h"})
+        body["messages"][0]["content"],
+        json!([{"type": "text", "text": "Hello", "cache_control": {"type": "ephemeral"}}])
     );
 }

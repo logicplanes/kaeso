@@ -305,10 +305,12 @@ Cache-Hinweise sind Hinweise, aber ein Ziel, das nur auf Anfrage cacht, wird tro
 - **Anthropic** cacht nur bis zu einem `cache_control`-Breakpoint ([Prompt-Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)). Eine Generierungsanfrage aus einem anderen Dialekt ohne Cache-Hinweis bekommt drei:
   - einen am letzten Funktions-Tool, sodass die Tool-Liste auch dann aus dem Cache gelesen wird, wenn sich der System-Prompt ändert;
   - einen am letzten System-Block, sodass Tools und System-Prompt auch dann aus dem Cache gelesen werden, wenn ein Zug mehr als die 20 Blöcke hinzufügt, die Anthropic von einem Breakpoint aus zurückschaut;
-  - automatisches Caching auf oberster Ebene, `cache_control` an der Anfrage, das von Zug zu Zug mit dem Ende der Unterhaltung wandert.
-- **Die eigenen Hinweise der App gehen vor.** Eine Anfrage mit Cache-Hinweisen behält nur diese. OpenAIs `prompt_cache_options` mit `mode: explicit` und ohne Breakpoint cacht nichts, wie bei OpenAI. Token-Zählungen bekommen keine Breakpoints.
+  - einen am letzten Inhaltsblock der Unterhaltung, der von Zug zu Zug nach vorn wandert.
+
+  Alle drei sitzen an Blöcken statt automatisches Caching auf oberster Ebene zu nutzen, sodass auch Anthropic-kompatible Anbieter sie annehmen, die nur Block-Breakpoints kennen, wie Claude Code sie sendet.
+- **Die eigenen Hinweise der App gehen vor.** Eine Anfrage mit Cache-Hinweisen behält nur diese. Anthropic nimmt höchstens 4 Breakpoints an; schickt eine App mehr, werden die frühesten weggelassen. OpenAIs `prompt_cache_options` mit `mode: explicit` und ohne Breakpoint cacht nichts, wie bei OpenAI. Token-Zählungen bekommen keine Breakpoints.
 - **Lebensdauer.** Anthropic hält einen Cache 5 Minuten oder 1 Stunde. Bittet die App OpenAI, ihn länger als 5 Minuten zu halten, mit `prompt_cache_retention: "24h"` oder einer `prompt_cache_options.ttl` wie `30m`, fragt jeder an Anthropic gesendete Breakpoint nach `1h`.
-- **Jeder Zug wiederholt den vorigen.** Zug *n+1* einer Unterhaltung wird zu denselben Tools, demselben System-Prompt, derselben Denk-Einstellung und denselben Nachrichten kodiert wie Zug *n*, gefolgt von den neuen Nachrichten, sodass jeder Zug liest, was der vorige geschrieben hat (`crates/kaeso-codecs/tests/prompt_cache.rs`).
+- **Jeder Zug wiederholt den vorigen.** Zug *n+1* einer Unterhaltung wird zu denselben Tools, demselben System-Prompt, derselben Denk-Einstellung und denselben Nachrichten kodiert wie Zug *n*, gefolgt von den neuen Nachrichten; nur der Breakpoint der Unterhaltung wandert, und Anthropic zählt Breakpoints nicht zum Präfix, sodass jeder Zug liest, was der vorige geschrieben hat (`crates/kaeso-codecs/tests/prompt_cache.rs`).
 
 ## Tool-Fehler
 
