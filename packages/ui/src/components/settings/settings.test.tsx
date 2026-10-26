@@ -66,3 +66,41 @@ describe("Settings", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 });
+
+describe("Settings rows", () => {
+  it("are exactly 64px with a description: no gap between title and description lines", () => {
+    render(
+      <SettingsGroup aria-label="Account">
+        <SettingsRow title="Email" description="owner@example.com" href="/settings/email" />
+        <SettingsRow title="Password" description="Changed 3 days ago" href="/settings/password" />
+      </SettingsGroup>,
+    );
+    const title = screen.getByText("Email");
+    expect(title.parentElement).not.toHaveClass("gap-2");
+    expect(screen.getByRole("link", { name: /Email/ })).toHaveClass("min-h-64", "py-12");
+  });
+
+  it("insets the divider 20px at both ends, keeps it in forced colours, and hovers in the raised tone", () => {
+    render(
+      <SettingsGroup aria-label="Account">
+        <SettingsRow title="Email" href="/settings/email" />
+        <SettingsRow title="Password" href="/settings/password" />
+      </SettingsGroup>,
+    );
+    const second = screen.getByRole("link", { name: /Password/ });
+    expect(second).toHaveClass("not-first:before:left-20", "not-first:before:right-20", "not-first:before:forced-line");
+    expect(second).toHaveClass("hover:bg-raised-hover", "active:bg-raised-pressed");
+    expect(second).toHaveClass("focus-ring-inset", "first:rounded-t-group", "last:rounded-b-group");
+  });
+
+  it("gives a settings section the same header as Section: wrapping, actions on the title's line", () => {
+    render(
+      <SettingsSection title="Members" description="People in the organization." actions={<button type="button">Invite</button>}>
+        <p>Rows</p>
+      </SettingsSection>,
+    );
+    const header = screen.getByRole("heading", { name: "Members" }).closest("header")!;
+    expect(header).toHaveClass("mb-16", "flex-wrap");
+    expect(screen.getByRole("button", { name: "Invite" }).parentElement).toHaveClass("shrink-0");
+  });
+});

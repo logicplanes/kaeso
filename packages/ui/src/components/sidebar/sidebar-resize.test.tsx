@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Sidebar, SidebarSheetContext, useSidebar } from "./sidebar.js";
@@ -12,7 +12,7 @@ function State() {
   return <output>{`${collapsed ? "collapsed" : "expanded"} ${rail ? "rail" : "full"} ${width}`}</output>;
 }
 
-const edge = () => screen.getByRole("separator", { name: "Resize sidebar; click to collapse" });
+const edge = () => screen.getByRole("separator", { name: "Resize sidebar; press Enter to collapse" });
 
 afterEach(() => localStorage.clear());
 
@@ -50,7 +50,11 @@ describe("Sidebar resizing", () => {
         <State />
       </Sidebar.Provider>,
     );
-    fireEvent.pointerMove(edge(), { clientY: 120 });
+    vi.useFakeTimers();
+    fireEvent.pointerEnter(edge(), { clientY: 120 });
+    expect(screen.queryByText("Drag")).toBeNull();
+    act(() => vi.advanceTimersByTime(500));
+    vi.useRealTimers();
     expect(screen.getByText("Drag")).toHaveClass("font-semibold");
     fireEvent.pointerLeave(edge());
     expect(screen.queryByText("Drag")).toBeNull();
@@ -164,9 +168,10 @@ describe("Sidebar resizing", () => {
     expect(screen.queryByText("Project")).toBeNull();
     expect(screen.queryByText("3")).toBeNull();
     expect(screen.queryByRole("separator")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Expand sidebar" }));
+    expect(screen.getByRole("button", { name: "Icons only" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "Icons only" }));
     expect(screen.getByRole("status")).toHaveTextContent("expanded full");
-    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Icons only" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Project")).toBeInTheDocument();
   });
 });
@@ -184,9 +189,9 @@ describe("Sidebar toggles", () => {
     const tip = (name: string) => [...document.querySelectorAll("[data-side]")].find((el) => el.textContent?.startsWith(name));
     await act(() => lazyModulesSettled());
     await user.tab();
-    expect(screen.getByRole("button", { name: "Expand sidebar" })).toHaveFocus();
-    expect(tip("Expand sidebar")).toHaveAttribute("data-open");
-    expect(tip("Expand sidebar")).toHaveTextContent(/^Expand sidebar$/);
+    expect(screen.getByRole("button", { name: "Icons only", pressed: true })).toHaveFocus();
+    expect(tip("Icons only")).toHaveAttribute("data-open");
+    expect(tip("Icons only")).toHaveTextContent(/^Icons only$/);
     await user.tab();
     expect(tip("Collapse sidebar")).toHaveAttribute("data-open");
     expect(tip("Collapse sidebar")).toHaveTextContent("[");
@@ -301,5 +306,119 @@ describe("Sidebar focus", () => {
     fireEvent.keyDown(window, { key: "[" });
     await new Promise((r) => requestAnimationFrame(r));
     expect(outside).not.toHaveFocus();
+  });
+});
+
+describe("The [ shortcut", () => {
+  const setup = (shortcut = true) =>
+    render(
+      <Sidebar.Provider shortcut={shortcut}>
+        <Sidebar.CollapseToggle />
+        <div contentEditable suppressContentEditableWarning>
+          Notes
+        </div>
+        <div role="textbox" tabIndex={0}>
+          Prompt
+        </div>
+        <State />
+      </Sidebar.Provider>,
+    );
+
+  it("leaves typing alone: content-editable text, textbox widgets, repeats and handled keys", () => {
+    setup();
+    fireEvent.keyDown(screen.getByText("Notes"), { key: "[" });
+    fireEvent.keyDown(screen.getByRole("textbox"), { key: "[" });
+    fireEvent.keyDown(window, { key: "[", repeat: true });
+    const handled = new KeyboardEvent("keydown", { key: "[", cancelable: true });
+    handled.preventDefault();
+    act(() => void window.dispatchEvent(handled));
+    expect(screen.getByRole("status")).toHaveTextContent("expanded");
+  });
+
+  it("works where [ needs Option or AltGr, and never under Command or Control alone", () => {
+    setup();
+    fireEvent.keyDown(window, { key: "[", metaKey: true });
+    fireEvent.keyDown(window, { key: "[", ctrlKey: true });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded");
+    fireEvent.keyDown(window, { key: "[", altKey: true });
+    expect(screen.getByRole("status")).toHaveTextContent("collapsed");
+    fireEvent.keyDown(window, { key: "[", altKey: true, ctrlKey: true });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded");
+  });
+
+  it("does nothing while a modal dialog is open or on a narrow screen", () => {
+    setup();
+    const dialog = document.createElement("div");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.append(dialog);
+    fireEvent.keyDown(window, { key: "[" });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded");
+    dialog.remove();
+    const narrow = vi.spyOn(window, "matchMedia").mockReturnValue({ matches: false } as MediaQueryList);
+    fireEvent.keyDown(window, { key: "[" });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded");
+    narrow.mockRestore();
+  });
+
+  it("doesn't promise [ on the toggle's tooltip when the shortcut is off", async () => {
+    const user = userEvent.setup();
+    setup(false);
+    await act(() => lazyModulesSettled());
+    await user.tab();
+    const tip = [...document.querySelectorAll("[data-side]")].find((el) => el.textContent?.startsWith("Collapse sidebar"));
+    expect(tip).toHaveTextContent(/^Collapse sidebar$/);
+  });
+});
+
+describe("Sidebar's resize edge by keyboard", () => {
+  it("jumps to the narrowest and widest with Home and End and reads the width in pixels", () => {
+    render(
+      <Sidebar.Provider>
+        <Sidebar>
+          <Sidebar.Content />
+        </Sidebar>
+        <State />
+      </Sidebar.Provider>,
+    );
+    expect(edge()).toHaveAttribute("aria-valuetext", "248 px");
+    fireEvent.keyDown(edge(), { key: "Home" });
+    expect(edge()).toHaveAttribute("aria-valuetext", "232 px");
+    fireEvent.keyDown(edge(), { key: "End" });
+    expect(screen.getByRole("status")).toHaveTextContent("expanded full 280");
+  });
+});
+
+describe("Sidebar groups and loading", () => {
+  it("names a static group by its label, and announces loading", () => {
+    render(
+      <Sidebar.Provider>
+        <Sidebar.Group label="Organization" collapsible={false}>
+          <Sidebar.Item href="/members">Members</Sidebar.Item>
+        </Sidebar.Group>
+        <Sidebar.Group>
+          <Sidebar.Item href="/usage">Usage</Sidebar.Item>
+        </Sidebar.Group>
+        <Sidebar.Loading />
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByRole("group", { name: "Organization" })).toBeInTheDocument();
+    expect(screen.getAllByRole("group")).toHaveLength(1);
+    expect(screen.getByRole("status", { name: "Loading navigation" })).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("opens a collapsible group from a 32px pill row with its chevron at the end", async () => {
+    render(
+      <Sidebar.Provider>
+        <Sidebar.Group label="Settings">
+          <Sidebar.Item href="/general">General</Sidebar.Item>
+        </Sidebar.Group>
+      </Sidebar.Provider>,
+    );
+    const trigger = screen.getByRole("button", { name: "Settings" });
+    expect(trigger).toHaveClass("h-32", "coarse:h-44", "rounded-pill", "px-12", "focus-ring-inset");
+    expect(trigger.lastElementChild?.querySelector("svg")).not.toBeNull();
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await userEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 });

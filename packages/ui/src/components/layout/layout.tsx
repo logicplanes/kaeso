@@ -37,7 +37,7 @@ export const KAESO_LAYOUT_VARIANTS = {
     2: { classes: "grid-cols-1 md:grid-cols-2", description: "Two columns from 768px" },
     3: { classes: "grid-cols-1 md:grid-cols-3", description: "Three columns from 768px" },
     4: { classes: "grid-cols-2 lg:grid-cols-4", description: "Two, then four from 1024px" },
-    6: { classes: "grid-cols-3 lg:grid-cols-6", description: "Three, then six from 1024px" },
+    6: { classes: "grid-cols-2 md:grid-cols-3 lg:grid-cols-6", description: "Two, three from 768px, six from 1024px" },
   },
 } as const;
 export const KAESO_LAYOUT_DEFAULT_VARIANTS = { align: "stretch", justify: "start", columns: 2 } as const;

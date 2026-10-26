@@ -24,3 +24,13 @@ describe("PageHeader", () => {
     expect(screen.getByRole("banner")).toHaveClass("px-24");
   });
 });
+
+describe("PageHeader on a phone", () => {
+  it("keeps a long title and its actions on one row, the title shrinking first, and the tabs on the next", () => {
+    render(<PageHeader title="Anfrageprotokolle für alle Projekte der Organisation" actions={<button type="button">Exportieren</button>} />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveClass("min-w-0", "flex-1", "shrink-4", "sm:flex-initial");
+    expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");
+    expect(screen.getByRole("button", { name: "Exportieren" }).parentElement).toHaveClass("ml-auto", "shrink-0");
+  });
+});

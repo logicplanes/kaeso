@@ -21,6 +21,7 @@ describe("page blocks", () => {
     expect(within(screen.getByRole("list", { name: "Keys" })).getByText("production")).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Key details" })).toBeInTheDocument();
     expect(TablePage).toBe(ListPage);
+    expect(screen.getByRole("list", { name: "Keys" }).parentElement).toHaveClass("pt-8");
   });
 
   it("draws an overview with metrics, controls, a chart, the breakdown and an aside", () => {
@@ -41,6 +42,7 @@ describe("page blocks", () => {
     expect(screen.getByRole("figure", { name: "Requests over time" })).toBeInTheDocument();
     expect(screen.getByText("By project")).toBeInTheDocument();
     expect(within(screen.getByRole("complementary")).getByText("Top models")).toBeInTheDocument();
+    expect(screen.getByRole("figure").parentElement!.parentElement!.closest(".pt-16")).toHaveClass("px-24", "pb-48");
     rerender(<OverviewPage header={{ title: "Overview" }} metrics={<p>1,204 requests</p>} />);
     expect(screen.queryByRole("complementary")).toBeNull();
     expect(screen.queryByRole("button", { name: "Last 7 days" })).toBeNull();
@@ -54,6 +56,7 @@ describe("page blocks", () => {
     rerender(<EmptyPage title="No projects yet" />);
     expect(screen.queryByRole("heading", { name: "Projects" })).toBeNull();
     expect(screen.getByText("No projects yet")).toBeInTheDocument();
+    expect(document.querySelector("[data-sidebar-expand]")).not.toBeNull();
   });
 
   it("draws a sign-in page with the wordmark, a heading and its form", () => {

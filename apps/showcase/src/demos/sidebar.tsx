@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar, AppFrame, PageHeader, Avatar, Badge, Button, Menu, icons, type IconData } from "@logicplanes/kaeso-ui";
 import { members, org, projects } from "~/fixtures/kaeso";
-import { StateSection } from "~/lib/states";
+import { StateSection, forceIn } from "~/lib/states";
 
 export const meta = {
   title: "Sidebar",
@@ -186,6 +186,8 @@ function Still({
   switcher,
   place,
   deletion = false,
+  groups = false,
+  german = false,
   name = org.name,
 }: {
   rail?: boolean;
@@ -193,16 +195,68 @@ function Still({
   switcher?: string;
   place?: string;
   deletion?: boolean;
+  groups?: boolean;
+  german?: boolean;
   name?: string;
 }) {
   return (
-    <div className="h-480 overflow-hidden rounded-frame bg-chrome shadow-frame">
+    <div className={groups ? "h-560 overflow-hidden rounded-frame bg-chrome shadow-frame" : "h-480 overflow-hidden rounded-frame bg-chrome shadow-frame"}>
       <Sidebar.Provider shortcut={false} defaultRail={rail}>
         <Sidebar aria-label="Console" resizable={false}>
           <Sidebar.Brand>{rail ? <Sidebar.RailToggle /> : <Sidebar.CollapseToggle />}</Sidebar.Brand>
           <Sidebar.Content>
             {loading ? (
               <Sidebar.Loading rows={6} />
+            ) : german ? (
+              <Sidebar.Group label="Organisation">
+                <Sidebar.Item icon={icons.overview}>Übersicht</Sidebar.Item>
+                <Sidebar.Item icon={icons.requestLog} active>
+                  Anfrageprotokolle und Nutzungsauswertungen
+                </Sidebar.Item>
+                <Sidebar.Item icon={icons.key} data-force="focus">
+                  Schlüssel für Dienstkonten und Automatisierungen
+                </Sidebar.Item>
+              </Sidebar.Group>
+            ) : groups ? (
+              <>
+                <div className="flex flex-col gap-4">
+                  <ProjectPlace {...(place ? { force: place } : {})} />
+                  <Sidebar.Group>
+                    <Sidebar.Item icon={icons.requestLog} active count={128}>
+                      Request logs
+                    </Sidebar.Item>
+                    <Sidebar.Item icon={icons.usage} active data-force="hover">
+                      Usage
+                    </Sidebar.Item>
+                    <Sidebar.Item icon={icons.key} data-force="hover">
+                      Keys
+                    </Sidebar.Item>
+                    <Sidebar.Item icon={icons.model} data-force="focus">
+                      Models
+                    </Sidebar.Item>
+                    <Sidebar.Item icon={icons.project} depth={1}>
+                      {projects[0]!.name}
+                    </Sidebar.Item>
+                    <Sidebar.Item depth={2}>Staging</Sidebar.Item>
+                  </Sidebar.Group>
+                </div>
+                <Sidebar.Group label="Organization" collapsible={false}>
+                  <Sidebar.Item icon={icons.members} count={5}>
+                    Members
+                  </Sidebar.Item>
+                </Sidebar.Group>
+                <div ref={forceIn("button[aria-expanded]", "hover")}>
+                  <Sidebar.Group label="Settings">
+                    <Sidebar.Item icon={icons.settings}>General</Sidebar.Item>
+                    <Sidebar.Item icon={icons.audit}>Audit log</Sidebar.Item>
+                  </Sidebar.Group>
+                </div>
+                <div ref={forceIn("button[aria-expanded]", "focus")}>
+                  <Sidebar.Group label="Archive" defaultOpen={false}>
+                    <Sidebar.Item icon={icons.stack}>Old keys</Sidebar.Item>
+                  </Sidebar.Group>
+                </div>
+              </>
             ) : (
               <div className="flex flex-col gap-4">
                 <ProjectPlace {...(place ? { force: place } : {})} />
@@ -211,15 +265,7 @@ function Still({
                   <Sidebar.Item icon={icons.requestLog} active count={128}>
                     Request logs
                   </Sidebar.Item>
-                  <Sidebar.Item icon={icons.usage} data-force="hover">
-                    Usage
-                  </Sidebar.Item>
-                  <Sidebar.Item icon={icons.key} data-force="focus">
-                    Keys
-                  </Sidebar.Item>
-                  <Sidebar.Item icon={icons.project} depth={1}>
-                    {projects[0]!.name}
-                  </Sidebar.Item>
+                  <Sidebar.Item icon={icons.usage}>Usage</Sidebar.Item>
                   <Sidebar.Item leading={<Avatar name={projects[1]!.name} kind="org" size={20} decorative />} trailing={<Badge>Default</Badge>}>
                     {projects[1]!.name}
                   </Sidebar.Item>
@@ -253,24 +299,30 @@ function Still({
 export function States() {
   return (
     <>
-      <StateSection title="The place, default, current, hover, keyboard focus, nested; rail; loading; the place and the switcher hovered and open">
-        <div className="flex gap-24">
-          <Still />
+      <StateSection title="Items, groups and rail">
+        <div className="flex items-start gap-24">
+          <Still groups />
           <Still rail />
+        </div>
+      </StateSection>
+      <StateSection title="Loading, the place and the switcher">
+        <div className="flex gap-24">
           <Still loading switcher="hover" />
           <Still switcher="open" place="hover" />
         </div>
       </StateSection>
-      <StateSection title="Scheduled for deletion: the switcher's caption at rest, hovered, in rail mode (its accessible description), and open with a long name">
+      <StateSection title="Scheduled for deletion">
         <div className="flex gap-24">
           <Still deletion />
-          <Still deletion switcher="hover" />
           <Still deletion rail />
           <Still deletion switcher="open" name="Northwind Labs Research and Development" />
         </div>
       </StateSection>
-      <StateSection title="The switcher's menu: the organizations, the date in the danger tone on one line">
-        <div className="h-240">
+      <StateSection title="Long German labels">
+        <Still german />
+      </StateSection>
+      <StateSection title="The switcher's menu">
+        <div className="h-320">
           <Menu open>
             <Menu.Trigger>
               <Button data-force="open">Northwind Labs</Button>

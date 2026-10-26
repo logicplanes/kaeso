@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -16,6 +17,7 @@ import {
   type Ref,
 } from "react";
 import { Collapsible } from "@base-ui/react/collapsible";
+import { DISCLOSURE_TRIGGER, DisclosureChevron } from "../collapsible/disclosure.js";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
@@ -70,6 +72,7 @@ interface SidebarCtx {
   setWidth: (v: number) => void;
   previewWidth: (v: number | null) => void;
   storageKey: string | undefined;
+  shortcut: boolean;
 }
 const Ctx = createContext<SidebarCtx>({
   rail: false,
@@ -82,6 +85,7 @@ const Ctx = createContext<SidebarCtx>({
   setWidth: () => undefined,
   previewWidth: () => undefined,
   storageKey: undefined,
+  shortcut: false,
 });
 export const useSidebar = () => useContext(Ctx);
 
@@ -102,28 +106,39 @@ function Provider({ children, storageKey, defaultRail = false, shortcut = true }
   const width = clampWidth(preview ?? storedWidth);
   const [collapsed, setCollapsedState] = useStoredState(storageKey ? `${storageKey}:collapsed` : undefined, false);
   const [peeking, setPeeking] = useState(false);
+  const lastFocus = useRef<HTMLElement | null>(null);
   const setCollapsed = useCallback(
     (v: boolean) => {
-      const leaving = v && !!document.activeElement?.closest("[data-sidebar-root]");
+      const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const leaving = v && !!active?.closest("[data-sidebar-root]");
+      const returning = !v && !!active?.closest("[data-sidebar-expand]");
+      if (leaving) lastFocus.current = active;
       setCollapsedState(v);
       setPeeking(false);
       if (leaving) requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-sidebar-expand]")?.focus());
+      if (returning)
+        requestAnimationFrame(() => {
+          const back = lastFocus.current?.isConnected ? lastFocus.current : null;
+          (back ?? document.querySelector<HTMLElement>("[data-sidebar-root] [data-sidebar-collapse]"))?.focus();
+        });
     },
     [setCollapsedState],
   );
   useEffect(() => {
     if (!shortcut) return;
     const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "[" || e.defaultPrevented || e.repeat || e.metaKey || (e.ctrlKey && !e.altKey)) return;
       const t = e.target;
-      if (e.key !== "[" || e.metaKey || e.ctrlKey || e.altKey || (t instanceof Element && t.closest("input, textarea, select, [contenteditable=true]"))) return;
+      if (t instanceof HTMLElement && (t.isContentEditable || t.closest(TYPING))) return;
+      if (document.querySelector('[aria-modal="true"]') || !window.matchMedia("(min-width: 1024px)").matches) return;
       setCollapsed(!collapsed);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [collapsed, setCollapsed, shortcut]);
   const value = useMemo(
-    () => ({ rail, setRail, collapsed, setCollapsed, peeking, setPeeking, width, setWidth, previewWidth, storageKey }),
-    [rail, setRail, collapsed, setCollapsed, peeking, width, setWidth, storageKey],
+    () => ({ rail, setRail, collapsed, setCollapsed, peeking, setPeeking, width, setWidth, previewWidth, storageKey, shortcut }),
+    [rail, setRail, collapsed, setCollapsed, peeking, width, setWidth, storageKey, shortcut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -134,6 +149,10 @@ export interface SidebarProps extends HTMLAttributes<HTMLElement> {
   "aria-label"?: string | undefined;
 }
 
+const TYPING = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="searchbox"]';
+
+const HINT_DELAY = 500;
+
 export const SIDEBAR_MIN = 232;
 export const SIDEBAR_MAX = 280;
 
@@ -143,6 +162,8 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
   const { rail, width, setWidth, previewWidth, collapsed, setCollapsed } = useSidebar();
   const t = useUiText();
   const [hint, setHint] = useState<number | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(hintTimer.current), []);
   const [dragging, setDragging] = useState(false);
   const endDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => endDrag.current?.(), []);
@@ -225,26 +246,42 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label={t("sidebar.resizeOrCollapse", "Resize sidebar; click to collapse")}
+          aria-label={t("sidebar.resizeOrCollapse", "Resize sidebar; press Enter to collapse")}
           aria-valuemin={SIDEBAR_MIN}
           aria-valuemax={SIDEBAR_MAX}
           aria-valuenow={width}
+          aria-valuetext={`${width} px`}
           tabIndex={0}
           onPointerDown={onPointerDown}
-          onPointerMove={(e) => setHint(Math.round(e.clientY - e.currentTarget.getBoundingClientRect().top))}
-          onPointerLeave={() => setHint(null)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") setWidth(clampWidth(width - 8));
-            if (e.key === "ArrowRight") setWidth(clampWidth(width + 8));
-            if (e.key === "Enter" || e.key === " ") setCollapsed(true);
+          onPointerEnter={(e) => {
+            const top = Math.round(e.clientY - e.currentTarget.getBoundingClientRect().top);
+            clearTimeout(hintTimer.current);
+            hintTimer.current = setTimeout(() => setHint(top), HINT_DELAY);
           }}
-          className="absolute top-0 right-0 z-10 h-full w-8 cursor-col-resize rounded-pill focus-ring-inset"
+          onPointerLeave={() => {
+            clearTimeout(hintTimer.current);
+            setHint(null);
+          }}
+          onKeyDown={(e) => {
+            const to =
+              e.key === "ArrowLeft" ? width - 8 : e.key === "ArrowRight" ? width + 8 : e.key === "Home" ? SIDEBAR_MIN : e.key === "End" ? SIDEBAR_MAX : null;
+            if (to !== null) {
+              e.preventDefault();
+              setWidth(clampWidth(to));
+            }
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setCollapsed(true);
+            }
+          }}
+          className="group/edge absolute top-0 right-0 z-10 h-full w-8 cursor-col-resize rounded-pill focus-ring-inset"
         >
+          <span aria-hidden className="absolute inset-y-0 right-0 w-1 bg-line-strong opacity-0 transition-control group-hover/edge:opacity-100 forced-line" />
           {hint !== null && !dragging && (
             <span
               aria-hidden
-              className="pointer-events-none absolute left-16 flex w-max flex-col gap-2 rounded-tooltip bg-tooltip px-12 py-8 text-small text-fg-secondary shadow-raised"
-              style={{ top: Math.max(8, (hint ?? 0) - 24) }}
+              className="pointer-events-none absolute left-16 flex w-max flex-col gap-2 rounded-tooltip-lg bg-tooltip px-12 py-8 text-small text-fg-secondary shadow-raised"
+              style={{ top: Math.max(8, hint - 24) }}
             >
               <span>{strong(t("sidebar.dragToResize", "**Drag** to resize"))}</span>
               <span>{strong(t("sidebar.clickToCollapse", "**Click** to collapse"))}</span>
@@ -258,7 +295,13 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
 Root.displayName = "Sidebar";
 
 const Header = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function SidebarHeader({ className, ...props }, ref) {
-  return <div ref={ref} className={cn("mt-8 flex h-52 shrink-0 items-center gap-4 px-8", className)} {...props} />;
+  return (
+    <div
+      ref={ref}
+      className={cn("mt-8 flex h-52 shrink-0 items-center gap-4 px-8 transition-control group-data-scrolled-over/sidebar:hairline-b-strong", className)}
+      {...props}
+    />
+  );
 });
 Header.displayName = "Sidebar.Header";
 
@@ -421,12 +464,17 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
             {...(force ? { "data-force": force } : {})}
             className={cn(
-              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-2 open:bg-fill-3 focus-ring-inset",
+              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-2 active:bg-fill-3 open:bg-fill-3 focus-ring-inset coarse:h-44",
               rail && "justify-center px-0",
               className,
             )}
           >
-            {avatar}
+            <span className="relative flex size-18 shrink-0 items-center justify-center">
+              {avatar}
+              {rail && hasCaption && captionTone === "danger" && (
+                <Icon icon={icons.warning} size="xs" className="absolute -right-6 -bottom-6 rounded-pill bg-chrome text-danger-text" />
+              )}
+            </span>
             {!rail &&
               (hasCaption ? (
                 <span className="flex min-w-0 flex-1 flex-col">
@@ -471,12 +519,12 @@ const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
   const t = useUiText();
   const LinkComp = useLinkComponent();
   const named = showsText(label);
-  const hint = children ? (ariaLabel ?? t("sidebar.switchPlace", "Switch")) : ariaLabel;
+  const hint = children ? (ariaLabel ?? t("sidebar.switchPlace", "Switch project")) : ariaLabel;
   const purpose = useHiddenDescription(named ? hint : undefined);
   const naming = named ? (purpose.id ? { "aria-describedby": purpose.id } : {}) : hint ? { "aria-label": hint } : {};
   const classes = cn(
-    "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-pill px-12 text-left text-body font-semibold text-fg",
-    (children || href) && "cursor-pointer transition-control hover:bg-fill-2 open:bg-fill-3 focus-ring-inset",
+    "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg",
+    (children || href) && "cursor-pointer transition-control hover:bg-fill-2 active:bg-fill-3 open:bg-fill-3 focus-ring-inset coarse:h-44",
     rail && "justify-center px-0",
     className,
   );
@@ -531,16 +579,21 @@ const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
 });
 Place.displayName = "Sidebar.Place";
 
-function PlaceName({ label }: { label: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
+function useCut(ref: React.RefObject<HTMLElement | null>, enabled: boolean) {
   const [cut, setCut] = useState(false);
   useLayoutEffect(() => {
     const box = ref.current;
-    if (!box || typeof ResizeObserver === "undefined") return;
+    if (!enabled || !box || typeof ResizeObserver === "undefined") return;
     const measure = () => setCut(box.scrollWidth > box.clientWidth);
     measure();
     return observeResize([box], measure);
-  }, [label]);
+  }, [ref, enabled]);
+  return enabled && cut;
+}
+
+function PlaceName({ label }: { label: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const cut = useCut(ref, true);
   return (
     <Tooltip content={label} side="right" disabled={!cut}>
       <span ref={ref} className="min-w-0 flex-1 truncate">
@@ -558,7 +611,10 @@ const Content = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(funct
     const el = own.current;
     const root = el?.closest("[data-sidebar-root]");
     if (!el || !root) return;
-    const check = () => root.toggleAttribute("data-scrolled-under", el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    const check = () => {
+      root.toggleAttribute("data-scrolled-under", el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+      root.toggleAttribute("data-scrolled-over", el.scrollTop > 1);
+    };
     check();
     el.addEventListener("scroll", check, { passive: true });
     const stop = observeResize([el, ...el.children], check);
@@ -566,6 +622,7 @@ const Content = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(funct
       el.removeEventListener("scroll", check);
       stop();
       root.removeAttribute("data-scrolled-under");
+      root.removeAttribute("data-scrolled-over");
     };
   }, []);
   return (
@@ -609,21 +666,27 @@ const Group = forwardRef<HTMLDivElement, SidebarGroupProps>(function SidebarGrou
 ) {
   const { storageKey, rail } = useSidebar();
   const [open, setOpen] = useStoredState(storageKey && id ? `${storageKey}:group:${id}` : undefined, defaultOpen);
+  const labelId = useId();
   if (!label || !collapsible || rail) {
+    const named = !!label && !rail;
     return (
-      <div ref={ref} role="group" className={cn("flex flex-col", className)}>
-        {label && !rail && <div className="flex h-28 items-center px-12 text-caption font-medium text-fg-secondary">{label}</div>}
+      <div ref={ref} {...(named ? { role: "group", "aria-labelledby": labelId } : {})} className={cn("flex flex-col", className)}>
+        {named && (
+          <div id={labelId} className="flex h-32 items-center px-12 text-caption font-medium text-fg-secondary">
+            {label}
+          </div>
+        )}
         <ul className="flex flex-col gap-2">{children}</ul>
       </div>
     );
   }
   return (
     <Collapsible.Root ref={ref} open={open} onOpenChange={(o: boolean) => setOpen(o)} className={cn("flex flex-col", className)}>
-      <Collapsible.Trigger className="group/gl relative -mx-0 flex h-28 w-full cursor-pointer items-center gap-4 rounded-pill px-12 text-left text-caption font-medium text-fg-secondary transition-control hover:text-fg focus-ring tap-target">
-        <span>{label}</span>
-        <svg viewBox="0 0 8 8" className="size-8 text-fg-tertiary transition-transform duration-180 group-data-panel-open/gl:rotate-90" aria-hidden>
-          <path d="M2.5 1.5 5.5 4l-3 2.5z" fill="currentColor" />
-        </svg>
+      <Collapsible.Trigger
+        className={cn(DISCLOSURE_TRIGGER, "h-32 text-caption font-medium text-fg-secondary hover:bg-fill-2 hover:text-fg active:bg-fill-3 coarse:h-44")}
+      >
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <DisclosureChevron />
       </Collapsible.Trigger>
       <Collapsible.Panel className="collapse-motion">
         <ul className="flex flex-col gap-2 pt-2">{children}</ul>
@@ -656,8 +719,15 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
 ) {
   const { rail } = useSidebar();
   const LinkComp = useLinkComponent();
+  const sheet = useContext(SidebarSheetContext);
+  const label = useRef<HTMLSpanElement>(null);
+  const cut = useCut(label, !rail);
+  const activate = (e: MouseEvent<HTMLElement>) => {
+    onClick?.(e);
+    if (sheet && !sheet.peek && !href && !e.defaultPrevented) sheet.close();
+  };
   const classes = cn(
-    "group/si flex h-32 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium transition-control focus-ring-inset",
+    "group/si flex h-32 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium transition-control focus-ring-inset coarse:h-44",
     active ? KAESO_SIDEBAR_VARIANTS.item.active.classes : KAESO_SIDEBAR_VARIANTS.item.default.classes,
     !rail && DEPTH[depth],
     rail && "justify-center px-0",
@@ -670,7 +740,13 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
       ) : (
         icon && <Icon icon={icon} size="md" className={cn("text-fg-secondary transition-control group-hover/si:text-fg", active && "text-fg")} />
       )}
-      {rail ? <span className="sr-only">{children}</span> : <span className="min-w-0 flex-1 truncate">{children}</span>}
+      {rail ? (
+        <span className="sr-only">{children}</span>
+      ) : (
+        <span ref={label} className="min-w-0 flex-1 truncate">
+          {children}
+        </span>
+      )}
       {!rail && count !== undefined && <span className={cn("text-caption font-medium tabular", active ? "text-fg" : "text-fg-tertiary")}>{count}</span>}
       {!rail && trailing}
     </>
@@ -685,19 +761,15 @@ const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
       {inner}
     </LinkComp>
   ) : (
-    <button ref={ref as React.Ref<HTMLButtonElement>} type="button" {...common} {...(onClick ? { onClick } : {})}>
+    <button ref={ref as React.Ref<HTMLButtonElement>} type="button" {...common} onClick={activate}>
       {inner}
     </button>
   );
   return (
     <li className="flex">
-      {rail ? (
-        <Tooltip content={children} side="right" {...(shortcut ? { shortcut } : {})}>
-          {el}
-        </Tooltip>
-      ) : (
-        el
-      )}
+      <Tooltip content={children} side="right" disabled={!rail && !cut} {...(rail && shortcut ? { shortcut } : {})}>
+        {el}
+      </Tooltip>
     </li>
   );
 });
@@ -714,7 +786,7 @@ const BackLink = forwardRef<HTMLAnchorElement, { href: string; children?: ReactN
       ref={ref}
       href={href}
       className={cn(
-        "flex h-32 items-center gap-8 rounded-pill px-12 text-body font-medium text-fg-secondary transition-control hover:bg-fill-2 hover:text-fg focus-ring-inset",
+        "flex h-32 items-center gap-8 rounded-pill px-12 text-body font-medium text-fg-secondary transition-control hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring-inset coarse:h-44",
         className,
       )}
     >
@@ -726,8 +798,9 @@ const BackLink = forwardRef<HTMLAnchorElement, { href: string; children?: ReactN
 BackLink.displayName = "Sidebar.BackLink";
 
 const Loading = forwardRef<HTMLDivElement, { rows?: number | undefined }>(function SidebarLoading({ rows = 5 }, ref) {
+  const t = useUiText();
   return (
-    <div ref={ref} className="flex flex-col gap-2" aria-busy>
+    <div ref={ref} role="status" aria-label={t("sidebar.loading", "Loading navigation")} aria-busy className="flex flex-col gap-2">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex h-32 items-center gap-8 px-12">
           <Skeleton className="size-18 rounded-pill" />
@@ -740,7 +813,7 @@ const Loading = forwardRef<HTMLDivElement, { rows?: number | undefined }>(functi
 Loading.displayName = "Sidebar.Loading";
 
 const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function SidebarCollapseToggle({ className }, ref) {
-  const { collapsed, setCollapsed } = useSidebar();
+  const { collapsed, setCollapsed, shortcut } = useSidebar();
   const sheet = useContext(SidebarSheetContext);
   const t = useUiText();
   const label = sheet
@@ -756,15 +829,16 @@ const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | unde
     else setCollapsed(!collapsed);
   };
   return (
-    <Tooltip content={label} {...(sheet && !sheet.peek ? {} : { shortcut: ["["] })}>
+    <Tooltip content={label} {...(shortcut && !(sheet && !sheet.peek) ? { shortcut: ["["] } : {})}>
       <button
         ref={ref}
         type="button"
+        data-sidebar-collapse=""
         aria-label={label}
         {...(sheet ? {} : { "aria-expanded": !collapsed })}
         onClick={onClick}
         className={cn(
-          "inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-fill-2 hover:text-fg focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring",
           className,
         )}
       >
@@ -778,7 +852,7 @@ CollapseToggle.displayName = "Sidebar.CollapseToggle";
 const RailToggle = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function SidebarRailToggle({ className }, ref) {
   const { rail, setRail } = useSidebar();
   const t = useUiText();
-  const label = rail ? t("sidebar.expand", "Expand sidebar") : t("sidebar.collapse", "Collapse sidebar");
+  const label = t("sidebar.iconsOnly", "Icons only");
   return (
     <Tooltip content={label} side="right">
       <button
@@ -788,7 +862,7 @@ const RailToggle = forwardRef<HTMLButtonElement, { className?: string | undefine
         aria-pressed={rail}
         onClick={() => setRail(!rail)}
         className={cn(
-          "inline-flex size-32 items-center justify-center rounded-pill text-fg-secondary transition-control hover:bg-fill-2 hover:text-fg focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 aria-pressed:bg-fill-3 aria-pressed:text-fg focus-ring",
           className,
         )}
       >
