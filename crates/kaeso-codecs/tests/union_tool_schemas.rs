@@ -352,6 +352,31 @@ fn rename_tool(schema: Value) -> Value {
 }
 
 #[test]
+fn grok_gets_roots_it_counts_as_objects_as_sent() {
+    for parameters in [
+        json!({
+            "properties": {"path": {"type": "string"}},
+            "allOf": [{"type": "object", "properties": {"to": {"type": "string"}}}]
+        }),
+        json!({
+            "type": "object",
+            "allOf": [{"type": "object", "properties": {"to": {"type": "string"}}}]
+        }),
+        json!({
+            "oneOf": [
+                {"properties": {"path": {"type": "string"}}},
+                {"type": "object", "properties": {"to": {"type": "string"}}}
+            ]
+        }),
+    ] {
+        let req = decode(A, &rename_tool(parameters.clone()));
+        let (sent, adapted) = sent(R, &req, xai(&req));
+        assert!(adapted.is_empty(), "{parameters}");
+        assert_eq!(schema(R, tool(R, &sent, "rename")), &parameters);
+    }
+}
+
+#[test]
 fn a_root_all_of_from_an_anthropic_app_reaches_grok_as_exactly_what_it_accepts() {
     let definitions = json!({
         "Path": {

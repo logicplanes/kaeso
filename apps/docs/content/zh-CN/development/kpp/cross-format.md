@@ -119,7 +119,7 @@ Anthropic 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有
 | 目标 | 接受的根部 | 来源 |
 | --- | --- | --- |
 | Anthropic | 根部没有 `oneOf`、`anyOf` 或 `allOf` 的对象 | [Messages API 参考](https://platform.claude.com/docs/en/api/messages/create)把 `input_schema` 的 `type` 定为 `"object"`；根部出现这三者中的任何一个时，Anthropic 会以 400 回应 `input_schema does not support oneOf, allOf, or anyOf at the top level`（2026-10-26 在 Codex Desktop 上实际看到）。 |
-| SpaceX，Responses 和 Chat Completions（`ToolSchemaRoot::ObjectUnions`） | 对象，或每个分支都是内联对象的 `oneOf` 或 `anyOf`；`allOf` 只能出现在对象根部 | xAI 的[函数调用指南](https://docs.x.ai/docs/guides/function-calling)中的 Tool Schema Reference，2026-10-26 阅读。2026-10-26 通过 Kaeso 网关实际验证：`$ref` 分支、`string` 分支以及没有 `type: "object"` 的 `allOf` 根部会被以 `invalid_client_tool_schema` 拒绝；由内联对象组成的联合会被接受。 |
+| SpaceX，Responses 和 Chat Completions（`ToolSchemaRoot::ObjectUnions`） | 对象，或每个分支都是内联对象的 `oneOf` 或 `anyOf`；`allOf` 只能出现在对象根部 | xAI 的[函数调用指南](https://docs.x.ai/docs/guides/function-calling)中的 Tool Schema Reference，2026-10-26 阅读。2026-10-26 通过 Kaeso 网关实际验证：`$ref` 分支、`string` 分支以及既没有 `type: "object"` 也没有 `properties` 的 `allOf` 根部会被以 `invalid_client_tool_schema` 拒绝；由内联对象组成的联合会被接受，带有 `properties` 但没有 `type` 的 schema 在根部和分支中都会被 SpaceX 视为对象。 |
 | OpenAI 和其他 Chat Completions 服务商 | 原样 | OpenAI 和 Mistral 会原样响应 Codex Desktop 的 `automation_update`（2026-10-26 实际看到），因此它们的配置保持 `ToolSchemaRoot::AsSent`。 |
 
 合并方式：
