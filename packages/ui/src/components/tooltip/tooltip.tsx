@@ -67,28 +67,36 @@ function accessibleName(el: Element): string {
   return el.getAttribute("aria-label") ?? el.textContent ?? "";
 }
 
-function ownDescription(el: Element, skip: string): string {
-  const ids = (el.getAttribute("aria-describedby") ?? "").split(/\s+/).filter((id) => id && id !== skip);
-  if (!ids.length) return el.getAttribute("aria-description") ?? "";
-  return ids.map((id) => el.ownerDocument.getElementById(id)?.textContent ?? "").join(" ");
+interface OwnDescription {
+  "aria-describedby"?: string | undefined;
+  "aria-description"?: string | undefined;
 }
 
-function useDescription(content: ReactNode, store: TriggerPropsStore, off: boolean) {
+function ownDescription(doc: Document, own: OwnDescription): string {
+  const ids = (own["aria-describedby"] ?? "").split(/\s+/).filter(Boolean);
+  if (!ids.length) return own["aria-description"] ?? "";
+  return ids.map((id) => doc.getElementById(id)?.textContent ?? "").join(" ");
+}
+
+function useDescription(content: ReactNode, store: TriggerPropsStore, off: boolean, own: OwnDescription) {
   const id = useId();
   const container = usePortalContainer();
   const node = useRef<HTMLSpanElement>(null);
   const [mounted, setMounted] = useState(false);
   const [describes, setDescribes] = useState(false);
   const plain = typeof content === "string" || typeof content === "number" ? String(content) : null;
+  // aria-describedby overrides aria-description, so only a trigger without its own describedby can take plain text as an attribute.
+  const asAttribute = plain !== null && !own["aria-describedby"];
   useEffect(() => setMounted(true), []);
   useLayoutEffect(() => {
     const trigger = store.element();
     const text = words(plain ?? node.current?.textContent);
-    const next = !off && !!trigger && text !== "" && text !== words(accessibleName(trigger)) && !words(ownDescription(trigger, id)).includes(text);
+    const next =
+      !off && !!trigger && text !== "" && text !== words(accessibleName(trigger)) && !words(ownDescription(trigger.ownerDocument, own)).includes(text);
     if (next !== describes) setDescribes(next);
-  }, [plain, off, mounted, content, describes, store, id]);
+  });
   const hidden =
-    mounted && (plain === null || describes) && typeof document !== "undefined"
+    mounted && (plain === null || (describes && !asAttribute)) && typeof document !== "undefined"
       ? createPortal(
           <span ref={node} id={id} hidden>
             {content}
@@ -96,20 +104,20 @@ function useDescription(content: ReactNode, store: TriggerPropsStore, off: boole
           container ?? document.body,
         )
       : null;
-  return { id: describes ? id : undefined, node: hidden };
+  if (!describes) return { props: undefined, node: hidden };
+  return { props: asAttribute ? { "aria-description": plain } : { "aria-describedby": joinIds(own["aria-describedby"], id) }, node: hidden };
 }
 
 export function Tooltip(props: TooltipProps) {
   const [mod, retry] = useLazyModuleRetried(tooltipRoot, true);
   const [store] = useState(triggerPropsStore);
-  const description = useDescription(props.content, store, !!props.disabled);
-  if (!isValidElement(props.children)) return props.children;
-  const own = props.children.props as {
+  const own = (isValidElement(props.children) ? props.children.props : {}) as OwnDescription & {
     onPointerEnter?: ((e: PointerEvent<Element>) => void) | undefined;
     onFocus?: ((e: FocusEvent<Element>) => void) | undefined;
-    "aria-describedby"?: string | undefined;
   };
-  const describedBy = description.id ? { "aria-describedby": joinIds(own["aria-describedby"], description.id) } : undefined;
+  const description = useDescription(props.content, store, !!props.disabled, own);
+  if (!isValidElement(props.children)) return props.children;
+  const describedBy = description.props;
   const retryOnIntent = mod
     ? describedBy
     : {
