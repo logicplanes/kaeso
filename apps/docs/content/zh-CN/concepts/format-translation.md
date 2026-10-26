@@ -84,6 +84,14 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 
 `/v1/messages/count_tokens` 和 `/v1/responses/input_tokens` 会向模型的服务商请求计数。如果服务商没有计数 Token 的端点，Kaeso 会以 400 拒绝请求，并在消息中说明该模型无法计数 Token。Kaeso 不会估算计数，因为估算值永远无法与服务商自己的结果一致。
 
+## 提示词缓存
+
+请求切换格式时，Kaeso 会让提示词缓存继续生效：
+
+- Claude 只缓存请求要求它缓存的内容，而 Codex 等使用 OpenAI 格式的应用从不提出这种要求。Kaeso 会替它们提出：在工具之后、系统提示词之后以及对话末尾。这样每一轮都能以缓存价格从 Claude 的缓存读取之前的轮次，而不必再次全价支付。自行标记缓存点的应用会原样保留这些标记。
+- 当应用通过 `prompt_cache_retention` 或 `prompt_cache_options` 要求 OpenAI 将缓存保留超过五分钟时，Claude 会保留一小时。
+- 当 Chat Completions 请求发往 Responses 模型或反过来时，应用的 `prompt_cache_key` 会一并传递，使服务商继续把该会话发往同一个缓存。
+
 ## Kaeso 省略的内容
 
 当目标没有对应位置时，Kaeso 会省略不改变模型输出内容的提示信息：

@@ -82,8 +82,8 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `display` (`thinking.display`) | reasoning, from `anthropic_messages` | Only controls whether thinking text is returned (`summarized` or `omitted`). OpenAI Responses gets `reasoning.summary: "auto"` instead unless it is `omitted` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
 | `image_url.detail` | image, from `openai_chat` | Image resolution hint (`low`, `high`, `auto`): it changes image token cost, not what is asked; targets without it choose their own resolution. | `openai_chat/requests/image-base64-detail.json` |
 | `file.filename` | document, from `openai_chat` | The file name OpenAI requires next to inline `file_data`. Metadata, no instruction. | `openai_chat/requests/file-pdf-data.json` |
-| `prompt_cache_key` | request, from `openai_chat` | Routes requests to a prompt cache. A cache hint ([cache hints](#cache-hints)). | `openai_chat/requests/all-params-sdk.json` |
-| `prompt_cache_key` | request, from `openai_responses` | As above. | `openai_responses/requests/sampling-and-ids.json` |
+| `prompt_cache_key` | request, from `openai_chat` | Routes requests to a prompt cache. Sent on to OpenAI Responses, whose providers route by it too, and dropped elsewhere ([cache hints](#cache-hints)). | `openai_chat/requests/all-params-sdk.json` |
+| `prompt_cache_key` | request, from `openai_responses` | Routes requests to a prompt cache. Sent on to Chat Completions and dropped elsewhere ([cache hints](#cache-hints)). | `openai_responses/requests/sampling-and-ids.json` |
 | `model_id` | assistant messages only, from `openai_chat` | The model that wrote a replayed assistant message, which Grok CLI records in its own history. Bookkeeping the model never reads; a logged request body keeps it. It is the one key of `cross::CHAT_ASSISTANT_BOOKKEEPING`, which Chat providers get only with `with_message_bookkeeping()` ([Chat providers](openai-chat-providers.md)); on any other message, a request to another format is refused; Chat providers get it as sent. | Grok CLI sends it on every replayed assistant message; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
@@ -98,6 +98,7 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 | `context_management` | request, from `anthropic_messages` | Holds only `edits`, with at least one edit, and every edit is `clear_thinking_*`. Thinking-block clearing only decides which earlier Anthropic `thinking` blocks the model sees, and those never reach another dialect ([reasoning](reasoning.md)). | Claude Code 2.1.296 sends `{"edits": [{"type": "clear_thinking_20251015", "keep": "all"}]}` on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.json` |
 | `text.verbosity` | request, from `openai_responses` | `low` or `high` (`medium` is a form marker). An output length hint ([field classes](index.md#field-classes)): a Chat Completions target whose profile takes `verbosity` gets it there ([provider profiles](openai-chat-providers.md#provider-profiles)); Anthropic and other Chat Completions targets have no equivalent, so it is left out and named in `kaeso-left-out`. | Codex sends `low` for GPT models and keeps it when a thread switches models; `openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message (`role: "system"`), from `anthropic_messages` | `{}`, or only `effort` equal to the request's `output_config.effort`. Repeating the request's effort changes nothing. | Claude Code 2.1.296 repeats the request's effort on its mid-conversation system message; same fixture |
+| `prompt_cache_retention`, `prompt_cache_options` | request, from `openai_chat` and `openai_responses` | Only towards Anthropic, where they set how long the cache is kept ([cache hints](#cache-hints)); every other target still refuses them. | `openai_chat/requests/prompt-cache-breakpoint.json`, `openai_responses/requests/item-reference-breakpoint.json` |
 
 ## Tool namespaces
 
@@ -298,7 +299,16 @@ The codecs never make up an id in the app's own pattern. The provider's id names
 
 ## Cache hints
 
-Cache hints are hints. OpenAI caches by itself, so hints from other dialects are dropped for OpenAI. OpenAI's own `prompt_cache_breakpoint` decodes to a KPP `CacheHint` and is written back only to the dialect it came from.
+Cache hints are hints, but a target that caches only when asked still gets asked.
+
+- **OpenAI and the other Chat Completions and Responses providers** cache by themselves, so hints from other dialects are dropped for them. OpenAI's own `prompt_cache_breakpoint` decodes to a KPP `CacheHint` and is written back only to the dialect it came from. `prompt_cache_key` follows a request between Chat Completions and Responses, so the provider keeps sending a session to the same cache.
+- **Anthropic** caches only up to a `cache_control` breakpoint ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)). A generation request from another dialect that carries no cache hint gets three:
+  - one on the last function tool, so the tool list is read from the cache even when the system prompt changes;
+  - one on the last system block, so tools and system prompt are read from the cache even when a turn adds more than the 20 blocks Anthropic looks back from a breakpoint;
+  - top-level automatic caching, `cache_control` on the request, which moves with the end of the conversation from turn to turn.
+- **The app's own hints win.** A request that carries cache hints keeps only those. OpenAI's `prompt_cache_options` with `mode: explicit` and no breakpoint caches nothing, as on OpenAI. Token counts get no breakpoints.
+- **Lifetime.** Anthropic keeps a cache for 5 minutes or for 1 hour. When the app asks OpenAI to keep it for longer than 5 minutes, with `prompt_cache_retention: "24h"` or a `prompt_cache_options.ttl` such as `30m`, every breakpoint sent to Anthropic asks for `1h`.
+- **Each turn repeats the one before.** Turn *n+1* of a conversation encodes to the same tools, system prompt, thinking setting and messages as turn *n*, followed by the new messages, so every turn reads what the turn before wrote (`crates/kaeso-codecs/tests/prompt_cache.rs`).
 
 ## Tool errors
 
