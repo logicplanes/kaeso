@@ -548,6 +548,31 @@ fn keywords_next_to_a_ref_follow_the_draft_the_schema_names() {
 }
 
 #[test]
+fn draft_07_schemas_ignore_unevaluated_properties() {
+    let req = decode(
+        A,
+        &rename_tool(json!({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "allOf": [
+                {"type": "object", "properties": {"path": {"type": "string"}}},
+                {"type": "object", "properties": {"to": {"type": "string"}}}
+            ],
+            "unevaluatedProperties": false
+        })),
+    );
+    let (sent, adapted) = sent(A, &req, anthropic(&req));
+    assert_eq!(adapted, ["tools[0]"]);
+    assert_eq!(
+        tool(A, &sent, "rename")["input_schema"],
+        json!({
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "object",
+            "properties": {"path": {"type": "string"}, "to": {"type": "string"}}
+        })
+    );
+}
+
+#[test]
 fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
     let closed_path = json!({
         "allOf": [

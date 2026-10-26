@@ -229,16 +229,15 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
 
 struct Doc<'a>(&'a Map<String, Value>);
 
-enum RefSiblings {
-    Applied,
-    Ignored,
+#[derive(PartialEq)]
+enum JsonSchemaDraft {
+    UpTo7,
+    From2019,
     Unknown,
 }
 
 impl<'a> Doc<'a> {
-    // Up to draft 7, keywords next to `$ref` are ignored (draft-07 Core §8.3); from
-    // 2019-09 on they apply alongside it (2019-09 Core §8.2.4.1).
-    fn ref_siblings(&self) -> RefSiblings {
+    fn draft(&self) -> JsonSchemaDraft {
         let dialect = self
             .0
             .get("$schema")
@@ -248,11 +247,11 @@ impl<'a> Doc<'a> {
             .iter()
             .any(|d| dialect.contains(d))
         {
-            RefSiblings::Ignored
+            JsonSchemaDraft::UpTo7
         } else if ["2019-09", "2020-12"].iter().any(|d| dialect.contains(d)) {
-            RefSiblings::Applied
+            JsonSchemaDraft::From2019
         } else {
-            RefSiblings::Unknown
+            JsonSchemaDraft::Unknown
         }
     }
 
@@ -317,13 +316,15 @@ impl<'a> Doc<'a> {
             && m.keys()
                 .any(|k| k != "$ref" && !ANNOTATIONS.contains(&k.as_str()))
         {
-            match self.ref_siblings() {
-                RefSiblings::Applied => {}
-                RefSiblings::Ignored => {
+            // Up to draft 7, keywords next to `$ref` are ignored (draft-07 Core §8.3); from
+            // 2019-09 on they apply alongside it (2019-09 Core §8.2.4.1).
+            match self.draft() {
+                JsonSchemaDraft::From2019 => {}
+                JsonSchemaDraft::UpTo7 => {
                     let target = self.lookup(reference.as_str().unwrap_or_default())?;
                     return self.variants(target, depth + 1);
                 }
-                RefSiblings::Unknown => return Err(Fault::RefSiblings),
+                JsonSchemaDraft::Unknown => return Err(Fault::RefSiblings),
             }
         }
         match m.get("type") {
@@ -364,7 +365,10 @@ impl<'a> Doc<'a> {
             }
             out = product(&out, &alternatives)?;
         }
-        if let Some(rule) = m.get(UNEVALUATED) {
+        // `unevaluatedProperties` arrived in 2019-09; earlier drafts ignore it as unknown.
+        if let Some(rule) = m.get(UNEVALUATED)
+            && self.draft() != JsonSchemaDraft::UpTo7
+        {
             for variant in &mut out {
                 seal(variant, rule)?;
             }
