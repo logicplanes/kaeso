@@ -24,7 +24,7 @@ export const KAESO_LINK_VARIANTS = {
       description: "A heading's link to itself: the heading's own look, with a # beside it on hover and keyboard focus",
     },
     card: {
-      classes: "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 px-16 py-12 text-fg no-underline hover:bg-fill-2",
+      classes: "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 px-16 py-12 text-fg no-underline outline-offset-2 hover:bg-fill-2",
       description: "A page to read next: a filled well with the page's name and one sentence about it",
     },
   },
@@ -47,7 +47,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link({ hre
       ref={ref}
       href={href}
       className={cn(
-        "relative -mx-2 box-decoration-clone rounded-code px-2 transition-control focus-ring tap-target",
+        "relative -mx-2 box-decoration-clone rounded-code px-2 outline-offset-0 transition-control focus-ring tap-target",
         KAESO_LINK_VARIANTS.variant[variant].classes,
         variant === "card" && isExternal && "pe-36",
         className,

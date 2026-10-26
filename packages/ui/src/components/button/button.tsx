@@ -1,15 +1,4 @@
-import {
-  forwardRef,
-  useId,
-  useRef,
-  useState,
-  type ButtonHTMLAttributes,
-  type FocusEvent,
-  type MouseEvent,
-  type ReactElement,
-  type ReactNode,
-  type Ref,
-} from "react";
+import { forwardRef, useRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactElement, type ReactNode, type Ref } from "react";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent, isExternalHref } from "../../utils/link-provider.js";
 import { warnMissingName, warnStylingClassName } from "../../utils/dev.js";
@@ -112,7 +101,7 @@ export function buttonClasses({
     shape === "circle" && CIRCLE[size],
     shape === "pill" && leading && variant !== "link" && LEADING_ICON_PADDING[size],
     shape === "pill" && trailing && variant !== "link" && TRAILING_ICON_PADDING[size],
-    variant === "link" && "-mx-2 h-auto rounded-code px-2 align-baseline",
+    variant === "link" && "-mx-2 h-auto rounded-code px-2 align-baseline outline-offset-0",
     KAESO_BUTTON_VARIANTS.variant[variant].classes,
     fullWidth && "w-full",
   );
