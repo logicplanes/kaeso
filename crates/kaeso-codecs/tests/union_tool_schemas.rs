@@ -292,6 +292,43 @@ fn a_zod_discriminated_union_from_chat_completions_reaches_claude_merged() {
 }
 
 #[test]
+fn keywords_a_variant_alone_has_are_named_in_its_line() {
+    let req = decode(
+        C,
+        &chat_tool(
+            "draw",
+            json!({
+                "oneOf": [
+                    {
+                        "type": "object",
+                        "properties": {"a": {"type": "string"}},
+                        "required": ["a"],
+                        "minProperties": 1,
+                        "additionalProperties": false
+                    },
+                    {"type": "object", "properties": {"b": {"type": "string"}}, "maxProperties": 2}
+                ]
+            }),
+        ),
+    );
+    let (sent, _) = sent(A, &req, anthropic(&req));
+    let tool = tool(A, &sent, "draw");
+    assert_eq!(
+        tool["input_schema"],
+        json!({
+            "type": "object",
+            "properties": {"a": {"type": "string"}, "b": {"type": "string"}}
+        })
+    );
+    assert_eq!(
+        tool["description"],
+        "Draws a shape.\n\nThe arguments match one of these variants:\n\
+         1. requires a; with additionalProperties false, minProperties 1.\n\
+         2. requires nothing; also takes b; with maxProperties 2."
+    );
+}
+
+#[test]
 fn grok_gets_a_union_of_inline_objects_as_sent() {
     let req = decode(C, &chat_tool("draw", zod_discriminated_union()));
     for target in [R, C] {

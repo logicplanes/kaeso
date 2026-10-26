@@ -129,7 +129,7 @@ Anthropic 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有
 - **属性。** 合并后的对象包含所有变体的属性。在不同变体之间有差异的属性会变为其各种形式的 `anyOf`；但同一属性的 `enum` 和 `const` 值会合并为一个 `enum`，例如 `mode`。
 - **`required`。** 每个变体都要求的属性；`allOf` 部分会加入它们自己的。
 - **`additionalProperties`** 和其他关键字在每个变体的值都相同时保留，例如 `additionalProperties: false`。根部的 `$defs`、`definitions`、`$schema`、`title` 和 `description` 保持不变，因此属性中的引用仍能解析。
-- **描述。** 有多个变体时，工具描述的末尾会列出这些变体，让模型仍然知道哪些字段要一起使用：`1. mode "view": requires mode, id.`
+- **描述。** 有多个变体时，工具描述的末尾会列出这些变体，让模型仍然知道哪些字段要一起使用：`1. mode "view": requires mode, id.` 只有部分变体才有、因而合并后的对象无法携带的关键字，会在其变体那一行中注明，例如 `; with minProperties 1`。合并后的对象接受所有组合；工具接受哪些参数仍由应用自己的 schema 决定。
 - **不变。** 属性内部的联合、目标接受的根部联合，以及工具调用的参数。
 - **拒绝。** 根部联合中有不是对象的分支（例如 `{"type": "string"}`）、`$ref` 没有指向 schema 的 `$defs` 或 `definitions`、无法精确组合的部分（例如两个不同的 `minProperties`，或 `additionalProperties: false` 与另一部分要求的属性相冲突）、与 `patternProperties` 或条件关键字并存的 `unevaluatedProperties`、`$schema` 未指定草案时 `$ref` 旁边除注解以外的关键字，以及根部组合出超过 64 个变体时，都是 `Unsupported`。错误消息会注明该工具，`param` 是它在请求中的路径。
 

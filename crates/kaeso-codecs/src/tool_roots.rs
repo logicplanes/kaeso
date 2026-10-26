@@ -213,7 +213,7 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
             schema.insert(key.to_owned(), v.clone());
         }
     }
-    let summary = (variants.len() > 1).then(|| doc.summary(&variants));
+    let summary = (variants.len() > 1).then(|| doc.summary(&variants, &schema));
     Ok(Merged {
         schema: Value::Object(schema),
         summary,
@@ -481,7 +481,7 @@ impl<'a> Doc<'a> {
         Some(Value::Object(out))
     }
 
-    fn summary(&self, variants: &[Map<String, Value>]) -> String {
+    fn summary(&self, variants: &[Map<String, Value>], merged: &Map<String, Value>) -> String {
         let discriminators = self.discriminators(variants);
         let mut out = String::from("The arguments match one of these variants:");
         for (i, v) in variants.iter().enumerate() {
@@ -513,6 +513,18 @@ impl<'a> Doc<'a> {
             }
             if !optional.is_empty() {
                 out.push_str(&format!("; also takes {}", optional.join(", ")));
+            }
+            let only_here: Vec<String> = v
+                .iter()
+                .filter(|(key, value)| {
+                    !matches!(key.as_str(), "properties" | "required" | "type")
+                        && !ANNOTATIONS.contains(&key.as_str())
+                        && merged.get(*key) != Some(*value)
+                })
+                .map(|(key, value)| format!("{key} {value}"))
+                .collect();
+            if !only_here.is_empty() {
+                out.push_str(&format!("; with {}", only_here.join(", ")));
             }
             out.push('.');
         }
