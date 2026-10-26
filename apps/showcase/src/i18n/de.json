@@ -1146,5 +1146,16 @@
   "Controls that stay under the title while the body scrolls, such as a search over the list below; a hairline shows once the body is scrolled.": "Steuerelemente, die unter dem Titel stehen bleiben, während der Inhalt scrollt, etwa eine Suche über der Liste darunter; sobald gescrollt wird, erscheint eine Haarlinie.",
   "The layers, each with its title, content and footer, and optionally a toolbar and a footer start; one shows at a time, and the ones below it stay mounted and hidden.": "Die Ebenen, jede mit Titel, Inhalt und Fußzeile, optional mit Werkzeugleiste und Fußzeilenanfang; eine ist sichtbar, die darunter bleiben eingehängt und verborgen.",
   "An always-open list for a dialog step, tiles with each provider's mark for a dialog's first step, or a pill that opens the list.": "Eine stets offene Liste für einen Dialogschritt, Kacheln mit dem Zeichen jedes Anbieters für den ersten Schritt eines Dialogs oder eine Pille, die die Liste öffnet.",
-  "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.": "Mit `grid`: wird aufgerufen, wenn eine Kachel gedrückt oder angeklickt wird, nicht wenn die Pfeiltasten die Wahl verschieben, sodass ein Dialogschritt sofort weitergehen kann."
+  "With `grid`: called when a tile is pressed or clicked, not when the arrow keys move the choice, so a dialog step can continue at once.": "Mit `grid`: wird aufgerufen, wenn eine Kachel gedrückt oder angeklickt wird, nicht wenn die Pfeiltasten die Wahl verschieben, sodass ein Dialogschritt sofort weitergehen kann.",
+  "Two versions in one column: removed lines on red, added on green, changed words marked, unchanged runs folded.": "Zwei Fassungen in einer Spalte: entfernte Zeilen rot, hinzugefügte grün, geänderte Wörter markiert, unveränderte Abschnitte eingeklappt.",
+  "An audit event": "Ein Audit-Ereignis",
+  "With line numbers": "Mit Zeilennummern",
+  "The new version.": "Die neue Fassung.",
+  "The old version.": "Die alte Fassung.",
+  "Unchanged lines kept around each change before the rest folds (3 by default).": "Unveränderte Zeilen, die um jede Änderung sichtbar bleiben, bevor der Rest einklappt (standardmäßig 3).",
+  "Hide the copy circle, which copies the diff with + and - markers.": "Blendet den Kopierkreis aus, der die Änderungen mit den Zeichen + und - kopiert.",
+  "The language of both versions, for highlighting (`text` by default).": "Die Sprache beider Fassungen, für die Hervorhebung (standardmäßig `text`).",
+  "Shows the old and the new line numbers.": "Zeigt die alten und die neuen Zeilennummern.",
+  "A name in the title bar, beside the count of added and removed lines.": "Ein Name in der Titelleiste, neben der Zahl hinzugefügter und entfernter Zeilen.",
+  "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.": "Lange Zeilen brechen um, statt seitlich zu scrollen, und behalten ihren Einzug: Werte in einer schmalen Spalte wie einem Sheet."
 }

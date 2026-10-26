@@ -22,6 +22,10 @@ for (const [role, s] of Object.entries(t.semantic)) {
   both(`${role}-text`, s.text);
   both(`${role}-tint`, s.tint);
 }
+for (const [kind, d] of Object.entries(t.diff)) {
+  both(`diff-${kind}`, d.line);
+  both(`diff-${kind}-word`, d.word);
+}
 both("danger-fill", t.dangerFill);
 both("on-danger", t.onDanger);
 both("viz-1-soft", t.vizSoft);
@@ -117,6 +121,10 @@ for (const role of Object.keys(t.semantic)) {
   colorRoles[role] = role;
   colorRoles[`${role}-text`] = `${role}-text`;
   colorRoles[`${role}-tint`] = `${role}-tint`;
+}
+for (const kind of Object.keys(t.diff)) {
+  colorRoles[`diff-${kind}`] = `diff-${kind}`;
+  colorRoles[`diff-${kind}-word`] = `diff-${kind}-word`;
 }
 for (const id of Object.keys(t.providerMark)) colorRoles[`mark-${id}`] = `mark-${id}`;
 t.viz.forEach((_, i) => {
