@@ -31,7 +31,7 @@ function HoverTrigger({ children, delay = 600 }: { children: ReactElement; delay
 }
 HoverTrigger.displayName = "HoverCard.Trigger";
 const HoverContent = forwardRef<HTMLDivElement, Omit<PopoverContentProps, "title" | "padding" | "aria-label">>(function HoverCardContent(
-  { children, side = "bottom", align = "start", sideOffset = 8, className },
+  { children, side = "bottom", align = "start", sideOffset = 6, className },
   ref,
 ) {
   return (

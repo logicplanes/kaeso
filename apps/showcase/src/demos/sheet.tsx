@@ -8,7 +8,11 @@ export const meta = {
   entry: "sheet",
   import: "Sheet",
   keyboard: [["Escape", "Closes"]],
-  a11y: ["A dialog; the title names it, the subtitle carries the id.", "Apps make it URL-addressable so links can open it."],
+  a11y: [
+    "A dialog; the title names it, the subtitle carries the id.",
+    "Apps make it URL-addressable so links can open it.",
+    "A sheet that isn't modal stays open when the page behind it is pressed, so the next row can fill it.",
+  ],
 };
 const body = (
   <div className="flex flex-col gap-24">
@@ -42,9 +46,26 @@ export function Inspector() {
 export function States() {
   return (
     <StateSection title="Inline">
-      <Sheet inline title="POST /v1/messages" subtitle="req_01JAR4X2KQ" size="sm" actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}>
-        {body}
-      </Sheet>
+      <div className="flex flex-col gap-24">
+        <Sheet inline title="POST /v1/messages" subtitle="req_01JAR4X2KQ" size="sm" actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}>
+          {body}
+        </Sheet>
+        <Sheet
+          inline
+          title="POST /v1/organizations/org_01J9Z5A/projects/proj_01J9Z5A/keys"
+          subtitle="req_01JAR4X2KQZ8M3N7P5V6W9Y2T4"
+          size="sm"
+          actions={<IconButton icon={icons.copy} aria-label="Copy request id" />}
+          footer={
+            <>
+              <Button>Copy as curl</Button>
+              <Button variant="primary">Replay request</Button>
+            </>
+          }
+        >
+          {body}
+        </Sheet>
+      </div>
     </StateSection>
   );
 }

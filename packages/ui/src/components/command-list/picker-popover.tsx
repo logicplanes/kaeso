@@ -57,10 +57,10 @@ export const PickerPopover = forwardRef<HTMLDivElement, PickerPopoverProps>(func
           <BaseDialog.Popup
             ref={ref}
             data-side="bottom"
-            className="fixed inset-8 z-50 flex flex-col overflow-hidden rounded-sheet bg-raised text-fg shadow-dialog outline-none sheet-motion"
+            className="fixed inset-safe-8 z-50 flex flex-col overflow-hidden rounded-sheet bg-raised text-fg shadow-dialog outline-none sheet-motion"
           >
-            <div className="flex h-56 shrink-0 items-center gap-12 pr-8 pl-20 hairline-b">
-              <BaseDialog.Title className="min-w-0 flex-1 truncate text-body-lg font-semibold text-fg">{title}</BaseDialog.Title>
+            <div className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b">
+              <BaseDialog.Title className="min-w-0 flex-1 text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</BaseDialog.Title>
               <BaseDialog.Close render={<IconButton icon={icons.close} aria-label={t("pickerPopover.close", "Close")} tooltip={false} />} />
             </div>
             <CommandListHeightContext.Provider value="fill">{children}</CommandListHeightContext.Provider>
