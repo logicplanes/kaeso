@@ -403,6 +403,65 @@ fn unevaluated_properties_close_the_object_they_stand_in() {
     }
 }
 
+fn ref_with_siblings(dialect: Option<&str>, sibling: Value) -> Value {
+    let mut branch = json!({"$ref": "#/$defs/Move"});
+    for (key, value) in sibling.as_object().unwrap() {
+        branch[key] = value.clone();
+    }
+    let mut schema = json!({
+        "oneOf": [branch, {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}],
+        "$defs": {"Move": {"type": "object", "properties": {"to": {"type": "string"}}}}
+    });
+    if let Some(dialect) = dialect {
+        schema["$schema"] = json!(dialect);
+    }
+    schema
+}
+
+fn merged_required(schema: Value) -> Result<Value, KppError> {
+    let req = decode(C, &chat_tool("move", schema));
+    let body = send(A, &req, &mut anthropic(&req))?;
+    Ok(tool(A, &body, "move")["description"].clone())
+}
+
+#[test]
+fn keywords_next_to_a_ref_follow_the_draft_the_schema_names() {
+    let required = json!({"required": ["to"]});
+    let draft_07 = merged_required(ref_with_siblings(
+        Some("http://json-schema.org/draft-07/schema#"),
+        required.clone(),
+    ))
+    .unwrap();
+    assert!(
+        draft_07
+            .as_str()
+            .unwrap()
+            .ends_with("1. requires nothing; also takes to.\n2. requires id."),
+        "{draft_07}"
+    );
+    let draft_2020 = merged_required(ref_with_siblings(
+        Some("https://json-schema.org/draft/2020-12/schema"),
+        required.clone(),
+    ))
+    .unwrap();
+    assert!(
+        draft_2020
+            .as_str()
+            .unwrap()
+            .ends_with("1. requires to.\n2. requires id."),
+        "{draft_2020}"
+    );
+    let annotated = merged_required(ref_with_siblings(None, json!({"description": "Moves it."})));
+    assert!(annotated.is_ok(), "{annotated:?}");
+
+    let err = merged_required(ref_with_siblings(None, required)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("tools[0]"));
+    assert_eq!(
+        err.message,
+        "The parameters of `move` put keywords next to a `$ref`, which JSON Schema drafts read differently, so Kaeso cannot merge them for Anthropic. Name the draft in `$schema`."
+    );
+}
+
 #[test]
 fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
     let closed_path = json!({

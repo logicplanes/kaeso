@@ -169,6 +169,7 @@ enum Fault {
     Unresolved(String),
     Circular,
     Conflict(String),
+    RefSiblings,
     TooMany,
 }
 
@@ -183,6 +184,9 @@ impl Fault {
             ),
             Fault::Circular => format!(
                 "The parameters of `{tool}` are a union whose branches refer back to themselves, so Kaeso cannot merge it for {provider}. Inline the branches."
+            ),
+            Fault::RefSiblings => format!(
+                "The parameters of `{tool}` put keywords next to a `$ref`, which JSON Schema drafts read differently, so Kaeso cannot merge them for {provider}. Name the draft in `$schema`."
             ),
             Fault::Conflict(keyword) => format!(
                 "The parameters of `{tool}` combine schemas whose `{keyword}` Kaeso cannot merge into one object for {provider} without changing what the tool accepts. Merge them into one object."
@@ -218,7 +222,33 @@ fn merge(root: &Map<String, Value>) -> Result<Merged, Fault> {
 
 struct Doc<'a>(&'a Map<String, Value>);
 
+enum RefSiblings {
+    Applied,
+    Ignored,
+    Unknown,
+}
+
 impl<'a> Doc<'a> {
+    // Up to draft 7, keywords next to `$ref` are ignored (draft-07 Core §8.3); from
+    // 2019-09 on they apply alongside it (2019-09 Core §8.2.4.1).
+    fn ref_siblings(&self) -> RefSiblings {
+        let dialect = self
+            .0
+            .get("$schema")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
+        if ["draft-03", "draft-04", "draft-06", "draft-07"]
+            .iter()
+            .any(|d| dialect.contains(d))
+        {
+            RefSiblings::Ignored
+        } else if ["2019-09", "2020-12"].iter().any(|d| dialect.contains(d)) {
+            RefSiblings::Applied
+        } else {
+            RefSiblings::Unknown
+        }
+    }
+
     fn lookup(&self, reference: &str) -> Result<&'a Value, Fault> {
         let unresolved = || Fault::Unresolved(reference.to_owned());
         let (defs, name) = DEFS
@@ -276,6 +306,19 @@ impl<'a> Doc<'a> {
         m: &'a Map<String, Value>,
         depth: usize,
     ) -> Result<Vec<Map<String, Value>>, Fault> {
+        if let Some(reference) = m.get("$ref")
+            && m.keys()
+                .any(|k| k != "$ref" && !ANNOTATIONS.contains(&k.as_str()))
+        {
+            match self.ref_siblings() {
+                RefSiblings::Applied => {}
+                RefSiblings::Ignored => {
+                    let target = self.lookup(reference.as_str().unwrap_or_default())?;
+                    return self.variants(target, depth + 1);
+                }
+                RefSiblings::Unknown => return Err(Fault::RefSiblings),
+            }
+        }
         match m.get("type") {
             None => {}
             Some(t) if t == "object" => {}
