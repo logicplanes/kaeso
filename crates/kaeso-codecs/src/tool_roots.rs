@@ -663,6 +663,12 @@ fn close(
         if is_open(rule) {
             continue;
         }
+        if other
+            .get("patternProperties")
+            .is_some_and(|patterns| part.get("patternProperties") != Some(patterns))
+        {
+            return Err(conflict());
+        }
         let own = property_names(part);
         if property_names(other).iter().all(|name| own.contains(name)) {
             continue;

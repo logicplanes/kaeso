@@ -553,6 +553,16 @@ fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
             {"type": "object", "properties": {"to": {"type": "string"}}, "required": ["to"]}
         ]
     });
+    let patterns_past_closed = json!({
+        "allOf": [
+            {
+                "type": "object",
+                "properties": {"path": {"type": "string"}},
+                "additionalProperties": false
+            },
+            {"type": "object", "patternProperties": {"^x-": {"type": "string"}}}
+        ]
+    });
     let patterned = json!({
         "type": "object",
         "patternProperties": {"^x-": {"type": "string"}},
@@ -564,6 +574,7 @@ fn all_of_parts_that_cannot_be_merged_exactly_are_refused() {
         (closed_path, "additionalProperties"),
         (counts, "minProperties"),
         (unevaluated_path, "additionalProperties"),
+        (patterns_past_closed, "additionalProperties"),
         (patterned, "unevaluatedProperties"),
     ] {
         let req = decode(A, &rename_tool(schema));
