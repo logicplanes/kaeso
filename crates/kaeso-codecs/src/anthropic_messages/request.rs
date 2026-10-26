@@ -26,7 +26,7 @@ use crate::wire::{
 const OBJECTS_FORM: &str = "objects";
 const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 const SYSTEM_FORM: &str = "system";
-const CACHE_CONTROL: &str = "cache_control";
+const MAX_BREAKPOINTS: usize = 4;
 
 fn invalid_body(detail: impl std::fmt::Display) -> KppError {
     KppError::invalid_request(format!(
@@ -326,10 +326,10 @@ pub(crate) fn encode_request(
         }
     };
     let own = r.extras.is_from(D);
-    let lengthened;
-    let r = if !own && asks_for_cache(r) && cross::openai_cache_outlives_five_minutes(&r.extras) {
-        lengthened = hints_kept_for_an_hour(r);
-        &lengthened
+    let adjusted;
+    let r = if !own && cache_hints(r) > 0 {
+        adjusted = app_hints_for_anthropic(r);
+        &adjusted
     } else {
         r
     };
@@ -351,6 +351,11 @@ pub(crate) fn encode_request(
         }
         None => &r.system,
     };
+    let last_cacheable_message = breakpoint.as_ref().and_then(|_| {
+        r.messages
+            .iter()
+            .rposition(|m| m.blocks.iter().any(takes_cache_control))
+    });
     let system_form = r.extras.form_str(D, SYSTEM_FORM);
     w.system = if system_form == Some("string")
         && let [kaeso_kpp::Block::Text(t)] = system.as_slice()
@@ -393,7 +398,7 @@ pub(crate) fn encode_request(
         plan = ThinkingPlan::default();
     }
     let rebuilt = rebuilt_thinking(r, &mut plan, reasoning, ctx, forced, own || is_count)?;
-    for m in &r.messages {
+    for (index, m) in r.messages.iter().enumerate() {
         let role = match m.role {
             Role::User => "user",
             Role::Assistant => "assistant",
@@ -417,6 +422,14 @@ pub(crate) fn encode_request(
             &kept
         } else {
             &m.blocks
+        };
+        let marked_message;
+        let blocks = match &breakpoint {
+            Some(hint) if last_cacheable_message == Some(index) => {
+                marked_message = with_last_breakpoint(blocks, hint);
+                &marked_message
+            }
+            _ => blocks,
         };
         let Some(content) = enc.content(blocks, &m.extras, "")? else {
             continue;
@@ -568,13 +581,7 @@ pub(crate) fn encode_request(
         }
     }
 
-    let mut out = own_ext(w, &r.extras);
-    if let Some(hint) = &breakpoint {
-        let automatic =
-            RawJson::from_serialize(&super::blocks::encode_cache(hint)).map_err(internal)?;
-        out.extra.insert(CACHE_CONTROL.to_owned(), automatic);
-    }
-    let body = to_body(&out)?;
+    let body = to_body(&own_ext(w, &r.extras))?;
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
     let betas: &[&str] = match rebuilt {
@@ -589,72 +596,115 @@ pub(crate) fn encode_request(
 }
 
 fn cross_format_breakpoint(r: &GenerateRequest) -> Option<CacheHint> {
-    if asks_for_cache(r) || cross::openai_cache_is_explicit(&r.extras) {
+    if cache_hints(r) > 0 || cross::openai_cache_is_explicit(&r.extras) {
         return None;
     }
     let ttl = cross::openai_cache_outlives_five_minutes(&r.extras).then_some(CacheTtl::OneHour);
     Some(CacheHint::new(ttl))
 }
 
-fn hints_kept_for_an_hour(r: &GenerateRequest) -> GenerateRequest {
-    fn lengthen(hint: &mut Option<CacheHint>) {
-        if let Some(h) = hint
-            && h.ttl.is_none()
-        {
-            h.ttl = Some(CacheTtl::OneHour);
-        }
+fn cache_slot(b: &mut Block) -> Option<&mut Option<CacheHint>> {
+    match b {
+        Block::Text(t) if !t.text.is_empty() => Some(&mut t.cache),
+        Block::Image(i) => Some(&mut i.cache),
+        Block::Document(d) => Some(&mut d.cache),
+        Block::ToolCall(c) => Some(&mut c.cache),
+        Block::ToolResult(t) => Some(&mut t.cache),
+        _ => None,
     }
-    fn lengthen_all(blocks: &mut [Block]) {
-        for b in blocks {
-            match b {
-                Block::Text(t) => lengthen(&mut t.cache),
-                Block::Image(i) => lengthen(&mut i.cache),
-                Block::Document(d) => lengthen(&mut d.cache),
-                Block::ToolCall(c) => lengthen(&mut c.cache),
-                Block::ToolResult(t) => {
-                    lengthen_all(&mut t.content);
-                    lengthen(&mut t.cache);
-                }
-                _ => {}
-            }
-        }
-    }
-    let mut r = r.clone();
-    lengthen_all(&mut r.system);
-    for m in &mut r.messages {
-        lengthen_all(&mut m.blocks);
-    }
-    for t in &mut r.tools {
-        if let ToolDef::Function(f) = t {
-            lengthen(&mut f.cache);
-        }
-    }
-    r
 }
 
-fn asks_for_cache(r: &GenerateRequest) -> bool {
-    fn marked(blocks: &[Block]) -> bool {
+fn takes_cache_control(b: &Block) -> bool {
+    match b {
+        Block::Text(t) => !t.text.is_empty(),
+        Block::Image(_) | Block::Document(_) | Block::ToolCall(_) | Block::ToolResult(_) => true,
+        _ => false,
+    }
+}
+
+fn each_block_hint(blocks: &mut [Block], visit: &mut impl FnMut(&mut Option<CacheHint>)) {
+    for b in blocks {
+        if let Block::ToolResult(t) = b {
+            each_block_hint(&mut t.content, visit);
+        }
+        if let Some(slot) = cache_slot(b) {
+            visit(slot);
+        }
+    }
+}
+
+fn each_hint(r: &mut GenerateRequest, visit: &mut impl FnMut(&mut Option<CacheHint>)) {
+    for t in &mut r.tools {
+        if let ToolDef::Function(f) = t {
+            visit(&mut f.cache);
+        }
+    }
+    each_block_hint(&mut r.system, visit);
+    for m in &mut r.messages {
+        each_block_hint(&mut m.blocks, visit);
+    }
+}
+
+fn cache_hints(r: &GenerateRequest) -> usize {
+    fn count(blocks: &[Block]) -> usize {
         blocks
             .iter()
-            .any(|b| b.cache().is_some() || matches!(b, Block::ToolResult(t) if marked(&t.content)))
+            .map(|b| {
+                usize::from(b.cache().is_some())
+                    + match b {
+                        Block::ToolResult(t) => count(&t.content),
+                        _ => 0,
+                    }
+            })
+            .sum()
     }
-    marked(&r.system)
-        || r.messages.iter().any(|m| marked(&m.blocks))
-        || r.tools
-            .iter()
-            .any(|t| matches!(t, ToolDef::Function(f) if f.cache.is_some()))
+    let tools = r
+        .tools
+        .iter()
+        .filter(|t| matches!(t, ToolDef::Function(f) if f.cache.is_some()))
+        .count();
+    tools + count(&r.system) + r.messages.iter().map(|m| count(&m.blocks)).sum::<usize>()
+}
+
+fn clear_hints_on_empty_text(blocks: &mut [Block]) {
+    for b in blocks {
+        match b {
+            Block::Text(t) if t.text.is_empty() => t.cache = None,
+            Block::ToolResult(t) => clear_hints_on_empty_text(&mut t.content),
+            _ => {}
+        }
+    }
+}
+
+fn app_hints_for_anthropic(r: &GenerateRequest) -> GenerateRequest {
+    let mut r = r.clone();
+    clear_hints_on_empty_text(&mut r.system);
+    for m in &mut r.messages {
+        clear_hints_on_empty_text(&mut m.blocks);
+    }
+    let mut surplus = cache_hints(&r).saturating_sub(MAX_BREAKPOINTS);
+    let long = cross::openai_cache_outlives_five_minutes(&r.extras);
+    each_hint(&mut r, &mut |slot| {
+        if slot.is_none() {
+            return;
+        }
+        if surplus > 0 {
+            *slot = None;
+            surplus -= 1;
+        } else if let Some(hint) = slot
+            && long
+            && hint.ttl.is_none()
+        {
+            hint.ttl = Some(CacheTtl::OneHour);
+        }
+    });
+    r
 }
 
 fn with_last_breakpoint(blocks: &[Block], hint: &CacheHint) -> Vec<Block> {
     let mut marked = blocks.to_vec();
-    let last = marked.iter_mut().rev().find_map(|b| match b {
-        Block::Text(t) => Some(&mut t.cache),
-        Block::Image(i) => Some(&mut i.cache),
-        Block::Document(d) => Some(&mut d.cache),
-        _ => None,
-    });
-    if let Some(cache) = last {
-        *cache = Some(hint.clone());
+    if let Some(slot) = marked.iter_mut().rev().find_map(cache_slot) {
+        *slot = Some(hint.clone());
     }
     marked
 }

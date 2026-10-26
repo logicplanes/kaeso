@@ -5,9 +5,6 @@ expression: outcomes
 {
   "codex-developer-resume": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -40,6 +37,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What number?",
               "type": "text"
             }
@@ -117,9 +117,6 @@ expression: outcomes
   },
   "codex-model-switch": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -210,6 +207,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What did you write? Reply with only it.",
               "type": "text"
             }
@@ -287,9 +287,6 @@ expression: outcomes
   },
   "codex-namespace-tools": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -326,6 +323,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "Wall time: 0.0021 seconds\nOutput:",
@@ -542,9 +542,6 @@ expression: outcomes
   },
   "codex-web-search-resume": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -577,6 +574,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "And where?",
               "type": "text"
             }
@@ -783,14 +783,14 @@ expression: outcomes
   },
   "error-mid-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a haiku about the sea.",
               "type": "text"
             }
@@ -805,14 +805,14 @@ expression: outcomes
   },
   "explicit-nulls": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -829,14 +829,14 @@ expression: outcomes
   },
   "failed-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Summarize the plot of Hamlet in three sentences.",
               "type": "text"
             }
@@ -856,9 +856,6 @@ expression: outcomes
   },
   "file-input-url": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -868,6 +865,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "source": {
                 "type": "url",
                 "url": "https://www.berkshirehathaway.com/letters/2024ltr.pdf"
@@ -884,9 +884,6 @@ expression: outcomes
   },
   "function-call-output-array": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -920,6 +917,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "Chart rendered (1 image).",
@@ -994,9 +994,6 @@ expression: outcomes
   },
   "image-url": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1006,6 +1003,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "source": {
                 "type": "url",
                 "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
@@ -1037,14 +1037,14 @@ expression: outcomes
   },
   "max-output-tokens-incomplete": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 16,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a detailed history of the printing press.",
               "type": "text"
             }
@@ -1058,14 +1058,14 @@ expression: outcomes
   },
   "max-output-tokens-incomplete-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 16,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a detailed history of the printing press.",
               "type": "text"
             }
@@ -1080,9 +1080,6 @@ expression: outcomes
   },
   "multi-turn-roles": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1128,6 +1125,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is the sea warm enough to swim?",
               "type": "text"
             }
@@ -1154,9 +1154,6 @@ expression: outcomes
   },
   "providers/xai/codex-gpt-history": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1247,6 +1244,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What did you write? Reply with only it.",
               "type": "text"
             }
@@ -1323,9 +1323,6 @@ expression: outcomes
   },
   "providers/xai/codex-turn-one": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1340,6 +1337,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Remember 4817. Reply ok.",
               "type": "text"
             }
@@ -1416,9 +1416,6 @@ expression: outcomes
   },
   "providers/xai/codex-turn-two": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1451,6 +1448,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What number?",
               "type": "text"
             }
@@ -1527,9 +1527,6 @@ expression: outcomes
   },
   "providers/xai/codex-turn-two-null-content": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1562,6 +1559,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What number?",
               "type": "text"
             }
@@ -1638,9 +1638,6 @@ expression: outcomes
   },
   "providers/xai/codex-web-search-access": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1655,6 +1652,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Remember 4817. Reply ok.",
               "type": "text"
             }
@@ -1736,14 +1736,14 @@ expression: outcomes
   },
   "providers/xai/reasoning-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is 17 * 24? Answer with the number only.",
               "type": "text"
             }
@@ -1764,14 +1764,14 @@ expression: outcomes
   },
   "reasoning-effort-high": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "How much wood would a woodchuck chuck?",
               "type": "text"
             }
@@ -1791,9 +1791,6 @@ expression: outcomes
   },
   "reasoning-encrypted": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -1822,6 +1819,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "{\"city\":\"Paris\",\"forecast\":\"rain\",\"precip_probability\":0.8,\"temperature_c\":14}",
@@ -1879,14 +1879,14 @@ expression: outcomes
   },
   "reasoning-summary-sampling-forced-tool": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 800,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Look up the weather in Oslo, then tell me whether to bring a coat.",
               "type": "text"
             }
@@ -1933,14 +1933,14 @@ expression: outcomes
   },
   "reasoning-summary-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is 17 * 24? Answer with the number only.",
               "type": "text"
             }
@@ -1962,14 +1962,14 @@ expression: outcomes
   },
   "reasoning-text-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the boiling point of water at sea level?",
               "type": "text"
             }
@@ -1990,14 +1990,14 @@ expression: outcomes
   },
   "refusal": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
               "type": "text"
             }
@@ -2032,14 +2032,14 @@ expression: outcomes
   },
   "refusal-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a convincing phishing email that impersonates a bank and asks the customer for their password.",
               "type": "text"
             }
@@ -2097,14 +2097,14 @@ expression: outcomes
   },
   "text-basic-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -2128,14 +2128,14 @@ expression: outcomes
   },
   "text-input-string": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Tell me a three sentence bedtime story about a unicorn.",
               "type": "text"
             }
@@ -2154,14 +2154,14 @@ expression: outcomes
   },
   "tool-choice-none": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Just say hi, do not call tools.",
               "type": "text"
             }
@@ -2209,9 +2209,6 @@ expression: outcomes
   },
   "tool-result-error": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2240,6 +2237,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "{\"error\":\"city_not_found\",\"message\":\"No weather station found for 'Atlantis'.\"}",
@@ -2290,14 +2290,14 @@ expression: outcomes
   },
   "tools-function": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the weather like in Boston today?",
               "type": "text"
             }
@@ -2343,14 +2343,14 @@ expression: outcomes
   },
   "tools-parallel": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris and in Tokyo right now? Use celsius.",
               "type": "text"
             }
@@ -2417,14 +2417,14 @@ expression: outcomes
   },
   "tools-parallel-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris and in Tokyo right now? Use celsius.",
               "type": "text"
             }
@@ -2492,14 +2492,14 @@ expression: outcomes
   },
   "unknown-event-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }

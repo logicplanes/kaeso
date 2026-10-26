@@ -371,7 +371,7 @@ fn a_foreign_request_encodes_from_typed_fields() {
             "model": "claude-sonnet-4-6",
             "max_tokens": 100,
             "system": [{"type": "text", "text": "Be brief.", "cache_control": {"type": "ephemeral"}}],
-            "messages": [{"role": "user", "content": [{"type": "text", "text": "hi"}]}],
+            "messages": [{"role": "user", "content": [{"type": "text", "text": "hi", "cache_control": {"type": "ephemeral"}}]}],
             "stop_sequences": ["\n\n"],
             "stream": true,
             "metadata": {"user_id": "user-42"},
@@ -380,7 +380,6 @@ fn a_foreign_request_encodes_from_typed_fields() {
             "tool_choice": {"type": "tool", "name": name, "disable_parallel_tool_use": true},
             "tools": [{"name": name, "description": "Weather", "input_schema": {"type": "object", "properties": {}},
                 "cache_control": {"type": "ephemeral"}}],
-            "cache_control": {"type": "ephemeral"},
         })
     );
 }
@@ -446,7 +445,7 @@ fn foreign_reasoning_is_dropped_and_own_reasoning_replayed() {
         json!([
             {"role": "user", "content": [{"type": "text", "text": "hi"}]},
             {"role": "assistant", "content": [{"type": "text", "text": "answer"}]},
-            {"role": "user", "content": [{"type": "text", "text": "next"}]},
+            {"role": "user", "content": [{"type": "text", "text": "next", "cache_control": {"type": "ephemeral"}}]},
         ])
     );
 
@@ -523,6 +522,6 @@ fn foreign_documents_and_images_map_to_anthropic_sources() {
     );
     assert_eq!(
         body["messages"][0]["content"][2],
-        json!({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}})
+        json!({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}, "cache_control": {"type": "ephemeral"}})
     );
 }

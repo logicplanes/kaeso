@@ -20,14 +20,14 @@ expression: outcomes
   },
   "explicit-nulls": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hi.",
               "type": "text"
             }
@@ -41,9 +41,6 @@ expression: outcomes
   },
   "file-pdf-data": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -57,6 +54,9 @@ expression: outcomes
               "type": "document"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What does this document say?",
               "type": "text"
             }
@@ -75,14 +75,14 @@ expression: outcomes
   },
   "functions-tool-choice-auto-doc": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the weather like in Boston today?",
               "type": "text"
             }
@@ -127,9 +127,6 @@ expression: outcomes
   },
   "grok-cli-model-id": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -182,6 +179,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "<user_query>\nsay ok\n</user_query>",
               "type": "text"
             }
@@ -241,9 +241,6 @@ expression: outcomes
   },
   "grok-cli-reasoning-content": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -296,6 +293,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "<user_query>\nsay ok\n</user_query>",
               "type": "text"
             }
@@ -351,9 +351,6 @@ expression: outcomes
   },
   "image-base64-detail": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -378,6 +375,9 @@ expression: outcomes
               "type": "image"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "source": {
                 "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
                 "media_type": "image/png",
@@ -395,9 +395,6 @@ expression: outcomes
   },
   "image-url-doc": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 300,
       "messages": [
         {
@@ -407,6 +404,9 @@ expression: outcomes
               "type": "text"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "source": {
                 "type": "url",
                 "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
@@ -451,14 +451,14 @@ expression: outcomes
   },
   "max-completion-tokens-legacy-null": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a haiku about the sea.",
               "type": "text"
             }
@@ -472,14 +472,14 @@ expression: outcomes
   },
   "max-tokens-length": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 16,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a haiku about the sea, then explain it line by line.",
               "type": "text"
             }
@@ -493,14 +493,14 @@ expression: outcomes
   },
   "max-tokens-null": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Write a haiku about the sea.",
               "type": "text"
             }
@@ -522,14 +522,14 @@ expression: outcomes
   },
   "plain-developer-string": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -585,14 +585,14 @@ expression: outcomes
   },
   "providers/deepseek/authentication-fails": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -611,14 +611,14 @@ expression: outcomes
   },
   "providers/deepseek/max-completion-tokens-limit": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 20,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Count from one to forty in English words, separated by commas.",
               "type": "text"
             }
@@ -632,14 +632,14 @@ expression: outcomes
   },
   "providers/deepseek/missing-model": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -703,14 +703,14 @@ expression: outcomes
   },
   "providers/groq/model-not-found": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -752,14 +752,14 @@ expression: outcomes
   },
   "providers/groq/stream-tools-system-role": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris right now? Use Celsius.",
               "type": "text"
             }
@@ -828,14 +828,14 @@ expression: outcomes
   },
   "providers/groq/tools-system-role": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris right now? Use Celsius.",
               "type": "text"
             }
@@ -903,9 +903,6 @@ expression: outcomes
   },
   "providers/mistral/assistant-prefill": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 30,
       "messages": [
         {
@@ -920,6 +917,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "The colour is",
               "type": "text"
             }
@@ -958,14 +958,14 @@ expression: outcomes
   },
   "providers/mistral/greedy-sampling": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "say ok",
               "type": "text"
             }
@@ -980,14 +980,14 @@ expression: outcomes
   },
   "providers/mistral/invalid-api-key": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1001,14 +1001,14 @@ expression: outcomes
   },
   "providers/mistral/magistral-medium": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 1500,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is 91 a prime number? Answer in one sentence.",
               "type": "text"
             }
@@ -1027,14 +1027,14 @@ expression: outcomes
   },
   "providers/mistral/model-not-found": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1053,14 +1053,14 @@ expression: outcomes
   },
   "providers/mistral/prompt-cache-options-field": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1074,15 +1074,15 @@ expression: outcomes
   },
   "providers/mistral/prompt-cache-retention-field": {
     "body": {
-      "cache_control": {
-        "ttl": "1h",
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "ttl": "1h",
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1101,14 +1101,14 @@ expression: outcomes
   },
   "providers/mistral/reasoning-effort-high": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 1500,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is 91 a prime number? Answer in one sentence.",
               "type": "text"
             }
@@ -1128,14 +1128,14 @@ expression: outcomes
   },
   "providers/mistral/reasoning-effort-high-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 1500,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is 91 a prime number? Answer in one sentence.",
               "type": "text"
             }
@@ -1156,14 +1156,14 @@ expression: outcomes
   },
   "providers/mistral/reasoning-then-tool-call": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 200,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the weather in Lisbon right now?",
               "type": "text"
             }
@@ -1219,14 +1219,14 @@ expression: outcomes
   },
   "providers/mistral/safety-identifier-field": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1248,14 +1248,14 @@ expression: outcomes
   },
   "providers/mistral/stream-no-options": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1270,14 +1270,14 @@ expression: outcomes
   },
   "providers/mistral/stream-tool-call": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 200,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the weather in Lisbon right now?",
               "type": "text"
             }
@@ -1332,14 +1332,14 @@ expression: outcomes
   },
   "providers/mistral/user-field": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 10,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hello.",
               "type": "text"
             }
@@ -1366,14 +1366,14 @@ expression: outcomes
   },
   "providers/openrouter/free-basic": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 256,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is the capital of France?",
               "type": "text"
             }
@@ -1411,14 +1411,14 @@ expression: outcomes
   },
   "providers/openrouter/free-stream-rate-limited": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 256,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Count from one to five in words, separated by commas.",
               "type": "text"
             }
@@ -1433,14 +1433,14 @@ expression: outcomes
   },
   "providers/openrouter/free-tools": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris right now? Use Celsius.",
               "type": "text"
             }
@@ -1495,9 +1495,6 @@ expression: outcomes
   },
   "providers/openrouter/invalid-messages": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [],
       "model": "google/gemma-4-31b-it:free"
@@ -1506,14 +1503,14 @@ expression: outcomes
   },
   "providers/openrouter/keepalive-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 200,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Say hi.",
               "type": "text"
             }
@@ -1533,14 +1530,14 @@ expression: outcomes
   },
   "providers/openrouter/unknown-model": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -1559,14 +1556,14 @@ expression: outcomes
   },
   "providers/togetherai/non-serverless-model": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 300,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Name one planet.",
               "type": "text"
             }
@@ -1580,14 +1577,14 @@ expression: outcomes
   },
   "providers/togetherai/reasoning-reply": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 60,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Name one planet.",
               "type": "text"
             }
@@ -1601,14 +1598,14 @@ expression: outcomes
   },
   "providers/togetherai/reasoning-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 60,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Name one planet.",
               "type": "text"
             }
@@ -1633,14 +1630,14 @@ expression: outcomes
   },
   "providers/togetherai/stream-usage-short": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 300,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Name one planet.",
               "type": "text"
             }
@@ -1655,14 +1652,14 @@ expression: outcomes
   },
   "providers/togetherai/tool-call-auto": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 400,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris right now? Use Celsius.",
               "type": "text"
             }
@@ -1722,14 +1719,14 @@ expression: outcomes
   },
   "providers/xai/max-completion-tokens-reasoning": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 20,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is 391 a prime number? Answer in one sentence.",
               "type": "text"
             }
@@ -1748,14 +1745,14 @@ expression: outcomes
   },
   "providers/xai/reasoning-content": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is 17 * 24? Answer with the number only.",
               "type": "text"
             }
@@ -1775,14 +1772,14 @@ expression: outcomes
   },
   "providers/xai/reasoning-content-stream": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What is 17 * 24? Answer with the number only.",
               "type": "text"
             }
@@ -1803,9 +1800,6 @@ expression: outcomes
   },
   "qwen-code-tool-loop": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 64000,
       "messages": [
         {
@@ -1863,6 +1857,9 @@ expression: outcomes
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "OK",
@@ -1964,14 +1961,14 @@ expression: outcomes
   },
   "refusal": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Give me step-by-step instructions to pick my neighbour's front door lock while they are away.",
               "type": "text"
             }
@@ -2009,14 +2006,14 @@ expression: outcomes
   },
   "response-format-text": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Name three primary colors.",
               "type": "text"
             }
@@ -2030,14 +2027,14 @@ expression: outcomes
   },
   "stop-array": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Count from 1 to 10 separated by commas.",
               "type": "text"
             }
@@ -2062,14 +2059,14 @@ expression: outcomes
   },
   "stream-doc": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -2093,14 +2090,14 @@ expression: outcomes
   },
   "stream-include-usage": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Hello!",
               "type": "text"
             }
@@ -2134,14 +2131,14 @@ expression: outcomes
   },
   "tool-choice-function": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is it raining in Lisbon?",
               "type": "text"
             }
@@ -2213,14 +2210,14 @@ expression: outcomes
   },
   "tool-choice-none": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "Is it raining in Lisbon?",
               "type": "text"
             }
@@ -2277,14 +2274,14 @@ expression: outcomes
   },
   "tools-parallel": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "I land in Tokyo tonight. What's the weather in Paris, and what time is it in Tokyo?",
               "type": "text"
             }
@@ -2364,9 +2361,6 @@ expression: outcomes
   },
   "tools-results-parallel-error": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
@@ -2413,6 +2407,9 @@ expression: outcomes
               "type": "tool_result"
             },
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "content": [
                 {
                   "text": "Error: time service unavailable (HTTP 503). Try again later.",
@@ -2494,14 +2491,14 @@ expression: outcomes
   },
   "tools-single": {
     "body": {
-      "cache_control": {
-        "type": "ephemeral"
-      },
       "max_tokens": 4096,
       "messages": [
         {
           "content": [
             {
+              "cache_control": {
+                "type": "ephemeral"
+              },
               "text": "What's the weather in Paris right now? Use Celsius.",
               "type": "text"
             }

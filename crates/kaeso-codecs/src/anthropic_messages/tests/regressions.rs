@@ -153,7 +153,7 @@ fn unsigned_reasoning_that_was_not_read_from_anthropic_is_dropped() {
     req.sampling.max_output_tokens = Some(5);
     assert_eq!(
         encode_value(req)["messages"][1]["content"],
-        json!([{"type": "text", "text": "a"}])
+        json!([{"type": "text", "text": "a", "cache_control": {"type": "ephemeral"}}])
     );
     let mut resp = kaeso_kpp::Response::new("id", "m", vec![Block::Reasoning(b)]);
     resp.extras = Extras::new(A);
@@ -334,7 +334,7 @@ fn temperature_range_tool_result_children_and_data_urls() {
     let body = encode_value(with_url("data:image/png;base64,AAAA", false));
     assert_eq!(
         body["messages"][0]["content"][1],
-        json!({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}})
+        json!({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}, "cache_control": {"type": "ephemeral"}})
     );
     let body = encode_value(with_url("data:application/pdf;base64,JVBE", true));
     assert_eq!(

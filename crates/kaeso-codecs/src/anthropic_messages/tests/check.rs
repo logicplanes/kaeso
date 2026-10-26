@@ -67,7 +67,7 @@ fn foreign_system_messages_join_a_user_turn() {
         body["messages"],
         json!([{"role": "user", "content": [
             {"type": "text", "text": "hi"},
-            {"type": "text", "text": "late rule"}
+            {"type": "text", "text": "late rule", "cache_control": {"type": "ephemeral"}}
         ]}])
     );
 }
