@@ -666,8 +666,22 @@ fn cache_hints(r: &GenerateRequest) -> usize {
     tools + count(&r.system) + r.messages.iter().map(|m| count(&m.blocks)).sum::<usize>()
 }
 
+fn clear_hints_on_empty_text(blocks: &mut [Block]) {
+    for b in blocks {
+        match b {
+            Block::Text(t) if t.text.is_empty() => t.cache = None,
+            Block::ToolResult(t) => clear_hints_on_empty_text(&mut t.content),
+            _ => {}
+        }
+    }
+}
+
 fn app_hints_for_anthropic(r: &GenerateRequest) -> GenerateRequest {
     let mut r = r.clone();
+    clear_hints_on_empty_text(&mut r.system);
+    for m in &mut r.messages {
+        clear_hints_on_empty_text(&mut m.blocks);
+    }
     let mut surplus = cache_hints(&r).saturating_sub(MAX_BREAKPOINTS);
     let long = cross::openai_cache_outlives_five_minutes(&r.extras);
     each_hint(&mut r, &mut |slot| {

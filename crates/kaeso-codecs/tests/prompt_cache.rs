@@ -522,3 +522,45 @@ fn openai_apps_see_what_claude_read_from_the_cache() {
     assert_eq!(usage["prompt_tokens"], 5317);
     assert_eq!(usage["prompt_tokens_details"]["cached_tokens"], 5000);
 }
+
+#[test]
+fn hints_on_empty_text_neither_reach_claude_nor_count() {
+    let marked = |text: &str| json!({"type": "input_text", "text": text, "prompt_cache_breakpoint": {"mode": "explicit"}});
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked(""), marked("one"), marked(""), marked("two"), marked("three"), marked("four"), marked("five")]}]}),
+    );
+    let content = body["messages"][0]["content"].as_array().unwrap();
+    let sent: Vec<(&str, bool)> = content
+        .iter()
+        .map(|b| {
+            (
+                b["text"].as_str().unwrap(),
+                b.get("cache_control").is_some(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        sent,
+        [
+            ("one", false),
+            ("two", true),
+            ("three", true),
+            ("four", true),
+            ("five", true)
+        ]
+    );
+
+    let body = send(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked(""), {"type": "input_text", "text": "Hello"}]}]}),
+    );
+    assert_eq!(
+        body["messages"][0]["content"],
+        json!([{"type": "text", "text": "Hello", "cache_control": {"type": "ephemeral"}}])
+    );
+}
