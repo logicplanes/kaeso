@@ -67,6 +67,12 @@ function accessibleName(el: Element): string {
   return el.getAttribute("aria-label") ?? el.textContent ?? "";
 }
 
+function ownDescription(el: Element, skip: string): string {
+  const ids = (el.getAttribute("aria-describedby") ?? "").split(/\s+/).filter((id) => id && id !== skip);
+  if (!ids.length) return el.getAttribute("aria-description") ?? "";
+  return ids.map((id) => el.ownerDocument.getElementById(id)?.textContent ?? "").join(" ");
+}
+
 function useDescription(content: ReactNode, store: TriggerPropsStore, off: boolean) {
   const id = useId();
   const container = usePortalContainer();
@@ -78,7 +84,7 @@ function useDescription(content: ReactNode, store: TriggerPropsStore, off: boole
   useLayoutEffect(() => {
     const trigger = store.element();
     const text = words(plain ?? node.current?.textContent);
-    const next = !off && !!trigger && text !== "" && text !== words(accessibleName(trigger));
+    const next = !off && !!trigger && text !== "" && text !== words(accessibleName(trigger)) && !words(ownDescription(trigger, id)).includes(text);
     if (next !== describes) setDescribes(next);
   }, [plain, off, mounted, content, describes, store]);
   const hidden =

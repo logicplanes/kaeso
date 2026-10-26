@@ -52,6 +52,19 @@ describe("Tooltip for a screen reader", () => {
     expect(screen.getByRole("button", { name: "Continue" })).toHaveAccessibleDescription("Keys are shown once. Enter a name");
   });
 
+  it("doesn't repeat a description its control already reads", async () => {
+    render(
+      <TooltipProvider>
+        <p id="reason">Connect an identity provider first</p>
+        <Tooltip content="Connect an identity provider first">
+          <Button aria-describedby="reason">Require single sign-on</Button>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    await settled();
+    expect(screen.getByRole("button", { name: "Require single sign-on" })).toHaveAccessibleDescription("Connect an identity provider first");
+  });
+
   it("describes nothing while it is disabled", async () => {
     render(
       <TooltipProvider>
