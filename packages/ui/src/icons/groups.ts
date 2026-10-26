@@ -52,6 +52,7 @@ export const ICON_GROUPS = {
     "menu",
     "sort",
     "switcher",
+    "unfold",
     "expand",
     "collapse",
     "show",

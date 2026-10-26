@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerFill, neutral, semantic, shadow, viz } from "./tokens.js";
+import { dangerFill, diff, neutral, semantic, shadow, viz } from "./tokens.js";
 
 type Rgb = readonly [number, number, number];
 type Mode = "light" | "dark";
@@ -58,6 +58,19 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
     }
     const tint = rgb(semantic[role].tint[mode]);
     if (tint) expect(contrast(rgb(text) ?? tint, tint)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each([
+    ["added", "success"],
+    ["removed", "danger"],
+  ] as const)("code on a %s diff line and its changed words stays readable", (kind, role) => {
+    const { line, word } = diff[kind];
+    const code = [neutral.text[mode], semantic.info.text[mode], semantic.warning.text[mode]];
+    for (const fg of [...code, neutral["text-secondary"][mode], neutral["text-tertiary"][mode], semantic[role].text[mode]]) {
+      expect(ratio(fg, line[mode]), `${fg} on the ${kind} line`).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const fg of code) expect(ratio(fg, word[mode]), `${fg} on ${kind} words`).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(word[mode], line[mode]), `${kind} words stand out from their line`).toBeGreaterThanOrEqual(1.25);
   });
 
   it("white reads on the danger fill", () => {

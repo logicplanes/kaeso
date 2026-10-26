@@ -15,6 +15,12 @@ export const KAESO_CODE_BLOCK_VARIANTS = {
 } as const;
 export const KAESO_CODE_BLOCK_DEFAULT_VARIANTS = { surface: "well" } as const;
 
+function diffLineClass(line: string): string | false {
+  if (line.startsWith("+") && !line.startsWith("+++")) return "bg-diff-added";
+  if (line.startsWith("-") && !line.startsWith("---")) return "bg-diff-removed";
+  return false;
+}
+
 export interface CodeTab {
   label: string;
   code: string;
@@ -99,6 +105,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
               "flex px-16 leading-code",
               wrap === true && "whitespace-pre-wrap wrap-anywhere",
               wrap === "phone" && "max-sm:whitespace-pre-wrap max-sm:wrap-anywhere",
+              current.lang === "diff" && diffLineClass(line),
               highlightLines.includes(i + 1) && "bg-fill-2",
             )}
           >

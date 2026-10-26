@@ -164,4 +164,16 @@ describe("CodeBlock", () => {
     expect(screen.getByText("a")).toBeInTheDocument();
     expect(screen.getByText("b")).toBeInTheDocument();
   });
+
+  it("tints added and removed lines of a diff, but not its file headers", () => {
+    render(<CodeBlock code={"--- a.json\n+++ b.json\n  same\n- old\n+ new"} lang="diff" copy={false} />);
+    const rows = [...screen.getByRole("region", { name: "Code" }).querySelectorAll("code > span")];
+    expect(rows.map((r) => (r.classList.contains("bg-diff-added") ? "+" : r.classList.contains("bg-diff-removed") ? "-" : " "))).toEqual([
+      " ",
+      " ",
+      " ",
+      "-",
+      "+",
+    ]);
+  });
 });

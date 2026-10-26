@@ -8,6 +8,7 @@ import {
   Combobox,
   DataTable,
   DateRangePicker,
+  DiffView,
   Empty,
   FilterRow,
   InlineCopyText,
@@ -31,7 +32,7 @@ import { auditEventQuery, auditLogQuery, auditParams, type AuditFilters, type Au
 import { auditActionLabel, auditActionOptions, rightsChangeSummary, snapshotName, targetKindLabel } from "~/format/audit";
 import { rightName, useCatalogue } from "./catalogue";
 import { partyText, type PartyLabel, type PartyRef } from "./party";
-import { jsonDiff, stableJson } from "~/format/json-diff";
+import { stableJson } from "~/format/stable-json";
 import { afterToday, DAY_PRESETS, pickedDay, pickerDate } from "~/format/picked-day";
 import { locale, t, type Locale } from "~/i18n";
 import { showExportProgress, startExport } from "~/shell/export-job";
@@ -422,17 +423,13 @@ function AuditEventSheet({
             </Section>
           )}
           <Section title={t("kaeso.audit.change", "Change")} spacing="none">
-            {e.before || e.after ? (
+            {e.before && e.after ? (
+              <DiffView title={t("kaeso.audit.beforeAfter", "Before → after")} lang="json" before={stableJson(e.before)} after={stableJson(e.after)} wrap />
+            ) : e.before || e.after ? (
               <CodeBlock
-                code={e.before && e.after ? jsonDiff(e.before, e.after) : stableJson(e.after ?? e.before)}
-                lang={e.before && e.after ? "diff" : "json"}
-                title={
-                  e.before && e.after
-                    ? t("kaeso.audit.beforeAfter", "Before → after")
-                    : e.after
-                      ? t("kaeso.audit.after", "After")
-                      : t("kaeso.audit.before", "Before")
-                }
+                code={stableJson(e.after ?? e.before)}
+                lang="json"
+                title={e.after ? t("kaeso.audit.after", "After") : t("kaeso.audit.before", "Before")}
                 collapseAfter={0}
               />
             ) : (
