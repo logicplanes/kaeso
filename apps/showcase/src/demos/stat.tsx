@@ -49,7 +49,7 @@ export function States() {
   return (
     <>
       <StateSection title="Sizes">
-        <div className="flex flex-col gap-24">
+        <div className="flex w-560 flex-col gap-24">
           <Row />
           <MetricRow>
             <Stat size="sm" value="0" unit="sessions" />
@@ -58,11 +58,18 @@ export function States() {
           </MetricRow>
         </div>
       </StateSection>
-      <StateSection title="Tiles: with a trend, loading one, and without">
-        <Tiles />
+      <StateSection title="Tiles: a trend, one loading, none, a single day">
+        <div className="w-560">
+          <StatGrid aria-label="Usage in the period">
+            <StatTile label="Requests" value="12,480" change={{ value: 0.12 }} detail="vs. the previous 7 days" trend={DAYS} />
+            <StatTile label="Tokens" value="4.2M" change={{ value: -0.04 }} detail="vs. the previous 7 days" trend={DAYS.map((d) => d * 3)} />
+            <StatTile label="Cost" value="$184.20" change={{ value: 0 }} detail="vs. the previous 7 days" trend={[]} />
+            <StatTile label="Errors" value="38" change={{ value: 0.3, better: "down" }} detail="0.3% of requests" trend={[4]} />
+          </StatGrid>
+        </div>
       </StateSection>
       <StateSection title="Tiles while their numbers load">
-        <div className="w-960">
+        <div className="w-560">
           <StatGrid aria-label="Loading">
             <StatTile label="Requests" value="12,480" trend={[]} loading />
             <StatTile label="Tokens" value="4.2M" trend={[]} loading />
@@ -71,20 +78,28 @@ export function States() {
           </StatGrid>
         </div>
       </StateSection>
-      <StateSection title="Five tiles (the last widens over the empty cells), a long label and value">
-        <div className="w-960">
-          <StatGrid aria-label="Five">
-            <StatTile label="Requests" value="12,480" change={{ value: 0.12 }} />
-            <StatTile label="Cost" value="$184.20" change={{ value: 0.08, better: "down" }} />
-            <StatTile label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />
-            <StatTile label="Median latency" value="1.2 s" />
-            <StatTile
-              label="Tokens across every project and every key this month"
-              value="1,284,503,112"
-              change={{ value: 2.4 }}
-              detail="A long label and a long value"
-            />
-          </StatGrid>
+      <StateSection title="Five tiles, a long label and value; at 320px">
+        <div className="flex flex-col gap-24">
+          <div className="w-560">
+            <StatGrid aria-label="Five">
+              <StatTile label="Requests" value="12,480" change={{ value: 0.12 }} />
+              <StatTile label="Cost" value="$184.20" change={{ value: 0.08, better: "down" }} />
+              <StatTile label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />
+              <StatTile label="Median latency" value="1.2 s" />
+              <StatTile
+                label="Tokens across every project and every key this month"
+                value="1,284,503,112"
+                change={{ value: 2.4 }}
+                detail="A long label and a long value"
+              />
+            </StatGrid>
+          </div>
+          <div className="w-320">
+            <StatGrid aria-label="Narrow">
+              <StatTile label="Cost" value="$1,284,503,112.40" change={{ value: 0.08, better: "down" }} />
+              <StatTile label="Requests" value="12,480" />
+            </StatGrid>
+          </div>
         </div>
       </StateSection>
     </>

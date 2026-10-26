@@ -1,4 +1,4 @@
-import { Meter, Progress } from "@logicplanes/kaeso-ui";
+import { Badge, Meter, Progress } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -26,13 +26,31 @@ export function ProgressDemo() {
 }
 export function States() {
   return (
-    <StateSection title="Levels">
-      <div className="flex w-400 flex-col gap-24">
-        <Meter label="Requests per minute" value={0.31} valueLabel="186 of 600" thresholds={[0.8]} />
-        <Meter label="Monthly budget" value={0.86} valueLabel="$43.00 of $50.00" thresholds={[0.5, 0.8]} caption="Alerts sent at 50% and 80%" />
-        <Meter label="Tokens per day" value={1.04} valueLabel="1.04M of 1M" thresholds={[0.8]} caption="Over the limit: requests are refused" />
-        <Meter label="Storage" tone="neutral" value={0.42} valueLabel="4.2 GB of 10 GB" />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Levels: empty, under, at the threshold, near, over, neutral">
+        <div className="flex w-400 flex-col gap-24">
+          <Meter label="Requests per minute" value={0} valueLabel="0 of 600" thresholds={[0.8]} />
+          <Meter label="Requests per minute" value={0.31} valueLabel="186 of 600" thresholds={[0.8]} />
+          <Meter label="Requests per minute" value={0.8} valueLabel="480 of 600" thresholds={[0.8]} caption="Alert sent at 80%" />
+          <Meter label="Monthly budget" value={0.86} valueLabel="$43.00 of $50.00" thresholds={[0.5, 0.8]} caption="Alerts sent at 50% and 80%" />
+          <Meter label="Tokens per day" value={1.04} valueLabel="1.04M of 1M" thresholds={[0.8]} caption="Over the limit: requests are refused" />
+          <Meter label="Storage" tone="neutral" value={0.42} valueLabel="4.2 GB of 10 GB" />
+        </div>
+      </StateSection>
+      <StateSection title="In a card, with leading content and a long label">
+        <div className="flex w-400 flex-col gap-24 rounded-group bg-raised p-20 shadow-xs">
+          <Meter
+            label="Output tokens per day for the checkout assistant production key"
+            leading={<Badge>Key</Badge>}
+            value={0.64}
+            valueLabel="640K of 1M"
+            thresholds={[0.5, 0.8]}
+          />
+        </div>
+      </StateSection>
+      <StateSection title="Progress: determinate and indeterminate">
+        <ProgressDemo />
+      </StateSection>
+    </>
   );
 }

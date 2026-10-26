@@ -64,15 +64,15 @@ describe("Section, SplitView and AuthLayout", () => {
 describe("Meter and Progress", () => {
   it("colors by thresholds and marks them", () => {
     expect(meterColor(1.2)).toBe("bg-danger");
-    expect(meterColor(0.85)).toBe("bg-warning");
-    expect(meterColor(0.5, [0.4, 0.9])).toBe("bg-warning");
+    expect(meterColor(0.85)).toBe("bg-viz-2");
+    expect(meterColor(0.5, [0.4, 0.9])).toBe("bg-viz-2");
     expect(meterColor(0.3, [0.4])).toBe("bg-viz-1");
-    const { container } = render(
+    render(
       <Meter value={0.6} label="Budget" valueLabel="$300.00" thresholds={[0.5, 0.9]} caption="of $500.00" leading={<span>L</span>} trailing={<span>T</span>} />,
     );
     const meter = screen.getByRole("meter", { name: "Budget" });
-    expect(meter).toHaveAttribute("aria-valuetext", "$300.00");
-    expect(container.querySelectorAll("span[aria-hidden].bg-panel")).toHaveLength(2);
+    expect(meter).toHaveAttribute("aria-valuetext", "$300.00, near the limit");
+    expect(meter.style.maskImage.match(/transparent calc/g)).toHaveLength(4);
     render(<Meter value={2} tone="neutral" aria-label="Share" />);
     expect(screen.getByRole("meter", { name: "Share" })).toHaveAttribute("aria-valuenow", "200");
     expect(screen.getByRole("meter", { name: "Share" })).toHaveAttribute("aria-valuemax", "200");
