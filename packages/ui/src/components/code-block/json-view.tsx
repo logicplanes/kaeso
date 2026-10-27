@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { createContext, forwardRef, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -89,6 +89,8 @@ function CopyPath({ path, copied, onCopy }: { path: string; copied: boolean; onC
   );
 }
 
+const isInside = (path: string, branch: string) => path !== branch && (branch === "" || path.startsWith(`${branch}.`) || path.startsWith(`${branch}[`));
+
 function moveFocus(from: HTMLElement, key: string): boolean {
   const tree = from.closest("[role=tree]");
   if (!tree) return false;
@@ -133,6 +135,10 @@ function Node({
       </span>
     );
   const comma = last ? "" : ",";
+  const toggle = (next: boolean) => {
+    setOpen(next);
+    if (!next && isInside(tree.active, path)) tree.setActive(path);
+  };
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && path) {
@@ -142,7 +148,7 @@ function Node({
     }
     if (isObj && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
-      setOpen(!open);
+      toggle(!open);
       return;
     }
     if (isObj && e.key === "ArrowRight") {
@@ -153,7 +159,7 @@ function Node({
     }
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      if (isObj && open) setOpen(false);
+      if (isObj && open) toggle(false);
       else e.currentTarget.parentElement?.parentElement?.closest<HTMLElement>("[data-json-node]")?.querySelector<HTMLElement>("[role=treeitem]")?.focus();
       return;
     }
@@ -190,7 +196,7 @@ function Node({
           type="button"
           tabIndex={-1}
           aria-hidden
-          onClick={() => setOpen(!open)}
+          onClick={() => toggle(!open)}
           className="relative -ml-4 inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary tap-target hover:bg-fill-2 hover:text-fg"
         >
           <Icon icon={icons.chevronRight} size="xs" className={cn("transition-transform duration-180", open && "rotate-90")} />
@@ -248,6 +254,10 @@ export const JsonView = forwardRef<HTMLDivElement, JsonViewProps>(function JsonV
   const [active, setActive] = useState("");
   const [said, setSaid] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!root.current?.querySelector('[role=treeitem][tabindex="0"]')) setActive("");
+  }, [value]);
   const tree = useMemo<Tree>(
     () => ({
       active,
@@ -266,7 +276,7 @@ export const JsonView = forwardRef<HTMLDivElement, JsonViewProps>(function JsonV
       className={cn("mono overflow-x-auto text-small leading-code text-fg scrollbar-quiet", KAESO_JSON_VIEW_VARIANTS.surface[surface].classes, className)}
     >
       <TreeContext.Provider value={tree}>
-        <div role="tree" aria-label={t("jsonView.label", "JSON")}>
+        <div ref={root} role="tree" aria-label={t("jsonView.label", "JSON")}>
           <Node value={value as Json} path="" depth={0} open={defaultDepth} query={query} last />
         </div>
       </TreeContext.Provider>
