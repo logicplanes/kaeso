@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { art } from "@logicplanes/kaeso-tokens";
 import { ReleaseArt, releaseArtSvg } from "./release-art.js";
@@ -117,11 +117,27 @@ describe("release artwork", () => {
 
 describe("ReleaseArt", () => {
   it("is an image with a label that shows its title and eyebrow", () => {
-    render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
+    const { container } = render(<ReleaseArt seed="0.1.0" label="Kaeso 0.1.0" title="0.1.0" eyebrow="What's new in Kaeso" shape="wide" />);
     const img = screen.getByRole("img", { name: "Kaeso 0.1.0" });
     expect(img).toHaveAttribute("viewBox", "0 0 840 360");
-    expect(img).toHaveTextContent("0.1.0");
-    expect(img).toHaveTextContent("What's new in Kaeso");
+    const text = container.querySelector<HTMLElement>("span[aria-hidden]:not(.shadow-ring)")!;
+    expect(text).toHaveTextContent("What's new in Kaeso0.1.0");
+    expect(text.firstElementChild).toHaveClass("text-caption", "@cell-lg:text-body-lg");
+    expect(text.lastElementChild?.className).toMatch(/\btext-(display|title-lg|title|title-sm)\b/);
+    expect(text.style.maxWidth).toBe(`${(236 / 840) * 100}cqw`);
+  });
+
+  it("steps a title that doesn't fit down the type scale, wrapping only at the smallest", () => {
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(600);
+    const wide = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return /text-(display|title-lg)\b/.test(this.className) ? 500 : 100;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
+    const { container } = render(<ReleaseArt seed="0.3.0" label="Kaeso 0.3.0" title="Veröffentlichung 0.3.0" />);
+    const title = container.querySelector("span.font-semibold")!;
+    expect(title).toHaveClass("text-title", "whitespace-nowrap");
+    wide.mockRestore();
+    vi.restoreAllMocks();
   });
 
   it("draws the stored art when it has one, and the seed's art otherwise", () => {
@@ -141,7 +157,7 @@ describe("ReleaseArt", () => {
     expect(image).toHaveAttribute("href", "https://update.kaeso.app/art/0.1.0.svg");
     expect(image).toHaveAttribute("preserveAspectRatio", "xMidYMid slice");
     expect(svg).toHaveAttribute("viewBox", "0 0 840 360");
-    expect(svg).toHaveTextContent("0.1.0");
+    expect(container).toHaveTextContent("0.1.0");
     expect(container.querySelectorAll("rect")).toHaveLength(0);
     fireEvent.error(image as Element);
     expect(svg.querySelector("image")).toBeNull();

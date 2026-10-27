@@ -18,11 +18,13 @@ describe("the navigation wordmark", () => {
     const [plain, named] = screen.getAllByRole("img");
     expect(plain).toHaveAccessibleName("Kaeso");
     expect(plain).toHaveAttribute("viewBox", "72 69.3 881.9 177.7");
-    expect(plain).toHaveStyle({ width: "60px", height: "12px" });
+    expect(plain).toHaveClass("w-60", "h-12");
+    expect(plain).not.toHaveAttribute("style");
     expect(ref.current).toBe(plain);
     expect(named).toHaveAccessibleName("Kaeso home");
     expect(named).toHaveClass("block", "shrink-0", "text-fg");
-    expect(named).toHaveStyle({ opacity: "0.5", width: "60px" });
+    expect(named).toHaveStyle({ opacity: "0.5" });
+    expect(named).toHaveClass("w-60");
     expect(document.querySelectorAll('svg[aria-hidden="true"]')).toHaveLength(1);
   });
 
@@ -38,6 +40,6 @@ describe("the navigation wordmark", () => {
     );
     const drawing = logo.querySelector("svg")!.outerHTML;
     expect(auth.querySelector("svg")!.outerHTML).toBe(drawing);
-    expect(sidebar.querySelector("svg")!.outerHTML.replace(' class="block shrink-0 text-fg"', ' class="block shrink-0"')).toBe(drawing);
+    expect(sidebar.querySelector("svg")!.outerHTML.replace(' class="block h-12 w-60 shrink-0 text-fg"', ' class="block h-12 w-60 shrink-0"')).toBe(drawing);
   });
 });

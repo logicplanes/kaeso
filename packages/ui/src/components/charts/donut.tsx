@@ -1,10 +1,12 @@
-import { forwardRef, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { arc as d3arc, pie as d3pie } from "d3-shape";
 import { cn } from "../../utils/cn.js";
 import { formatNumber, formatPercent } from "../../format/index.js";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { englishText, useUiText, type UiText } from "../../i18n/context.js";
 import { ChartFrame, Legend, Swatch, seriesColors, useTweened, type ChartState } from "./core.js";
+import { Text } from "../text/text.js";
+import { edgeColor } from "./marks.js";
 
 export interface Slice {
   id: string;
@@ -65,6 +67,31 @@ function useOtherData(identity: string): boolean {
   return seen !== identity;
 }
 
+const MAX_SLICES = 8;
+
+function capSlices(slices: Slice[], t: UiText): Slice[] {
+  if (slices.length <= MAX_SLICES) return slices;
+  const named = slices.filter((s) => s.id !== "__other");
+  const kept = named.slice(0, MAX_SLICES - 1);
+  const rest = slices.filter((s) => !kept.includes(s)).reduce((a, s) => a + s.value, 0);
+  return [...kept, { id: "__other", label: t("donut.other", "Other"), value: rest, color: "var(--k-text-tertiary)" }];
+}
+
+const TOTAL_SIZES = ["text-title", "text-title-sm", "text-body-lg"] as const;
+
+function useFittedSize(text: string, room: number, first: number) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [step, setStep] = useState({ text, room, at: first });
+  const current = step.text === text && step.room === room ? step : { text, room, at: first };
+  if (current !== step) setStep(current);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || current.at >= TOTAL_SIZES.length - 1) return;
+    if (el.scrollWidth > room) setStep({ text, room, at: current.at + 1 });
+  }, [current.at, room, text]);
+  return [ref, TOTAL_SIZES[current.at]!] as const;
+}
+
 export const Donut = forwardRef<
   HTMLDivElement,
   {
@@ -80,8 +107,9 @@ export const Donut = forwardRef<
   const t = useUiText();
   const D = { sm: 140, md: 160, lg: 180 }[size];
   const STROKE = 14;
-  const data = groupSmall(slices, 0.02, t);
+  const data = capSlices(groupSmall(slices, 0.02, t), t);
   const sum = data.reduce((a, s) => a + s.value, 0);
+  const empty = state.empty ?? sum === 0;
   const other = useOtherData(data.map((d) => d.id).join("\u0000"));
   const tween = useTweened(
     data.map((d) => d.value),
@@ -115,6 +143,8 @@ export const Donut = forwardRef<
   const box = useRef<HTMLDivElement | null>(null);
   const width = useLayoutWidth(box);
   const stacked = !!width && width < D + 40 + 220;
+  const totalText = typeof total === "string" ? total : total === undefined ? formatValue(sum) : "";
+  const [totalRef, totalSize] = useFittedSize(totalText, D - STROKE * 2 - 16, D >= 160 ? 0 : 1);
   return (
     <div
       ref={(el) => {
@@ -122,56 +152,54 @@ export const Donut = forwardRef<
         if (typeof ref === "function") ref(el);
         else if (ref) ref.current = el;
       }}
-      className={cn("min-w-0", className)}
+      className={cn("w-full min-w-0", className)}
     >
-      <ChartFrame
-        label={ariaLabel}
-        height={stacked ? D + 24 + data.length * 32 : Math.max(D, data.length * 32)}
-        table={table}
-        state={{ ...state, empty: state.empty ?? sum === 0 }}
-      >
-        <div className={cn("flex h-full", stacked ? "flex-col items-center gap-24" : "items-center gap-40")}>
-          <div className="relative shrink-0" style={{ width: D, height: D }}>
-            <svg width={D} height={D} role="presentation">
-              <g transform={`translate(${D / 2},${D / 2})`}>
-                {arcs.map((a, i) => {
-                  const len = (a.endAngle - a.startAngle - a.padAngle) * mid;
-                  return (
-                    <path
-                      key={data[i]!.id}
-                      d={arc.cornerRadius(Math.max(0, Math.min(STROKE / 2, len / 2)))(a) ?? ""}
-                      fill={color(data[i]!)}
-                      opacity={focus && focus !== data[i]!.id ? 0.3 : 1}
-                      className="opacity-motion"
-                    />
-                  );
-                })}
-              </g>
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-              <span className={cn("font-semibold text-fg tabular", D >= 160 ? "text-title" : "text-title-sm")}>{total ?? formatValue(sum)}</span>
-              <span className="text-caption font-medium text-fg-tertiary">{totalLabel ?? t("donut.total", "Total")}</span>
+      <ChartFrame label={ariaLabel} height={stacked ? D + 24 + data.length * 32 : Math.max(D, data.length * 32)} table={table} state={{ ...state, empty }}>
+        {!empty && (
+          <div className={cn("flex h-full", stacked ? "flex-col items-center gap-24" : "items-center gap-40")}>
+            <div className="relative shrink-0" style={{ width: D, height: D }}>
+              <svg width={D} height={D} role="presentation">
+                <g transform={`translate(${D / 2},${D / 2})`}>
+                  {arcs.map((a, i) => {
+                    const len = (a.endAngle - a.startAngle - a.padAngle) * mid;
+                    return (
+                      <path
+                        key={data[i]!.id}
+                        d={arc.cornerRadius(Math.max(0, Math.min(STROKE / 2, len / 2)))(a) ?? ""}
+                        fill={color(data[i]!)}
+                        opacity={focus && focus !== data[i]!.id ? 0.3 : 1}
+                        className="opacity-motion"
+                      />
+                    );
+                  })}
+                </g>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-16 text-center">
+                <span ref={totalRef} className={cn("max-w-full font-semibold text-balance text-fg tabular wrap-anywhere", totalSize)}>
+                  {total ?? formatValue(sum)}
+                </span>
+                <span className="text-caption font-medium text-fg-tertiary">{totalLabel ?? t("donut.total", "Total")}</span>
+              </div>
             </div>
+            <ul className={cn("flex min-w-0 flex-col", stacked ? "w-full" : "min-w-160 max-w-320 flex-1")} aria-label={t("donut.legend", "Legend")}>
+              {data.map((d, i) => (
+                <li
+                  key={d.id}
+                  onMouseEnter={() => setFocus(d.id)}
+                  onMouseLeave={() => setFocus(null)}
+                  className={cn("flex h-32 items-center gap-10 text-small opacity-motion", focus && focus !== d.id && "opacity-50")}
+                >
+                  <Swatch color={color(d)} />
+                  <Text variant="small" weight="medium" truncate className="flex-1">
+                    {d.label}
+                  </Text>
+                  <span className="text-fg-secondary tabular">{formatValue(d.value)}</span>
+                  <span className="w-40 text-right text-fg-tertiary tabular">{shares[i]}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className={cn("flex min-w-0 flex-col", stacked ? "w-full" : "max-w-320 flex-1")} aria-label={t("donut.legend", "Legend")}>
-            {data.map((d, i) => (
-              <li
-                key={d.id}
-                onMouseEnter={() => setFocus(d.id)}
-                onMouseLeave={() => setFocus(null)}
-                className={cn(
-                  "flex h-32 items-center gap-10 rounded-item px-8 text-small transition-control hover:bg-fill-1",
-                  focus && focus !== d.id && "opacity-50",
-                )}
-              >
-                <Swatch color={color(d)} />
-                <span className="min-w-0 flex-1 truncate font-medium text-fg">{d.label}</span>
-                <span className="text-fg-secondary tabular">{formatValue(d.value)}</span>
-                <span className="w-40 text-right text-fg-tertiary tabular">{shares[i]}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        )}
       </ChartFrame>
     </div>
   );
@@ -198,6 +226,10 @@ export const ShareBar = forwardRef<
   const sum = slices.reduce((a, s) => a + s.value, 0) || 1;
   const palette = seriesColors(slices.map((s) => s.id));
   const color = (s: Slice) => s.color ?? palette.get(s.id)!;
+  const shares = wholeShares(
+    slices.map((s) => s.value),
+    t,
+  );
   return (
     <div ref={ref} className={cn("flex flex-col gap-12", className)}>
       <div
@@ -205,32 +237,35 @@ export const ShareBar = forwardRef<
         aria-label={t("shareBar.summary", "{label}: {shares}", {
           label: ariaLabel,
           shares: slices
-            .map((s) => t("shareBar.share", "{label} {share}", { label: s.label, share: formatPercent(s.value / sum, 0) }))
+            .map((s, i) => t("shareBar.valueShare", "{label} {value} ({share})", { label: s.label, value: formatValue(s.value), share: shares[i] ?? "" }))
             .join(t("shareBar.listSeparator", ", ")),
         })}
-        className="flex h-8 w-full gap-2 overflow-hidden rounded-pill"
+        className={cn("flex h-8 w-full gap-2 overflow-hidden rounded-pill", !slices.some((s) => s.value > 0) && "bg-fill-2")}
       >
         {slices
           .filter((s) => s.value > 0)
-          .map((s) => (
-            <span
-              key={s.id}
-              className="h-full min-w-2 first:rounded-l-pill last:rounded-r-pill width-motion"
-              style={{
-                width: `${(s.value / sum) * 100}%`,
-                background: color(s),
-              }}
-              title={t("shareBar.segment", "{label}: {value}", { label: s.label, value: formatValue(s.value) })}
-            />
-          ))}
+          .map((s) => {
+            const edge = edgeColor(color(s));
+            return (
+              <span
+                key={s.id}
+                className="h-full min-w-2 data-mark first:rounded-l-pill last:rounded-r-pill width-motion"
+                style={{
+                  width: `${(s.value / sum) * 100}%`,
+                  background: color(s),
+                  ...(edge ? { boxShadow: `inset 0 0 0 1px ${edge}` } : {}),
+                }}
+              />
+            );
+          })}
       </div>
       {legend && (
         <Legend
-          items={slices.map((s) => ({
+          items={slices.map((s, i) => ({
             id: s.id,
             label: s.label,
             color: color(s),
-            value: formatPercent(s.value / sum, 0),
+            value: shares[i],
           }))}
         />
       )}

@@ -12,6 +12,7 @@ import {
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { cn } from "../../utils/cn.js";
+import { useUiText } from "../../i18n/context.js";
 import { STATUS_TONE_TEXT, type StatusTone } from "../../utils/tone.js";
 
 export const KAESO_TABLE_VARIANTS = {
@@ -35,6 +36,7 @@ export interface TableProps extends HTMLAttributes<HTMLTableElement> {
   density?: Density | undefined;
 }
 const Root = forwardRef<HTMLTableElement, TableProps>(function Table({ density = "default", className, ...props }, ref) {
+  const t = useUiText();
   const scroller = useRef<HTMLDivElement | null>(null);
   const [overflows, setOverflows] = useState(false);
   useScrollFadeX(scroller, "table");
@@ -47,7 +49,11 @@ const Root = forwardRef<HTMLTableElement, TableProps>(function Table({ density =
   }, []);
   return (
     <DensityContext.Provider value={density}>
-      <div ref={scroller} {...(overflows ? { tabIndex: 0 } : {})} className="min-w-0 overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset">
+      <div
+        ref={scroller}
+        {...(overflows ? { tabIndex: 0, role: "group", "aria-label": t("table.scrolls", "Table, scrolls sideways") } : {})}
+        className="min-w-0 overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset"
+      >
         <table ref={ref} className={cn("w-full border-collapse text-body", className)} {...props} />
       </div>
     </DensityContext.Provider>

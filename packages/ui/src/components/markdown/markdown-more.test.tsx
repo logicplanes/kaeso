@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Markdown, lexMarkdown, markdownCodeLang, previewMarkdown } from "./markdown.js";
@@ -65,5 +65,19 @@ describe("Markdown", () => {
       <Markdown streaming text={"Thinking about it\n\n\n"} trailing={<span data-testid="cursor" />} size="small" tone="secondary" wrapCode headingLevel={2} />,
     );
     expect(screen.getByTestId("cursor")).toBeInTheDocument();
+  });
+});
+
+describe("Markdown tables wider than their column", () => {
+  it("scroll sideways as a named, focusable group and keep short cells on one line", () => {
+    const wide = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(900);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(300);
+    render(<Markdown text={"| Model | Region |\n|---|---|\n| gpt-5 | eu-west-1 |"} />);
+    const scroller = screen.getByRole("group", { name: "Table, scrolls sideways" });
+    expect(scroller).toHaveAttribute("tabindex", "0");
+    expect(scroller).toHaveClass("scroll-fade-x");
+    expect(screen.getByText("eu-west-1").closest("td")).toHaveClass("whitespace-nowrap");
+    wide.mockRestore();
+    vi.restoreAllMocks();
   });
 });

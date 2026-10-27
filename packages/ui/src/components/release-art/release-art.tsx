@@ -1,5 +1,5 @@
-import { createElement, forwardRef, useId, useMemo, useState, type ReactNode } from "react";
-import { font } from "@logicplanes/kaeso-tokens";
+import { createElement, forwardRef, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { cn } from "../../utils/cn.js";
 import { drawReleaseArt, releaseArtFor, releaseArtText, serializeArt, RELEASE_ART_VIEW, type ArtNode, type ReleaseArtSpec } from "./drawing.js";
 
@@ -28,6 +28,22 @@ function toElement(n: ArtNode, key: number): ReactNode {
   return createElement(n.tag, { ...n.attrs, key }, n.text ?? n.children?.map(toElement));
 }
 
+const TITLE_SIZES = ["text-display", "text-title-lg", "text-title", "text-title-sm"] as const;
+const WRAP = "text-title-sm";
+
+function useTitleFit(ref: { current: HTMLSpanElement | null }, width: number | null, title: string): string | null {
+  const start = width === null ? null : width >= 512 ? 0 : width >= 320 ? 1 : width >= 208 ? 2 : 3;
+  const [step, setStep] = useState<{ key: string; at: number } | null>(null);
+  const key = `${start}|${title}`;
+  const at = start === null ? null : step?.key === key ? step.at : start;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || at === null || at >= TITLE_SIZES.length - 1) return;
+    if (el.scrollWidth > el.clientWidth + 1) setStep({ key, at: at + 1 });
+  }, [at, key, ref]);
+  return at === null ? null : TITLE_SIZES[at]!;
+}
+
 export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function ReleaseArt(
   { seed, label, art, src, title, eyebrow, shape = "banner", className },
   ref,
@@ -38,8 +54,13 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
   const spec = art ?? releaseArtFor(seed);
   const drawn = useMemo(() => drawReleaseArt(spec, { shape, idPrefix: prefix }), [spec, shape, prefix]);
   const text = releaseArtText(spec);
+  const clear = 236;
+  const frame = useRef<HTMLSpanElement | null>(null);
+  const heading = useRef<HTMLSpanElement | null>(null);
+  const width = useLayoutWidth(frame);
+  const fit = useTitleFit(heading, width, typeof title === "string" ? title : "");
   return (
-    <span className={cn("relative block w-full", className)}>
+    <span ref={frame} className={cn("@container relative block w-full", className)}>
       <svg
         ref={ref}
         viewBox={`0 0 ${w} ${h}`}
@@ -53,26 +74,34 @@ export const ReleaseArt = forwardRef<SVGSVGElement, ReleaseArtProps>(function Re
         ) : (
           drawn.children?.map(toElement)
         )}
-        {eyebrow && (
-          <text
-            x={text.eyebrow.x}
-            y={h - text.eyebrow.bottom}
-            fill={text.color}
-            fillOpacity={0.7}
-            fontSize={16}
-            fontWeight={500}
-            letterSpacing={0.1}
-            fontFamily={font.sans}
-          >
-            {eyebrow}
-          </text>
-        )}
-        {title && (
-          <text x={text.title.x} y={h - text.title.bottom} fill={text.color} fontSize={52} fontWeight={600} letterSpacing={-1.5} fontFamily={font.sans}>
-            {title}
-          </text>
-        )}
       </svg>
+      {(eyebrow || title) && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute flex flex-col items-start gap-4 text-balance"
+          style={{
+            left: `${(text.eyebrow.x / w) * 100}cqw`,
+            bottom: `${(text.title.bottom / w) * 100}cqw`,
+            maxWidth: `${(clear / w) * 100}cqw`,
+            hyphens: "auto",
+            color: text.color,
+          }}
+        >
+          {eyebrow && <span className="text-caption font-medium opacity-70 @cell-lg:text-body-lg">{eyebrow}</span>}
+          {title && (
+            <span
+              ref={heading}
+              className={cn(
+                "max-w-full font-semibold",
+                fit ?? "text-title-sm @cell-sm:text-title @cell-md:text-title-lg @cell-lg:text-display",
+                fit && fit !== WRAP && "whitespace-nowrap",
+              )}
+            >
+              {title}
+            </span>
+          )}
+        </span>
+      )}
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />
     </span>
   );

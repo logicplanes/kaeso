@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" role="img" aria-label="A white settings screen">
+  <rect width="480" height="480" fill="#ffffff"/>
+  <rect x="48" y="56" width="168" height="16" rx="4" fill="#e5e5e5"/>
+  <rect x="48" y="104" width="384" height="12" rx="4" fill="#efefef"/>
+  <rect x="48" y="132" width="320" height="12" rx="4" fill="#efefef"/>
+  <rect x="48" y="184" width="120" height="36" rx="18" fill="#0a0a0a"/>
+</svg>

@@ -33,9 +33,9 @@ export const Icon = forwardRef<SVGSVGElement, IconProps>(function Icon({ icon, s
       size={PX[size]}
       strokeWidth={STROKE[size]}
       color="currentColor"
-      className={cn("shrink-0", KAESO_ICON_VARIANTS.size[size].classes, className)}
-      {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true, focusable: false })}
       {...props}
+      className={cn("shrink-0", KAESO_ICON_VARIANTS.size[size].classes, className)}
+      {...(label ? { role: "img", "aria-label": label, "aria-hidden": undefined } : { "aria-hidden": props["aria-hidden"] ?? true, focusable: false })}
     />
   );
 });

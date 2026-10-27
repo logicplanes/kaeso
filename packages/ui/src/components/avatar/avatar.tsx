@@ -1,11 +1,8 @@
-import { forwardRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { useHydrating } from "../../hooks/use-hydrating.js";
 import { useUiText } from "../../i18n/context.js";
 import { Tooltip } from "../tooltip/tooltip.js";
-
-const noSubscription = () => () => undefined;
-const notHydrating = () => false;
-const isHydrating = () => true;
 
 export const KAESO_AVATAR_VARIANTS = {
   size: {
@@ -40,7 +37,7 @@ export interface AvatarProps {
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar({ name, src, size = 24, kind = "person", decorative, className }, ref) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined);
-  const hydrating = useSyncExternalStore(noSubscription, notHydrating, isHydrating);
+  const hydrating = useHydrating();
   return (
     <span
       ref={ref}

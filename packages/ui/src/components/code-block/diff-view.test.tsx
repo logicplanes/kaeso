@@ -10,7 +10,7 @@ const after = json({ a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, name: "Agents", h
 describe("DiffView", () => {
   it("tints removed and added lines and says what changed", () => {
     render(<DiffView before={before} after={after} title="Before → after" lang="json" />);
-    const region = screen.getByRole("region", { name: "Before → after" });
+    const region = screen.getByRole("group", { name: "Before → after" });
     const removed = region.querySelector('[data-diff="removed"]');
     const added = region.querySelector('[data-diff="added"]');
     expect(removed).toHaveClass("bg-diff-removed");
@@ -23,8 +23,8 @@ describe("DiffView", () => {
   it("marks the changed words inside a changed line", () => {
     const { container } = render(<DiffView before={before} after={after} lang="text" />);
     expect([...container.querySelectorAll("[data-diff-change]")].map((m) => [m.textContent, m.className])).toEqual([
-      ["Sub Experiment", "rounded-cell bg-diff-removed-word"],
-      ["Agents", "rounded-cell bg-diff-added-word"],
+      ["Sub Experiment", "rounded-cell forced-colors:underline bg-diff-removed-word"],
+      ["Agents", "rounded-cell forced-colors:underline bg-diff-added-word"],
     ]);
   });
 
@@ -37,7 +37,7 @@ describe("DiffView", () => {
   it("folds unchanged lines and shows them on request", async () => {
     const user = userEvent.setup();
     render(<DiffView before={before} after={after} />);
-    const region = screen.getByRole("region", { name: "Changes" });
+    const region = screen.getByRole("group", { name: "Changes" });
     expect(within(region).queryByText(/"a": 1/)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show 5 unchanged lines" }));
     expect(within(region).getByText(/"a": 1/)).toBeInTheDocument();
@@ -48,7 +48,9 @@ describe("DiffView", () => {
   it("says when nothing changed", () => {
     render(<DiffView before={before} after={before} />);
     expect(screen.getByText("No changes")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Show 11 unchanged lines" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /unchanged lines/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Copy diff" })).toBeNull();
+    expect(screen.getByRole("group", { name: "Changes" }).querySelectorAll("[data-diff=same]")).toHaveLength(11);
   });
 
   it("shows both line numbers when asked", () => {

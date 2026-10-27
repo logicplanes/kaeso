@@ -31,10 +31,8 @@ export const kaesoShikiTheme = {
       scope: ["string", "string.quoted", "string.template", "punctuation.definition.string", "markup.inline.raw"],
       settings: { foreground: TONES.string.color },
     },
-    {
-      scope: ["constant.numeric", "constant.language.boolean", "constant.language.null", "constant.language"],
-      settings: { foreground: TONES.constant.color },
-    },
+    { scope: ["constant.numeric"], settings: { foreground: TONES.constant.color } },
+    { scope: ["constant.language.boolean", "constant.language.null", "constant.language"], settings: { foreground: TONES.text.color, fontStyle: "bold" } },
     {
       scope: ["keyword", "storage", "storage.type", "storage.modifier", "keyword.control", "keyword.operator.new", "variable.language"],
       settings: { foreground: TONES.text.color, fontStyle: "bold" },

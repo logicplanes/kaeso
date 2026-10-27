@@ -22,20 +22,25 @@ export const Sparkline = forwardRef<
 >(function Sparkline({ values, color = "var(--k-viz-1)", fluid, className, "aria-label": ariaLabel }, ref) {
   const W = fluid ? 240 : 80;
   const H = fluid ? 32 : 24;
+  const points = values.filter(Number.isFinite);
   const x = linear(0, Math.max(1, values.length - 1), 2, W - 4);
-  const lo = d3min(values) ?? 0;
-  const hi = d3max(values) ?? 1;
-  const y = linear(lo, hi === lo ? lo + 1 : hi, H - 3, 3);
+  const lo = d3min(points) ?? 0;
+  const hi = d3max(points) ?? 0;
+  const y = hi === lo ? () => H / 2 : linear(lo, hi, H - 3, 3);
   const line = d3line<number>()
+    .defined(Number.isFinite)
     .x((_, i) => x(i))
     .y((v) => y(v))
     .curve(curveMonotoneX);
   const area = d3area<number>()
+    .defined(Number.isFinite)
     .x((_, i) => x(i))
     .y0(H)
     .y1((v) => y(v))
     .curve(curveMonotoneX);
-  const last = values[values.length - 1] ?? 0;
+  const lastIndex = values.findLastIndex(Number.isFinite);
+  const single = points.length === 1;
+  const dotX = single ? W - 4 : x(lastIndex);
   const gid = useId().replace(/:/g, "");
   return (
     <svg
@@ -48,23 +53,42 @@ export const Sparkline = forwardRef<
       aria-label={ariaLabel}
       className={cn("block shrink-0 overflow-visible", className)}
     >
-      <defs>
-        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} className="chart-fill-top" />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <path d={area(values) ?? ""} fill={`url(#${gid})`} />
-      <path
-        d={line(values) ?? ""}
-        fill="none"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-      {!fluid && <circle cx={x(values.length - 1)} cy={y(last)} r={2.5} fill={color} stroke="var(--k-bg-panel)" strokeWidth={1.5} paintOrder="stroke" />}
+      {points.length === 0 ? (
+        <line x1={2} x2={W - 4} y1={H / 2} y2={H / 2} stroke="var(--k-line-strong)" strokeWidth={1.5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      ) : (
+        <>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} className="chart-fill-top" />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          {!single && <path d={area(values) ?? ""} fill={`url(#${gid})`} />}
+          {!single && (
+            <path
+              d={line(values) ?? ""}
+              fill="none"
+              stroke={color}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {(!fluid || single) && (
+            <g data-dot="">
+              <path
+                d={`M${dotX} ${y(values[lastIndex] ?? 0)}h0`}
+                stroke="var(--k-bg-panel)"
+                strokeWidth={8}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              <path d={`M${dotX} ${y(values[lastIndex] ?? 0)}h0`} stroke={color} strokeWidth={5} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            </g>
+          )}
+        </>
+      )}
     </svg>
   );
 });

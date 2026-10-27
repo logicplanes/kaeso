@@ -1,4 +1,5 @@
-import { forwardRef, useState, type ReactNode } from "react";
+import type * as React from "react";
+import { createContext, forwardRef, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
@@ -23,6 +24,13 @@ export interface JsonViewProps {
   className?: string | undefined;
 }
 
+interface Tree {
+  active: string;
+  setActive: (path: string) => void;
+  announce: (text: string) => void;
+}
+const TreeContext = createContext<Tree>({ active: "", setActive: () => undefined, announce: () => undefined });
+
 function Mark({ text, query }: { text: string; query?: string | undefined }) {
   if (!query) return <>{text}</>;
   const i = text.toLowerCase().indexOf(query.toLowerCase());
@@ -41,28 +49,56 @@ function Scalar({ v, query }: { v: Json; query?: string | undefined }) {
   if (typeof v === "boolean") return <span className="font-semibold text-fg">{String(v)}</span>;
   if (typeof v === "number") return <span className="text-warning-text tabular">{v}</span>;
   return (
-    <span className="break-all text-info-text">
+    <span className="text-info-text wrap-anywhere">
       "<Mark text={String(v)} query={query} />"
     </span>
   );
 }
 
-function CopyPath({ path }: { path: string }) {
+function useCopyPath(path: string) {
   const { copied, copy } = useCopy();
+  const { announce } = useContext(TreeContext);
+  const t = useUiText();
+  return {
+    copied,
+    copyPath: () => {
+      void copy(path).then((ok) => ok && announce(t("jsonView.pathCopied", "Path copied")));
+    },
+  };
+}
+
+function CopyPath({ path, copied, onCopy }: { path: string; copied: boolean; onCopy: () => void }) {
   const t = useUiText();
   return (
     <button
       type="button"
-      aria-label={copied ? t("jsonView.pathCopied", "Path copied") : t("jsonView.copyPath", "Copy path {path}", { path })}
+      tabIndex={-1}
+      aria-hidden
+      title={copied ? t("jsonView.pathCopied", "Path copied") : t("jsonView.copyPath", "Copy path {path}", { path })}
       onClick={(e) => {
         e.stopPropagation();
-        void copy(path);
+        onCopy();
       }}
-      className="relative ml-8 inline-flex size-20 items-center justify-center rounded-pill text-fg-tertiary tap-target opacity-0 transition-control group-hover/row:opacity-100 coarse:opacity-100 hover:bg-fill-2 hover:text-fg focus-visible:opacity-100"
+      className={cn(
+        "relative ml-8 inline-flex size-20 shrink-0 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary tap-target transition-control hover:bg-fill-2 hover:text-fg group-hover/row:opacity-100 group-focus-within/row:opacity-100",
+        copied ? "text-fg opacity-100" : "opacity-0",
+      )}
     >
       <Icon icon={copied ? icons.check : icons.copy} size="xs" />
     </button>
   );
+}
+
+function moveFocus(from: HTMLElement, key: string): boolean {
+  const tree = from.closest("[role=tree]");
+  if (!tree) return false;
+  const items = [...tree.querySelectorAll<HTMLElement>("[role=treeitem]")];
+  const i = items.indexOf(from);
+  const next =
+    key === "ArrowDown" ? items[i + 1] : key === "ArrowUp" ? items[i - 1] : key === "Home" ? items[0] : key === "End" ? items[items.length - 1] : undefined;
+  if (!next) return key === "ArrowDown" || key === "ArrowUp" || key === "Home" || key === "End";
+  next.focus();
+  return true;
 }
 
 function Node({
@@ -84,6 +120,8 @@ function Node({
 }) {
   const [open, setOpen] = useState(depth < initialOpen);
   const t = useUiText();
+  const tree = useContext(TreeContext);
+  const { copied, copyPath } = useCopyPath(path);
   const isObj = value !== null && typeof value === "object";
   const entries: [string | number, Json][] = isObj ? (Array.isArray(value) ? value.map((v, i) => [i, v]) : Object.entries(value)) : [];
   const keyLabel: ReactNode =
@@ -95,44 +133,78 @@ function Node({
       </span>
     );
   const comma = last ? "" : ",";
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c" && path) {
+      e.preventDefault();
+      copyPath();
+      return;
+    }
+    if (isObj && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      setOpen(!open);
+      return;
+    }
+    if (isObj && e.key === "ArrowRight") {
+      e.preventDefault();
+      if (!open) setOpen(true);
+      else if (entries.length) moveFocus(e.currentTarget, "ArrowDown");
+      return;
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (isObj && open) setOpen(false);
+      else e.currentTarget.parentElement?.parentElement?.closest<HTMLElement>("[data-json-node]")?.querySelector<HTMLElement>("[role=treeitem]")?.focus();
+      return;
+    }
+    if (moveFocus(e.currentTarget, e.key)) e.preventDefault();
+  };
+  const item = {
+    role: "treeitem",
+    "aria-level": depth + 1,
+    tabIndex: tree.active === path ? 0 : -1,
+    onKeyDown,
+    onFocus: (e: React.FocusEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) tree.setActive(path);
+    },
+  } as const;
   if (!isObj) {
     return (
-      <div className="group/row flex min-h-20 items-start pl-20" style={{ paddingLeft: depth * 16 + 20 }}>
-        <span>
-          {keyLabel}
-          <Scalar v={value} query={query} />
-          <span className="text-fg-tertiary">{comma}</span>
-        </span>
-        {path && <CopyPath path={path} />}
+      <div data-json-node="">
+        <div {...item} className="group/row flex min-h-20 items-start rounded-cell focus-ring-inset" style={{ paddingLeft: depth * 16 + 20 }}>
+          <span className="min-w-0">
+            {keyLabel}
+            <Scalar v={value} query={query} />
+            <span className="text-fg-tertiary">{comma}</span>
+          </span>
+          {path && <CopyPath path={path} copied={copied} onCopy={copyPath} />}
+        </div>
       </div>
     );
   }
   const [o, c] = Array.isArray(value) ? ["[", "]"] : ["{", "}"];
   return (
-    <div>
-      <div className="group/row flex min-h-24 items-center" style={{ paddingLeft: depth * 16 }}>
+    <div data-json-node="">
+      <div {...item} aria-expanded={open} className="group/row flex min-h-24 items-center rounded-cell focus-ring-inset" style={{ paddingLeft: depth * 16 }}>
         <button
           type="button"
-          aria-expanded={open}
-          aria-label={
-            path
-              ? open
-                ? t("jsonView.collapsePath", "Collapse {path}", { path })
-                : t("jsonView.expandPath", "Expand {path}", { path })
-              : open
-                ? t("jsonView.collapse", "Collapse")
-                : t("jsonView.expand", "Expand")
-          }
+          tabIndex={-1}
+          aria-hidden
           onClick={() => setOpen(!open)}
-          className="-ml-4 inline-flex size-24 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary hover:bg-fill-2 hover:text-fg focus-ring"
+          className="relative -ml-4 inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary tap-target hover:bg-fill-2 hover:text-fg"
         >
           <Icon icon={icons.chevronRight} size="xs" className={cn("transition-transform duration-180", open && "rotate-90")} />
         </button>
-        <span>
+        <span className="min-w-0">
           {keyLabel}
           <span className="text-fg-tertiary">{o}</span>
           {!open && (
-            <button type="button" onClick={() => setOpen(true)} className="mx-4 cursor-pointer rounded-code px-4 text-fg-tertiary hover:bg-fill-2">
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={() => setOpen(true)}
+              className="relative mx-4 cursor-pointer rounded-code px-4 text-fg-tertiary tap-target hover:bg-fill-2 hover:text-fg"
+            >
               {Array.isArray(value)
                 ? t("jsonView.items", "{count, plural, one {{n} item} other {{n} items}}", { count: entries.length, n: String(entries.length) })
                 : t("jsonView.keys", "{count, plural, one {{n} key} other {{n} keys}}", { count: entries.length, n: String(entries.length) })}
@@ -145,7 +217,7 @@ function Node({
             </span>
           )}
         </span>
-        {path && <CopyPath path={path} />}
+        {path && <CopyPath path={path} copied={copied} onCopy={copyPath} />}
       </div>
       {open && (
         <>
@@ -161,7 +233,7 @@ function Node({
               last={i === entries.length - 1}
             />
           ))}
-          <div className="min-h-20 text-fg-tertiary" style={{ paddingLeft: depth * 16 + 20 }}>
+          <div aria-hidden className="min-h-20 text-fg-tertiary" style={{ paddingLeft: depth * 16 + 20 }}>
             {c}
             {comma}
           </div>
@@ -173,19 +245,34 @@ function Node({
 
 export const JsonView = forwardRef<HTMLDivElement, JsonViewProps>(function JsonView({ value, defaultDepth = 2, query, surface = "well", className }, ref) {
   const t = useUiText();
+  const [active, setActive] = useState("");
+  const [said, setSaid] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const tree = useMemo<Tree>(
+    () => ({
+      active,
+      setActive,
+      announce: (text) => {
+        setSaid("");
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => setSaid(text), 50);
+      },
+    }),
+    [active],
+  );
   return (
     <div
       ref={ref}
-      tabIndex={0}
-      role="region"
-      aria-label={t("jsonView.label", "JSON")}
-      className={cn(
-        "mono overflow-x-auto text-small focus-ring-inset leading-code text-fg scrollbar-quiet",
-        KAESO_JSON_VIEW_VARIANTS.surface[surface].classes,
-        className,
-      )}
+      className={cn("mono overflow-x-auto text-small leading-code text-fg scrollbar-quiet", KAESO_JSON_VIEW_VARIANTS.surface[surface].classes, className)}
     >
-      <Node value={value as Json} path="" depth={0} open={defaultDepth} query={query} last />
+      <TreeContext.Provider value={tree}>
+        <div role="tree" aria-label={t("jsonView.label", "JSON")}>
+          <Node value={value as Json} path="" depth={0} open={defaultDepth} query={query} last />
+        </div>
+      </TreeContext.Provider>
+      <div role="status" className="sr-only">
+        {said}
+      </div>
     </div>
   );
 });

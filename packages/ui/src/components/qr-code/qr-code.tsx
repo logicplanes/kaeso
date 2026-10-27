@@ -19,7 +19,7 @@ export interface QRCodeProps {
 
 export const QRCode = forwardRef<SVGSVGElement, QRCodeProps>(function QRCode({ value, label, size = "md", className }, ref) {
   const { path, extent } = useMemo(() => {
-    const { data, size: n } = encode(value, { ecc: "M", border: 2 });
+    const { data, size: n } = encode(value, { ecc: "M", border: 4 });
     let d = "";
     data.forEach((row, y) => row.forEach((dark, x) => dark && (d += `M${x} ${y}h1v1h-1z`)));
     return { path: d, extent: n };

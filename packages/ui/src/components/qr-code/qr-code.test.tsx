@@ -9,7 +9,11 @@ describe("QRCode", () => {
     const [, , w, h] = (svg.getAttribute("viewBox") ?? "").split(" ").map(Number);
     expect(w).toBe(h);
     expect((w ?? 0) % 4).toBe(1);
-    expect(svg.querySelector("path")?.getAttribute("d")).toMatch(/^M\d+ \d+h1v1h-1z/);
+    const d = svg.querySelector("path")?.getAttribute("d") ?? "";
+    expect(d).toMatch(/^M\d+ \d+h1v1h-1z/);
+    const xs = [...d.matchAll(/M(\d+) (\d+)/g)].flatMap((m) => [Number(m[1]), Number(m[2])]);
+    expect(Math.min(...xs)).toBe(4);
+    expect(Math.max(...xs)).toBe((w ?? 0) - 5);
   });
 
   it("keeps its square size when text beside it in a row needs the room", () => {

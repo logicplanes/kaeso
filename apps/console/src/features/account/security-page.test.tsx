@@ -152,7 +152,7 @@ describe("turning on two-factor authentication", () => {
     expect(requests("POST", "me/totp/confirm").map((r) => r.body)).toEqual([{ code: "123456" }]);
     await waitFor(() => expect(requests("GET", "me").length).toBeGreaterThan(1));
     expect(requests("POST", "me/totp")).toHaveLength(1);
-    expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent(/aaaa-bbbb\s*cccc-dddd/);
+    expect(within(codes).getByRole("group", { name: "Recovery codes code" })).toHaveTextContent(/aaaa-bbbb\s*cccc-dddd/);
     await user.click(within(codes).getByRole("button", { name: "Download .txt" }));
     expect(click).toHaveBeenCalledTimes(1);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
@@ -422,7 +422,7 @@ describe("with two-factor authentication on", () => {
     const { user } = await renderApp(PATH);
     await regenerateWith(user);
     const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
-    expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
+    expect(within(codes).getByRole("group", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
     expect(requests("POST", "me/recovery-codes").map((r) => r.body)).toEqual([{ code: "123456" }]);
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
     await user.keyboard("{Escape}");
@@ -470,7 +470,7 @@ describe("with two-factor authentication on", () => {
     expect(requests("POST", "me/recovery-codes")).toHaveLength(1);
     respond({ recovery_codes: ["eeee-ffff"] });
     const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
-    expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
+    expect(within(codes).getByRole("group", { name: "Recovery codes code" })).toHaveTextContent("eeee-ffff");
   });
 
   it("shows only the new recovery codes when they are regenerated again", async () => {
@@ -485,7 +485,7 @@ describe("with two-factor authentication on", () => {
     ] as const) {
       await regenerateWith(user);
       const codes = await screen.findByRole("dialog", { name: "Store your recovery codes" });
-      expect(within(codes).getByRole("region", { name: "Recovery codes code" })).toHaveTextContent(shown);
+      expect(within(codes).getByRole("group", { name: "Recovery codes code" })).toHaveTextContent(shown);
       if (gone) expect(screen.queryByText(gone, { exact: false })).not.toBeInTheDocument();
       expect(within(codes).getByRole("checkbox", { name: "I stored these codes" })).not.toBeChecked();
       await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));

@@ -2,6 +2,7 @@ import { BarChart, tokenKindColor, tokenKindLabel } from "@logicplanes/kaeso-ui"
 import { formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { useLocale, useUiText } from "@logicplanes/kaeso-ui/i18n";
 import { StateSection } from "~/lib/states";
+import { AsTable, Labelled } from "~/lib/chart-states";
 
 const days = ["Oct 6", "Oct 7", "Oct 8", "Oct 9", "Oct 10", "Oct 11", "Oct 12"];
 const kinds = ["input", "cacheRead", "output", "reasoning"] as const;
@@ -114,6 +115,12 @@ export function Months() {
     </div>
   );
 }
+const week = ["Oct 6", "Oct 7", "Oct 8", "Oct 9", "Oct 10", "Oct 11", "Oct 12"];
+const net = [{ id: "credits", label: "Credit balance change", color: "var(--k-viz-1)", values: [12.4, 8.1, -3, -6.5, 4.2, 9.8, 2.1] }];
+const zeros = [{ id: "requests", label: "Requests", values: week.map(() => 0) }];
+const keyNames = ["checkout-web-production-eu-west", "checkout-worker", "claude-sonnet-4-5-20250929", "staging"];
+const spend = (v: number) => formatUSD(v.toFixed(2));
+
 export function States() {
   const { months, monthAxis, weeks, weekAxis } = useAxes();
   const series = useSeries();
@@ -121,8 +128,8 @@ export function States() {
   const weekTokens = useInputTokens(weekValues);
   return (
     <>
-      <StateSection title="Highlighted: a quiet fill behind the category and its tooltip, as on hover or with the arrow keys">
-        <div className="flex w-960 flex-col gap-40">
+      <StateSection title="Highlighted: a quiet fill and the tooltip, as on hover or with the arrow keys">
+        <div className="flex w-640 flex-col gap-40">
           <BarChart
             aria-label="Tokens by kind per day, a day highlighted"
             categories={days}
@@ -144,23 +151,113 @@ export function States() {
             height={200}
             categories={["checkout-web", "checkout-worker", "ci-runner", "staging"]}
             series={[{ id: "spend", label: "Spend", color: "var(--k-viz-1)", values: [84.2, 51.9, 12.4, 3.1] }]}
-            formatValue={(v) => formatUSD(v.toFixed(2))}
+            formatValue={spend}
             highlight={1}
           />
         </div>
       </StateSection>
-      <StateSection title="Axis labels thinned where they don't all fit: evenly, never overlapping, keeping where a year begins, then the newest bar">
-        <div className="flex flex-col gap-40">
-          <div className="w-960">
+      <StateSection title="Edge cases: negative, zero, one category, empty, loading and error">
+        <div className="grid w-640 grid-cols-2 gap-x-24 gap-y-40">
+          <Labelled title="Negative values">
+            <BarChart aria-label="Credit balance change per day" categories={week} series={net} formatValue={spend} height={200} />
+          </Labelled>
+          <Labelled title="Every value zero">
+            <BarChart aria-label="Requests per day, none" categories={week} series={zeros} height={200} />
+          </Labelled>
+          <Labelled title="One category">
+            <BarChart aria-label="Requests today" categories={["Oct 12"]} series={[{ id: "requests", label: "Requests", values: [4812] }]} height={200} />
+          </Labelled>
+          <Labelled title="No data">
+            <BarChart aria-label="Requests per day, no data" categories={[]} series={[]} height={200} />
+          </Labelled>
+          <Labelled title="Loading, data on screen">
+            <BarChart aria-label="Tokens per day, refreshing" categories={days} series={series.slice(0, 1)} formatValue={formatTokens} height={200} loading />
+          </Labelled>
+          <Labelled title="Loading, nothing yet">
+            <BarChart aria-label="Tokens per day, loading" categories={[]} series={[]} height={200} loading />
+          </Labelled>
+          <Labelled title="Error with Try again">
+            <BarChart aria-label="Tokens per day, failed" categories={days} series={series} height={200} error onRetry={() => undefined} />
+          </Labelled>
+          <Labelled title="Error without a retry">
+            <BarChart aria-label="Tokens per day, failed, no retry" categories={days} series={series} height={200} error />
+          </Labelled>
+        </div>
+      </StateSection>
+      <StateSection title="Partial periods: today still counting, the first week cut short">
+        <div className="flex w-640 flex-col gap-40">
+          <BarChart
+            aria-label="Tokens by kind per day, today so far"
+            categories={days}
+            series={series}
+            layout="stacked"
+            formatValue={formatTokens}
+            partial={{ ongoing: true }}
+          />
+          <BarChart
+            aria-label="Input and output tokens per day, first and last partial"
+            categories={days}
+            series={series.slice(0, 2)}
+            formatValue={formatTokens}
+            partial={{ first: true, last: true }}
+          />
+        </div>
+      </StateSection>
+      <StateSection title="Long names, two series across, huge values, and 320px">
+        <div className="grid w-640 grid-cols-2 gap-x-24 gap-y-40">
+          <Labelled title="Long key names, 320px">
+            <div className="w-320">
+              <BarChart
+                aria-label="Spend by key, long names"
+                layout="horizontal"
+                height={200}
+                categories={keyNames}
+                series={[{ id: "spend", label: "Spend", color: "var(--k-viz-1)", values: [1284.5, 512.2, 96.4, 3.1] }]}
+                formatValue={spend}
+              />
+            </div>
+          </Labelled>
+          <Labelled title="Two series across">
             <BarChart
-              aria-label="Input tokens per month, 960px"
+              aria-label="Input and output tokens by key"
+              layout="horizontal"
+              height={240}
+              categories={["checkout-web", "checkout-worker", "ci-runner"]}
+              series={series.slice(0, 2).map((s) => ({ ...s, values: s.values.slice(0, 3) }))}
+              formatValue={formatTokens}
+            />
+          </Labelled>
+          <Labelled title="Huge values, default format">
+            <BarChart
+              aria-label="Tokens per day, lifetime totals"
+              categories={week}
+              series={[{ id: "tokens", label: "Tokens", values: week.map((_, i) => (i + 1) * 410_000_000_000) }]}
+              height={200}
+            />
+          </Labelled>
+          <Labelled title="320px, stacked with a legend">
+            <div className="w-320">
+              <BarChart aria-label="Tokens by kind per day, 320px" categories={days} series={series} layout="stacked" formatValue={formatTokens} height={200} />
+            </div>
+          </Labelled>
+        </div>
+      </StateSection>
+      <StateSection title="As a table: the same height as the chart, scrolling inside">
+        <div className="w-640">
+          <AsTable>
+            <BarChart
+              aria-label="Input tokens per month, as a table"
               categories={months}
               axisLabels={monthAxis}
               dates={monthDays}
               series={monthTokens}
               formatValue={formatTokens}
             />
-          </div>
+          </AsTable>
+        </div>
+      </StateSection>
+      <StateSection title="Axis labels thinned evenly, keeping where a year begins and the newest bar">
+        <div className="flex flex-col gap-40">
           <div className="w-640">
             <BarChart
               aria-label="Input tokens per month, 640px"
@@ -181,9 +278,9 @@ export function States() {
               formatValue={formatTokens}
             />
           </div>
-          <div className="w-960">
+          <div className="w-640">
             <BarChart
-              aria-label="Input tokens per week, 960px"
+              aria-label="Input tokens per week, 640px"
               categories={weeks}
               axisLabels={weekAxis}
               dates={weekDays}
@@ -201,13 +298,6 @@ export function States() {
               formatValue={formatTokens}
             />
           </div>
-        </div>
-      </StateSection>
-      <StateSection title="Layouts">
-        <div className="flex w-960 flex-col gap-40">
-          <Stacked />
-          <Grouped />
-          <Ranking />
         </div>
       </StateSection>
     </>

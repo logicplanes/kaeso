@@ -24,7 +24,7 @@ export function States() {
   return (
     <>
       <StateSection title="Without a caption">
-        <Figure label="Diagram: route of a request" className="w-full">
+        <Figure label="Diagram: route of a request, without a caption" className="w-full">
           <ThemeImage light="/demos/route.light.svg" dark="/demos/route.dark.svg" alt="Route of a request: app, Kaeso, provider" width={364} height={49} />
         </Figure>
       </StateSection>

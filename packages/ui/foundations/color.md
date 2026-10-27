@@ -35,7 +35,7 @@ Success, warning, danger and info are marks, never surfaces: a colored word, an 
 
 ## Data
 
-Eight series in a fixed order, balanced in lightness so none shouts. Token kinds always take the same series: input blue, output emerald, cache read teal, cache write amber, reasoning violet. Marks thinner than 2px use a darker shade in light mode to keep 3:1.
+Eight series in a fixed order, balanced in lightness so none shouts. Token kinds always take the same series: input blue, output emerald, cache read a soft blue edged in input's blue, cache write amber, reasoning violet. A soft tint is too faint to stand on the panel alone, so it always carries a 1px edge in its series colour. Partial periods draw faint with a dashed edge, on bars and lines alike. Marks thinner than 2px use a darker shade in light mode to keep 3:1.
 
 ## Rules
 

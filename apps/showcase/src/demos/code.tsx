@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Code",
-  description: "Inline code: Geist Mono 13 on a soft fill. A pill for one word.",
+  description: "Inline code: Geist Mono 13 on a soft fill, radius 6 in running text.",
   group: "Components",
   entry: "code",
   import: "Code",
@@ -19,16 +19,35 @@ export function Basic() {
 }
 export function States() {
   return (
-    <StateSection title="Shapes">
-      <div className="flex items-center gap-12">
-        <Code>gpt-5</Code>
-        <Code>curl -s localhost:8080/healthz</Code>
-        <Code shape="pill">auto</Code>
-        <Code shape="rounded">rounded</Code>
-      </div>
-      <p className="mt-16 max-w-320 text-body text-fg-secondary">
-        Print the document with <Code flow="text">docker compose exec gateway kaeso openapi</Code>; every operation names its right.
-      </p>
-    </StateSection>
+    <>
+      <StateSection title="Shapes">
+        <div className="flex items-center gap-12">
+          <Code>gpt-5</Code>
+          <Code>curl -s localhost:8080/healthz</Code>
+          <Code shape="pill">pill</Code>
+          <Code shape="rounded">rounded</Code>
+        </div>
+      </StateSection>
+      <StateSection title="In running text at 280px: box, text and cell">
+        <div className="flex w-280 flex-col gap-16 text-body text-fg-secondary">
+          <p>
+            Set <Code>KAESO_MASTER_KEY</Code> to <Code>sk-kso-AbC123dEf456gHi789jKl012mNo345</Code>, then call the gateway.
+          </p>
+          <p>
+            Print the document with <Code flow="text">docker compose exec gateway kaeso openapi</Code>; every operation names its right.
+          </p>
+          <table className="w-full text-small">
+            <tbody>
+              <tr>
+                <td className="w-1/2 align-top">Model</td>
+                <td>
+                  <Code flow="cell">claude-sonnet-4-5-20250929</Code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -9,7 +9,8 @@ describe("UsageBreakdown", () => {
   it("names the kinds that were used and lists every kind it's given", () => {
     render(<UsageBreakdown tokens={{ input: 1_200_000, output: 300_000, cacheRead: 0, cacheWrite: 0, reasoning: 0 }} />);
     expect(screen.getByRole("img", { name: "Tokens: Input 1,200,000, Output 300,000" })).toBeInTheDocument();
-    expect(screen.getByText("1.2M")).toHaveAttribute("title", "1,200,000 tokens");
+    expect(screen.getByText("1.2M")).toHaveAccessibleName("1,200,000 tokens");
+    expect(screen.getByText("1.2M")).toHaveAttribute("tabindex", "0");
     expect(screen.getAllByText("0")).toHaveLength(3);
   });
 
@@ -30,12 +31,22 @@ describe("UsageBreakdown", () => {
         <UsageBreakdown tokens={{ input: 103_000_000, output: 51_000 }} />
       </LocaleProvider>,
     );
-    expect(screen.getByText(shown.replace(/\u00a0/g, " "))).toHaveAttribute("title", exact);
+    expect(screen.getByText(shown.replace(/\u00a0/g, " "))).toHaveAccessibleName(exact);
   });
 
-  it("draws an empty bar when nothing was used", () => {
+  it("draws an empty track when nothing was used", () => {
     const { container } = render(<UsageBreakdown tokens={{}} />);
     expect(container.querySelector("[role=img]")?.children).toHaveLength(0);
+    expect(container.querySelector("[role=img]")).toHaveClass("bg-fill-2");
+  });
+
+  it("edges cache read in input's blue and keeps every segment's color in forced colors", () => {
+    const { container } = render(<UsageBreakdown tokens={{ input: 10, cacheRead: 5 }} />);
+    const [input, cache] = [...container.querySelectorAll<HTMLElement>("[role=img] > span")];
+    expect(input).toHaveClass("data-mark");
+    expect(input?.style.boxShadow).toBe("");
+    expect(cache?.style.background).toBe("var(--k-viz-1-soft)");
+    expect(cache?.style.boxShadow).toBe("inset 0 0 0 1px var(--k-viz-1)");
   });
 });
 
@@ -44,16 +55,24 @@ describe("LimitMeter", () => {
     const { container } = render(
       <LimitMeter kind="spend" scope="Production" window="per month" used={400} limit={500} valueLabel="$400.00 of $500.00" resets="Resets 1 Nov" />,
     );
-    expect(screen.getByRole("meter", { name: "spend limit" })).toHaveAttribute("aria-valuenow", "80");
-    expect(container).toHaveTextContent("Hard");
+    expect(screen.getByRole("meter", { name: "Production, spend limit" })).toHaveAttribute("aria-valuenow", "80");
+    expect(container).toHaveTextContent("Hard limit");
+    expect(container).not.toHaveTextContent("Over the limit");
     expect(container).toHaveTextContent("$400.00 of $500.00 · per monthResets 1 Nov");
   });
 
   it("shows a soft limit, and a zero limit as empty", () => {
     const { container } = render(<LimitMeter kind="tokens" scope="Docs search" window="per day" used={10} limit={0} valueLabel="10 tokens" hard={false} />);
-    expect(container).toHaveTextContent("Soft");
-    expect(screen.getByRole("meter", { name: "tokens limit" })).toHaveAttribute("aria-valuenow", "0");
-    render(<LimitMeter kind="requests" scope="All" window="per minute" used={1} limit={10} valueLabel="1" />);
+    expect(container).toHaveTextContent("Soft limit");
+    expect(screen.getByRole("meter", { name: "Docs search, tokens limit" })).toHaveAttribute("aria-valuenow", "0");
+    render(<LimitMeter kind="requests" scope={<b>All</b>} window="per minute" used={1} limit={10} valueLabel="1" />);
     expect(screen.getByRole("meter", { name: "requests limit" })).toBeInTheDocument();
+  });
+
+  it("says when it is over, and what happens to requests", () => {
+    const { rerender } = render(<LimitMeter kind="spend" scope="Checkout" window="Per month" used={1200} limit={500} valueLabel="$1,200.00 of $500.00" />);
+    expect(screen.getByText("Over the limit, requests refused")).toHaveClass("text-danger-text");
+    rerender(<LimitMeter kind="spend" scope="Checkout" window="Per month" used={1200} limit={500} valueLabel="$1,200.00 of $500.00" hard={false} />);
+    expect(screen.getByText("Over the limit, alerts only")).toHaveClass("text-warning-text");
   });
 });

@@ -6,7 +6,7 @@ const reply = `# Why the 429s started
 Requests to **gpt-5** from \`checkout-api\` hit the project's limit of *60 a minute* at 14:05 UTC. Three things changed:
 
 1. The retry loop in the worker doubled its traffic.
-2. A new key, \`kae_live_…3f9a\`, shares the same limit.
+2. A new key, \`sk-kso-…3f9a\`, shares the same limit.
 3. The budget alert fired at 80% — see [the usage page](https://kaeso.example.com/docs/usage).
 
 | Model | Requests | p95 |
@@ -68,11 +68,32 @@ export function Safe() {
     />
   );
 }
+const headings = "# Heading 1\n\n## Heading 2\n\n### Heading 3\n\n#### Heading 4\n\n##### Heading 5\n\n###### Heading 6\n\nBody text under the headings.";
+const numbered = Array.from({ length: 12 }, (_, i) => `${i + 1}. Retry attempt ${i + 1} backs off for ${2 ** Math.min(i, 6)} s`).join("\n");
+const wide =
+  "| Model | Requests | p95 | Region | Provider key |\n|---|--:|--:|---|---|\n| gpt-5 | 4,812 | 2.4 s | eu-west-1 | …4f2a |\n| claude-sonnet-4-5 | 1,204 | 0.9 s | us-east-1 | …9c1d |";
+const link = "See https://kaeso.example.com/docs/usage/limits-and-budgets/per-project-limits#alerts-and-hard-limits for the details.";
+
 export function States() {
   return (
     <div className="flex w-640 flex-col">
       <StateSection title="Body">
         <Basic />
+      </StateSection>
+      <StateSection title="Heading levels at each size">
+        <div className="grid grid-cols-3 gap-24">
+          <Markdown size="lg" headingLevel={1} text={headings} />
+          <Markdown headingLevel={1} text={headings} />
+          <Markdown size="small" headingLevel={1} text={headings} />
+        </div>
+      </StateSection>
+      <StateSection title="Past nine, a wide table and a long link at 320px, wrapped code">
+        <div className="flex w-320 flex-col gap-24">
+          <Markdown text={numbered} />
+          <Markdown text={wide} />
+          <Markdown text={link} />
+          <Markdown wrapCode text={'```bash\ncurl https://kaeso.example.com/v1/responses -H "Authorization: Bearer $KAESO_API_KEY" -d @request.json\n```'} />
+        </div>
       </StateSection>
       <StateSection title="Small, secondary">
         <Small />
