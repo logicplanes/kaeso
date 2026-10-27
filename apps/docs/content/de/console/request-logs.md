@@ -39,7 +39,7 @@ Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben 
 
 Die Spalte **Token ein / aus · Cache** endet mit dem Anteil der Eingabe jeder Anfrage, der aus dem Prompt-Cache gelesen wurde, etwa `· 0 %`. Ein langer Prompt, der nie zwischengespeichert wird, kostet jedes Mal den vollen Eingabepreis.
 
-Anthropic speichert nur die Teile eines Prompts zwischen, die eine Anfrage mit `cache_control` markiert. Für Apps, die die Formate von OpenAI nutzen, setzt Kaeso diese Markierungen selbst. Eine Anfrage, die das Format von Anthropic ohne jede Markierung erreichte, zeigt ihren Anteil in einer Warnfarbe. Ihre **Nutzung** nennt **Kein Cache-Breakpoint**, so unterscheidet sich eine fehlende Markierung von einem Cache-Fehltreffer.
+Anthropic speichert nur die Teile eines Prompts zwischen, die eine Anfrage mit `cache_control` markiert, und für Apps, die die Formate von OpenAI nutzen, setzt Kaeso diese Markierungen selbst. Eine Anfrage im Format von Anthropic ohne Markierung, die nichts aus dem Cache gelesen und nichts in ihn geschrieben hat, zeigt ihren Anteil in einer Warnfarbe. Ihre **Nutzung** nennt **Kein Cache-Breakpoint**, so unterscheidet sich eine fehlende Markierung von einem Cache-Fehltreffer. Manche Anthropic-kompatiblen Anbieter cachen auch ohne Markierung; ihre Anfragen zeigen keine Warnung, sobald sie aus dem Cache lesen oder in ihn schreiben.
 
 Die **Nutzung** einer Anfrage listet außerdem **Aus dem Cache** und, für das Format von Anthropic, wie viele **Cache-Breakpoints** Kaeso gesendet hat. Der CSV-Export enthält diese Zahl als `cache_breakpoints`.
 

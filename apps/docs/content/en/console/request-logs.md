@@ -39,7 +39,7 @@ The **Request** and **Reply** tabs need the right **View prompts and outputs**. 
 
 The **Tokens in / out · cached** column ends with the share of each request's input read from the prompt cache, such as `· 0%`. A long prompt that is never cached costs the full input price every time.
 
-Anthropic caches only the parts of a prompt that a request marks with `cache_control`. Kaeso marks them itself for apps that use OpenAI's formats. A request that reached Anthropic's format without any mark shows its share in a warning color. Its **Usage** says **No cache breakpoint**, so a missing mark stands apart from a cache miss.
+Anthropic caches only the parts of a prompt that a request marks with `cache_control`, and Kaeso marks them itself for apps that use OpenAI's formats. A request sent in Anthropic's format without a mark, which read nothing from the cache and wrote nothing to it, shows its share in a warning color. Its **Usage** says **No cache breakpoint**, so a missing mark stands apart from a cache miss. Some Anthropic-compatible providers cache without marks; their requests show no warning once they read or write the cache.
 
 A request's **Usage** also lists **Read from the cache** and, for Anthropic's format, how many **Cache breakpoints** Kaeso sent. The CSV export has that count as `cache_breakpoints`.
 

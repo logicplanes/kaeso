@@ -153,9 +153,36 @@ describe("LogInspector", () => {
 
     const usageSection = section(await sheet(), "Usage");
     expect(usageSection).toHaveTextContent("No cache breakpoint");
-    expect(usageSection).toHaveTextContent("Sent without cache_control; this provider caches only the prompt a request marks, so nothing was cached.");
+    expect(usageSection).toHaveTextContent(
+      "Sent without cache_control, and nothing was read from or written to the cache; Anthropic caches only the prompt a request marks.",
+    );
     expect(usageSection).toHaveTextContent("Read from the cache0%");
     expect(usageSection).toHaveTextContent("Cache breakpoints0");
+  });
+
+  it("leaves the breakpoint mark out when an Anthropic-format provider cached a prompt sent without marks", async () => {
+    signedIn();
+    projectData();
+    const usage = { input_tokens: 1_000, output_tokens: 40, cache_read_tokens: 9_000, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          ingress_dialect: "anthropic_messages",
+          egress_dialect: "anthropic_messages",
+          provider: "anthropic-compatible",
+          cache_breakpoints: 0,
+          usage,
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    const usageSection = section(await sheet(), "Usage");
+    expect(usageSection).toHaveTextContent("Read from the cache90%");
+    expect(usageSection).toHaveTextContent("Cache breakpoints0");
+    expect(usageSection).not.toHaveTextContent("No cache breakpoint");
+    expect(usageSection).not.toHaveTextContent("nothing was read");
   });
 
   it("leaves the breakpoint mark out for a provider that caches by itself", async () => {
