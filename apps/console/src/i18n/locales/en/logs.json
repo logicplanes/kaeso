@@ -106,6 +106,7 @@
   "logs.inspector.replyUnknownFormat": "This reply was logged in a format this console can't read yet; it's shown as stored.",
   "logs.inspector.request": "Request",
   "logs.inspector.requestAsSent": "The app's body as sent, in {format}.",
+  "logs.inspector.requestUpload": "Request upload",
   "logs.inspector.route": "Route",
   "logs.inspector.sentBy": "Sent by",
   "logs.inspector.serviceAccount": "Service account",

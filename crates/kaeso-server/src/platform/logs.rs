@@ -690,10 +690,14 @@ pub struct LogView {
     pub duration_ms: u32,
     #[doc = "Time to the provider's first byte, in milliseconds."]
     pub ttfb_ms: Option<u32>,
+    #[doc = "Time the app took to send the request body, in milliseconds, from\n\
+        when Kaeso began reading it until all of it had arrived; `null` when\n\
+        it wasn't recorded."]
+    pub request_upload_ms: Option<u32>,
     #[doc = "Kaeso's own time before it called the provider, in milliseconds:\n\
-        reading the body, the key, decoding, the catalogue, the provider\n\
-        credential, limits and encoding; `null` when the request ended\n\
-        before reaching the provider."]
+        the key, decoding, the catalogue, the provider credential, limits\n\
+        and encoding, without the request upload; `null` when the request\n\
+        ended before reaching the provider."]
     pub overhead_ms: Option<u32>,
     #[doc = "The key; `null` for requests from the Playground, which have none."]
     pub key_id: Option<ApiKeyId>,
@@ -793,6 +797,7 @@ fn view(r: &LogRow) -> LogView {
         started_at: r.started_at,
         duration_ms: r.duration_ms,
         ttfb_ms: r.ttfb_ms,
+        request_upload_ms: r.request_upload_ms,
         overhead_ms: r.overhead_ms,
         key_id: (!r.key_id.is_nil()).then(|| ApiKeyId::from_uuid(r.key_id)),
         source: r.source.clone(),
@@ -956,7 +961,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1033,6 +1038,7 @@ fn csv_line(v: &LogView) -> String {
         number(v.overhead_ms),
         number(progress.and_then(|p| p.processing_ms)),
         number(v.cache_breakpoints),
+        number(v.request_upload_ms),
     ];
     let mut line = cells
         .iter()

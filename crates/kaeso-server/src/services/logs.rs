@@ -424,6 +424,7 @@ pub async fn record(state: &AppState, o: &Outcome) {
         cache_breakpoints: o
             .cache_breakpoints
             .map(|n| u16::try_from(n).unwrap_or(u16::MAX)),
+        request_upload_ms: o.upload.map(ms),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

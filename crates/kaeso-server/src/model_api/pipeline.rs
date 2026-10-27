@@ -83,7 +83,10 @@ impl Recording {
     fn timing(&mut self) -> HeaderValue {
         let elapsed = self.started.elapsed();
         let o = self.outcome();
-        server_timing(o.overhead.unwrap_or(elapsed), o.ttfb)
+        let kaeso = o
+            .overhead
+            .unwrap_or_else(|| elapsed.saturating_sub(o.upload.unwrap_or_default()));
+        server_timing(o.upload, kaeso, o.ttfb)
     }
 
     fn time(&mut self, resp: &mut Response) {
@@ -196,6 +199,7 @@ fn blank_outcome() -> Outcome {
         started_at: time::OffsetDateTime::UNIX_EPOCH,
         duration: std::time::Duration::ZERO,
         ttfb: None,
+        upload: None,
         overhead: None,
         stream_processing: None,
         user_agent: None,
@@ -592,7 +596,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
     let limit = max_body;
-    let body = axum::body::to_bytes(body, limit).await.map_err(|e| {
+    let reading = Instant::now();
+    let read = axum::body::to_bytes(body, limit).await;
+    let upload = reading.elapsed();
+    rec.outcome().upload = Some(upload);
+    let body = read.map_err(|e| {
         let refused = if crate::http::body_timeout::timed_out(&e) {
             error(
                 ErrorKind::InvalidRequest,
@@ -945,7 +953,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     let provider = eff.provider.metric_label();
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
-    rec.outcome().overhead = Some(sent_at.duration_since(rec.started));
+    rec.outcome().overhead = Some(sent_at.duration_since(rec.started).saturating_sub(upload));
     let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {

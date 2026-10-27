@@ -86,6 +86,7 @@ async fn requests_are_logged_with_metadata_and_content() {
     assert_eq!(ok["cost"], "0.0001");
     assert_eq!(ok["has_content"], true);
     assert!(ok["overhead_ms"].is_u64(), "{ok}");
+    assert!(ok["request_upload_ms"].is_u64(), "{ok}");
     assert!(
         data[0]["overhead_ms"].is_u64(),
         "failures after the provider call keep it"
@@ -662,6 +663,7 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             overhead_ms: Some(1),
             stream_processing_ms: None,
             cache_breakpoints: Some(2),
+            request_upload_ms: Some(40),
         },
         ContentRow {
             request_id: id,
@@ -759,16 +761,17 @@ async fn exports_stream_large_ranges_in_both_formats() {
     let text = std::str::from_utf8(&body).unwrap();
     assert!(text.starts_with("id,started_at,"));
     assert!(
-        text.lines()
-            .next()
-            .unwrap()
-            .ends_with(",source,overhead_ms,stream_processing_ms,cache_breakpoints"),
+        text.lines().next().unwrap().ends_with(
+            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms"
+        ),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines().skip(1).all(|l| l.ends_with(",\"api\",1,,2")),
-        "the overhead and the breakpoints are exported, and a stream's processing time is empty for other requests"
+        text.lines()
+            .skip(1)
+            .all(|l| l.ends_with(",\"api\",1,,2,40")),
+        "the overhead, the breakpoints and the upload are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
 

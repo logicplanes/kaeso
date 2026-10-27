@@ -81,7 +81,7 @@ ulimit -n 65536
 | 数字 | 含义 |
 | --- | --- |
 | Requests/s | 网关每秒应答的非流式请求数，包含模拟服务商的时间 |
-| Overhead | Kaeso 调用服务商之前自身花费的时间，取自 [`server-timing` 响应头](../api/model-api.md#响应头)中的 `kaeso` 项。从请求到达 Kaeso 的处理程序时开始计时 |
+| Overhead | Kaeso 调用服务商之前自身花费的时间，取自 [`server-timing` 响应头](../api/model-api.md#响应头)中的 `kaeso` 项。从请求到达 Kaeso 的处理程序时开始计时，不含客户端发送请求体的时间 |
 | Latency | 客户端完成一个非流式请求的时间 |
 | Added time to first byte | 客户端收到第一个数据块的时间，减去服务商作出应答的时间，即 `server-timing` 中的 `upstream` 项。其中包含开销、Kaeso 处理第一个数据块的工作以及多出的一段连接 |
 | Added chunk gap | 经过 Kaeso 时客户端两次读取之间间隔的某个百分位数，减去仅有模拟服务商时的同一百分位数。数值在零附近表示 Kaeso 没有在数据块之间增加延迟 |

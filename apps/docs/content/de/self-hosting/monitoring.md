@@ -38,7 +38,8 @@ services:
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | Ein Anstieg von `status=~"5.."` bei `surface="model_api"`. `model` ist `custom` für Modelle ohne Daten von models.dev |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Veränderungen im 99. Perzentil je Route und je Anbieter |
-| `kaeso_gateway_overhead_seconds{provider}` | Die eigene Zeit von Kaeso, bevor es den Anbieter aufruft: Body lesen, Schlüssel prüfen, übersetzen und Limits prüfen. Die Buckets beginnen bei 0,1 ms. Ein Anstieg, den `kaeso_time_to_first_byte_seconds` nicht zeigt, liegt bei Kaeso, nicht beim Anbieter |
+| `kaeso_gateway_overhead_seconds{provider}` | Die eigene Zeit von Kaeso, bevor es den Anbieter aufruft, ohne den Upload der Anfrage: Schlüssel prüfen, übersetzen und Limits prüfen. Die Buckets beginnen bei 0,1 ms. Ein Anstieg, den `kaeso_time_to_first_byte_seconds` nicht zeigt, liegt bei Kaeso, nicht beim Anbieter |
+| `kaeso_request_upload_seconds{provider}` | Die Zeit, die Apps zum Senden des Bodys ihrer Anfragen brauchen. Sie wächst mit der Größe des Prompts und der Verbindung der App; ein Anstieg liegt bei den Apps oder im Netz, nicht bei Kaeso |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` oder `connect`: ein Ausfall beim Anbieter. `authentication` oder `billing`: ein Anbieter-Schlüssel muss geprüft werden |
 | `kaeso_stream_failures_total{kind, provider}` | Streams, die nach dem Senden ihrer Header scheiterten. `kaeso_requests_total` zählt sie als 200, das Anfrageprotokoll als Fehlschläge. `client_stalled`: Apps, die ihren Stream nicht mehr lasen |
 | `kaeso_usage_estimates_total{reason, provider}` | Nutzung, die Kaeso schätzen musste. `unreported`: ein Anbieter hat eine Antwort ohne Nutzung beendet. `cancelled` und `failed`: Apps, die die Verbindung getrennt haben, und abgebrochene Streams |

@@ -17,6 +17,7 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     key_id: "key_web",
     model: "gpt-5.4-mini",
     overhead_ms: 3,
+    request_upload_ms: 40,
     principal_id: USER,
     principal_kind: "user",
     provider: "openai",

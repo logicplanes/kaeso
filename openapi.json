@@ -24207,7 +24207,7 @@
                     "null"
                   ],
                   "format": "int32",
-                  "description": "Kaeso's own time before it called the provider, in milliseconds:\nreading the body, the key, decoding, the catalogue, the provider\ncredential, limits and encoding; `null` when the request ended\nbefore reaching the provider.",
+                  "description": "Kaeso's own time before it called the provider, in milliseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
                   "minimum": 0
                 },
                 "principal_id": {
@@ -24221,6 +24221,15 @@
                 "provider": {
                   "type": "string",
                   "description": "The provider."
+                },
+                "request_upload_ms": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "Time the app took to send the request body, in milliseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
+                  "minimum": 0
                 },
                 "requested_model": {
                   "type": "string",
@@ -25545,7 +25554,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "Kaeso's own time before it called the provider, in milliseconds:\nreading the body, the key, decoding, the catalogue, the provider\ncredential, limits and encoding; `null` when the request ended\nbefore reaching the provider.",
+            "description": "Kaeso's own time before it called the provider, in milliseconds:\nthe key, decoding, the catalogue, the provider credential, limits\nand encoding, without the request upload; `null` when the request\nended before reaching the provider.",
             "minimum": 0
           },
           "principal_id": {
@@ -25559,6 +25568,15 @@
           "provider": {
             "type": "string",
             "description": "The provider."
+          },
+          "request_upload_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Time the app took to send the request body, in milliseconds, from\nwhen Kaeso began reading it until all of it had arrived; `null` when\nit wasn't recorded.",
+            "minimum": 0
           },
           "requested_model": {
             "type": "string",
