@@ -434,7 +434,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                 <CodeText
                   text={t(
                     "logs.inspector.noBreakpointHint",
-                    "Sent without `cache_control`; this provider caches only the prompt a request marks, so nothing was cached.",
+                    "Sent without `cache_control`, and nothing was read from or written to the cache; Anthropic caches only the prompt a request marks.",
                   )}
                 />
               </Text>

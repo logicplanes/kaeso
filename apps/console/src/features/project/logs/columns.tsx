@@ -67,7 +67,7 @@ function timeWidth(spansDays: boolean, layout: LogsLayout): number {
 
 const ROW_END_RESERVE = 48;
 const STATUS_WIDTH = 80;
-const KEPT_WIDTHS = { duration: 104, tokens: 176, cost: 120 } as const;
+const KEPT_WIDTHS = { duration: 104, tokens: 184, cost: 120 } as const;
 
 export function logsLayout(width: number, phone: boolean, spansDays: boolean, shown: readonly ColumnId[]): LogsLayout {
   if (phone) return "phone";
@@ -286,14 +286,15 @@ export const cachedShare = (u: LogView["usage"]): number | null => {
   return input > 0 ? u.cache_read_tokens / input : null;
 };
 
-export const sentWithoutBreakpoint = (row: LogView) => row.cache_breakpoints === 0 && inputTokens(row.usage) > 0;
+export const sentWithoutBreakpoint = (row: LogView) =>
+  row.cache_breakpoints === 0 && inputTokens(row.usage) > 0 && row.usage.cache_read_tokens === 0 && row.usage.cache_write_tokens === 0;
 
 function TokensCell({ row }: { row: LogView }) {
   const u = row.usage;
   const share = isEmbedding(row) ? null : cachedShare(u);
   const unmarked = sentWithoutBreakpoint(row);
   const detail = [
-    unmarked && t("logs.tokens.noBreakpoint", "Sent without a cache breakpoint, so the provider cached nothing"),
+    unmarked && t("logs.tokens.noBreakpoint", "Sent without a cache breakpoint, and nothing was cached"),
     u.cache_read_tokens && t("logs.tokens.cacheRead", "{count} cache read", { count: formatNumber(u.cache_read_tokens) }),
     u.cache_write_tokens && t("logs.tokens.cacheWrite", "{count} cache write", { count: formatNumber(u.cache_write_tokens) }),
     u.reasoning_tokens && t("logs.tokens.reasoning", "{count} reasoning", { count: formatNumber(u.reasoning_tokens) }),

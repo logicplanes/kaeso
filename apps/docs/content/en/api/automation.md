@@ -117,7 +117,7 @@ A request shows in the logs within a few seconds. Usage includes costs when the 
 - `from` and `to`: days in UTC, such as `2026-08-15`. Grouped by day, they are at most 400 days apart.
 - `usage/span` answers with the first and last day that have usage, so you can read a long period by week or month.
 
-Each usage row has `cache_hit_rate`, the share of its input read from the cache, from 0 to 1. Logs take `ingress_dialect` and `egress_dialect` to select one route, such as `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Their export takes the same filters.
+Each usage row has `cache_hit_rate`, the share of its input read from the cache, from 0 to 1. It is `null` for a row without input and for routes of embeddings, which are never cached. Logs take `ingress_dialect` and `egress_dialect` to select one route, such as `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Their export takes the same filters.
 
 Add a log's id to read one request, such as `logs/req_…`. It includes the request's content when the project logs content.
 

@@ -24135,7 +24135,7 @@
                     "null"
                   ],
                   "format": "int32",
-                  "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in a format whose providers\ncache only the prompt a request marks (`anthropic_messages`); `0` means\nnothing of the prompt could be read from or written to the cache. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
+                  "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in Anthropic's format\n(`anthropic_messages`); `0` means Kaeso marked nothing. Anthropic then\ncaches nothing, but Anthropic-compatible providers may cache by\nthemselves, so `usage` says what was read and written. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
                   "minimum": 0
                 },
                 "client_ip": {
@@ -25256,7 +25256,7 @@
                     "null"
                   ],
                   "format": "double",
-                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
                 },
                 "cache_read_tokens": {
                   "type": "integer",
@@ -25473,7 +25473,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in a format whose providers\ncache only the prompt a request marks (`anthropic_messages`); `0` means\nnothing of the prompt could be read from or written to the cache. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
+            "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in Anthropic's format\n(`anthropic_messages`); `0` means Kaeso marked nothing. Anthropic then\ncaches nothing, but Anthropic-compatible providers may cache by\nthemselves, so `usage` says what was read and written. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
             "minimum": 0
           },
           "client_ip": {
@@ -29934,7 +29934,7 @@
               "null"
             ],
             "format": "double",
-            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
           },
           "cache_read_tokens": {
             "type": "integer",

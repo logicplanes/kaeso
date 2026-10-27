@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
 import { logRow } from "~/test/fixtures/project-logs";
+import { apply, load } from "~/i18n";
 import { COLUMNS, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
 const shown = COLUMNS.filter((c) => c !== "request" && c !== "agent");
@@ -16,6 +17,15 @@ describe("logsLayout", () => {
     expect(logsLayout(1000, false, true, ["duration"])).toBe("wide");
     expect(logsLayout(700, false, true, shown)).toBe("narrow");
     expect(logsLayout(1200, true, true, shown)).toBe("phone");
+  });
+
+  it("keeps every column at full width in a 1440 pixel window, in every language", async () => {
+    const grid1440 = 1136;
+    for (const language of ["en", "de", "zh-CN"] as const) {
+      apply(await load(language));
+      expect(logsLayout(grid1440, false, true, shown), language).toBe("wide");
+    }
+    apply(await load("en"));
   });
 });
 
@@ -164,16 +174,27 @@ describe("logColumns", () => {
             usage: { ...usage, input_tokens: 563_000, cache_read_tokens: 0 },
           }),
           logRow({ id: "req_0003", ingress_dialect: "openai_embeddings", egress_dialect: "openai_embeddings" }),
+          logRow({ id: "req_0004", egress_dialect: "anthropic_messages", cache_breakpoints: 0, usage: { ...usage, input_tokens: 10, cache_read_tokens: 90 } }),
+          logRow({
+            id: "req_0005",
+            egress_dialect: "anthropic_messages",
+            cache_breakpoints: 0,
+            usage: { ...usage, input_tokens: 40, cache_read_tokens: 0, cache_write_tokens: 60 },
+          }),
         ]}
         columns={[all.tokens]}
         getRowId={(r) => r.id}
       />,
     );
-    const [cached, unmarked, embedding] = screen.getAllByRole("cell");
+    const [cached, unmarked, embedding, cachedWithoutMarks, writtenWithoutMarks] = screen.getAllByRole("cell");
     expect(cached).toHaveTextContent("100 / 10· 75%");
     expect(within(cached as HTMLElement).getByText("· 75%")).toHaveClass("text-fg-tertiary");
     expect(unmarked).toHaveTextContent("563,000 / 10· 0%");
     expect(within(unmarked as HTMLElement).getByText("· 0%")).toHaveClass("text-warning-text");
     expect(embedding).toHaveTextContent(/^120 \/ 48$/);
+    expect(cachedWithoutMarks).toHaveTextContent("100 / 10· 90%");
+    expect(within(cachedWithoutMarks as HTMLElement).getByText("· 90%")).toHaveClass("text-fg-tertiary");
+    expect(writtenWithoutMarks).toHaveTextContent("100 / 10· 0%");
+    expect(within(writtenWithoutMarks as HTMLElement).getByText("· 0%")).toHaveClass("text-fg-tertiary");
   });
 });

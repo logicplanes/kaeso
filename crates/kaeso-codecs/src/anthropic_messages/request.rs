@@ -6,7 +6,8 @@ use kaeso_kpp::{
 use serde_json::Value;
 
 use super::blocks::{
-    BlockEncoder, Dec, Side, decode_block, decode_cache, decode_content, empty_parameters, own_ext,
+    BlockEncoder, Dec, Side, decode_block, decode_cache, decode_content, empty_parameters,
+    is_cache_mark, own_ext,
 };
 use super::check::{check_output, check_reasoning};
 use super::common::{D, internal, nested_ext, request_kind_name, to_raw};
@@ -570,7 +571,7 @@ pub(crate) fn encode_request(
                 };
                 w.tools.push(to_raw(&own_ext(w_tool, &f.extras))?);
             }
-            ToolDef::Unknown(item) => w.tools.push(item.raw.clone().into_inner()),
+            ToolDef::Unknown(item) => w.tools.push(enc.passed_through(&item.raw)),
             _ => {
                 return Err(KppError::unsupported_by(
                     "tool definition",
@@ -583,7 +584,11 @@ pub(crate) fn encode_request(
 
     let body = to_body(&own_ext(w, &r.extras))?;
     if matches!(req, Request::Generate(_)) {
-        let automatic = own && r.extras.fields.contains_key("cache_control");
+        let automatic = own
+            && r.extras
+                .fields
+                .get("cache_control")
+                .is_some_and(|v| is_cache_mark(v.get()));
         ctx.cache_breakpoints = Some(enc.breakpoints + usize::from(automatic));
     }
     ctx.tool_ids.extend(enc.rewrites.ids);
