@@ -33,7 +33,7 @@ Die Zeiten trennen die Arbeit von Kaeso von der des Anbieters. **Kaeso-Overhead*
 
 ## Prompt-Caching prüfen
 
-Die Spalte **Token ein / aus** zeigt, wie viel der Eingabe jeder Anfrage aus dem Prompt-Cache gelesen wurde, etwa **0 % aus dem Cache**. Ein langer Prompt, der nie zwischengespeichert wird, kostet jedes Mal den vollen Eingabepreis.
+Die Spalte **Token ein / aus · Cache** endet mit dem Anteil der Eingabe jeder Anfrage, der aus dem Prompt-Cache gelesen wurde, etwa `· 0 %`. Ein langer Prompt, der nie zwischengespeichert wird, kostet jedes Mal den vollen Eingabepreis.
 
 Anthropic speichert nur die Teile eines Prompts zwischen, die eine Anfrage mit `cache_control` markiert. Für Apps, die die Formate von OpenAI nutzen, setzt Kaeso diese Markierungen selbst. Eine Anfrage, die das Format von Anthropic ohne jede Markierung erreichte, zeigt ihren Anteil in einer Warnfarbe. Ihre **Nutzung** nennt **Kein Cache-Breakpoint**, so unterscheidet sich eine fehlende Markierung von einem Cache-Fehltreffer.
 

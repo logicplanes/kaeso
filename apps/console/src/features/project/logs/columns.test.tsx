@@ -170,10 +170,10 @@ describe("logColumns", () => {
       />,
     );
     const [cached, unmarked, embedding] = screen.getAllByRole("cell");
-    expect(cached).toHaveTextContent("75% cached100 / 10");
-    expect(within(cached as HTMLElement).getByText("75% cached")).toHaveClass("text-fg-tertiary");
-    expect(unmarked).toHaveTextContent("0% cached563,000 / 10");
-    expect(within(unmarked as HTMLElement).getByText("0% cached")).toHaveClass("text-warning-text");
+    expect(cached).toHaveTextContent("100 / 10· 75%");
+    expect(within(cached as HTMLElement).getByText("· 75%")).toHaveClass("text-fg-tertiary");
+    expect(unmarked).toHaveTextContent("563,000 / 10· 0%");
+    expect(within(unmarked as HTMLElement).getByText("· 0%")).toHaveClass("text-warning-text");
     expect(embedding).toHaveTextContent(/^120 \/ 48$/);
   });
 });

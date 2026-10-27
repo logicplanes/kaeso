@@ -33,7 +33,7 @@ The timing keeps Kaeso's own work apart from the provider's. **Kaeso overhead** 
 
 ## Check prompt caching
 
-The **Tokens in / out** column shows how much of each request's input was read from the prompt cache, such as **0% cached**. A long prompt that is never cached costs the full input price every time.
+The **Tokens in / out · cached** column ends with the share of each request's input read from the prompt cache, such as `· 0%`. A long prompt that is never cached costs the full input price every time.
 
 Anthropic caches only the parts of a prompt that a request marks with `cache_control`. Kaeso marks them itself for apps that use OpenAI's formats. A request that reached Anthropic's format without any mark shows its share in a warning color. Its **Usage** says **No cache breakpoint**, so a missing mark stands apart from a cache miss.
 

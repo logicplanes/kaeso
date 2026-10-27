@@ -67,7 +67,7 @@ function timeWidth(spansDays: boolean, layout: LogsLayout): number {
 
 const ROW_END_RESERVE = 48;
 const STATUS_WIDTH = 80;
-const KEPT_WIDTHS = { duration: 104, tokens: 200, cost: 120 } as const;
+const KEPT_WIDTHS = { duration: 104, tokens: 176, cost: 120 } as const;
 
 export function logsLayout(width: number, phone: boolean, spansDays: boolean, shown: readonly ColumnId[]): LogsLayout {
   if (phone) return "phone";
@@ -200,7 +200,7 @@ export function logColumns({
       { align: "end" },
     ),
     tokens: col.custom(
-      { id: "tokens", header: t("logs.column.tokensInOut", "Tokens in / out"), size: KEPT_WIDTHS.tokens, priority: 2 },
+      { id: "tokens", header: t("logs.column.tokensInOutCached", "Tokens in / out · cached"), size: KEPT_WIDTHS.tokens, priority: 2 },
       (r: LogView) => totalTokens(r.usage),
       (_v, r) => <TokensCell row={r} />,
       { align: "end" },
@@ -302,12 +302,12 @@ function TokensCell({ row }: { row: LogView }) {
   const text = `${u.estimated ? "≈ " : ""}${formatNumber(inputTokens(u))} / ${formatNumber(u.output_tokens)}`;
   const content = (
     <span className="inline-flex items-baseline gap-6">
+      <Text tabular>{text}</Text>
       {share !== null && (
         <Text variant="small" tone={unmarked ? "warning" : "tertiary"} tabular>
-          {t("logs.tokens.cachedShare", "{percent} cached", { percent: formatPercent(share, 0) })}
+          {`· ${formatPercent(share, 0)}`}
         </Text>
       )}
-      <Text tabular>{text}</Text>
     </span>
   );
   return detail.length ? (
