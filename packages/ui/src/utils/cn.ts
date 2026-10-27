@@ -225,6 +225,7 @@ export function kaesoMergeConfig() {
       resize: [{ resize: ["none", "", "y", "x"] }],
       "scrollbar-w": [{ scrollbar: ["auto", "thin", "none"] }],
       "scroll-mt": [{ "scroll-mt": spacing }],
+      "scroll-px": [{ "scroll-px": spacing }],
       "snap-align": [{ snap: ["start", "end", "center", "align-none"] }],
       "snap-stop": [{ snap: ["normal", "always"] }],
       touch: [{ touch: ["auto", "none", "manipulation"] }],

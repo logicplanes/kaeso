@@ -24,24 +24,26 @@ function Page(props: { description?: string }) {
 }
 
 describe("AppFrame.Settings", () => {
-  it("puts the actions on the title's line and the description below it", () => {
+  it("puts the actions on the title's line and the description below both", () => {
     render(<Page description="People in the organization and their rights in it." />);
-    const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;
-    expect(line).toContainElement(screen.getByRole("button", { name: "Invite member" }));
+    const title = screen.getByRole("heading", { level: 1, name: "Members" });
+    const actions = screen.getByRole("button", { name: "Invite member" }).parentElement!;
     const description = screen.getByText("People in the organization and their rights in it.");
-    expect(line).not.toContainElement(description);
-    expect(line.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(title.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(actions.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(description).toHaveClass("basis-full");
   });
   it("keeps the actions on the title's line without a description", () => {
     render(<Page />);
     const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;
     expect(line).toContainElement(screen.getByRole("button", { name: "Invite member" }));
   });
-  it("moves the actions to their own row at the end when the title leaves no room, like the page header", () => {
-    render(<Page />);
-    const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;
-    expect(line).toHaveClass("flex-wrap", "justify-between");
-    expect(screen.getByRole("button", { name: "Invite member" }).parentElement).toHaveClass("ml-auto", "shrink-0");
+  it("on a phone, follows the description with the actions at the start, and starts 16px under the bar", () => {
+    render(<Page description="People in the organization and their rights in it." />);
+    const actions = screen.getByRole("button", { name: "Invite member" }).parentElement!;
+    expect(actions).toHaveClass("order-last", "sm:order-none", "sm:ml-auto", "shrink-0");
+    expect(actions).not.toHaveClass("ml-auto");
+    expect(screen.getByRole("heading", { level: 1 }).closest("header")!.parentElement).toHaveClass("pt-16", "lg:pt-64");
   });
 });
 

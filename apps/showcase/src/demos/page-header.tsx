@@ -74,12 +74,30 @@ export function WithTabsAndPrimary() {
 }
 export function States() {
   return (
-    <StateSection title="Headers">
-      <div className="flex w-960 flex-col gap-16">
-        <WithTabs />
-        <WithPrimary />
-        <WithTabsAndPrimary />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="Headers">
+        <div className="flex w-640 flex-col gap-16">
+          <WithTabs />
+          <WithPrimary />
+          <WithTabsAndPrimary />
+        </div>
+      </StateSection>
+      <StateSection title="A long German title shrinks first and shows in full on hover and focus">
+        <div className="w-480 rounded-well shadow-frame">
+          <PageHeader
+            title="Anfrageprotokolle für alle Projekte dieser Organisation"
+            tabs={
+              <PillTabs defaultValue="all">
+                <PillTabs.List aria-label="Protokolle">
+                  <PillTabs.Tab value="all">Alle</PillTabs.Tab>
+                  <PillTabs.Tab value="errors">Fehler</PillTabs.Tab>
+                </PillTabs.List>
+              </PillTabs>
+            }
+            actions={<IconButton icon={icons.filter} aria-label="Filtern" variant="secondary" />}
+          />
+        </div>
+      </StateSection>
+    </>
   );
 }

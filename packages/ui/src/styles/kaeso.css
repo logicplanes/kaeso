@@ -532,7 +532,8 @@
 
 @utility forced-line {
   @media (forced-colors: active) {
-    background-color: CanvasText;
+    /* The element also carries a bg-* utility, which Tailwind may emit after this one. */
+    background-color: CanvasText !important;
     forced-color-adjust: none;
   }
 }
@@ -962,6 +963,24 @@
     black calc(100% - min(16px, var(--scroll-area-overflow-x-end, 0px))),
     transparent 100%
   );
+}
+@utility scroll-fade-both {
+  mask-image:
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      black min(16px, var(--scroll-area-overflow-y-start, 0px)),
+      black calc(100% - min(16px, var(--scroll-area-overflow-y-end, 0px))),
+      transparent 100%
+    ),
+    linear-gradient(
+      to right,
+      transparent 0,
+      black min(16px, var(--scroll-area-overflow-x-start, 0px)),
+      black calc(100% - min(16px, var(--scroll-area-overflow-x-end, 0px))),
+      transparent 100%
+    );
+  mask-composite: intersect;
 }
 @utility hairline-t {
   box-shadow: inset 0 1px 0 var(--k-line-subtle);

@@ -108,13 +108,13 @@ describe("ButtonGroup", () => {
 });
 
 describe("Pagination", () => {
-  it("loads more while there is more, and then disappears", async () => {
+  it("loads more while there is more, then says all rows are shown where the button had focus", async () => {
     const onLoadMore = vi.fn();
-    const { container, rerender } = render(<Pagination hasMore onLoadMore={onLoadMore} />);
+    const { rerender } = render(<Pagination hasMore onLoadMore={onLoadMore} />);
     await userEvent.click(screen.getByRole("button", { name: "Load more" }));
     expect(onLoadMore).toHaveBeenCalled();
     rerender(<Pagination hasMore={false} />);
-    expect(container).toBeEmptyDOMElement();
+    expect(screen.getByText("All rows shown")).toHaveFocus();
   });
 
   it("goes back and forth by cursor", async () => {

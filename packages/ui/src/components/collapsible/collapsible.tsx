@@ -2,19 +2,17 @@ import { forwardRef, type ReactNode } from "react";
 import { Collapsible as BaseCollapsible } from "@base-ui/react/collapsible";
 import { Accordion as BaseAccordion } from "@base-ui/react/accordion";
 import { cn } from "../../utils/cn.js";
-import { icons } from "../../icons/vocabulary.js";
-import { Icon } from "../icon/icon.js";
+import { DISCLOSURE_TRIGGER, DisclosureChevron } from "./disclosure.js";
 
 export const KAESO_COLLAPSIBLE_VARIANTS = {
   state: {
-    closed: { classes: "", description: "Closed: the chevron points to the row (default)" },
-    open: { classes: "group-data-panel-open/dt:rotate-90", description: "Open: the chevron turns down and the content shows" },
+    closed: { classes: "", description: "Closed: a pill row with the title 12px in and a chevron at its end pointing right (default)" },
+    open: { classes: "group-data-panel-open/dt:rotate-90", description: "Open: the chevron turns down in 200ms and the content shows under the title" },
   },
 } as const;
 export const KAESO_COLLAPSIBLE_DEFAULT_VARIANTS = { state: "closed" } as const;
 
-const TRIGGER =
-  "group/dt flex min-h-40 w-full cursor-pointer items-center gap-8 rounded-item px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 focus-ring-inset";
+const TRIGGER = `${DISCLOSURE_TRIGGER} min-h-40 py-8 text-body font-medium text-fg hover:bg-fill-1 active:bg-fill-2 coarse:min-h-44`;
 
 export interface CollapsibleProps {
   title: ReactNode;
@@ -38,20 +36,13 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       className={cn("flex flex-col", className)}
     >
-      <BaseCollapsible.Trigger className="group/dt flex min-h-40 w-full cursor-pointer items-center gap-8 rounded-item text-left text-body font-medium text-fg focus-ring">
-        <Icon
-          icon={icons.chevronRight}
-          size="sm"
-          className={cn(
-            "text-fg-tertiary transition-transform duration-180 ease-overlay group-hover/dt:text-fg",
-            KAESO_COLLAPSIBLE_VARIANTS.state.open.classes,
-          )}
-        />
+      <BaseCollapsible.Trigger className={TRIGGER}>
         <span className="min-w-0 flex-1">{title}</span>
-        {hint && <span className="text-small font-regular text-fg-secondary transition-control group-hover/dt:text-fg">{hint}</span>}
+        {hint && <span className="text-small font-regular text-fg-secondary">{hint}</span>}
+        <DisclosureChevron />
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
-        <div className="pt-4 pb-12 pl-24">{children}</div>
+        <div className="px-12 pt-4 pb-12">{children}</div>
       </BaseCollapsible.Panel>
     </BaseCollapsible.Root>
   );
@@ -81,20 +72,16 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Acc
       className={cn("flex flex-col", className)}
     >
       {items.map((it) => (
-        <BaseAccordion.Item key={it.value} value={it.value} className="hairline-b">
+        <BaseAccordion.Item key={it.value} value={it.value} className="py-4 hairline-b">
           <BaseAccordion.Header>
-            <BaseAccordion.Trigger className={cn(TRIGGER, "min-h-48")}>
+            <BaseAccordion.Trigger className={TRIGGER}>
               <span className="min-w-0 flex-1">{it.title}</span>
               {it.hint && <span className="text-small font-regular text-fg-secondary">{it.hint}</span>}
-              <Icon
-                icon={icons.chevronDown}
-                size="sm"
-                className="text-fg-tertiary transition-transform duration-180 ease-overlay group-data-panel-open/dt:rotate-180"
-              />
+              <DisclosureChevron />
             </BaseAccordion.Trigger>
           </BaseAccordion.Header>
           <BaseAccordion.Panel className="collapse-motion">
-            <div className="px-12 pb-16 text-body text-fg-secondary">{it.content}</div>
+            <div className="px-12 pt-4 pb-12 text-body text-fg-secondary">{it.content}</div>
           </BaseAccordion.Panel>
         </BaseAccordion.Item>
       ))}

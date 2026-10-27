@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { cn } from "../../utils/cn.js";
 import { AppFrame } from "../../components/app-frame/app-frame.js";
 import { PageHeader, type PageHeaderProps } from "../../components/page-header/page-header.js";
 import { Empty, type EmptyProps } from "../../components/empty/empty.js";
@@ -29,7 +28,7 @@ export function ListPage({ header, toolbar, children, sheet }: ListPageProps) {
     <>
       <PageHeader start={<AppFrame.MenuButton />} {...header} />
       {toolbar}
-      <AppFrame.Body>{children}</AppFrame.Body>
+      <AppFrame.Body padding="list">{children}</AppFrame.Body>
       {sheet}
     </>
   );
@@ -54,7 +53,7 @@ export function OverviewPage({
   aside?: ReactNode | undefined;
 }) {
   const main = (
-    <div className="flex flex-col gap-40">
+    <div className="flex flex-col gap-48">
       <div className="flex flex-wrap items-end justify-between gap-16">
         {metrics}
         {controls && <div className="flex items-center gap-8">{controls}</div>}
@@ -66,9 +65,7 @@ export function OverviewPage({
   return (
     <>
       <PageHeader start={<AppFrame.MenuButton />} {...header} />
-      <AppFrame.Body>
-        <div className="px-24 pt-24 pb-64">{aside ? <SplitView aside={aside}>{main}</SplitView> : main}</div>
-      </AppFrame.Body>
+      <AppFrame.Body padding="page">{aside ? <SplitView aside={aside}>{main}</SplitView> : main}</AppFrame.Body>
     </>
   );
 }
@@ -78,8 +75,9 @@ export function EmptyPage({ header, ...empty }: { header?: PageHeaderProps | und
   return (
     <>
       {header && <PageHeader start={<AppFrame.MenuButton />} {...header} />}
-      <AppFrame.Body>
-        <div className={cn("flex min-h-full items-center justify-center px-24")}>
+      <AppFrame.Body className="relative">
+        {!header && <AppFrame.MenuButton className="absolute top-10 left-24 z-10" />}
+        <div className="flex min-h-full items-center justify-center px-24">
           <Empty {...empty} />
         </div>
       </AppFrame.Body>

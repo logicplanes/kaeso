@@ -119,10 +119,13 @@ export function EmptyDemo() {
 export function States() {
   return (
     <StateSection title="Pages">
-      <div className="flex w-1200 flex-col gap-24">
+      <div className="flex w-640 flex-col gap-24">
         <Overview />
         <ListDemo />
         <EmptyDemo />
+        <Frame>
+          <EmptyPage title="No models yet" description="Without a header, the menu button still brings back a collapsed sidebar." />
+        </Frame>
       </div>
     </StateSection>
   );

@@ -63,12 +63,12 @@ describe("Sidebar", () => {
         <State />
       </Sidebar.Provider>,
     );
-    const edge = screen.getByRole("separator", { name: "Resize sidebar; click to collapse" });
+    const edge = screen.getByRole("separator", { name: "Resize sidebar; press Enter to collapse" });
     expect(edge.closest(".sidebar-motion")).toBeNull();
     expect(edge.closest("nav")).toBeNull();
     fireEvent.keyDown(edge, { key: "Enter" });
     expect(screen.getByTestId("state")).toHaveTextContent("collapsed");
-    expect(screen.queryByRole("separator", { name: "Resize sidebar; click to collapse" })).toBeNull();
+    expect(screen.queryByRole("separator", { name: "Resize sidebar; press Enter to collapse" })).toBeNull();
   });
   it("clips the column while it animates without a scroll position of its own, so focusing a link inside never shifts the sidebar sideways", () => {
     const css = readFileSync(join(__dirname, "../../styles/kaeso.css"), "utf8");
@@ -219,7 +219,7 @@ describe("Sidebar", () => {
       </Sidebar.Provider>,
     );
     const place = screen.getByRole("button", { name: "Checkout assistant", description: "Switch project" });
-    expect(place).toHaveClass("h-36", "px-12", "gap-8", "font-semibold", "text-fg");
+    expect(place).toHaveClass("h-36", "px-12", "gap-8", "font-medium", "text-fg");
     expect(screen.getByTestId("picture").parentElement).toHaveClass("size-18");
     expect(screen.getByRole("link", { name: "Northwind Labs" })).toHaveClass("px-12", "gap-8");
     fireEvent.click(place);
@@ -318,6 +318,6 @@ describe("Sidebar part refs", () => {
     expect(loading.current).toHaveAttribute("aria-busy", "true");
     expect(loading.current?.children).toHaveLength(2);
     expect(collapse.current).toBe(screen.getByRole("button", { name: "Collapse sidebar", expanded: true }));
-    expect(rail.current).toBe(screen.getByRole("button", { name: "Collapse sidebar", pressed: false }));
+    expect(rail.current).toBe(screen.getByRole("button", { name: "Icons only", pressed: false }));
   });
 });

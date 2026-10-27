@@ -10,7 +10,7 @@ export const meta = {
   a11y: [
     'Text renders a span by default; pass as="p" for paragraphs.',
     "Truncated text gets a tooltip with the full string and becomes focusable so keyboard users can read it.",
-    "Tertiary never carries meaning alone (3.23:1 on white).",
+    "Tertiary measures at least 4.5:1 on every surface, and still never carries meaning alone.",
   ],
 };
 export const examples = [
@@ -70,13 +70,20 @@ export function States() {
   return (
     <>
       <StateSection title="Scale in context">
-        <Scale />
+        <div className="w-640">
+          <Scale />
+        </div>
       </StateSection>
       <StateSection title="Tones">
         <Tones />
       </StateSection>
-      <StateSection title="Truncation">
-        <Truncate />
+      <StateSection title="Truncation: at rest, and focused by keyboard with its tooltip">
+        <div className="flex flex-col gap-16">
+          <Truncate />
+          <div className="w-240" ref={(el) => el?.querySelector("[tabindex]")?.setAttribute("data-force", "focus")}>
+            <Text truncate>Northwind Labs Research and Development, production traffic</Text>
+          </div>
+        </div>
       </StateSection>
     </>
   );

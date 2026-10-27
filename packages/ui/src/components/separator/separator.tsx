@@ -25,10 +25,10 @@ export const Separator = forwardRef<HTMLDivElement, SeparatorProps>(function Sep
 ) {
   if (label && orientation === "horizontal") {
     return (
-      <div ref={ref} role="separator" aria-orientation="horizontal" className={cn("flex w-full items-center gap-12", className)} {...props}>
-        <span className={cn("h-1 flex-1", KAESO_SEPARATOR_VARIANTS.tone[tone].classes)} />
-        <span className="text-caption font-medium text-fg-tertiary">{label}</span>
-        <span className={cn("h-1 flex-1", KAESO_SEPARATOR_VARIANTS.tone[tone].classes)} />
+      <div ref={ref} className={cn("flex w-full items-center gap-12", className)} {...props}>
+        <span role="separator" aria-orientation="horizontal" className={cn("h-1 flex-1 forced-line", KAESO_SEPARATOR_VARIANTS.tone[tone].classes)} />
+        <span className="text-caption font-medium text-fg-secondary">{label}</span>
+        <span aria-hidden className={cn("h-1 flex-1 forced-line", KAESO_SEPARATOR_VARIANTS.tone[tone].classes)} />
       </div>
     );
   }
@@ -37,7 +37,7 @@ export const Separator = forwardRef<HTMLDivElement, SeparatorProps>(function Sep
       ref={ref}
       role="separator"
       aria-orientation={orientation}
-      className={cn("shrink-0", KAESO_SEPARATOR_VARIANTS.orientation[orientation].classes, KAESO_SEPARATOR_VARIANTS.tone[tone].classes, className)}
+      className={cn("shrink-0 forced-line", KAESO_SEPARATOR_VARIANTS.orientation[orientation].classes, KAESO_SEPARATOR_VARIANTS.tone[tone].classes, className)}
       {...props}
     />
   );

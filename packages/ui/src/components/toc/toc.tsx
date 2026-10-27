@@ -5,7 +5,7 @@ import { useUiText } from "../../i18n/context.js";
 export const KAESO_TABLE_OF_CONTENTS_VARIANTS = {
   state: {
     default: { classes: "text-fg-secondary hover:text-fg", description: "A heading" },
-    active: { classes: "text-fg", description: "The heading in view, with a 2px ink bar" },
+    active: { classes: "text-fg", description: "The heading in view, with a 2px ink bar on the rail (a solid line in forced colours)" },
   },
 } as const;
 export const KAESO_TABLE_OF_CONTENTS_DEFAULT_VARIANTS = { state: "default" } as const;
@@ -45,7 +45,9 @@ export const TableOfContents = forwardRef<HTMLElement, TableOfContentsProps>(fun
     let frame = 0;
     const pick = () => {
       frame = 0;
-      const line = window.innerHeight * READING_LINE;
+      const page = scroller === document.scrollingElement || scroller === document.documentElement;
+      const view = page ? { top: 0, height: window.innerHeight } : { top: scroller.getBoundingClientRect().top, height: scroller.clientHeight };
+      const line = view.top + view.height * READING_LINE;
       let id = first.id;
       for (const h of headings) if (h.getBoundingClientRect().top <= line) id = h.id;
       const end = scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
@@ -67,19 +69,19 @@ export const TableOfContents = forwardRef<HTMLElement, TableOfContentsProps>(fun
   return (
     <nav ref={ref} aria-label={title} className={cn("flex flex-col", className)}>
       <span className="mb-8 text-caption font-medium text-fg-secondary">{title}</span>
-      <ul className="flex flex-col hairline-l">
+      <ul className="relative flex flex-col before:absolute before:inset-y-0 before:start-0 before:w-1 before:bg-line-subtle before:forced-line">
         {items.map((i) => (
           <li key={i.id}>
             <a
               href={`#${i.id}`}
               aria-current={i.id === current ? "location" : undefined}
               className={cn(
-                "relative flex min-h-28 items-center py-4 text-small transition-control focus-ring-inset rounded-code",
-                i.depth ? "pl-24" : "pl-12",
+                "relative ms-4 flex min-h-32 items-center rounded-pill py-4 pe-8 text-small transition-control focus-ring-inset coarse:min-h-44",
+                i.depth ? "ps-20" : "ps-8",
                 KAESO_TABLE_OF_CONTENTS_VARIANTS.state[i.id === current ? "active" : "default"].classes,
               )}
             >
-              {i.id === current && <span aria-hidden className="absolute inset-y-4 left-0 w-2 rounded-pill bg-ink" />}
+              {i.id === current && <span aria-hidden className="absolute inset-y-6 -start-4 w-2 rounded-pill bg-ink forced-line" />}
               {i.label}
             </a>
           </li>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { PillTabs, Tabs } from "./tabs.js";
 import { InsetContent } from "../../utils/inset.js";
 
@@ -12,26 +13,44 @@ const pills = (
   </PillTabs>
 );
 
+const underline = (
+  <Tabs defaultValue="a">
+    <Tabs.List aria-label="Request">
+      <Tabs.Tab value="a">Overview</Tabs.Tab>
+      <Tabs.Tab value="b">Response</Tabs.Tab>
+    </Tabs.List>
+  </Tabs>
+);
+
 describe("PillTabs", () => {
-  it("puts the first pill's fill on the column's edge, in a padded column too, so it lines up with the controls under it", () => {
+  it("never pulls the list into the gutter, in a padded column too", () => {
     const { rerender } = render(pills);
-    const list = screen.getByRole("tablist");
-    expect(list).toHaveClass("-m-4", "p-4");
-    expect(list.className).not.toMatch(/-ml-\d+/);
+    expect(screen.getByRole("tablist").className).not.toMatch(/(^|\s)-m[xl]?-\d+/);
     rerender(<InsetContent>{pills}</InsetContent>);
-    expect(screen.getByRole("tablist")).toHaveClass("-m-4", "p-4");
-    expect(screen.getByRole("tablist").className).not.toMatch(/-ml-\d+/);
+    expect(screen.getByRole("tablist").className).not.toMatch(/(^|\s)-m[xl]?-\d+/);
   });
-  it("leaves underline tabs on the edge", () => {
-    render(
-      <InsetContent>
-        <Tabs defaultValue="a">
-          <Tabs.List aria-label="Request">
-            <Tabs.Tab value="a">Overview</Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
-      </InsetContent>,
-    );
-    expect(screen.getByRole("tablist")).not.toHaveClass("-ml-16");
+  it("draws the focus ring inside the pill, so it never touches the next pill or gets cut by the scroller", () => {
+    render(pills);
+    for (const tab of screen.getAllByRole("tab")) expect(tab).toHaveClass("focus-ring-inset");
+  });
+});
+
+describe("Tabs", () => {
+  it("leaves underline tabs inside the column and pads each label 12px inside its box", () => {
+    render(<InsetContent>{underline}</InsetContent>);
+    expect(screen.getByRole("tablist").className).not.toMatch(/(^|\s)-m[xl]?-\d+/);
+    expect(screen.getByText("Overview")).toHaveClass("px-12", "focus-ring-inset");
+  });
+  it("selects with Enter or Space after arrows move focus", async () => {
+    render(underline);
+    screen.getByRole("tab", { name: "Overview" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: "Response" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    expect(screen.getByRole("tab", { name: "Response" })).toHaveAttribute("aria-selected", "true");
+  });
+  it("keeps the indicator visible in forced colours", () => {
+    const { container } = render(underline);
+    expect(container.querySelector(".bg-ink")).toHaveClass("forced-line");
   });
 });

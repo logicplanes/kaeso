@@ -4,6 +4,7 @@ import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
+import { SectionHeader } from "../section/section-header.js";
 
 export const KAESO_SETTINGS_VARIANTS = {
   row: {
@@ -30,15 +31,7 @@ export const SettingsSection = forwardRef<HTMLElement, SettingsSectionProps>(fun
 ) {
   return (
     <section ref={ref} className={cn("mt-48 first:mt-40", className)}>
-      {(title || actions) && (
-        <div className="mb-12 flex items-end justify-between gap-16">
-          <div className="flex flex-col gap-2">
-            {title && <h2 className="text-title-sm font-semibold text-fg">{title}</h2>}
-            {description && <p className="text-small text-fg-secondary">{description}</p>}
-          </div>
-          {actions}
-        </div>
-      )}
+      {(title || actions) && <SectionHeader title={title} description={description} actions={actions} />}
       {children}
     </section>
   );
@@ -83,7 +76,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
           <Icon icon={icon} size="md" />
         </span>
       )}
-      <span className="flex min-w-0 flex-1 basis-140 flex-col gap-2">
+      <span className="flex min-w-0 flex-1 basis-140 flex-col">
         <span id={id ? `${id}-title` : undefined} className={cn("text-body-lg font-medium", danger ? "text-danger-text" : "text-fg")}>
           {title}
         </span>
@@ -105,9 +98,9 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
   const classes = cn(
     "@container relative flex w-full flex-wrap items-center gap-x-16 gap-y-8 px-20 text-left",
     description ? KAESO_SETTINGS_VARIANTS.row.default.classes : KAESO_SETTINGS_VARIANTS.row.single.classes,
-    "not-first:before:absolute not-first:before:top-0 not-first:before:right-0 not-first:before:h-1 not-first:before:bg-line-subtle",
+    "not-first:before:absolute not-first:before:top-0 not-first:before:right-20 not-first:before:h-1 not-first:before:bg-line-subtle not-first:before:forced-line",
     icon ? "not-first:before:left-56" : "not-first:before:left-20",
-    navigates && "cursor-pointer transition-control hover:bg-fill-1 active:bg-fill-2 focus-ring-card-row",
+    navigates && "cursor-pointer transition-control hover:bg-raised-hover active:bg-raised-pressed focus-ring-inset first:rounded-t-group last:rounded-b-group",
     className,
   );
   if (href) {

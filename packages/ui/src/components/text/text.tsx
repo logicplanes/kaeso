@@ -65,6 +65,7 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
   const Comp = (as ?? "span") as ElementType;
   const inner = useRef<HTMLElement>(null);
   const isTruncated = useTruncated(inner, !!truncate);
+  const tip = !!truncate && isTruncated && typeof children === "string";
   const el = (
     <Comp
       ref={mergeRefs(ref, inner)}
@@ -76,15 +77,16 @@ export const Text = forwardRef<HTMLElement, TextProps>(function Text(
         mono && variant === "body" && "text-small",
         tabular && "tabular",
         truncate && "block min-w-0 truncate",
+        tip && "rounded-code focus-ring",
         className,
       )}
-      {...(truncate && isTruncated ? { tabIndex: 0 } : {})}
+      {...(tip ? { tabIndex: 0 } : {})}
       {...props}
     >
       {children}
     </Comp>
   );
-  if (truncate && isTruncated && typeof children === "string") {
+  if (tip) {
     return (
       <Tooltip content={children} shape="multiline">
         {el}

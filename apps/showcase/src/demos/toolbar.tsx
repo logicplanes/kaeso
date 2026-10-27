@@ -8,7 +8,11 @@ export const meta = {
   group: "Layout",
   entry: "toolbar",
   import: "Toolbar",
-  keyboard: [["Left Right", "Moves between controls"]],
+  keyboard: [
+    ["Tab", "Enters the toolbar on the control used last, and leaves it"],
+    ["Left Right", "Moves between controls, wrapping at the ends"],
+  ],
+  a11y: ["One tab stop: arrows move inside, skipping the parts of a filter chip that aren't controls; a filled search keeps the arrows for its caret."],
 };
 export const examples = [{ id: "logs", title: "Request logs", fn: "Logs" }];
 export function Logs() {
@@ -22,7 +26,7 @@ export function Logs() {
           Add filter
         </Button>
         <Toolbar.Spacer />
-        <div className="w-240">
+        <div className="order-last basis-full sm:order-none sm:basis-auto sm:w-240">
           <SearchInput aria-label="Search logs" placeholder="Search logs" />
         </div>
         <DisplayOptions {...display} />
@@ -33,7 +37,7 @@ export function Logs() {
 export function States() {
   return (
     <StateSection title="Toolbar">
-      <div className="w-960">
+      <div className="w-640">
         <Logs />
       </div>
     </StateSection>

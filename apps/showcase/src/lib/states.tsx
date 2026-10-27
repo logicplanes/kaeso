@@ -77,3 +77,9 @@ export function Matrix<R extends { label: string }>({
     </StateMatrix>
   );
 }
+
+export function forceIn(selector: string, force: string) {
+  return (el: HTMLElement | null) => {
+    el?.querySelector(selector)?.setAttribute("data-force", force);
+  };
+}

@@ -19,6 +19,7 @@ import { icons } from "../../icons/vocabulary.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { buttonClasses } from "../button/button.js";
 import { useSidebar, BrandWordmark } from "../sidebar/sidebar.js";
+import { PortalContainer } from "../../utils/portal-context.js";
 import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { useUiText } from "../../i18n/context.js";
@@ -59,10 +60,16 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
   const mainId = `k-main-${useId().replace(/[^\w-]/g, "")}`;
   const Main = fill === "screen" ? "main" : "div";
   const frame = useMemo(() => ({ openNav: () => setNavOpen(true), embedded: fill === "parent", sheetReady }), [fill]);
+  const sheet = (
+    <FrameSheet navOpen={navOpen} setNavOpen={setNavOpen} toggle={toggle} ready={sheetReady}>
+      {sidebar}
+    </FrameSheet>
+  );
   return (
     <Ctx.Provider value={frame}>
       <div
         ref={ref}
+        data-app-frame={fill}
         className={cn(
           "relative isolate flex w-full flex-col overflow-hidden bg-chrome text-fg lg:flex-row",
           KAESO_APP_FRAME_VARIANTS.fill[fill].classes,
@@ -86,11 +93,9 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
         >
           {children}
         </Main>
-        {corner && <div className="fixed right-16 bottom-16 z-10 flex items-center gap-8">{corner}</div>}
+        {corner && <div className={cn(fill === "parent" ? "absolute" : "fixed", "right-16 bottom-16 z-10 flex items-center gap-8")}>{corner}</div>}
+        {fill === "parent" ? <PortalContainer className="contents">{sheet}</PortalContainer> : sheet}
       </div>
-      <FrameSheet navOpen={navOpen} setNavOpen={setNavOpen} toggle={toggle} ready={sheetReady}>
-        {sidebar}
-      </FrameSheet>
     </Ctx.Provider>
   );
 });
@@ -109,7 +114,7 @@ function SkipLink({ target }: { target: string }) {
         main.addEventListener("blur", () => main.removeAttribute("tabindex"), { once: true });
         main.focus();
       }}
-      className={cn(buttonClasses({ size: "sm" }), "absolute top-8 left-8 z-50 not-focus:sr-only")}
+      className={cn(buttonClasses({ size: "sm" }), "absolute top-16 left-16 z-50 not-focus:sr-only")}
     >
       {t("appFrame.skipToContent", "Skip to content")}
     </a>
@@ -159,6 +164,7 @@ function PhoneBar({
 PhoneBar.displayName = "AppFrame.PhoneBar";
 
 export const PEEK_DELAY = 750;
+const PEEK_LEAVE = 160;
 
 const navSheet = lazyModule(() => import("./nav-sheet.js"), { base: () => import.meta.url });
 
@@ -229,7 +235,7 @@ function usePendingDismiss(pending: boolean, toggle: RefObject<HTMLElement | nul
 
 const MenuButton = forwardRef<HTMLButtonElement, { className?: string | undefined }>(function AppFrameMenuButton({ className }, ref) {
   const { openNav, sheetReady } = useAppFrame();
-  const { collapsed, setCollapsed, setPeeking } = useSidebar();
+  const { collapsed, setCollapsed, peeking, setPeeking, shortcut } = useSidebar();
   const intent = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(intent.current), []);
   const t = useUiText();
@@ -239,16 +245,20 @@ const MenuButton = forwardRef<HTMLButtonElement, { className?: string | undefine
       ref={ref}
       onPointerEnter={() => {
         clearTimeout(intent.current);
-        if (collapsed && wide()) intent.current = setTimeout(() => setPeeking(true), PEEK_DELAY);
+        if (collapsed && wide() && !peeking) intent.current = setTimeout(() => setPeeking(true), PEEK_DELAY);
       }}
-      onPointerLeave={() => {
+      onPointerLeave={(e) => {
         clearTimeout(intent.current);
-        if (!sheetReady.current) setPeeking(false);
+        if (!sheetReady.current || !peeking) return setPeeking(false);
+        const doc = e.currentTarget.ownerDocument;
+        intent.current = setTimeout(() => {
+          if (!doc.querySelector("[data-nav-sheet]")?.matches(":hover")) setPeeking(false);
+        }, PEEK_LEAVE);
       }}
       icon={icons.sidebar}
       data-sidebar-expand=""
       aria-label={collapsed ? t("appFrame.expandSidebar", "Expand sidebar") : t("appFrame.openNavigation", "Open navigation")}
-      shortcut={collapsed ? ["["] : undefined}
+      shortcut={collapsed && shortcut ? ["["] : undefined}
       onClick={() => {
         clearTimeout(intent.current);
         if (collapsed && wide()) setCollapsed(false);
@@ -296,13 +306,11 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
   return (
     <Body ref={ref} className="relative">
       <MenuButton className="absolute top-10 left-24 z-10" />
-      <div className={cn("mx-auto w-full max-w-settings px-24 pt-64 pb-96", className)} {...props}>
-        <header className="flex flex-col gap-8">
-          <div className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8">
-            <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance">{title}</h1>
-            {actions && <div className="ml-auto flex h-34 shrink-0 items-center gap-8">{actions}</div>}
-          </div>
-          {description && <p className="text-body-lg font-regular text-fg-secondary">{description}</p>}
+      <div className={cn("mx-auto w-full max-w-settings px-24 pt-16 pb-96 lg:pt-64", className)} {...props}>
+        <header className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8">
+          <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance">{title}</h1>
+          {actions && <div className="order-last flex h-34 shrink-0 items-center gap-8 sm:order-none sm:ml-auto">{actions}</div>}
+          {description && <p className="basis-full text-body-lg font-regular text-fg-secondary">{description}</p>}
         </header>
         <div className="mt-8">
           <InsetContent>

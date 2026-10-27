@@ -34,3 +34,25 @@ describe("ScrollArea", () => {
     expect(rule("scroll-axis-both")).toMatch(/overflow: auto !important;/);
   });
 });
+
+describe("ScrollArea focus and fades", () => {
+  it("draws the focus ring on a layer above the faded viewport, so the fade never erases it", () => {
+    render(
+      <ScrollArea aria-label="Logs">
+        <p>Lines</p>
+      </ScrollArea>,
+    );
+    const viewport = screen.getByRole("region", { name: "Logs" });
+    expect(viewport).toHaveClass("peer/viewport", "outline-none");
+    expect(viewport.nextElementSibling).toHaveClass("peer-focus-visible/viewport:outline-focus", "pointer-events-none");
+  });
+  it("fades both axes when it scrolls both ways", () => {
+    render(
+      <ScrollArea orientation="both" aria-label="Grid">
+        <p>Cells</p>
+      </ScrollArea>,
+    );
+    expect(screen.getByRole("region", { name: "Grid" })).toHaveClass("scroll-fade-both");
+    expect(css).toMatch(/@utility scroll-fade-both \{[\s\S]*mask-composite: intersect;/);
+  });
+});
