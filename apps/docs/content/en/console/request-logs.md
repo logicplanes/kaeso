@@ -11,6 +11,7 @@ Kaeso logs every model request: the model, the provider, the status, tokens, cos
 Open a project's **Request logs** page. It lists requests newest first, from the last hour, 24 hours, 7 days or 30 days, or a range you choose.
 
 - **Add filter** narrows the list by key, member, model, provider, status, error kind, streaming and source: the API or the Playground. **Failed only** keeps the errors.
+- **App format** and **Provider format** narrow it to one route, such as OpenAI Responses to Anthropic Messages. Caching, overhead and errors often differ between routes.
 - **Live** adds new requests as they arrive. Once you have scrolled down, a button says how many are new.
 - The display options choose the columns and the density.
 - **Open a request by id** finds the request whose `kaeso-request-id` header your app received.
@@ -29,6 +30,14 @@ Choose a request to open it:
 | Raw | The log entry as the Platform API returns it |
 
 The timing keeps Kaeso's own work apart from the provider's. **Kaeso overhead** is the time before Kaeso called the provider: reading the body, checking the key, translating and checking limits. For a stream, **Stream processing** is the time Kaeso spent translating the provider's events for the app, without the waits for either side. The CSV export has both, as `overhead_ms` and `stream_processing_ms`.
+
+## Check prompt caching
+
+The **Tokens in / out** column shows how much of each request's input was read from the prompt cache, such as **0% cached**. A long prompt that is never cached costs the full input price every time.
+
+Anthropic caches only the parts of a prompt that a request marks with `cache_control`. Kaeso marks them itself for apps that use OpenAI's formats. A request that reached Anthropic's format without any mark shows its share in a warning color. Its **Usage** says **No cache breakpoint**, so a missing mark stands apart from a cache miss.
+
+A request's **Usage** also lists **Read from the cache** and, for Anthropic's format, how many **Cache breakpoints** Kaeso sent. The CSV export has that count as `cache_breakpoints`.
 
 A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
 

@@ -113,9 +113,11 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 A request shows in the logs within a few seconds. Usage includes costs when the caller has the right `costs.view`, and takes these query parameters:
 
-- `group_by`: `day` (the default), `week`, `month`, `model`, `key` or `member`.
+- `group_by`: `day` (the default), `week`, `month`, `model`, `key`, `member` or `route`. A route's key reads `<app format>:<provider format>:<provider>`, such as `openai_responses:anthropic_messages:anthropic`.
 - `from` and `to`: days in UTC, such as `2026-08-15`. Grouped by day, they are at most 400 days apart.
 - `usage/span` answers with the first and last day that have usage, so you can read a long period by week or month.
+
+Each usage row has `cache_hit_rate`, the share of its input read from the cache, from 0 to 1. Logs take `ingress_dialect` and `egress_dialect` to select one route, such as `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Their export takes the same filters.
 
 Add a log's id to read one request, such as `logs/req_…`. It includes the request's content when the project logs content.
 

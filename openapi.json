@@ -13493,6 +13493,24 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "ingress_dialect",
+            "in": "query",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses` or `openai_embeddings`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "egress_dialect",
+            "in": "query",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses` or\n`openai_embeddings`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -13692,6 +13710,24 @@
             "name": "source",
             "in": "query",
             "description": "Only requests from the model API (`api`) or the console's\nPlayground (`playground`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ingress_dialect",
+            "in": "query",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses` or `openai_embeddings`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "egress_dialect",
+            "in": "query",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses` or\n`openai_embeddings`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -16835,7 +16871,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, or for\norgs `project`. A week or month that starts before `from` or ends\nafter `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, `route`,\nor for orgs `project`. A week or month that starts before `from` or\nends after `to` counts only the days in the period.",
             "required": false,
             "schema": {
               "type": "string"
@@ -18303,7 +18339,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, or for\norgs `project`. A week or month that starts before `from` or ends\nafter `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `key`, `member`, `route`,\nor for orgs `project`. A week or month that starts before `from` or\nends after `to` counts only the days in the period.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24093,6 +24129,15 @@
                 "has_content"
               ],
               "properties": {
+                "cache_breakpoints": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\nprovider, for requests in a format whose providers cache only the\nprompt a request marks (`anthropic_messages`); `0` means nothing of the\nprompt could be read from or written to the cache. `null` for other\nformats, for requests that ended before reaching the provider and for\nrequests logged before Kaeso recorded it.",
+                  "minimum": 0
+                },
                 "client_ip": {
                   "type": "string",
                   "description": "Client address."
@@ -25205,6 +25250,14 @@
                 "reasoning_tokens"
               ],
               "properties": {
+                "cache_hit_rate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "format": "double",
+                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+                },
                 "cache_read_tokens": {
                   "type": "integer",
                   "format": "int64",
@@ -25238,7 +25291,7 @@
                 },
                 "key": {
                   "type": "string",
-                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), or project id."
+                  "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid."
                 },
                 "output_tokens": {
                   "type": "integer",
@@ -25414,6 +25467,15 @@
           "has_content"
         ],
         "properties": {
+          "cache_breakpoints": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\nprovider, for requests in a format whose providers cache only the\nprompt a request marks (`anthropic_messages`); `0` means nothing of the\nprompt could be read from or written to the cache. `null` for other\nformats, for requests that ended before reaching the provider and for\nrequests logged before Kaeso recorded it.",
+            "minimum": 0
+          },
           "client_ip": {
             "type": "string",
             "description": "Client address."
@@ -29866,6 +29928,14 @@
           "reasoning_tokens"
         ],
         "properties": {
+          "cache_hit_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "double",
+            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+          },
           "cache_read_tokens": {
             "type": "integer",
             "format": "int64",
@@ -29899,7 +29969,7 @@
           },
           "key": {
             "type": "string",
-            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), or project id."
+            "description": "The day, the Monday of the week, the first day of the month,\n`provider/model`, key id (`playground` for the requests members made\nin the console's Playground, without a key), member (`user:<id>` or\n`service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\nsuch as `openai_responses:anthropic_messages:anthropic`; both formats are\nempty for requests made before Kaeso recorded them, and the provider\nformat for requests refused before a provider was chosen), or project\nid."
           },
           "output_tokens": {
             "type": "integer",

@@ -407,6 +407,7 @@ pub(crate) struct BlockEncoder {
     pub(crate) target: Origin,
     pub(crate) side: Side,
     pub(crate) rewrites: Rewrites,
+    pub(crate) breakpoints: usize,
 }
 
 impl BlockEncoder {
@@ -415,7 +416,14 @@ impl BlockEncoder {
             target,
             side,
             rewrites: Rewrites::default(),
+            breakpoints: 0,
         }
+    }
+
+    pub(crate) fn cache(&mut self, hint: Option<&CacheHint>) -> Option<Ext<CacheControlW>> {
+        let w = hint.map(encode_cache);
+        self.breakpoints += usize::from(w.is_some());
+        w
     }
 
     fn id(&mut self, id: &str) -> String {
@@ -495,7 +503,7 @@ impl BlockEncoder {
                 let w = TextW {
                     ty: "text".into(),
                     text: t.text.clone(),
-                    cache_control: t.cache.as_ref().map(encode_cache),
+                    cache_control: self.cache(t.cache.as_ref()),
                     citations: (!citations.is_empty()).then_some(citations),
                 };
                 to_raw(&own_ext(w, &t.extras))?
@@ -505,7 +513,7 @@ impl BlockEncoder {
                 let w = ImageW {
                     ty: "image".into(),
                     source,
-                    cache_control: b.cache.as_ref().map(encode_cache),
+                    cache_control: self.cache(b.cache.as_ref()),
                 };
                 to_raw(&own_ext(w, &b.extras))?
             }
@@ -526,7 +534,7 @@ impl BlockEncoder {
                     citations: enabled.map(|enabled| {
                         nested_ext(CitationsConfigW { enabled }, &b.extras, "citations")
                     }),
-                    cache_control: b.cache.as_ref().map(encode_cache),
+                    cache_control: self.cache(b.cache.as_ref()),
                 };
                 to_raw(&own_ext(w, &b.extras))?
             }
@@ -542,7 +550,7 @@ impl BlockEncoder {
                     id: self.id(&c.id),
                     name: self.name(&c.name),
                     input: c.arguments.clone().into_inner(),
-                    cache_control: c.cache.as_ref().map(encode_cache),
+                    cache_control: self.cache(c.cache.as_ref()),
                 };
                 to_raw(&own_ext(w, &c.extras))?
             }
@@ -553,7 +561,7 @@ impl BlockEncoder {
                     tool_use_id: self.id(&r.call_id),
                     content,
                     is_error: r.is_error.then_some(true),
-                    cache_control: r.cache.as_ref().map(encode_cache),
+                    cache_control: self.cache(r.cache.as_ref()),
                 };
                 to_raw(&own_ext(w, &r.extras))?
             }

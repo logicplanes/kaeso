@@ -71,7 +71,7 @@ describe("OverviewPage", () => {
     await renderApp(projectPath(`?${PERIOD}&by=model`));
 
     const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 96px");
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 96px");
   });
 
   it("breaks usage down by model with names from the catalogue", async () => {
@@ -99,9 +99,35 @@ describe("OverviewPage", () => {
     expect(third).toHaveTextContent("<$0.01");
     expect(within(table).getByRole("columnheader", { name: "Model" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Cost" })).toBeInTheDocument();
-    expect(screen.getByText("Requests, errors, tokens and cost in the period")).toBeInTheDocument();
+    expect(screen.getByText("Requests, errors, tokens, cache hits and cost in the period")).toBeInTheDocument();
     expect((await screen.findAllByText("Cost by model")).length).toBeGreaterThan(0);
     expect(requests("GET", USAGE).map((r) => Object.fromEntries(r.query))).toContainEqual({ from: "2026-10-01", to: "2026-10-14", group_by: "model" });
+  });
+
+  it("breaks usage down by route with the share of the input read from the cache", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({
+      route: [
+        usageRow({ key: "anthropic_messages:anthropic_messages:anthropic", requests: 80, cache_hit_rate: 0.78 }),
+        usageRow({ key: "openai_responses:anthropic_messages:anthropic", requests: 120, cache_hit_rate: 0 }),
+        usageRow({ key: "::anthropic", requests: 5, cache_hit_rate: null }),
+      ],
+    });
+    await renderApp(projectPath(`?${PERIOD}&by=route`));
+
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
+    const [first, second, third] = bodyRows(table);
+    expect(first).toHaveTextContent("Responses→ Messages");
+    expect(first).toHaveTextContent("0%");
+    expect(second).toHaveTextContent("Messages→ Messages");
+    expect(second).toHaveTextContent("78%");
+    expect(third).toHaveTextContent("Route not recorded");
+    expect(third).toHaveTextContent("—");
+    expect(within(table).getByRole("columnheader", { name: "Route" })).toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: "Cache hit" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "By route" })).toBeChecked();
   });
 
   it("tells a replaced key from its replacement in usage by key", async () => {
@@ -184,7 +210,7 @@ describe("OverviewPage", () => {
 
     const table = await breakdown();
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(within(table).getByText("Couldn't load these rows").closest("[role=cell]")).toHaveAttribute("aria-colspan", "4");
+    expect(within(table).getByText("Couldn't load these rows").closest("[role=cell]")).toHaveAttribute("aria-colspan", "5");
   });
 
   it("leaves cost out without the right to see it", async () => {
@@ -197,7 +223,7 @@ describe("OverviewPage", () => {
     await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("claude-sonnet-4-5"));
     expect(bodyRows(table)[0]).not.toHaveTextContent("Claude Sonnet 4.5");
     expect(within(table).queryByRole("columnheader", { name: "Cost" })).not.toBeInTheDocument();
-    expect(screen.getByText("Requests, errors and tokens in the period")).toBeInTheDocument();
+    expect(screen.getByText("Requests, errors, tokens and cache hits in the period")).toBeInTheDocument();
     expect(screen.queryByText("Cost by model")).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/models")).toHaveLength(0);
   });

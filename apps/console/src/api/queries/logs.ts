@@ -20,6 +20,8 @@ export interface LogFilters {
   error?: string;
   stream?: boolean;
   source?: "api" | "playground";
+  ingress?: string;
+  egress?: string;
 }
 
 export function logsParams(f: LogFilters, now = Date.now()) {
@@ -39,6 +41,8 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.error ? { error_kind: f.error } : {}),
     ...(f.stream !== undefined ? { stream: f.stream } : {}),
     ...(f.source ? { source: f.source } : {}),
+    ...(f.ingress ? { ingress_dialect: f.ingress } : {}),
+    ...(f.egress ? { egress_dialect: f.egress } : {}),
   };
 }
 

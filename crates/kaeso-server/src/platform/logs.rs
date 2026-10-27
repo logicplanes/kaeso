@@ -9,6 +9,7 @@ use bytes::Bytes;
 use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId};
 use kaeso_core::rights::ProjectRight;
+use kaeso_kpp::DialectId;
 use kaeso_store::clickhouse::logs::{self as ch, Filter, LogRow};
 use kaeso_store::pg::{instance, log_jobs, orgs, projects};
 use serde::{Deserialize, Serialize};
@@ -583,6 +584,13 @@ pub struct LogFilter {
     #[doc = "Only requests from the model API (`api`) or the console's\n\
         Playground (`playground`)."]
     pub source: Option<String>,
+    #[doc = "Only requests the app sent in this format: `anthropic_messages`,\n\
+        `openai_chat`, `openai_responses` or `openai_embeddings`."]
+    pub ingress_dialect: Option<String>,
+    #[doc = "Only requests Kaeso sent to the provider in this format:\n\
+        `anthropic_messages`, `openai_chat`, `openai_responses` or\n\
+        `openai_embeddings`."]
+    pub egress_dialect: Option<String>,
 }
 
 impl LogFilter {
@@ -618,11 +626,34 @@ impl LogFilter {
             error_kind: self.error_kind.clone(),
             stream: self.stream,
             source: self.source.clone(),
+            ingress_dialect: self
+                .ingress_dialect
+                .as_deref()
+                .map(|d| dialect_filter("ingress_dialect", d))
+                .transpose()?,
+            egress_dialect: self
+                .egress_dialect
+                .as_deref()
+                .map(|d| dialect_filter("egress_dialect", d))
+                .transpose()?,
         })
     }
 }
 
 const SOURCES: [&str; 2] = ["api", "playground"];
+
+fn dialect_filter(field: &str, d: &str) -> ApiResult<String> {
+    DialectId::ALL
+        .iter()
+        .find(|known| known.as_str() == d)
+        .map(|known| known.as_str().to_owned())
+        .ok_or_else(|| {
+            ApiError::invalid(
+                field,
+                format!("`{field}` must be a format, such as `openai_responses`."),
+            )
+        })
+}
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(description = "Token counts of a request.")]
@@ -720,6 +751,13 @@ pub struct LogView {
     pub has_content: bool,
     #[doc = "For streamed requests: how far the stream got."]
     pub stream_progress: Option<StreamProgressView>,
+    #[doc = "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\n\
+        provider, for requests in a format whose providers cache only the\n\
+        prompt a request marks (`anthropic_messages`); `0` means nothing of the\n\
+        prompt could be read from or written to the cache. `null` for other\n\
+        formats, for requests that ended before reaching the provider and for\n\
+        requests logged before Kaeso recorded it."]
+    pub cache_breakpoints: Option<u16>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -788,6 +826,7 @@ fn view(r: &LogRow) -> LogView {
             keepalives: r.stream_keepalives,
             processing_ms: r.stream_processing_ms,
         }),
+        cache_breakpoints: r.cache_breakpoints,
     }
 }
 
@@ -915,7 +954,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -991,6 +1030,7 @@ fn csv_line(v: &LogView) -> String {
         Text(v.source.clone()),
         number(v.overhead_ms),
         number(progress.and_then(|p| p.processing_ms)),
+        number(v.cache_breakpoints),
     ];
     let mut line = cells
         .iter()

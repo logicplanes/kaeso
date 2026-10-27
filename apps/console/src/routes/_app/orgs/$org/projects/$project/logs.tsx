@@ -24,6 +24,8 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("error", s.error),
     ...(stream !== undefined ? { stream } : {}),
     ...(s.source === "api" || s.source === "playground" ? { source: s.source } : {}),
+    ...text("ingress", s.ingress),
+    ...text("egress", s.egress),
     ...text("log", s.log),
     ...(bool(s.live) ? { live: true } : {}),
   };

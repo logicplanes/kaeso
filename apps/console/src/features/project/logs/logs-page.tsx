@@ -24,7 +24,7 @@ import { allKeysQuery } from "~/api/queries/keys";
 import { logsInfiniteQuery, type LogFilters, type LogRange } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
-import { ERROR_KIND_IDS, errorKindLabel } from "~/format/labels";
+import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
 import { utcDay } from "~/format/period";
@@ -53,14 +53,16 @@ const ranges = (): { value: LogRange; label: string }[] => [
   { value: "30d", label: t("logs.range.month", "Last 30 days") },
 ];
 const STATUSES = [200, 400, 401, 403, 404, 408, 413, 422, 429, 499, 500, 502, 503, 504, 529];
-type FilterId = "key" | "member" | "model" | "provider" | "status" | "error" | "stream" | "source" | "failed";
+type FilterId = "key" | "member" | "model" | "provider" | "ingress" | "egress" | "status" | "error" | "stream" | "source" | "failed";
 type ChoiceFilterId = Exclude<FilterId, "failed">;
-const FILTER_IDS: FilterId[] = ["key", "member", "model", "provider", "status", "failed", "error", "stream", "source"];
+const FILTER_IDS: FilterId[] = ["key", "member", "model", "provider", "ingress", "egress", "status", "failed", "error", "stream", "source"];
 const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPatch<LogsSearch> } = {
   key: (key) => ({ key }),
   member: (member) => ({ member }),
   model: (model) => ({ model }),
   provider: (provider) => ({ provider }),
+  ingress: (ingress) => ({ ingress }),
+  egress: (egress) => ({ egress }),
   error: (error) => ({ error }),
   status: (v) => ({ status: v ? Number(v) : undefined }),
   stream: (v) => ({ stream: v === undefined ? undefined : v === "true" }),
@@ -72,6 +74,8 @@ const filterLabel = (id: FilterId): string =>
     member: t("logs.filter.member", "Member"),
     model: common.model(),
     provider: common.provider(),
+    ingress: t("logs.filter.appFormat", "App format"),
+    egress: t("logs.filter.providerFormat", "Provider format"),
     status: common.status(),
     failed: t("logs.filter.failed", "Failed only"),
     error: t("logs.filter.error", "Error kind"),
@@ -186,15 +190,17 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           ? STATUSES.map((s) => ({ value: String(s), label: String(s) }))
           : id === "error"
             ? ERROR_KIND_IDS.map((k) => ({ value: k, label: errorKindLabel(k) }))
-            : id === "stream"
-              ? [
-                  { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                  { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                ]
-              : [
-                  { value: "api", label: "API" },
-                  { value: "playground", label: t("logs.source.playground", "Playground") },
-                ];
+            : id === "ingress" || id === "egress"
+              ? Object.keys(DIALECTS).map((d) => ({ value: d, label: dialectLabel(d) }))
+              : id === "stream"
+                ? [
+                    { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                    { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                  ]
+                : [
+                    { value: "api", label: "API" },
+                    { value: "playground", label: t("logs.source.playground", "Playground") },
+                  ];
   const current = (id: ChoiceFilterId): string | undefined =>
     id === "status"
       ? filters.status

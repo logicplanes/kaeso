@@ -141,6 +141,35 @@ describe("LogInspector", () => {
     expect(sentBy).toHaveTextContent("openai-python/1.40.0");
   });
 
+  it("says how much of the input came from the cache and marks a request sent without a breakpoint", async () => {
+    signedIn();
+    projectData();
+    const usage = { input_tokens: 563_000, output_tokens: 40, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
+    logsData({
+      rows: [logRow()],
+      entries: [logEntry({ ingress_dialect: "openai_responses", egress_dialect: "anthropic_messages", provider: "anthropic", cache_breakpoints: 0, usage })],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    const usageSection = section(await sheet(), "Usage");
+    expect(usageSection).toHaveTextContent("No cache breakpoint");
+    expect(usageSection).toHaveTextContent("Sent without cache_control; this provider caches only the prompt a request marks, so nothing was cached.");
+    expect(usageSection).toHaveTextContent("Read from the cache0%");
+    expect(usageSection).toHaveTextContent("Cache breakpoints0");
+  });
+
+  it("leaves the breakpoint mark out for a provider that caches by itself", async () => {
+    signedIn();
+    projectData();
+    const usage = { input_tokens: 20, output_tokens: 40, cache_read_tokens: 60, cache_write_tokens: 20, reasoning_tokens: 0, estimated: false };
+    logsData({ rows: [logRow()], entries: [logEntry({ usage })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    const usageSection = section(await sheet(), "Usage");
+    expect(usageSection).toHaveTextContent("Read from the cache60%");
+    expect(usageSection).not.toHaveTextContent("breakpoint");
+  });
+
   it("shows dashes for a request that never reached a model, and the stream's first byte", async () => {
     signedIn();
     projectData();

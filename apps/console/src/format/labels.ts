@@ -27,7 +27,7 @@ const ERROR_KINDS: Record<string, () => string> = {
 export const ERROR_KIND_IDS = Object.keys(ERROR_KINDS);
 export const errorKindLabel = (kind: string) => ERROR_KINDS[kind]?.() ?? titled(kind);
 
-const DIALECTS: Record<string, string> = {
+export const DIALECTS: Record<string, string> = {
   anthropic_messages: "Anthropic Messages",
   openai_chat: "OpenAI Chat Completions",
   openai_responses: "OpenAI Responses",

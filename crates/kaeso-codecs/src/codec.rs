@@ -136,6 +136,10 @@ pub struct EgressCtx {
     pub responses_profile: ResponsesProfile,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
+    /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
+    /// carries, set by encoders whose providers cache only what a request marks
+    /// (Anthropic Messages); `None` for the other dialects.
+    pub cache_breakpoints: Option<usize>,
 }
 
 impl EgressCtx {
@@ -158,6 +162,7 @@ impl EgressCtx {
             responses_profile: ResponsesProfile::OPENAI,
             left_out: Vec::new(),
             adapted: Vec::new(),
+            cache_breakpoints: None,
         }
     }
 

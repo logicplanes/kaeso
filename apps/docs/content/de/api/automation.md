@@ -113,9 +113,11 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 
 Eine Anfrage erscheint innerhalb weniger Sekunden in den Protokollen. Die Nutzung enthält Kosten, wenn der Aufrufer das Recht `costs.view` hat, und nimmt diese Query-Parameter:
 
-- `group_by`: `day` (Standard), `week`, `month`, `model`, `key` oder `member`.
+- `group_by`: `day` (Standard), `week`, `month`, `model`, `key`, `member` oder `route`. Der Schlüssel einer Route lautet `<Format der App>:<Format des Anbieters>:<Anbieter>`, etwa `openai_responses:anthropic_messages:anthropic`.
 - `from` und `to`: Tage in UTC, etwa `2026-08-15`. Nach Tagen gruppiert liegen sie höchstens 400 Tage auseinander.
 - `usage/span` antwortet mit dem ersten und letzten Tag mit Nutzung, damit Sie einen langen Zeitraum nach Woche oder Monat lesen können.
+
+Jede Zeile der Nutzung hat `cache_hit_rate`, den Anteil ihrer Eingabe, der aus dem Cache gelesen wurde, von 0 bis 1. Die Protokolle nehmen `ingress_dialect` und `egress_dialect`, um eine Route zu wählen, etwa `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`. Ihr Export nimmt dieselben Filter.
 
 Hängen Sie die ID eines Protokolleintrags an, um eine einzelne Anfrage zu lesen, etwa `logs/req_…`. Er enthält den Inhalt der Anfrage, wenn das Projekt Inhalte protokolliert.
 

@@ -421,6 +421,9 @@ pub async fn record(state: &AppState, o: &Outcome) {
         source: o.source.as_str().into(),
         overhead_ms: o.overhead.map(ms),
         stream_processing_ms: o.stream_processing.map(ms),
+        cache_breakpoints: o
+            .cache_breakpoints
+            .map(|n| u16::try_from(n).unwrap_or(u16::MAX)),
     };
     let content = content.then(|| ContentRow {
         request_id: log.request_id,

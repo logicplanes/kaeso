@@ -25,7 +25,7 @@ import {
   Tooltip,
   UsageBreakdown,
 } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { formatBytes, formatDate, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { LogEntryView } from "~/api/generated/types";
 import { logEntryQuery } from "~/api/queries/logs";
@@ -37,6 +37,7 @@ import { orgProjectsQuery } from "~/api/queries/projects";
 import { catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
+import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
 import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
 import { seconds, startedLabel } from "./timing";
 import { logMessage, useGatewayErrors } from "./messages";
@@ -251,7 +252,13 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   const name = modelName(e.provider, e.model);
   const sp = e.stream ? e.stream_progress : undefined;
   const message = logMessage(useGatewayErrors(), e.error_message, e.provider, providers.name);
-  const embeddings = e.ingress_dialect === "openai_embeddings" || e.egress_dialect === "openai_embeddings";
+  const embeddings = isEmbedding(e);
+  const share = embeddings ? null : cachedShare(u);
+  const unmarked = sentWithoutBreakpoint(e);
+  const caching = [
+    ...(share !== null ? [{ label: t("logs.inspector.cachedShare", "Read from the cache"), value: formatPercent(share) }] : []),
+    ...(known(e.cache_breakpoints) ? [{ label: t("logs.inspector.cacheBreakpoints", "Cache breakpoints"), value: formatNumber(e.cache_breakpoints) }] : []),
+  ];
   const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
   const timing = [
     ...(known(e.overhead_ms) ? [{ label: t("logs.inspector.overhead", "Kaeso overhead"), value: milliseconds(e.overhead_ms) }] : []),
@@ -407,12 +414,29 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
         <Section
           title={t("logs.inspector.usage", "Usage")}
           spacing="none"
-          actions={u.estimated ? <Badge tone="warning">{t("logs.inspector.estimated", "Estimated")}</Badge> : undefined}
+          actions={
+            u.estimated || unmarked ? (
+              <div className="flex gap-8">
+                {unmarked && <Badge tone="warning">{t("logs.inspector.noBreakpoint", "No cache breakpoint")}</Badge>}
+                {u.estimated && <Badge tone="warning">{t("logs.inspector.estimated", "Estimated")}</Badge>}
+              </div>
+            ) : undefined
+          }
         >
           <div className="flex flex-col gap-16">
             {u.estimated && (
               <Text variant="small" tone="secondary">
                 {t("logs.inspector.estimatedHint", "The stream ended before the provider's final count; cost and limits use these numbers.")}
+              </Text>
+            )}
+            {unmarked && (
+              <Text variant="small" tone="secondary">
+                <CodeText
+                  text={t(
+                    "logs.inspector.noBreakpointHint",
+                    "Sent without `cache_control`; this provider caches only the prompt a request marks, so nothing was cached.",
+                  )}
+                />
               </Text>
             )}
             <UsageBreakdown
@@ -428,6 +452,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                     }
               }
             />
+            {caching.length > 0 && <KeyValue layout="stacked" className="-my-8 grid grid-cols-2 gap-x-32" items={caching} />}
           </div>
         </Section>
       )}

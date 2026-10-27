@@ -30,6 +30,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "gateway_overhead",
         sql: include_str!("../../migrations/clickhouse/0003_gateway_overhead.sql"),
     },
+    Migration {
+        version: 4,
+        name: "cache_by_route",
+        sql: include_str!("../../migrations/clickhouse/0004_cache_by_route.sql"),
+    },
 ];
 
 #[derive(Clone)]

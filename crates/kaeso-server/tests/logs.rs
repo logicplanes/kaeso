@@ -91,6 +91,14 @@ async fn requests_are_logged_with_metadata_and_content() {
         "failures after the provider call keep it"
     );
     assert!(ok.get("content").is_none(), "lists carry metadata only");
+    assert_eq!(
+        ok["cache_breakpoints"], 0,
+        "the app marked nothing to cache"
+    );
+    assert_eq!(
+        data[0]["cache_breakpoints"], 1,
+        "Kaeso marks a breakpoint for apps in OpenAI's formats"
+    );
 
     let one = env
         .app
@@ -150,6 +158,36 @@ async fn requests_are_logged_with_metadata_and_content() {
             .await;
         assert_eq!(r.status, StatusCode::BAD_REQUEST, "{bad}");
         assert_eq!(r.body["error"]["param"], "provider", "{bad}");
+    }
+    for (query, matches) in [
+        ("?ingress_dialect=openai_chat", 1),
+        ("?ingress_dialect=anthropic_messages", 1),
+        (
+            "?ingress_dialect=openai_chat&egress_dialect=anthropic_messages",
+            1,
+        ),
+        ("?egress_dialect=anthropic_messages", 2),
+        ("?egress_dialect=openai_responses", 0),
+    ] {
+        assert_eq!(
+            logs(&env, query).await["data"].as_array().unwrap().len(),
+            matches,
+            "{query}"
+        );
+    }
+    for (param, bad) in [
+        ("ingress_dialect", "openai"),
+        ("egress_dialect", "Anthropic%20Messages"),
+    ] {
+        let r = env
+            .app
+            .get(
+                &format!("{}/logs?{param}={bad}", base(&env)),
+                &env.owner.cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{bad}");
+        assert_eq!(r.body["error"]["param"], param, "{bad}");
     }
     assert_eq!(
         logs(&env, "?error_kind=rate_limited").await["data"]
@@ -623,6 +661,7 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             source: "api".into(),
             overhead_ms: Some(1),
             stream_processing_ms: None,
+            cache_breakpoints: Some(2),
         },
         ContentRow {
             request_id: id,
@@ -723,15 +762,45 @@ async fn exports_stream_large_ranges_in_both_formats() {
         text.lines()
             .next()
             .unwrap()
-            .ends_with(",source,overhead_ms,stream_processing_ms"),
+            .ends_with(",source,overhead_ms,stream_processing_ms,cache_breakpoints"),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines().skip(1).all(|l| l.ends_with(",\"api\",1,")),
-        "the overhead is exported, and a stream's processing time is empty for other requests"
+        text.lines().skip(1).all(|l| l.ends_with(",\"api\",1,,2")),
+        "the overhead and the breakpoints are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
+
+    for (dialect, lines) in [("anthropic_messages", 2501), ("openai_chat", 1)] {
+        let req = axum::http::Request::builder()
+            .uri(format!(
+                "/platform/v1{}/logs/export?format=csv&from={}&egress_dialect={dialect}",
+                base(&env),
+                (now - time::Duration::minutes(61))
+                    .format(&time::format_description::well_known::Rfc3339)
+                    .unwrap()
+            ))
+            .header(
+                "cookie",
+                format!("__Host-kaeso_session={}", env.owner.cookie),
+            )
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = http_body_util::BodyExt::collect(resp.into_body())
+            .await
+            .unwrap()
+            .to_bytes();
+        assert_eq!(
+            std::str::from_utf8(&body).unwrap().lines().count(),
+            lines,
+            "{dialect}"
+        );
+    }
 }
 
 #[tokio::test]

@@ -56,6 +56,7 @@ pub struct LogRow {
     pub source: String,
     pub overhead_ms: Option<u32>,
     pub stream_processing_ms: Option<u32>,
+    pub cache_breakpoints: Option<u16>,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -119,6 +120,8 @@ pub struct Filter {
     pub error_kind: Option<String>,
     pub stream: Option<bool>,
     pub source: Option<String>,
+    pub ingress_dialect: Option<String>,
+    pub egress_dialect: Option<String>,
 }
 
 pub async fn search(
@@ -218,6 +221,14 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(s) = &f.source {
         sql.push_str(" AND source = ?");
         binds.push(Bind::Str(s.clone()));
+    }
+    if let Some(d) = &f.ingress_dialect {
+        sql.push_str(" AND ingress_dialect = ?");
+        binds.push(Bind::Str(d.clone()));
+    }
+    if let Some(d) = &f.egress_dialect {
+        sql.push_str(" AND egress_dialect = ?");
+        binds.push(Bind::Str(d.clone()));
     }
 }
 
@@ -360,6 +371,7 @@ pub enum GroupBy {
     Model,
     Key,
     Member,
+    Route,
 }
 
 pub async fn usage(
@@ -378,6 +390,7 @@ pub async fn usage(
         GroupBy::Model => "concat(provider, '/', model)",
         GroupBy::Key => "toString(key_id)",
         GroupBy::Member => "concat(principal_kind, ':', toString(principal_id))",
+        GroupBy::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
     };
     let mut sql = format!(
         "SELECT {key} AS key, sum(requests) AS requests, sum(errors) AS errors, sum(input_tokens) AS input_tokens, \

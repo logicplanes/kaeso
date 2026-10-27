@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col } from "@logicplanes/kaeso-ui";
-import { dateFormatter, formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
 import { requestUSD } from "~/format/money";
@@ -67,7 +67,7 @@ function timeWidth(spansDays: boolean, layout: LogsLayout): number {
 
 const ROW_END_RESERVE = 48;
 const STATUS_WIDTH = 80;
-const KEPT_WIDTHS = { duration: 104, tokens: 136, cost: 120 } as const;
+const KEPT_WIDTHS = { duration: 104, tokens: 200, cost: 120 } as const;
 
 export function logsLayout(width: number, phone: boolean, spansDays: boolean, shown: readonly ColumnId[]): LogsLayout {
   if (phone) return "phone";
@@ -278,22 +278,43 @@ function ModelCell({ row, message, provider }: { row: LogView; message: LogMessa
   );
 }
 
+export const isEmbedding = (row: Pick<LogView, "ingress_dialect" | "egress_dialect">) =>
+  row.ingress_dialect === "openai_embeddings" || row.egress_dialect === "openai_embeddings";
+
+export const cachedShare = (u: LogView["usage"]): number | null => {
+  const input = inputTokens(u);
+  return input > 0 ? u.cache_read_tokens / input : null;
+};
+
+export const sentWithoutBreakpoint = (row: LogView) => row.cache_breakpoints === 0 && inputTokens(row.usage) > 0;
+
 function TokensCell({ row }: { row: LogView }) {
   const u = row.usage;
+  const share = isEmbedding(row) ? null : cachedShare(u);
+  const unmarked = sentWithoutBreakpoint(row);
   const detail = [
+    unmarked && t("logs.tokens.noBreakpoint", "Sent without a cache breakpoint, so the provider cached nothing"),
     u.cache_read_tokens && t("logs.tokens.cacheRead", "{count} cache read", { count: formatNumber(u.cache_read_tokens) }),
     u.cache_write_tokens && t("logs.tokens.cacheWrite", "{count} cache write", { count: formatNumber(u.cache_write_tokens) }),
     u.reasoning_tokens && t("logs.tokens.reasoning", "{count} reasoning", { count: formatNumber(u.reasoning_tokens) }),
   ].filter(Boolean);
   if (u.estimated) detail.unshift(t("logs.tokens.estimated", "Estimated: the stream ended before the provider's final count"));
   const text = `${u.estimated ? "≈ " : ""}${formatNumber(inputTokens(u))} / ${formatNumber(u.output_tokens)}`;
+  const content = (
+    <span className="inline-flex items-baseline gap-6">
+      {share !== null && (
+        <Text variant="small" tone={unmarked ? "warning" : "tertiary"} tabular>
+          {t("logs.tokens.cachedShare", "{percent} cached", { percent: formatPercent(share, 0) })}
+        </Text>
+      )}
+      <Text tabular>{text}</Text>
+    </span>
+  );
   return detail.length ? (
     <Tooltip content={detail.join(" · ")}>
-      <Text tabular tabIndex={0}>
-        {text}
-      </Text>
+      <Text tabIndex={0}>{content}</Text>
     </Tooltip>
   ) : (
-    <Text tabular>{text}</Text>
+    content
   );
 }

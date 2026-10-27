@@ -564,3 +564,65 @@ fn hints_on_empty_text_neither_reach_claude_nor_count() {
         json!([{"type": "text", "text": "Hello", "cache_control": {"type": "ephemeral"}}])
     );
 }
+
+fn reported_breakpoints(from: DialectId, to: DialectId, body: &Value) -> (Value, Option<usize>) {
+    let mut req = dispatch::decode_request(
+        from,
+        RequestKind::Generate,
+        &serde_json::to_vec(body).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    if let Request::Generate(g) = &mut req {
+        g.sampling.max_output_tokens.get_or_insert(64_000);
+    }
+    let mut ctx = EgressCtx::new(&req).with_provider("anthropic");
+    let enc = dispatch::encode_request(to, &req, &mut ctx).unwrap();
+    (
+        serde_json::from_slice(&enc.body).unwrap(),
+        ctx.cache_breakpoints,
+    )
+}
+
+#[test]
+fn the_breakpoints_sent_to_claude_are_reported() {
+    let cases = [
+        (R, fixture(R, "codex-developer-resume.json")),
+        (C, fixture(C, "prompt-cache-breakpoint.json")),
+        (R, json!({"model": "claude", "input": "Hello"})),
+        (
+            R,
+            json!({"model": "claude", "input": "Hello",
+            "prompt_cache_options": {"mode": "explicit"}}),
+        ),
+        (A, fixture(A, "system-blocks-cache-ttl.json")),
+        (A, fixture(A, "text-simple.json")),
+    ];
+    for (from, request) in cases {
+        let (body, reported) = reported_breakpoints(from, A, &request);
+        assert_eq!(reported, Some(breakpoints(&body).len()), "{request}");
+    }
+    let (_, none) = reported_breakpoints(A, A, &fixture(A, "text-simple.json"));
+    assert_eq!(none, Some(0));
+}
+
+#[test]
+fn automatic_caching_counts_as_a_breakpoint() {
+    let (body, reported) = reported_breakpoints(
+        A,
+        A,
+        &json!({"model": "claude", "max_tokens": 100, "cache_control": {"type": "ephemeral"},
+            "messages": [{"role": "user", "content": "Hello"}]}),
+    );
+    assert_eq!(body["cache_control"], json!({"type": "ephemeral"}));
+    assert_eq!(reported, Some(1));
+}
+
+#[test]
+fn formats_that_cache_by_themselves_report_no_breakpoints() {
+    for to in [C, R] {
+        let (_, reported) =
+            reported_breakpoints(A, to, &fixture(A, "system-blocks-cache-ttl.json"));
+        assert_eq!(reported, None, "{to:?}");
+    }
+}

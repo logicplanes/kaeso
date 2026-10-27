@@ -18,7 +18,9 @@ Die **Übersicht** der Organisation zeigt Anfragen, Token, Kosten und Fehler fü
 
 Die Seite vergleicht jede Summe mit dem Zeitraum davor, außer für heute, das noch läuft, und die gesamte Laufzeit. Diagramme zählen nach UTC-Tagen. Einen Tag, eine Woche oder einen Monat, der noch läuft, zeichnen sie gestrichelt oder heller, und sein Tooltip sagt „bisher“. Für die Nutzung brauchen Sie das Recht **Gesamtnutzung ansehen**, für die Kosten **Gesamtkosten ansehen**.
 
-Die **Übersicht** eines Projekts zeigt dieselben Zahlen für ein Projekt, aufgeschlüsselt nach Zeit, Modell, Schlüssel oder Mitglied. Sie listet außerdem die Limits des Projekts mit ihrem Verbrauch und die letzten Fehler.
+Die **Übersicht** eines Projekts zeigt dieselben Zahlen für ein Projekt, aufgeschlüsselt nach Zeit, Modell, Schlüssel, Mitglied oder Route. Sie listet außerdem die Limits des Projekts mit ihrem Verbrauch und die letzten Fehler.
+
+Eine Route ist das Format der App, das Format, in dem Kaeso den Anbieter aufrief, und der Anbieter. Ihre Aufschlüsselung hat eine Spalte **Cache-Treffer**: den Anteil der Eingabe, der aus dem Prompt-Cache gelesen wurde. Dasselbe Modell kann über eine Route den Cache treffen und über eine andere nie, daher zeigt **Route**, wo das Caching versagt. Anfragen aus der Zeit, bevor Kaeso Routen erfasste, erscheinen als **Route nicht erfasst**.
 
 ## Organisationseinstellungen ändern
 
