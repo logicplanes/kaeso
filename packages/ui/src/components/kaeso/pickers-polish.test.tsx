@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProviderPicker } from "./provider-picker.js";
 import { RolePicker } from "./role-picker.js";
@@ -14,7 +14,7 @@ import { DisplayOptions } from "../display-options/display-options.js";
 import { Segmented } from "../segmented/segmented.js";
 import { Slider } from "../slider/slider.js";
 import { PickerTrigger } from "../command-list/picker-popover.js";
-import { pageBoundary } from "../../utils/portal-context.js";
+import { lazyModulesSettled } from "../../utils/lazy-module.js";
 import { RaisedContent } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 
@@ -25,10 +25,47 @@ const providers = [
 ];
 
 describe("popups", () => {
-  it("measure the window, not the page, so a popup at 200% zoom stays on screen", () => {
-    const boundary = pageBoundary();
-    expect(boundary).not.toBe(document.documentElement);
-    expect(boundary).toMatchObject({ x: 0, y: 0, width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+  it("measure the window, not the page, so a popup at 200% zoom on a scrolled page stays on screen", async () => {
+    const rect = (x: number, y: number, width: number, height: number) =>
+      ({ x, y, left: x, top: y, width, height, right: x + width, bottom: y + height, toJSON: () => ({}) }) as DOMRect;
+    const isPopup = (el: HTMLElement) => el.matches("[role=listbox]") || !!el.querySelector("[role=listbox]");
+    const mocks = [
+      vi.spyOn(document.documentElement, "clientWidth", "get").mockReturnValue(640),
+      vi.spyOn(document.documentElement, "clientHeight", "get").mockReturnValue(400),
+      vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return this === document.documentElement ? 640 : isPopup(this) ? 240 : 120;
+      }),
+      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+        return this === document.documentElement ? 3000 : isPopup(this) ? 200 : 36;
+      }),
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+        if (this === document.documentElement) return rect(0, -1200, this.offsetWidth, this.offsetHeight);
+        if (this.getAttribute("role") === "combobox") return rect(560, 330, 72, 36);
+        return rect(0, 0, this.offsetWidth, this.offsetHeight);
+      }),
+    ];
+    try {
+      render(
+        <Select
+          aria-label="Retention"
+          options={[
+            { value: "7", label: "7 days" },
+            { value: "30", label: "30 days" },
+          ]}
+        />,
+      );
+      await userEvent.click(screen.getByRole("combobox", { name: "Retention" }));
+      await act(() => lazyModulesSettled());
+      const positioner = (await screen.findByRole("listbox")).closest<HTMLElement>('[data-side][style*="position: fixed"]')!;
+      const place = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)/;
+      await waitFor(() => expect(positioner.getAttribute("style")).toMatch(place));
+      const [, x, y] = place.exec(positioner.getAttribute("style")!)!.map(Number);
+      expect(positioner).toHaveAttribute("data-side", "top");
+      expect({ left: x, top: y, right: x! + 240, bottom: y! + 200 }).toEqual({ left: 392, top: 124, right: 632, bottom: 324 });
+      expect(positioner.getAttribute("style")).toContain("--available-height: 316px");
+    } finally {
+      for (const mock of mocks) mock.mockRestore();
+    }
   });
 });
 
