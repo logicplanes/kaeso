@@ -31,6 +31,10 @@ Choose a request to open it:
 
 The timing keeps Kaeso's own work apart from the provider's. **Kaeso overhead** is the time before Kaeso called the provider: reading the body, checking the key, translating and checking limits. For a stream, **Stream processing** is the time Kaeso spent translating the provider's events for the app, without the waits for either side. The CSV export has both, as `overhead_ms` and `stream_processing_ms`.
 
+A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
+
+The **Request** and **Reply** tabs need the right **View prompts and outputs**. They tell you when that right is missing, when content wasn't logged, or when it has passed its retention. Kaeso never keeps embedding vectors. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as it was stored.
+
 ## Check prompt caching
 
 The **Tokens in / out · cached** column ends with the share of each request's input read from the prompt cache, such as `· 0%`. A long prompt that is never cached costs the full input price every time.
@@ -38,10 +42,6 @@ The **Tokens in / out · cached** column ends with the share of each request's i
 Anthropic caches only the parts of a prompt that a request marks with `cache_control`. Kaeso marks them itself for apps that use OpenAI's formats. A request that reached Anthropic's format without any mark shows its share in a warning color. Its **Usage** says **No cache breakpoint**, so a missing mark stands apart from a cache miss.
 
 A request's **Usage** also lists **Read from the cache** and, for Anthropic's format, how many **Cache breakpoints** Kaeso sent. The CSV export has that count as `cache_breakpoints`.
-
-A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
-
-The **Request** and **Reply** tabs need the right **View prompts and outputs**. They tell you when that right is missing, when content wasn't logged, or when it has passed its retention. Kaeso never keeps embedding vectors. A reply logged in a format this console can't read yet, for example by a newer gateway, is shown as it was stored.
 
 ## Export logs
 

@@ -31,6 +31,10 @@ Wählen Sie eine Anfrage, um sie zu öffnen:
 
 Die Zeiten trennen die Arbeit von Kaeso von der des Anbieters. **Kaeso-Overhead** ist die Zeit, bevor Kaeso den Anbieter aufrief: Body lesen, Schlüssel prüfen, übersetzen und Limits prüfen. Bei einem Stream ist **Stream-Verarbeitung** die Zeit, in der Kaeso die Events des Anbieters für die App übersetzt hat, ohne die Wartezeiten auf beide Seiten. Der CSV-Export enthält beides, als `overhead_ms` und `stream_processing_ms`.
 
+Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitüberschreitung**, **Client getrennt** oder **Client liest nicht mehr**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
+
+Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort, die in einem Format protokolliert wurde, das diese Konsole noch nicht lesen kann (etwa von einem neueren Gateway), erscheint so, wie sie gespeichert wurde.
+
 ## Prompt-Caching prüfen
 
 Die Spalte **Token ein / aus · Cache** endet mit dem Anteil der Eingabe jeder Anfrage, der aus dem Prompt-Cache gelesen wurde, etwa `· 0 %`. Ein langer Prompt, der nie zwischengespeichert wird, kostet jedes Mal den vollen Eingabepreis.
@@ -38,10 +42,6 @@ Die Spalte **Token ein / aus · Cache** endet mit dem Anteil der Eingabe jeder A
 Anthropic speichert nur die Teile eines Prompts zwischen, die eine Anfrage mit `cache_control` markiert. Für Apps, die die Formate von OpenAI nutzen, setzt Kaeso diese Markierungen selbst. Eine Anfrage, die das Format von Anthropic ohne jede Markierung erreichte, zeigt ihren Anteil in einer Warnfarbe. Ihre **Nutzung** nennt **Kein Cache-Breakpoint**, so unterscheidet sich eine fehlende Markierung von einem Cache-Fehltreffer.
 
 Die **Nutzung** einer Anfrage listet außerdem **Aus dem Cache** und, für das Format von Anthropic, wie viele **Cache-Breakpoints** Kaeso gesendet hat. Der CSV-Export enthält diese Zahl als `cache_breakpoints`.
-
-Eine fehlgeschlagene Anfrage zeigt ihre Fehlerart, etwa **Ratenlimit erreicht**, **Kontext zu lang**, **Zeitüberschreitung**, **Client getrennt** oder **Client liest nicht mehr**. Hat der Anbieter eine Meldung gesendet, zeigt sie auch diese. Ein abgebrochener Stream wird als Fehler protokolliert, mit dem Stand, den er erreicht hat.
-
-Die Tabs **Anfrage** und **Antwort** erfordern das Recht **Prompts und Ausgaben ansehen**. Sie sagen Ihnen, wenn dieses Recht fehlt, wenn kein Inhalt protokolliert wurde oder wenn seine Aufbewahrung abgelaufen ist. Embedding-Vektoren speichert Kaeso nie. Eine Antwort, die in einem Format protokolliert wurde, das diese Konsole noch nicht lesen kann (etwa von einem neueren Gateway), erscheint so, wie sie gespeichert wurde.
 
 ## Protokolle exportieren
 
