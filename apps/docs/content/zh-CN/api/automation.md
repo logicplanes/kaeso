@@ -117,7 +117,7 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 - `from` 和 `to`：UTC 日期，例如 `2026-08-15`。按天分组时，两者最多相隔 400 天。
 - `usage/span` 返回有用量的第一天和最后一天，便于按周或按月读取较长的时间段。
 
-每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`。日志导出接受相同的筛选条件。
+每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`。日志导出接受相同的筛选条件。
 
 在地址后加上日志条目的 ID 即可读取单个请求，例如 `logs/req_…`。项目记录内容时，条目中包含请求的内容。
 

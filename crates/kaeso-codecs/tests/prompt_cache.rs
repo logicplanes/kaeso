@@ -75,7 +75,9 @@ fn collect(value: &Value, found: &mut Vec<Value>) {
         Value::Object(map) => {
             for (key, inner) in map {
                 if key == "cache_control" {
-                    found.push(inner.clone());
+                    if !inner.is_null() {
+                        found.push(inner.clone());
+                    }
                 } else {
                     collect(inner, found);
                 }
@@ -597,6 +599,16 @@ fn the_breakpoints_sent_to_claude_are_reported() {
         ),
         (A, fixture(A, "system-blocks-cache-ttl.json")),
         (A, fixture(A, "text-simple.json")),
+        (A, fixture(A, "explicit-nulls.json")),
+        (A, fixture(A, "cache-prewarm.json")),
+        (A, fixture(A, "system-string-multi-turn.json")),
+        (A, fixture(A, "claude-code-tool-search.json")),
+        (A, fixture(A, "claude-code-tool-search-loaded.json")),
+        (A, fixture(A, "claude-code-mid-conversation-system.json")),
+        (A, fixture(A, "mid-conversation-system-tool-results.json")),
+        (A, fixture(A, "web-search-server-tool.json")),
+        (A, fixture(A, "web-search-result-replay.json")),
+        (A, fixture(A, "document-custom-content.json")),
     ];
     for (from, request) in cases {
         let (body, reported) = reported_breakpoints(from, A, &request);
@@ -604,6 +616,15 @@ fn the_breakpoints_sent_to_claude_are_reported() {
     }
     let (_, none) = reported_breakpoints(A, A, &fixture(A, "text-simple.json"));
     assert_eq!(none, Some(0));
+
+    let marked = |text: &str| json!({"type": "input_text", "text": text, "prompt_cache_breakpoint": {"mode": "explicit"}});
+    let (_, capped) = reported_breakpoints(
+        R,
+        A,
+        &json!({"model": "claude", "input": [{"type": "message", "role": "user", "content": [
+            marked("one"), marked("two"), marked("three"), marked("four"), marked("five"), marked("six")]}]}),
+    );
+    assert_eq!(capped, Some(4));
 }
 
 #[test]
@@ -616,6 +637,43 @@ fn automatic_caching_counts_as_a_breakpoint() {
     );
     assert_eq!(body["cache_control"], json!({"type": "ephemeral"}));
     assert_eq!(reported, Some(1));
+}
+
+#[test]
+fn breakpoints_on_server_tools_and_passed_through_blocks_count() {
+    let marked = json!({"type": "ephemeral"});
+    let (_, reported) = reported_breakpoints(
+        A,
+        A,
+        &json!({"model": "claude", "max_tokens": 100,
+            "tools": [{"type": "web_search_20250305", "name": "web_search", "cache_control": marked}],
+            "messages": [{"role": "user", "content": "Hello"}]}),
+    );
+    assert_eq!(reported, Some(1));
+
+    let request = json!({"model": "claude", "max_tokens": 100,
+    "tools": [
+        {"type": "web_search_20250305", "name": "web_search", "cache_control": marked},
+        {"type": "bash_20250124", "name": "bash", "cache_control": null}
+    ],
+    "messages": [
+        {"role": "user", "content": [
+            {"type": "search_result", "source": "https://docs.example.com", "title": "Docs",
+                "content": [{"type": "text", "text": "Kaeso"}], "cache_control": marked},
+            {"type": "text", "text": "Summarise this."}
+        ]},
+        {"role": "assistant", "content": [
+            {"type": "tool_use", "id": "toolu_01", "name": "lookup", "input": {}}
+        ]},
+        {"role": "user", "content": [
+            {"type": "tool_result", "tool_use_id": "toolu_01", "content": [
+                {"type": "tool_reference", "tool_name": "lookup", "cache_control": marked}
+            ]}
+        ]}
+    ]});
+    let (body, reported) = reported_breakpoints(A, A, &request);
+    assert_eq!(breakpoints(&body).len(), 3);
+    assert_eq!(reported, Some(3));
 }
 
 #[test]

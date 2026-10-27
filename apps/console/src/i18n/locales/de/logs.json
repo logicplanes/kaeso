@@ -81,7 +81,7 @@
   "logs.inspector.metadata": "Metadaten",
   "logs.inspector.modelRequestedAs": "Modell, angefragt als {model}",
   "logs.inspector.noBreakpoint": "Kein Cache-Breakpoint",
-  "logs.inspector.noBreakpointHint": "Ohne `cache_control` gesendet; dieser Anbieter speichert nur den Teil des Prompts zwischen, den eine Anfrage markiert, daher wurde nichts zwischengespeichert.",
+  "logs.inspector.noBreakpointHint": "Ohne `cache_control` gesendet, und nichts wurde aus dem Cache gelesen oder in ihn geschrieben; Anthropic speichert nur den Teil des Prompts zwischen, den eine Anfrage markiert.",
   "logs.inspector.noContentRight": "Kein Zugriff auf Anfrageinhalte",
   "logs.inspector.noReply": "Keine Antwort",
   "logs.inspector.noReplyStored": "Für diese Anfrage wurde keine Antwort gespeichert.",
@@ -178,7 +178,7 @@
   "logs.tokens.cacheRead": "{count} aus dem Cache gelesen",
   "logs.tokens.cacheWrite": "{count} in den Cache geschrieben",
   "logs.tokens.estimated": "Geschätzt: Der Stream endete vor der finalen Zählung des Anbieters",
-  "logs.tokens.noBreakpoint": "Ohne Cache-Breakpoint gesendet, daher hat der Anbieter nichts zwischengespeichert",
+  "logs.tokens.noBreakpoint": "Ohne Cache-Breakpoint gesendet, und nichts wurde zwischengespeichert",
   "logs.tokens.reasoning": "{count} Reasoning",
   "logs.unavailable": "Anfrageprotokolle sind vorübergehend nicht verfügbar",
   "logs.unavailableHint": "Nutzung und Limits funktionieren weiterhin."

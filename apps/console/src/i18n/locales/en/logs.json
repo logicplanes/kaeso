@@ -81,7 +81,7 @@
   "logs.inspector.metadata": "Metadata",
   "logs.inspector.modelRequestedAs": "Model, requested as {model}",
   "logs.inspector.noBreakpoint": "No cache breakpoint",
-  "logs.inspector.noBreakpointHint": "Sent without `cache_control`; this provider caches only the prompt a request marks, so nothing was cached.",
+  "logs.inspector.noBreakpointHint": "Sent without `cache_control`, and nothing was read from or written to the cache; Anthropic caches only the prompt a request marks.",
   "logs.inspector.noContentRight": "You can't see request content",
   "logs.inspector.noReply": "No reply",
   "logs.inspector.noReplyStored": "No reply was stored for this request.",
@@ -178,7 +178,7 @@
   "logs.tokens.cacheRead": "{count} cache read",
   "logs.tokens.cacheWrite": "{count} cache write",
   "logs.tokens.estimated": "Estimated: the stream ended before the provider's final count",
-  "logs.tokens.noBreakpoint": "Sent without a cache breakpoint, so the provider cached nothing",
+  "logs.tokens.noBreakpoint": "Sent without a cache breakpoint, and nothing was cached",
   "logs.tokens.reasoning": "{count} reasoning",
   "logs.unavailable": "Request logs are unavailable for now",
   "logs.unavailableHint": "Usage and limits still work."

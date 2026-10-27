@@ -397,6 +397,18 @@ pub(crate) fn encode_cache(hint: &CacheHint) -> Ext<CacheControlW> {
     )
 }
 
+pub(crate) fn is_cache_mark(value: &str) -> bool {
+    serde_json::from_str::<Option<serde::de::IgnoredAny>>(value).is_ok_and(|v| v.is_some())
+}
+
+fn marks_cache(object: &str) -> bool {
+    #[derive(serde::Deserialize)]
+    struct Marked {
+        cache_control: Option<serde::de::IgnoredAny>,
+    }
+    serde_json::from_str::<Marked>(object).is_ok_and(|m| m.cache_control.is_some())
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Side {
     Request,
@@ -424,6 +436,11 @@ impl BlockEncoder {
         let w = hint.map(encode_cache);
         self.breakpoints += usize::from(w.is_some());
         w
+    }
+
+    pub(crate) fn passed_through(&mut self, raw: &RawJson) -> Raw {
+        self.breakpoints += usize::from(marks_cache(raw.get()));
+        raw.clone().into_inner()
     }
 
     fn id(&mut self, id: &str) -> String {
@@ -583,7 +600,7 @@ impl BlockEncoder {
             },
             Block::Unknown(item) => {
                 if item.origin.is(D) {
-                    item.raw.clone().into_inner()
+                    self.passed_through(&item.raw)
                 } else if self.side == Side::Reply {
                     return Ok(None);
                 } else {

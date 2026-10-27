@@ -112,19 +112,23 @@ describe("OverviewPage", () => {
         usageRow({ key: "anthropic_messages:anthropic_messages:anthropic", requests: 80, cache_hit_rate: 0.78 }),
         usageRow({ key: "openai_responses:anthropic_messages:anthropic", requests: 120, cache_hit_rate: 0 }),
         usageRow({ key: "::anthropic", requests: 5, cache_hit_rate: null }),
+        usageRow({ key: "openai_embeddings:openai_embeddings:openai", requests: 3, input_tokens: 900, cache_hit_rate: null }),
       ],
     });
     await renderApp(projectPath(`?${PERIOD}&by=route`));
 
     const table = await breakdown();
-    await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
-    const [first, second, third] = bodyRows(table);
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(4));
+    const [first, second, third, fourth] = bodyRows(table);
     expect(first).toHaveTextContent("Responses→ Messages");
     expect(first).toHaveTextContent("0%");
     expect(second).toHaveTextContent("Messages→ Messages");
     expect(second).toHaveTextContent("78%");
     expect(third).toHaveTextContent("Route not recorded");
     expect(third).toHaveTextContent("—");
+    expect(fourth).toHaveTextContent("Embeddings");
+    expect(fourth).toHaveTextContent("—");
+    expect(fourth).not.toHaveTextContent("0%");
     expect(within(table).getByRole("columnheader", { name: "Route" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Cache hit" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "By route" })).toBeChecked();
