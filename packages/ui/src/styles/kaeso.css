@@ -535,6 +535,11 @@
     color: HighlightText;
     forced-color-adjust: none;
   }
+  /* forced-color-adjust is inherited, so without this a description or key cap keeps its author colour on Highlight. */
+  :where([data-highlighted], [data-force~="highlighted"]) :where(:not(.data-mark, .data-mark *)) {
+    color: inherit;
+    background-color: transparent;
+  }
   :where([role^="menuitem"][data-disabled], [role="option"][aria-disabled="true"]) {
     color: GrayText;
   }
