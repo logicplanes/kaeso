@@ -142,7 +142,7 @@ describe("ConversationView blocks", () => {
       />,
     );
     expect(screen.getByText("lookup_order")).toBeInTheDocument();
-    expect(screen.getByText('{"status":"shipped"}')).toBeInTheDocument();
+    expect(screen.getByText('"shipped"')).toBeInTheDocument();
     expect(screen.getByText("Error")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Image from kaeso\.app/ })).toHaveAttribute("href", "https://kaeso.app/receipt.png");
     expect(screen.queryByRole("img", { name: "Receipt" })).toBeNull();

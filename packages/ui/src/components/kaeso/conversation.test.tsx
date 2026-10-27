@@ -29,7 +29,8 @@ describe("ConversationView", () => {
     expect(screen.getByText("bold")).toHaveProperty("tagName", "STRONG");
     expect(container.querySelector("b, img")).toBeNull();
     expect(container.textContent).toContain("<b>here</b>");
-    expect(container.querySelector("pre")).toHaveTextContent('{"ok":true}');
+    expect(container.querySelector("pre")).toBeNull();
+    expect(screen.getByText("true")).toBeInTheDocument();
   });
 
   it("shows inline images, links remote ones without loading them and drops other schemes", () => {

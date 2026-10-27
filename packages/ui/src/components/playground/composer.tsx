@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useLayoutEffect, useRef, useSyncExternalStore, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useCallback, useId, useLayoutEffect, useRef, useSyncExternalStore, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
 import { useControllable } from "../../utils/use-controllable.js";
@@ -78,15 +78,23 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   const submitLabel = submitLabelProp ?? t("composer.send", "Send");
   const stopLabel = stopLabelProp ?? t("composer.stop", "Stop");
   const [text, setText] = useControllable(value, defaultValue, onValueChange);
+  const waitHint = useId();
 
   const box = useRef<HTMLTextAreaElement | null>(null);
   const minRows = size === "sm" ? 1 : 2;
+  const fade = useCallback(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.setProperty("--scroll-area-overflow-y-start", `${Math.max(0, el.scrollTop)}px`);
+    el.style.setProperty("--scroll-area-overflow-y-end", `${Math.max(0, el.scrollHeight - el.clientHeight - el.scrollTop)}px`);
+  }, []);
   const grow = useCallback(() => {
     const el = box.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(Math.max(el.scrollHeight, minRows * 20 + 16), maxRows * 20 + 16)}px`;
-  }, [maxRows, minRows]);
+    fade();
+  }, [maxRows, minRows, fade]);
   useLayoutEffect(grow, [grow, text]);
 
   const empty = text.trim() === "";
@@ -115,10 +123,11 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     <form
       onSubmit={onFormSubmit}
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !disabled) {
-          e.preventDefault();
-          box.current?.focus();
-        }
+        if (disabled || e.button !== 0 || !e.currentTarget.contains(e.target as Node)) return;
+        const control = (e.target as Element).closest("textarea, button, a, input, select, label, [role], [tabindex]");
+        if (control && e.currentTarget.contains(control)) return;
+        e.preventDefault();
+        box.current?.focus();
       }}
       {...(force ? { "data-force": force } : {})}
       {...(disabled ? { "data-disabled": "" } : {})}
@@ -139,16 +148,21 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={onKeyDown}
+        onScroll={fade}
         disabled={disabled}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        {...(streaming && !empty ? { "aria-describedby": waitHint } : {})}
         aria-keyshortcuts={enterSends ? "Enter Meta+Enter Control+Enter" : "Meta+Enter Control+Enter"}
         {...(enterSends ? { enterKeyHint: "send" as const } : {})}
         autoFocus={autoFocus}
         {...(name ? { name } : {})}
-        className="block w-full min-w-0 resize-none bg-transparent px-16 pt-12 pb-4 text-body text-fg outline-none scrollbar-quiet placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled"
+        className="block w-full min-w-0 resize-none bg-transparent px-16 pt-12 pb-4 text-body text-fg outline-none scrollbar-quiet scroll-fade-y placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled disabled:placeholder:text-fg-disabled"
       />
-      <div className="flex min-w-0 items-center gap-8 p-8 pt-4">
+      <span id={waitHint} className="sr-only">
+        {t("composer.stopToSend", "A response is arriving; stop it to send this prompt.")}
+      </span>
+      <div className="flex min-w-0 items-center gap-8 p-8 pt-4 controls-on-fill">
         <div className="flex min-w-0 flex-1 items-center gap-4">{actions}</div>
         {streaming ? (
           <Button type="button" size="sm" variant="secondary" reserveLabels={[submitLabel, stopLabel]} onClick={() => onStop?.()} disabled={disabled}>

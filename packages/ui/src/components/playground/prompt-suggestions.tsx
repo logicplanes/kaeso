@@ -1,6 +1,8 @@
-import { forwardRef } from "react";
+import { forwardRef, useRef } from "react";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
+import { useTruncated } from "../../hooks/use-truncated.js";
+import { Tooltip } from "../tooltip/tooltip.js";
 
 export const KAESO_PROMPT_SUGGESTIONS_VARIANTS = {
   align: {
@@ -16,29 +18,53 @@ export interface PromptSuggestionsProps {
   "aria-label"?: string | undefined;
   align?: keyof typeof KAESO_PROMPT_SUGGESTIONS_VARIANTS.align | undefined;
   className?: string | undefined;
+  "data-force"?: string | undefined;
+}
+
+function Suggestion({
+  prompt,
+  align,
+  force,
+  onSelect,
+}: {
+  prompt: string;
+  align: keyof typeof KAESO_PROMPT_SUGGESTIONS_VARIANTS.align;
+  force: string | undefined;
+  onSelect: (prompt: string) => void;
+}) {
+  const text = useRef<HTMLSpanElement | null>(null);
+  const truncated = useTruncated(text);
+  return (
+    <li className={cn("flex min-w-0", align === "center" && "justify-center")}>
+      <Tooltip content={prompt} disabled={!truncated} shape="multiline">
+        <button
+          type="button"
+          {...(force ? { "data-force": force } : {})}
+          onClick={() => onSelect(prompt)}
+          className={cn(
+            "flex h-36 max-w-full min-w-0 cursor-pointer items-center rounded-pill px-16 text-body text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-visible:text-fg active:bg-fill-2 active:text-fg focus-ring-inset coarse:h-44",
+            align === "start" && "flex-1",
+          )}
+        >
+          <span ref={text} className="min-w-0 truncate">
+            {prompt}
+          </span>
+        </button>
+      </Tooltip>
+    </li>
+  );
 }
 
 export const PromptSuggestions = forwardRef<HTMLUListElement, PromptSuggestionsProps>(function PromptSuggestions(
-  { suggestions, onSelect, "aria-label": ariaLabelProp, align = "start", className },
+  { suggestions, onSelect, "aria-label": ariaLabelProp, align = "start", className, "data-force": force },
   ref,
 ) {
   const t = useUiText();
   const ariaLabel = ariaLabelProp ?? t("promptSuggestions.examplePrompts", "Example prompts");
   return (
     <ul ref={ref} aria-label={ariaLabel} className={cn("flex min-w-0 flex-col gap-2", KAESO_PROMPT_SUGGESTIONS_VARIANTS.align[align].classes, className)}>
-      {suggestions.slice(0, 3).map((s) => (
-        <li key={s} className={cn("flex min-w-0", align === "center" && "justify-center")}>
-          <button
-            type="button"
-            onClick={() => onSelect(s)}
-            className={cn(
-              "flex h-36 max-w-full min-w-0 cursor-pointer items-center rounded-item px-16 text-body text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg focus-ring-inset",
-              align === "start" && "flex-1",
-            )}
-          >
-            <span className="min-w-0 truncate">{s}</span>
-          </button>
-        </li>
+      {suggestions.slice(0, 3).map((s, i) => (
+        <Suggestion key={i} prompt={s} align={align} force={force} onSelect={onSelect} />
       ))}
     </ul>
   );

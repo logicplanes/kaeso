@@ -428,17 +428,14 @@
   color: var(--k-text);
   box-shadow: var(--k-shadow-field);
   @media (hover: hover) {
-    &:hover:not(:has(textarea:disabled), :has(textarea:focus)) {
+    &:hover:not(:has(textarea:disabled), :has(textarea:focus-visible)) {
       box-shadow: var(--k-shadow-field-hover);
     }
   }
   &[data-force~="hover"] {
     box-shadow: var(--k-shadow-field-hover);
   }
-  &:has(textarea:focus) {
-    box-shadow: var(--k-shadow-field-hover);
-  }
-  :root:not([data-k-pointer]) &:has(textarea:focus-visible),
+  &:has(textarea:focus-visible),
   &[data-force~="focus"] {
     box-shadow:
       inset 0 0 0 1px var(--k-text),
@@ -449,6 +446,35 @@
     background-color: var(--k-fill-1);
     color: var(--k-text-disabled);
     box-shadow: none;
+  }
+  /* Ghost controls in the button row sit on the raised surface, where fill-1 disappears in dark. */
+  & .material-ghost {
+    @media (hover: hover) {
+      &:hover:not(:disabled, [data-disabled], [aria-disabled="true"]) {
+        background-color: var(--k-raised-hover);
+      }
+    }
+    &[data-force~="hover"] {
+      background-color: var(--k-raised-hover);
+    }
+    &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
+    &[data-force~="pressed"],
+    &[data-popup-open],
+    &[data-force~="open"] {
+      background-color: var(--k-raised-pressed);
+    }
+  }
+}
+
+@utility reserve-text {
+  &::after {
+    content: attr(data-reserve);
+  }
+}
+
+@utility markdown-text-inset {
+  & > :not(.rounded-well, :has(> table), :has(> button)) {
+    padding-inline: 12px;
   }
 }
 
@@ -911,12 +937,35 @@
     display: none;
   }
   @media (width >= 48rem) {
-    grid-auto-columns: minmax(240px, 1fr);
+    grid-auto-columns: minmax(320px, 1fr);
     mask-image: linear-gradient(to right, transparent 0, black var(--k-fade-start, 0px), black calc(100% - var(--k-fade-end, 0px)), transparent 100%);
     scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
-    &:hover {
-      scrollbar-color: var(--k-line-strong) transparent;
+    scrollbar-color: var(--k-line-strong) transparent;
+  }
+}
+
+/* The thread scroller is masked by its fade, which would also hide a ring drawn on it. */
+@utility compare-thread {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
+  :root:not([data-k-pointer]) &:has(> :focus-visible)::after,
+  &[data-force~="focus"]::after {
+    outline-color: var(--k-focus);
+  }
+  @media (forced-colors: active) {
+    &::after {
+      outline-style: none;
+    }
+    :root:not([data-k-pointer]) &:has(> :focus-visible)::after,
+    &[data-force~="focus"]::after {
+      outline: 2px solid Highlight;
     }
   }
 }

@@ -30,8 +30,17 @@ interface GridContext {
   count: number;
   divider: keyof typeof KAESO_COMPARE_GRID_VARIANTS.divider;
   add: ReactNode;
+  removing: (index: number) => void;
 }
-const ColumnContext = createContext<GridContext>({ index: 0, count: 1, divider: "hairline", add: null });
+const ColumnContext = createContext<GridContext>({ index: 0, count: 1, divider: "hairline", add: null, removing: () => {} });
+
+const FOCUSABLE = "button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex='-1'])";
+
+function focusIn(column: Element | undefined, preferred?: string) {
+  const header = column?.querySelector("header");
+  const el = (preferred ? header?.querySelector<HTMLElement>(preferred) : null) ?? header?.querySelector<HTMLElement>(FOCUSABLE);
+  el?.focus({ preventScroll: true });
+}
 
 export interface CompareGridProps {
   children: ReactNode;
@@ -79,21 +88,36 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
     if (active !== undefined) scrollTo(active);
   }, [active, scrollTo]);
   const before = useRef(count);
+  const adding = useRef(false);
+  const removed = useRef<number | null>(null);
   useLayoutEffect(() => {
+    const columnsNow = scroller.current?.children;
     if (count > before.current) {
       setCurrent(count - 1);
       changed.current?.(count - 1);
       scrollTo(count - 1);
+      if (adding.current) focusIn(columnsNow?.[count - 1]);
+    } else if (count < before.current && removed.current !== null) {
+      const at = Math.min(removed.current, count - 1);
+      focusIn(columnsNow?.[at], "[data-compare-remove]");
     }
+    adding.current = false;
+    removed.current = null;
     before.current = count;
   }, [count, scrollTo]);
+  const removing = useCallback((index: number) => {
+    removed.current = index;
+  }, []);
 
+  const [edges, setEdges] = useState<{ overflow: boolean; start: boolean; end: boolean } | null>(null);
   const fade = useCallback(() => {
     const box = scroller.current;
     if (!box) return;
     const end = box.scrollWidth - box.clientWidth - box.scrollLeft;
     box.style.setProperty("--k-fade-start", box.scrollLeft > 1 ? "24px" : "0px");
     box.style.setProperty("--k-fade-end", end > 1 ? "24px" : "0px");
+    const next = { overflow: box.scrollWidth - box.clientWidth > 1, start: box.scrollLeft <= 1, end: end <= 1 };
+    setEdges((e) => (e && e.overflow === next.overflow && e.start === next.start && e.end === next.end ? e : next));
   }, []);
   useLayoutEffect(() => {
     const box = scroller.current;
@@ -101,6 +125,7 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
     fade();
     const ro = new ResizeObserver(fade);
     ro.observe(box);
+    for (const column of box.children) ro.observe(column);
     return () => ro.disconnect();
   }, [fade, count]);
 
@@ -130,52 +155,66 @@ const Root = forwardRef<HTMLDivElement, CompareGridProps>(function CompareGrid(
       icon={icons.add}
       aria-label={addLabel ?? t("compareGrid.addModel", "Add model")}
       size="sm"
-      onClick={onAdd}
+      onClick={() => {
+        adding.current = true;
+        onAdd();
+      }}
       disabled={full}
       {...(full ? { disabledReason: t("compareGrid.compareUpTo", "Compare up to {max} at once", { max }) } : {})}
     />
   ) : null;
   const label = columns[shown]?.props.label ?? "";
+  const switcher = edges?.overflow ? "flex" : "flex md:hidden";
+  const atStart = edges?.overflow ? edges.start : shown === 0;
+  const atEnd = edges?.overflow ? edges.end : shown >= count - 1;
+  const position = { index: shown + 1, count };
 
   return (
     <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex h-full min-h-0 min-w-0 flex-col", className)}>
-      {count > 1 || onAdd ? (
-        <div className="flex h-44 shrink-0 items-center gap-4 px-24 hairline-b md:hidden">
+      {(count > 1 || edges?.overflow) && (
+        <div className={cn("h-44 shrink-0 items-center gap-4 px-24 hairline-b", switcher)}>
           <IconButton
             icon={icons.chevronLeft}
             aria-label={t("compareGrid.previousColumn", "Previous column")}
             size="sm"
-            disabled={shown === 0}
+            disabled={atStart}
             onClick={() => go(shown - 1)}
           />
           <span aria-live="polite" className="min-w-0 flex-1 truncate text-center text-small text-fg-secondary tabular">
-            <span className="sr-only">{t("compareGrid.columnName", "{label}, ", { label })}</span>
-            {t("compareGrid.position", "{index} of {count}", { index: shown + 1, count })}
+            <span className="sr-only">{t("compareGrid.namedPosition", "{label}, {index} of {count}", { label, ...position })}</span>
+            <span aria-hidden>{t("compareGrid.position", "{index} of {count}", position)}</span>
           </span>
           <IconButton
             icon={icons.chevronRight}
             aria-label={t("compareGrid.nextColumn", "Next column")}
             size="sm"
-            disabled={shown >= count - 1}
+            disabled={atEnd}
             onClick={() => go(shown + 1)}
           />
-          {add}
+          {add && <span className="contents md:hidden">{add}</span>}
         </div>
-      ) : null}
-      <div
-        ref={scroller}
-        onScroll={onScroll}
-        onPointerDown={release}
-        onWheel={release}
-        onTouchStart={release}
-        onKeyDown={release}
-        className="relative min-h-0 min-w-0 flex-1 compare-grid"
-      >
-        {columns.map((col, i) => (
-          <ColumnContext.Provider key={col.key ?? i} value={{ index: i, count, divider, add: i === count - 1 ? add : null }}>
-            {col}
-          </ColumnContext.Provider>
-        ))}
+      )}
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <div
+          ref={scroller}
+          onScroll={onScroll}
+          onPointerDown={release}
+          onWheel={release}
+          onTouchStart={release}
+          onKeyDown={release}
+          className="relative min-h-0 min-w-0 flex-1 compare-grid"
+        >
+          {columns.map((col, i) => (
+            <ColumnContext.Provider key={col.key ?? i} value={{ index: i, count, divider, add: count === 1 ? add : null, removing }}>
+              {col}
+            </ColumnContext.Provider>
+          ))}
+        </div>
+        {add && (
+          <div className={cn("hidden w-56 shrink-0 flex-col md:flex", KAESO_COMPARE_GRID_VARIANTS.divider[divider].classes)}>
+            <div className="flex h-52 shrink-0 items-center justify-center hairline-b">{add}</div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -236,7 +275,7 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
   ref,
 ) {
   const t = useUiText();
-  const { index, count, divider, add } = useContext(ColumnContext);
+  const { index, count, divider, add, removing } = useContext(ColumnContext);
   const { body, content } = useStickToEnd(stickToEnd);
   return (
     <section
@@ -252,19 +291,30 @@ const Column = forwardRef<HTMLElement, CompareColumnProps>(function CompareGridC
         <div className="flex min-w-0 flex-1 items-center">{header}</div>
         {actions}
         {onRemove && count > 1 && (
-          <IconButton icon={icons.close} aria-label={removeLabel ?? t("compareGrid.remove", "Remove {label}", { label })} size="sm" onClick={onRemove} />
+          <IconButton
+            data-compare-remove=""
+            icon={icons.close}
+            aria-label={removeLabel ?? t("compareGrid.remove", "Remove {label}", { label })}
+            size="sm"
+            onClick={() => {
+              removing(index);
+              onRemove();
+            }}
+          />
         )}
-        {add && <span className="hidden md:contents">{add}</span>}
+        {add && <span className="flex shrink-0 md:hidden">{add}</span>}
       </header>
-      <div
-        ref={body}
-        tabIndex={0}
-        aria-label={t("compareGrid.thread", "{label} thread", { label })}
-        role="region"
-        className="relative min-h-0 overflow-y-auto overscroll-contain scrollbar-quiet scroll-fade-y focus-ring-inset"
-      >
-        <div ref={content} className="flex min-h-full flex-col px-24 pt-16 pb-24">
-          {children}
+      <div className="min-h-0 min-w-0 compare-thread">
+        <div
+          ref={body}
+          tabIndex={0}
+          aria-label={t("compareGrid.thread", "{label} thread", { label })}
+          role="region"
+          className="relative h-full min-h-0 overflow-y-auto overscroll-contain outline-none scrollbar-quiet scroll-fade-y"
+        >
+          <div ref={content} className="flex min-h-full flex-col px-24 pt-16 pb-24">
+            {children}
+          </div>
         </div>
       </div>
       {footer !== undefined && footer !== null && (

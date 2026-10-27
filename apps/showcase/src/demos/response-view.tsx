@@ -10,7 +10,7 @@ const sonnet = answers["claude-sonnet-4-5"]![1]!;
 export const meta = {
   title: "ResponseView",
   description:
-    "A model's response as it arrives: Markdown with a quiet caret, reasoning in a Thinking disclosure, and calm stopped, cut-off and failed states.",
+    "A model's response as it arrives: a quiet caret until the first token, Markdown as it streams, reasoning in a Thinking disclosure, and calm stopped, cut-off and failed states.",
   group: "Playground",
   entry: "playground",
   import: "ResponseView, UserMessage, Thread",
@@ -20,6 +20,7 @@ export const meta = {
     "Each response is an article named by aria-label (“GPT-5 response” in a comparison) and is aria-busy while it streams, so its words aren't read out one by one.",
     "Thinking is a disclosure button; closed, its row shows the latest line of the summary, hidden from screen readers, which read the summary when opened.",
     "A failure is an alert in place of the response: “No response”, then the error.",
+    "When a response finishes, stops or is cut off, a status message says so once, by name: “GPT-5 response finished”.",
   ],
 };
 export const examples = [
@@ -113,9 +114,11 @@ export function ThreadDemo() {
 
 export function States() {
   const half = gpt.text.slice(0, 160);
+  const table =
+    "Two did:\n\n| Model | Errors | Rate |\n|---|--:|--:|\n| gpt-5 | 41 | 0.9% |\n| claude-haiku-4-5 | 12 | 0.3% |\n\nMost were **429s** from the project's limit.";
   return (
     <div className="flex w-560 flex-col">
-      <StateSection title="Pending: nothing drawn; the metrics count">
+      <StateSection title="Pending: a quiet mark until the first token">
         <ResponseView status="pending" footer={<ResponseMetrics live reasoning />} />
       </StateSection>
       <StateSection title="Thinking, closed: the latest line">
@@ -127,17 +130,35 @@ export function States() {
       <StateSection title="Writing">
         <ResponseView status="streaming" reasoning={gpt.reasoning} reasoningDuration={3800} text={half} />
       </StateSection>
+      <StateSection title="Writing, reasoning open">
+        <ResponseView status="streaming" reasoning={gpt.reasoning} reasoningDuration={3800} text={half} defaultReasoningOpen />
+      </StateSection>
       <StateSection title="Done">
         <ResponseView text={gpt.text} reasoning={gpt.reasoning} reasoningDuration={3800} />
       </StateSection>
-      <StateSection title="Done, no reasoning">
-        <ResponseView text={answers["claude-haiku-4-5"]![0]!.text} />
+      <StateSection title="Done, no reasoning, with metrics">
+        <ResponseView
+          text={answers["claude-haiku-4-5"]![0]!.text}
+          footer={<ResponseMetrics timeToFirstToken={280} duration={1460} inputTokens={98} outputTokens={41} cost="0.000026" />}
+        />
+      </StateSection>
+      <StateSection title="A table and code">
+        <ResponseView text={`${table}\n\n\`\`\`json\n{ "model": "gpt-5", "errors": 41 }\n\`\`\``} />
       </StateSection>
       <StateSection title="Stopped">
         <ResponseView status="stopped" text={half} onRetry={() => undefined} />
       </StateSection>
+      <StateSection title="Stopped before a response">
+        <ResponseView status="stopped" onRetry={() => undefined} />
+      </StateSection>
       <StateSection title="Cut off at the output limit">
         <ResponseView status="incomplete" incompleteReason="max_output_tokens" text={half} onRetry={() => undefined} />
+      </StateSection>
+      <StateSection title="Cut off by the content filter">
+        <ResponseView status="incomplete" incompleteReason="content_filter" text={half} onRetry={() => undefined} />
+      </StateSection>
+      <StateSection title="Ended early, no reason given">
+        <ResponseView status="incomplete" text={half} />
       </StateSection>
       <StateSection title="Failed">
         <ResponseView status="error" error="Budget used up: the project's $5.00 per month." onRetry={() => undefined} />
@@ -145,8 +166,14 @@ export function States() {
       <StateSection title="Failed partway">
         <ResponseView status="error" text={half} error="The stream ended before the model finished. Try again." onRetry={() => undefined} />
       </StateSection>
+      <StateSection title="Failed, no Retry">
+        <ResponseView status="error" error="The key `sk-kso-…wxyz` can't use GPT-5. Ask an owner to allow it." />
+      </StateSection>
       <StateSection title="Empty">
         <ResponseView text="" />
+      </StateSection>
+      <StateSection title="A long prompt, clamped">
+        <UserMessage>{Array.from({ length: 3 }, () => prompts[0]).join(" ")}</UserMessage>
       </StateSection>
       <StateSection title="A thread">
         <ThreadDemo />

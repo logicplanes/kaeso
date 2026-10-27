@@ -1,4 +1,4 @@
-import { forwardRef, useId, type ReactElement } from "react";
+import { forwardRef, type ReactElement } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { formatNumber } from "../../format/index.js";
@@ -78,17 +78,14 @@ function SliderRow({
   disabled: boolean;
   onChange: (v: number) => void;
 }) {
-  const id = useId();
   const t = useUiText();
   const shown = formatNumber(value, { minimumFractionDigits: digits, maximumFractionDigits: digits });
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-baseline justify-between gap-12">
-        <span id={id} className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>
-          {label}
-        </span>
+        <span className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{label}</span>
         <span className={cn("text-small tabular", unset ? "text-fg-tertiary" : "text-fg-secondary")}>
-          {unset ? t("parameterPanel.valueDefault", "{value} default", { value: shown }) : shown}
+          {unset ? t("parameterPanel.valueDefault", "{value} (default)", { value: shown }) : shown}
         </span>
       </div>
       <div className="px-8">
@@ -177,7 +174,12 @@ export const ParameterPanel = forwardRef<HTMLDivElement, ParameterPanelProps>(fu
         placeholder={t("parameterPanel.modelDefault", "Model default")}
         align="start"
         min="1"
-        {...(maxOutputTokensLimit ? { max: String(maxOutputTokensLimit) } : {})}
+        {...(maxOutputTokensLimit
+          ? {
+              max: String(maxOutputTokensLimit),
+              description: t("parameterPanel.maxOutputTokensLimit", "Up to {max} for this model", { max: formatNumber(maxOutputTokensLimit) }),
+            }
+          : {})}
         step="256"
         value={value.maxOutputTokens === undefined ? "" : String(value.maxOutputTokens)}
         disabled={disabled}
@@ -257,8 +259,16 @@ export const ParameterPopover = forwardRef<HTMLDivElement, ParameterPopoverProps
       {...(onOpenChange ? { onOpenChange } : {})}
     >
       <Popover.Trigger>{trigger ?? <IconButton icon={icons.displayOptions} aria-label={title} size="sm" />}</Popover.Trigger>
-      <Popover.Content ref={ref} title={title} side={side} align={align} className="w-320 max-w-(--available-width)">
-        <ParameterPanel {...panel} />
+      <Popover.Content ref={ref} aria-label={title} side={side} align={align} className="w-320 max-w-(--available-width)">
+        <div className="relative">
+          <p className="mb-16 flex min-h-32 items-center pr-40 text-body font-semibold text-fg">{title}</p>
+          <ParameterPanel {...panel} />
+          <div className="absolute top-0 right-0">
+            <Popover.Close>
+              <IconButton icon={icons.close} aria-label={t("parameterPopover.close", "Close parameters")} size="sm" />
+            </Popover.Close>
+          </div>
+        </div>
       </Popover.Content>
     </Popover>
   );

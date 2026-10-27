@@ -16,7 +16,9 @@ export const meta = {
     ["Left Right", "Moves a slider by a step"],
     ["Escape", "Closes the popover"],
   ],
-  a11y: ["Every control has a visible label that names it; the popover holds a form and traps the focus until it closes."],
+  a11y: [
+    "Every control has a visible label that names it; the popover holds a form, keeps the focus inside until it closes and has a Close button; Escape closes it too.",
+  ],
 };
 export const examples = [
   { id: "popover", title: "In a popover", fn: "Basic", minHeight: 120 },
@@ -54,18 +56,26 @@ export function Panel() {
 export function States() {
   const none = () => undefined;
   return (
-    <div className="grid grid-cols-2 gap-x-48" style={{ width: 720 }}>
+    <div className="grid w-640 grid-cols-2 gap-x-24">
+      <StateSection title="In its popover" className="col-span-2">
+        <div className="h-720">
+          <ParameterPopover defaultOpen value={{ instructions }} onValueChange={none} reasoning align="start" />
+        </div>
+      </StateSection>
       <StateSection title="Defaults">
         <ParameterPanel value={{}} onValueChange={none} />
       </StateSection>
-      <StateSection title="Changed">
-        <ParameterPanel value={{ instructions, temperature: 0.2, topP: 0.9, maxOutputTokens: 1024 }} onValueChange={none} />
+      <StateSection title="Changed, with the model's limit">
+        <ParameterPanel value={{ instructions, temperature: 0.2, topP: 0.9, maxOutputTokens: 1024 }} onValueChange={none} maxOutputTokensLimit={128000} />
       </StateSection>
       <StateSection title="A model that reasons">
         <ParameterPanel value={{ reasoningEffort: "high", reasoningSummary: "detailed" }} onValueChange={none} sampling={false} reasoning />
       </StateSection>
       <StateSection title="Disabled">
         <ParameterPanel value={{ instructions }} onValueChange={none} disabled reasoning />
+      </StateSection>
+      <StateSection title="As a panel">
+        <ParameterPanel layout="panel" value={{ temperature: 0.4 }} onValueChange={none} reasoning={["minimal", "low", "medium", "high"]} />
       </StateSection>
     </div>
   );

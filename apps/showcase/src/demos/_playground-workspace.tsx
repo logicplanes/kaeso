@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, icons } from "@logicplanes/kaeso-ui";
+import { Button, icons, toast } from "@logicplanes/kaeso-ui";
 import {
   CompareGrid,
   Composer,
@@ -168,6 +168,17 @@ function useFakeGateway(setColumns: (f: (c: Column[]) => Column[]) => void) {
   return { run, stop };
 }
 
+export function EmptyColumn({ name }: { name: string }) {
+  return (
+    <div className="flex flex-col gap-4 px-12">
+      <p className="text-body font-medium text-fg">{name}</p>
+      <p className="max-w-280 text-small text-fg-secondary text-pretty">
+        Its answers appear here, side by side with the others, from the next prompt you send.
+      </p>
+    </div>
+  );
+}
+
 const suggestions = ["Apologize for a late order in two sentences", "Explain our refund policy in plain words", "Sort these support emails by topic"];
 
 const empty = (): Response => ({ status: "pending", text: "", reasoning: "", startedAt: Date.now(), metrics: {} });
@@ -222,7 +233,13 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
                     onValueChange={(v) => setColumns((cs) => cs.map((x) => (x.id === c.id ? { ...x, model: v } : x)))}
                   />
                 }
-                onRemove={() => setColumns((cs) => cs.filter((x) => x.id !== c.id))}
+                onRemove={() => {
+                  const at = columns.findIndex((x) => x.id === c.id);
+                  setColumns((cs) => cs.filter((x) => x.id !== c.id));
+                  toast(`${model.name} removed`, {
+                    action: { label: "Undo", onClick: () => setColumns((cs) => [...cs.slice(0, at), c, ...cs.slice(at)]) },
+                  });
+                }}
                 footer={
                   <ResponseMetrics
                     timeToFirstToken={last?.metrics.ttft}
@@ -238,12 +255,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
                 }
               >
                 {c.thread.length === 0 ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-4 px-16 text-center">
-                    <p className="text-body font-medium text-fg">{model.name}</p>
-                    <p className="max-w-280 text-small text-fg-secondary text-pretty">
-                      Its answers appear here, side by side with the others, from the next prompt you send.
-                    </p>
-                  </div>
+                  <EmptyColumn name={model.name} />
                 ) : (
                   <Thread>
                     {c.thread.map((e, i) => (
@@ -267,7 +279,7 @@ export function PlaygroundWorkspace({ initial, initialPrompt = "" }: { initial: 
           })}
         </CompareGrid>
       </div>
-      <div className="flex shrink-0 flex-col gap-12 px-12 pt-4 pb-12 md:px-16 md:pb-16">
+      <div className="flex shrink-0 flex-col gap-12 px-24 pt-4 pb-24">
         {fresh && (
           <PromptSuggestions
             className="mx-auto w-full max-w-800"

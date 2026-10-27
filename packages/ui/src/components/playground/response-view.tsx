@@ -1,4 +1,4 @@
-import { forwardRef, useId, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { Button } from "../button/button.js";
 import { Markdown } from "../markdown/markdown.js";
@@ -42,6 +42,26 @@ function incompleteText(t: UiText, reason: string | undefined): string {
   return t("responseView.incomplete", "The model ended the response early");
 }
 
+const STREAM_CARET = (
+  <span
+    aria-hidden
+    data-caret=""
+    className="ml-2 inline-block h-16 w-2 rounded-pill bg-fg-tertiary align-text-bottom animate-pulse-quiet forced-line reduced:animate-none"
+  />
+);
+
+function useEndAnnouncement(status: ResponseStatus, ended: string) {
+  const [said, setSaid] = useState("");
+  const before = useRef(status);
+  useEffect(() => {
+    const was = before.current;
+    before.current = status;
+    if (status === "pending" || status === "streaming") setSaid("");
+    else if ((was === "pending" || was === "streaming") && status !== "error") setSaid(ended);
+  }, [status, ended]);
+  return said;
+}
+
 export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function ResponseView(
   {
     text = "",
@@ -67,6 +87,18 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
   const hasText = text.trim() !== "";
   const hasReasoning = !!reasoning && reasoning.trim() !== "";
   const thinking = active && hasReasoning && !hasText;
+  const ended =
+    status === "stopped"
+      ? t("responseView.endedStopped", "{label} stopped", { label: ariaLabel })
+      : status === "incomplete"
+        ? t("responseView.endedIncomplete", "{label}: {reason}", { label: ariaLabel, reason: incompleteText(t, incompleteReason) })
+        : t("responseView.endedDone", "{label} finished", { label: ariaLabel });
+  const said = useEndAnnouncement(status, ended);
+  const retry = onRetry ? (
+    <Button size="sm" variant="secondary" onClick={onRetry}>
+      {t("responseView.retry", "Retry")}
+    </Button>
+  ) : null;
   return (
     <article
       ref={ref}
@@ -86,53 +118,54 @@ export const ResponseView = forwardRef<HTMLElement, ResponseViewProps>(function 
         />
       )}
       {hasText ? (
-        <Markdown text={text} size="lg" streaming={active} collapseAfter={0} wrapCode className="px-12" />
+        <Markdown
+          text={text}
+          size="lg"
+          streaming={active}
+          collapseAfter={0}
+          wrapCode
+          trailing={status === "streaming" ? STREAM_CARET : undefined}
+          className="markdown-text-inset"
+        />
       ) : active && !hasReasoning ? (
-        <div aria-hidden className="h-22 px-12" />
-      ) : null}
-      {status === "stopped" && (
-        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4 px-12">
-          <span className="text-small text-fg-tertiary">
-            {hasText ? t("responseView.stopped", "Stopped") : t("responseView.stoppedBeforeResponse", "Stopped before a response")}
-          </span>
-          {onRetry && (
-            <Button size="xs" variant="ghost" onClick={onRetry}>
-              {t("responseView.retry", "Retry")}
-            </Button>
-          )}
+        <div aria-hidden data-pending="" className="flex h-22 items-center px-12">
+          <span className="h-16 w-2 rounded-pill bg-fg-tertiary animate-pulse-quiet forced-line reduced:animate-none" />
         </div>
-      )}
-      {status === "incomplete" && (
-        <div className="flex min-h-24 flex-wrap items-center gap-x-12 gap-y-4 px-12">
-          <span className="text-small text-fg-secondary">{incompleteText(t, incompleteReason)}</span>
-          {onRetry && (
-            <Button size="xs" variant="ghost" onClick={onRetry}>
-              {t("responseView.retry", "Retry")}
-            </Button>
-          )}
+      ) : null}
+      {(status === "stopped" || status === "incomplete") && (
+        <div className="flex min-h-32 flex-wrap items-center gap-x-12 gap-y-4 px-12">
+          <span className="text-small text-fg-secondary">
+            {status === "incomplete"
+              ? incompleteText(t, incompleteReason)
+              : hasText
+                ? t("responseView.stopped", "Stopped")
+                : t("responseView.stoppedBeforeResponse", "Stopped before a response")}
+          </span>
+          {retry}
         </div>
       )}
       {status === "error" && (
-        <div role="alert" className="flex min-h-24 flex-col items-start gap-4 px-12">
-          <span className="text-small font-medium text-fg">
-            {hasText ? t("responseView.stoppedEarly", "The response stopped early") : t("responseView.noResponse", "No response")}
-          </span>
-          {error && <Markdown text={error} size="small" tone="secondary" className="max-w-prose min-w-0" />}
-          {onRetry && (
-            <Button size="xs" variant="secondary" onClick={onRetry} className="mt-4">
-              {t("responseView.retry", "Retry")}
-            </Button>
-          )}
+        <div className="flex flex-col items-start gap-8 px-12">
+          <div role="alert" className="flex min-w-0 flex-col gap-4">
+            <span className="text-small font-medium text-fg">
+              {hasText ? t("responseView.failedPartway", "The response failed partway") : t("responseView.noResponse", "No response")}
+            </span>
+            {error && <Markdown text={error} size="small" tone="secondary" className="max-w-prose min-w-0" />}
+          </div>
+          {retry}
         </div>
       )}
       {status === "done" && !hasText && <span className="px-12 text-small text-fg-tertiary">{t("responseView.noText", "The model returned no text")}</span>}
-      {footer}
+      {footer !== undefined && footer !== null && <div className="min-w-0 px-12">{footer}</div>}
       <span id={announce} className="sr-only">
         {status === "pending"
           ? t("responseView.waiting", "Waiting for the response")
           : status === "streaming"
             ? t("responseView.responding", "Responding")
             : ""}
+      </span>
+      <span role="status" className="sr-only">
+        {said}
       </span>
     </article>
   );
@@ -157,21 +190,23 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
   const showAll = t("userMessage.showAll", "Show all");
   const showLess = t("userMessage.showLess", "Show less");
   const [all, setAll] = useState(false);
+  const body = useId();
   const text = useRef<HTMLParagraphElement | null>(null);
   const clamped = useTruncated(text, maxLines > 0 && !all);
   return (
-    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-start gap-2 px-12", className)}>
+    <div ref={ref} role="group" aria-label={ariaLabel} className={cn("flex min-w-0 flex-col items-start gap-2", className)}>
       <p
+        id={body}
         ref={text}
         className={cn(
-          "max-w-prose min-w-0 text-body font-medium whitespace-pre-wrap wrap-break-word text-fg-secondary",
+          "max-w-prose min-w-0 px-12 text-body font-medium whitespace-pre-wrap wrap-break-word text-fg-secondary",
           maxLines !== 0 && !all && CLAMP[maxLines],
         )}
       >
         {children}
       </p>
       {(clamped || all) && (
-        <Button size="xs" variant="link" reserveLabels={[showAll, showLess]} onClick={() => setAll((a) => !a)} className="text-fg-tertiary">
+        <Button size="sm" variant="quiet" aria-expanded={all} aria-controls={body} reserveLabels={[showAll, showLess]} onClick={() => setAll((a) => !a)}>
           {all ? showLess : showAll}
         </Button>
       )}
