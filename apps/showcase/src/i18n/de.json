@@ -739,7 +739,7 @@
   "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.": "Die Serien, jede mit `id`, `label`, `points` aus `t` (einer Zeit) und `v` sowie optionaler `color`.",
   "The shape it stands in for: a line of text, a control, a circle or a block.": "Die Form, die es vertritt: eine Textzeile, ein Steuerelement, einen Kreis oder einen Block.",
   "The shape of each step: a pill or a box.": "Die Form jedes Schritts: eine Pille oder ein Kasten.",
-  "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.": "Der verbrauchte Anteil, von 0 bis 1. Werte über 1 füllen den Bogen und färben ihn als Gefahr.",
+  "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger; a missing value (NaN) shows a dash and no arc.": "Der verbrauchte Anteil, von 0 bis 1. Werte über 1 füllen den Bogen und färben ihn als Gefahr; ein fehlender Wert (NaN) zeigt einen Strich und keinen Bogen.",
   "The sheet's content.": "Der Inhalt des Sheets.",
   "The side it opens on.": "Die Seite, auf der es sich öffnet.",
   "The size of each character's box.": "Die Größe des Kastens für jedes Zeichen.",
