@@ -221,6 +221,8 @@ export function notifications() {
 export async function hoverReason(user: UserEvent, element: HTMLElement, text: string | RegExp): Promise<HTMLElement> {
   act(() => showTooltipsAtOnce(true));
   try {
+    // A pointer still resting on the button from the click that blocked it gets no enter event; a person moves onto it.
+    await user.pointer({ target: element.parentElement ?? element });
     await user.hover(element);
     const tip = await screen.findByText(text);
     await user.unhover(element);

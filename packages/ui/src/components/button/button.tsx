@@ -290,12 +290,12 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     );
   }
 
-  if (disabledReason && disabled) {
-    return <Tooltip content={disabledReason}>{el as ReactElement}</Tooltip>;
-  }
-  if (cut) {
-    return <Tooltip content={(props as PillButtonProps).children}>{el as ReactElement}</Tooltip>;
-  }
-  return el;
+  const reasonShown = !!disabledReason && !!disabled;
+  // The Tooltip stays mounted when it has nothing to say: unwrapping would remount the button and drop its focus.
+  return (
+    <Tooltip content={reasonShown ? disabledReason : cut ? (props as PillButtonProps).children : ""} disabled={!reasonShown && !cut}>
+      {el as ReactElement}
+    </Tooltip>
+  );
 });
 Button.displayName = "Button";

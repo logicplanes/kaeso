@@ -36,6 +36,10 @@ export function IsoField({
     }
     const d = parseISODate(typed);
     if (!d) return onProblem("format");
+    if (value && formatISODate(d) === formatISODate(value)) {
+      setText(formatISODate(value));
+      return onProblem(null);
+    }
     if (onCommit(d) === false) return onProblem("unavailable");
     onProblem(null);
   };
