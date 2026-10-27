@@ -4,6 +4,40 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-10-27
+
+### Added
+
+- The request log filters by format and shows each request's cached share, and usage reports a cache hit rate by route ([#511](https://github.com/logicplanes/kaeso/pull/511))
+
+### Changed
+
+- Every control shows its hover, press and open states, dark text reads clearly and the library works in forced colours ([#502](https://github.com/logicplanes/kaeso/pull/502))
+- Buttons, links, key caps and text fields show every state, fit long labels and say what changed ([#503](https://github.com/logicplanes/kaeso/pull/503))
+- Dialogs, menus, tooltips, toasts and the command palette keep their place and describe their controls once ([#505](https://github.com/logicplanes/kaeso/pull/505))
+- Tabs, pagination, the sidebar and settings rows keep focus, mirror right to left and stay visible in forced colours ([#506](https://github.com/logicplanes/kaeso/pull/506))
+- Data tables are one tab stop with range selection, and lists, badges, avatars and rights read clearly on every row ([#507](https://github.com/logicplanes/kaeso/pull/507))
+- Charts handle empty and extreme data, keep their labels inside and survive forced colours, and code views are one tab stop ([#508](https://github.com/logicplanes/kaeso/pull/508))
+
+#### Gateway
+
+- A fresh install starts with models.dev's models and prices as of 27 October 2026 ([#515](https://github.com/logicplanes/kaeso/pull/515))
+
+#### UI library
+
+- Checkboxes, radios, switches, sliders, selects and pickers show every state and keep their popups on screen ([#504](https://github.com/logicplanes/kaeso/pull/504))
+- The playground keeps focus, reserves its room and says when a response ends ([#509](https://github.com/logicplanes/kaeso/pull/509))
+
+### Fixed
+
+- Claude's calls to tools without parameters reach Codex and Chat apps as {}, and tool calls whose arguments aren't an object no longer stop a thread on Claude ([#501](https://github.com/logicplanes/kaeso/pull/501))
+- Buttons and switches keep focus when their tooltip turns on or off, highlighted rows read clearly in forced colours, and a typed date is reported once ([#513](https://github.com/logicplanes/kaeso/pull/513))
+- The request log warns about a missing cache breakpoint only when nothing was cached, counts breakpoints passed through to Anthropic, and leaves embedding routes' cache hit rate empty ([#514](https://github.com/logicplanes/kaeso/pull/514))
+
+#### UI library
+
+- Data tables keep focus after the last page and shrink range selections, page links recover from a page past the end, and charts write missing values as a dash ([#512](https://github.com/logicplanes/kaeso/pull/512))
+
 ## [0.4.4] - 2026-10-26
 
 Kaeso 0.4.4 makes Claude work better behind OpenAI-format apps such as Codex: their prompts are cached, and tools whose schema has a root union reach Claude and Grok. Fresh installs start from the model catalogue of 26 October 2026, with 554 models. The release has no breaking changes, and the audit log now shows changes as a highlighted diff.
@@ -891,7 +925,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.4...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.5
 [0.4.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.4
 [0.4.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.3
 [0.4.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.2
