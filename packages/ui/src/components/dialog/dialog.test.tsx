@@ -1225,6 +1225,22 @@ describe("StepDialog when a step is blocked", () => {
   });
 });
 
+describe("StepDialog Continue", () => {
+  it("keeps focus when the step becomes blocked while Continue is focused", async () => {
+    const steps = (blockedReason?: string) => [
+      { id: "name", title: "What is it for?", ...(blockedReason ? { blockedReason } : {}), content: <input aria-label="Name" /> },
+      { id: "expiry", title: "When does it expire?", content: <input aria-label="Days" /> },
+    ];
+    const { rerender } = render(<StepDialog open title="Create key" submitLabel="Create key" onSubmit={() => undefined} steps={steps()} />);
+    await frames();
+    const next = screen.getByRole("button", { name: "Continue" });
+    next.focus();
+    rerender(<StepDialog open title="Create key" submitLabel="Create key" onSubmit={() => undefined} steps={steps("Enter a name")} />);
+    expect(document.activeElement).toBe(next);
+    expect(next).toHaveAttribute("aria-disabled", "true");
+  });
+});
+
 describe("LayerDialog header", () => {
   it("keeps the close circle in a bar above the title on every layer, with Back at its start from the second layer", async () => {
     render(

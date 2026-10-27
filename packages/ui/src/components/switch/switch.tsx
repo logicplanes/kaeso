@@ -99,7 +99,12 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       {spinning && <Spinner aria-hidden className={cn("absolute text-fg-secondary group-data-checked/sw:text-on-ink", BUSY[size])} />}
     </BaseSwitch.Root>
   );
-  const control = soft ? <Tooltip content={disabledReason}>{switchEl}</Tooltip> : switchEl;
+  // The Tooltip stays mounted when it has nothing to say: unwrapping would remount the switch and drop its focus.
+  const control = (
+    <Tooltip content={soft ? disabledReason : ""} disabled={!soft}>
+      {switchEl}
+    </Tooltip>
+  );
   if (!label) return control;
   return (
     <label

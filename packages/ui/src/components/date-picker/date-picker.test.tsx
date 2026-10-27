@@ -248,6 +248,20 @@ describe("DatePicker", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("This date can't be chosen. Choose another date.");
     expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("1 Oct 2026");
   });
+
+  it("reports a typed date once when Enter is followed by Tab", async () => {
+    const onChange = vi.fn();
+    render(<DatePicker aria-label="Expires" defaultValue={new Date(2026, 9, 1)} onValueChange={onChange} />);
+    await userEvent.click(screen.getByRole("button", { description: "Expires" }));
+    await popoverLoaded();
+    const field = screen.getByRole("textbox", { name: "Date" });
+    await userEvent.clear(field);
+    await userEvent.type(field, "2026-10-15{Enter}");
+    expect(field).toHaveFocus();
+    await userEvent.tab();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("15 Oct 2026");
+  });
 });
 
 describe("the trigger's name", () => {
