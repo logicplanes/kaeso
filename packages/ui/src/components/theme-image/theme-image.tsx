@@ -27,7 +27,7 @@ export const ThemeImage = forwardRef<HTMLSpanElement, ThemeImageProps>(function 
     alt,
     loading: "lazy" as const,
     decoding: "async" as const,
-    ...(width && height ? { width, height, style: { minWidth: `calc(${width}px * var(--k-figure-floor, 0))` } } : {}),
+    ...(width && height ? { width, height } : {}),
     ...(describedBy ? { "aria-describedby": describedBy } : {}),
   };
   return (

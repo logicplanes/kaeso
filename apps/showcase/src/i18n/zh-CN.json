@@ -1164,7 +1164,7 @@
   "Shows the empty state (`emptyText`) in place of the ring and legend. By default it shows when every value is 0, since a ring of nothing has no shares.": "显示空状态（`emptyText`），代替圆环和图例。默认在所有数值都为 0 时显示，因为空的圆环没有占比。",
   "The parts of the whole, each with an `id`, a `label`, a `value` and an optional `color`. Slices under 2% are grouped as Other when there are two or more, and past the eighth slice the rest are grouped too, so no two slices share a color.": "整体的各个部分，每个包含 `id`、`label`、`value` 和可选的 `color`。占比低于 2% 的部分有两个或更多时归为“其他”，超过第八个部分后其余部分也会归入，确保不会有两部分同色。",
   "Replaces the total in the center, which is otherwise the sum of the slices written with `formatValue`. A long total steps down a size to fit the ring.": "替换中心的总计，否则为用 `formatValue` 写出的各部分之和。过长的总计会缩小一级字号以放进圆环。",
-  "A diagram or image set apart from the text: centred on a well, with a caption, scrolling sideways when it is wider than its column.": "与正文分开展示的图示或图片：居中放在底板上并带有图注，宽于所在栏时横向滚动。",
+  "A diagram or image set apart from the text: centred on a well, with a caption, scrolling sideways only when it can't shrink to fit.": "与正文分开展示的图示或图片：居中放在底板上并带有图注，只有在无法缩小到合适宽度时才横向滚动。",
   "The name of the figure's scrolling region, read by screen readers; give each figure on a page its own.": "图示滚动区域的名称，供屏幕阅读器朗读；同一页面上的每个图示都应有各自的名称。",
   "A route that changes": "会变化的路由",
   "With animated, a dot runs once along each connector when the route changes; never on load and never with reduced motion.": "开启 animated 后，路由变化时会有一个圆点沿每条连线移动一次；加载时不会，减少动态效果时也不会。",
@@ -1176,7 +1176,7 @@
   "Shows the empty state (`emptyText`) in place of the data. By default it shows when no link carries a value.": "显示空状态（`emptyText`），代替数据。默认在没有任何连线带有数值时显示。",
   "The values in order, oldest first. One value is a dot at the newest end; none is a quiet flat line.": "按顺序排列的数值，最早的在前。只有一个数值时在最新一端显示圆点；没有数值时显示一条安静的水平线。",
   "The image's own height in pixels. Pass it with `width` so the page keeps the image's place before it loads; without both, the content below moves when it arrives.": "图片自身的高度（像素）。请与 `width` 一起传入，使页面在加载前预留图片位置；两者缺一时，图片出现后下方内容会移动。",
-  "The image's own width in pixels; the image shrinks to its container and never grows past it. Inside a `Figure` it keeps this width and the figure scrolls instead.": "图片自身的宽度（像素）；图片会缩小以适应容器，且不会超过此宽度。在 `Figure` 中保持此宽度，由图示横向滚动。",
+  "The image's own width in pixels; the image shrinks to its container, never grows past this.": "图片自身的宽度（像素）；图片会缩小以适应容器，但绝不会超过此宽度。",
   "Shows the empty state (`emptyText`) in place of the data, over the baseline and the time axis. By default it shows when there are no points; zeros are data and draw a flat line on the baseline.": "在基线和时间轴上方显示空状态（`emptyText`），代替数据。默认在没有数据点时显示；0 也是数据，会在基线上绘制一条水平线。",
   "Formats values in the tooltip, the table and on the axis. Without it, values are written in full and the axis in short form (1.2M), and the axis takes the room its widest label needs.": "格式化提示框、表格和坐标轴上的数值。不传时，数值完整显示，坐标轴使用简写（120万），并按最宽的标签预留空间。"
 }

@@ -10,8 +10,7 @@ export const docs = {
       height:
         "The image's own height in pixels. Pass it with `width` so the page keeps the image's place before it loads; without both, the content below moves when it arrives.",
       light: "The image's address for the light theme and for print.",
-      width:
-        "The image's own width in pixels; the image shrinks to its container and never grows past it. Inside a `Figure` it keeps this width and the figure scrolls instead.",
+      width: "The image's own width in pixels; the image shrinks to its container, never grows past this.",
     },
   },
 } satisfies ComponentDocs;

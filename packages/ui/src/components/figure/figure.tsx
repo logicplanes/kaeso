@@ -52,7 +52,7 @@ export const Figure = forwardRef<HTMLElement, FigureProps>(function Figure({ chi
   return (
     <figure ref={ref} className={cn("flex min-w-0 flex-col gap-12", className)}>
       <ScrollArea orientation="horizontal" aria-label={label} className={KAESO_FIGURE_VARIANTS.surface[surface].classes}>
-        <div ref={content} className="mx-auto flex w-fit min-w-full justify-center p-16 sm:p-24" style={{ ["--k-figure-floor" as string]: 1 }}>
+        <div ref={content} className="mx-auto flex w-fit min-w-full justify-center p-16 sm:p-24">
           {children}
         </div>
       </ScrollArea>
