@@ -5,9 +5,11 @@ import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { IconButton } from "../icon-button/icon-button.js";
 import { Text } from "../text/text.js";
+import { TruncatedText } from "../text/truncated.js";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { scrollParent } from "../../hooks/scroll-parent.js";
 import { useLayoutWidth } from "../../hooks/use-layout-width.js";
+import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
 import { createPortal } from "react-dom";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import { lazyModule, useLazyModuleRetried } from "../../utils/lazy-module.js";
@@ -19,7 +21,7 @@ const virtualRows = lazyModule(() => import("./virtual-rows.js"), { base: () => 
 export const KAESO_LIST_VARIANTS = {
   density: {
     default: { classes: "h-44", description: "44px rows (default)" },
-    compact: { classes: "h-36", description: "36px rows" },
+    compact: { classes: "h-36 coarse:h-44", description: "36px rows; 44px with a coarse pointer" },
   },
 } as const;
 export const KAESO_LIST_DEFAULT_VARIANTS = { density: "default" } as const;
@@ -125,6 +127,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
   const [active, setActive] = useState(-1);
   const [anchor, setAnchor] = useState<number | null>(null);
   const root = useRef<HTMLDivElement | null>(null);
+  const bar = useRef<HTMLDivElement | null>(null);
   const width = useLayoutWidth(root);
   const narrow = !!width && width < NARROW;
 
@@ -141,7 +144,8 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
   const none = groups ? groups.every((g) => g.items.length === 0) : (items ?? []).length === 0;
 
   const virtual = flat.length > virtualizeAbove;
-  const estimateSize = (i: number) => (flat[i]?.kind === "header" ? (i === 0 ? 36 : 52) : narrow ? 64 : density === "compact" ? 36 : 44);
+  const coarse = useCoarsePointer();
+  const estimateSize = (i: number) => (flat[i]?.kind === "header" ? (i === 0 ? 36 : 52) : narrow ? 64 : density === "compact" && !coarse ? 36 : 44);
   const [rowsModule, retryRows] = useLazyModuleRetried(virtualRows, virtual);
   const VirtualRows = rowsModule?.VirtualRows;
   const scrollTo = useRef<((index: number) => void) | null>(null);
@@ -152,9 +156,14 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     setActive(i);
     if (virtual) scrollTo.current?.(i);
     const line = () => root.current?.querySelector<HTMLElement>(`[data-index="${i}"]`);
+    const reach = (el: HTMLElement | null | undefined) => {
+      if (!el) return;
+      el.focus();
+      clearOfBar(el, bar.current);
+    };
     const now = line();
-    if (now) now.focus();
-    else requestAnimationFrame(() => line()?.focus());
+    if (now) reach(now);
+    else requestAnimationFrame(() => reach(line()));
   };
   const hadVirtualRows = useRef(!!VirtualRows);
   useLayoutEffect(() => {
@@ -180,12 +189,19 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
   const enabledIds = (lines: Flat[]) => lines.flatMap((f) => (f.kind === "row" && !f.item.disabled ? [f.item.id] : []));
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    if (e.defaultPrevented || !e.currentTarget.contains(target) || target.closest(TEXT_ENTRY)) return;
+    if (!e.currentTarget.contains(target) || target.closest(TEXT_ENTRY)) return;
     const line = target.closest<HTMLElement>("[role=row]");
     const primary = line?.querySelector<HTMLElement>("[data-index]");
     if (!line || !primary) return;
-    const index = Number(primary.dataset.index);
     const onPrimary = target === primary;
+    // A tooltip trigger prevents Escape's default even while its tooltip is still closed; only an open popup keeps the key.
+    if (e.key === "Escape" && !onPrimary && !e.altKey && !e.metaKey && !e.ctrlKey && !target.closest("[data-popup-open], [aria-expanded=true]")) {
+      e.preventDefault();
+      primary.focus();
+      return;
+    }
+    if (e.defaultPrevented) return;
+    const index = Number(primary.dataset.index);
     const f = flat[index];
     const row = f?.kind === "row" ? f.item : undefined;
     if (e.altKey) return;
@@ -222,9 +238,6 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
       if (!next) return;
       e.preventDefault();
       next.focus();
-    } else if (e.key === "Escape" && !onPrimary) {
-      e.preventDefault();
-      primary.focus();
     } else if (!onPrimary || !row || e.shiftKey) {
       return;
     } else if ((e.key === " " || e.key === "x") && selectable) {
@@ -238,6 +251,10 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     }
   };
   const selecting = selected.size > 0;
+  useLayoutEffect(() => {
+    const focused = document.activeElement;
+    if (selecting && focused instanceof HTMLElement && root.current?.contains(focused)) clearOfBar(focused, bar.current);
+  }, [selecting]);
   const render = (f: Flat, i: number) =>
     f.kind === "header" ? (
       <GroupHeader
@@ -305,7 +322,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
       className={cn("relative flex flex-col outline-none", inset && "overflow-hidden rounded-group bg-raised shadow-xs", className)}
     >
       {loading && (none || flat.length === 0) ? (
-        <LoadingRows density={density} />
+        <LoadingRows density={density} grouped={!!groups} />
       ) : none && empty ? (
         <div role="row">
           <div role="gridcell">{empty}</div>
@@ -325,7 +342,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
         flat.map(render)
       )}
       {selectable && selecting && selectionBar && (
-        <SelectionBar count={selected.size} onClear={() => setSelected(new Set())}>
+        <SelectionBar ref={bar} count={selected.size} onClear={() => setSelected(new Set())}>
           {selectionActions}
         </SelectionBar>
       )}
@@ -333,6 +350,26 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
   );
 });
 List.displayName = "List";
+
+function rowTone(card: boolean, selected: boolean) {
+  if (selected)
+    return card
+      ? "bg-raised-pressed controls-on-fill hover:raised-selected-hover active:raised-selected-hover"
+      : "bg-fill-2 controls-on-fill hover:bg-fill-3 active:bg-fill-3";
+  return card ? "hover:bg-raised-hover hover:controls-on-fill active:bg-raised-pressed" : "hover:bg-fill-1 hover:controls-on-fill active:bg-fill-2";
+}
+
+function selectsText(row: HTMLElement) {
+  const selection = typeof window === "undefined" ? null : window.getSelection();
+  return !!selection && !selection.isCollapsed && !!selection.anchorNode && row.contains(selection.anchorNode);
+}
+
+function clearOfBar(el: HTMLElement, bar: HTMLElement | null) {
+  const top = bar?.firstElementChild?.getBoundingClientRect().top;
+  if (top === undefined) return;
+  const covered = el.getBoundingClientRect().bottom + 8 - top;
+  if (covered > 0) scrollParent(el)?.scrollBy({ top: covered });
+}
 
 function FirstRows({ count, estimateSize, row }: { count: number; estimateSize: (index: number) => number; row: (index: number) => ReactNode }) {
   const view = typeof window === "undefined" ? 1024 : window.innerHeight;
@@ -358,10 +395,17 @@ function FirstRows({ count, estimateSize, row }: { count: number; estimateSize: 
   );
 }
 
-function LoadingRows({ density }: { density: keyof typeof KAESO_LIST_VARIANTS.density }) {
+function LoadingRows({ density, grouped }: { density: keyof typeof KAESO_LIST_VARIANTS.density; grouped: boolean }) {
   const padded = useGutterPadded();
   return (
     <div role="presentation">
+      {grouped && (
+        <div role="presentation" className={padded ? "px-0" : "px-24"}>
+          <div className="flex h-36 items-center px-12">
+            <Skeleton shape="line" className="w-80" />
+          </div>
+        </div>
+      )}
       {[62, 48, 70, 54, 40, 58].map((w, i) => (
         <div key={i} role="presentation" className={padded ? "px-0" : "px-24"}>
           <div className={cn("flex items-center gap-12 px-12", KAESO_LIST_VARIANTS.density[density].classes)}>
@@ -421,6 +465,8 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
   const lines = narrow && !!(item.meta || item.date);
   const stacked = (card || lines) && !!item.subtitle;
   const wraps = stacked && wrapSubtitle;
+  const off = !!item.disabled;
+  const trailing = item.avatar && <span className={cn("flex shrink-0", off && "opacity-50")}>{item.avatar}</span>;
   return (
     <div
       role="row"
@@ -431,30 +477,30 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         ref={ref}
         role="gridcell"
         aria-selected={selectable ? !!selected : undefined}
-        aria-disabled={item.disabled || undefined}
+        aria-disabled={off || undefined}
         data-index={index}
         data-row=""
         tabIndex={active === false ? -1 : 0}
         onFocus={onFocus}
         onClick={(e: MouseEvent<HTMLElement>) => {
           if (!e.currentTarget.contains(e.target as Node) || (e.target as HTMLElement).closest("button, a, [role=checkbox]")) return;
+          if (selectsText(e.currentTarget)) return;
           if (selecting && selectable) onSelect?.();
           else onOpen?.();
         }}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset select-none",
+          "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset",
           card ? "rounded-none px-20" : "rounded-item px-12",
-          lines || wraps ? "min-h-56 py-8" : stacked ? "h-56" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
-          "hover:bg-fill-1 hover:controls-on-fill",
-          selected && "bg-fill-2 controls-on-fill hover:bg-fill-2",
-          item.disabled && "pointer-events-none text-fg-disabled",
+          stacked || lines || wraps ? "min-h-56 py-8" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
+          rowTone(card, !!selected),
+          off && "pointer-events-none text-fg-disabled",
         )}
       >
         {selectable && (
           <span
             className={cn(
-              "flex shrink-0 transition-control",
+              "flex shrink-0 transition-control select-none",
               selecting || selected ? "opacity-100" : "opacity-0 group-hover/row:opacity-100 group-focus-visible/row:opacity-100 coarse:opacity-100",
             )}
             onClick={(e) => e.stopPropagation()}
@@ -467,44 +513,62 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </span>
         )}
         {depth === 1 && (
-          <span aria-hidden className="relative -ml-4 h-full w-16 shrink-0">
-            <span className={cn("absolute left-6 w-1 bg-line-strong", lastChild ? "top-0 h-1/2" : "inset-y-0")} />
-            <span className="absolute top-1/2 left-6 h-1 w-10 bg-line-strong" />
+          <span aria-hidden className="relative -ml-4 h-full w-16 shrink-0 self-stretch">
+            <span className={cn("absolute left-6 w-1 bg-line-strong forced-line", lastChild ? "top-0 h-1/2" : "inset-y-0")} />
+            <span className="absolute top-1/2 left-6 h-1 w-10 bg-line-strong forced-line" />
           </span>
         )}
-        {item.glyph && <span className="flex size-16 shrink-0 items-center justify-center">{item.glyph}</span>}
-        {item.leading && <span className="-mr-4 flex shrink-0">{item.leading}</span>}
+        {item.glyph && <span className={cn("flex size-16 shrink-0 items-center justify-center", off && "opacity-50")}>{item.glyph}</span>}
+        {item.leading && <span className={cn("-mr-4 flex shrink-0", stacked && "self-start", off && "opacity-50")}>{item.leading}</span>}
         {item.displayId && (
-          <span className={cn("shrink-0 truncate mono text-small text-fg-tertiary tabular", selected && "text-fg-secondary", idWidth && ID_W[idWidth])}>
+          <TruncatedText
+            className={cn(
+              "shrink-0 mono text-small tabular",
+              off ? "text-fg-disabled" : selected ? "text-fg-secondary" : "text-fg-tertiary",
+              idWidth && ID_W[idWidth],
+            )}
+          >
             {item.displayId}
-          </span>
+          </TruncatedText>
         )}
-        <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-start gap-4" : "contents")}>
+        <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-stretch gap-4" : "contents")}>
           <span className={cn("flex min-w-0", lines ? "w-full" : "flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8")}>
             {typeof item.title === "string" ? (
-              <Text truncate weight="medium" className={cn("min-w-0 shrink", stacked && "max-w-full")}>
+              <Text truncate weight="medium" tone={off ? "inherit" : "default"} className={cn("min-w-0 shrink", stacked && "max-w-full")}>
                 {item.title}
               </Text>
             ) : (
-              <span className={cn("min-w-0 truncate font-medium text-fg", stacked && "max-w-full")}>{item.title}</span>
+              <span className={cn("min-w-0 truncate font-medium", off ? "text-inherit" : "text-fg", stacked && "max-w-full")}>{item.title}</span>
             )}
             {item.subtitle && (
-              <span className={cn("min-w-0 text-fg-secondary", wraps ? "text-pretty" : "truncate", stacked ? "max-w-full text-small" : "flex-1 basis-0")}>
+              <TruncatedText
+                wrap={wraps}
+                className={cn("min-w-0", off ? "text-fg-disabled" : "text-fg-secondary", stacked ? "max-w-full text-small" : "flex-1 basis-0")}
+              >
                 {item.subtitle}
-              </span>
+              </TruncatedText>
             )}
           </span>
           {lines && (
-            <span className="flex min-w-0 flex-wrap items-center gap-x-8 gap-y-4">
-              {item.meta && <span className="contents">{item.meta}</span>}
-              {item.date && <span className="text-small whitespace-nowrap text-fg-secondary tabular">{item.date}</span>}
+            <span className="flex h-24 min-w-0 items-center gap-8">
+              {item.meta && <span className={cn("flex min-w-0 items-center gap-6 overflow-hidden", off && "opacity-50")}>{item.meta}</span>}
+              {item.date && (
+                <span className={cn("shrink-0 text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>{item.date}</span>
+              )}
+              {trailing}
+              {item.actions && <span className="ml-auto flex shrink-0 items-center gap-2">{item.actions}</span>}
             </span>
           )}
         </span>
-        {lines && item.actions && <span className="flex shrink-0 items-center gap-2">{item.actions}</span>}
         {!lines && (item.meta || item.actions) && (
           <span className="relative flex shrink-0 items-center gap-6">
-            <span className={cn("flex items-center gap-6", item.actions && "transition-control group-hover/row:opacity-0 group-focus-within/row:opacity-0")}>
+            <span
+              className={cn(
+                "flex items-center gap-6",
+                item.actions && "transition-control group-hover/row:opacity-0 group-focus-within/row:opacity-0",
+                off && "opacity-50",
+              )}
+            >
               {item.meta}
             </span>
             {item.actions && (
@@ -519,8 +583,12 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
             )}
           </span>
         )}
-        {!lines && item.date && <span className="min-w-80 shrink-0 text-right text-small whitespace-nowrap text-fg-secondary tabular">{item.date}</span>}
-        {item.avatar && <span className="flex shrink-0">{item.avatar}</span>}
+        {!lines && item.date && (
+          <span className={cn("min-w-80 shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>
+            {item.date}
+          </span>
+        )}
+        {!lines && trailing}
       </div>
     </div>
   );
@@ -555,22 +623,29 @@ export const GroupHeader = forwardRef<HTMLDivElement, GroupHeaderProps>(function
       role="row"
       aria-rowindex={index !== undefined ? index + 1 : undefined}
       onFocus={onFocus}
-      className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : cn("group/gh pt-16 first:pt-0", padded ? "px-0" : "px-24")}
+      className={card ? cn("group/gh bg-fill-1", !first && "hairline-t") : cn("group/gh", !first && "pt-16", padded ? "px-0" : "px-24")}
     >
       <div role="gridcell" className={cn("flex h-36 items-center gap-4", card && "pr-12 pl-8")}>
-        {indent && !card && <span aria-hidden className="mr-8 w-18 shrink-0" />}
         <button
           type="button"
           aria-expanded={!collapsed}
           data-index={index}
           tabIndex={active === false ? -1 : 0}
           onClick={onToggle}
-          className="relative flex h-28 min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-small transition-control hover:bg-fill-1 focus-ring tap-target"
+          className={cn(
+            "relative flex h-28 min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-small transition-control focus-ring tap-target",
+            card ? "hover:bg-fill-2 active:bg-fill-3" : "hover:bg-fill-1 active:bg-fill-2",
+          )}
         >
+          {indent && !card && <span aria-hidden className="w-22 shrink-0" />}
           {glyph && <span className="flex size-16 items-center justify-center">{glyph}</span>}
           <span className="truncate font-medium text-fg-secondary">{title}</span>
           {count !== undefined && <span className="text-fg-tertiary tabular">{count}</span>}
-          <svg viewBox="0 0 8 8" aria-hidden className={cn("size-8 text-fg-tertiary transition-transform duration-180", !collapsed && "rotate-90")}>
+          <svg
+            viewBox="0 0 8 8"
+            aria-hidden
+            className={cn("size-10 text-fg-tertiary transition-transform duration-200 ease-standard", !collapsed && "rotate-90")}
+          >
             <path d="M2.5 1.5 5.5 4l-3 2.5z" fill="currentColor" />
           </svg>
         </button>

@@ -1,8 +1,37 @@
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { hydrateRoot } from "react-dom/client";
 import { Avatar, AvatarGroup, initials } from "./avatar.js";
 
 describe("Avatar", () => {
+  let loaded: ReturnType<typeof vi.spyOn> | undefined;
+  beforeEach(() => {
+    loaded = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(64);
+  });
+  afterEach(() => loaded?.mockRestore());
+
+  it("shows the initials for a picture that failed before the page became interactive", () => {
+    loaded?.mockReturnValue(0);
+    const avatar = <Avatar name="Ada Okafor" src="https://example.com/missing.png" />;
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(avatar);
+    document.body.append(container);
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    act(() => {
+      root = hydrateRoot(container, avatar);
+    });
+    expect(screen.getByRole("img", { name: "Ada Okafor" })).toHaveTextContent("AO");
+    act(() => root?.unmount());
+    container.remove();
+  });
+
+  it("keeps a picture it renders itself until the picture reports an error", () => {
+    loaded?.mockReturnValue(0);
+    render(<Avatar name="Ada Okafor" src="/avatars/ada.webp" />);
+    expect(screen.getByRole("img", { name: "Ada Okafor" }).querySelector('img[src="/avatars/ada.webp"]')).not.toBeNull();
+  });
+
   it("takes the first letters of the first and last word", () => {
     expect(initials("Ada Okafor")).toBe("AO");
     expect(initials("  ada  van der okafor ")).toBe("AO");
@@ -38,5 +67,24 @@ describe("Avatar", () => {
       </AvatarGroup>,
     );
     expect(screen.getByRole("group", { name: "Ada Okafor" })).toContainElement(screen.getByRole("button", { name: "Invite people" }));
+  });
+
+  it("separates overlapping avatars with a gap cut out of the one below, which works on any surface", () => {
+    const { container } = render(<AvatarGroup size={32} people={[{ name: "Ada Okafor" }, { name: "Lin Park" }, { name: "Mira Sato" }]} max={2} />);
+    const slots = [...container.querySelectorAll<HTMLElement>("[role=group] > span")];
+    expect(slots).toHaveLength(3);
+    expect(slots[0]).toHaveClass("cutout");
+    expect(slots[0]!.style.getPropertyValue("--k-cut-x-ltr")).toBe("42px");
+    expect(slots[0]!.style.getPropertyValue("--k-cut-r")).toBe("18px");
+    expect(slots[1]).toHaveClass("cutout", "-ms-6");
+    expect(slots[2]).not.toHaveClass("cutout");
+    expect(slots[2]).toHaveTextContent("+1");
+    expect(slots[2]!.firstElementChild).toHaveClass("mark-fill");
+    expect(container.querySelector(".ring-panel")).toBeNull();
+  });
+
+  it("draws a hairline around a photo so a light picture keeps its edge", () => {
+    const { container } = render(<Avatar name="Ada Okafor" src="https://example.com/ada.png" />);
+    expect(container.querySelector("img + .shadow-ring")).toBeInTheDocument();
   });
 });

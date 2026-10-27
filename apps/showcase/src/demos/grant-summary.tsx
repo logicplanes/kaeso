@@ -1,4 +1,4 @@
-import { GrantSummary } from "@logicplanes/kaeso-ui";
+import { Button, GrantSummary } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -30,6 +30,14 @@ export function States() {
       </StateSection>
       <StateSection title="One line, no note">
         <GrantSummary className="w-360" aria-label="What it can do" items={["Reads your profile, nothing else"]} />
+      </StateSection>
+      <StateSection title="An action without a note">
+        <GrantSummary
+          className="w-360"
+          aria-label="What it can do"
+          items={["Reads your profile, nothing else"]}
+          action={<Button size="sm">Customize</Button>}
+        />
       </StateSection>
     </>
   );

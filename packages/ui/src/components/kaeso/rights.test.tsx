@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RightsMatrix, type RightsGroup } from "./rights.js";
 import { groupCascade, rightsCascade, type RightChange } from "./rights-logic.js";
@@ -186,5 +186,64 @@ describe("RightsMatrix requirements", () => {
     );
     expect(screen.getByText("Needs View models")).toBeInTheDocument();
     expect(screen.queryByText(/Needs View project/)).not.toBeInTheDocument();
+  });
+});
+
+describe("RightsMatrix, review fixes", () => {
+  const withLocked: RightsGroup[] = [
+    {
+      label: "Members",
+      rights: [
+        { code: "members.view", label: "View members", description: "See who is in the organization", granted: true },
+        {
+          code: "members.remove",
+          label: "Remove members",
+          description: "Remove people from the organization",
+          granted: false,
+          disabled: true,
+          disabledReason: "Only rights you hold can be granted",
+        },
+      ],
+    },
+  ];
+  it("never checks a group whose count says some of its rights are missing", () => {
+    render(<RightsMatrix groups={withLocked} onChange={() => undefined} />);
+    expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Every right in Members" })).toHaveAttribute("aria-checked", "mixed");
+  });
+  it("says why a right can't be changed in the tooltip on its row, once", async () => {
+    render(<RightsMatrix groups={withLocked} onChange={() => undefined} />);
+    const box = screen.getByRole("checkbox", { name: "Remove members" });
+    await waitFor(() => expect(box.closest("label")).toHaveAttribute("aria-description", expect.stringMatching(/Only rights you hold can be granted/)));
+    expect(screen.queryAllByText(/Only rights you hold can be granted/)).toHaveLength(0);
+    expect(box.closest("label")).not.toHaveClass("hover:bg-fill-1");
+  });
+  it("is one tab stop: Tab enters on a checkbox and leaves, and the right arrow reaches a right's warning", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <RightsMatrix groups={groups} onChange={() => undefined} />
+        <button type="button">After</button>
+      </>,
+    );
+    await user.tab();
+    expect(screen.getByRole("checkbox", { name: "Every right in Keys" })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "After" })).toHaveFocus();
+    screen.getByRole("checkbox", { name: "keys.all.manage" }).focus();
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("img", { name: "Sensitive" }).parentElement).toHaveFocus();
+    await user.keyboard("{ArrowLeft}");
+    expect(screen.getByRole("checkbox", { name: "keys.all.manage" })).toHaveFocus();
+  });
+  it("toggles a group from its name, like a right from its row", async () => {
+    const onChange = vi.fn();
+    render(<RightsMatrix groups={withLocked.map((g) => ({ ...g, rights: [{ ...g.rights[0]!, granted: false }, g.rights[1]!] }))} onChange={onChange} />);
+    await userEvent.click(screen.getByText("Members"));
+    expect(onChange).toHaveBeenCalledWith("members.view", true);
+  });
+  it("marks a right that isn't granted in read-only mode in tertiary, not the disabled grey", () => {
+    render(<RightsMatrix groups={withLocked} readOnly />);
+    expect(screen.getByRole("img", { name: "Not granted" })).toHaveClass("text-fg-tertiary");
   });
 });

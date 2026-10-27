@@ -23,15 +23,19 @@ import { Button } from "../button/button.js";
 import { Pagination } from "../pagination/pagination.js";
 import { ContextMenu } from "../menu/menu.js";
 import { Text } from "../text/text.js";
+import { TruncatedText } from "../text/truncated.js";
 import { STATUS_TONE_TEXT, type StatusTone } from "../../utils/tone.js";
 import { scrollParent } from "../../hooks/scroll-parent.js";
 import { useScrollMargin } from "../../hooks/use-scroll-margin.js";
 import { useUiText } from "../../i18n/context.js";
+import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
+import { useCoarsePointer } from "../../hooks/use-coarse-pointer.js";
+import { TIME_COLUMNS } from "./time-columns.js";
 
 export const KAESO_DATA_TABLE_VARIANTS = {
   density: {
-    compact: { classes: "h-36", description: "36px rows" },
-    default: { classes: "h-40", description: "40px rows (default)" },
+    compact: { classes: "h-36 coarse:h-44", description: "36px rows; 44px with a coarse pointer" },
+    default: { classes: "h-40 coarse:h-44", description: "40px rows (default); 44px with a coarse pointer" },
     comfortable: { classes: "h-48", description: "48px rows" },
   },
 } as const;
@@ -77,6 +81,7 @@ export interface DataTableProps<T> {
   activeRowId?: string | undefined;
   freshRowIds?: ReadonlySet<string> | undefined;
   onHiddenColumnsChange?: ((ids: string[]) => void) | undefined;
+  "data-force-row"?: string | undefined;
 }
 
 const ROW_H = { compact: 36, default: 40, comfortable: 48 } as const;
@@ -114,12 +119,43 @@ function contentWidth(el: HTMLElement): number {
   return el.getBoundingClientRect().width - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
 }
 
+function nameColumn<T>(columns: ColumnDef<T, any>[]): ColumnDef<T, any> | undefined {
+  const labelled = columns.filter((c) => c.id && c.meta?.text && c.meta.align !== "end");
+  return labelled.find((c) => !TIME_COLUMNS.has(c)) ?? labelled[0] ?? columns[0];
+}
+
 function rowName<T>(column: ColumnDef<T, any> | undefined, row: Row<T>): string | undefined {
   if (!column?.id) return undefined;
   const text = column.meta?.text?.(row.original);
   if (text) return text;
   const raw = row.getValue(column.id);
   return typeof raw === "string" && raw ? raw : undefined;
+}
+
+const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex], [contenteditable=true]";
+const TEXT_ENTRY = "input:not([type=checkbox]):not([type=radio]), textarea, select, [contenteditable=true]";
+
+function cellWidgets(row: HTMLElement): HTMLElement[] {
+  return [...row.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+    (w) => !w.closest("[role=checkbox], [aria-hidden=true], [hidden]") && !w.matches(":disabled, input[type=checkbox]"),
+  );
+}
+
+function headTargets(head: HTMLElement | null): HTMLElement[] {
+  if (!head) return [];
+  return [...head.querySelectorAll<HTMLElement>("[role=columnheader]")].flatMap((th) => {
+    const target = th.querySelector<HTMLElement>("[role=checkbox], button") ?? th.querySelector<HTMLElement>("[role=separator]");
+    return target ? [target] : [];
+  });
+}
+
+function rowTone(raised: boolean, on: boolean) {
+  if (on)
+    return cn(
+      "controls-on-fill",
+      raised ? "bg-raised-pressed hover:raised-selected-hover active:raised-selected-hover" : "bg-fill-2 hover:bg-fill-3 active:bg-fill-3",
+    );
+  return raised ? "hover:bg-raised-hover active:bg-raised-pressed hover:controls-on-fill" : "hover:bg-fill-1 active:bg-fill-2 hover:controls-on-fill";
 }
 
 const growMin = (c: { size: number; minWidth: number | undefined }) => Math.min(c.size, c.minWidth ?? DATA_TABLE_GROW_MIN);
@@ -153,6 +189,7 @@ function DataTableInner<T>(
     freshRowIds,
     onHiddenColumnsChange,
     "aria-label": ariaLabel,
+    "data-force-row": forceRow,
   }: DataTableProps<T>,
   ref: React.Ref<HTMLDivElement>,
 ) {
@@ -163,6 +200,9 @@ function DataTableInner<T>(
   const [sortingInner, setSortingInner] = useState<SortingState>([]);
   const [selectionInner, setSelectionInner] = useState<RowSelectionState>({});
   const [focusRow, setFocusRow] = useState(0);
+  const [zone, setZone] = useState<"head" | "body">("body");
+  const [headStop, setHeadStop] = useState(0);
+  const [anchor, setAnchor] = useState<number | null>(null);
   const sorting = sortingProp ?? sortingInner;
   const rowSelection = selection ?? selectionInner;
   const columns = useMemo<ColumnDef<T, any>[]>(() => {
@@ -183,7 +223,7 @@ function DataTableInner<T>(
           />
         ),
         cell: ({ row }) => {
-          const name = rowName(userColumns[0], row);
+          const name = rowName(nameColumn(userColumns), row);
           return (
             <CheckboxBox
               aria-label={name ? t("dataTable.selectNamed", "Select {name}", { name }) : t("dataTable.selectRow", "Select row")}
@@ -267,30 +307,43 @@ function DataTableInner<T>(
 
   const rows = table.getRowModel().rows;
   const virtual = rows.length > virtualizeAbove;
+  const rowHeight = Math.max(ROW_H[density], useCoarsePointer() ? 44 : 0);
   const getScrollElement = () => scrollParent(root.current);
   const scrollMargin = useScrollMargin(body, getScrollElement, rows.length, virtual);
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement,
-    estimateSize: () => ROW_H[density],
+    estimateSize: () => rowHeight,
     overscan: 16,
     enabled: virtual,
     scrollMargin,
   });
 
   const cellPad = (i: number) => cn("flex min-w-0 items-center px-12", inset && i === 0 && "pl-20", inset && i === cols.length - 1 && "pr-20");
-  const stickyCol = (i: number, header = false) =>
+  const onRaised = inset || raised;
+  const stickyCol = (i: number, header = false, on = false) =>
     ((stickyFirstColumn && i === 0) || (pinEnd && i === cols.length - 1)) &&
     cn(
-      "sticky z-10 group-hover/tr:bg-fill-1 group-aria-selected/tr:bg-fill-2 group-data-active/tr:bg-fill-2",
+      "sticky z-10",
+      header
+        ? onRaised
+          ? "bg-raised"
+          : "bg-panel"
+        : on
+          ? "bg-inherit"
+          : onRaised
+            ? "bg-raised group-hover/tr:bg-raised-hover group-active/tr:bg-raised-pressed"
+            : "bg-panel group-hover/tr:bg-fill-1 group-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      inset ? "bg-raised" : cn(raised ? "bg-raised" : "bg-panel", !header && (i === 0 ? "rounded-l-item" : "rounded-r-item")),
+      !inset && !header && (i === 0 ? "rounded-l-item" : "rounded-r-item"),
     );
 
   const focusable = !!onRowClick || !!selectable;
+  const bodyZone = focusable && rows.length > 0 && zone === "body";
   const stop = Math.min(focusRow, Math.max(rows.length - 1, 0));
   const focusAt = (i: number) => {
     const next = Math.max(0, Math.min(rows.length - 1, i));
+    setZone("body");
     setFocusRow(next);
     if (virtual) virtualizer.scrollToIndex(next, { align: "auto" });
     const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`);
@@ -298,35 +351,160 @@ function DataTableInner<T>(
     if (now) now.focus();
     else requestAnimationFrame(() => line()?.focus());
   };
-  const page = () => Math.max(1, Math.floor((getScrollElement()?.clientHeight ?? 400) / ROW_H[density]) - 1);
+  const focusHead = (i: number) => {
+    const targets = headTargets(head.current);
+    const target = targets[Math.max(0, Math.min(targets.length - 1, i))];
+    if (!target) return false;
+    setZone("head");
+    setHeadStop(targets.indexOf(target));
+    target.focus();
+    return true;
+  };
+  const rovingHead = useRef(() => {});
+  rovingHead.current = () => {
+    const targets = headTargets(head.current);
+    const own = Math.min(headStop, targets.length - 1);
+    for (const el of head.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []) {
+      const tabindex = targets.indexOf(el) === own && !bodyZone ? "0" : "-1";
+      if (el.getAttribute("tabindex") !== tabindex) el.setAttribute("tabindex", tabindex);
+    }
+  };
+  useLayoutEffect(() => rovingHead.current());
+  useLayoutEffect(() => {
+    const el = head.current;
+    if (!el) return;
+    const observer = new MutationObserver(() => rovingHead.current());
+    observer.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ["tabindex"] });
+    return () => observer.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el || !focusable) return;
+    const quiet = () => {
+      for (const line of el.querySelectorAll<HTMLElement>("[data-row-index]"))
+        for (const w of line.querySelectorAll<HTMLElement>(FOCUSABLE)) if (w.getAttribute("tabindex") !== "-1") w.setAttribute("tabindex", "-1");
+    };
+    quiet();
+    const observer = new MutationObserver(quiet);
+    observer.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ["tabindex"] });
+    return () => observer.disconnect();
+  }, [focusable]);
+  useScrollFadeX(body, "[role=row]");
+
+  const resizeBy = (columnId: string | undefined, step: number) => {
+    const column = columnId ? table.getColumn(columnId) : undefined;
+    if (!column?.getCanResize()) return false;
+    const min = column.columnDef.minSize ?? 64;
+    const max = column.columnDef.maxSize ?? 640;
+    table.setColumnSizing((old) => ({ ...old, [column.id]: Math.max(min, Math.min(max, column.getSize() + step)) }));
+    return true;
+  };
+  const onHeadKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey || e.metaKey || e.ctrlKey) return;
+    const targets = headTargets(head.current);
+    const at = targets.indexOf(e.target as HTMLElement);
+    if (at < 0) return;
+    const step = { ArrowLeft: -16, ArrowRight: 16 }[e.key];
+    if (e.shiftKey) {
+      if (step !== undefined && resizeBy((e.target as HTMLElement).closest<HTMLElement>("[role=columnheader]")?.dataset.col, step)) e.preventDefault();
+      return;
+    }
+    const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: targets.length - 1 }[e.key];
+    if (to !== undefined) {
+      e.preventDefault();
+      if (to >= 0 && to < targets.length) focusHead(to);
+    } else if (e.key === "ArrowDown" && focusable && rows.length) {
+      e.preventDefault();
+      focusAt(stop);
+    }
+  };
+
+  const page = () => Math.max(1, Math.floor((getScrollElement()?.clientHeight ?? 400) / rowHeight) - 1);
+  const selectRange = (from: number, to: number) => {
+    const next = { ...rowSelection };
+    for (const r of rows.slice(Math.min(from, to), Math.max(from, to) + 1)) if (r.getCanSelect()) next[r.id] = true;
+    table.setRowSelection(next);
+  };
   const onRowKeyDown = (e: KeyboardEvent<HTMLDivElement>, row: Row<T>, i: number) => {
-    if (e.target !== e.currentTarget || e.altKey || e.metaKey || e.ctrlKey) return;
+    const line = e.currentTarget;
+    const target = e.target as HTMLElement;
+    if (target !== line) {
+      if (e.altKey || e.metaKey || e.ctrlKey || target.closest(TEXT_ENTRY)) return;
+      const widgets = cellWidgets(line);
+      const at = widgets.indexOf(target);
+      if (at < 0) return;
+      // A tooltip trigger prevents Escape's default even while its tooltip is closed; only an open popup keeps the key.
+      if (e.key === "Escape" && !target.closest("[data-popup-open], [aria-expanded=true]")) {
+        e.preventDefault();
+        line.focus();
+      } else if (e.defaultPrevented) {
+        return;
+      } else if (e.key === "ArrowRight" && widgets[at + 1]) {
+        e.preventDefault();
+        widgets[at + 1]?.focus();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        (widgets[at - 1] ?? line).focus();
+      }
+      return;
+    }
+    if (e.altKey) return;
+    if (e.metaKey || e.ctrlKey) {
+      if (e.key.toLowerCase() === "a" && selectable && !e.shiftKey) {
+        e.preventDefault();
+        table.toggleAllRowsSelected(true);
+      }
+      return;
+    }
     const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: rows.length - 1, PageDown: i + page(), PageUp: i - page() }[e.key];
     if (to !== undefined) {
       e.preventDefault();
-      focusAt(to);
+      if (to < 0 && focusHead(headStop)) return;
+      const next = Math.max(0, Math.min(rows.length - 1, to));
+      if (e.shiftKey && selectable) {
+        const from = anchor ?? i;
+        setAnchor(from);
+        selectRange(from, next);
+      } else setAnchor(null);
+      focusAt(next);
+    } else if (e.shiftKey) {
+      return;
+    } else if (e.key === "ArrowRight") {
+      const first = cellWidgets(line)[0];
+      if (!first) return;
+      e.preventDefault();
+      first.focus();
     } else if (e.key === "Enter") {
       e.preventDefault();
       onRowClick?.(row.original);
-    } else if (e.key === " " && selectable) {
+    } else if ((e.key === " " || e.key === "x") && selectable) {
       e.preventDefault();
-      row.toggleSelected();
+      if (row.getCanSelect()) row.toggleSelected();
+    } else if (e.key === "Escape" && selectable && Object.keys(rowSelection).length) {
+      e.preventDefault();
+      table.toggleAllRowsSelected(false);
     }
   };
 
   const renderRow = (row: Row<T>, i: number, style?: CSSProperties) => {
     const cells = row.getVisibleCells().filter((c) => !hidden.has(c.column.id));
+    const active = row.id === activeRowId;
+    const on = active || (!!selectable && row.getIsSelected());
     const el = (
       <div
         role="row"
         aria-rowindex={i + 2}
         aria-selected={selectable ? row.getIsSelected() : undefined}
-        data-active={row.id === activeRowId || undefined}
+        aria-current={active || undefined}
+        data-active={active || undefined}
         data-fresh={freshRowIds?.has(row.id) || undefined}
         data-row-index={i}
-        tabIndex={focusable ? (i === stop ? 0 : -1) : undefined}
+        {...(forceRow && i === 0 ? { "data-force": forceRow } : {})}
+        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : undefined}
         onFocus={(e) => {
-          if (e.target === e.currentTarget && i !== focusRow) setFocusRow(i);
+          if (e.target !== e.currentTarget) return;
+          setZone("body");
+          if (i !== focusRow) setFocusRow(i);
         }}
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("button, a, [role=checkbox]")) return;
@@ -339,8 +517,9 @@ function DataTableInner<T>(
           !inset && "rounded-item",
           KAESO_DATA_TABLE_VARIANTS.density[density].classes,
           onRowClick && "cursor-pointer",
-          "hover:bg-fill-1 aria-selected:bg-fill-2 data-active:bg-fill-2 data-fresh:animate-row-fresh",
-          "hover:controls-on-fill aria-selected:controls-on-fill data-active:controls-on-fill",
+          rowTone(onRaised, on),
+          "data-fresh:animate-row-fresh",
+          "forced-colors:data-active:outline-2 forced-colors:data-active:-outline-offset-2 forced-colors:data-active:outline-solid",
         )}
       >
         {cells.map((cell, i) => {
@@ -358,7 +537,7 @@ function DataTableInner<T>(
                 meta?.align === "end" && "justify-end text-right tabular",
                 meta?.mono && "mono text-small",
                 tone && STATUS_TONE_TEXT[tone],
-                stickyCol(i),
+                stickyCol(i, false, on),
               )}
             >
               {text !== undefined && typeof content !== "object" ? (
@@ -368,7 +547,7 @@ function DataTableInner<T>(
               ) : cell.column.id === "__select" ? (
                 <span className="flex">{content}</span>
               ) : (
-                <span className={cn("min-w-0 truncate cell-fit", meta?.grow && "flex-1")}>{content}</span>
+                <TruncatedText className={cn("min-w-0 cell-fit", meta?.grow && "flex-1")}>{content}</TruncatedText>
               )}
             </div>
           );
@@ -381,6 +560,79 @@ function DataTableInner<T>(
         <ContextMenu.Trigger>{el}</ContextMenu.Trigger>
         <ContextMenu.Content>{rowMenu(row.original)}</ContextMenu.Content>
       </ContextMenu>
+    );
+  };
+
+  const header = (h: ReturnType<typeof table.getHeaderGroups>[number]["headers"][number], i: number) => {
+    const meta = h.column.columnDef.meta;
+    const sortable = h.column.getCanSort();
+    const resizable = h.column.getCanResize();
+    const dir = h.column.getIsSorted();
+    const label = flexRender(h.column.columnDef.header, h.getContext());
+    const content = (
+      <>
+        {sortable ? (
+          <button
+            type="button"
+            onClick={h.column.getToggleSortingHandler()}
+            className={cn(
+              "relative -mx-6 inline-flex h-28 min-w-0 cursor-pointer items-center gap-4 rounded-pill px-6 text-caption font-medium transition-control focus-ring tap-target",
+              onRaised ? "hover:bg-raised-hover active:bg-raised-pressed" : "hover:bg-fill-1 active:bg-fill-2",
+              "hover:text-fg",
+              dir ? "text-fg" : "text-fg-secondary",
+              meta?.align === "end" && "flex-row-reverse",
+            )}
+          >
+            <TruncatedText>{label}</TruncatedText>
+            <Icon
+              icon={dir === "desc" ? icons.chevronDown : icons.chevronUp}
+              size="xs"
+              className={cn("shrink-0 transition-control", dir ? "opacity-100" : "opacity-0 group-hover/th:opacity-60")}
+            />
+          </button>
+        ) : (
+          <TruncatedText className="text-caption font-medium text-fg-secondary">{label}</TruncatedText>
+        )}
+        {resizable && (
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t("dataTable.resizeColumn", "Resize column")}
+            aria-valuenow={h.column.getSize()}
+            aria-valuemin={h.column.columnDef.minSize ?? 64}
+            aria-valuemax={h.column.columnDef.maxSize ?? 640}
+            tabIndex={-1}
+            onMouseDown={h.getResizeHandler()}
+            onTouchStart={h.getResizeHandler()}
+            onDoubleClick={() => h.column.resetSize()}
+            className="absolute inset-y-0 -right-8 z-10 w-16 cursor-col-resize after:absolute after:inset-y-8 after:right-8 after:w-1 after:bg-transparent after:transition-control group-hover/th:after:bg-line-strong coarse:after:bg-line focus-ring-inset"
+          />
+        )}
+      </>
+    );
+    return (
+      <div
+        key={h.id}
+        role="columnheader"
+        data-col={h.column.id}
+        aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : sortable ? "none" : undefined}
+        className={cn("group/th relative", cellPad(i), meta?.align === "end" && "justify-end", stickyCol(i, true), stickyCol(i, true) && "hairline-b-strong")}
+      >
+        {resizable ? (
+          <ContextMenu>
+            <ContextMenu.Trigger className={cn("flex min-w-0 flex-1 items-center self-stretch", meta?.align === "end" && "justify-end")}>
+              {content}
+            </ContextMenu.Trigger>
+            <ContextMenu.Content>
+              <ContextMenu.Item onClick={() => resizeBy(h.column.id, 32)}>{t("dataTable.widenColumn", "Widen column")}</ContextMenu.Item>
+              <ContextMenu.Item onClick={() => resizeBy(h.column.id, -32)}>{t("dataTable.narrowColumn", "Narrow column")}</ContextMenu.Item>
+              <ContextMenu.Item onClick={() => h.column.resetSize()}>{t("dataTable.resetWidth", "Reset width")}</ContextMenu.Item>
+            </ContextMenu.Content>
+          </ContextMenu>
+        ) : (
+          content
+        )}
+      </div>
     );
   };
 
@@ -403,86 +655,28 @@ function DataTableInner<T>(
         <div
           ref={head}
           role="rowgroup"
-          className={cn("sticky top-0 z-20 overflow-hidden", inset || raised ? "bg-raised" : "bg-panel")}
+          className={cn("sticky top-0 z-20 overflow-hidden", onRaised ? "bg-raised" : "bg-panel")}
+          onKeyDown={onHeadKeyDown}
+          onFocus={(e) => {
+            const at = headTargets(head.current).indexOf(e.target as HTMLElement);
+            if (at < 0) return;
+            setZone("head");
+            setHeadStop(at);
+          }}
           onScroll={(e) => {
             if (body.current && body.current.scrollLeft !== e.currentTarget.scrollLeft) body.current.scrollLeft = e.currentTarget.scrollLeft;
           }}
         >
           {table.getHeaderGroups().map((hg) => (
             <div key={hg.id} role="row" aria-rowindex={1} className="grid h-36 hairline-b-strong" style={gridStyle}>
-              {hg.headers
-                .filter((h) => !hidden.has(h.column.id))
-                .map((h, i) => {
-                  const meta = h.column.columnDef.meta;
-                  const sortable = h.column.getCanSort();
-                  const dir = h.column.getIsSorted();
-                  return (
-                    <div
-                      key={h.id}
-                      role="columnheader"
-                      aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : sortable ? "none" : undefined}
-                      className={cn(
-                        "group/th relative",
-                        cellPad(i),
-                        meta?.align === "end" && "justify-end",
-                        stickyCol(i, true),
-                        stickyCol(i, true) && "hairline-b-strong",
-                      )}
-                    >
-                      {sortable ? (
-                        <button
-                          type="button"
-                          onClick={h.column.getToggleSortingHandler()}
-                          className={cn(
-                            "relative -mx-6 inline-flex h-28 min-w-0 cursor-pointer items-center gap-4 rounded-pill px-6 text-caption font-medium transition-control hover:bg-fill-1 hover:text-fg focus-ring tap-target",
-                            dir ? "text-fg" : "text-fg-secondary",
-                            meta?.align === "end" && "flex-row-reverse",
-                          )}
-                        >
-                          <span className="truncate">{flexRender(h.column.columnDef.header, h.getContext())}</span>
-                          <Icon
-                            icon={dir === "desc" ? icons.chevronDown : icons.chevronUp}
-                            size="xs"
-                            className={cn("shrink-0 transition-control", dir ? "opacity-100" : "opacity-0 group-hover/th:opacity-60")}
-                          />
-                        </button>
-                      ) : (
-                        <span className="truncate text-caption font-medium text-fg-secondary">{flexRender(h.column.columnDef.header, h.getContext())}</span>
-                      )}
-                      {h.column.getCanResize() && (
-                        <div
-                          role="separator"
-                          aria-orientation="vertical"
-                          aria-label={t("dataTable.resizeColumn", "Resize column")}
-                          aria-valuenow={h.column.getSize()}
-                          aria-valuemin={h.column.columnDef.minSize ?? 64}
-                          aria-valuemax={h.column.columnDef.maxSize ?? 640}
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            const step = { ArrowLeft: -16, ArrowRight: 16 }[e.key];
-                            if (step === undefined) return;
-                            e.preventDefault();
-                            const id = h.column.id;
-                            const min = h.column.columnDef.minSize ?? 64;
-                            const max = h.column.columnDef.maxSize ?? 640;
-                            table.setColumnSizing((old) => ({ ...old, [id]: Math.max(min, Math.min(max, h.column.getSize() + step)) }));
-                          }}
-                          onMouseDown={h.getResizeHandler()}
-                          onTouchStart={h.getResizeHandler()}
-                          onDoubleClick={() => h.column.resetSize()}
-                          className="absolute top-8 right-0 bottom-8 w-8 cursor-col-resize rounded-pill after:absolute after:inset-y-0 after:right-0 after:w-1 after:bg-transparent after:transition-control group-hover/th:after:bg-line-strong focus-ring-inset"
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+              {hg.headers.filter((h) => !hidden.has(h.column.id)).map(header)}
             </div>
           ))}
         </div>
         <div
           ref={body}
           role="rowgroup"
-          className="overflow-x-auto scrollbar-quiet"
+          className="overflow-x-auto scrollbar-quiet scroll-fade-x"
           onScroll={(e) => {
             if (head.current && head.current.scrollLeft !== e.currentTarget.scrollLeft) head.current.scrollLeft = e.currentTarget.scrollLeft;
           }}
@@ -494,6 +688,7 @@ function DataTableInner<T>(
                   <Empty
                     size="compact"
                     title={t("dataTable.loadFailed", "Couldn't load these rows")}
+                    {...(onRetry ? {} : { description: t("dataTable.reloadToRetry", "Reload the page to try again.") })}
                     actions={
                       onRetry && (
                         <Button size="sm" onClick={onRetry}>
@@ -518,9 +713,7 @@ function DataTableInner<T>(
           ) : rows.length === 0 ? (
             <div role="row">
               <div role="cell" aria-colspan={cols.length} className="block">
-                {empty ?? (
-                  <Empty size="compact" title={t("dataTable.noRows", "No rows")} description={t("dataTable.noMatches", "Nothing matches these filters.")} />
-                )}
+                {empty ?? <Empty size="compact" title={t("dataTable.noRows", "No rows")} />}
               </div>
             </div>
           ) : virtual ? (

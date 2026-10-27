@@ -2,16 +2,19 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   DataTable: {
-    description: "A table for many rows: sorting, selection, loading and empty states, more rows on demand, and virtual scrolling for long lists.",
+    description:
+      "A table for many rows: sorting, selection, loading and empty states, more rows on demand, and virtual scrolling for long lists. One tab stop: the arrows move between rows and header buttons, Right reaches a row's controls, Shift with Left or Right resizes a column from its header, and a header's context menu widens, narrows or resets it.",
     props: {
-      activeRowId: "The id of a row to show as active (open in a sheet).",
+      activeRowId: "The id of the row whose detail is open, in a sheet beside the table: it keeps the selected fill and is marked aria-current.",
       "aria-label": "The table's accessible name.",
+      "data-force-row": "Force a state on the first row for state matrices: hover, pressed, focus.",
       columns: "The columns, as TanStack Table column definitions.",
       data: "The rows.",
       density: "How much room each row gets.",
-      empty: "What to show when there are no rows, usually an `Empty`.",
+      empty:
+        'What to show when there are no rows: an `Empty` with the page\'s own sentence, such as "No requests yet" or, behind filters, "No requests match". Without it the table says "No rows".',
       error:
-        "The rows failed to load: the table says so where its rows would be and offers Try again (`onRetry`). Errors are toasts, so the value isn't shown; toast the message where the request fails.",
+        "The rows failed to load: the table says so where its rows would be and offers Try again (`onRetry`), or, without it, says to reload the page. Errors are toasts, so the value isn't shown; toast the message where the request fails.",
       freshRowIds: "Rows that just arrived (a live list): each shows a fill that fades out over a second.",
       getRowId: "Returns a row's stable id, for selection and keys.",
       hasMore: "Whether more rows can be loaded.",
@@ -26,7 +29,7 @@ export const docs = {
       onSortingChange: "Called with the new sort order.",
       ref: "A ref to the outer element.",
       rowMenu: "Items for a row's context menu (right-click).",
-      selectable: "Adds a checkbox to every row.",
+      selectable: "Adds a checkbox to every row, named after the row's first text column; Space, Shift with the arrows and ⌘A select from the keyboard.",
       canSelectRow: "Whether a row can be selected; a row that can't keeps a disabled checkbox, and select all skips it.",
       selection: "The selected rows, when you control them.",
       sorting: "The sort order, when you control it.",

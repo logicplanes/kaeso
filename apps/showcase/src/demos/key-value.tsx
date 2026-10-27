@@ -65,15 +65,28 @@ export function Grid() {
 export function States() {
   return (
     <>
-      <StateSection title="Layouts">
-        <div className="flex gap-48">
+      <StateSection title="Layouts, side by side: rows keep their height beside a taller list">
+        <div className="flex gap-32">
           <Basic />
-          <KeyValue items={items} layout="stacked" className="w-240" />
+          <KeyValue items={items} layout="stacked" className="w-200" />
         </div>
       </StateSection>
-      <StateSection title="Grid at 720px and 400px">
+      <StateSection title="Long and German labels, a wrapping message, a cut value">
+        <div className="flex w-560 flex-col gap-24">
+          <KeyValue
+            items={[
+              { label: "Upstream-Anfrage-Kennung", value: "req_011Cg1rpXo2L5DAnHsAAaHg2", mono: true, copy: "req_011Cg1rpXo2L5DAnHsAAaHg2" },
+              { label: "Maximale Ausgabe-Tokens pro Anfrage im Projekt", value: "64.000" },
+              { label: "Nachricht", value: "Das Ratenlimit des Projekts ist erreicht: 600 Anfragen pro Minute. In 50 Sekunden erneut versuchen.", wrap: true },
+              { label: "Model", value: <span>claude-sonnet-4-5-20250929 via Anthropic Messages on the checkout project</span> },
+            ]}
+          />
+          <Wrap />
+        </div>
+      </StateSection>
+      <StateSection title="Grid at 560px and 320px">
         <div className="flex flex-col gap-32">
-          <div className="w-720">
+          <div className="w-560">
             <KeyValue
               layout="grid"
               items={[
@@ -82,7 +95,7 @@ export function States() {
               ]}
             />
           </div>
-          <div className="w-400">
+          <div className="w-320">
             <KeyValue layout="grid" items={sender} />
           </div>
         </div>

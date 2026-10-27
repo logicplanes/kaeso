@@ -3,10 +3,6 @@ import { open, statesPages } from "./support";
 
 test.use({ viewport: { width: 1600, height: 1200 } });
 
-// Identical states that later pull requests in this stack fix; each one removes its own entries.
-const PENDING = new Set([
-  "/components/tag/states: dark raised: hover paints like rest",
-]);
 
 test.describe("every forced state paints differently from rest", () => {
   for (const path of statesPages) {
@@ -82,7 +78,7 @@ test.describe("every forced state paints differently from rest", () => {
         }
         return found;
       });
-      expect(same.filter((line) => !PENDING.has(`${path}: ${line}`))).toEqual([]);
+      expect(same).toEqual([]);
     });
   }
 });

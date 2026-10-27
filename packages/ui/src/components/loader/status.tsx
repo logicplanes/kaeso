@@ -31,7 +31,8 @@ export const Loader = forwardRef<HTMLSpanElement, LoaderProps>(function Loader(
   ref,
 ) {
   const t = useUiText();
-  const shown = useDelayedLoading(loading, delay === true ? undefined : delay || 0, minDuration ?? (delay ? undefined : 0));
+  const shown = useDelayedLoading(loading, delay === false ? 0 : delay === true ? undefined : delay, minDuration ?? (delay === false ? 0 : undefined));
+  const text = label ?? t("loader.loading", "Loading");
   return (
     <span
       ref={ref}
@@ -39,10 +40,11 @@ export const Loader = forwardRef<HTMLSpanElement, LoaderProps>(function Loader(
       className={cn("inline-flex items-center gap-8 text-body", KAESO_LOADER_VARIANTS.tone[tone ?? "secondary"].classes, className)}
       {...props}
     >
-      <span className={shown ? "contents" : "contents invisible"}>
+      <span aria-hidden className={shown ? "contents" : "contents invisible"}>
         <Spinner size={size} />
-        <span className={cn(!label || hideLabel ? "sr-only" : undefined)}>{label ?? t("loader.loading", "Loading")}</span>
+        {label && !hideLabel && <span>{label}</span>}
       </span>
+      <span className="sr-only">{shown ? text : ""}</span>
     </span>
   );
 });

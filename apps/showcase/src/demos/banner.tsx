@@ -1,4 +1,4 @@
-import { Banner, Button, PageHeader } from "@logicplanes/kaeso-ui";
+import { Banner, Button, PageHeader, icons } from "@logicplanes/kaeso-ui";
 import { StateSection } from "~/lib/states";
 
 export const meta = {
@@ -103,14 +103,26 @@ export function States() {
           </Banner>
         </div>
       </StateSection>
-      <StateSection title="Full width over a page header: rest, restoring (nothing moves)">
-        <div className="flex w-800 max-w-full flex-col gap-24">
+      <StateSection title="Neutral with dismiss, one line with and without an action, a custom icon">
+        <div className="flex w-560 flex-col gap-12">
+          <Banner onDismiss={() => undefined}>Maintenance is planned for Sunday from 02:00 to 03:00 UTC.</Banner>
+          <Banner tone="success">The provider key works.</Banner>
+          <Banner tone="success" actions={<Button size="sm">Send a request</Button>}>
+            The provider key works.
+          </Banner>
+          <Banner tone="info" icon={icons.update}>
+            A new version of Kaeso is ready to install.
+          </Banner>
+        </div>
+      </StateSection>
+      <StateSection title="Full width over a page header: rest, restoring">
+        <div className="flex w-560 max-w-full flex-col gap-24">
           <Panel />
           <Panel loading />
         </div>
       </StateSection>
       <StateSection title="Narrow (a phone): the action under the text, at its left edge">
-        <div className="flex flex-wrap gap-24">
+        <div className="flex flex-col gap-24">
           <div className="w-360">
             <Panel />
           </div>

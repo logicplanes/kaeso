@@ -6,10 +6,11 @@ export const docs = {
     props: {
       children: "The pill's text.",
       icon: "An icon before the text.",
-      invalid: "Marks a value that isn't accepted.",
-      onClick: "Renders a button with a hover fill.",
+      invalid: "Marks a value that isn't accepted: a red ring, red text and an error icon named \"Not accepted\", so it doesn't rest on color.",
+      onClick: "Renders a button with the control's hover, press and focus: raised tags take the secondary button's material, outline tags the ghost's.",
       onRemove: "Shows a remove circle; called with the click.",
-      pressed: "For toggle pills (DisplayOptions).",
+      pressed:
+        "For toggle pills (DisplayOptions): sets aria-pressed, and `true` draws the selected soft fill whatever the variant, so a toggle needs no variant swap.",
       removeLabel: "The remove circle's accessible name. Defaults to \"Remove\" and the label in the provider's language.",
       size: "The pill's height.",
       variant: "Raised on the panel, soft fill, or outlined.",
@@ -21,10 +22,11 @@ export const docs = {
     props: {
       children: "The tag's text.",
       icon: "An icon before the text.",
-      invalid: "Marks a value that isn't accepted.",
-      onClick: "Renders a button with a hover fill.",
+      invalid: "Marks a value that isn't accepted: a red ring, red text and an error icon named \"Not accepted\", so it doesn't rest on color.",
+      onClick: "Renders a button with the control's hover, press and focus: raised tags take the secondary button's material, outline tags the ghost's.",
       onRemove: "Shows a remove circle; called with the click.",
-      pressed: "For toggle pills (DisplayOptions).",
+      pressed:
+        "For toggle pills (DisplayOptions): sets aria-pressed, and `true` draws the selected soft fill whatever the variant, so a toggle needs no variant swap.",
       removeLabel: "The remove circle's accessible name. Defaults to \"Remove\" and the label in the provider's language.",
       size: "The tag's height.",
       variant: "Raised on the panel, soft fill, or outlined.",

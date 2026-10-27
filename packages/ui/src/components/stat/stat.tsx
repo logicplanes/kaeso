@@ -16,6 +16,7 @@ import { observeResize } from "../../utils/observe-resize.js";
 import { Badge } from "../badge/badge.js";
 import { Sparkline } from "../charts/sparkline.js";
 import { Skeleton } from "../skeleton/skeleton.js";
+import { TruncatedText } from "../text/truncated.js";
 import { useLocale, useUiText, type UiText } from "../../i18n/context.js";
 
 export const KAESO_STAT_VARIANTS = {
@@ -81,7 +82,7 @@ const changeLabel = (v: number, t: UiText, locale: string) => {
 };
 
 export const STAT_VALUE_STEPS = [
-  { classes: "text-title-lg", px: 28 },
+  { classes: "text-metric", px: 28 },
   { classes: "text-title", px: 20 },
   { classes: "text-title-sm", px: 17 },
 ] as const;
@@ -105,9 +106,15 @@ export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatT
     >
       <span className="text-small font-medium text-fg-secondary">{label}</span>
       <span className="mt-6 flex h-34 min-w-0 items-center">
-        <span data-stat-value={step.px} className={cn("max-w-full truncate font-semibold text-fg tabular", step.classes, loading && "flex")}>
-          {loading ? <Skeleton shape="line" className="h-20 w-96" /> : value}
-        </span>
+        {loading ? (
+          <span data-stat-value={step.px} className={cn("flex max-w-full font-semibold text-fg tabular", step.classes)}>
+            <Skeleton shape="line" className="h-20 w-96" />
+          </span>
+        ) : (
+          <TruncatedText data-stat-value={step.px} className={cn("max-w-full font-semibold text-fg tabular", step.classes)}>
+            {value}
+          </TruncatedText>
+        )}
       </span>
       {loading ? (
         <>
@@ -126,6 +133,7 @@ export const StatTile = forwardRef<HTMLDivElement, StatTileProps>(function StatT
             <span className="flex h-20 shrink-0 items-center">
               <Badge tone={good === undefined ? "neutral" : good ? "success" : "danger"} className="shrink-0 tabular">
                 {changeLabel(change.value, t, locale)}
+                {good !== undefined && <span className="sr-only"> {good ? t("statTile.better", "better") : t("statTile.worse", "worse")}</span>}
               </Badge>
             </span>
           )}
@@ -193,14 +201,21 @@ export const StatGrid = forwardRef<HTMLDivElement, { children: ReactNode; "aria-
     const grid = useRef<HTMLDivElement | null>(null);
     const [fit, setFit] = useState({ step: 0, single: false, two: false });
     const measure = useRef(() => {});
+    const measuredAt = useRef(0);
     measure.current = () => {
       const el = grid.current;
       if (!el || !el.clientWidth) return;
       const values = [...el.querySelectorAll<HTMLElement>("[data-stat-value]")];
       const needs = values.map((v) => (v.scrollWidth * STAT_VALUE_STEPS[0].px) / (Number(v.dataset.statValue) || STAT_VALUE_STEPS[0].px));
       const wide = typeof window.matchMedia === "function" && window.matchMedia("(min-width: 1024px)").matches;
-      const next = statGridFit(needs, el.clientWidth, wide);
-      setFit((f) => (f.step === next.step && f.single === next.single && f.two === next.two ? f : next));
+      const fitted = statGridFit(needs, el.clientWidth, wide);
+      const sameWidth = measuredAt.current === el.clientWidth;
+      measuredAt.current = el.clientWidth;
+      setFit((f) => {
+        // At the same width, live values only ever step the size down, so a digit that comes and goes doesn't make every tile jump.
+        const next = sameWidth && fitted.step < f.step ? { ...fitted, step: f.step } : fitted;
+        return f.step === next.step && f.single === next.single && f.two === next.two ? f : next;
+      });
     };
     useLayoutEffect(() => measure.current());
     useLayoutEffect(() => {
@@ -226,7 +241,7 @@ export const StatGrid = forwardRef<HTMLDivElement, { children: ReactNode; "aria-
         }}
         role="list"
         className={cn(
-          "grid gap-1 overflow-hidden rounded-group bg-line-subtle shadow-xs",
+          "grid gap-1 overflow-hidden rounded-group bg-line shadow-xs forced-line",
           fit.single ? "grid-cols-1" : fit.two ? "grid-cols-2" : cn(GRID_COLS[narrow.cols], wide.cols !== narrow.cols && LG_GRID_COLS[wide.cols]),
           className,
         )}

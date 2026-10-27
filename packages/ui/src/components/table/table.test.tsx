@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Table } from "./table.js";
 
@@ -69,5 +69,35 @@ describe("Table", () => {
     expect(screen.getByRole("columnheader")).toHaveClass("px-8", "first:pl-0");
     expect(screen.getByRole("cell")).toHaveClass("px-8", "first:pl-0");
     expect(screen.getByRole("cell")).not.toHaveClass("px-12");
+  });
+
+  it("scrolls sideways inside its own box, under an edge fade, when it is wider than its room, and keeps 40px rows", () => {
+    render(
+      <Table aria-label="Prices">
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>claude-sonnet-4-5</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>,
+    );
+    const table = screen.getByRole("table", { name: "Prices" });
+    expect(table.parentElement).toHaveClass("overflow-x-auto", "scroll-fade-x");
+    expect(screen.getByRole("cell")).toHaveClass("h-40", "py-10");
+  });
+
+  it("takes keyboard focus only when it has columns to scroll to", () => {
+    const wide = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(600);
+    render(
+      <Table aria-label="Prices">
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>claude-sonnet-4-5</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>,
+    );
+    expect(screen.getByRole("table").parentElement).toHaveAttribute("tabindex", "0");
+    wide.mockRestore();
   });
 });

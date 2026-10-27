@@ -36,7 +36,7 @@ export function States() {
           </div>
         </div>
       </StateSection>
-      <StateSection title="With a mark">
+      <StateSection title="With a mark, small, on a selected row">
         <div className="flex gap-24">
           <StatusDot tone="success" icon={icons.success}>
             Up to date
@@ -44,6 +44,14 @@ export function States() {
           <StatusDot tone="danger" icon={icons.error}>
             Down
           </StatusDot>
+          <StatusDot tone="success" size="sm" icon={icons.success}>
+            Up to date
+          </StatusDot>
+          <span className="flex h-44 items-center rounded-item bg-fill-2 px-12">
+            <StatusDot tone="warning" size="sm">
+              Expiring
+            </StatusDot>
+          </span>
         </div>
       </StateSection>
     </>

@@ -91,4 +91,22 @@ describe("ResourceList's ref", () => {
     expect(ref.current).toContainElement(screen.getByRole("toolbar", { name: "Filters" }));
     expect(ref.current).toContainElement(screen.getByText("production"));
   });
+
+  it("names the collection when it is empty without a title of its own", () => {
+    render(<ResourceList aria-label="Keys" groups={[]} />);
+    expect(screen.getByText("No keys yet")).toBeInTheDocument();
+  });
+
+  it("announces how many rows a search leaves, and clears the search from its no-match state", async () => {
+    render(<ResourceList aria-label="Keys" groups={groups} />);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search" }), "prod");
+    expect(status).toHaveTextContent("1 result");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Search" }), "zzz");
+    expect(status).toHaveTextContent("No results");
+    await userEvent.click(screen.getAllByRole("button", { name: "Clear search" }).at(-1)!);
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+    expect(screen.getByText("staging")).toBeInTheDocument();
+  });
 });

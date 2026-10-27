@@ -86,20 +86,25 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   const hits = dialog.getByRole("table", { name: "Models on models.dev" }).getByRole("rowgroup").last().getByRole("row");
   await expect(hits).toHaveCount(2);
   await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
+  // A Tab pressed as the dialog's resize animation ends can drop focus to the first field.
+  await expect(dialog).not.toHaveAttribute("data-resizing");
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
     dialog.getByRole("switch", { name: "Include deprecated" }),
     dialog.getByRole("link", { name: "Open providers" }),
-    dialog.getByRole("checkbox", { name: "Select all rows" }),
   ]) {
     await page.keyboard.press("Tab");
     await expect(control).toBeFocused();
   }
+  await page.keyboard.press("Tab");
+  await expect(hit(page, "gpt-4.1")).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(dialog.getByRole("checkbox", { name: "Select all rows" })).toBeFocused();
   for (const column of ["Model", "Context", "Per 1M in / out", "Released"]) {
-    await page.keyboard.press("Tab");
+    await page.keyboard.press("ArrowRight");
     await expect(dialog.getByRole("columnheader", { name: column }).getByRole("button")).toBeFocused();
   }
-  await page.keyboard.press("Tab");
+  await page.keyboard.press("ArrowDown");
   await expect(hit(page, "gpt-4.1")).toBeFocused();
   await page.keyboard.press("Space");
   await expect(dialog.getByRole("button", { name: "Add 1 model" })).toBeVisible();
@@ -120,7 +125,7 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   await expect(hits).toHaveCount(1);
   const review = hit(page, "gpt-4.1-mini").getByRole("button", { name: "Review gpt-4.1-mini" });
   for (let i = 0; i < 16; i++) {
-    const focused = await expect(review)
+    const focused = await expect(hit(page, "gpt-4.1-mini"))
       .toBeFocused({ timeout: 200 })
       .then(
         () => true,
@@ -129,6 +134,7 @@ test("models are picked from the keyboard: Space selects, a row's review button 
     if (focused) break;
     await page.keyboard.press("Tab");
   }
+  await page.keyboard.press("ArrowRight");
   await expect(review).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog").getByRole("heading", { name: "Review gpt-4.1-mini" })).toBeVisible();

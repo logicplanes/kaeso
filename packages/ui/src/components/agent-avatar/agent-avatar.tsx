@@ -1,4 +1,5 @@
-import { forwardRef } from "react";
+import { forwardRef, type CSSProperties } from "react";
+import { Tooltip } from "../tooltip/tooltip.js";
 import { cn } from "../../utils/cn.js";
 import { useUiText } from "../../i18n/context.js";
 import { Avatar } from "../avatar/avatar.js";
@@ -17,19 +18,18 @@ export const KAESO_AGENT_AVATAR_DEFAULT_VARIANTS = { size: 24 } as const;
 
 export const KAESO_AGENT_ATTRIBUTION_VARIANTS = {
   size: {
-    20: { classes: "size-10 right-0 bottom-0 rounded-cell", glyph: "size-8", stroke: 3, description: "20px person, 10px agent badge" },
-    24: { classes: "size-12 right-0 bottom-0 rounded-cell", glyph: "size-10", stroke: 2.75, description: "24px person, 12px agent badge (default)" },
-    28: { classes: "size-14 right-0 bottom-0 rounded-cell", glyph: "size-10", stroke: 2.5, description: "28px person, 14px agent badge" },
-    32: { classes: "size-16 right-0 bottom-0 rounded-cell", glyph: "size-12", stroke: 2.25, description: "32px person, 16px agent badge" },
-    40: { classes: "size-20 right-0 bottom-0 rounded-avatar", glyph: "size-14", stroke: 2, description: "40px person, 20px agent badge" },
+    20: { classes: "size-8", px: 8, glyph: "size-6", stroke: 3.5, description: "20px person, 8px agent badge" },
+    24: { classes: "size-10", px: 10, glyph: "size-8", stroke: 3, description: "24px person, 10px agent badge (default)" },
+    28: { classes: "size-12", px: 12, glyph: "size-10", stroke: 2.75, description: "28px person, 12px agent badge" },
+    32: { classes: "size-12", px: 12, glyph: "size-10", stroke: 2.75, description: "32px person, 12px agent badge" },
+    40: { classes: "size-16", px: 16, glyph: "size-12", stroke: 2.5, description: "40px person, 16px agent badge" },
   },
 } as const;
 export const KAESO_AGENT_ATTRIBUTION_DEFAULT_VARIANTS = { size: 24 } as const;
 
 type AvatarSize = keyof typeof KAESO_AGENT_AVATAR_VARIANTS.size;
 
-// A bot's face on a 24 grid: head 4–20, ears at 2 and 22, antenna to 4.5, eyes as round-capped dots. Badges
-// drop the ears and widen the head, which is all that still reads at 8 to 14 pixels.
+// Below 14px the ears merge with the head, so the badge drops them and widens the head instead.
 const BADGE_BOT = [
   "M6.5 7h11A3.5 3.5 0 0 1 21 10.5v6a3.5 3.5 0 0 1-3.5 3.5h-11A3.5 3.5 0 0 1 3 16.5v-6A3.5 3.5 0 0 1 6.5 7z",
   "M12 7V3.5",
@@ -78,7 +78,11 @@ export const AgentAvatar = forwardRef<HTMLSpanElement, AgentAvatarProps>(functio
     <span
       ref={ref}
       {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })}
-      className={cn("inline-flex shrink-0 items-center justify-center bg-ink text-on-ink select-none", tile.classes, className)}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center bg-fill-3 text-fg select-none forced-colors:outline forced-colors:-outline-offset-1",
+        tile.classes,
+        className,
+      )}
     >
       {botGlyph(tile)}
     </span>
@@ -97,22 +101,29 @@ export interface AgentAttributionProps {
 export const AgentAttribution = forwardRef<HTMLSpanElement, AgentAttributionProps>(function AgentAttribution({ name, src, agent, size = 24, className }, ref) {
   const t = useUiText();
   const badge = KAESO_AGENT_ATTRIBUTION_VARIANTS.size[size];
+  const label = t("agentAttribution.label", "{name} via {agent} ({model})", { name, agent: agent.name, model: modelName(agent.model, t) });
+  const centre = `${size - badge.px / 2}px`;
   return (
-    <span
-      ref={ref}
-      role="img"
-      aria-label={t("agentAttribution.label", "{name} via {agent} ({model})", { name, agent: agent.name, model: modelName(agent.model, t) })}
-      className={cn("relative inline-flex shrink-0", className)}
-    >
-      <Avatar name={name} {...(src ? { src } : {})} size={size} decorative />
-      <span
-        aria-hidden
-        data-agent-badge=""
-        className={cn("absolute inline-flex items-center justify-center bg-ink text-on-ink ring-2 ring-panel", badge.classes)}
-      >
-        {botGlyph(badge, BADGE_BOT)}
+    <Tooltip content={label}>
+      <span ref={ref} role="img" aria-label={label} className={cn("relative inline-flex shrink-0", className)}>
+        <span
+          className="flex cutout rounded-pill"
+          style={{ "--k-cut-x-ltr": centre, "--k-cut-y": centre, "--k-cut-r": `${badge.px / 2 + 2}px` } as CSSProperties}
+        >
+          <Avatar name={name} {...(src ? { src } : {})} size={size} decorative />
+        </span>
+        <span
+          aria-hidden
+          data-agent-badge=""
+          className={cn(
+            "absolute right-0 bottom-0 inline-flex items-center justify-center rounded-pill bg-ink text-on-ink data-mark forced-colors:outline forced-colors:-outline-offset-1",
+            badge.classes,
+          )}
+        >
+          {botGlyph(badge, BADGE_BOT)}
+        </span>
       </span>
-    </span>
+    </Tooltip>
   );
 });
 AgentAttribution.displayName = "AgentAttribution";

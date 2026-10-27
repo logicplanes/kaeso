@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { StatGrid, StatTile, statGridFit, statGridLayout } from "./stat.js";
 
@@ -88,7 +88,13 @@ describe("StatGrid rows", () => {
   });
   it("names the change as better or worse by its direction", () => {
     render(<StatTile label="Errors" value="0.4%" change={{ value: -0.31, better: "down" }} />);
-    expect(screen.getByText("↓31%")).toHaveClass("text-success-text");
+    const badge = screen.getByText("↓31%").closest(".rounded-pill")!;
+    expect(badge).toHaveClass("text-success-text");
+    expect(badge).toHaveTextContent("↓31% better");
+  });
+  it("says a change is worse in words, not only in red", () => {
+    render(<StatTile label="Tokens" value="18.4M" change={{ value: -0.04 }} />);
+    expect(screen.getByText("↓4.0%").closest(".rounded-pill")).toHaveTextContent("↓4.0% worse");
   });
 });
 
@@ -112,7 +118,32 @@ describe("StatGrid on a narrow screen", () => {
   it("draws the numbers at the grid's step, in a line of the largest size's height", () => {
     render(<StatTile label="Cost" value="$1,041.13" />);
     const value = screen.getByText("$1,041.13");
-    expect(value).toHaveClass("text-title-lg", "truncate");
+    expect(value).toHaveClass("text-metric", "truncate");
     expect(value.parentElement).toHaveClass("h-34");
+  });
+});
+
+describe("StatGrid with live values", () => {
+  it("steps every value down when a number grows, and holds that size when it shrinks again at the same width", () => {
+    const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(342);
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return (this.textContent ?? "").length * 15;
+    });
+    const grid = (cost: string) => (
+      <StatGrid aria-label="Usage">
+        <StatTile label="Requests" value="18,204" />
+        <StatTile label="Cost" value={cost} />
+      </StatGrid>
+    );
+    const { rerender } = render(grid("$41.13"));
+    const size = () => screen.getByText(/^\$/).className.match(/text-(metric|title|title-sm)\b/)?.[1];
+    expect(size()).toBe("metric");
+    rerender(grid("$1,041,213.13"));
+    expect(size()).not.toBe("metric");
+    const stepped = size();
+    rerender(grid("$41.13"));
+    expect(size()).toBe(stepped);
+    width.mockRestore();
+    scroll.mockRestore();
   });
 });

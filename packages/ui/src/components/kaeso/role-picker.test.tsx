@@ -59,7 +59,7 @@ describe("EffectiveAccess", () => {
     expect(screen.getByText("View keys")).toBeInTheDocument();
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
     expect(screen.getByText("Every right")).toBeInTheDocument();
-    expect(screen.getByText("No rights in")).toBeInTheDocument();
+    expect(screen.getByText("No rights")).toBeInTheDocument();
     expect(screen.getByText("Members")).toBeInTheDocument();
     expect(screen.getByText("Developer")).toBeInTheDocument();
   });

@@ -258,16 +258,18 @@ describe("DataTable from the keyboard", () => {
     render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable />);
     expect(screen.getByRole("checkbox", { name: "Select ci-runner" })).toBeInTheDocument();
   });
-  it("resizes a column with the arrow keys on its handle", async () => {
+  it("resizes a column with Shift and the arrow keys on its header, whose handle stays out of the tab order", async () => {
     const user = userEvent.setup();
     render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />);
     const handle = screen.getAllByRole("separator", { name: "Resize column" })[0]!;
     expect(handle).toHaveAttribute("aria-valuenow", "160");
-    handle.focus();
-    await user.keyboard("{ArrowRight}");
+    expect(handle).toHaveAttribute("tabindex", "-1");
+    screen.getByRole("button", { name: "Key" }).focus();
+    await user.keyboard("{Shift>}{ArrowRight}{/Shift}");
     expect(handle).toHaveAttribute("aria-valuenow", "176");
-    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    await user.keyboard("{Shift>}{ArrowLeft}{ArrowLeft}{/Shift}");
     expect(handle).toHaveAttribute("aria-valuenow", "144");
+    expect(screen.getByRole("button", { name: "Key" })).toHaveFocus();
   });
 
   it("keeps rows that can't be selected out of the selection, select all included", async () => {

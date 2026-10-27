@@ -1,14 +1,13 @@
-import { forwardRef, useRef, type ReactNode } from "react";
+import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { useTruncated } from "../../hooks/use-truncated.js";
 import { CopyButton } from "../copy-button/copy-button.js";
-import { Tooltip } from "../tooltip/tooltip.js";
+import { TruncatedText } from "../text/truncated.js";
 
 export const KAESO_KEY_VALUE_VARIANTS = {
   layout: {
-    columns: { classes: "grid grid-cols-kv gap-x-24", description: "Label and value side by side (default)" },
+    columns: { classes: "grid grid-cols-kv content-start self-start gap-x-24", description: "Label and value side by side (default)" },
     stacked: { classes: "flex flex-col", description: "Label above value, for narrow sheets" },
-    grid: { classes: "grid gap-x-32", description: "Label above value, in columns: a wide sheet's details, two or more to a row" },
+    grid: { classes: "grid content-start self-start gap-x-32", description: "Label above value, in columns: a wide sheet's details, two or more to a row" },
   },
   columns: {
     2: { classes: "grid-cols-1 @kv:grid-cols-2", description: "Two to a row from 480px; one below (default)" },
@@ -34,23 +33,6 @@ export interface KeyValueProps {
   className?: string | undefined;
 }
 
-function Cut({ children }: { children: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const cut = useTruncated(ref);
-  const el = (
-    <span ref={ref} className="block min-w-0 truncate" {...(cut ? { tabIndex: 0 } : {})}>
-      {children}
-    </span>
-  );
-  return cut ? (
-    <Tooltip content={children} shape="multiline">
-      {el}
-    </Tooltip>
-  ) : (
-    el
-  );
-}
-
 export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function KeyValue({ items, layout = "columns", columns = 2, className }, ref) {
   const grid = layout === "grid";
   const list = (
@@ -60,12 +42,12 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
           <dt
             className={cn(
               "text-small text-fg-secondary",
-              layout === "columns" && "flex min-h-36 items-center",
-              layout === "columns" && it.wrap && "items-start pt-8",
-              grid && "truncate",
+              layout === "columns" && "flex min-h-36 min-w-120 items-center py-8",
+              layout === "columns" && it.wrap && "items-start",
+              grid && "flex min-w-0",
             )}
           >
-            {it.label}
+            {grid ? <TruncatedText>{it.label}</TruncatedText> : it.label}
           </dt>
           <dd
             className={cn(
@@ -75,13 +57,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
               it.wrap && (grid ? "items-start" : "items-start py-8"),
             )}
           >
-            {it.wrap ? (
-              <span className="min-w-0 break-words">{it.value}</span>
-            ) : typeof it.value === "string" ? (
-              <Cut>{it.value}</Cut>
-            ) : (
-              <span className="min-w-0 truncate">{it.value}</span>
-            )}
+            {it.wrap ? <span className="min-w-0 break-words">{it.value}</span> : <TruncatedText className="block min-w-0">{it.value}</TruncatedText>}
             {it.copy && (
               <span className="shrink-0 opacity-0 transition-control group-hover/kv:opacity-100 coarse:opacity-100 focus-within:opacity-100">
                 <CopyButton value={it.copy} size="xs" />

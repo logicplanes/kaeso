@@ -115,7 +115,7 @@ test("DataTable header sticks while its rows scroll, and follows them sideways",
   await hydrated(page);
   const result = await example.evaluate((el) => {
     const scroller = el.querySelector<HTMLElement>(".overflow-y-auto")!;
-    const table = el.querySelector("[role=table]")!;
+    const table = el.querySelector("[role=grid], [role=table]")!;
     const [head, body] = [...table.querySelectorAll<HTMLElement>(":scope > [role=rowgroup]")];
     scroller.scrollTop = 400;
     body!.scrollLeft = 24;

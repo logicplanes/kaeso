@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { KeyValue } from "./key-value.js";
 
@@ -20,8 +20,8 @@ describe("KeyValue", () => {
     expect(container.firstElementChild).toHaveClass("@container");
     const dl = container.querySelector("dl");
     expect(dl).toHaveClass("grid", "grid-cols-2", "@kv:grid-cols-4");
-    expect(screen.getByText("Message").parentElement).toHaveClass("col-span-full");
-    expect(screen.getByText("Format").nextElementSibling).toHaveClass("min-h-24");
+    expect(screen.getByText("Message").closest("dt")?.parentElement).toHaveClass("col-span-full");
+    expect(screen.getByText("Format").closest("dt")?.nextElementSibling).toHaveClass("min-h-24");
   });
 
   it("keeps a long text value on one line and copies what it says", () => {
@@ -29,5 +29,18 @@ describe("KeyValue", () => {
     expect(screen.getByText("OpenAI Responses → Anthropic Messages")).toHaveClass("truncate");
     expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
     expect(screen.getByText(/The connection to the provider/)).toHaveClass("break-words");
+  });
+
+  it("keeps its rows at their own height beside a taller neighbour instead of stretching to fill", () => {
+    const { container } = render(<KeyValue items={items} />);
+    expect(container.querySelector("dl")).toHaveClass("content-start", "self-start");
+  });
+
+  it("lets a cut value of any kind, and a cut grid label, be read in full from the keyboard", () => {
+    const spy = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(999);
+    render(<KeyValue layout="grid" items={[{ label: "Upstream request identifier", value: <span>req_011Cg1rpXo2L5DAnHsAAaHg2</span> }]} />);
+    expect(screen.getByText("Upstream request identifier")).toHaveAttribute("tabindex", "0");
+    expect(screen.getByText("req_011Cg1rpXo2L5DAnHsAAaHg2").parentElement).toHaveAttribute("tabindex", "0");
+    spy.mockRestore();
   });
 });

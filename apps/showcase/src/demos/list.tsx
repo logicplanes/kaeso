@@ -1,5 +1,18 @@
 import type { ReactNode } from "react";
-import { List, Avatar, Badge, Button, Empty, IconButton, InsetContent, SelectionAction, icons, type ListGroup, type ListItemData } from "@logicplanes/kaeso-ui";
+import {
+  List,
+  Avatar,
+  Badge,
+  Button,
+  Empty,
+  IconButton,
+  InsetContent,
+  PortalContainer,
+  SelectionAction,
+  icons,
+  type ListGroup,
+  type ListItemData,
+} from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { useLocale } from "@logicplanes/kaeso-ui/i18n";
 import { keys, members, NOW } from "~/fixtures/kaeso";
@@ -121,46 +134,155 @@ export function Keys() {
     </div>
   );
 }
+function Cell({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <span className="text-caption font-medium text-fg-tertiary">{label}</span>
+      <div data-cell={id}>{children}</div>
+    </div>
+  );
+}
+
+const one = groups[0]!.items.slice(0, 1);
+const firstId = one[0]!.id;
+const ROW_STATES: { id: string; label: string; force?: string; selected?: boolean; disabled?: boolean }[] = [
+  { id: "rest", label: "Rest" },
+  { id: "hover", label: "Hover", force: "hover" },
+  { id: "pressed", label: "Pressed", force: "pressed" },
+  { id: "focus", label: "Keyboard focus", force: "focus" },
+  { id: "disabled", label: "Disabled", disabled: true },
+];
+const SELECTED_STATES = [
+  { id: "rest", label: "Selected" },
+  { id: "hover", label: "Selected, hover", force: "hover" },
+  { id: "pressed", label: "Selected, pressed", force: "pressed" },
+];
+
+function RowStates({ prefix }: { prefix: string }) {
+  return (
+    <div className="flex w-560 flex-col gap-12">
+      {ROW_STATES.map((s) => (
+        <Cell key={s.id} id={`${prefix}-${s.id}`} label={s.label}>
+          <List
+            aria-label={s.label}
+            items={s.disabled ? one.map((i) => ({ ...i, disabled: true })) : one}
+            selectable
+            selectionBar={false}
+            {...(s.force ? { "data-force-row": s.force } : {})}
+          />
+        </Cell>
+      ))}
+      {SELECTED_STATES.map((s) => (
+        <Cell key={s.id} id={`${prefix}sel-${s.id}`} label={s.label}>
+          <List
+            aria-label={s.label}
+            items={one}
+            selectable
+            selectionBar={false}
+            selected={new Set([firstId])}
+            {...(s.force ? { "data-force-row": s.force } : {})}
+          />
+        </Cell>
+      ))}
+    </div>
+  );
+}
+
+const many: ListItemData[] = Array.from({ length: 140 }, (_, i) => ({
+  id: `req_${i}`,
+  title: `checkout-web request ${i + 1}`,
+  displayId: `req_01JB${String(1000 + i)}`,
+  date: `${(i % 59) + 1} min ago`,
+}));
+
 export function States() {
   return (
     <>
-      <StateSection title="Rows (first row forced)">
-        <div className="flex w-960 flex-col gap-24">
-          <List aria-label="Rest" items={groups[0]!.items.slice(0, 2)} />
-          <List aria-label="Hover" items={groups[0]!.items.slice(0, 2)} data-force-row="hover" />
-          <List aria-label="Focus" items={groups[0]!.items.slice(0, 2)} data-force-row="focus" />
-          <List aria-label="Focus, selectable" items={groups[0]!.items.slice(0, 2)} selectable data-force-row="focus" />
-          <List aria-label="Selected" items={groups[0]!.items.slice(0, 2)} selectable selected={new Set([groups[0]!.items[0]!.id])} />
+      <StateSection title="Rows on the panel">
+        <RowStates prefix="panel" />
+      </StateSection>
+      <StateSection title="Rows in a card">
+        <div>
+          <InsetContent>
+            <RowStates prefix="card" />
+          </InsetContent>
         </div>
       </StateSection>
-      <StateSection title="Loading, and selection without the floating bar">
-        <div className="flex w-960 flex-col gap-24">
-          <List aria-label="Loading" items={[]} loading />
+      <StateSection title="Secondary controls on a row's fill">
+        <div className="flex w-560 flex-col gap-12">
+          <List aria-label="Invitations hover" items={invitations} data-force-row="hover" />
+          <List aria-label="Invitations selected" items={invitations} selectable selectionBar={false} selected={new Set(["inv_1"])} data-force-row="hover" />
+          <InsetContent>
+            <List aria-label="Invitations in a card" items={invitations} data-force-row="hover" />
+          </InsetContent>
+        </div>
+      </StateSection>
+      <StateSection title="Selecting, with the floating bar">
+        <div className="relative h-160 w-560 contain-layout">
+          <PortalContainer>
+            <List
+              aria-label="Selecting"
+              items={groups[0]!.items.slice(0, 2)}
+              selectable
+              selected={new Set([firstId])}
+              selectionActions={
+                <>
+                  <SelectionAction icon={icons.copy}>Copy ids</SelectionAction>
+                  <SelectionAction icon={icons.delete} danger>
+                    Delete
+                  </SelectionAction>
+                </>
+              }
+            />
+          </PortalContainer>
+        </div>
+      </StateSection>
+      <StateSection title="Groups: collapsed, with an add button, in a selectable list, loading">
+        <div className="flex w-560 flex-col gap-24">
           <List
-            aria-label="Selected in a dialog"
-            items={groups[0]!.items.slice(0, 2)}
+            aria-label="Keys by state"
             selectable
             selectionBar={false}
-            selected={new Set([groups[0]!.items[0]!.id])}
+            groups={[
+              { ...groups[0]!, items: groups[0]!.items.slice(0, 2) },
+              { ...groups[1]!, defaultCollapsed: true },
+            ]}
           />
+          <List aria-label="Loading keys" groups={groups.map((g) => ({ ...g, items: [] }))} loading />
         </div>
       </StateSection>
-      <StateSection title="Secondary controls on a row's fill (hover, selected), on the panel and in a card">
+      <StateSection title="Compact, ids, a child row, a disabled row, a wrapping description">
+        <div className="flex w-560 flex-col gap-24">
+          <List
+            aria-label="Aliases"
+            density="compact"
+            idWidth={120}
+            items={[
+              { id: "a", title: "checkout-default", displayId: "gpt-5-mini", children: [{ id: "b", title: "Fallback", displayId: "claude-haiku-4-5" }] },
+              { id: "c", title: "support-triage", displayId: "claude-sonnet-4-5", disabled: true, date: "Paused" },
+            ]}
+          />
+          <InsetContent>
+            <List
+              aria-label="Models"
+              wrapSubtitle
+              items={[
+                {
+                  id: "m",
+                  title: "Claude Sonnet 4.5",
+                  subtitle:
+                    "Anthropic's balanced model for agents and coding. Supports tools, vision, PDFs and extended reasoning with up to 64,000 output tokens.",
+                },
+              ]}
+            />
+          </InsetContent>
+        </div>
+      </StateSection>
+      <StateSection title="At phone width: lines, stacked rows, long titles">
         <div className="flex flex-col gap-24">
-          <div className="flex w-960 flex-col gap-24">
-            <List aria-label="Invitations hover" items={invitations} data-force-row="hover" />
-            <List aria-label="Invitations selected" items={invitations} selectable selectionBar={false} selected={new Set(["inv_1"])} data-force-row="hover" />
+          <div className="w-360">
+            <List aria-label="Keys, narrow" items={groups[0]!.items.slice(0, 3)} />
           </div>
-          <Column>
-            <List aria-label="Invitations in a card" items={invitations} data-force-row="hover" />
-          </Column>
-        </div>
-      </StateSection>
-      <StateSection title="In a settings column: stacked rows, and long titles at phone width">
-        <div className="flex flex-col gap-24">
-          <Column>
-            <List aria-label="Members" items={memberRows.slice(0, 3)} data-force-row="hover" />
-          </Column>
           <Column width="w-360">
             <List
               aria-label="Members, narrow"
@@ -169,6 +291,7 @@ export function States() {
                   id: "a",
                   title: "Ada Okafor, platform and billing administrator",
                   subtitle: "ada.okafor@northwind-laboratories.example",
+                  leading: <Avatar name="Ada Okafor" size={20} decorative />,
                   meta: <Badge>Owner</Badge>,
                 },
                 { id: "b", title: "checkout-assistant-production-worker", subtitle: "Service account · created by Lin Park", meta: <Badge>Developer</Badge> },
@@ -178,34 +301,20 @@ export function States() {
         </div>
       </StateSection>
       <StateSection title="Empty: in a card, and on the panel">
-        <div className="flex flex-col gap-24">
-          <Column>
+        <div className="flex w-560 flex-col gap-24">
+          <InsetContent>
             <List
               aria-label="Invitations, none"
               items={[]}
               empty={<Empty size="md" title="No pending invitations" description="Accepted, revoked and expired invitations are under All." />}
             />
-          </Column>
-          <div className="w-760">
-            <List aria-label="Keys, none" items={[]} empty={<Empty size="compact" title="No keys match" description="Clear the search to see every key." />} />
-          </div>
+          </InsetContent>
+          <List aria-label="Keys, none" items={[]} empty={<Empty size="compact" title="No keys match" description="Clear the search to see every key." />} />
         </div>
       </StateSection>
-      <StateSection title="Groups and child rows">
-        <div className="w-960">
-          <List
-            aria-label="Tree"
-            groups={[
-              {
-                id: "g",
-                title: "Aliases",
-                count: 1,
-                items: [
-                  { id: "a", title: "checkout-default", displayId: "gpt-5-mini", children: [{ id: "b", title: "Fallback", displayId: "claude-haiku-4-5" }] },
-                ],
-              },
-            ]}
-          />
+      <StateSection title="Over 100 rows: virtualized in its scroller">
+        <div className="h-240 w-560 overflow-y-auto">
+          <List aria-label="Requests" items={many} />
         </div>
       </StateSection>
     </>

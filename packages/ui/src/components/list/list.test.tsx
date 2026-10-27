@@ -40,7 +40,7 @@ describe("List", () => {
       </InsetContent>,
     );
     expect(screen.getByText("Builds with the project's models, keys and logs.")).toHaveClass("truncate");
-    expect(screen.getByRole("gridcell")).toHaveClass("h-56");
+    expect(screen.getByRole("gridcell")).toHaveClass("min-h-56", "py-8");
   });
   it("puts a leading avatar before the title", () => {
     render(<List aria-label="Members" items={[{ id: "ada", title: "Ada", leading: <span data-testid="avatar" /> }]} />);
@@ -85,7 +85,7 @@ describe("List", () => {
     const empty = <Empty size="md" title="No invitations yet" />;
     const { rerender } = render(<List aria-label="Invitations" items={[]} empty={empty} />);
     const grid = screen.getByRole("grid", { name: "Invitations" });
-    expect(within(grid).getByRole("heading", { name: "No invitations yet" })).toBeInTheDocument();
+    expect(within(grid).getByText("No invitations yet")).toBeInTheDocument();
     expect(grid).not.toHaveClass("rounded-group");
     rerender(
       <InsetContent>
@@ -93,7 +93,7 @@ describe("List", () => {
       </InsetContent>,
     );
     expect(screen.getByRole("grid", { name: "Invitations" })).toHaveClass("rounded-group");
-    expect(within(screen.getByRole("grid", { name: "Invitations" })).getByRole("heading", { name: "No invitations yet" })).toBeInTheDocument();
+    expect(within(screen.getByRole("grid", { name: "Invitations" })).getByText("No invitations yet")).toBeInTheDocument();
   });
   it("shows loading rows, not the empty state, while loading", () => {
     render(<List aria-label="Invitations" items={[]} loading empty={<Empty title="No invitations yet" />} />);

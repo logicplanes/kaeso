@@ -20,7 +20,7 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
   ref,
 ) {
   return (
-    <div ref={ref} className={cn("flex flex-col gap-16 rounded-group bg-raised p-16 shadow-xs", className)}>
+    <div ref={ref} className={cn("flex flex-col gap-16 rounded-group bg-raised p-20 shadow-xs", className)}>
       <ul aria-label={ariaLabel} className="flex flex-col gap-10">
         {items.map((item, i) => (
           <li key={i} className="flex items-start gap-10 text-body text-fg">
@@ -31,8 +31,8 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
       </ul>
       {(footer || action) && (
         <div className="flex items-center justify-between gap-12 pt-12 hairline-t">
-          <p className="min-w-0 text-small text-fg-tertiary text-pretty">{footer}</p>
-          {action && <div className="shrink-0">{action}</div>}
+          {footer && <p className="min-w-0 text-small text-fg-secondary text-pretty">{footer}</p>}
+          {action && <div className="ml-auto shrink-0">{action}</div>}
         </div>
       )}
     </div>

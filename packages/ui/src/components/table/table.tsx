@@ -1,4 +1,16 @@
-import { createContext, forwardRef, useContext, type HTMLAttributes, type TdHTMLAttributes, type ThHTMLAttributes } from "react";
+import {
+  createContext,
+  forwardRef,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type HTMLAttributes,
+  type TdHTMLAttributes,
+  type ThHTMLAttributes,
+} from "react";
+import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { cn } from "../../utils/cn.js";
 import { STATUS_TONE_TEXT, type StatusTone } from "../../utils/tone.js";
 
@@ -23,9 +35,21 @@ export interface TableProps extends HTMLAttributes<HTMLTableElement> {
   density?: Density | undefined;
 }
 const Root = forwardRef<HTMLTableElement, TableProps>(function Table({ density = "default", className, ...props }, ref) {
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const [overflows, setOverflows] = useState(false);
+  useScrollFadeX(scroller, "table");
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const measure = () => setOverflows(el.scrollWidth > el.clientWidth + 1);
+    measure();
+    return observeResize([el, ...(el.firstElementChild ? [el.firstElementChild] : [])], measure);
+  }, []);
   return (
     <DensityContext.Provider value={density}>
-      <table ref={ref} className={cn("w-full border-collapse text-body", className)} {...props} />
+      <div ref={scroller} {...(overflows ? { tabIndex: 0 } : {})} className="min-w-0 overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset">
+        <table ref={ref} className={cn("w-full border-collapse text-body", className)} {...props} />
+      </div>
     </DensityContext.Provider>
   );
 });
@@ -74,7 +98,7 @@ const Cell = forwardRef<HTMLTableCellElement, TableCellProps>(function TableCell
     <td
       ref={ref}
       className={cn(
-        "h-44 py-12 align-middle text-fg first:pl-0",
+        "h-40 py-10 align-middle text-fg first:pl-0",
         KAESO_TABLE_VARIANTS.density[density].classes,
         LAST[align],
         KAESO_TABLE_VARIANTS.align[align].classes,

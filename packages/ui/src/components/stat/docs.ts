@@ -18,7 +18,7 @@ export const docs = {
   },
   StatGrid: {
     description:
-      "`StatTile`s in one raised group, divided by hairlines: two to a row, then as many as there are tiles (up to four) from 1024px. The last tile of a short row widens to fill it (the third of three spans both columns below 1024px), so the group never shows an empty cell. Where a number doesn't fit its tile (a phone, a long amount), every tile's number steps down a size, and the tiles take a row each when even the smallest doesn't fit: a value is never cut short.",
+      "`StatTile`s in one raised group, divided by hairlines: two to a row, then as many as there are tiles (up to four) from 1024px. The last tile of a short row widens to fill it (the third of three spans both columns below 1024px), so the group never shows an empty cell. Where a number doesn't fit its tile (a phone, a long amount), every tile's number steps down a size, and the tiles take a row each when even the smallest doesn't fit. At the same width, live numbers only step the size down, never back up, so a digit that comes and goes doesn't make the tiles jump; a value that still can't fit ends in an ellipsis and shows in full in a tooltip.",
     props: {
       "aria-label": "The grid's accessible name.",
       children: "The stats, in a grid.",
@@ -27,7 +27,8 @@ export const docs = {
   StatTile: {
     description: "One metric of a dashboard row: its label, the number, the change against the previous period and the trend.",
     props: {
-      change: "The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down.",
+      change:
+        'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down. The badge is green or red and says "better" or "worse" to screen readers.',
       detail: 'A quiet line under the number: "vs. the previous 30 days", "0.4% of requests".',
       label: 'What the number is: "Requests", "Cost".',
       loading: "While the numbers load: the value, the change and the trend show their shape at the tile's final height.",
