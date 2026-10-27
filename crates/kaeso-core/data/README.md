@@ -9,9 +9,9 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 | | |
 |---|---|
 | Source | `https://models.dev/api.json` |
-| Fetched | 2026-10-26T14:34:37Z |
-| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `mistral`, `openai`, `openrouter`, `togetherai`, `xai`), unchanged otherwise; 554 models |
-| SHA-256 | `f88412033df6241fbfc253251e6cc65969a772719a30396ca8c96dbc14cbd504` |
+| Fetched | 2026-10-27T13:02:41Z |
+| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `mistral`, `openai`, `openrouter`, `togetherai`, `xai`), unchanged otherwise; 555 models |
+| SHA-256 | `1f9c144a85e0f43b4d5d25476ec3764fd807674f4d5ff0f7960a64af1fcf1a8e` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 `models-dev-providers.txt` lists every provider id in the same `api.json`. To refresh both for a release:
