@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Autocomplete, Combobox } from "./combobox.js";
 import { Field } from "../field/field.js";
@@ -80,6 +80,36 @@ describe("Combobox", () => {
       </Field>,
     );
     expect(screen.getByRole("combobox", { name: "Owner" })).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+describe("Combobox right to left", () => {
+  it("keeps the room for the chevron on the side the chevron sits, at every size", () => {
+    const sizes = ["sm", "md", "lg", "xl"] as const;
+    render(
+      <div dir="rtl">
+        {sizes.map((size) => (
+          <Combobox key={size} multiple size={size} aria-label={`Members ${size}`} options={members} defaultValue={["u1", "u2"]} />
+        ))}
+        <Combobox aria-label="Owner" options={members} defaultValue="u1" />
+      </div>,
+    );
+    const logical = /^(pe|ps|me|ms|end|start)-/;
+    const physical = /^(pr|pl|mr|ml|right|left)-/;
+    for (const size of sizes) {
+      const field = screen.getByRole("combobox", { name: `Members ${size}` }).closest(".material-field")!;
+      const chevron = within(field as HTMLElement).getByRole("button", { name: "Show options" });
+      const sides = (el: Element) => [...el.classList].filter((c) => logical.test(c) || physical.test(c));
+      expect(sides(chevron).every((c) => logical.test(c))).toBe(true);
+      expect(sides(field).filter((c) => physical.test(c))).toEqual([]);
+      expect(sides(field).some((c) => c.startsWith("pe-"))).toBe(true);
+      for (const chip of within(field as HTMLElement).getAllByRole("button", { name: /^Remove / })) {
+        expect(sides(chip).filter((c) => physical.test(c))).toEqual([]);
+        expect(sides(chip.parentElement!).filter((c) => physical.test(c))).toEqual([]);
+      }
+    }
+    const single = screen.getByRole("combobox", { name: "Owner" }).closest(".material-field")!;
+    expect([...single.classList].filter((c) => /^(pr|pl)-/.test(c))).toEqual([]);
   });
 });
 

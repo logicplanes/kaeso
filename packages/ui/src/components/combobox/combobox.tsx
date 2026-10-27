@@ -107,10 +107,10 @@ export interface MultiComboboxProps extends BaseProps {
 export type ComboboxProps = SingleComboboxProps | MultiComboboxProps;
 
 const CHIPS: Record<InputSize, { field: string; row: string; chevron: string }> = {
-  sm: { field: "min-h-32 p-4 pr-32", row: "h-24", chevron: "end-2 top-2" },
-  md: { field: "min-h-36 p-4 pr-36", row: "h-28", chevron: "end-4 top-4" },
-  lg: { field: "min-h-40 p-6 pr-36", row: "h-28", chevron: "end-6 top-6" },
-  xl: { field: "min-h-48 p-8 pr-40 text-body-lg", row: "h-32", chevron: "end-10 top-10" },
+  sm: { field: "min-h-32 p-4 pe-32", row: "h-24", chevron: "end-2 top-2" },
+  md: { field: "min-h-36 p-4 pe-36", row: "h-28", chevron: "end-4 top-4" },
+  lg: { field: "min-h-40 p-6 pe-36", row: "h-28", chevron: "end-6 top-6" },
+  xl: { field: "min-h-48 p-8 pe-40 text-body-lg", row: "h-32", chevron: "end-10 top-10" },
 };
 
 const CHEVRON = "inline-flex size-28 shrink-0 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-raised-hover hover:text-fg";
@@ -254,11 +254,11 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
               <>
                 {value.map((o) => (
                   <BaseCombobox.Chip key={o.value} aria-label={o.label} className="outline-none">
-                    <Tag className="pr-2">
+                    <Tag className="pe-2">
                       {o.label}
                       <BaseCombobox.ChipRemove
                         aria-label={t("combobox.remove", "Remove {label}", { label: o.label })}
-                        className="ml-2 inline-flex size-24 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-fill-2 hover:text-fg"
+                        className="ms-2 inline-flex size-24 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-fill-2 hover:text-fg"
                       >
                         <Icon icon={icons.close} size="xs" />
                       </BaseCombobox.ChipRemove>
@@ -280,7 +280,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
           className={cn(
             "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
             KAESO_COMBOBOX_VARIANTS.size[size].classes,
-            "pr-4",
+            "pe-4",
             !(label || description || error) && className,
           )}
         >
