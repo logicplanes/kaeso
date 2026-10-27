@@ -241,6 +241,37 @@ async fn usage_by_route_shows_how_much_of_the_input_each_route_read_from_the_cac
     );
 }
 
+#[tokio::test]
+async fn embedding_routes_have_no_cache_hit_rate() {
+    let env = common::v1::env(None, None).await;
+    let state = &env.app.state;
+    state.clickhouse.migrate(&state.pg).await.unwrap();
+    let r = call(
+        &env,
+        "/v1/embeddings",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "text-embedding-3-small", "input": "hello" })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    env.app.state.in_flight.settled().await;
+    kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+
+    let r = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=route", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let row = &r.body["data"][0];
+    assert_eq!(row["key"], "openai_embeddings:openai_embeddings:openai");
+    assert!(row["input_tokens"].as_u64().unwrap() > 0, "{row}");
+    assert_eq!(row["cache_hit_rate"], Value::Null, "{row}");
+}
+
 async fn rollup_day(env: &Env, day: &str, requests: u64) {
     env.app
         .state

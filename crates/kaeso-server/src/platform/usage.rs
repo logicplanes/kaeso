@@ -3,6 +3,7 @@ use axum::extract::State;
 use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::rights::{OrgRight, ProjectRight};
+use kaeso_kpp::DialectId;
 use kaeso_store::clickhouse::logs::{self as ch, GroupBy};
 use serde::{Deserialize, Serialize};
 use time::Date;
@@ -64,7 +65,8 @@ pub struct UsageRow {
     pub reasoning_tokens: u64,
     #[doc = "The share of the input read from the cache, from 0 to 1: cache reads\n\
         over uncached input, cache reads and cache writes together; `null` for\n\
-        a group without input."]
+        a group without input and for routes to or from `openai_embeddings`,\n\
+        which never cache."]
     pub cache_hit_rate: Option<f64>,
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
@@ -93,7 +95,15 @@ fn public_key(group: GroupBy, key: String) -> String {
     }
 }
 
-fn cache_hit_rate(r: &ch::UsageGroup) -> Option<f64> {
+fn embedding_route(group: GroupBy, key: &str) -> bool {
+    let embeddings = DialectId::OpenAiEmbeddings.as_str();
+    group == GroupBy::Route && key.split(':').take(2).any(|format| format == embeddings)
+}
+
+fn cache_hit_rate(group: GroupBy, r: &ch::UsageGroup) -> Option<f64> {
+    if embedding_route(group, &r.key) {
+        return None;
+    }
     let input = r
         .input_tokens
         .saturating_add(r.cache_read_tokens)
@@ -158,7 +168,7 @@ async fn usage(
     Ok(Json(List::complete(
         rows.into_iter()
             .map(|r| UsageRow {
-                cache_hit_rate: cache_hit_rate(&r),
+                cache_hit_rate: cache_hit_rate(group, &r),
                 key: public_key(group, r.key),
                 requests: r.requests,
                 errors: r.errors,

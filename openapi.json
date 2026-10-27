@@ -25256,7 +25256,7 @@
                     "null"
                   ],
                   "format": "double",
-                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+                  "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
                 },
                 "cache_read_tokens": {
                   "type": "integer",
@@ -29934,7 +29934,7 @@
               "null"
             ],
             "format": "double",
-            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input."
+            "description": "The share of the input read from the cache, from 0 to 1: cache reads\nover uncached input, cache reads and cache writes together; `null` for\na group without input and for routes to or from `openai_embeddings`,\nwhich never cache."
           },
           "cache_read_tokens": {
             "type": "integer",
