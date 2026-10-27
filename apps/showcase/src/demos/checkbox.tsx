@@ -1,4 +1,5 @@
-import { Checkbox, CheckboxGroup } from "@logicplanes/kaeso-ui";
+import { useState } from "react";
+import { Checkbox, CheckboxGroup, Field } from "@logicplanes/kaeso-ui";
 import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -43,15 +44,44 @@ export function States() {
         )}
       />
       <StateSection title="With labels">
-        <div className="flex w-400 flex-col">
-          <Checkbox label="Log request content" defaultChecked />
-          <Checkbox label="Disabled" disabled />
+        <div className="flex w-400 flex-col gap-8">
+          <Checkbox label="Log request content" description="Prompts and completions are stored for 30 days." defaultChecked />
+          <Checkbox label="Hovering the label" description="The row is the target, so the box answers the pointer." data-force="hover" />
+          <Checkbox label="Store images" description="Unavailable while request content is off." disabled />
+          <Checkbox label="Store tool calls" description="Unavailable on this plan." disabled defaultChecked />
+          <Checkbox label="Redact secrets" description="Set by the organization's policy." readOnly defaultChecked />
           <Checkbox
             label="A long label that wraps onto a second line keeps its box aligned with the first line of text"
             description="And a description under it."
           />
+          <Field error="Accept the data processing terms to create the organization.">
+            <Checkbox label="I accept the data processing terms" />
+          </Field>
         </div>
       </StateSection>
+      <StateSection title="Group with a parent">
+        <GroupWithParent />
+      </StateSection>
     </>
+  );
+}
+
+function GroupWithParent() {
+  const all = ["text", "image", "pdf"];
+  const [value, setValue] = useState(["text"]);
+  return (
+    <CheckboxGroup value={value} onValueChange={setValue} allValues={all} aria-label="Input types">
+      <label htmlFor="input-types-all" className="inline-flex min-h-32 cursor-pointer items-center gap-10 select-none">
+        <Checkbox.Box parent id="input-types-all" aria-labelledby="input-types-all-name" />
+        <span id="input-types-all-name" className="text-body text-fg">
+          All input types
+        </span>
+      </label>
+      <div className="flex flex-col pl-28">
+        <Checkbox value="text" label="Text" />
+        <Checkbox value="image" label="Images" />
+        <Checkbox value="pdf" label="PDF" />
+      </div>
+    </CheckboxGroup>
   );
 }

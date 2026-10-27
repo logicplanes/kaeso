@@ -72,9 +72,30 @@ export function States() {
           <ProviderPicker aria-label="Provider" providers={providers.map((p) => ({ id: p.id, name: p.name }))} />
         </div>
       </StateSection>
-      <StateSection title="Tiles, one chosen">
-        <div className="w-512 max-w-full">
-          <ProviderPicker appearance="grid" aria-label="Provider" providers={providers} value="mistral" />
+      <StateSection title="Tiles: chosen, hovered, focused and unavailable">
+        <div className="w-480 max-w-full">
+          <ProviderPicker
+            appearance="grid"
+            aria-label="Provider"
+            value="mistral"
+            providers={providers.map((p) =>
+              p.id === "deepseek"
+                ? { ...p, "data-force": "hover" }
+                : p.id === "groq"
+                  ? { ...p, "data-force": "focus" }
+                  : p.id === "togetherai"
+                    ? { ...p, disabled: true, hint: "Not offered in your region" }
+                    : p.id === "mistral"
+                      ? { ...p, "data-force": "hover" }
+                      : p,
+            )}
+          />
+        </div>
+      </StateSection>
+      <StateSection title="Turned off">
+        <div className="flex w-480 max-w-full flex-col gap-24">
+          <ProviderPicker appearance="grid" aria-label="Provider" providers={providers.slice(0, 3)} value="openai" disabled />
+          <ProviderPicker appearance="select" label="Provider" providers={providers} value="anthropic" disabled />
         </div>
       </StateSection>
       <StateSection title="Chosen, in a form">

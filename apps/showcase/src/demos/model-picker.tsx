@@ -11,7 +11,7 @@ const catalogue = models.map((m) => ({
   context: m.context,
   price: `$${m.input} / $${m.output}`,
 }));
-import { Matrix } from "~/lib/states";
+import { Matrix, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "ModelPicker",
@@ -63,22 +63,60 @@ export function Catalogue() {
     />
   );
 }
+function Picker({ row, props }: { row: string; props: Record<string, unknown> }) {
+  return (
+    <div className="w-180">
+      <ModelPicker
+        {...props}
+        appearance={row === "raised" ? "default" : "ghost"}
+        {...(row === "empty" ? {} : { defaultValue: "gpt-5-mini" })}
+        options={playgroundModels}
+        providers={providers}
+      />
+    </div>
+  );
+}
+
 export function States() {
   return (
-    <Matrix
-      title="Appearance"
-      rows={[{ label: "Ghost" }, { label: "Raised" }, { label: "Empty" }]}
-      render={(row, props) => (
-        <div className="w-280">
+    <>
+      <Matrix
+        title="Appearance"
+        rows={[{ label: "ghost" }, { label: "raised" }, { label: "empty" }]}
+        columns={[
+          { label: "Rest", props: {} },
+          { label: "Hover", props: { "data-force": "hover" } },
+        ]}
+        render={(row, props) => <Picker row={row.label} props={props} />}
+      />
+      <Matrix
+        title="Pressed and focus"
+        rows={[{ label: "ghost" }, { label: "raised" }, { label: "empty" }]}
+        columns={[
+          { label: "Pressed", props: { "data-force": "pressed" } },
+          { label: "Focus", props: { "data-force": "focus" } },
+        ]}
+        render={(row, props) => <Picker row={row.label} props={props} />}
+      />
+      <Matrix
+        title="Off"
+        rows={[{ label: "ghost" }, { label: "raised" }, { label: "empty" }]}
+        columns={[{ label: "Disabled", props: { disabled: true } }]}
+        render={(row, props) => <Picker row={row.label} props={props} />}
+      />
+      <StateSection title="Several models and errors">
+        <div className="flex w-180 flex-col gap-12">
           <ModelPicker
-            {...(props as object)}
-            appearance={row.label === "Raised" ? "default" : "ghost"}
-            {...(row.label === "Empty" ? {} : { defaultValue: "gpt-5-mini" })}
+            appearance="default"
+            multiple
             options={playgroundModels}
             providers={providers}
+            defaultValue={["claude-sonnet-4-5", "gpt-5-mini", "gpt-5"]}
+            fullWidth
           />
+          <ModelPicker appearance="default" invalid options={playgroundModels} providers={providers} fullWidth />
         </div>
-      )}
-    />
+      </StateSection>
+    </>
   );
 }

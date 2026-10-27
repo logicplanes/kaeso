@@ -84,7 +84,10 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
         const hh = Number(shown("h") || 0);
         const mm = Number(shown("m") || 0);
         if (part === "h") set(hh + d, mm);
-        else set(hh, mm + d);
+        else {
+          const total = (((hh * 60 + mm + d) % 1440) + 1440) % 1440;
+          set(Math.floor(total / 60), total % 60);
+        }
       }
     },
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -97,7 +100,10 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
       const v = pending.current[part];
       if (v !== undefined) commit(part, v);
     },
-    className: "w-20 flex-none bg-transparent text-center tabular text-fg outline-none coarse:w-24",
+    className: cn(
+      "w-20 flex-none bg-transparent tabular text-fg outline-none disabled:text-fg-disabled coarse:w-24",
+      part === "h" ? "text-right" : "text-left",
+    ),
   });
   const control = (
     <InputGroup
@@ -106,15 +112,17 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(function Tim
       leadingIcon
       disabled={disabled}
       invalid={!!error}
-      className={cn("w-auto", !(label || description || error) && className)}
+      className={cn("w-auto self-start", !(label || description || error) && className)}
       {...(force ? { "data-force": force } : {})}
       role="group"
       {...(labelId && !ariaLabel ? { "aria-labelledby": labelId } : { "aria-label": ariaLabel ?? t("timeInput.time", "Time") })}
     >
       <Icon icon={icons.time} size="sm" className="text-fg-tertiary" />
-      <span className="flex items-center gap-2">
+      <span className="flex items-center">
         <input {...seg("h")} aria-label={t("timeInput.hours", "Hours")} {...(id ? { id } : {})} {...fc.controlProps} />
-        <span className="text-fg-tertiary">:</span>
+        <span className="px-1 text-fg-tertiary" aria-hidden>
+          :
+        </span>
         <input ref={minutes} {...seg("m")} aria-label={t("timeInput.minutes", "Minutes")} />
       </span>
       {utc && <InputGroup.Addon>UTC</InputGroup.Addon>}

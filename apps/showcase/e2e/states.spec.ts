@@ -5,14 +5,6 @@ test.use({ viewport: { width: 1600, height: 1200 } });
 
 // Identical states that later pull requests in this stack fix; each one removes its own entries.
 const PENDING = new Set([
-  ...["light", "dark"].flatMap((theme) => [
-    ...["unchecked", "checked", "indeterminate", "invalid"].map((row) => `/components/checkbox/states: ${theme} ${row}: pressed paints like rest`),
-    `/components/checkbox/states: ${theme} invalid: hover paints like rest`,
-    `/components/model-picker/states: ${theme} raised: pressed paints like rest`,
-    ...["unselected", "selected"].map((row) => `/components/radio/states: ${theme} ${row}: pressed paints like rest`),
-    `/components/radio/states: ${theme} selected: hover paints like rest`,
-    `/components/switch/states: ${theme} on: hover paints like rest`,
-  ]),
   "/components/tag/states: dark raised: hover paints like rest",
 ]);
 

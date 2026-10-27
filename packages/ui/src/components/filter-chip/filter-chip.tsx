@@ -82,7 +82,8 @@ export interface FilterChipProps {
 const textOf = (v: FilterChipChoice) => v.textValue ?? (typeof v.label === "string" || typeof v.label === "number" ? String(v.label) : v.value);
 
 const SEG =
-  "relative inline-flex h-full cursor-pointer items-center gap-6 px-10 font-medium transition-control tap-target hover:bg-fill-1 active:bg-fill-2 open:bg-fill-1 focus-ring-segment";
+  "relative inline-flex h-full min-w-0 cursor-pointer items-center gap-6 px-10 font-medium whitespace-nowrap transition-control tap-target disabled:cursor-default hover:bg-raised-hover active:bg-raised-pressed open:bg-raised-pressed focus-ring-segment";
+const VALUE = "min-w-0 max-w-240 truncate";
 
 export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function FilterChip(
   {
@@ -132,35 +133,38 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
       ref={ref}
       role="group"
       aria-label={typeof property === "string" ? t("filterChip.filterNamed", "Filter: {property}", { property }) : t("filterChip.filter", "Filter")}
-      {...(force ? { "data-force": force } : {})}
       className={cn(
-        "group/fc inline-flex shrink-0 items-stretch overflow-hidden rounded-pill bg-raised text-fg ring-over",
+        "group/fc inline-flex max-w-full shrink-0 items-stretch overflow-hidden rounded-pill bg-raised text-fg ring-over",
         KAESO_FILTER_CHIP_VARIANTS.size.sm.classes,
         className,
       )}
     >
-      <span className={cn(SEG, "cursor-default pl-12 text-fg-secondary hover:bg-transparent active:bg-transparent")}>
+      <span className={cn(SEG, "shrink-0 cursor-default pl-12 text-fg-secondary hover:bg-transparent active:bg-transparent")}>
         {propertyIcon && <Icon icon={propertyIcon} size="sm" />}
         {property}
       </span>
-      <Menu>
-        <Menu.Trigger>
-          <button type="button" className={cn(SEG, "text-fg-secondary divider-l")} disabled={!operators?.length}>
-            {operator}
-          </button>
-        </Menu.Trigger>
-        {operators && (
-          <Menu.Content>
-            <Menu.RadioGroup value={operator} onValueChange={(v) => onOperatorChange?.(v)}>
-              {operators.map((o) => (
-                <Menu.RadioItem key={o} value={o}>
-                  {o}
-                </Menu.RadioItem>
-              ))}
-            </Menu.RadioGroup>
-          </Menu.Content>
-        )}
-      </Menu>
+      {!operators?.length ? (
+        <span className={cn(SEG, "shrink-0 cursor-default text-fg-secondary divider-l hover:bg-transparent active:bg-transparent")}>{operator}</span>
+      ) : (
+        <Menu>
+          <Menu.Trigger>
+            <button type="button" className={cn(SEG, "shrink-0 text-fg-secondary divider-l")}>
+              {operator}
+            </button>
+          </Menu.Trigger>
+          {operators && (
+            <Menu.Content>
+              <Menu.RadioGroup value={operator} onValueChange={(v) => onOperatorChange?.(v)}>
+                {operators.map((o) => (
+                  <Menu.RadioItem key={o} value={o}>
+                    {o}
+                  </Menu.RadioItem>
+                ))}
+              </Menu.RadioGroup>
+            </Menu.Content>
+          )}
+        </Menu>
+      )}
       {long && (givenGroups || values) ? (
         <PickerPopover
           title={typeof property === "string" ? property : t("filterChip.filter", "Filter")}
@@ -168,8 +172,8 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           onOpenChange={setOpen}
           {...(width ? { width } : {})}
           trigger={
-            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")}>
-              {value}
+            <button type="button" {...(force ? { "data-force": force } : {})} className={cn(SEG, "divider-l", !onRemove && "pr-12")}>
+              <span className={VALUE}>{value}</span>
             </button>
           }
         >
@@ -203,8 +207,8 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           }}
         >
           <Menu.Trigger>
-            <button type="button" className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={choices === 0}>
-              {value}
+            <button type="button" {...(force ? { "data-force": force } : {})} className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={choices === 0}>
+              <span className={VALUE}>{value}</span>
             </button>
           </Menu.Trigger>
           {values && (
@@ -266,14 +270,14 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
         </Menu>
       )}
       {onRemove && (
-        <span className="flex items-center pr-4 divider-l pl-4">
+        <span className="flex shrink-0 items-center pr-4 divider-l pl-4">
           <button
             type="button"
             aria-label={
               typeof property === "string" ? t("filterChip.removeNamed", "Remove the {property} filter", { property }) : t("filterChip.remove", "Remove filter")
             }
             onClick={onRemove}
-            className="relative inline-flex size-24 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-fill-2 hover:text-fg focus-ring tap-target"
+            className="relative inline-flex size-24 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-raised-hover hover:text-fg active:bg-raised-pressed focus-ring tap-target"
           >
             <Icon icon={icons.close} size="xs" />
           </button>

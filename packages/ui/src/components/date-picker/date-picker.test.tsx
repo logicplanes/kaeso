@@ -151,7 +151,7 @@ describe("DateRangePicker's popover", () => {
     expect(screen.getByRole("button", { description: "Period" })).toHaveAccessibleName("2 Mar – 5 Apr");
   });
 
-  it("refuses a typed day that is disabled", async () => {
+  it("refuses a typed day that is disabled, keeps the text and says why", async () => {
     render(
       <DateRangePicker
         aria-label="Period"
@@ -163,7 +163,27 @@ describe("DateRangePicker's popover", () => {
     const end = screen.getByRole("textbox", { name: "End date" });
     await userEvent.clear(end);
     await userEvent.type(end, "2027-01-01{Enter}");
-    expect(end).toHaveValue("2026-10-12");
+    expect(end).toHaveValue("2027-01-01");
+    expect(end).toHaveAttribute("aria-invalid", "true");
+    expect(end).toHaveAccessibleDescription("This date can't be chosen. Choose another date.");
+    expect(screen.getByRole("alert")).toHaveTextContent("This date can't be chosen. Choose another date.");
+    expect(screen.getByRole("textbox", { name: "Start date" })).not.toHaveAttribute("aria-invalid");
+    await userEvent.clear(end);
+    await userEvent.type(end, "2026-10-10{Enter}");
+    expect(end).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByRole("alert")).toBeEmptyDOMElement();
+  });
+
+  it("asks for a start date instead of applying an empty range", async () => {
+    const onChange = vi.fn();
+    render(<DateRangePicker aria-label="Period" onValueChange={onChange} />);
+    await open();
+    await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose a start date first.");
+    expect(screen.getByRole("textbox", { name: "Start date" })).toHaveFocus();
+    await userEvent.type(screen.getByRole("textbox", { name: "Start date" }), "2026-10-05{Enter}");
+    expect(screen.getByRole("alert")).toBeEmptyDOMElement();
   });
 
   it("leaves the range as it was when closed without Apply", async () => {
@@ -223,16 +243,18 @@ describe("DatePicker", () => {
     await userEvent.clear(field);
     await userEvent.type(field, "2027-01-01{Enter}");
     expect(onChange).not.toHaveBeenCalled();
-    expect(field).toHaveValue("2026-10-01");
+    expect(field).toHaveValue("2027-01-01");
+    expect(field).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("This date can't be chosen. Choose another date.");
     expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("1 Oct 2026");
   });
 });
 
 describe("the trigger's name", () => {
   it.each([
-    ["DatePicker", <DatePicker key="d" aria-label="Expires" />, "Expires", "Pick a date"],
+    ["DatePicker", <DatePicker key="d" aria-label="Expires" />, "Expires", "Choose a date"],
     ["DatePicker with a date", <DatePicker key="d" aria-label="Expires" defaultValue={new Date(2027, 0, 1)} />, "Expires", "1 Jan 2027"],
-    ["DateRangePicker", <DateRangePicker key="r" aria-label="Period" />, "Period", "Pick a range"],
+    ["DateRangePicker", <DateRangePicker key="r" aria-label="Period" />, "Period", "Choose a date range"],
     [
       "DateRangePicker with a range",
       <DateRangePicker key="r" aria-label="Period" defaultValue={{ from: new Date(2026, 9, 1), to: new Date(2026, 9, 12) }} />,
@@ -253,7 +275,7 @@ describe("the trigger's name", () => {
         <DateRangePicker aria-labelledby="period-heading" />
       </>,
     );
-    expect(screen.getByRole("button", { name: "Usage period Pick a range" })).not.toHaveAttribute("aria-describedby");
+    expect(screen.getByRole("button", { name: "Usage period Choose a date range" })).not.toHaveAttribute("aria-describedby");
   });
   it("comes from a field's label, with the help after the value", () => {
     render(
@@ -263,11 +285,11 @@ describe("the trigger's name", () => {
       </>,
     );
     expect(screen.getByRole("button", { name: "Expiry date" })).toHaveAccessibleDescription("1 Jan 2027 The key stops working at the start of this day.");
-    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Pick a range");
+    expect(screen.getByRole("button", { name: "Period" })).toHaveAccessibleDescription("Choose a date range");
   });
   it("is what it shows when nothing else names it", () => {
     render(<DateRangePicker />);
-    const trigger = screen.getByRole("button", { name: "Pick a range" });
+    const trigger = screen.getByRole("button", { name: "Choose a date range" });
     expect(trigger).not.toHaveAttribute("aria-describedby");
   });
 });
@@ -314,7 +336,7 @@ describe("the typed ISO field and the calendar agree", () => {
         expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("28 Mar 2027");
       });
 
-      it("puts back the day when the typed text isn't a date", async () => {
+      it("keeps text that isn't a date and asks for the format", async () => {
         const onChange = vi.fn();
         render(<DatePicker aria-label="Expires" defaultValue={new Date(2027, 0, 1)} onValueChange={onChange} />);
         await userEvent.click(screen.getByRole("button", { description: "Expires" }));
@@ -323,7 +345,12 @@ describe("the typed ISO field and the calendar agree", () => {
         await userEvent.clear(field);
         await userEvent.type(field, "2027-02-30{Enter}");
         expect(onChange).not.toHaveBeenCalled();
+        expect(field).toHaveValue("2027-02-30");
+        expect(field).toHaveAccessibleDescription("Enter the date as YYYY-MM-DD.");
+        await userEvent.clear(field);
+        await userEvent.tab();
         expect(field).toHaveValue("2027-01-01");
+        expect(field).not.toHaveAttribute("aria-invalid");
       });
 
       it("shows and takes a range's days as those days", async () => {

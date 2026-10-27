@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Combobox, ModelLabel, type ComboboxOption } from "@logicplanes/kaeso-ui";
+import { Combobox, type ComboboxOption } from "@logicplanes/kaeso-ui";
 import { models } from "~/fixtures/kaeso";
-import { StateSection } from "~/lib/states";
+import { Matrix, StateSection } from "~/lib/states";
 
 const options: ComboboxOption[] = models.map((m) => ({ value: m.model, label: m.model, description: m.name }));
 
@@ -49,17 +49,53 @@ export function Create() {
     </div>
   );
 }
+function Field(props: Record<string, unknown>) {
+  return (
+    <div className="w-140">
+      <Combobox aria-label="Model" options={options} placeholder="Search models" defaultValue="gpt-5" {...props} />
+    </div>
+  );
+}
+
 export function States() {
   return (
-    <StateSection title="Fields">
-      <div className="flex w-400 flex-col gap-16">
-        <Combobox aria-label="Empty" options={options} placeholder="Search models" />
-        <Combobox aria-label="Focused" options={options} placeholder="Search models" data-force="focus" />
-        <Combobox aria-label="Value" options={options} defaultValue="claude-sonnet-4-5" />
-        <Combobox multiple aria-label="Chips" options={options} defaultValue={["gpt-5", "gpt-5-mini", "claude-haiku-4-5"]} />
-        <Combobox aria-label="Disabled" options={options} disabled defaultValue="gpt-5" />
-        <ModelLabel provider="openai" providerName="OpenAI" model="gpt-5" name="GPT-5" />
-      </div>
-    </StateSection>
+    <>
+      <Matrix
+        title="Field"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Rest", props: {} },
+          { label: "Hover", props: { "data-force": "hover" } },
+          { label: "Disabled", props: { disabled: true } },
+        ]}
+        render={(_, p) => <Field {...p} />}
+      />
+      <Matrix
+        title="Focus and errors"
+        rows={[{ label: "value" }]}
+        columns={[
+          { label: "Focus", props: { "data-force": "focus" } },
+          { label: "Invalid", props: { invalid: true } },
+        ]}
+        render={(_, p) => <Field {...p} />}
+      />
+      <StateSection title="Sizes">
+        <div className="flex w-400 flex-col gap-12">
+          {(["sm", "md", "lg", "xl"] as const).map((size) => (
+            <Combobox key={size} aria-label={`Model, ${size}`} size={size} options={options} defaultValue="claude-sonnet-4-5" />
+          ))}
+        </div>
+      </StateSection>
+      <StateSection title="Several values">
+        <div className="flex w-400 flex-col gap-12">
+          <Combobox multiple aria-label="Models" options={options} placeholder="Add models" />
+          <Combobox multiple aria-label="Models, three" options={options} defaultValue={["gpt-5", "gpt-5-mini", "claude-haiku-4-5"]} />
+          <Combobox multiple size="sm" aria-label="Models, small" options={options} defaultValue={["gpt-5", "claude-sonnet-4-5"]} />
+          <Combobox multiple size="xl" aria-label="Models, extra large" options={options} defaultValue={["gpt-5", "claude-sonnet-4-5"]} />
+          <Combobox multiple aria-label="Models, disabled" options={options} defaultValue={["gpt-5"]} disabled />
+          <Combobox label="Fallback models" options={options} placeholder="Search models" error="Choose a model that is enabled in this project." />
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -32,7 +32,7 @@ export const FilterRow = forwardRef<HTMLDivElement, FilterRowProps>(function Fil
   return (
     <div
       ref={ref}
-      className={cn("flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-16 gap-y-8", KAESO_FILTER_ROW_VARIANTS.size[size].classes, className)}
+      className={cn("flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-16 gap-y-12", KAESO_FILTER_ROW_VARIANTS.size[size].classes, className)}
       {...props}
     >
       {tabs && <div className="flex max-w-full min-w-0">{tabs}</div>}
@@ -42,7 +42,7 @@ export const FilterRow = forwardRef<HTMLDivElement, FilterRowProps>(function Fil
           aria-label={filtersLabel ?? t("filterRow.filters", "Filters")}
           aria-orientation="horizontal"
           className="flex max-w-full min-w-0 flex-wrap items-center gap-8"
-          onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => arrowFocus(e)}
+          onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => arrowFocus(e, { byItem: true })}
         >
           {children}
         </div>

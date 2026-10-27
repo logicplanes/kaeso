@@ -48,14 +48,31 @@ export function States() {
           { label: "Rest", props: {} },
           { label: "Hover", props: { "data-force": "hover" } },
           { label: "Focus", props: { "data-force": "focus" } },
+          { label: "Pressed", props: { "data-force": "pressed" } },
           { label: "Loading", props: { loading: true } },
           { label: "Disabled", props: { disabled: true } },
-          { label: "With reason", props: { disabled: true, disabledReason: "Connect an identity provider first" } },
         ]}
         render={(r, p) => <Switch aria-label={r.label} defaultChecked={r.label === "on"} {...p} />}
       />
+      <StateSection title="With labels">
+        <div className="flex w-400 flex-col gap-8">
+          <Basic />
+          <Switch label="Hovering the label" description="The row is the target, so the track answers the pointer." data-force="hover" />
+          <Switch label="Saving" description="The track shows a spinner after 300ms." loading defaultChecked />
+          <Switch label="Read-only" description="Set by the organization's policy." readOnly defaultChecked />
+          <Switch label="Disabled" description="Unavailable on this plan." disabled />
+          <Reason />
+        </div>
+      </StateSection>
       <StateSection title="Sizes">
-        <Sizes />
+        <div className="flex flex-col gap-16">
+          <Sizes />
+          <div className="flex items-center gap-16">
+            <Switch size="sm" aria-label="Small, loading" loading />
+            <Switch size="md" aria-label="Medium, loading" loading defaultChecked />
+            <Switch size="lg" aria-label="Large, loading" loading />
+          </div>
+        </div>
       </StateSection>
     </>
   );

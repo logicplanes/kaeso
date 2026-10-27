@@ -16,7 +16,7 @@ export const KAESO_SELECT_VARIANTS = {
   appearance: {
     default: { classes: "material-selector", description: "A pill with the same ring, hover and focus as a text input (default)" },
     ghost: {
-      classes: "material-ghost focus-ring text-fg-secondary hover:text-fg open:text-fg",
+      classes: "material-ghost focus-ring text-fg-secondary hover:text-fg focus-visible:text-fg open:text-fg",
       description: "Inline in settings rows: “GPT-5 mini (default) ⌄”",
     },
     header: { classes: "material-ghost focus-ring text-fg", description: "Transparent until hovered, in full text colour: a column header's model" },
@@ -77,6 +77,8 @@ function changeWith<T extends string | string[]>(onChange: (value: T) => void, a
   };
 }
 
+const SCROLL_ARROW = "absolute inset-x-0 z-10 flex h-24 cursor-default items-center justify-center bg-raised text-fg-tertiary";
+
 function groupsOf(options: SelectOption[]) {
   const out: { group: string | undefined; items: SelectOption[] }[] = [];
   for (const o of options) {
@@ -114,7 +116,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
   } = props;
   warnStylingClassName("Select", className);
   const t = useUiText();
-  const placeholder = placeholderProp ?? t("select.placeholder", "Select");
+  const placeholder = placeholderProp ?? t("select.placeholder", "Not set");
   const field = useField();
   const fc = useFieldControl(props);
   const trigger = useRef<HTMLButtonElement | null>(null);
@@ -163,7 +165,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         {...(invalid || error ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
+          "group/trigger inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
           (invalid || error) && appearance !== "default" && "ring-invalid",
@@ -171,9 +173,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           !(label || description || error) && className,
         )}
       >
-        {icon && <Icon icon={icon} size="sm" className="text-fg-secondary" />}
+        {icon && <Icon icon={icon} size="sm" className="text-fg-secondary group-disabled/trigger:text-fg-disabled" />}
         <BaseSelect.Value
-          className="min-w-0 flex-1 truncate text-left data-placeholder:text-fg-tertiary data-placeholder:font-regular"
+          className={cn(
+            "min-w-0 flex-1 truncate text-left data-placeholder:font-regular data-placeholder:text-fg-tertiary group-disabled/trigger:data-placeholder:text-fg-disabled",
+            multiple && "flex items-center",
+          )}
           placeholder={placeholder}
         >
           {(value: unknown) => {
@@ -181,12 +186,18 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
               const arr = Array.isArray(value) ? value.map(String) : [];
               const [first] = arr;
               if (first === undefined) return placeholder;
-              return arr.length === 1 ? textOf(first) : t("select.firstAndMore", "{first} +{count}", { first: textOf(first), count: String(arr.length - 1) });
+              if (arr.length === 1) return <span className="min-w-0 truncate">{textOf(first)}</span>;
+              return (
+                <>
+                  <span className="min-w-0 truncate">{textOf(first)}</span>{" "}
+                  <span className="shrink-0 pl-4 tabular">{t("select.more", "+{count}", { count: String(arr.length - 1) })}</span>
+                </>
+              );
             }
             return value == null || value === "" ? placeholder : (byValue.get(String(value))?.label ?? String(value));
           }}
         </BaseSelect.Value>
-        <BaseSelect.Icon className="flex shrink-0 text-fg-tertiary">
+        <BaseSelect.Icon className="flex shrink-0 text-fg-tertiary group-disabled/trigger:text-fg-disabled">
           <Icon icon={icons.chevronDown} size="sm" />
         </BaseSelect.Icon>
       </BaseSelect.Trigger>
@@ -201,8 +212,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
             collisionPadding={8}
             className="z-50 outline-none"
           >
-            <BaseSelect.Popup className={cn(MENU_POPUP, "min-w-anchor overflow-hidden")} style={anchorWidthStyle(triggerWidth)}>
-              <BaseSelect.ScrollUpArrow className="flex h-20 items-center justify-center text-fg-tertiary">
+            <BaseSelect.Popup data-select-popup="" className={cn(MENU_POPUP, "relative min-w-anchor overflow-hidden")} style={anchorWidthStyle(triggerWidth)}>
+              <BaseSelect.ScrollUpArrow className={cn(SCROLL_ARROW, "top-0 rounded-t-menu")}>
                 <Icon icon={icons.chevronUp} size="xs" />
               </BaseSelect.ScrollUpArrow>
               <BaseSelect.List className="-mx-6 flex min-h-0 flex-col overflow-y-auto overscroll-contain px-6 outline-none scrollbar-quiet">
@@ -225,9 +236,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                             </span>
                           )}
                           {o.icon && <Icon icon={o.icon} size="sm" className={cn(MENU_ICON, o.description && "self-start mt-10")} />}
-                          <span className={cn("flex min-w-0 flex-1 flex-col", o.description && "gap-2 py-8")}>
-                            <BaseSelect.ItemText className="truncate">{o.label}</BaseSelect.ItemText>
-                            {o.description && <span className="text-small font-regular whitespace-normal text-fg-secondary">{o.description}</span>}
+                          <span className={cn("flex min-w-0 flex-1 flex-col", o.description ? "gap-2 py-8" : "py-6")}>
+                            <BaseSelect.ItemText className="wrap-break-word whitespace-normal text-pretty">{o.label}</BaseSelect.ItemText>
+                            {o.description && <span className="text-small font-regular whitespace-normal text-pretty text-fg-secondary">{o.description}</span>}
                           </span>
                           {!multiple && (
                             <BaseSelect.ItemIndicator
@@ -246,7 +257,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
                   </Fragment>
                 ))}
               </BaseSelect.List>
-              <BaseSelect.ScrollDownArrow className="flex h-20 items-center justify-center text-fg-tertiary">
+              <BaseSelect.ScrollDownArrow className={cn(SCROLL_ARROW, "bottom-0 rounded-b-menu")}>
                 <Icon icon={icons.chevronDown} size="xs" />
               </BaseSelect.ScrollDownArrow>
             </BaseSelect.Popup>

@@ -162,7 +162,7 @@ export const docs = {
   },
   RolePicker: {
     description:
-      "Choosing a role: built-in roles first, then custom ones under their own caption, each with its one-sentence description. A role the person can't give stays in the list, disabled, with the reason under it and in its tooltip, so nobody wonders where it went.",
+      "Choosing a role: built-in roles first, then custom ones under their own caption, each with its one-sentence description. A role the person can't give stays in the list, disabled, with the reason under it, so nobody wonders where it went.",
     props: {
       appearance: "A list with each role's description, or a compact select.",
       "aria-label": "The accessible name, for when there is no visible label.",

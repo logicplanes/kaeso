@@ -15,9 +15,15 @@ export function Basic() {
   return <DisplayOptions {...useLogDisplayOptions()} />;
 }
 export function States() {
+  const options = useLogDisplayOptions();
   return (
-    <StateSection title="Panel">
-      <DisplayOptions inline {...useLogDisplayOptions()} />
-    </StateSection>
+    <>
+      <StateSection title="Panel">
+        <DisplayOptions inline {...options} />
+      </StateSection>
+      <StateSection title="Toggles only">
+        <DisplayOptions inline toggles={options.toggles} />
+      </StateSection>
+    </>
   );
 }

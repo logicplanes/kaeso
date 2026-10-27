@@ -22,7 +22,7 @@ export const docs = {
       open: "Whether the list is open, when you control it.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
       options: "The options to choose from.",
-      placeholder: 'Defaults to "Select" in the provider\'s language.',
+      placeholder: 'Defaults to "Not set" in the provider\'s language.',
       required: "Marks it as required in a form.",
       size: "The height of the field.",
       value: "The chosen value, or a list of values with `multiple`, when you control it.",

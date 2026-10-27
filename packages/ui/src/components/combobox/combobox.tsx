@@ -7,7 +7,7 @@ import { warnStylingClassName } from "../../utils/dev.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
-import { KAESO_INPUT_GROUP_VARIANTS, type InputSize } from "../input/input-group.js";
+import { KAESO_INPUT_GROUP_VARIANTS, LEADING, type InputSize } from "../input/input-group.js";
 import { Tag } from "../tag/tag.js";
 import { MENU_ICON, MENU_ITEM, MENU_POPUP } from "../menu/styles.js";
 
@@ -105,6 +105,15 @@ export interface MultiComboboxProps extends BaseProps {
   onValueChange?: ((value: string[]) => void) | undefined;
 }
 export type ComboboxProps = SingleComboboxProps | MultiComboboxProps;
+
+const CHIPS: Record<InputSize, { field: string; row: string; chevron: string }> = {
+  sm: { field: "min-h-32 p-4 pr-32", row: "h-24", chevron: "end-2 top-2" },
+  md: { field: "min-h-36 p-4 pr-36", row: "h-28", chevron: "end-4 top-4" },
+  lg: { field: "min-h-40 p-6 pr-36", row: "h-28", chevron: "end-6 top-6" },
+  xl: { field: "min-h-48 p-8 pr-40 text-body-lg", row: "h-32", chevron: "end-10 top-10" },
+};
+
+const CHEVRON = "inline-flex size-28 shrink-0 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-raised-hover hover:text-fg";
 
 function keepValueOnEscape(e: KeyboardEvent<HTMLInputElement> & { preventBaseUIHandler?: (() => void) | undefined }) {
   if (e.key === "Escape" && e.currentTarget.getAttribute("aria-expanded") !== "true") e.preventBaseUIHandler?.();
@@ -209,7 +218,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
       {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
       {...(invalid || error ? { "aria-invalid": true } : {})}
       onKeyDown={keepValueOnEscape}
-      className="min-w-80 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed"
+      className="min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled"
     />
   );
 
@@ -235,8 +244,8 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
           ref={fieldRef}
           {...(force ? { "data-force": force } : {})}
           className={cn(
-            "flex min-h-36 w-full flex-wrap items-center gap-4 rounded-field p-4 material-field transition-control cursor-text",
-            (invalid || error) && "ring-invalid",
+            "relative flex w-full flex-wrap items-center gap-4 rounded-field material-field transition-control cursor-text",
+            CHIPS[size].field,
             !(label || description || error) && className,
           )}
         >
@@ -256,7 +265,10 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                     </Tag>
                   </BaseCombobox.Chip>
                 ))}
-                <span className={cn("flex h-28 min-w-80 flex-1 items-center", value.length === 0 ? "px-12" : "px-8")}>{inputEl}</span>
+                <span className={cn("flex min-w-64 flex-1 basis-64 items-center", CHIPS[size].row, value.length === 0 ? "px-12" : "px-8")}>{inputEl}</span>
+                <BaseCombobox.Trigger aria-label={t("combobox.showOptions", "Show options")} className={cn(CHEVRON, "absolute", CHIPS[size].chevron)}>
+                  <Icon icon={icons.chevronDown} size="sm" />
+                </BaseCombobox.Trigger>
               </>
             )}
           </BaseCombobox.Value>
@@ -269,15 +281,11 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
             "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
             KAESO_COMBOBOX_VARIANTS.size[size].classes,
             "pr-4",
-            (invalid || error) && "ring-invalid",
             !(label || description || error) && className,
           )}
         >
           {inputEl}
-          <BaseCombobox.Trigger
-            aria-label={t("combobox.showOptions", "Show options")}
-            className="inline-flex size-28 shrink-0 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-fill-1 hover:text-fg"
-          >
+          <BaseCombobox.Trigger aria-label={t("combobox.showOptions", "Show options")} className={CHEVRON}>
             <Icon icon={icons.chevronDown} size="sm" />
           </BaseCombobox.Trigger>
         </BaseCombobox.InputGroup>
@@ -294,13 +302,16 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
         >
           <BaseCombobox.Popup className={cn(MENU_POPUP, "relative min-w-anchor overflow-hidden")} style={anchorWidthStyle(fieldWidth)}>
             {loading && (
-              <span aria-hidden className="absolute inset-x-16 top-0 h-2 overflow-hidden rounded-pill">
+              <span aria-hidden className="absolute inset-x-16 top-0 h-2 overflow-hidden rounded-pill show-after-delay reduced:hidden">
                 <span className="block h-full w-1/3 animate-indeterminate rounded-pill bg-fg-tertiary" />
               </span>
             )}
             <BaseCombobox.Status className="sr-only">{loading ? t("combobox.loadingResults", "Loading results") : ""}</BaseCombobox.Status>
             <BaseCombobox.Empty className="flex h-34 items-center px-10 text-body text-fg-secondary empty:hidden">
-              {loading ? t("combobox.loading", "Loading…") : (emptyText ?? t("combobox.noResults", "No results"))}
+              {loading
+                ? t("combobox.loading", "Loading…")
+                : (emptyText ??
+                  (query.trim() ? t("combobox.noMatch", "No matches for “{query}”", { query: query.trim() }) : t("combobox.noResults", "No results")))}
             </BaseCombobox.Empty>
             <BaseCombobox.List className="-m-6 flex min-h-0 flex-col overflow-y-auto overscroll-contain p-6 outline-none scrollbar-quiet">
               {(o: ComboboxOption | CreateItem) => (
@@ -426,8 +437,7 @@ export const Autocomplete = forwardRef<HTMLInputElement, AutocompleteProps>(func
         className={cn(
           "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
           KAESO_AUTOCOMPLETE_VARIANTS.size[size].classes,
-          leadingIcon && "pl-14",
-          props.error && "ring-invalid",
+          leadingIcon && LEADING[size],
           !(label || description || error) && className,
         )}
       >
@@ -439,7 +449,7 @@ export const Autocomplete = forwardRef<HTMLInputElement, AutocompleteProps>(func
           {...fc.controlProps}
           {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
           onKeyDown={keepValueOnEscape}
-          className="min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary"
+          className="min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary disabled:text-fg-disabled"
         />
       </BaseAutocomplete.InputGroup>
       <BaseAutocomplete.Portal container={usePortalContainer()}>

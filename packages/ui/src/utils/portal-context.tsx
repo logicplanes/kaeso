@@ -28,6 +28,24 @@ export function usePortalContainer(): HTMLElement | undefined {
   return use(PortalCtx) ?? undefined;
 }
 
-export function pageBoundary(): Element | "clipping-ancestors" {
-  return typeof document === "undefined" ? "clipping-ancestors" : document.documentElement;
+export interface BoundaryRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+const viewportRect: BoundaryRect = {
+  x: 0,
+  y: 0,
+  get width() {
+    return document.documentElement.clientWidth;
+  },
+  get height() {
+    return document.documentElement.clientHeight;
+  },
+};
+
+export function pageBoundary(): BoundaryRect | "clipping-ancestors" {
+  return typeof document === "undefined" ? "clipping-ancestors" : viewportRect;
 }

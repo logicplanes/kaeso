@@ -93,7 +93,7 @@ describe("ModelPicker", () => {
     render(<ModelPicker options={options} providers={providers} />);
     await open(user);
     expect(screen.queryByRole("option", { name: /GPT-4\b/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Deprecated" }));
+    await user.click(screen.getByRole("switch", { name: "Show deprecated" }));
     expect(screen.getByRole("option", { name: /GPT-4/ })).toBeInTheDocument();
     await user.click(screen.getByRole("combobox", { name: "Provider" }));
     expect(screen.getAllByRole("option", { name: /^(All providers|Anthropic|DeepSeek|OpenAI)/ }).map((o) => o.textContent)).toEqual([

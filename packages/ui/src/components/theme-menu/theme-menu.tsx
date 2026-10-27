@@ -41,13 +41,13 @@ export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function 
       </Menu.Trigger>
       <Menu.Content side={side} align={align} className="min-w-180">
         <Menu.RadioGroup value={theme} onValueChange={(v) => setTheme(v as ThemePreference)}>
-          <Menu.RadioItem value="system" icon={icons.themeSystem}>
+          <Menu.RadioItem value="system" closeOnClick icon={icons.themeSystem}>
             {t("themeMenu.system", "System")}
           </Menu.RadioItem>
-          <Menu.RadioItem value="light" icon={icons.themeLight}>
+          <Menu.RadioItem value="light" closeOnClick icon={icons.themeLight}>
             {t("themeMenu.light", "Light")}
           </Menu.RadioItem>
-          <Menu.RadioItem value="dark" icon={icons.themeDark}>
+          <Menu.RadioItem value="dark" closeOnClick icon={icons.themeDark}>
             {t("themeMenu.dark", "Dark")}
           </Menu.RadioItem>
         </Menu.RadioGroup>

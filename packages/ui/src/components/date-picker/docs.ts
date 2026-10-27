@@ -16,7 +16,7 @@ export const docs = {
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
       onValueChange: "Called with the chosen day, or `null` when it is cleared.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
-      placeholder: 'Shown without a date. Defaults to "Pick a date" ("Pick a range" for a range) in the provider\'s language.',
+      placeholder: 'Shown without a date. Defaults to "Choose a date" ("Choose a date range" for a range) in the provider\'s language.',
       required: "Marks it as required in a form.",
       size: "The height of the field.",
       value: "The chosen day, when you control it.",
@@ -40,7 +40,7 @@ export const docs = {
       layout: "The label above the control (`vertical`) or beside it (`horizontal`).",
       onValueChange: "A preset's range, or the days chosen with Apply; `preset` is the preset's id (\"Last 7 days\"), `null` for chosen days.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
-      placeholder: 'Shown without a date. Defaults to "Pick a date" ("Pick a range" for a range) in the provider\'s language.',
+      placeholder: 'Shown without a date. Defaults to "Choose a date" ("Choose a date range" for a range) in the provider\'s language.',
       preset:
         'The preset the value is, by its id (or label): the trigger shows its name ("Last 6 months", "All time") and the popover marks it. Set it from where the period lives (the address), with `null` for chosen days. Without it, the trigger names a preset picked here while the range is still that preset\'s.',
       presets: "Defaults to the last 24 hours, 7 and 30 days, this month and last month, named in the provider's language.",
