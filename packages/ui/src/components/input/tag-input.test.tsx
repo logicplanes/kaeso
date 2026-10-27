@@ -40,7 +40,7 @@ describe("TagInput", () => {
     expect(screen.getByRole("status")).toHaveTextContent("lin@example.com selected");
     expect(screen.getByText("lin@example.com").closest("[data-force]")).toHaveAttribute("data-force", "focus");
     await user.keyboard("{ArrowRight}{ArrowRight}");
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     await user.keyboard("{ArrowLeft}{Escape}{Delete}");
     expect(onChange).not.toHaveBeenCalled();
     await user.keyboard("{ArrowLeft}{Delete}");

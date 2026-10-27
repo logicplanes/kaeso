@@ -153,9 +153,9 @@ describe("ResponseView marks and announcements", () => {
   it("says once, by name, that a response finished, stopped or was cut off", () => {
     const { rerender } = render(<ResponseView aria-label="GPT-5 response" status="done" text="Earlier answer" />);
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("");
+    expect(status).toBeEmptyDOMElement();
     rerender(<ResponseView aria-label="GPT-5 response" status="streaming" text="Rate" />);
-    expect(status).toHaveTextContent("");
+    expect(status).toBeEmptyDOMElement();
     rerender(<ResponseView aria-label="GPT-5 response" status="done" text="Rate limits." />);
     expect(status).toHaveTextContent("GPT-5 response finished");
     rerender(<ResponseView aria-label="GPT-5 response" status="pending" />);
@@ -166,7 +166,7 @@ describe("ResponseView marks and announcements", () => {
     expect(status).toHaveTextContent("GPT-5 response: Stopped at the output limit");
     rerender(<ResponseView aria-label="GPT-5 response" status="streaming" text="Rate" />);
     rerender(<ResponseView aria-label="GPT-5 response" status="error" error="The provider timed out." />);
-    expect(status).toHaveTextContent("");
+    expect(status).toBeEmptyDOMElement();
     expect(screen.getByRole("alert")).toHaveTextContent("No response");
   });
 

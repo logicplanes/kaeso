@@ -56,7 +56,8 @@ describe("Loader", () => {
 
   it("is a status region that announces Loading without a label, in secondary text, once the spinner's delay has passed", () => {
     render(<Loader />);
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(screen.getByRole("status")).not.toHaveTextContent("Loading");
+    expect(screen.getByRole("status").lastElementChild).toBeEmptyDOMElement();
     act(() => vi.advanceTimersByTime(300));
     expect(screen.getByRole("status")).toHaveTextContent("Loading");
     expect(screen.getByRole("status").className).toContain("text-fg-secondary");
@@ -76,7 +77,7 @@ describe("Loader", () => {
     const inner = screen.getByRole("status").firstElementChild!;
     const live = screen.getByRole("status").lastElementChild!;
     expect(inner.className).toContain("invisible");
-    expect(live).toHaveTextContent("");
+    expect(live).toBeEmptyDOMElement();
     act(() => vi.advanceTimersByTime(299));
     expect(inner.className).toContain("invisible");
     act(() => vi.advanceTimersByTime(1));
