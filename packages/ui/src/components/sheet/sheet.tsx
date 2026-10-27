@@ -19,14 +19,14 @@ export const KAESO_SHEET_VARIANTS = {
   },
   side: {
     right: {
-      classes: "top-8 right-8 bottom-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none",
+      classes: "top-8 right-8 bottom-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none max-sm:safe-area-inset",
       description: "From the right (default); fills a phone's screen",
     },
     left: {
-      classes: "top-8 bottom-8 left-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none",
+      classes: "top-8 bottom-8 left-8 sheet-limits-x max-sm:inset-0 max-sm:w-auto max-sm:max-w-none max-sm:rounded-none max-sm:safe-area-inset",
       description: "From the left: the mobile sidebar; fills a phone's screen",
     },
-    bottom: { classes: "right-8 bottom-8 left-8 sheet-limits-y", description: "From the bottom: mobile menus" },
+    bottom: { classes: "right-8 bottom-safe-8 left-8 sheet-limits-y", description: "From the bottom: mobile menus" },
   },
 } as const;
 export const KAESO_SHEET_DEFAULT_VARIANTS = { size: "sm", side: "right" } as const;
@@ -64,10 +64,10 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   );
   return (
     <>
-      <div ref={headRef} className="flex h-60 shrink-0 items-center gap-12 px-24 hairline-b">
+      <div ref={headRef} className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b">
         <div className="flex min-w-0 flex-1 flex-col">
-          <Title className="truncate text-title-sm font-semibold text-fg">{title}</Title>
-          {subtitle && <span className="truncate mono text-small text-fg-secondary">{subtitle}</span>}
+          <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+          {subtitle && <span className="mono text-small text-fg-secondary wrap-anywhere">{subtitle}</span>}
         </div>
         {actions}
         {inline ? close : <BaseDialog.Close render={close} />}
@@ -110,6 +110,7 @@ export const Sheet = forwardRef<HTMLDivElement, SheetProps>(function Sheet(curre
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       modal={modal}
+      disablePointerDismissal={!modal}
       onOpenChangeComplete={settled}
     >
       {trigger && <BaseDialog.Trigger render={trigger} />}

@@ -8,6 +8,7 @@ export interface TriggerPropsStore {
   set: (props: TriggerProps | null) => void;
   subscribe: (listener: () => void) => () => void;
   ref: RefCallback<Element>;
+  element: () => Element | null;
 }
 
 export function triggerPropsStore(): TriggerPropsStore {
@@ -38,6 +39,7 @@ export function triggerPropsStore(): TriggerPropsStore {
       element = node;
       attach();
     },
+    element: () => element,
   };
 }
 

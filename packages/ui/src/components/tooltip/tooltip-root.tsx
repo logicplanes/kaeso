@@ -1,8 +1,9 @@
-import { forwardRef, useLayoutEffect, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { mergeProps } from "@base-ui/react/merge-props";
 import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js";
 import { cn } from "../../utils/cn.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { KbdSequence } from "../kbd/kbd.js";
 import { KAESO_TOOLTIP_DEFAULT_VARIANTS, KAESO_TOOLTIP_VARIANTS, type TooltipProps } from "./tooltip.js";
 import type { TriggerProps, TriggerPropsStore } from "./trigger-props.js";
@@ -55,13 +56,26 @@ export function mergeTriggerProps(given: TriggerProps, own: object): object {
   return mergeProps<"button">(props, own);
 }
 
-const TooltipPopup = forwardRef<HTMLDivElement, { shape: keyof typeof KAESO_TOOLTIP_VARIANTS.shape; children: ReactNode; className?: string | undefined }>(
-  function TooltipPopup({ shape, children, className }, ref) {
-    return (
-      <BaseTooltip.Popup ref={ref} className={cn(popupClasses, KAESO_TOOLTIP_VARIANTS.shape[shape].classes, className)}>
-        {children}
-      </BaseTooltip.Popup>
-    );
-  },
-);
-TooltipPopup.displayName = "Tooltip.Popup";
+function TooltipPopup({ shape, children }: { shape: keyof typeof KAESO_TOOLTIP_VARIANTS.shape; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [wraps, setWraps] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (shape !== "pill" || wraps || !el) return;
+    const check = () => {
+      if (el.scrollWidth > el.clientWidth + 1) setWraps(true);
+    };
+    check();
+    return observeResize([el], check);
+  }, [shape, wraps]);
+  return (
+    <BaseTooltip.Popup
+      ref={ref}
+      role="tooltip"
+      className={cn(popupClasses, KAESO_TOOLTIP_VARIANTS.shape[wraps ? "multiline" : shape].classes)}
+      style={{ maxWidth: wraps || shape === "multiline" ? "min(var(--k-width-tooltip), var(--available-width))" : "var(--available-width)" }}
+    >
+      {children}
+    </BaseTooltip.Popup>
+  );
+}

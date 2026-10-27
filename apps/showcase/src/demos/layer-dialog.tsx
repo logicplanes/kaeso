@@ -10,7 +10,7 @@ export const meta = {
   entry: "dialog",
   import: "LayerDialog",
   keyboard: [
-    ["Escape", "Closes and returns focus to the trigger"],
+    ["Escape", "Closes the dialog from any layer and returns focus to the trigger"],
     ["Tab", "Moves within the layer shown"],
     ["mod Enter", "Calls onSubmit, on every layer"],
   ],
@@ -156,12 +156,32 @@ export function States() {
       footer: <Button variant="primary">Add model</Button>,
     },
   ];
+  const searched = [
+    {
+      ...layers[0]!,
+      toolbar: <SearchInput aria-label="Search models" placeholder="Search" defaultValue="claude" />,
+      footerStart: (
+        <Button variant="ghost" leadingIcon={icons.add}>
+          Add a custom model
+        </Button>
+      ),
+    },
+    layers[1]!,
+  ];
   return (
-    <StateSection title="First layer and second layer (with back)">
-      <div className="flex flex-col gap-24">
-        <LayerDialog inline layers={layers} layer={0} />
-        <LayerDialog inline layers={layers} layer={1} />
-      </div>
-    </StateSection>
+    <>
+      <StateSection title="First layer and second layer (with back)">
+        <div className="flex flex-col gap-24">
+          <LayerDialog inline layers={layers} layer={0} />
+          <LayerDialog inline layers={layers} layer={1} />
+        </div>
+      </StateSection>
+      <StateSection title="Toolbar and footer start, busy">
+        <div className="flex flex-col gap-24">
+          <LayerDialog inline layers={searched} layer={0} />
+          <LayerDialog inline busy layers={layers} layer={1} />
+        </div>
+      </StateSection>
+    </>
   );
 }

@@ -32,6 +32,7 @@
 @custom-variant focus-within-visible (:root:not([data-k-pointer]) &:has(:focus-visible), &[data-force~="focus"]);
 @custom-variant dragging (&[data-dragging], &[data-force~="dragging"]);
 @custom-variant reduced (@media (prefers-reduced-motion: reduce));
+@custom-variant dialog-narrow (@container (width < 24rem));
 @custom-variant ghost-start {
   @variant @max-settings-row {
     [data-row-control] > &.material-ghost:first-child,
@@ -508,6 +509,9 @@
     color: HighlightText;
     forced-color-adjust: none;
   }
+  :where([role^="menuitem"][data-disabled], [role="option"][aria-disabled="true"]) {
+    color: GrayText;
+  }
   :where(.hairline-b, .hairline-b-strong) {
     border-bottom: 1px solid CanvasText;
   }
@@ -657,6 +661,11 @@
 }
 @utility animate-indeterminate {
   animation: k-indeterminate var(--k-skeleton-duration) var(--k-ease-pulse) infinite;
+}
+@utility reduced-pulse {
+  @media (prefers-reduced-motion: reduce) {
+    animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite !important;
+  }
 }
 
 @keyframes k-hidden {
@@ -862,6 +871,18 @@
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
+}
+@utility safe-area-inset {
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+@utility bottom-safe-* {
+  bottom: calc(--value(integer) * 1px + env(safe-area-inset-bottom, 0px));
+}
+@utility inset-safe-* {
+  top: calc(--value(integer) * 1px + env(safe-area-inset-top, 0px));
+  right: calc(--value(integer) * 1px + env(safe-area-inset-right, 0px));
+  bottom: calc(--value(integer) * 1px + env(safe-area-inset-bottom, 0px));
+  left: calc(--value(integer) * 1px + env(safe-area-inset-left, 0px));
 }
 
 @utility cell-fit {
@@ -1543,21 +1564,12 @@
 .k-toast-content {
   transition: opacity var(--k-duration-fast) var(--k-ease-standard);
 }
-.k-toast-close {
-  opacity: 0;
-  transform: scale(0.9);
-  transition-property: opacity, transform, background-color, color;
-  transition-duration: var(--k-duration-fast);
-  transition-timing-function: var(--k-ease-standard);
-}
-.k-toast:hover .k-toast-close,
-.k-toast:focus-within .k-toast-close,
-.k-toast-close[data-force~="visible"] {
-  opacity: 1;
-  transform: scale(1);
-}
-.k-toast[data-behind]:not([data-expanded]) .k-toast-close {
-  display: none;
+.k-toast-viewport:focus-visible .k-toast:not([data-behind]) .k-toast-surface {
+  outline: 2px solid var(--k-focus);
+  outline-offset: 2px;
+  @media (forced-colors: active) {
+    outline-color: Highlight;
+  }
 }
 @utility toast-viewport-width {
   max-width: min(560px, calc(100vw - 32px));

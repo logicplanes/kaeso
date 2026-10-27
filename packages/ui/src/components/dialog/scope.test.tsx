@@ -277,7 +277,7 @@ describe("CommandPalette", () => {
       await frames();
       await userEvent.type(screen.getByRole("combobox"), "logs");
       expect(screen.getAllByRole("option")).toHaveLength(1);
-      await userEvent.keyboard("{Escape}");
+      await userEvent.keyboard("{Enter}");
       await frames();
       expect(screen.getByRole("option", { name: /Request logs/ })).toBeInTheDocument();
       await animations.finish();
@@ -311,7 +311,7 @@ describe("CommandPalette", () => {
       render(<Host />);
       await frames();
       await userEvent.type(screen.getByRole("combobox"), "logs");
-      await userEvent.keyboard("{Escape}");
+      await userEvent.keyboard("{Enter}");
       await frames();
       expect(screen.getByRole("combobox")).toHaveValue("logs");
       await userEvent.click(screen.getByRole("button", { name: "Search", hidden: true }));

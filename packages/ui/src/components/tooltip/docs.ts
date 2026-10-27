@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Tooltip: {
-    description: "A short label for a control, shown on hover and focus. Never on disabled elements without a reason.",
+    description:
+      "A short label for a control, shown on hover and focus. When it says more than the control's name, it is also the control's accessible description. Never on disabled elements without a reason.",
     props: {
       children: "The trigger: a single element that accepts a ref.",
       content: "What the tooltip says. Keep it to the control's name or one short sentence.",
@@ -11,14 +12,14 @@ export const docs = {
       disabled: "Never shows the tooltip.",
       onOpenChange: "Called when it opens or closes.",
       open: "Whether it is open, when you control it.",
-      shape: "A pill for a short label, or a box for several lines.",
+      shape: "A pill for a short label, or a box for several lines; a pill too long for the screen wraps into the box.",
       shortcut: 'A shortcut shown after the text: `["mod", "k"]` or `[["g"], ["m"]]`.',
       side: "The side it opens on.",
       sideOffset: "Distance from the trigger in px.",
     },
   },
   TooltipProvider: {
-    description: "Tooltips open after 500ms, and instantly when moving between tooltipped siblings.",
+    description: "Tooltips open once the pointer has rested on a control for 500ms, and instantly when moving between tooltipped siblings.",
     props: {
       children: "The app, so every tooltip shares one delay.",
       delay: "How long the pointer has to rest before the first tooltip opens, in milliseconds.",

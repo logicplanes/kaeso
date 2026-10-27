@@ -220,3 +220,48 @@ describe("Sheet", () => {
     expect(sheet).toHaveClass("top-8", "right-8", "bottom-8", "max-sm:inset-0", "max-sm:w-auto", "max-sm:max-w-none", "max-sm:rounded-none");
   });
 });
+
+describe("Sheet as an inspector", () => {
+  it("stays open when a row behind it is pressed, so the row can fill it; the close circle still closes it", async () => {
+    const closed = vi.fn();
+    function Inspector() {
+      const [request, setRequest] = useState<string | null>("req_01JAR4X2KQ");
+      return (
+        <>
+          <Button onClick={() => setRequest("req_01JAR4X2KR")}>POST /v1/chat/completions</Button>
+          <Sheet
+            open={!!request}
+            onOpenChange={(o) => {
+              if (o) return;
+              closed();
+              setRequest(null);
+            }}
+            modal={false}
+            title="Request"
+            subtitle={request}
+          >
+            <p>{request}</p>
+          </Sheet>
+        </>
+      );
+    }
+    render(<Inspector />);
+    expect(await screen.findByRole("dialog", { name: "Request" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "POST /v1/chat/completions" }));
+    expect(screen.getByRole("dialog", { name: "Request" })).toHaveTextContent("req_01JAR4X2KR");
+    expect(closed).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("shows a long title and the id under it whole, wrapping instead of cutting them off", () => {
+    render(
+      <Sheet inline title="POST /v1/organizations/org_01J9Z5A/projects/proj_01J9Z5A/keys" subtitle="req_01JAR4X2KQZ8M3N7P5V6W9Y2T4">
+        <p>Body</p>
+      </Sheet>,
+    );
+    const title = screen.getByRole("heading", { name: /org_01J9Z5A/ });
+    expect(title).not.toHaveClass("truncate");
+    expect(screen.getByText("req_01JAR4X2KQZ8M3N7P5V6W9Y2T4")).not.toHaveClass("truncate");
+  });
+});

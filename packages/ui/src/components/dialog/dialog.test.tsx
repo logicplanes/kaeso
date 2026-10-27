@@ -634,11 +634,24 @@ describe("LayerDialog", () => {
     expect(screen.getByRole("textbox", { name: "Model id" })).toHaveFocus();
     const focusedBelow = vi.fn();
     opener.addEventListener("focus", focusedBelow);
-    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
     await frames();
     expect(focusedBelow).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
     expect(screen.queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+  it("closes on Escape from a second layer, as a cancel of the whole task", async () => {
+    const onOpenChange = vi.fn();
+    render(<AddModels onSubmit={() => undefined} onOpenChange={onOpenChange} />);
+    const trigger = screen.getByRole("button", { name: "New models" });
+    await userEvent.click(trigger);
+    await frames();
+    await userEvent.click(screen.getByRole("button", { name: "Add a custom model" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleName("Add a custom model");
+    await userEvent.keyboard("{Escape}");
+    await frames();
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
     expect(trigger).toHaveFocus();
   });
 });
@@ -1164,5 +1177,69 @@ describe("StepDialog advance", () => {
     await user.click(screen.getByRole("button", { name: "Groq" }));
     expect(await screen.findByRole("heading", { name: "Paste your groq key" })).toBeVisible();
     expect(screen.getByText("Step 2 of 2")).toBeInTheDocument();
+  });
+});
+
+describe("Dialog backdrop", () => {
+  it("keeps the focus in a persistent dialog when the backdrop is pressed, so typing and ⌘Enter still reach it", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <Dialog open persistent title="Create key" onSubmit={onSubmit}>
+        <input aria-label="Name" />
+      </Dialog>,
+    );
+    await frames();
+    const field = screen.getByRole("textbox", { name: "Name" });
+    expect(field).toHaveFocus();
+    const viewport = screen.getByRole("dialog").parentElement!;
+    await userEvent.click(viewport);
+    await frames();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(field).toHaveFocus();
+    await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("StepDialog when a step is blocked", () => {
+  it("says why Continue waits, on the step and to a screen reader, when Enter is pressed", async () => {
+    render(
+      <StepDialog
+        open
+        title="Create key"
+        submitLabel="Create key"
+        onSubmit={() => undefined}
+        steps={[
+          { id: "name", title: "What is it for?", blockedReason: "Enter a name", content: <input aria-label="Name" /> },
+          { id: "expiry", title: "When does it expire?", content: <input aria-label="Days" /> },
+        ]}
+      />,
+    );
+    await frames();
+    const field = screen.getByRole("textbox", { name: "Name" });
+    expect(screen.queryByText("Enter a name", { selector: "[data-step-refused]" })).toBeNull();
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(screen.getByText("Enter a name", { selector: "[data-step-refused]" })).toBeInTheDocument();
+    expect(screen.getByText("Enter a name", { selector: "[aria-live]" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "What is it for?" })).toBeInTheDocument();
+  });
+});
+
+describe("LayerDialog header", () => {
+  it("keeps the close circle in a bar above the title on every layer, with Back at its start from the second layer", async () => {
+    render(
+      <LayerDialog
+        inline
+        layer={1}
+        layers={[
+          { title: "Add models", content: <p>Catalogue</p> },
+          { title: "Add a custom model", content: <input aria-label="Model id" /> },
+        ]}
+      />,
+    );
+    const header = screen.getByRole("heading", { name: "Add a custom model" }).closest("[data-dialog-header]")!;
+    expect(header).toHaveAttribute("data-bar");
+    expect(header.querySelector("[data-dialog-start]")).toContainElement(screen.getByRole("button", { name: "Back" }));
+    expect(header.querySelector("[data-dialog-close]")).toContainElement(screen.getByRole("button", { name: "Close" }));
   });
 });

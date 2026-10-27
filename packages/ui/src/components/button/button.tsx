@@ -220,6 +220,7 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
       {shortcut && (
         <KbdSequence
           aria-hidden
+          data-shortcut=""
           keys={shortcut}
           tone={variant === "primary" || variant === "danger" ? "onInk" : "default"}
           className={cn(variant === "danger" && "kbd-on-danger")}

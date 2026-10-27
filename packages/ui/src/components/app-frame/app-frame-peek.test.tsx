@@ -70,6 +70,22 @@ describe("AppFrame on a wide screen with the sidebar collapsed", () => {
     expect(within(header).queryByRole("button", { name: "Expand sidebar" })).toBeNull();
   });
 
+  it("doesn't peek after a click on the menu button, however often the pointer entered it", async () => {
+    wideScreen(true);
+    render(<Shell />);
+    await userEvent.click(screen.getByRole("button", { name: "Collapse now" }));
+    const header = screen.getByRole("heading", { level: 1, name: "Usage" }).closest("header")!;
+    const menu = within(header).getByRole("button", { name: "Expand sidebar" });
+    vi.useFakeTimers();
+    fireEvent.pointerEnter(menu);
+    fireEvent.pointerEnter(menu);
+    fireEvent.click(menu);
+    act(() => vi.advanceTimersByTime(PEEK_DELAY * 2));
+    vi.useRealTimers();
+    await act(async () => {});
+    expect(screen.queryByRole("dialog", { name: "Navigation" })).toBeNull();
+  });
+
   it("closes the sheet when a link in it is followed, and fills its parent when embedded", async () => {
     wideScreen(false);
     render(<Shell fill="parent" />);

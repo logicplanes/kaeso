@@ -76,6 +76,7 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
   const [announced, setAnnounced] = useState(false);
   const [continuing, setContinuing] = useState(false);
   const [enter, setEnter] = useState<"forward" | "back" | null>(null);
+  const [refused, setRefused] = useState<string | null>(null);
   const [opened, setOpened] = useState({ open, defaultStep });
   if (opened.open !== open || opened.defaultStep !== defaultStep) {
     setOpened({ open, defaultStep });
@@ -91,6 +92,7 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
   const shown = useRef(index);
   const go = (to: number) => {
     moved.current = true;
+    setRefused(null);
     setAnnounced(true);
     setEnter(reducedMotion() ? null : to > index ? "forward" : "back");
     setIndex(to);
@@ -116,8 +118,10 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
   const step = steps[Math.min(index, steps.length - 1)];
   const last = index >= steps.length - 1;
   const blocked = step?.blockedReason;
+  if (refused && refused !== blocked) setRefused(null);
   const next = () => {
-    if (blocked || submitting || continuing) return;
+    if (blocked) return setRefused(blocked);
+    if (submitting || continuing) return;
     if (last) return onSubmit();
     const check = step?.onContinue;
     if (!check) return go(index + 1);
@@ -157,12 +161,17 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
           className="flex min-w-0 flex-col gap-16 step-motion"
         >
           <div className="flex flex-col gap-4">
-            <h3 id={`${uid}-step-${s.id}`} tabIndex={-1} className="text-body-lg font-semibold text-fg outline-none">
+            <h3 id={`${uid}-step-${s.id}`} tabIndex={-1} className="text-body-lg font-medium text-fg outline-none">
               {s.title}
             </h3>
             {s.description && <p className="text-small text-fg-secondary">{s.description}</p>}
           </div>
           {s.content}
+          {i === index && refused && (
+            <p data-step-refused="" className="text-small text-fg-secondary">
+              {refused}
+            </p>
+          )}
         </section>
       ))}
     </div>
@@ -220,13 +229,14 @@ export const StepDialog = forwardRef<HTMLDivElement, StepDialogProps>(function S
       }
     >
       <p className="sr-only" aria-live="polite">
-        {announced && step && (
-          <>
-            {heardBefore}
-            {step.title}
-            {heardAfter}
-          </>
-        )}
+        {refused ??
+          (announced && step && (
+            <>
+              {heardBefore}
+              {step.title}
+              {heardAfter}
+            </>
+          ))}
       </p>
       <StepDialogContext.Provider value={controls}>{stepList}</StepDialogContext.Provider>
     </Dialog>

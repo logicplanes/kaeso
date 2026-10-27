@@ -2,11 +2,12 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   CommandPalette: {
-    description: "⌘K: search every page and action; nested pages; async groups with a quiet progress line.",
+    description:
+      "⌘K: search every page and action; nested pages with a chip that goes back; async groups with a quiet progress line. Escape closes; on a nested page it clears the search, then goes back a page. ⌘K does nothing while another dialog is open.",
     props: {
       counts: "Shows each group's count beside its caption; false leaves them out, for a site whose house style has no result counters.",
       defaultQuery: "Start with this query (documentation).",
-      emptyText: 'Defaults to "No results" in the provider\'s language.',
+      emptyText: 'Defaults to "No results for “claude”" (naming the query) in the provider\'s language.',
       groups: "The commands, in groups with a heading each.",
       hotkey: "Open with ⌘K / Ctrl+K anywhere (default true).",
       inline: "Render without a portal, for documentation and state matrices.",

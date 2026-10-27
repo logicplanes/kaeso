@@ -19,7 +19,7 @@ describe("DeleteResource", () => {
   it("asks for the name before deleting", async () => {
     const onConfirm = vi.fn();
     render(<DeleteResource inline kind="key" name="production" consequence="Apps that use it stop working." onConfirm={onConfirm} />);
-    expect(screen.getByRole("heading", { name: "Delete this key?" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Delete “production”?" })).toBeInTheDocument();
     const confirm = screen.getByRole("button", { name: "Delete key" });
     expect(confirm).toBeDisabled();
     await userEvent.type(screen.getByRole("textbox"), "production");
@@ -42,7 +42,7 @@ describe("DeleteResource", () => {
         trigger={<button>Archive</button>}
       />,
     );
-    expect(await screen.findByRole("alertdialog", { name: "Archive this project?" })).toBeInTheDocument();
+    expect(await screen.findByRole("alertdialog", { name: "Archive “Checkout”?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Archive project" })).toBeEnabled();
     expect(screen.queryByRole("textbox")).toBeNull();
   });

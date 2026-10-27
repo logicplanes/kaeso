@@ -37,12 +37,15 @@ interface ToastData {
   reserve?: ReactNode[] | undefined;
 }
 
+const stays = (tone: Tone, o: ToastOptions) => tone === "error" || !!o.action;
+
 function add(tone: Tone, title: ReactNode, o: ToastOptions = {}) {
+  const timeout = o.timeout ?? (stays(tone, o) ? 0 : undefined);
   return toastManager.add({
     title,
     type: tone,
     ...(o.description !== undefined ? { description: o.description } : {}),
-    ...(o.timeout !== undefined ? { timeout: o.timeout } : {}),
+    ...(timeout !== undefined ? { timeout } : {}),
     ...(o.id ? { id: o.id } : {}),
     ...(tone === "error" ? { priority: "high" as const } : {}),
     ...(o.action ? { actionProps: { children: o.action.label, onClick: o.action.onClick } } : {}),
@@ -60,15 +63,21 @@ export const toast = Object.assign((title: ReactNode, o?: ToastOptions) => add("
     return toastManager.promise(p, {
       loading: { title: m.loading, type: "loading", timeout: 0, data: { reserve } },
       success: (v: T) => ({ title: typeof m.success === "function" ? m.success(v) : m.success, type: "success", data: { reserve } }),
-      error: (e: unknown) => ({ title: typeof m.error === "function" ? m.error(e) : m.error, type: "error", priority: "high", data: { reserve } }),
+      error: (e: unknown) => ({
+        title: typeof m.error === "function" ? m.error(e) : m.error,
+        type: "error",
+        priority: "high",
+        timeout: 0,
+        data: { reserve },
+      }),
     });
   },
 });
 
-function ToneIcon({ tone }: { tone: Tone }) {
+function ToneIcon({ tone, multi }: { tone: Tone; multi: boolean }) {
   if (tone === "neutral") return null;
   return (
-    <span className={cn("flex shrink-0", KAESO_TOAST_VARIANTS.tone[tone].classes)}>
+    <span className={cn("flex shrink-0", multi && "mt-2 self-start", KAESO_TOAST_VARIANTS.tone[tone].classes)}>
       {tone === "loading" ? <Spinner size="sm" /> : <Icon icon={ICON[tone]} size="sm" />}
     </span>
   );
@@ -78,14 +87,15 @@ const SURFACE = "relative flex min-h-44 max-w-560 items-center gap-10 bg-toast p
 const ACTION =
   "inline-flex h-32 shrink-0 cursor-pointer items-center rounded-pill bg-toast-action px-12 text-body font-medium text-toast-fg transition-control hover:bg-toast-action-hover focus-ring";
 const CLOSE =
-  "k-toast-close absolute -top-6 -left-6 inline-flex size-20 cursor-pointer items-center justify-center rounded-pill bg-toast text-toast-fg-secondary shadow-toast hover:text-toast-fg focus-ring";
+  "relative inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-toast-fg-secondary transition-control tap-target hover:bg-toast-action hover:text-toast-fg focus-ring";
+const padEnd = (action: boolean, close: boolean) => (close ? "pr-10" : action ? "pr-6" : "pr-16");
 
 function useMultiline(title: ReactNode, description: ReactNode) {
   const ref = useRef<HTMLDivElement>(null);
   const [multi, setMulti] = useState(false);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (el) setMulti(el.offsetHeight > 46);
+    if (el) setMulti(el.offsetHeight > (parseFloat(getComputedStyle(el).minHeight) || 0) + 2);
   }, [title, description]);
   return [ref, multi] as const;
 }
@@ -106,10 +116,13 @@ export const ToastCapsule = forwardRef<HTMLDivElement, ToastCapsuleProps>(functi
   const [surface, multi] = useMultiline(title, description);
   const t = useUiText();
   return (
-    <div ref={ref} role="status" className="k-toast-static relative w-max">
-      <div ref={surface} className={cn(SURFACE, multi ? "rounded-toast" : "rounded-pill", tone === "neutral" ? "pl-16" : "pl-14", action ? "pr-6" : "pr-16")}>
-        <ToneIcon tone={tone} />
-        <span className="min-w-0 text-pretty">
+    <div ref={ref} role="status" className="k-toast-static relative w-max" {...(tone === "error" || action ? { "data-stays": "" } : {})}>
+      <div
+        ref={surface}
+        className={cn(SURFACE, multi ? "rounded-toast" : "rounded-pill", tone === "neutral" ? "pl-16" : "pl-14", padEnd(!!action, !!closable))}
+      >
+        <ToneIcon tone={tone} multi={multi} />
+        <span className="min-w-0 text-pretty wrap-break-word">
           {title}
           {description && <span className="font-regular text-toast-fg-secondary"> {description}</span>}
         </span>
@@ -118,12 +131,12 @@ export const ToastCapsule = forwardRef<HTMLDivElement, ToastCapsuleProps>(functi
             {action}
           </button>
         )}
+        {closable && (
+          <button type="button" aria-label={t("toast.dismiss", "Dismiss")} className={CLOSE} {...(force ? { "data-force": force } : {})}>
+            <Icon icon={icons.close} size="xs" />
+          </button>
+        )}
       </div>
-      {closable && (
-        <button type="button" aria-label={t("toast.dismiss", "Dismiss")} className={CLOSE} data-force={force ? `visible ${force}` : "visible"}>
-          <Icon icon={icons.close} size="xs" className="size-12" />
-        </button>
-      )}
     </div>
   );
 });
@@ -136,6 +149,7 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
   const tone = ((item.type as Tone) ?? "neutral") as Tone;
   const reserve = (item.data as ToastData | undefined)?.reserve;
   const [ref, multi] = useMultiline(item.title, item.description);
+  const stays = item.timeout === 0 && tone !== "loading";
   useLayoutEffect(() => {
     const el = ref.current;
     if (index !== 0 || !el) return;
@@ -148,6 +162,7 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
       toast={item}
       swipeDirection={["down", "left", "right"]}
       className="k-toast outline-none"
+      {...(stays ? { "data-stays": "" } : {})}
       {...(index > 0 ? { "data-behind": "" } : {})}
       {...(index >= limit ? { "data-index-hidden": "" } : {})}
     >
@@ -158,12 +173,12 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
           SURFACE,
           multi ? "rounded-toast" : "rounded-pill",
           tone === "neutral" ? "pl-16" : "pl-14",
-          item.actionProps ? "pr-6" : "pr-16",
+          padEnd(!!item.actionProps, stays),
         )}
       >
         <div className="k-toast-content flex min-w-0 items-center gap-10">
-          <ToneIcon tone={tone} />
-          <span className="min-w-0 text-pretty">
+          <ToneIcon tone={tone} multi={multi} />
+          <span className="min-w-0 text-pretty wrap-break-word">
             {reserve ? (
               <SwapText reserve={reserve} align="start">
                 <BaseToast.Title render={<span />} />
@@ -179,11 +194,13 @@ function ToastItem({ item, index, limit, onFrontWidth }: { item: ManagedToast; i
             )}
           </span>
           {item.actionProps && <BaseToast.Action className={ACTION} />}
+          {stays && (
+            <BaseToast.Close aria-label={t("toast.dismiss", "Dismiss")} className={CLOSE}>
+              <Icon icon={icons.close} size="xs" />
+            </BaseToast.Close>
+          )}
         </div>
       </div>
-      <BaseToast.Close aria-label={t("toast.dismiss", "Dismiss")} className={CLOSE}>
-        <Icon icon={icons.close} size="xs" className="size-12" />
-      </BaseToast.Close>
     </BaseToast.Root>
   );
 }
@@ -198,7 +215,7 @@ function List({ limit, viewportRef }: { limit: number; viewportRef: Ref<HTMLDivE
       <BaseToast.Viewport
         ref={viewportRef}
         aria-label={t("toast.notifications", "Notifications")}
-        className="fixed right-0 bottom-24 left-0 z-60 mx-auto h-0 w-full toast-viewport-width outline-none"
+        className="k-toast-viewport fixed right-0 bottom-safe-24 left-0 z-60 mx-auto h-0 w-full toast-viewport-width outline-none"
         style={{ ["--k-front-width" as string]: frontWidth ? `${frontWidth}px` : "auto" }}
       >
         {toasts.map((item) => (

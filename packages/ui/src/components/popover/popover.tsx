@@ -3,6 +3,7 @@ import { pageBoundary, usePortalContainer } from "../../utils/portal-context.js"
 import { forwardRef, type ReactNode } from "react";
 import { Popover as BasePopover } from "@base-ui/react/popover";
 import { cn } from "../../utils/cn.js";
+import { devWarn } from "../../utils/dev.js";
 import { PopoverClose, PopoverRoot, PopoverTrigger } from "./popover-root.js";
 
 export type { PopoverProps } from "./popover-root.js";
@@ -20,7 +21,7 @@ type Side = "top" | "bottom" | "left" | "right";
 type Align = "start" | "center" | "end";
 
 export const POPOVER_POPUP =
-  "z-50 rounded-popover bg-raised text-body text-fg shadow-raised outline-none popup-motion max-h-(--available-height) overflow-auto scrollbar-quiet";
+  "z-50 rounded-popover bg-raised text-body text-fg shadow-raised outline-none popup-motion max-h-(--available-height) max-w-(--available-width) overflow-auto overscroll-contain scrollbar-quiet";
 
 export interface PopoverContentProps {
   children: ReactNode;
@@ -37,6 +38,7 @@ const Content = forwardRef<HTMLDivElement, PopoverContentProps>(function Popover
   { children, side = "bottom", align = "start", sideOffset = 6, padding = "form", title, className, "aria-label": ariaLabel },
   ref,
 ) {
+  if (!title && !ariaLabel) devWarn("Popover.Content: pass a title or an aria-label, so the popover's dialog has a name.");
   return (
     <BasePopover.Portal container={usePortalContainer()}>
       <BasePopover.Positioner
@@ -53,7 +55,7 @@ const Content = forwardRef<HTMLDivElement, PopoverContentProps>(function Popover
           {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
           className={cn(POPOVER_POPUP, KAESO_POPOVER_VARIANTS.padding[padding].classes, className)}
         >
-          {title && <BasePopover.Title className="mb-8 text-body font-semibold text-fg">{title}</BasePopover.Title>}
+          {title && <BasePopover.Title className="mb-8 text-body font-semibold text-fg wrap-anywhere">{title}</BasePopover.Title>}
           <InsetContent inset={false}>{children}</InsetContent>
         </BasePopover.Popup>
       </BasePopover.Positioner>

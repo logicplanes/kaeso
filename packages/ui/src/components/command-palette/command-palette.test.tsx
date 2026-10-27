@@ -72,7 +72,7 @@ describe("CommandPalette", () => {
     render(<CommandPalette inline groups={groups()} emptyText="Nothing here" defaultQuery="zzz" />);
     const input = screen.getByRole("combobox");
     await userEvent.type(input, "{ArrowDown}{ArrowUp}{Enter}");
-    expect(screen.getByRole("status")).toHaveTextContent("Nothing here");
+    expect(screen.getByRole("listbox")).toHaveTextContent("Nothing here");
   });
 
   it("shows a loading bar for a loading group and reports the query", async () => {
@@ -186,5 +186,60 @@ describe("CommandPalette", () => {
     render(<CommandPalette ref={ref} inline groups={groups()} />);
     expect(ref.current).toHaveClass("rounded-palette");
     expect(ref.current).toContainElement(screen.getByRole("combobox"));
+  });
+});
+
+describe("CommandPalette pages", () => {
+  it("goes back from a nested page with its chip, with Escape on an empty query, and clears a query first", async () => {
+    const onOpenChange = vi.fn();
+    render(<CommandPalette open onOpenChange={onOpenChange} hotkey={false} groups={groups()} />);
+    await userEvent.click(await screen.findByRole("option", { name: /Switch project/ }));
+    const back = screen.getByRole("button", { name: "Switch project, go back" });
+    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search");
+    await userEvent.click(back);
+    expect(screen.getByRole("option", { name: /Request logs/ })).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveFocus();
+    await userEvent.click(screen.getByRole("option", { name: /Switch project/ }));
+    await userEvent.type(screen.getByRole("combobox"), "chec");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("combobox")).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Checkout" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("option", { name: /Request logs/ })).toBeInTheDocument();
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("closes on Escape from the first page, even with a search typed", async () => {
+    const onOpenChange = vi.fn();
+    render(<CommandPalette open onOpenChange={onOpenChange} hotkey={false} groups={groups()} />);
+    await userEvent.type(await screen.findByRole("combobox"), "logs");
+    await userEvent.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("names a result by its label first, with its hint after a pause", () => {
+    render(<CommandPalette inline groups={groups()} />);
+    expect(screen.getByRole("option", { name: /^Request logs\s*,\s*Every call\s*,\s*G\s*L$/i })).toBeInTheDocument();
+  });
+
+  it("keeps ⌘K from opening a second dialog over another one", () => {
+    const onOpenChange = vi.fn();
+    render(
+      <>
+        <div role="dialog" aria-label="Create key" data-open="" />
+        <CommandPalette onOpenChange={onOpenChange} groups={groups()} />
+      </>,
+    );
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("captions a group that is still loading without a count, with a loading row under it", () => {
+    render(<CommandPalette inline groups={[{ label: "Logs", items: [], loading: true }, ...groups()]} />);
+    const caption = screen.getByText("Logs");
+    expect(caption.parentElement).toHaveTextContent(/^Logs$/);
+    expect(screen.getByText("Loading…")).toBeInTheDocument();
   });
 });

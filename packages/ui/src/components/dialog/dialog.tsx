@@ -13,6 +13,7 @@ import {
   useState,
   type FocusEvent,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -51,6 +52,15 @@ const DIALOG_POPUP = "relative flex dialog-limits flex-col overflow-hidden round
 
 const DialogBusy = createContext(false);
 const LayerSlots = createContext({ toolbar: true, footerStart: true });
+
+function isComposing(e: KeyboardEvent): boolean {
+  // Safari ends composition before the Enter that confirms it, leaving only keyCode 229: https://bugs.webkit.org/show_bug.cgi?id=165004
+  return e.nativeEvent.isComposing || e.keyCode === 229;
+}
+
+function keepFocusOnBackdrop(e: MouseEvent<HTMLElement>) {
+  if (e.target === e.currentTarget) e.preventDefault();
+}
 
 function useScrolledUnder<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -91,8 +101,7 @@ function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
 const SINGLE_LINE = new Set(["text", "email", "password", "tel", "url", "number"]);
 
 function submitsOnEnter(e: KeyboardEvent): boolean {
-  // Safari ends composition before the Enter that confirms it, leaving only keyCode 229: https://bugs.webkit.org/show_bug.cgi?id=165004
-  if (e.key !== "Enter" || e.altKey || e.nativeEvent.isComposing || e.keyCode === 229) return false;
+  if (e.key !== "Enter" || e.altKey || isComposing(e)) return false;
   if (e.metaKey || e.ctrlKey) return true;
   const target = e.target as HTMLElement;
   return !e.defaultPrevented && !e.shiftKey && target instanceof HTMLInputElement && SINGLE_LINE.has(target.type) && target.getAttribute("role") !== "combobox";
@@ -154,13 +163,14 @@ function DialogFrame({
   const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} disabled={!!busy} />;
   const close = hideClose ? null : inline ? closeButton : <BaseDialog.Close render={closeButton} />;
   const Description = inline ? "p" : BaseDialog.Description;
+  const bar = headerStart !== undefined;
   return (
     <DialogBusy value={!!busy}>
       <div
         ref={frameRef}
         data-dialog-frame=""
         className={cn(
-          "flex min-h-0 flex-col",
+          "@container flex min-h-0 flex-col",
           inline ? "rounded-dialog bg-raised shadow-dialog" : cn("flex-1 self-center", anchor === "top" ? "dialog-limits-top" : "dialog-limits"),
           KAESO_DIALOG_VARIANTS.size[size].classes,
           className,
@@ -172,13 +182,25 @@ function DialogFrame({
           }
         }}
       >
-        <div className="flex items-start gap-12 px-24 pt-20 pb-4">
-          {headerStart ? <span className="flex shrink-0 items-center">{headerStart}</span> : null}
-          <div className="flex min-w-0 flex-1 flex-col gap-4 pt-4">
-            <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-            {description && <Description className="text-body text-fg-secondary text-pretty">{description}</Description>}
+        <div
+          data-dialog-header=""
+          {...(bar ? { "data-bar": "" } : {})}
+          className={cn("flex flex-wrap items-start gap-x-12 px-24 pb-4", bar ? "pt-16" : "pt-20")}
+        >
+          {bar && (
+            <span data-dialog-start="" className="flex h-32 min-w-0 items-center">
+              {headerStart}
+            </span>
+          )}
+          <div data-dialog-titles="" className={cn("flex min-w-0 flex-col gap-4", bar ? "order-last basis-full pt-8" : "flex-1 pt-4")}>
+            <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+            {description && <Description className="text-body text-fg-secondary text-pretty wrap-anywhere">{description}</Description>}
           </div>
-          {close && <span className="flex">{close}</span>}
+          {close && (
+            <span data-dialog-close="" className={cn("flex", bar && "ml-auto")}>
+              {close}
+            </span>
+          )}
         </div>
         {toolbar && (
           <div
@@ -193,7 +215,11 @@ function DialogFrame({
           <div
             ref={ref}
             data-dialog-body=""
-            className={cn("min-h-0 flex-1 overflow-y-auto px-24 scrollbar-quiet", toolbar ? "pt-0" : "pt-16", footer || footerStart ? "pb-8" : "pb-24")}
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 scrollbar-quiet",
+              toolbar ? "pt-0" : "pt-16",
+              footer || footerStart ? "pb-8" : "pb-24",
+            )}
           >
             <GutterContent>
               <RaisedContent>{children}</RaisedContent>
@@ -203,7 +229,10 @@ function DialogFrame({
         {(footer || footerStart) && (
           <div
             data-dialog-footer=""
-            className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-20 transition-control", under && "hairline-t")}
+            className={cn(
+              "flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden transition-control",
+              under && "hairline-t",
+            )}
           >
             {footerStart && (
               <div hidden={!slots.footerStart} className="mr-auto flex min-w-0 items-center gap-8">
@@ -245,7 +274,7 @@ const Root = forwardRef<HTMLDivElement, DialogProps>(function Dialog(props, ref)
       {trigger && <BaseDialog.Trigger render={trigger} />}
       <BaseDialog.Portal container={container}>
         <BaseDialog.Backdrop className={BACKDROP} forceRender={overSheet} />
-        <BaseDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor[anchor].classes)}>
+        <BaseDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor[anchor].classes)} onMouseDown={keepFocusOnBackdrop}>
           <BaseDialog.Popup
             ref={ref}
             initialFocus={focus.initialFocus}
@@ -275,9 +304,9 @@ export const Dialog = Object.assign(Root, { Close });
 
 export const KAESO_ALERT_DIALOG_VARIANTS = {
   tone: {
-    danger: { classes: "bg-danger-tint text-danger-text", description: "Destructive (default)" },
-    warning: { classes: "bg-warning-tint text-warning-text", description: "Risky but reversible" },
-    info: { classes: "bg-info-tint text-info-text", description: "Neutral confirmation" },
+    danger: { classes: "", description: "Destructive: a danger confirm, with the focus on Cancel (default)" },
+    warning: { classes: "", description: "Risky but reversible: a primary confirm, with the focus on Cancel" },
+    info: { classes: "", description: "A neutral confirmation: a primary confirm, with the focus on it" },
   },
 } as const;
 export const KAESO_ALERT_DIALOG_DEFAULT_VARIANTS = { tone: "danger" } as const;
@@ -312,7 +341,14 @@ function AlertFrame({
   busy,
   setBusy,
   rootRef,
-}: AlertDialogProps & { close: () => void; busy: boolean; setBusy: (busy: boolean) => void; rootRef?: Ref<HTMLDivElement> | undefined }) {
+  confirmRef,
+}: AlertDialogProps & {
+  close: () => void;
+  busy: boolean;
+  setBusy: (busy: boolean) => void;
+  rootRef?: Ref<HTMLDivElement> | undefined;
+  confirmRef?: Ref<HTMLButtonElement> | undefined;
+}) {
   const [typed, setTyped] = useState("");
   const pending = useRef(false);
   const t = useUiText();
@@ -339,30 +375,40 @@ function AlertFrame({
     if (done) close();
   };
   return (
-    <div ref={frameRef} className={cn("flex w-440 flex-col gap-20 p-24", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}>
-      <div className="flex flex-col gap-6">
-        <Title className="text-title-sm font-semibold text-fg text-balance">{title}</Title>
-        <Description className="text-body text-fg-secondary text-pretty">{description}</Description>
+    <div
+      ref={frameRef}
+      className={cn("@container flex min-h-0 w-440 flex-col", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}
+    >
+      <div data-dialog-body="" className="flex min-h-0 flex-col gap-20 overflow-y-auto overscroll-contain px-24 pt-24 pb-4 scrollbar-quiet">
+        <div className="flex flex-col gap-6">
+          <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+          <Description className="text-body text-fg-secondary text-pretty wrap-anywhere">{description}</Description>
+        </div>
+        {confirmText && (
+          <Input
+            label={
+              <span className="font-regular text-fg-secondary">
+                {typeBefore}
+                <span className="mono font-medium text-fg">{confirmText}</span>
+                {typeAfter}
+              </span>
+            }
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isComposing(e)) void confirm();
+            }}
+          />
+        )}
       </div>
-      {confirmText && (
-        <Input
-          label={
-            <span className="font-regular text-fg-secondary">
-              {typeBefore}
-              <span className="mono font-medium text-fg">{confirmText}</span>
-              {typeAfter}
-            </span>
-          }
-          value={typed}
-          onChange={(e) => setTyped(e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-          onKeyDown={(e) => e.key === "Enter" && confirm()}
-        />
-      )}
-      <div className="flex flex-wrap justify-end gap-8">
+      <div
+        data-dialog-footer=""
+        className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden"
+      >
         {inline ? <Button>{cancelLabel}</Button> : <BaseAlertDialog.Close render={<Button disabled={busy || !!loading}>{cancelLabel}</Button>} />}
-        <Button variant={tone === "danger" ? "danger" : "primary"} onClick={confirm} disabled={!ok} loading={busy || loading}>
+        <Button ref={confirmRef} variant={tone === "danger" ? "danger" : "primary"} onClick={confirm} disabled={!ok} loading={busy || loading}>
           {confirmLabel}
         </Button>
       </div>
@@ -379,7 +425,8 @@ export const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(function
     onOpenChange?.(o);
   };
   const [busy, setBusy] = useState(false);
-  const focus = useRestoreFocus(isOpen);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const focus = useRestoreFocus(isOpen, () => (props.tone === "info" && !props.confirmText && confirmRef.current) || true);
   const container = usePortalContainer();
   const overSheet = use(OverNonModalSheet);
   const settled = useScopedDialog(inline ? false : isOpen);
@@ -396,10 +443,10 @@ export const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(function
       {trigger && <BaseAlertDialog.Trigger render={trigger} />}
       <BaseAlertDialog.Portal container={container}>
         <BaseAlertDialog.Backdrop className={BACKDROP} forceRender={overSheet} />
-        <BaseAlertDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor.center.classes)}>
+        <BaseAlertDialog.Viewport className={cn(DIALOG_VIEWPORT, KAESO_DIALOG_VARIANTS.anchor.center.classes)} onMouseDown={keepFocusOnBackdrop}>
           <BaseAlertDialog.Popup ref={ref} initialFocus={focus.initialFocus} finalFocus={focus.finalFocus} className={cn(DIALOG_POPUP, "w-440")}>
             <InsetContent inset={false}>
-              <AlertFrame {...props} close={() => setOpen(false)} busy={busy} setBusy={setBusy} />
+              <AlertFrame {...props} close={() => setOpen(false)} busy={busy} setBusy={setBusy} confirmRef={confirmRef} />
             </InsetContent>
           </BaseAlertDialog.Popup>
         </BaseAlertDialog.Viewport>
@@ -410,7 +457,7 @@ export const AlertDialog = forwardRef<HTMLDivElement, AlertDialogProps>(function
 AlertDialog.displayName = "AlertDialog";
 
 export const KAESO_LAYER_DIALOG_VARIANTS = KAESO_DIALOG_VARIANTS;
-export const KAESO_LAYER_DIALOG_DEFAULT_VARIANTS = KAESO_DIALOG_DEFAULT_VARIANTS;
+export const KAESO_LAYER_DIALOG_DEFAULT_VARIANTS = { size: "md", anchor: "top" } as const;
 
 export interface DialogLayer {
   title: ReactNode;
@@ -429,7 +476,10 @@ export interface LayerDialogProps extends Omit<DialogProps, "title" | "descripti
 
 const bodyOf = (el: HTMLElement | null | undefined) => el?.closest<HTMLElement>("[data-dialog-body]") ?? null;
 
-export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function LayerDialog({ layers, layer, onLayerChange, ...props }, ref) {
+export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function LayerDialog(
+  { layers, layer, onLayerChange, anchor = KAESO_LAYER_DIALOG_DEFAULT_VARIANTS.anchor, ...props },
+  ref,
+) {
   const [inner, setInner] = useState(0);
   const t = useUiText();
   const wanted = layer ?? inner;
@@ -471,6 +521,7 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
       <Dialog
         ref={ref}
         {...props}
+        anchor={anchor}
         title={current.title}
         description={current.description}
         toolbar={
@@ -499,7 +550,7 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
           current.footer
             ? stack.map((l, i) =>
                 l.footer ? (
-                  <div key={i} hidden={i !== index} className="contents" onFocus={remember(i)}>
+                  <div key={i} hidden={i !== index} className="contents dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden" onFocus={remember(i)}>
                     {l.footer}
                   </div>
                 ) : null,

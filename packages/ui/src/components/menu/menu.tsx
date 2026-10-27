@@ -4,7 +4,10 @@ import {
   forwardRef,
   useCallback,
   useContext,
+  useId,
+  useLayoutEffect,
   useRef,
+  useState,
   type HTMLAttributes,
   type ReactElement,
   type ReactNode,
@@ -95,8 +98,8 @@ function framed(header: ReactNode, footer: ReactNode) {
     const { role, id, "aria-labelledby": labelledBy, "aria-orientation": orientation, children, className, ...rest } = props;
     return (
       <div {...rest} className={cn(className, "overflow-hidden p-0")}>
-        <div tabIndex={0} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain rounded-menu p-6 focus-ring-inset scrollbar-quiet">
-          <div className="mb-6 px-10 pt-6 pb-10 hairline-b">{header}</div>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain rounded-menu p-6 scrollbar-quiet">
+          {header && <div className="mb-6 px-10 pt-6 pb-10 hairline-b">{header}</div>}
           <div role={role} id={id} aria-labelledby={labelledBy} aria-orientation={orientation} className="flex flex-col">
             {children}
           </div>
@@ -107,8 +110,8 @@ function framed(header: ReactNode, footer: ReactNode) {
   };
 }
 
-const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuContent(
-  { children, side = "bottom", align = "start", sideOffset = 6, width = "auto", className, header, footer },
+const Popup = forwardRef<HTMLDivElement, MenuContentProps & { alignOffset?: number | undefined }>(function MenuPopup(
+  { children, side = "bottom", align = "start", sideOffset = 6, alignOffset = 0, width = "auto", className, header, footer },
   ref,
 ) {
   const trigger = useContext(TriggerContext);
@@ -122,6 +125,7 @@ const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuConten
         side={side}
         align={align}
         sideOffset={sideOffset}
+        alignOffset={alignOffset}
         collisionPadding={8}
         className="z-50 outline-none"
       >
@@ -139,14 +143,18 @@ const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuConten
           tabIndex={0}
           className={cn(MENU_POPUP, KAESO_MENU_VARIANTS.width[width].classes, className)}
           style={width === "trigger" ? anchorWidthStyle(triggerWidth) : undefined}
-          {...(header ? { render: framed(header, footer) } : {})}
+          {...(header || footer ? { render: framed(header, footer) } : {})}
         >
           {children}
-          {!header && footer && <div className="px-10 pt-6 pb-4 text-caption text-fg-tertiary">{footer}</div>}
         </BaseMenu.Popup>
       </BaseMenu.Positioner>
     </BaseMenu.Portal>
   );
+});
+Popup.displayName = "Menu.Popup";
+
+const Content = forwardRef<HTMLDivElement, MenuContentProps>(function MenuContent(props, ref) {
+  return <Popup ref={ref} {...props} />;
 });
 Content.displayName = "Menu.Content";
 
@@ -175,24 +183,30 @@ function ItemContent({
   hint,
   children,
   danger,
-}: Pick<MenuItemProps, "icon" | "leading" | "description" | "descriptionTone" | "shortcut" | "hint" | "children"> & { danger?: boolean | undefined }) {
+  hintId,
+}: Pick<MenuItemProps, "icon" | "leading" | "description" | "descriptionTone" | "shortcut" | "hint" | "children"> & {
+  danger?: boolean | undefined;
+  hintId?: string | undefined;
+}) {
   return (
     <>
       {leading ? (
         <span className={cn("flex size-16 shrink-0 items-center justify-center", description && "self-start mt-10")}>{leading}</span>
       ) : (
-        icon && <Icon icon={icon} size="sm" className={cn(danger ? "text-danger-text" : MENU_ICON, description && "self-start mt-10")} />
+        icon && (
+          <Icon icon={icon} size="sm" className={cn(danger ? "text-danger-text forced-colors:text-current" : MENU_ICON, description && "self-start mt-10")} />
+        )
       )}
       {description ? (
         <span className="flex min-w-0 flex-1 flex-col gap-2 py-8">
-          <span className="truncate">{children}</span>
+          <span className="text-pretty wrap-break-word">{children}</span>
           <span className={cn("text-small font-regular whitespace-normal", KAESO_MENU_VARIANTS.description[descriptionTone].classes)}>{description}</span>
         </span>
       ) : (
-        <span className="min-w-0 flex-1 truncate">{children}</span>
+        <span className="min-w-0 flex-1 py-6 text-pretty wrap-break-word">{children}</span>
       )}
       {(shortcut || hint) && (
-        <span className={MENU_HINT}>
+        <span id={hintId} aria-hidden className={MENU_HINT}>
           {hint}
           {shortcut && <KbdSequence keys={shortcut} />}
         </span>
@@ -219,9 +233,11 @@ const Item = forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
   },
   ref,
 ) {
+  const hintId = useId();
   return (
     <BaseMenu.Item
       ref={ref}
+      {...(shortcut || hint ? { "aria-describedby": hintId } : {})}
       {...(disabled ? { disabled } : {})}
       {...(onClick ? { onClick } : {})}
       {...(closeOnClick !== undefined ? { closeOnClick } : {})}
@@ -236,6 +252,7 @@ const Item = forwardRef<HTMLDivElement, MenuItemProps>(function MenuItem(
         shortcut={shortcut}
         hint={hint}
         danger={variant === "danger"}
+        hintId={hintId}
       >
         {children}
       </ItemContent>
@@ -257,9 +274,11 @@ const LinkItem = forwardRef<HTMLAnchorElement, MenuLinkItemProps>(function MenuL
   ref,
 ) {
   const LinkComp = useLinkComponent();
+  const hintId = useId();
   return (
     <BaseMenu.LinkItem
       ref={ref}
+      {...(shortcut || hint ? { "aria-describedby": hintId } : {})}
       href={href}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : { render: <LinkComp href={href} /> })}
       className={cn(MENU_ITEM, "no-underline", className)}
@@ -271,6 +290,7 @@ const LinkItem = forwardRef<HTMLAnchorElement, MenuLinkItemProps>(function MenuL
         descriptionTone={descriptionTone}
         shortcut={shortcut}
         hint={hint ?? (external ? <Icon icon={icons.externalLink} size="xs" /> : undefined)}
+        hintId={hintId}
       >
         {children}
       </ItemContent>
@@ -303,9 +323,11 @@ const CheckboxItem = forwardRef<HTMLDivElement, MenuCheckboxItemProps>(function 
   },
   ref,
 ) {
+  const hintId = useId();
   return (
     <BaseMenu.CheckboxItem
       ref={ref}
+      {...(shortcut || hint ? { "aria-describedby": hintId } : {})}
       {...(checked !== undefined ? { checked } : {})}
       {...(defaultChecked !== undefined ? { defaultChecked } : {})}
       {...(onCheckedChange ? { onCheckedChange: (c: boolean) => onCheckedChange(c) } : {})}
@@ -313,7 +335,7 @@ const CheckboxItem = forwardRef<HTMLDivElement, MenuCheckboxItemProps>(function 
       closeOnClick={closeOnClick}
       className={cn(MENU_ITEM, className)}
     >
-      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} shortcut={shortcut} hint={hint}>
+      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} shortcut={shortcut} hint={hint} hintId={hintId}>
         {children}
       </ItemContent>
       <BaseMenu.CheckboxItemIndicator keepMounted className="flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-checked:opacity-100">
@@ -345,15 +367,17 @@ const RadioItem = forwardRef<HTMLDivElement, Omit<MenuItemProps, "variant"> & { 
   { children, value, icon, leading, description, descriptionTone, shortcut, hint, disabled, closeOnClick, className },
   ref,
 ) {
+  const hintId = useId();
   return (
     <BaseMenu.RadioItem
       ref={ref}
+      {...(shortcut || hint ? { "aria-describedby": hintId } : {})}
       value={value}
       {...(disabled ? { disabled } : {})}
       {...(closeOnClick !== undefined ? { closeOnClick } : {})}
       className={cn(MENU_ITEM, className)}
     >
-      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} shortcut={shortcut} hint={hint}>
+      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} shortcut={shortcut} hint={hint} hintId={hintId}>
         {children}
       </ItemContent>
       <BaseMenu.RadioItemIndicator keepMounted className="flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-checked:opacity-100">
@@ -387,8 +411,8 @@ const Header = forwardRef<HTMLDivElement, { avatar?: ReactNode | undefined; name
     <div ref={ref} className="flex min-w-0 items-center gap-10 px-10 pt-8 pb-10">
       {avatar}
       <div className="flex min-w-0 flex-col">
-        <span className="truncate text-body font-semibold text-fg">{name}</span>
-        {email && <span className="truncate text-caption font-regular text-fg-secondary">{email}</span>}
+        <span className="text-body font-semibold text-fg wrap-break-word">{name}</span>
+        {email && <span className="text-caption font-regular text-fg-secondary wrap-anywhere">{email}</span>}
       </div>
     </div>
   );
@@ -418,9 +442,15 @@ const SubTrigger = forwardRef<HTMLDivElement, Omit<MenuItemProps, "shortcut" | "
     },
     [trigger, ref],
   );
+  const hintId = useId();
   return (
-    <BaseMenu.SubmenuTrigger ref={setRef} {...(disabled ? { disabled } : {})} className={cn(MENU_ITEM, "open:bg-fill-1", className)}>
-      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} hint={hint}>
+    <BaseMenu.SubmenuTrigger
+      ref={setRef}
+      {...(disabled ? { disabled } : {})}
+      {...(hint ? { "aria-describedby": hintId } : {})}
+      className={cn(MENU_ITEM, "open:bg-item-hover", className)}
+    >
+      <ItemContent icon={icon} leading={leading} description={description} descriptionTone={descriptionTone} hint={hint} hintId={hintId}>
         {children}
       </ItemContent>
       <Icon icon={icons.chevronRight} size="sm" className="-mr-2 text-fg-tertiary" />
@@ -430,7 +460,7 @@ const SubTrigger = forwardRef<HTMLDivElement, Omit<MenuItemProps, "shortcut" | "
 SubTrigger.displayName = "Menu.SubTrigger";
 
 const SubContent = forwardRef<HTMLDivElement, Omit<MenuContentProps, "side" | "align">>(function MenuSubContent(props, ref) {
-  return <Content ref={ref} side="right" align="start" sideOffset={2} {...props} />;
+  return <Popup ref={ref} side="right" align="start" sideOffset={8} alignOffset={-6} {...props} />;
 });
 SubContent.displayName = "Menu.SubContent";
 
@@ -453,32 +483,74 @@ export const Menu = Object.assign(Root, {
 export const KAESO_CONTEXT_MENU_VARIANTS = {} as const;
 export const KAESO_CONTEXT_MENU_DEFAULT_VARIANTS = {} as const;
 
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
 function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((open: boolean) => void) | undefined }) {
-  return <BaseContextMenu.Root {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}>{children}</BaseContextMenu.Root>;
+  const opener = useRef<HTMLElement | null>(null);
+  return (
+    <BaseContextMenu.Root
+      onOpenChange={(o: boolean) => {
+        if (o) {
+          const at = document.activeElement;
+          opener.current = at instanceof HTMLElement && at !== document.body ? at : null;
+        }
+        onOpenChange?.(o);
+      }}
+    >
+      <TriggerContext.Provider value={opener}>{children}</TriggerContext.Provider>
+    </BaseContextMenu.Root>
+  );
 }
 ContextRoot.displayName = "ContextMenu";
-const ContextTrigger = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined }>(function ContextMenuTrigger(
-  { children, className },
-  ref,
-) {
-  return (
-    <BaseContextMenu.Trigger ref={ref} className={className}>
-      {children}
-    </BaseContextMenu.Trigger>
-  );
-});
+const ContextTrigger = forwardRef<HTMLDivElement, { children: ReactNode; className?: string | undefined; "data-force"?: string | undefined }>(
+  function ContextMenuTrigger({ children, className, "data-force": force }, ref) {
+    const own = useRef<HTMLDivElement | null>(null);
+    const [focusable, setFocusable] = useState(false);
+    useLayoutEffect(() => {
+      setFocusable(!own.current?.querySelector(FOCUSABLE));
+    }, [children]);
+    return (
+      <BaseContextMenu.Trigger
+        ref={(el: HTMLDivElement | null) => {
+          own.current = el;
+          if (typeof ref === "function") ref(el);
+          else if (ref) ref.current = el;
+        }}
+        {...(focusable ? { tabIndex: 0 } : {})}
+        {...(force ? { "data-force": force } : {})}
+        className={cn(focusable && "focus-ring", className)}
+      >
+        {children}
+      </BaseContextMenu.Trigger>
+    );
+  },
+);
 ContextTrigger.displayName = "ContextMenu.Trigger";
 const ContextContent = forwardRef<HTMLDivElement, Omit<MenuContentProps, "side" | "align" | "sideOffset">>(function ContextMenuContent(
   { children, className, header, footer, width = "auto" },
   ref,
 ) {
+  const opener = useContext(TriggerContext);
+  const popup = useRef<HTMLDivElement | null>(null);
   return (
     <BaseContextMenu.Portal container={usePortalContainer()}>
       <BaseContextMenu.Positioner positionMethod="fixed" collisionBoundary={pageBoundary()} collisionPadding={8} className="z-50 outline-none">
-        <BaseContextMenu.Popup ref={ref} tabIndex={0} className={cn(MENU_POPUP, KAESO_MENU_VARIANTS.width[width].classes, className)}>
-          {header && <div className="mb-6 px-10 pt-6 pb-10 hairline-b">{header}</div>}
+        <BaseContextMenu.Popup
+          ref={(el: HTMLDivElement | null) => {
+            popup.current = el;
+            if (typeof ref === "function") ref(el);
+            else if (ref) ref.current = el;
+          }}
+          finalFocus={() => {
+            const at = document.activeElement;
+            if (at && at !== document.body && !popup.current?.contains(at)) return false;
+            return opener?.current?.isConnected ? opener.current : true;
+          }}
+          tabIndex={0}
+          className={cn(MENU_POPUP, KAESO_MENU_VARIANTS.width[width].classes, className)}
+          {...(header || footer ? { render: framed(header, footer) } : {})}
+        >
           {children}
-          {footer && <div className="px-10 pt-6 pb-4 text-caption text-fg-tertiary">{footer}</div>}
         </BaseContextMenu.Popup>
       </BaseContextMenu.Positioner>
     </BaseContextMenu.Portal>
@@ -508,7 +580,7 @@ const MenubarRoot = forwardRef<HTMLDivElement, { children: ReactNode; className?
   ref,
 ) {
   return (
-    <BaseMenubar ref={ref} className={cn("inline-flex items-center gap-2", className)} {...(ariaLabel ? { "aria-label": ariaLabel } : {})}>
+    <BaseMenubar ref={ref} className={cn("inline-flex items-center gap-8", className)} {...(ariaLabel ? { "aria-label": ariaLabel } : {})}>
       {children}
     </BaseMenubar>
   );
@@ -521,7 +593,7 @@ const MenubarTrigger = forwardRef<HTMLButtonElement, { children: ReactNode; clas
         ref={ref}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "inline-flex h-32 cursor-pointer items-center rounded-pill px-12 text-body font-medium text-fg material-ghost transition-control focus-ring",
+          "relative inline-flex h-32 cursor-pointer items-center rounded-pill px-12 text-body font-medium text-fg material-ghost transition-control focus-ring tap-target",
           className,
         )}
       >

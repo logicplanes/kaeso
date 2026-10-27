@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Dialog, DialogScope, Input, SecretReveal, StepDialog } from "@logicplanes/kaeso-ui";
+import { Button, DialogScope, Input, SecretReveal, StepDialog } from "@logicplanes/kaeso-ui";
 import { SECRET } from "~/fixtures/kaeso";
 
 export const meta = {
@@ -27,19 +27,6 @@ export const examples = [
 function CreateKeyFlow({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
   const [created, setCreated] = useState<string | null>(null);
-  if (created)
-    return (
-      <Dialog
-        open={open}
-        onOpenChange={(o) => !o && onClose()}
-        size="lg"
-        title="Key created"
-        description="Copy the key now: it's shown once."
-        footer={<Button onClick={onClose}>Done</Button>}
-      >
-        <SecretReveal secret={SECRET} name={created} baseUrl="https://kaeso.example.com" />
-      </Dialog>
-    );
   return (
     <StepDialog
       open={open}
@@ -56,6 +43,17 @@ function CreateKeyFlow({ open, onClose }: { open: boolean; onClose: () => void }
           content: <Input aria-label="Name" placeholder="checkout-web" value={name} onChange={(e) => setName(e.target.value)} autoFocus />,
         },
       ]}
+      result={
+        created
+          ? {
+              title: "Key created",
+              description: "Copy the key now: it's shown once.",
+              size: "lg",
+              content: <SecretReveal secret={SECRET} name={created} baseUrl="https://kaeso.example.com" />,
+              footer: <Button onClick={onClose}>Done</Button>,
+            }
+          : undefined
+      }
     />
   );
 }
