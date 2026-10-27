@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 import { expect, test, signInAsOwner } from "./support";
 
 test.describe.configure({ mode: "serial" });
@@ -93,9 +93,9 @@ test("switching projects client-side shows the new project's data, at its top, w
   await expect(page.getByRole("button", { name: "Switch narrow", description: "Switch project", exact: true })).toBeVisible();
 });
 
-async function menuFrames(page: Page, shownFor: number, limit: number): Promise<string[]> {
+async function menuFrames(page: Page, shownFor: number, atLeast: number): Promise<string[]> {
   return page.evaluate(
-    ([span, cap]) =>
+    ([span, count]) =>
       new Promise<string[]>((done) => {
         type El = {
           offsetWidth: number;
@@ -107,7 +107,6 @@ async function menuFrames(page: Page, shownFor: number, limit: number): Promise<
         const win = globalThis as unknown as { document: { querySelector(s: string): El | null }; requestAnimationFrame(f: () => void): number };
         const doc = win.document;
         const frames: string[] = [];
-        const start = performance.now();
         let shown: number | undefined;
         const tick = () => {
           const menu = doc.querySelector('[role="menu"]');
@@ -118,19 +117,19 @@ async function menuFrames(page: Page, shownFor: number, limit: number): Promise<
               `${Math.round(at.x)},${Math.round(at.y)} ${menu.offsetWidth}x${menu.offsetHeight} ${menu.querySelectorAll('[role^="menuitem"]').length} items`,
             );
           }
-          const now = performance.now();
-          if (shown === undefined ? now - start < cap : now - shown < span) win.requestAnimationFrame(tick);
+          // A busy machine paints only a few frames in `span`, too few to compare, so sampling also waits for `count` frames.
+          if (shown === undefined || performance.now() - shown < span || (menu && frames.length < count)) win.requestAnimationFrame(tick);
           else done(frames);
         };
         win.requestAnimationFrame(tick);
       }),
-    [shownFor, limit] as const,
+    [shownFor, atLeast] as const,
   );
 }
 
-async function openFrames(page: Page, trigger: ReturnType<Page["getByRole"]>, limit = 2000): Promise<string[]> {
+async function openFrames(page: Page, trigger: ReturnType<Page["getByRole"]>): Promise<string[]> {
   await expect(trigger).toBeVisible();
-  const frames = menuFrames(page, 400, limit);
+  const frames = menuFrames(page, 400, 4);
   await trigger.click();
   return frames;
 }
@@ -157,8 +156,33 @@ test("the sidebar's switchers open whole the first time: the menu's box in its f
     await route.continue();
   });
   await page.goto(`/orgs/${org}/projects/${project}`);
-  const frames = await openFrames(page, projectSwitcher, 4000);
+  const frames = await openFrames(page, projectSwitcher);
   expect(frames.length).toBeGreaterThan(3);
   expect(new Set(frames), frames.join("\n")).toEqual(new Set([frames[0]]));
   expect(frames[0]).toContain(`${projects.length + 1} items`);
+});
+
+test("while a project page's code and rights are still loading, its pending page holds the place", async ({ page }) => {
+  await signInAsOwner(page);
+  const org = orgOf(page);
+  await page.goto(`/orgs/${org}/projects`);
+  const projectsHeading = page.getByRole("main").getByRole("heading", { name: "Projects", level: 1 });
+  await expect(projectsHeading).toBeVisible();
+
+  const held: Route[] = [];
+  let released = false;
+  await page.route(/\?tsr-split=|\/my-rights$/, async (route) => {
+    if (released) await route.continue();
+    else held.push(route);
+  });
+  await page.getByRole("main").getByRole("row").filter({ hasText: "Default project" }).first().click();
+  await expect(page).toHaveURL(/\/projects\/proj_[^/]+$/);
+  await expect(projectsHeading).toBeHidden();
+  // The pending page's skeleton is decorative and hidden from assistive technology, so no role finds it.
+  await expect(page.getByRole("main").locator('[aria-hidden="true"]').filter({ visible: true }).first()).toBeVisible();
+  expect(held.length).toBeGreaterThan(0);
+
+  released = true;
+  await Promise.all(held.map((route) => route.continue()));
+  await expect(page.getByRole("main").getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
 });
