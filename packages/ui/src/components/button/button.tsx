@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type MouseEvent, type ReactElement, type ReactNode, type Ref } from "react";
+import { forwardRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactElement, type ReactNode, type Ref } from "react";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent, isExternalHref } from "../../utils/link-provider.js";
 import { warnMissingName, warnStylingClassName } from "../../utils/dev.js";
@@ -14,14 +14,15 @@ export const KAESO_BUTTON_VARIANTS = {
     secondary: { classes: "material-secondary", description: "Raised, ring and a soft shadow. The default." },
     ghost: { classes: "material-ghost", description: "Transparent until hovered: toolbars, rows, quiet actions" },
     quiet: {
-      classes: "material-ghost text-fg-secondary hover:text-fg",
+      classes: "material-ghost text-fg-secondary hover:text-fg active:text-fg open:text-fg",
       description: "A ghost in secondary text that darkens on hover: actions inside a field (clear, reveal, copy)",
     },
     soft: { classes: "material-soft", description: "A fill without a ring: the active pill tab" },
     danger: { classes: "material-danger", description: "The destructive confirm, with the primary's material" },
     "danger-secondary": { classes: "material-danger-secondary", description: "Raised with danger text; tints on hover. Destructive triggers." },
     link: {
-      classes: "bg-transparent text-fg underline decoration-line-strong decoration-1 underline-offset-3 hover:decoration-current disabled:text-fg-disabled",
+      classes:
+        "bg-transparent text-fg underline decoration-line-strong decoration-1 underline-offset-3 hover:decoration-current active:decoration-current open:decoration-current disabled:text-fg-disabled",
       description: "Text with an underline, for actions inside sentences",
     },
   },
@@ -125,9 +126,12 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     className,
     type,
     onClick,
+    onFocus,
+    onBlur,
     ...rest
   } = props;
   const LinkComp = useLinkComponent();
+  const [focused, setFocused] = useState(false);
   warnStylingClassName("Button", className);
 
   const spinning = useDelayedLoading(loading);
@@ -145,7 +149,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
   const domProps = { ...rest } as Record<string, unknown>;
   for (const k of ["shape", "icon", "leadingIcon", "trailingIcon", "shortcut", "count", "children", "reserveLabels"]) delete domProps[k];
 
-  const softDisabled = !!disabledReason && disabled;
+  // A natively disabled button that holds focus drops it to <body>; stay focusable until it blurs.
+  const softDisabled = (!!disabledReason || focused) && disabled;
   const inert = busy || softDisabled;
   const classes = cn(
     buttonClasses({
@@ -196,6 +201,15 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     onClick?.(e as MouseEvent<HTMLButtonElement>);
   };
 
+  const handleFocus = (e: FocusEvent<HTMLButtonElement & HTMLAnchorElement>) => {
+    setFocused(true);
+    onFocus?.(e as FocusEvent<HTMLButtonElement>);
+  };
+  const handleBlur = (e: FocusEvent<HTMLButtonElement & HTMLAnchorElement>) => {
+    setFocused(false);
+    onBlur?.(e as FocusEvent<HTMLButtonElement>);
+  };
+
   let el: ReactNode;
   if (href && !disabled) {
     const external = isExternalHref(href);
@@ -209,6 +223,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         {...(domProps as object)}
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         onClick={handleClick}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       >
         {content}
       </LinkComp>
@@ -225,6 +241,8 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
         {...(busy ? { "aria-busy": true, "data-loading": "" } : {})}
         {...(softDisabled ? { "data-disabled": "" } : {})}
         onClick={handleClick}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
       >
         {content}
       </button>

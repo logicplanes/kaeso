@@ -7,7 +7,10 @@ import type { IconData } from "../icon/icon.js";
 export const KAESO_ICON_BUTTON_VARIANTS = {
   variant: {
     ghost: { classes: "material-ghost", description: "Toolbar and row actions (default)" },
-    quiet: { classes: "material-ghost text-fg-secondary hover:text-fg", description: "Secondary text that darkens on hover: inside fields" },
+    quiet: {
+      classes: "material-ghost text-fg-secondary hover:text-fg active:text-fg open:text-fg",
+      description: "Secondary text that darkens on hover: inside fields",
+    },
     secondary: { classes: "material-secondary", description: "Raised circles with a ring: page-header buttons" },
     soft: { classes: "material-soft", description: "A filled circle" },
     primary: { classes: "material-primary", description: "The view's one primary action, as an icon" },

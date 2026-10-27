@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(packageRoot, "dist");
-const budgets = { "components/button.js": 3, "components/menu.js": 9, "components/data-table.js": 22 };
+const budgets = { "components/button.js": 3.2, "components/menu.js": 9, "components/data-table.js": 22 };
 const cssBudget = 28;
 
 function closure(file, seen = new Set()) {

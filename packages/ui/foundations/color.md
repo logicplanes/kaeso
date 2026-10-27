@@ -11,6 +11,8 @@ Two tint-free ramps. Components use the role names, never a step, so both themes
 | `bg-panel`       | The brightest surface: pure white, pure black. Content lives here. |
 | `bg-chrome`      | The window behind the panel. The sidebar sits on it.               |
 | `bg-raised`      | Controls, menus, popovers: a surface above the panel.              |
+| `raised-hover`   | A raised control under the pointer: secondary buttons, list items. |
+| `raised-pressed` | A raised control while it is pressed.                              |
 | `fill-1`         | Quiet fills: inputs at rest, code wells, group headers.            |
 | `fill-2`         | Hover on ghost controls and rows.                                  |
 | `fill-3`         | Pressed and current: the active sidebar pill.                      |
@@ -23,6 +25,8 @@ Two tint-free ramps. Components use the role names, never a step, so both themes
 | `text-tertiary`  | Placeholders, counts, axis labels.                                 |
 | `text-disabled`  | Disabled labels.                                                   |
 | `ink`            | The primary button and selected marks.                             |
+| `ink-hover`      | The primary button under the pointer.                              |
+| `ink-pressed`    | The primary button while pressed, or while its menu is open.       |
 | `focus`          | Keyboard focus rings.                                              |
 
 ## Status

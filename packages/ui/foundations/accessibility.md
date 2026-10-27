@@ -5,7 +5,7 @@ Every component works with a keyboard, a screen reader, a coarse pointer and the
 ## Foundations
 
 - Behavior comes from Base UI: roles, states, focus management and keyboard interaction follow the WAI-ARIA practices.
-- **Targets**: nothing interactive is smaller than 32px; with a coarse pointer, rows and menu items grow to 44px.
+- **Targets**: nothing interactive is smaller than 32px; a control drawn smaller (a 24px chip action) still takes a 32px hit area (`tap-target`). With a coarse pointer, hit areas grow to 44px and rows and menu items grow to 44px tall.
 - **Text**: 14px base, 12px minimum. Every text and background pair is measured against WCAG 2.2 (4.5:1 for text, 3:1 for large text and essential graphics).
 - **Zoom stays with the person**: with a coarse pointer, every field's text is at least 16px, so a phone never zooms the page when a field takes focus, and a quick second tap on a control is a tap, not a zoom. Pinch zoom always works; never set `maximum-scale` or `user-scalable=no`.
 - **Color is never alone**: every status carries a word or an icon.
@@ -36,6 +36,7 @@ Icon-only buttons require an accessible name; their tooltip repeats it. A contro
 - `prefers-reduced-motion`: transforms are removed; only opacity changes.
 - `prefers-contrast: more`: rings use the strong line and secondary text becomes primary.
 - `prefers-color-scheme`: the system theme is the default.
+- `forced-colors: active`: rings drawn as shadows disappear, so every control and raised surface gets a 1px system-colour outline instead, keyboard focus a 2px `Highlight` outline, selected and current items a 2px `Highlight` outline, and highlighted rows a `Highlight` fill. Data colours that carry meaning keep their colour (`data-mark`); lines drawn as fills use `forced-line`.
 
 ## Testing
 
