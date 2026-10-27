@@ -47,17 +47,22 @@ test("a single-line tooltip too long for the screen wraps inside it", async ({ p
 test("a layer dialog's title keeps its place when the second layer opens", async ({ page }) => {
   await open(page, "/components/layer-dialog/examples");
   await page.getByRole("button", { name: "Add model" }).first().click();
-  const title = page.getByRole("dialog").getByRole("heading").first();
+  const dialog = page.getByRole("dialog");
+  const title = dialog.getByRole("heading").first();
+  const settled = () => dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
   await expect(title).toHaveText("Add model");
+  await settled();
   const before = (await title.boundingBox())!;
-  await page.getByRole("dialog").getByRole("button", { name: "Add a custom model" }).click();
+  await dialog.getByRole("button", { name: "Add a custom model" }).click();
   await expect(title).toHaveText("Add a custom model");
+  await settled();
   const after = (await title.boundingBox())!;
   expect(after.x).toBe(before.x);
   expect(after.y).toBe(before.y);
-  await page.getByRole("dialog").getByRole("button", { name: "Back" }).click();
+  await dialog.getByRole("button", { name: "Back" }).click();
   await expect(title).toHaveText("Add model");
+  await settled();
   expect((await title.boundingBox())!.y).toBe(before.y);
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(dialog).toBeHidden();
 });
