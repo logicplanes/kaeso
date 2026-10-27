@@ -230,7 +230,7 @@ function DialogFrame({
           <div
             data-dialog-footer=""
             className={cn(
-              "flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto transition-control",
+              "flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden transition-control",
               under && "hairline-t",
             )}
           >
@@ -403,7 +403,10 @@ function AlertFrame({
           />
         )}
       </div>
-      <div data-dialog-footer="" className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto">
+      <div
+        data-dialog-footer=""
+        className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden"
+      >
         {inline ? <Button>{cancelLabel}</Button> : <BaseAlertDialog.Close render={<Button disabled={busy || !!loading}>{cancelLabel}</Button>} />}
         <Button ref={confirmRef} variant={tone === "danger" ? "danger" : "primary"} onClick={confirm} disabled={!ok} loading={busy || loading}>
           {confirmLabel}
@@ -547,7 +550,7 @@ export const LayerDialog = forwardRef<HTMLDivElement, LayerDialogProps>(function
           current.footer
             ? stack.map((l, i) =>
                 l.footer ? (
-                  <div key={i} hidden={i !== index} className="contents dialog-narrow:*:flex-auto" onFocus={remember(i)}>
+                  <div key={i} hidden={i !== index} className="contents dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden" onFocus={remember(i)}>
                     {l.footer}
                   </div>
                 ) : null,

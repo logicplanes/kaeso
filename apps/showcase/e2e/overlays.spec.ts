@@ -12,6 +12,7 @@ test.describe("overlays on a 320px screen", () => {
     const box = (await dialog.boundingBox())!;
     const cancel = (await dialog.getByRole("button", { name: "Cancel" }).boundingBox())!;
     const create = (await dialog.getByRole("button", { name: "Create key" }).boundingBox())!;
+    await expect(dialog.getByRole("button", { name: "Create key" }).locator("[data-shortcut]")).toBeHidden();
     expect(cancel.y).toBe(create.y);
     expect(cancel.x).toBeCloseTo(box.x + 24, 0);
     expect(create.x + create.width).toBeCloseTo(box.x + box.width - 24, 0);
