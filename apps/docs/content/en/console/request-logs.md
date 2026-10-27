@@ -29,7 +29,7 @@ Choose a request to open it:
 | Reply | What the app got back |
 | Raw | The log entry as the Platform API returns it |
 
-The timing keeps Kaeso's own work apart from the provider's. **Kaeso overhead** is the time before Kaeso called the provider: reading the body, checking the key, translating and checking limits. For a stream, **Stream processing** is the time Kaeso spent translating the provider's events for the app, without the waits for either side. The CSV export has both, as `overhead_ms` and `stream_processing_ms`.
+The timing keeps Kaeso's own work apart from the app's and the provider's. **Request upload** is the time the app took to send the request body, from when Kaeso began reading it until all of it had arrived; it grows with the size of the body and the app's connection, not with Kaeso's work. **Kaeso overhead** is Kaeso's own time before it called the provider, without the upload: checking the key, decoding, translating and checking limits. For a stream, **Stream processing** is the time Kaeso spent translating the provider's events for the app, without the waits for either side. The CSV export has all three, as `request_upload_ms`, `overhead_ms` and `stream_processing_ms`.
 
 A failed request shows its error kind, such as **Rate limited**, **Context too long**, **Timeout**, **Client disconnected** or **Client stalled**. Where the provider sent a message, it shows that too. A stream that broke off is logged as a failure, with how far it got.
 

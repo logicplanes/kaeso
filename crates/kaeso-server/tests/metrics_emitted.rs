@@ -58,6 +58,7 @@ async fn model_requests_are_measured() {
         "kaeso_request_duration_seconds",
         "kaeso_time_to_first_byte_seconds",
         "kaeso_gateway_overhead_seconds{provider=\"anthropic\",quantile=",
+        "kaeso_request_upload_seconds{provider=\"anthropic\",quantile=",
         "kaeso_tokens_total{provider=\"anthropic\",kind=\"output\"} 18",
         "kaeso_cost_microusd_total{provider=\"anthropic\"} 100",
         "kaeso_upstream_errors_total{kind=\"overloaded\",provider=\"anthropic\"} 1",

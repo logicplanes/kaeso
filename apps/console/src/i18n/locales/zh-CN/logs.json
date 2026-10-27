@@ -106,6 +106,7 @@
   "logs.inspector.replyUnknownFormat": "这条回复以此控制台尚无法读取的格式记录，按存储原样显示。",
   "logs.inspector.request": "请求",
   "logs.inspector.requestAsSent": "应用发送的原始请求体，格式为 {format}。",
+  "logs.inspector.requestUpload": "请求上传",
   "logs.inspector.route": "路由",
   "logs.inspector.sentBy": "发送方",
   "logs.inspector.serviceAccount": "服务账号",

@@ -261,6 +261,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   ];
   const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
   const timing = [
+    ...(known(e.request_upload_ms) ? [{ label: t("logs.inspector.requestUpload", "Request upload"), value: milliseconds(e.request_upload_ms) }] : []),
     ...(known(e.overhead_ms) ? [{ label: t("logs.inspector.overhead", "Kaeso overhead"), value: milliseconds(e.overhead_ms) }] : []),
     ...(sp && known(sp.processing_ms) ? [{ label: t("logs.inspector.streamProcessing", "Stream processing"), value: milliseconds(sp.processing_ms) }] : []),
   ];

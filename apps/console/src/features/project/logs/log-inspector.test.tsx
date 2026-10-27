@@ -56,6 +56,7 @@ describe("LogInspector", () => {
           stream_progress: { events: 12, bytes: 2048, first_byte_ms: null, keepalives: 3, processing_ms: 0 },
           ttfb_ms: null,
           overhead_ms: 14,
+          request_upload_ms: 0,
           key_id: null,
           has_content: false,
           upstream_request_id: "",
@@ -80,6 +81,7 @@ describe("LogInspector", () => {
     expect(dialog).toHaveTextContent("120 in · 30 out · 10 reasoning");
     const timing = section(dialog, "Timing");
     expect(within(timing).queryByRole("img")).not.toBeInTheDocument();
+    expect(timing).toHaveTextContent("Request uploadUnder 1 ms");
     expect(timing).toHaveTextContent("Kaeso overhead14 ms");
     expect(timing).toHaveTextContent("Stream processingUnder 1 ms");
     const route = section(dialog, "Route");
@@ -123,6 +125,7 @@ describe("LogInspector", () => {
     expect(dialog).toHaveTextContent("/v1/chat/completions · req_0001");
     const timing = section(dialog, "Timing");
     expect(within(timing).getByRole("img")).toHaveAccessibleName("Time to first byte 420 ms of 1.3 s total");
+    expect(timing).toHaveTextContent("Request upload40 ms");
     expect(timing).toHaveTextContent("Kaeso overhead3 ms");
     expect(timing).not.toHaveTextContent("Stream processing");
     expect(within(dialog).getByRole("list", { name: "Summary" })).toHaveTextContent("From the provider");
@@ -216,6 +219,7 @@ describe("LogInspector", () => {
           stream_progress: { events: 1, bytes: 300, first_byte_ms: 320, keepalives: 0 },
           ttfb_ms: null,
           overhead_ms: null,
+          request_upload_ms: null,
         }),
       ],
     });

@@ -106,6 +106,7 @@
   "logs.inspector.replyUnknownFormat": "Diese Antwort wurde in einem Format protokolliert, das diese Konsole noch nicht lesen kann; sie wird so gezeigt, wie sie gespeichert ist.",
   "logs.inspector.request": "Anfrage",
   "logs.inspector.requestAsSent": "Der Body der App, wie gesendet, im Format {format}.",
+  "logs.inspector.requestUpload": "Upload der Anfrage",
   "logs.inspector.route": "Route",
   "logs.inspector.sentBy": "Gesendet von",
   "logs.inspector.serviceAccount": "Dienstkonto",

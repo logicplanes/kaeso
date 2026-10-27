@@ -81,7 +81,7 @@ Every time comes as percentiles over all requests or chunks of a run:
 | Number | Means |
 | --- | --- |
 | Requests/s | Non-streamed requests the gateway answered per second, the mock's time included |
-| Overhead | Kaeso's own time before it called the provider, from the `kaeso` entry of the [`server-timing` header](../api/model-api.md#response-headers). It starts when the request reaches Kaeso's handler |
+| Overhead | Kaeso's own time before it called the provider, from the `kaeso` entry of the [`server-timing` header](../api/model-api.md#response-headers). It starts when the request reaches Kaeso's handler and leaves out the time the client took to send the body |
 | Latency | The client's time for a whole non-streamed request |
 | Added time to first byte | The client's time to the first chunk minus the provider's time to answer, the `upstream` entry of `server-timing`. It holds the overhead, Kaeso's work on the first chunk and the extra connection |
 | Added chunk gap | A percentile of the gaps between the client's reads through Kaeso, minus the same percentile with the mock alone. Values around zero mean Kaeso adds no delay between chunks |

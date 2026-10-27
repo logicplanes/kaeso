@@ -45,12 +45,21 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     }
 }
 
-pub fn server_timing(kaeso: Duration, upstream: Option<Duration>) -> HeaderValue {
-    let ms = |d: Duration| d.as_secs_f64() * 1000.0;
-    let value = match upstream {
-        Some(u) => format!("kaeso;dur={:.3}, upstream;dur={:.3}", ms(kaeso), ms(u)),
-        None => format!("kaeso;dur={:.3}", ms(kaeso)),
-    };
+pub fn server_timing(
+    upload: Option<Duration>,
+    kaeso: Duration,
+    upstream: Option<Duration>,
+) -> HeaderValue {
+    let entry = |name: &str, d: Duration| format!("{name};dur={:.3}", d.as_secs_f64() * 1000.0);
+    let value = [
+        upload.map(|d| entry("upload", d)),
+        Some(entry("kaeso", kaeso)),
+        upstream.map(|d| entry("upstream", d)),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>()
+    .join(", ");
     HeaderValue::from_str(&value).unwrap_or_else(|_| HeaderValue::from_static("kaeso"))
 }
 

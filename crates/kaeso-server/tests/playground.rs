@@ -970,15 +970,20 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms"
         )
     );
     let row = lines.next().unwrap();
     let (_, rest) = row.split_once(",\"playground\",").unwrap();
-    let (timing, breakpoints) = rest.rsplit_once(',').unwrap();
+    let [overhead, processing, breakpoints, upload] = rest.split(',').collect::<Vec<_>>()[..]
+    else {
+        panic!("{row}");
+    };
     assert!(
-        timing.split(',').all(|ms| ms.parse::<u32>().is_ok()),
-        "the overhead and the stream's processing time: {row}"
+        [overhead, processing, upload]
+            .iter()
+            .all(|ms| ms.parse::<u32>().is_ok()),
+        "the overhead, the stream's processing time and the upload: {row}"
     );
     assert!(
         breakpoints.is_empty() || breakpoints.parse::<u16>().is_ok(),

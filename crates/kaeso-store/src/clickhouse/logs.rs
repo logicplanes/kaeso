@@ -57,6 +57,7 @@ pub struct LogRow {
     pub overhead_ms: Option<u32>,
     pub stream_processing_ms: Option<u32>,
     pub cache_breakpoints: Option<u16>,
+    pub request_upload_ms: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
