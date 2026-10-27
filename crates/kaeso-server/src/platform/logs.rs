@@ -751,11 +751,12 @@ pub struct LogView {
     pub has_content: bool,
     #[doc = "For streamed requests: how far the stream got."]
     pub stream_progress: Option<StreamProgressView>,
-    #[doc = "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\n\
-        provider, for requests in a format whose providers cache only the\n\
-        prompt a request marks (`anthropic_messages`); `0` means nothing of the\n\
-        prompt could be read from or written to the cache. `null` for other\n\
-        formats, for requests that ended before reaching the provider and for\n\
+    #[doc = "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\n\
+        encoded for the provider, for requests in a format whose providers\n\
+        cache only the prompt a request marks (`anthropic_messages`); `0` means\n\
+        nothing of the prompt could be read from or written to the cache. The\n\
+        count stays when sending the encoded request then failed. `null` for\n\
+        other formats, for requests refused before Kaeso encoded them and for\n\
         requests logged before Kaeso recorded it."]
     pub cache_breakpoints: Option<u16>,
 }

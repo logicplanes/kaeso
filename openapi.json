@@ -24135,7 +24135,7 @@
                     "null"
                   ],
                   "format": "int32",
-                  "description": "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\nprovider, for requests in a format whose providers cache only the\nprompt a request marks (`anthropic_messages`); `0` means nothing of the\nprompt could be read from or written to the cache. `null` for other\nformats, for requests that ended before reaching the provider and for\nrequests logged before Kaeso recorded it.",
+                  "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in a format whose providers\ncache only the prompt a request marks (`anthropic_messages`); `0` means\nnothing of the prompt could be read from or written to the cache. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
                   "minimum": 0
                 },
                 "client_ip": {
@@ -25473,7 +25473,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "The prompt-cache breakpoints (`cache_control`) Kaeso sent to the\nprovider, for requests in a format whose providers cache only the\nprompt a request marks (`anthropic_messages`); `0` means nothing of the\nprompt could be read from or written to the cache. `null` for other\nformats, for requests that ended before reaching the provider and for\nrequests logged before Kaeso recorded it.",
+            "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in a format whose providers\ncache only the prompt a request marks (`anthropic_messages`); `0` means\nnothing of the prompt could be read from or written to the cache. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
             "minimum": 0
           },
           "client_ip": {
