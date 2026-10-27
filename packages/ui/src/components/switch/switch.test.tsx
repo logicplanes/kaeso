@@ -26,6 +26,17 @@ describe("Switch", () => {
     expect(onChange).not.toHaveBeenCalled();
     expect(s).toHaveAttribute("aria-checked", "false");
   });
+
+  it("keeps focus when it becomes disabled with a reason while focused", () => {
+    const { rerender } = render(<Switch aria-label="Require single sign-on" />);
+    const s = screen.getByRole("switch", { name: "Require single sign-on" });
+    s.focus();
+    rerender(<Switch aria-label="Require single sign-on" disabled disabledReason="Connect an identity provider first" />);
+    expect(document.activeElement).toBe(s);
+    expect(s).toHaveAttribute("aria-disabled", "true");
+    rerender(<Switch aria-label="Require single sign-on" />);
+    expect(document.activeElement).toBe(s);
+  });
 });
 
 describe("Segmented", () => {

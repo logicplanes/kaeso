@@ -33,6 +33,60 @@ describe("Button", () => {
     await userEvent.tab();
     expect(screen.getByRole("button", { name: "Stop" })).toBeDisabled();
   });
+  it("keeps focus when it becomes disabled with a reason while focused", () => {
+    const { rerender } = render(<Button>Add column</Button>);
+    const add = screen.getByRole("button", { name: "Add column" });
+    add.focus();
+    rerender(
+      <Button disabled disabledReason="A table holds at most 12 columns">
+        Add column
+      </Button>,
+    );
+    expect(document.activeElement).toBe(add);
+    expect(screen.getByRole("button", { name: "Add column" })).toBe(add);
+    expect(add).toHaveAttribute("aria-description", "A table holds at most 12 columns");
+    rerender(<Button>Add column</Button>);
+    expect(document.activeElement).toBe(add);
+  });
+
+  it("keeps focus when its label starts and stops being cut off", async () => {
+    const observers: (() => void)[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(private readonly run: () => void) {}
+        observe() {
+          observers.push(this.run);
+        }
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => {
+      run(0);
+      return 0;
+    });
+    let scrollWidth = 120;
+    const width = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(() => scrollWidth);
+    const client = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
+    render(<Button>Read the gateway setup guide</Button>);
+    const button = screen.getByRole("button", { name: "Read the gateway setup guide" });
+    button.focus();
+    const resize = (next: number) => {
+      scrollWidth = next;
+      act(() => observers.forEach((run) => run()));
+    };
+    resize(240);
+    await act(() => lazyModulesSettled());
+    expect(document.activeElement).toBe(button);
+    expect(button).toHaveAttribute("data-base-ui-tooltip-trigger");
+    resize(120);
+    expect(document.activeElement).toBe(button);
+    width.mockRestore();
+    client.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it("is a pill button that calls onClick", async () => {
     const onClick = vi.fn();
     render(<Button onClick={onClick}>Create key</Button>);
