@@ -97,9 +97,11 @@ test("playground requests are in the request log with a Playground tag and filte
     .getByRole("table", { name: "Requests" })
     .getByRole("row")
     .filter({ hasNot: page.getByRole("columnheader"), has: page.locator("time") });
+  const empty = page.getByText("No requests in this range", { exact: true });
   await expect(async () => {
     await page.reload();
-    await expect(rows.first()).toBeVisible({ timeout: 2000 });
+    await expect(rows.first().or(empty)).toBeVisible();
+    expect(await rows.count()).toBeGreaterThan(0);
   }).toPass({ timeout: 30_000 });
   await expect(rows.first().getByText("Playground", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add filter" }).click();
