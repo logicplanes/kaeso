@@ -67,7 +67,7 @@ function timeWidth(spansDays: boolean, layout: LogsLayout): number {
 
 const ROW_END_RESERVE = 48;
 const STATUS_WIDTH = 80;
-const KEPT_WIDTHS = { duration: 104, tokens: 176, cost: 120 } as const;
+const KEPT_WIDTHS = { duration: 104, tokens: 184, cost: 120 } as const;
 
 export function logsLayout(width: number, phone: boolean, spansDays: boolean, shown: readonly ColumnId[]): LogsLayout {
   if (phone) return "phone";

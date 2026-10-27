@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
 import { logRow } from "~/test/fixtures/project-logs";
+import { apply, load } from "~/i18n";
 import { COLUMNS, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
 const shown = COLUMNS.filter((c) => c !== "request" && c !== "agent");
@@ -16,6 +17,15 @@ describe("logsLayout", () => {
     expect(logsLayout(1000, false, true, ["duration"])).toBe("wide");
     expect(logsLayout(700, false, true, shown)).toBe("narrow");
     expect(logsLayout(1200, true, true, shown)).toBe("phone");
+  });
+
+  it("keeps every column at full width in a 1440 pixel window, in every language", async () => {
+    const grid1440 = 1136;
+    for (const language of ["en", "de", "zh-CN"] as const) {
+      apply(await load(language));
+      expect(logsLayout(grid1440, false, true, shown), language).toBe("wide");
+    }
+    apply(await load("en"));
   });
 });
 
