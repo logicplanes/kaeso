@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { OverviewPage, type OverviewSearch } from "~/features/project/overview-page";
 import { periodSearch } from "~/format/period-search";
 
-const BY = ["day", "model", "key", "member"] as const;
+const BY = ["day", "model", "key", "member", "route"] as const;
 
 function overviewSearch(search: Record<string, unknown>): OverviewSearch {
   const by = BY.find((b) => b === search.by);

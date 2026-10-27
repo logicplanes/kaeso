@@ -181,7 +181,7 @@ describe("LogsPage", () => {
     logsData();
     await renderApp(
       projectPath(
-        "logs?range=7d&key=key_web&member=sa:sa_deploy&model=claude-sonnet-4-5&provider=anthropic&status=429&failed=true&error=rate_limited&stream=false&source=playground",
+        "logs?range=7d&key=key_web&member=sa:sa_deploy&model=claude-sonnet-4-5&provider=anthropic&ingress=openai_responses&egress=anthropic_messages&status=429&failed=true&error=rate_limited&stream=false&source=playground",
       ),
     );
 
@@ -192,6 +192,8 @@ describe("LogsPage", () => {
         service_account: "sa_deploy",
         model: "claude-sonnet-4-5",
         provider: "anthropic",
+        ingress_dialect: "openai_responses",
+        egress_dialect: "anthropic_messages",
         status: "429",
         failed: "true",
         error_kind: "rate_limited",
@@ -204,6 +206,8 @@ describe("LogsPage", () => {
     expect(within(toolbar).getByRole("group", { name: "Filter: Member" })).toHaveTextContent("ci-deploy (service account)");
     expect(within(toolbar).getByRole("group", { name: "Filter: Model" })).toHaveTextContent("Claude Sonnet 4.5");
     expect(within(toolbar).getByRole("group", { name: "Filter: Provider" })).toHaveTextContent("Anthropic");
+    expect(within(toolbar).getByRole("group", { name: "Filter: App format" })).toHaveTextContent("OpenAI Responses");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Provider format" })).toHaveTextContent("Anthropic Messages");
     expect(within(toolbar).getByRole("group", { name: "Filter: Status" })).toHaveTextContent("429");
     expect(within(toolbar).getByRole("group", { name: "Filter: Failed only" })).toHaveTextContent("yes");
     expect(within(toolbar).getByRole("group", { name: "Filter: Error kind" })).toHaveTextContent("Rate limited");
@@ -302,6 +306,25 @@ describe("LogsPage", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Source" }));
     await user.click(await screen.findByRole("menuitemradio", { name: "Playground" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ source: "playground" }));
+  });
+
+  it("narrows the list to one route by the app's and the provider's format", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "App format" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "OpenAI Responses" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ ingress: "openai_responses" }));
+
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Provider format" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Anthropic Messages" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ ingress: "openai_responses", egress: "anthropic_messages" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ ingress_dialect: "openai_responses", egress_dialect: "anthropic_messages" }));
   });
 
   it("keeps the not streamed filter", async () => {

@@ -26,9 +26,9 @@ pub struct UsageQuery {
         after `from`; other groupings take any period."]
     pub to: Option<String>,
     #[doc = "`day` (default), `week` (Monday to Sunday, named by its Monday),\n\
-        `month` (named by its first day), `model`, `key`, `member`, or for\n\
-        orgs `project`. A week or month that starts before `from` or ends\n\
-        after `to` counts only the days in the period."]
+        `month` (named by its first day), `model`, `key`, `member`, `route`,\n\
+        or for orgs `project`. A week or month that starts before `from` or\n\
+        ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
 }
 
@@ -38,7 +38,11 @@ pub struct UsageRow {
     #[doc = "The day, the Monday of the week, the first day of the month,\n\
         `provider/model`, key id (`playground` for the requests members made\n\
         in the console's Playground, without a key), member (`user:<id>` or\n\
-        `service_account:<id>`), or project id."]
+        `service_account:<id>`), route (`<app format>:<provider format>:<provider>`,\n\
+        such as `openai_responses:anthropic_messages:anthropic`; both formats are\n\
+        empty for requests made before Kaeso recorded them, and the provider\n\
+        format for requests refused before a provider was chosen), or project\n\
+        id."]
     pub key: String,
     #[doc = "Model requests of the group, made with a key or from the Playground:\n\
         every one, the gateway's own refusals (limits, unknown models,\n\
@@ -58,6 +62,10 @@ pub struct UsageRow {
     pub cache_write_tokens: u64,
     #[doc = "Reasoning tokens."]
     pub reasoning_tokens: u64,
+    #[doc = "The share of the input read from the cache, from 0 to 1: cache reads\n\
+        over uncached input, cache reads and cache writes together; `null` for\n\
+        a group without input."]
+    pub cache_hit_rate: Option<f64>,
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
@@ -66,7 +74,7 @@ pub struct UsageRow {
 fn public_key(group: GroupBy, key: String) -> String {
     let id = |s: &str| Uuid::parse_str(s).ok();
     match group {
-        GroupBy::Day | GroupBy::Week | GroupBy::Month | GroupBy::Model => key,
+        GroupBy::Day | GroupBy::Week | GroupBy::Month | GroupBy::Model | GroupBy::Route => key,
         GroupBy::Project => id(&key).map_or(key, |u| ProjectId::from_uuid(u).to_string()),
         GroupBy::Key => match id(&key) {
             Some(u) if u.is_nil() => "playground".to_owned(),
@@ -83,6 +91,14 @@ fn public_key(group: GroupBy, key: String) -> String {
             _ => key,
         },
     }
+}
+
+fn cache_hit_rate(r: &ch::UsageGroup) -> Option<f64> {
+    let input = r
+        .input_tokens
+        .saturating_add(r.cache_read_tokens)
+        .saturating_add(r.cache_write_tokens);
+    (input > 0).then(|| r.cache_read_tokens as f64 / input as f64)
 }
 
 fn parse_day(field: &str, s: Option<&str>, default: Date) -> ApiResult<Date> {
@@ -121,11 +137,12 @@ async fn usage(
         "model" => GroupBy::Model,
         "key" => GroupBy::Key,
         "member" => GroupBy::Member,
+        "route" => GroupBy::Route,
         "project" if project.is_none() => GroupBy::Project,
         _ => {
             return Err(ApiError::invalid(
                 "group_by",
-                "Use `day`, `week`, `month`, `model`, `key`, `member`, or `project` for orgs.",
+                "Use `day`, `week`, `month`, `model`, `key`, `member`, `route`, or `project` for orgs.",
             ));
         }
     };
@@ -141,6 +158,7 @@ async fn usage(
     Ok(Json(List::complete(
         rows.into_iter()
             .map(|r| UsageRow {
+                cache_hit_rate: cache_hit_rate(&r),
                 key: public_key(group, r.key),
                 requests: r.requests,
                 errors: r.errors,

@@ -168,6 +168,79 @@ async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
     assert_eq!((limited_counts.0, limited_counts.1), (2, 1));
 }
 
+#[tokio::test]
+async fn usage_by_route_shows_how_much_of_the_input_each_route_read_from_the_cache() {
+    let env = common::v1::env(None, None).await;
+    let state = &env.app.state;
+    state.clickhouse.migrate(&state.pg).await.unwrap();
+    let cached = "Hi [mock:gen=5] [mock:in=100] [mock:cached=80]";
+    let uncached = "Hi [mock:gen=5] [mock:in=100] [mock:cached=0]";
+    for text in [cached, cached] {
+        let r = ask(&env, &env.key, messages("claude-haiku-4-5", text)).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("claude-haiku-4-5", uncached)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    env.app.state.in_flight.settled().await;
+    kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+
+    let rate = |body: &Value| -> Vec<(String, u64, Option<f64>)> {
+        body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| {
+                (
+                    r["key"].as_str().unwrap().to_owned(),
+                    r["requests"].as_u64().unwrap(),
+                    r["cache_hit_rate"].as_f64(),
+                )
+            })
+            .collect()
+    };
+    for scope in [format!("/orgs/{}", env.owner.org_id), base(&env)] {
+        let r = env
+            .app
+            .get(&format!("{scope}/usage?group_by=route"), &env.owner.cookie)
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        assert_eq!(
+            rate(&r.body),
+            vec![
+                (
+                    "anthropic_messages:anthropic_messages:anthropic".to_owned(),
+                    2,
+                    Some(0.8)
+                ),
+                (
+                    "openai_chat:anthropic_messages:anthropic".to_owned(),
+                    1,
+                    Some(0.0)
+                ),
+            ]
+        );
+    }
+    let r = env
+        .app
+        .get(
+            &format!("{}/usage?group_by=model", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    let both = 160.0 / 300.0;
+    assert_eq!(
+        rate(&r.body),
+        vec![("anthropic/claude-haiku-4-5".to_owned(), 3, Some(both))]
+    );
+}
+
 async fn rollup_day(env: &Env, day: &str, requests: u64) {
     env.app
         .state

@@ -969,16 +969,20 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         String::from_utf8(csv.into_body().collect().await.unwrap().to_bytes().to_vec()).unwrap();
     let mut lines = csv.lines();
     assert!(
-        lines
-            .next()
-            .unwrap()
-            .ends_with(",usage_estimated,source,overhead_ms,stream_processing_ms")
+        lines.next().unwrap().ends_with(
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints"
+        )
     );
     let row = lines.next().unwrap();
-    let (_, timing) = row.split_once(",\"playground\",").unwrap();
+    let (_, rest) = row.split_once(",\"playground\",").unwrap();
+    let (timing, breakpoints) = rest.rsplit_once(',').unwrap();
     assert!(
         timing.split(',').all(|ms| ms.parse::<u32>().is_ok()),
         "the overhead and the stream's processing time: {row}"
+    );
+    assert!(
+        breakpoints.is_empty() || breakpoints.parse::<u16>().is_ok(),
+        "{row}"
     );
     assert!(lines.next().is_none());
 

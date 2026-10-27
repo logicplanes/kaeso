@@ -18,7 +18,9 @@ The organization's **Overview** shows requests, tokens, cost and errors for a pe
 
 The page compares each total with the period before it, except for today, which isn't over yet, and all time. Charts count by UTC day. They draw a day, week or month that is still running dashed or lighter, and its tooltip says "so far". Seeing usage needs the right **View org usage**, and seeing cost **View org costs**.
 
-A project's **Overview** shows the same numbers for one project, broken down by time, model, key or member. It also lists the project's limits with what is used, and its recent errors.
+A project's **Overview** shows the same numbers for one project, broken down by time, model, key, member or route. It also lists the project's limits with what is used, and its recent errors.
+
+A route is the app's format, the format Kaeso sent to the provider, and the provider. Its breakdown has a **Cache hit** column: the share of the input read from the prompt cache. The same model can hit the cache through one route and never through another, so **By route** shows where caching fails. Requests from before Kaeso recorded routes show as **Route not recorded**.
 
 ## Change organization settings
 

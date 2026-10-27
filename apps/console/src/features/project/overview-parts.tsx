@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { DataTable, Empty, InsetContent, LimitMeter, List, ModelLabel, Section, Segmented, StatusCode, Text, col } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { DataTable, Empty, InsetContent, LimitMeter, List, ModelLabel, ProviderBadge, Section, Segmented, StatusCode, Text, col } from "@logicplanes/kaeso-ui";
+import { formatNumber, formatPercent, formatRelative, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { LimitView, UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
@@ -26,6 +26,7 @@ const byOptions = (g: Granularity) => [
   { value: "model", label: t("project.overview.byModel", "By model") },
   { value: "key", label: t("project.overview.byKey", "By key") },
   { value: "member", label: t("project.overview.byMember", "By member") },
+  { value: "route", label: t("project.overview.byRoute", "By route") },
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
@@ -87,6 +88,7 @@ export function Breakdown({
       );
     }
     if (by === "key") return <Text truncate>{keyName(r.key)}</Text>;
+    if (by === "route") return <RouteLabel route={r.key} providerName={providers.name} />;
     const [kind, id = ""] = r.key.split(":");
     const sa = kind === "service_account";
     const name = partyName({ kind: sa ? "service_account" : "user", id });
@@ -99,7 +101,15 @@ export function Breakdown({
         ? common.model()
         : by === "key"
           ? t("project.overview.key", "Key")
-          : t("project.overview.member", "Member");
+          : by === "route"
+            ? t("project.overview.route", "Route")
+            : t("project.overview.member", "Member");
+  const cache = col.custom(
+    { id: "cache", header: t("project.overview.cacheHit", "Cache hit"), size: NUMBER_WIDTH, priority: by === "route" ? 1 : 3 },
+    (r: UsageRow) => r.cache_hit_rate ?? null,
+    (v: number | null) => (v === null ? "—" : formatPercent(v, 0)),
+    { align: "end" },
+  );
   const columns = [
     col.custom(
       { id: "key", header, size: LABEL_WIDTH, minWidth: LABEL_MIN_WIDTH, priority: 1, grow: true },
@@ -143,6 +153,7 @@ export function Breakdown({
         align: "end",
       },
     ),
+    ...(by === "route" ? [] : [cache]),
     ...(showCost
       ? [
           col.custom(
@@ -153,14 +164,15 @@ export function Breakdown({
           ),
         ]
       : []),
+    ...(by === "route" ? [cache] : []),
   ].map((c) => ({ ...c, enableSorting: false, enableResizing: false }));
   return (
     <Section
       title={t("project.overview.breakdown", "Breakdown")}
       description={
         showCost
-          ? t("project.overview.breakdownWithCost", "Requests, errors, tokens and cost in the period")
-          : t("project.overview.breakdownHint", "Requests, errors and tokens in the period")
+          ? t("project.overview.breakdownWithCost", "Requests, errors, tokens, cache hits and cost in the period")
+          : t("project.overview.breakdownHint", "Requests, errors, tokens and cache hits in the period")
       }
       actions={
         <Segmented
@@ -183,6 +195,35 @@ export function Breakdown({
         empty={<Empty size="compact" title={t("project.overview.noRequests", "No requests in this period")} />}
       />
     </Section>
+  );
+}
+
+const SHORT_DIALECTS: Record<string, string> = {
+  anthropic_messages: "Messages",
+  openai_chat: "Chat",
+  openai_responses: "Responses",
+  openai_embeddings: "Embeddings",
+};
+const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
+
+function RouteLabel({ route, providerName }: { route: string; providerName: (id: string) => string }) {
+  const [ingress = "", egress = "", provider = ""] = route.split(":");
+  return (
+    <span className="flex min-w-0 items-center gap-8">
+      {provider && <ProviderBadge provider={provider} name={providerName(provider)} size="sm" />}
+      {ingress ? (
+        <span className="flex min-w-0 flex-col">
+          <Text truncate>{shortDialectLabel(ingress)}</Text>
+          {egress && (
+            <Text variant="caption" tone="tertiary" truncate>
+              {`→ ${shortDialectLabel(egress)}`}
+            </Text>
+          )}
+        </span>
+      ) : (
+        <Text tone="secondary">{t("project.overview.routeNotRecorded", "Route not recorded")}</Text>
+      )}
+    </span>
   );
 }
 

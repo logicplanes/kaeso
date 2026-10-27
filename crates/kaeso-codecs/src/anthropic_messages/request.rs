@@ -564,7 +564,7 @@ pub(crate) fn encode_request(
                         .parameters
                         .as_ref()
                         .map_or_else(empty_parameters, |p| p.clone().into_inner()),
-                    cache_control: cache.map(super::blocks::encode_cache),
+                    cache_control: enc.cache(cache),
                     strict: f.strict,
                     ..ToolW::default()
                 };
@@ -582,6 +582,10 @@ pub(crate) fn encode_request(
     }
 
     let body = to_body(&own_ext(w, &r.extras))?;
+    if matches!(req, Request::Generate(_)) {
+        let automatic = own && r.extras.fields.contains_key("cache_control");
+        ctx.cache_breakpoints = Some(enc.breakpoints + usize::from(automatic));
+    }
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
     let betas: &[&str] = match rebuilt {

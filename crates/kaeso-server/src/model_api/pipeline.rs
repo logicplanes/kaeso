@@ -207,6 +207,7 @@ fn blank_outcome() -> Outcome {
         stream_progress: None,
         usage_estimated: false,
         content_kept: false,
+        cache_breakpoints: None,
     }
 }
 
@@ -878,6 +879,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    rec.outcome().cache_breakpoints = ectx.cache_breakpoints;
     if !ectx.left_out.is_empty() {
         tracing::info!(
             left_out = %ectx.left_out.join(", "),

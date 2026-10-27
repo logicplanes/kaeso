@@ -143,6 +143,7 @@ pub struct Outcome {
     pub stream_progress: Option<StreamProgress>,
     pub usage_estimated: bool,
     pub content_kept: bool,
+    pub cache_breakpoints: Option<usize>,
 }
 
 impl Outcome {

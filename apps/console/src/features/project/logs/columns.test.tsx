@@ -148,4 +148,32 @@ describe("logColumns", () => {
     expect(ok).toHaveClass("@cell-sm:inline-flex");
     expect(failed).toHaveClass("@cell-md:inline-flex");
   });
+
+  it("shows how much of the input was read from the cache, and marks a request sent without a breakpoint", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const usage = { input_tokens: 25, output_tokens: 10, cache_read_tokens: 75, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false };
+    render(
+      <DataTable
+        aria-label="Requests"
+        data={[
+          logRow({ usage }),
+          logRow({
+            id: "req_0002",
+            egress_dialect: "anthropic_messages",
+            cache_breakpoints: 0,
+            usage: { ...usage, input_tokens: 563_000, cache_read_tokens: 0 },
+          }),
+          logRow({ id: "req_0003", ingress_dialect: "openai_embeddings", egress_dialect: "openai_embeddings" }),
+        ]}
+        columns={[all.tokens]}
+        getRowId={(r) => r.id}
+      />,
+    );
+    const [cached, unmarked, embedding] = screen.getAllByRole("cell");
+    expect(cached).toHaveTextContent("100 / 10· 75%");
+    expect(within(cached as HTMLElement).getByText("· 75%")).toHaveClass("text-fg-tertiary");
+    expect(unmarked).toHaveTextContent("563,000 / 10· 0%");
+    expect(within(unmarked as HTMLElement).getByText("· 0%")).toHaveClass("text-warning-text");
+    expect(embedding).toHaveTextContent(/^120 \/ 48$/);
+  });
 });
