@@ -86,6 +86,8 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   const hits = dialog.getByRole("table", { name: "Models on models.dev" }).getByRole("rowgroup").last().getByRole("row");
   await expect(hits).toHaveCount(2);
   await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
+  // A Tab pressed as the dialog's resize animation ends can drop focus to the first field.
+  await expect(dialog).not.toHaveAttribute("data-resizing");
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
     dialog.getByRole("switch", { name: "Include deprecated" }),
