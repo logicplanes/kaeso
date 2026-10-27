@@ -12,7 +12,7 @@ use crate::provider::{ProviderId, known_ids};
 
 pub const EMBEDDED: &str = include_str!("../data/models-dev.json");
 
-pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-26 14:34:37 UTC);
+pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-27 13:02:41 UTC);
 
 pub const DEFAULT_URL: &str = "https://models.dev/api.json";
 
