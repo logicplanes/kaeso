@@ -178,6 +178,7 @@ const zhCN: Readonly<Record<string, string>> = {
   "format.thousands": "{value}千",
   "format.yesterday": "昨天",
   "gauge.near": "接近上限",
+  "gauge.noData": "无数据",
   "gauge.over": "已超出上限",
   "heatmap.cell": "{row} {column}：{value}",
   "heatmap.cellHeading": "{row} {column}",

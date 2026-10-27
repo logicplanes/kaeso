@@ -90,6 +90,43 @@ describe("BarChart edge cases", () => {
     expect(texts(container)).toEqual(expect.arrayContaining(["10", "5", "20", "8"]));
   });
 
+  it("writes a missing value as a dash in its label, tooltip, live line and table, and leaves it out of the shares", async () => {
+    const series = [
+      { id: "i", label: "Input", values: [4, Number.NaN] },
+      { id: "o", label: "Output", values: [2, 6] },
+    ];
+    const { container } = render(<BarChart aria-label="Tokens" layout="horizontal" categories={["web", "worker"]} series={series} highlight={1} />);
+    expect(texts(container)).toEqual(expect.arrayContaining(["4", "2", "–", "6"]));
+    const tip = container.querySelector("div[role=presentation]")!;
+    expect(tip).toHaveTextContent(/^worker\s*Input\s*–\s*Output\s*6\s*100%$/);
+    await userEvent.tab();
+    await userEvent.keyboard("{End}");
+    expect(live()).toBe("worker: Input –, Output 6");
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("worker–6");
+    expect(container).not.toHaveTextContent("NaN");
+  });
+
+  it("totals only the values it has when it stacks", async () => {
+    render(
+      <BarChart
+        aria-label="Tokens"
+        layout="stacked"
+        categories={week}
+        series={[
+          { id: "i", label: "Input", values: [1, Number.NaN, 3] },
+          { id: "o", label: "Output", values: [3, 2, Number.POSITIVE_INFINITY] },
+        ]}
+        highlight={1}
+      />,
+    );
+    const tip = document.querySelector("div[role=presentation]")!;
+    expect(tip).toHaveTextContent(/^Tue\s*Input\s*–\s*Output\s*2\s*100%$/);
+    await userEvent.tab();
+    await userEvent.keyboard("{End}");
+    expect(live()).toBe("Wed: Input 3, Output –");
+    expect(screen.getByRole("table", { hidden: true })).not.toHaveTextContent(/NaN|∞/);
+  });
+
   it("toggles series from the legend, and says so when every series is hidden", async () => {
     render(
       <BarChart

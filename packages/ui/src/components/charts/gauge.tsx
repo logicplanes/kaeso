@@ -23,7 +23,8 @@ export const Gauge = forwardRef<
   const t = useUiText();
   const W = 180;
   const R = 82;
-  const [drawn] = useTweened([Math.max(0, Math.min(1, value))]);
+  const known = Number.isFinite(value);
+  const [drawn] = useTweened([known ? Math.max(0, Math.min(1, value)) : 0]);
   const a = (f: number) => Math.PI * (1 - f);
   const pt = (f: number, r: number) => [W / 2 + r * Math.cos(a(f)), 94 - r * Math.sin(a(f))] as const;
   const path = (from: number, to: number) => {
@@ -31,13 +32,14 @@ export const Gauge = forwardRef<
     const [x2, y2] = pt(to, R);
     return `M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}`;
   };
-  const now = Math.round(value * 100);
-  const over = value >= 1;
-  const near = !over && value >= Math.min(...thresholds, 1);
+  const now = known ? Math.round(value * 100) : 0;
+  const over = known && value >= 1;
+  const near = known && !over && value >= Math.min(...thresholds, 1);
   const tone = over ? "var(--k-danger)" : near ? "var(--k-warning)" : "var(--k-viz-1)";
   const status = over ? t("gauge.over", "Over the limit") : near ? t("gauge.near", "Near the limit") : null;
-  const shown = valueLabel ?? formatPercent(value, 0);
-  const spoken = [typeof shown === "string" ? shown : formatPercent(value, 0), typeof label === "string" ? label : null, status].filter(Boolean).join(", ");
+  const shown = valueLabel ?? (known ? formatPercent(value, 0) : "–");
+  const spokenValue = typeof valueLabel === "string" ? valueLabel : known ? formatPercent(value, 0) : t("gauge.noData", "No data");
+  const spoken = [spokenValue, typeof label === "string" ? label : null, status].filter(Boolean).join(", ");
   return (
     <div
       ref={ref}

@@ -93,7 +93,7 @@ export const docs = {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       label: 'A caption under the arc ("of $500.00 budget"); it wraps when long.',
       thresholds: "Fractions marked as ticks on the arc (`[0.8]` by default). From the lowest one, the arc turns to warning.",
-      value: "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.",
+      value: "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger; a missing value (NaN) shows a dash and no arc.",
       valueLabel: "Replaces the value in the center, which is otherwise the percentage. Pass a string so screen readers hear it with the unit.",
     },
   },
