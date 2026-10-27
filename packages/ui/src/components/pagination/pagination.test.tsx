@@ -44,6 +44,17 @@ describe("Pagination pages", () => {
     expect(screen.getByRole("button", { name: "Page 12" })).toHaveAttribute("aria-current", "page");
   });
 
+  it("brings a page past the end back to the last page when that page is pressed", async () => {
+    const onPageChange = vi.fn();
+    const { rerender } = render(<Pagination variant="pages" page={5} pageCount={4} onPageChange={onPageChange} />);
+    expect(screen.getByRole("button", { name: "Page 4" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(screen.getByRole("button", { name: "Page 4" }));
+    expect(onPageChange).toHaveBeenCalledWith(4);
+    rerender(<Pagination variant="pages" page={4} pageCount={4} onPageChange={onPageChange} />);
+    await userEvent.click(screen.getByRole("button", { name: "Page 4" }));
+    expect(onPageChange).toHaveBeenCalledTimes(1);
+  });
+
   it("shows every page when there are seven or fewer", () => {
     render(<Pages count={3} />);
     expect(screen.getAllByRole("button", { name: /^Page / }).map((b) => b.textContent)).toEqual(["1", "2", "3"]);

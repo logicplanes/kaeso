@@ -202,7 +202,7 @@ function DataTableInner<T>(
   const [focusRow, setFocusRow] = useState(0);
   const [zone, setZone] = useState<"head" | "body">("body");
   const [headStop, setHeadStop] = useState(0);
-  const [anchor, setAnchor] = useState<number | null>(null);
+  const anchor = useRef<{ id: string; base: RowSelectionState } | null>(null);
   const sorting = sortingProp ?? sortingInner;
   const rowSelection = selection ?? selectionInner;
   const columns = useMemo<ColumnDef<T, any>[]>(() => {
@@ -244,6 +244,7 @@ function DataTableInner<T>(
     state: { sorting, rowSelection },
     onSortingChange: (u) => {
       const next = typeof u === "function" ? u(sorting) : u;
+      anchor.current = null;
       if (!sortingProp) setSortingInner(next);
       onSortingChange?.(next);
     },
@@ -421,8 +422,11 @@ function DataTableInner<T>(
 
   const page = () => Math.max(1, Math.floor((getScrollElement()?.clientHeight ?? 400) / rowHeight) - 1);
   const selectRange = (from: number, to: number) => {
-    const next = { ...rowSelection };
-    for (const r of rows.slice(Math.min(from, to), Math.max(from, to) + 1)) if (r.getCanSelect()) next[r.id] = true;
+    const found = anchor.current ? rows.findIndex((r) => r.id === anchor.current?.id) : -1;
+    if (found < 0) anchor.current = { id: rows[from]!.id, base: rowSelection };
+    const start = found < 0 ? from : found;
+    const next = { ...anchor.current?.base };
+    for (const r of rows.slice(Math.min(start, to), Math.max(start, to) + 1)) if (r.getCanSelect()) next[r.id] = true;
     table.setRowSelection(next);
   };
   const onRowKeyDown = (e: KeyboardEvent<HTMLDivElement>, row: Row<T>, i: number) => {
@@ -452,6 +456,7 @@ function DataTableInner<T>(
     if (e.metaKey || e.ctrlKey) {
       if (e.key.toLowerCase() === "a" && selectable && !e.shiftKey) {
         e.preventDefault();
+        anchor.current = null;
         table.toggleAllRowsSelected(true);
       }
       return;
@@ -459,13 +464,10 @@ function DataTableInner<T>(
     const to = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: rows.length - 1, PageDown: i + page(), PageUp: i - page() }[e.key];
     if (to !== undefined) {
       e.preventDefault();
-      if (to < 0 && focusHead(headStop)) return;
+      if (e.key === "ArrowUp" && !e.shiftKey && to < 0 && focusHead(headStop)) return;
       const next = Math.max(0, Math.min(rows.length - 1, to));
-      if (e.shiftKey && selectable) {
-        const from = anchor ?? i;
-        setAnchor(from);
-        selectRange(from, next);
-      } else setAnchor(null);
+      if (e.shiftKey && selectable) selectRange(i, next);
+      else anchor.current = null;
       focusAt(next);
     } else if (e.shiftKey) {
       return;
@@ -479,9 +481,11 @@ function DataTableInner<T>(
       onRowClick?.(row.original);
     } else if ((e.key === " " || e.key === "x") && selectable) {
       e.preventDefault();
+      anchor.current = null;
       if (row.getCanSelect()) row.toggleSelected();
     } else if (e.key === "Escape" && selectable && Object.keys(rowSelection).length) {
       e.preventDefault();
+      anchor.current = null;
       table.toggleAllRowsSelected(false);
     }
   };
@@ -507,6 +511,7 @@ function DataTableInner<T>(
           if (i !== focusRow) setFocusRow(i);
         }}
         onClick={(e) => {
+          anchor.current = null;
           if ((e.target as HTMLElement).closest("button, a, [role=checkbox]")) return;
           onRowClick?.(row.original);
         }}
@@ -660,6 +665,7 @@ function DataTableInner<T>(
           onFocus={(e) => {
             const at = headTargets(head.current).indexOf(e.target as HTMLElement);
             if (at < 0) return;
+            anchor.current = null;
             setZone("head");
             setHeadStop(at);
           }}
@@ -732,7 +738,7 @@ function DataTableInner<T>(
           )}
         </div>
       </div>
-      {hasMore && <Pagination variant="load-more" hasMore loading={loadingMore} onLoadMore={onLoadMore} />}
+      <Pagination variant="load-more" hasMore={!!hasMore} loading={loadingMore} onLoadMore={onLoadMore} />
     </div>
   );
 }

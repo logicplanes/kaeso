@@ -91,7 +91,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
               aria-current={p === current ? "page" : undefined}
               aria-label={t("pagination.page", "Page {page}", { page: String(p) })}
               onClick={() => {
-                if (p !== current) onPageChange?.(p);
+                if (p !== page) onPageChange?.(p);
               }}
               className={cn(
                 "relative inline-flex h-32 min-w-40 cursor-pointer items-center justify-center rounded-pill px-8 text-body font-medium tabular transition-control tap-target focus-ring-inset",

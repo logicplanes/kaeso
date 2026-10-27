@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataTable } from "./data-table.js";
 import { col } from "./columns.js";
@@ -172,5 +172,83 @@ describe("DataTable keyboard model", () => {
   it("says how to recover when loading failed and there is no retry", () => {
     render(<DataTable aria-label="Keys" data={[]} columns={columns} error="503" />);
     expect(screen.getByRole("alert")).toHaveTextContent("Reload the page to try again.");
+  });
+});
+
+describe("DataTable ranges and pages", () => {
+  const selected = () => screen.getAllByRole("row", { selected: true }).map((r) => within(r).getAllByRole("cell")[2]?.textContent);
+  const table = () => <DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable onRowClick={() => undefined} />;
+
+  it("shrinks a range when Shift and an arrow turn back toward where it began", async () => {
+    const user = userEvent.setup();
+    render(table());
+    row("checkout-web").focus();
+    await user.keyboard("{Shift>}{ArrowDown}{ArrowDown}{/Shift}");
+    expect(selected()).toEqual(["checkout-web", "ci-runner", "staging"]);
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+    expect(selected()).toEqual(["checkout-web", "ci-runner"]);
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+    expect(selected()).toEqual(["checkout-web"]);
+  });
+
+  it("starts a new range at the row last clicked, keeping the rows already selected", async () => {
+    const user = userEvent.setup();
+    render(table());
+    row("checkout-web").focus();
+    await user.keyboard("{Shift>}{ArrowDown}{/Shift}");
+    expect(selected()).toEqual(["checkout-web", "ci-runner"]);
+    await user.click(screen.getByText("staging"));
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+    expect(selected()).toEqual(["checkout-web", "ci-runner", "staging"]);
+  });
+
+  it("starts a new range at the row last toggled with Space", async () => {
+    const user = userEvent.setup();
+    render(table());
+    row("checkout-web").focus();
+    await user.keyboard("{Shift>}{ArrowDown}{/Shift}");
+    await user.keyboard(" ");
+    expect(selected()).toEqual(["checkout-web"]);
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+    expect(selected()).toEqual(["checkout-web", "ci-runner"]);
+  });
+
+  it("starts a new range after the rows are sorted", async () => {
+    const user = userEvent.setup();
+    render(table());
+    row("checkout-web").focus();
+    await user.keyboard("{Shift>}{ArrowDown}{/Shift}");
+    fireEvent.click(screen.getByRole("button", { name: "Cost" }));
+    expect(
+      screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((r) => within(r).getAllByRole("cell")[2]?.textContent),
+    ).toEqual(["ci-runner", "checkout-web", "staging"]);
+    row("staging").focus();
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+    expect(selected()).toEqual(["ci-runner", "checkout-web", "staging"]);
+  });
+
+  it("pages up to the first row, not into the header; only the up arrow climbs there", async () => {
+    const user = userEvent.setup();
+    const height = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(400);
+    try {
+      render(table());
+      row("staging").focus();
+      await user.keyboard("{PageUp}");
+      expect(row("checkout-web")).toHaveFocus();
+      await user.keyboard("{PageUp}");
+      expect(row("checkout-web")).toHaveFocus();
+      await user.keyboard("{PageDown}");
+      expect(row("staging")).toHaveFocus();
+      await user.keyboard("{Shift>}{PageUp}{/Shift}");
+      expect(row("checkout-web")).toHaveFocus();
+      expect(selected()).toEqual(["checkout-web", "ci-runner", "staging"]);
+      await user.keyboard("{ArrowUp}");
+      expect(screen.getByRole("checkbox", { name: "Select all rows" })).toHaveFocus();
+    } finally {
+      height.mockRestore();
+    }
   });
 });
