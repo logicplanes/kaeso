@@ -297,7 +297,7 @@ describe("KeySheet", () => {
 
     const reveal = await screen.findByRole("dialog", { name: "Key rotated" });
     expect(within(reveal).getByText("Copy the new key now: it's shown once, and the old key stops in 1 hour.")).toBeInTheDocument();
-    expect(within(reveal).getByRole("textbox", { name: /^Secret for/ })).toHaveTextContent(createdKey().secret);
+    expect(within(reveal).getByRole("textbox", { name: /^Key for/ })).toHaveTextContent(createdKey().secret);
     expect(requests("POST", `${KEY}/rotate`).map((r) => r.body)).toEqual([{ grace_hours: 1, expires_in_days: 90 }]);
     await user.click(within(reveal).getByRole("button", { name: "Finish" }));
     await user.click(within(await screen.findByRole("alertdialog", { name: "Did you copy the key?" })).getByRole("button", { name: "Close without copying" }));

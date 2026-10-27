@@ -1,5 +1,6 @@
 import { Input, icons, type InputSize } from "@logicplanes/kaeso-ui";
-import { Matrix, StateSection } from "~/lib/states";
+import { StateSection } from "~/lib/states";
+import { FIELD_STATES, StateGrid } from "~/lib/state-grid";
 
 export const meta = {
   title: "Input",
@@ -16,7 +17,12 @@ export const meta = {
 };
 export const examples = [
   { id: "basic", title: "Basic", fn: "Basic" },
-  { id: "field", title: "With label and help", fn: "WithField", description: "An invalid value gets the danger ring; what is wrong goes in a toast." },
+  {
+    id: "field",
+    title: "With label and help",
+    fn: "WithField",
+    description: "An invalid value gets the danger ring and a message under the field that says what to enter.",
+  },
   { id: "sizes", title: "Sizes", fn: "Sizes" },
   { id: "addons", title: "Icon, prefix and suffix", fn: "Addons" },
   { id: "readonly", title: "Read-only and disabled", fn: "ReadOnly" },
@@ -32,7 +38,7 @@ export function WithField() {
   return (
     <div className="flex w-360 flex-col gap-24">
       <Input label="Key name" description="Shown in logs and the audit log." placeholder="checkout-web" />
-      <Input label="Monthly budget" defaultValue="-20" suffix="USD" invalid />
+      <Input label="Monthly budget" defaultValue="-20" suffix="USD" align="end" error="Enter an amount of 0 or more." />
     </div>
   );
 }
@@ -62,47 +68,62 @@ export function ReadOnly() {
     </div>
   );
 }
+const INPUT_KINDS = [
+  { label: "Empty", id: "empty" },
+  { label: "Filled", id: "filled" },
+];
+
 export function States() {
   return (
     <>
-      <Matrix
+      <StateGrid
         title="States"
-        rows={[{ label: "empty" }, { label: "filled" }]}
-        columns={[
-          { label: "Rest", props: {} },
-          { label: "Hover", props: { "data-force": "hover" } },
-          { label: "Focus", props: { "data-force": "focus" } },
-          { label: "Invalid", props: { invalid: true } },
-          { label: "Disabled", props: { disabled: true } },
-          { label: "Read-only", props: { readOnly: true } },
-        ]}
-        render={(r, p) => (
+        kinds={INPUT_KINDS}
+        states={FIELD_STATES}
+        render={(k, p) => (
           <div className="w-200">
-            <Input aria-label="Key name" placeholder="checkout-web" {...(r.label === "filled" ? { defaultValue: "checkout-web" } : {})} {...p} />
+            <Input aria-label="Key name" placeholder="checkout-web" {...(k.id === "filled" ? { defaultValue: "checkout-web" } : {})} {...p} />
           </div>
         )}
       />
-      <Matrix
-        title="Sizes × content"
-        rows={(["sm", "md", "lg", "xl"] as InputSize[]).map((s) => ({ label: s }))}
-        columns={[
-          { label: "Text", props: {} },
-          { label: "Icon", props: { leadingIcon: icons.search } },
-          { label: "Prefix", props: { prefix: "https://" } },
-          { label: "Suffix", props: { suffix: "USD", align: "end" } },
+      <StateGrid
+        title="Content × states"
+        kinds={[
+          { label: "Prefix", id: "prefix" },
+          { label: "Icon and suffix", id: "suffix" },
         ]}
-        render={(r, p) => (
+        states={FIELD_STATES.filter((s) => ["rest", "focus", "disabled", "read-only"].includes(s.id))}
+        render={(k, p) => (
           <div className="w-200">
-            <Input size={r.label as InputSize} aria-label="Value" defaultValue="1200" {...p} />
+            {k.id === "prefix" ? (
+              <Input aria-label="Gateway URL" prefix="https://" defaultValue="kaeso.example.com" {...p} />
+            ) : (
+              <Input aria-label="Budget" leadingIcon={icons.budget} suffix="USD" align="end" defaultValue="1,200.00" {...p} />
+            )}
           </div>
         )}
       />
+      <StateSection title="Sizes">
+        <div className="flex w-240 flex-col gap-12">
+          {(["sm", "md", "lg", "xl"] as InputSize[]).map((s) => (
+            <Input key={s} size={s} aria-label={`Size ${s}`} prefix="https://" defaultValue="kaeso.example.com" />
+          ))}
+        </div>
+      </StateSection>
       <StateSection title="Field">
-        <div className="flex w-640 flex-col gap-24">
+        <div className="flex w-560 flex-col gap-24">
           <Input label="Key name" description="Shown in logs and the audit log." defaultValue="checkout-web" />
-          <Input label="Monthly budget" defaultValue="-20" suffix="USD" invalid />
+          <Input
+            label="Monthly budget"
+            description="Requests stop once this is spent."
+            error="Enter an amount of 0 or more."
+            defaultValue="-20"
+            suffix="USD"
+            align="end"
+          />
           <Input label="Description" optional placeholder="What this key is for" />
           <Input label="Rate limit" layout="horizontal" description="Requests per minute for this key." defaultValue="600" suffix="/ min" />
+          <Input label="Origin" defaultValue="https://checkout.northwind.example/api/v2/callbacks/payment-confirmation" />
         </div>
       </StateSection>
     </>

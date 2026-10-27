@@ -31,7 +31,7 @@ describe("ParameterPanel reasoning and limits", () => {
   it("takes a positive whole number of output tokens, or none", () => {
     const onChange = vi.fn();
     render(<ParameterPanel value={{}} onValueChange={onChange} sampling={false} instructions={false} />);
-    const input = screen.getByRole("textbox", { name: "Max output tokens" });
+    const input = screen.getByRole("spinbutton", { name: "Max output tokens" });
     fireEvent.change(input, { target: { value: "1024.6" } });
     expect(onChange).toHaveBeenLastCalledWith({ maxOutputTokens: 1025 });
     fireEvent.change(input, { target: { value: "0" } });

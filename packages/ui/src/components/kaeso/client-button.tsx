@@ -22,10 +22,14 @@ export interface ClientButtonProps {
   "aria-label": string;
   onClick?: (() => void) | undefined;
   className?: string | undefined;
+  "data-force"?: string | undefined;
 }
 
-/** An agent client's mark on a raised tile, as a button that opens how to connect it. Its tooltip is its label. */
-export const ClientButton = forwardRef<HTMLButtonElement, ClientButtonProps>(function ClientButton({ client, "aria-label": label, onClick, className }, ref) {
+/** An agent client's mark in a raised circle, as a button that opens how to connect it. Its tooltip is its label. */
+export const ClientButton = forwardRef<HTMLButtonElement, ClientButtonProps>(function ClientButton(
+  { client, "aria-label": label, onClick, className, "data-force": force },
+  ref,
+) {
   return (
     <Tooltip content={label}>
       <button
@@ -33,9 +37,10 @@ export const ClientButton = forwardRef<HTMLButtonElement, ClientButtonProps>(fun
         type="button"
         aria-label={label}
         data-client={client}
+        {...(force ? { "data-force": force } : {})}
         onClick={onClick}
         className={cn(
-          "inline-flex size-32 shrink-0 items-center justify-center rounded-org text-fg material-secondary transition-control focus-ring",
+          "relative inline-flex size-32 shrink-0 items-center justify-center rounded-pill text-fg material-secondary transition-control focus-ring tap-target",
           className,
         )}
       >

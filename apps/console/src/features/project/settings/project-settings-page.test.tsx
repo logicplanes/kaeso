@@ -149,7 +149,7 @@ describe("project settings", () => {
     setUp({ view: project({ is_default: false, archived_at: "2026-10-19T12:00:00Z", max_key_lifetime_days: 30 }) });
     const { user } = await renderApp(projectPath("settings"));
 
-    expect(await screen.findByRole("textbox", { name: "Maximum key lifetime" })).toBeDisabled();
+    expect(await screen.findByRole("spinbutton", { name: "Maximum key lifetime" })).toBeDisabled();
     await hoverReason(user, screen.getByRole("button", { name: "Save" }), "An archived project can't change");
   });
 
@@ -199,7 +199,7 @@ describe("key lifetime", () => {
     expect(await screen.findByText("At most 30 days.")).toBeInTheDocument();
     const inherit = screen.getByRole("switch", { name: "Use the organization's limit" });
     expect(inherit).toBeChecked();
-    expect(screen.queryByRole("textbox", { name: "Maximum key lifetime" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Maximum key lifetime" })).not.toBeInTheDocument();
     await user.click(inherit);
     expect(await notifications().findByText("Key lifetime saved")).toBeInTheDocument();
     expect(requests("PUT", KEY_POLICY).map((r) => r.body)).toEqual([{ max_key_lifetime_days: 30 }]);
@@ -211,7 +211,7 @@ describe("key lifetime", () => {
     on("PUT", KEY_POLICY, ({ body }: { body: { max_key_lifetime_days: number | null } }) => body);
     const { user } = await renderApp(projectPath("settings"));
 
-    const days = await screen.findByRole("textbox", { name: "Maximum key lifetime" });
+    const days = await screen.findByRole("spinbutton", { name: "Maximum key lifetime" });
     expect(days).toHaveValue("14");
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
     await user.clear(days);

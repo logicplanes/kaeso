@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   ClientButton: {
-    description: "An agent client's mark, such as Claude, Cursor or GitHub Copilot, on a raised tile, as a button that opens how to connect it.",
+    description:
+      "An agent client's mark, such as Claude, Cursor or GitHub Copilot, in a raised circle beside the other header buttons, as a button that opens how to connect it.",
     props: {
       "aria-label": "The client's name; also the tooltip.",
       client: "Which client's mark it shows.",
@@ -47,7 +48,7 @@ export const docs = {
     },
   },
   KeyDisplay: {
-    description: "A redacted key: mono 13 with its state dot, copy of the redacted form, and its access.",
+    description: "A redacted key: mono 13, a word badge for any state but active, a copy of the redacted form, and its access in an outline badge.",
     props: {
       access: '"Inference", "Platform", or both.',
       copy: "Hide the copy circle.",
@@ -177,10 +178,10 @@ export const docs = {
   },
   SecretReveal: {
     description:
-      'The one-time secret: calm, centered, certain. The secret on a well (selected on click), a large "Copy key" that becomes "Copied" without changing size, a plain warning, and snippets that use it.',
+      'The one-time secret: calm, centered, certain. The secret on a well (selected on click), a plain warning, a large "Copy key" that becomes "Key copied" without changing size, and a `.env` tab with the gateway\'s URL and the key beside SDK snippets that read the key from the environment.',
     props: {
       apiKey: "What stands in for the key: the real key right after creation, a placeholder elsewhere.",
-      baseUrl: "The gateway's address, for the code snippet that uses the key.",
+      baseUrl: "The gateway's address, for the `.env` tab and the code snippets.",
       model: "A model id for the code snippet.",
       name: "The key's name, for the heading.",
       onCopied: "Called when the secret was copied.",

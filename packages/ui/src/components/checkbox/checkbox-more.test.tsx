@@ -125,9 +125,10 @@ describe("SensitiveInput", () => {
     const input = screen.getByLabelText("API key");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("data-1p-ignore");
-    await userEvent.click(screen.getByRole("button", { name: "Show" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show key" }));
     expect(input).toHaveAttribute("type", "text");
-    await userEvent.click(screen.getByRole("button", { name: "Hide" }));
+    expect(input).toHaveAttribute("data-mono");
+    await userEvent.click(screen.getByRole("button", { name: "Hide key" }));
     expect(input).toHaveAttribute("type", "password");
   });
 
@@ -147,9 +148,13 @@ describe("SensitiveInput", () => {
     const input = screen.getByLabelText("Password");
     expect(input).toHaveAttribute("autocomplete", "current-password");
     await userEvent.type(input, "{CapsLock}a");
-    expect(screen.getByText("Caps Lock is on.")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Caps Lock is on.");
+    expect(screen.getByText("Caps Lock")).toBeVisible();
+    expect(input).toHaveAccessibleDescription("At least 12 characters");
     expect(onKeyDown).toHaveBeenCalled();
     expect(onKeyUp).toHaveBeenCalled();
+    await userEvent.tab();
+    expect(screen.getByRole("status")).toHaveTextContent("");
   });
 });
 

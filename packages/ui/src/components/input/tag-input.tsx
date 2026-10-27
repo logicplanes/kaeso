@@ -60,6 +60,8 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
     onInputValueChange?.(next);
   };
   const input = useRef<HTMLInputElement | null>(null);
+  const [armed, setArmed] = useState<number | null>(null);
+  const [status, setStatus] = useState("");
   const tags = value ?? inner;
   const set = (next: string[]) => {
     if (value === undefined) setInner(next);
@@ -74,6 +76,18 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
       .filter((p) => !tags.includes(p));
     if (parts.length) set([...tags, ...parts]);
     setDraft("");
+  };
+  const remove = (index: number) => {
+    const tag = tags[index];
+    if (tag === undefined) return;
+    set(tags.filter((_, i) => i !== index));
+    setArmed(null);
+    setStatus(t("tagInput.removed", "Removed {tag}", { tag }));
+  };
+  const arm = (index: number | null) => {
+    setArmed(index);
+    const tag = index === null ? undefined : tags[index];
+    setStatus(tag === undefined ? "" : t("tagInput.selected", "{tag} selected. Press Backspace to remove it.", { tag }));
   };
   const messages = tags.map((tag) => (validate ? validate(tag) : true));
   const firstError = messages.find((m) => m !== true);
@@ -102,7 +116,18 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
           <Tag
             key={tag}
             invalid={message !== true}
-            {...(disabled ? {} : { onRemove: () => set(tags.filter((x) => x !== tag)), removeLabel: t("tagInput.remove", "Remove {tag}", { tag }) })}
+            {...(disabled ? { variant: "soft" as const } : {})}
+            className="focus-ring"
+            {...(armed === i ? { "data-force": "focus" } : {})}
+            {...(disabled
+              ? {}
+              : {
+                  onRemove: () => {
+                    remove(i);
+                    input.current?.focus();
+                  },
+                  removeLabel: t("tagInput.remove", "Remove {tag}", { tag }),
+                })}
           >
             {typeof message === "string" ? (
               <Tooltip content={message}>
@@ -130,16 +155,31 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
         value={draft}
         placeholder={tags.length ? undefined : placeholder}
         onChange={(e) => {
+          if (armed !== null) arm(null);
           const v = e.target.value;
           if (separators.some((s) => v.endsWith(s))) add(v);
           else setDraft(v);
         }}
         onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+          const atStart = e.currentTarget.selectionStart === 0 && e.currentTarget.selectionEnd === 0;
           if (e.key === "Enter" && draft.trim()) {
             e.preventDefault();
             add(draft);
-          } else if (e.key === "Backspace" && !draft && tags.length) {
-            set(tags.slice(0, -1));
+          } else if ((e.key === "Backspace" || e.key === "Delete") && armed !== null) {
+            e.preventDefault();
+            remove(armed);
+          } else if (e.key === "Backspace" && atStart && tags.length) {
+            e.preventDefault();
+            arm(tags.length - 1);
+          } else if (e.key === "ArrowLeft" && atStart && tags.length) {
+            e.preventDefault();
+            arm(armed === null ? tags.length - 1 : Math.max(0, armed - 1));
+          } else if (e.key === "ArrowRight" && armed !== null) {
+            e.preventDefault();
+            arm(armed + 1 < tags.length ? armed + 1 : null);
+          } else if (e.key === "Escape" && armed !== null) {
+            e.stopPropagation();
+            arm(null);
           }
         }}
         onPaste={(e: ClipboardEvent<HTMLInputElement>) => {
@@ -149,13 +189,19 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
             add(draft + text);
           }
         }}
-        onBlur={() => draft.trim() && add(draft)}
+        onBlur={() => {
+          setArmed(null);
+          if (draft.trim()) add(draft);
+        }}
         className={cn(
-          "my-4 min-w-80 flex-1 bg-transparent px-8 text-body text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed",
-          tags.length === 0 && "pl-12",
+          "my-4 min-w-32 flex-1 bg-transparent px-8 text-body text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed",
+          tags.length === 0 && "ps-10",
         )}
       />
       {name && <input type="hidden" name={name} value={tags.join(",")} />}
+      <span role="status" className="sr-only">
+        {status}
+      </span>
     </div>
   );
   if (field) return control;

@@ -1,5 +1,6 @@
 import { Textarea } from "@logicplanes/kaeso-ui";
-import { Matrix } from "~/lib/states";
+import { StateSection } from "~/lib/states";
+import { FIELD_STATES, StateGrid } from "~/lib/state-grid";
 
 export const meta = {
   title: "Textarea",
@@ -29,21 +30,36 @@ export function Mono() {
 }
 export function States() {
   return (
-    <Matrix
-      title="States"
-      rows={[{ label: "filled" }]}
-      columns={[
-        { label: "Rest", props: {} },
-        { label: "Hover", props: { "data-force": "hover" } },
-        { label: "Focus", props: { "data-force": "focus" } },
-        { label: "Invalid", props: { invalid: true } },
-        { label: "Disabled", props: { disabled: true } },
-      ]}
-      render={(_, p) => (
-        <div className="w-240">
-          <Textarea aria-label="Notes" defaultValue="Rotate this key every 90 days." {...p} />
+    <>
+      <StateGrid
+        title="States"
+        kinds={[
+          { label: "Text", id: "text" },
+          { label: "Placeholder", id: "empty" },
+        ]}
+        states={FIELD_STATES}
+        render={(k, p) => (
+          <div className="w-240">
+            {k.id === "text" ? (
+              <Textarea aria-label="Notes" rows={2} defaultValue="Rotate this key every 90 days." {...p} />
+            ) : (
+              <Textarea aria-label="Notes" rows={2} placeholder="You help customers finish checkout." {...p} />
+            )}
+          </div>
+        )}
+      />
+      <StateSection title="Mono, growing to eight lines then scrolling">
+        <div className="flex w-640 flex-col gap-16">
+          <Textarea
+            label="Request body"
+            mono
+            defaultValue={
+              '{\n  "model": "gpt-5",\n  "input": "Write one sentence about gateways.",\n  "metadata": {\n    "team": "checkout",\n    "env": "production",\n    "region": "eu-west-1",\n    "owner": "lin@northwind.example",\n    "ticket": "OPS-2214"\n  }\n}'
+            }
+          />
+          <Textarea label="System prompt" layout="horizontal" description="Sent before every message." defaultValue="You help customers finish checkout." />
         </div>
-      )}
-    />
+      </StateSection>
+    </>
   );
 }

@@ -5,7 +5,6 @@ test.use({ viewport: { width: 1600, height: 1200 } });
 
 // Identical states that later pull requests in this stack fix; each one removes its own entries.
 const PENDING = new Set([
-  "/components/button-group/states: dark attached: hover paints like rest",
   ...["light", "dark"].flatMap((theme) => [
     ...["unchecked", "checked", "indeterminate", "invalid"].map((row) => `/components/checkbox/states: ${theme} ${row}: pressed paints like rest`),
     `/components/checkbox/states: ${theme} invalid: hover paints like rest`,

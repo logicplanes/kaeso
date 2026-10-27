@@ -1,5 +1,6 @@
 import { SearchInput } from "@logicplanes/kaeso-ui";
-import { Matrix } from "~/lib/states";
+import { StateSection } from "~/lib/states";
+import { FIELD_STATES, StateGrid } from "~/lib/state-grid";
 
 export const meta = {
   title: "SearchInput",
@@ -8,7 +9,11 @@ export const meta = {
   entry: "input",
   import: "SearchInput",
   keyboard: [["Escape", "Clears the search"]],
-  a11y: ["The clear button is named “Clear search”.", "type=search lets assistive technology announce it as a search field."],
+  a11y: [
+    "The clear button is named “Clear search”.",
+    "type=search lets assistive technology announce it as a search field.",
+    "A shortcut hint hides while the field has focus, where it no longer applies; its room stays, so nothing moves.",
+  ],
 };
 export const examples = [
   { id: "toolbar", title: "In a toolbar", fn: "Toolbar" },
@@ -17,34 +22,46 @@ export const examples = [
 export function Toolbar() {
   return (
     <div className="w-240">
-      <SearchInput aria-label="Search logs" placeholder="Search logs" />
+      <SearchInput aria-label="Search logs" placeholder="gpt-5, req_01…" shortcut={["mod", "k"]} />
     </div>
   );
 }
 export function Settings() {
   return (
     <div className="w-240">
-      <SearchInput size="md" aria-label="Search settings" placeholder="Search…" />
+      <SearchInput size="md" aria-label="Search settings" placeholder="Rate limit, budget" />
     </div>
   );
 }
 export function States() {
   return (
-    <Matrix
-      title="States"
-      rows={[{ label: "sm" }, { label: "md" }]}
-      columns={[
-        { label: "Empty", props: { shortcut: ["mod", "k"] } },
-        { label: "Hover", props: { "data-force": "hover" } },
-        { label: "Focus", props: { "data-force": "focus" } },
-        { label: "Filled", props: { defaultValue: "gpt-5" } },
-        { label: "Disabled", props: { disabled: true } },
-      ]}
-      render={(r, p) => (
-        <div className="w-200">
-          <SearchInput aria-label="Search" size={r.label as "sm"} {...p} />
+    <>
+      <StateGrid
+        title="States"
+        kinds={[
+          { label: "Empty, with shortcut", id: "empty" },
+          { label: "Filled", id: "filled" },
+        ]}
+        states={FIELD_STATES.filter((s) => s.id !== "invalid")}
+        render={(k, p) => (
+          <div className="w-200">
+            <SearchInput
+              aria-label="Search logs"
+              placeholder="gpt-5, req_01…"
+              shortcut={["mod", "k"]}
+              {...(k.id === "filled" ? { defaultValue: "gpt-5" } : {})}
+              {...p}
+            />
+          </div>
+        )}
+      />
+      <StateSection title="Sizes">
+        <div className="flex w-240 flex-col gap-12">
+          {(["sm", "md", "lg", "xl"] as const).map((s) => (
+            <SearchInput key={s} size={s} aria-label={`Search, ${s}`} placeholder="gpt-5, req_01…" />
+          ))}
         </div>
-      )}
-    />
+      </StateSection>
+    </>
   );
 }

@@ -5,10 +5,20 @@ import { SecretReveal, sdkSnippets } from "./moments.js";
 const SECRET = "sk-kso-test-0123456789abcdef";
 
 describe("SecretReveal", () => {
-  it("shows the SDK snippets with the secret by default", () => {
+  it("puts the gateway's URL and the key in a .env file and has the SDK snippets read the key from the environment", () => {
     render(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" />);
-    expect(screen.getByRole("textbox", { name: "Secret" })).toHaveTextContent(SECRET);
+    expect(screen.getByRole("textbox", { name: "Key" })).toHaveTextContent(SECRET);
+    expect(screen.getByRole("tab", { name: ".env" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("KAESO_BASE_URL=https://kaeso.example.com/v1")).toBeInTheDocument();
+    expect(screen.getByText(`KAESO_API_KEY=${SECRET}`)).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Python" })).toBeInTheDocument();
+  });
+
+  it("warns that the key is shown once before the button that copies it", () => {
+    render(<SecretReveal secret={SECRET} baseUrl="https://kaeso.example.com" snippets={false} />);
+    const warning = screen.getByText("Shown once. Store it now.");
+    const copy = screen.getByRole("button", { name: "Copy key" });
+    expect(warning.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("keeps every line of the SDK snippets short enough to read without scrolling, with a full key in it", () => {

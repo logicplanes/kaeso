@@ -97,8 +97,16 @@ export function States() {
           </StateRow>
         ))}
       </StateMatrix>
-      <StateSection title="Keys">
-        <Keys />
+      <StateSection title="Keys: every state, access in one outline style">
+        <div className="flex flex-col gap-12">
+          {(["active", "disabled", "expired", "archived"] as const).map((state) => (
+            <KeyDisplay key={state} redacted="sk-kso-AbC123…wxyz" state={state} access={state === "archived" ? "both" : "inference"} />
+          ))}
+          <KeyDisplay redacted="sk-kso-Pl4tf0…rm42" access="platform" />
+          <div className="w-240">
+            <KeyDisplay redacted="sk-kso-AbC123def456ghi789…wxyz" state="expired" access="inference" />
+          </div>
+        </div>
       </StateSection>
       <StateSection title="Models">
         <Models />

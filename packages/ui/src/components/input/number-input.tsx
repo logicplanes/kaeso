@@ -1,15 +1,15 @@
 import { forwardRef, useMemo, useState, type ChangeEvent, type FocusEvent, type KeyboardEvent } from "react";
 import { cn } from "../../utils/cn.js";
 import { Input, type InputProps } from "./input.js";
-import { InputGroup } from "./input-group.js";
+import { Button } from "../button/button.js";
 import { icons } from "../../icons/vocabulary.js";
 import { addDecimal, compareDecimal, decimalSeparators, groupDecimal, isDecimal, localizeDecimal, ungroup } from "./decimal.js";
 import { useLocale, useUiText } from "../../i18n/context.js";
 
 export const KAESO_NUMBER_INPUT_VARIANTS = {
   align: {
-    end: { classes: "text-right", description: "Right-aligned tabular digits (default)" },
-    start: { classes: "text-left", description: "Left-aligned" },
+    end: { classes: "text-end", description: "End-aligned tabular digits (default)" },
+    start: { classes: "text-start", description: "Start-aligned" },
   },
 } as const;
 export const KAESO_NUMBER_INPUT_DEFAULT_VARIANTS = { align: "end" } as const;
@@ -69,29 +69,45 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   const stepBy = (dir: 1 | -1) => set(clamp(addDecimal(raw || "0", dir === 1 ? step : `-${step}`)));
   const display = integer ? raw : focused ? localizeDecimal(raw, seps) : groupDecimal(raw, seps);
   const live = !disabled && !readOnly;
+  const buttonSize = props.size === "xl" ? "md" : props.size === "sm" ? "xs" : "sm";
+  const atLimit = (dir: 1 | -1) => {
+    const limit = dir === 1 ? max : min;
+    return limit !== undefined && isDecimal(raw) && raw !== "" && raw !== "-" && compareDecimal(raw, limit) * dir >= 0;
+  };
+  const stepButton = (dir: 1 | -1) => (
+    <Button
+      shape="circle"
+      variant="quiet"
+      size={buttonSize}
+      tabIndex={-1}
+      icon={dir === 1 ? icons.add : icons.minus}
+      aria-label={dir === 1 ? t("numberInput.increase", "Increase") : t("numberInput.decrease", "Decrease")}
+      onClick={() => stepBy(dir)}
+      disabled={!live || atLimit(dir)}
+    />
+  );
   const stepper = !hideStepper && (
-    <span
-      className={cn(
-        "flex shrink-0 items-center opacity-0 transition-control",
-        live ? "group-hover/num:opacity-100 coarse:opacity-100 group-focus-within/num:opacity-100" : "invisible",
-      )}
-      {...(live ? {} : { "aria-hidden": true })}
-    >
-      <InputGroup.Button icon={icons.minus} aria-label={t("numberInput.decrease", "Decrease")} onClick={() => stepBy(-1)} disabled={!live} />
-      <InputGroup.Button icon={icons.add} aria-label={t("numberInput.increase", "Increase")} onClick={() => stepBy(1)} disabled={!live} />
+    <span className={cn("flex shrink-0 items-center", !live && "invisible")} {...(live ? {} : { "aria-hidden": true })}>
+      {stepButton(-1)}
+      {stepButton(1)}
     </span>
   );
+  const numeric = raw !== "" && raw !== "-" ? Number(raw) : undefined;
   return (
     <Input
       ref={ref}
       type="text"
+      role="spinbutton"
+      {...(numeric !== undefined && Number.isFinite(numeric) ? { "aria-valuenow": numeric, "aria-valuetext": unit ? `${display} ${unit}` : display } : {})}
+      {...(min !== undefined ? { "aria-valuemin": Number(min) } : {})}
+      {...(max !== undefined ? { "aria-valuemax": Number(max) } : {})}
       inputMode={integer ? "numeric" : "decimal"}
       autoComplete="off"
       spellCheck={false}
       value={display}
       disabled={disabled}
       readOnly={readOnly}
-      className={cn("group/num", className)}
+      className={className}
       suffix={unit}
       trailing={stepper || undefined}
       onChange={(e: ChangeEvent<HTMLInputElement>) => {

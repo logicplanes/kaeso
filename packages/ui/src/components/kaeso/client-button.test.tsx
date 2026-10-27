@@ -16,4 +16,11 @@ describe("ClientButton", () => {
   it("draws a different mark for every client", () => {
     expect(new Set(Object.values(CLIENT_MARKS)).size).toBe(Object.keys(CLIENT_MARKS).length);
   });
+
+  it("is a circle like the header buttons beside it, and takes a forced state for the states page", () => {
+    render(<ClientButton client="claude" aria-label="Add to Claude Code" data-force="hover" />);
+    const button = screen.getByRole("button", { name: "Add to Claude Code" });
+    expect(button).toHaveClass("rounded-pill", "size-32", "tap-target");
+    expect(button).toHaveAttribute("data-force", "hover");
+  });
 });

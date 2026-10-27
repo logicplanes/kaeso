@@ -43,7 +43,7 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   await page.keyboard.press("ControlOrMeta+Enter");
   const reveal = page.getByRole("dialog", { name: "Key created" });
   await expect(reveal).toBeVisible();
-  const secret = (await reveal.getByRole("textbox", { name: "Secret for keyboard-only" }).textContent()) ?? "";
+  const secret = (await reveal.getByRole("textbox", { name: "Key for keyboard-only" }).textContent()) ?? "";
   const sent = await page.request.post("/v1/chat/completions", {
     headers: { authorization: `Bearer ${secret}` },
     data: { model: "gpt-5.4-mini", messages: [{ role: "user", content: "From the keyboard pass" }] },
@@ -51,7 +51,7 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   expect(sent.ok()).toBe(true);
   await reveal.getByRole("button", { name: "Copy key" }).focus();
   await page.keyboard.press("Enter");
-  await expect(reveal.getByRole("button", { name: "Copied" })).toBeVisible();
+  await expect(reveal.getByRole("button", { name: "Key copied" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(reveal).toBeHidden();
 

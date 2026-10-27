@@ -7,7 +7,7 @@ export const meta = {
   group: "Components",
   entry: "label",
   import: "Label",
-  a11y: ["Connect it to its control with htmlFor; Field does this for you."],
+  a11y: ["Connect it to its control with htmlFor; Field does this for you.", "Beside a disabled control, pass data-disabled so the label dims with it."],
 };
 export const examples = [
   { id: "basic", title: "Basic", fn: "Basic" },
@@ -26,11 +26,16 @@ export function Optional() {
 }
 export function States() {
   return (
-    <StateSection title="Sizes">
-      <div className="flex flex-col gap-12">
+    <StateSection title="Sizes and states">
+      <div className="flex w-240 flex-col gap-12">
         <Label>Key name</Label>
         <Label size="sm">Key name</Label>
         <Label optional>Description</Label>
+        <Label size="sm" optional>
+          Description
+        </Label>
+        <Label data-disabled="">Rate limit</Label>
+        <Label optional>Weiterleitungsadresse für Benachrichtigungen</Label>
       </div>
     </StateSection>
   );

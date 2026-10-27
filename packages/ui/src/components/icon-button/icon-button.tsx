@@ -58,9 +58,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       {...props}
     />
   );
-  if (!tooltip || disabled) return btn;
+  if (!tooltip) return btn;
+  // The Tooltip stays mounted while disabled: unwrapping would remount the button and drop its focus.
   return (
-    <Tooltip content={label} side={tooltipSide} {...(shortcut ? { shortcut } : {})}>
+    <Tooltip content={label} side={tooltipSide} disabled={!!disabled} {...(shortcut ? { shortcut } : {})}>
       {btn}
     </Tooltip>
   );

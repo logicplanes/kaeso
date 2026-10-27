@@ -19,9 +19,6 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   "data-force"?: string | undefined;
 }
 
-const LINE = 20;
-const PAD = 20;
-
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(props, ref) {
   const {
     resize = "auto",
@@ -48,8 +45,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
   const grow = useCallback(() => {
     const el = inner.current;
     if (!el || resize !== "auto") return;
+    const style = getComputedStyle(el);
+    const line = parseFloat(style.lineHeight) || 20;
+    const pad = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, maxRows * LINE + PAD)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, maxRows * line + pad)}px`;
   }, [maxRows, resize]);
   useLayoutEffect(grow, [grow, rest.value]);
   const control = (

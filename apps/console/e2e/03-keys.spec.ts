@@ -27,7 +27,7 @@ test("a new key is shown once, and closing without copying asks first", async ({
   await submitSteps(dialog, "Create key");
 
   const reveal = page.getByRole("dialog", { name: "Key created" });
-  const field = reveal.getByRole("textbox", { name: "Secret for checkout-web" });
+  const field = reveal.getByRole("textbox", { name: "Key for checkout-web" });
   await expect(field).toHaveText(/^sk-kso-/);
   secret = (await field.textContent()) ?? "";
   await expect(reveal.getByText(`${new URL(page.url()).origin}/v1`, { exact: false }).first()).toBeVisible();
@@ -54,7 +54,7 @@ test("the next key starts on an empty first step, and the last key's secret is n
   await dialog.getByLabel("Name").fill("deploy-preview");
   await submitSteps(dialog, "Create key");
   const reveal = page.getByRole("dialog", { name: "Key created" });
-  const field = reveal.getByRole("textbox", { name: "Secret for deploy-preview" });
+  const field = reveal.getByRole("textbox", { name: "Key for deploy-preview" });
   await expect(field).toHaveText(/^sk-kso-/);
   const next = (await field.textContent()) ?? "";
   preview = next;
@@ -105,7 +105,7 @@ test("rotating a key shows the new key once, and the old key works until the gra
 
   const reveal = page.getByRole("dialog", { name: "Key rotated" });
   await expect(reveal.getByText("Copy the new key now: it's shown once, and the old key stops in 1 hour.")).toBeVisible();
-  const field = reveal.getByRole("textbox", { name: "Secret for deploy-preview" });
+  const field = reveal.getByRole("textbox", { name: "Key for deploy-preview" });
   await expect(field).toHaveText(/^sk-kso-/);
   const rotated = (await field.textContent()) ?? "";
   expect(rotated).not.toBe(preview);

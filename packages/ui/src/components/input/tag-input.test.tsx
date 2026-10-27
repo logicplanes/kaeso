@@ -14,7 +14,7 @@ describe("TagInput", () => {
     expect(onDraft).toHaveBeenLastCalledWith("");
     expect(screen.getByText("ada@example.com")).toBeInTheDocument();
   });
-  it("adds a tag at a separator or Enter, skips duplicates, and removes the last with Backspace", async () => {
+  it("adds a tag at a separator or Enter, skips duplicates, and removes the last with two presses of Backspace", async () => {
     const onChange = vi.fn();
     render(<TagInput aria-label="Emails" placeholder="Add emails" onValueChange={onChange} />);
     const input = screen.getByRole("textbox", { name: "Emails" });
@@ -23,7 +23,38 @@ describe("TagInput", () => {
     expect(onChange).toHaveBeenLastCalledWith(["ada@example.com", "lin@example.com"]);
     expect(input).not.toHaveAttribute("placeholder");
     await userEvent.type(input, "{Backspace}");
+    expect(onChange).toHaveBeenLastCalledWith(["ada@example.com", "lin@example.com"]);
+    expect(screen.getByRole("status")).toHaveTextContent("lin@example.com selected. Press Backspace to remove it.");
+    await userEvent.type(input, "{Backspace}");
     expect(onChange).toHaveBeenLastCalledWith(["ada@example.com"]);
+    expect(screen.getByRole("status")).toHaveTextContent("Removed lin@example.com");
+  });
+
+  it("moves through the tags with the arrows from the start of the field, and Escape lets go", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<TagInput aria-label="Emails" defaultValue={["ada@example.com", "lin@example.com", "sam@example.com"]} onValueChange={onChange} />);
+    const input = screen.getByRole("textbox", { name: "Emails" });
+    await user.click(input);
+    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    expect(screen.getByRole("status")).toHaveTextContent("lin@example.com selected");
+    expect(screen.getByText("lin@example.com").closest("[data-force]")).toHaveAttribute("data-force", "focus");
+    await user.keyboard("{ArrowRight}{ArrowRight}");
+    expect(screen.getByRole("status")).toHaveTextContent("");
+    await user.keyboard("{ArrowLeft}{Escape}{Delete}");
+    expect(onChange).not.toHaveBeenCalled();
+    await user.keyboard("{ArrowLeft}{Delete}");
+    expect(onChange).toHaveBeenLastCalledWith(["ada@example.com", "lin@example.com"]);
+    expect(input).toHaveFocus();
+  });
+
+  it("returns focus to the field after a tag's remove button, and says what went", async () => {
+    const user = userEvent.setup();
+    render(<TagInput aria-label="Emails" defaultValue={["ada@example.com", "lin@example.com"]} />);
+    await user.click(screen.getByRole("button", { name: "Remove ada@example.com" }));
+    expect(screen.getByRole("textbox", { name: "Emails" })).toHaveFocus();
+    expect(screen.getByRole("status")).toHaveTextContent("Removed ada@example.com");
+    expect(screen.queryByText("ada@example.com")).toBeNull();
   });
 
   it("splits pasted lists and adds the draft on blur", async () => {

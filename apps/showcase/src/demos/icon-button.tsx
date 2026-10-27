@@ -1,5 +1,5 @@
 import { IconButton, Inline, icons, KAESO_ICON_BUTTON_VARIANTS, type ButtonSize } from "@logicplanes/kaeso-ui";
-import { Matrix, StateSection } from "~/lib/states";
+import { Matrix, STATE_COLUMNS, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "IconButton",
@@ -14,7 +14,7 @@ export const meta = {
   a11y: [
     "aria-label is required by the types; it is also the tooltip, so sighted and screen-reader users get the same name.",
     "Shortcuts appear in the tooltip as key caps.",
-    "Disabled icon buttons have no tooltip unless they carry a disabledReason.",
+    "Disabled icon buttons have no tooltip unless they carry a disabledReason, which the tooltip shows and screen readers read as the description.",
   ],
 };
 
@@ -51,13 +51,27 @@ export function Sizes() {
 export function WithShortcut() {
   return <IconButton icon={icons.search} aria-label="Search" shortcut={["mod", "k"]} variant="secondary" />;
 }
+const ICON_VARIANTS = Object.keys(KAESO_ICON_BUTTON_VARIANTS.variant).map((v) => ({ label: v }));
+
 export function States() {
   return (
     <>
       <Matrix
         title="Variants × states"
-        rows={Object.keys(KAESO_ICON_BUTTON_VARIANTS.variant).map((v) => ({ label: v }))}
+        rows={ICON_VARIANTS}
+        columns={STATE_COLUMNS.filter((c) => c.label !== "Disabled")}
         render={(r, p) => <IconButton icon={icons.filter} aria-label="Filter" variant={r.label as "ghost"} tooltip={false} {...p} />}
+      />
+      <Matrix
+        title="Variants × more states"
+        rows={ICON_VARIANTS}
+        columns={[
+          { label: "Open", props: { "data-force": "open" } },
+          { label: "Disabled", props: { disabled: true } },
+          { label: "Soft-disabled", props: { disabled: true, disabledReason: "Only owners can filter by member" } },
+          { label: "Loading", props: { loading: true } },
+        ]}
+        render={(r, p) => <IconButton icon={icons.filter} aria-label="Filter" variant={r.label as "ghost"} {...p} />}
       />
       <StateSection title="Sizes">
         <Inline gap={12}>

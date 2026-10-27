@@ -20,7 +20,9 @@ const LEADING: Record<InputSize, string> = { sm: "pl-10", md: "pl-14", lg: "pl-1
 const TRAILING_BUTTON: Record<InputSize, string> = { sm: "pr-4", md: "pr-2", lg: "pr-4", xl: "pr-6" };
 export const INPUT_ICON_SIZE: Record<InputSize, IconSize> = { sm: "sm", md: "sm", lg: "md", xl: "lg" };
 
-const Ctx = createContext<{ size: InputSize }>({ size: "md" });
+const PREFIX_JOIN: Record<InputSize, string> = { sm: "-me-6", md: "-me-8", lg: "-me-8", xl: "-me-8" };
+
+const Ctx = createContext<{ size: InputSize; invalid?: boolean | undefined; disabled?: boolean | undefined }>({ size: "md" });
 
 export interface InputGroupProps extends HTMLAttributes<HTMLDivElement> {
   size?: InputSize | undefined;
@@ -37,11 +39,11 @@ const Root = forwardRef<HTMLDivElement, InputGroupProps>(function InputGroup(
   ref,
 ) {
   return (
-    <Ctx.Provider value={{ size }}>
+    <Ctx.Provider value={{ size, invalid, disabled }}>
       <div
         ref={ref}
         className={cn(
-          "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
+          "group/field relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
           KAESO_INPUT_GROUP_VARIANTS.size[size].classes,
           leadingIcon && LEADING[size],
           trailingButton && TRAILING_BUTTON[size],
@@ -64,11 +66,14 @@ Root.displayName = "InputGroup";
 export interface InputGroupInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {}
 
 const Input = forwardRef<HTMLInputElement, InputGroupInputProps>(function InputGroupInput({ className, ...props }, ref) {
+  const { invalid, disabled } = useContext(Ctx);
   return (
     <input
       ref={ref}
+      {...(invalid ? { "aria-invalid": true } : {})}
+      {...(disabled ? { disabled: true } : {})}
       className={cn(
-        "min-w-0 flex-1 bg-transparent bidi-plaintext text-inherit text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled read-only:cursor-text",
+        "min-w-0 flex-1 bg-transparent bidi-plaintext text-inherit text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled read-only:cursor-text data-mono:mono data-mono:text-small",
         className,
       )}
       {...props}
@@ -79,12 +84,17 @@ Input.displayName = "InputGroup.Input";
 
 export interface InputGroupAddonProps extends HTMLAttributes<HTMLSpanElement> {
   icon?: IconData | undefined;
+  "data-join"?: boolean | undefined;
 }
 
-const Addon = forwardRef<HTMLSpanElement, InputGroupAddonProps>(function InputGroupAddon({ icon, className, children, ...props }, ref) {
+const Addon = forwardRef<HTMLSpanElement, InputGroupAddonProps>(function InputGroupAddon({ icon, className, children, "data-join": join, ...props }, ref) {
   const { size } = useContext(Ctx);
   return (
-    <span ref={ref} className={cn("inline-flex shrink-0 items-center gap-4 bidi-plaintext text-fg-secondary select-none", className)} {...props}>
+    <span
+      ref={ref}
+      className={cn("inline-flex shrink-0 items-center gap-4 bidi-plaintext text-fg-secondary select-none", join && PREFIX_JOIN[size], className)}
+      {...props}
+    >
       {icon && <Icon icon={icon} size={INPUT_ICON_SIZE[size]} />}
       {children}
     </span>
@@ -101,9 +111,10 @@ export interface InputGroupButtonProps {
 }
 
 const GroupButton = forwardRef<HTMLButtonElement, InputGroupButtonProps>(function InputGroupButton({ icon, className, ...props }, ref) {
-  const { size } = useContext(Ctx);
+  const { size, disabled } = useContext(Ctx);
   return (
     <Button
+      {...(disabled ? { disabled: true } : {})}
       ref={ref as React.Ref<HTMLButtonElement & HTMLAnchorElement>}
       shape="circle"
       variant="quiet"

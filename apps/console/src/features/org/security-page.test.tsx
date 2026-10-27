@@ -70,7 +70,7 @@ describe("organization security", () => {
     expect(screen.getByRole("switch", { name: "Require two-factor authentication" })).not.toBeChecked();
     expect(screen.getByRole("switch", { name: "No limit" })).toBeChecked();
     expect(screen.getByText("Keys may never expire.")).toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Maximum key lifetime" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: "Maximum key lifetime" })).not.toBeInTheDocument();
   });
 
   it("shows the connected identity provider", async () => {
@@ -177,7 +177,7 @@ describe("organization security", () => {
       "You need Require two-factor; ask an owner or admin for it.",
     );
     await hoverReason(user, screen.getByRole("switch", { name: "No limit" }), "You need Set key lifetime; ask an owner or admin for it.");
-    expect(screen.getByRole("textbox", { name: "Maximum key lifetime" })).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: "Maximum key lifetime" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
@@ -492,7 +492,7 @@ describe("maximum key lifetime", () => {
     on("PUT", "orgs/:org/security/key-policy", security({ max_key_lifetime_days: 60 }));
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("New keys expire within 30 days at most.")).toBeInTheDocument();
-    const days = screen.getByRole("textbox", { name: "Maximum key lifetime" });
+    const days = screen.getByRole("spinbutton", { name: "Maximum key lifetime" });
     expect(days).toHaveValue("30");
     const save = () => screen.getByRole("button", { name: "Save" });
     await hoverReason(user, save(), "No change to save");

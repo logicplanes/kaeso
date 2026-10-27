@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { InlineCopyText } from "./copy-button.js";
+import { ClipboardText, InlineCopyText } from "./copy-button.js";
 import { DataTable } from "../data-table/data-table.js";
 import { col } from "../data-table/columns.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
@@ -157,5 +157,26 @@ describe("InlineCopyText", () => {
     await user.click(copyIcon);
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("req_01m5mbcwbfe7"));
     expect(open).not.toHaveBeenCalled();
+  });
+});
+
+describe("ClipboardText", () => {
+  afterEach(() => vi.restoreAllMocks());
+  it("lets people read a cut value in full: it becomes focusable and shows the whole value in a tooltip", async () => {
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(200);
+    const url = "https://kaeso.example.com/v1/organizations/org_01m5mbctmseffb5006sxv8cn1j";
+    render(<ClipboardText value={url} label="Copy base URL" />);
+    await act(() => lazyModulesSettled());
+    const text = screen.getByText(url);
+    expect(text).toHaveAttribute("tabindex", "0");
+    await userEvent.tab();
+    expect(text).toHaveFocus();
+    await waitFor(() => expect([...document.querySelectorAll("[data-side]")].some((el) => el.textContent === url)).toBe(true));
+  });
+
+  it("keeps a value that fits out of the tab order", () => {
+    render(<ClipboardText value="$KAESO_API_KEY" label="Copy variable name" />);
+    expect(screen.getByText("$KAESO_API_KEY")).not.toHaveAttribute("tabindex");
   });
 });

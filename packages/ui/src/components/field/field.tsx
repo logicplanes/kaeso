@@ -1,12 +1,12 @@
 import { createContext, forwardRef, useContext, useId, type FieldsetHTMLAttributes, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { useUiText } from "../../i18n/context.js";
+import { Label } from "../label/label.js";
 
 export const KAESO_FIELD_VARIANTS = {
   layout: {
     vertical: { classes: "flex flex-col gap-8", description: "Label above the control (default)" },
     horizontal: {
-      classes: "grid grid-cols-1 gap-8 md:grid-cols-label md:gap-x-24",
+      classes: "grid grid-cols-1 gap-8 md:grid-cols-label md:items-baseline md:gap-x-24",
       description: "Label in a 240px column on the left, from 768px",
     },
   },
@@ -45,7 +45,6 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
   ref,
 ) {
   const auto = useId();
-  const t = useUiText();
   const controlId = id ?? `k-field-${auto}`;
   const labelId = label ? `${controlId}-label` : undefined;
   const descriptionId = description ? `${controlId}-description` : undefined;
@@ -71,14 +70,9 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
     <FieldContext.Provider value={value}>
       <div ref={ref} className={cn(KAESO_FIELD_VARIANTS.layout[layout].classes, className)} data-disabled={disabled || undefined} {...props}>
         {label && (
-          <label
-            id={labelId}
-            htmlFor={controlId}
-            className={cn("flex items-baseline gap-6 text-body font-medium text-fg", layout === "horizontal" && "md:pt-8", disabled && "text-fg-disabled")}
-          >
+          <Label id={labelId} htmlFor={controlId} optional={optional} className="flex" {...(disabled ? { "data-disabled": "" } : {})}>
             {label}
-            {optional && <span className="text-small font-regular text-fg-tertiary">{t("field.optional", "Optional")}</span>}
-          </label>
+          </Label>
         )}
         <div className="flex min-w-0 flex-col gap-6">
           {children}
@@ -105,12 +99,20 @@ export interface FieldsetProps extends FieldsetHTMLAttributes<HTMLFieldSetElemen
 }
 
 export const Fieldset = forwardRef<HTMLFieldSetElement, FieldsetProps>(function Fieldset({ legend, description, className, children, ...props }, ref) {
+  const descriptionId = `k-fieldset-${useId()}`;
   return (
-    <fieldset ref={ref} className={cn("flex min-w-0 flex-col gap-16", className)} {...props}>
-      <div className="flex flex-col gap-4">
-        <legend className="text-body-lg font-semibold text-fg">{legend}</legend>
-        {description && <p className="text-small text-fg-secondary">{description}</p>}
-      </div>
+    <fieldset
+      ref={ref}
+      className={cn("flex min-w-0 flex-col gap-16", className)}
+      {...props}
+      {...(description ? { "aria-describedby": [props["aria-describedby"], descriptionId].filter(Boolean).join(" ") } : {})}
+    >
+      <legend className={cn("float-none w-full p-0 text-body-lg font-semibold text-fg", description ? "mb-4" : "mb-16")}>{legend}</legend>
+      {description && (
+        <p id={descriptionId} className="text-small text-fg-secondary">
+          {description}
+        </p>
+      )}
       {children}
     </fieldset>
   );

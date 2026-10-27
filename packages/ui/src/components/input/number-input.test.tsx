@@ -8,10 +8,11 @@ describe("NumberInput", () => {
   it("steps exactly with the buttons and the arrows, within its limits", async () => {
     const onChange = vi.fn();
     render(<NumberInput aria-label="Budget" defaultValue="9.5" step="0.5" min="0" max="10" unit="USD" onValueChange={onChange} />);
-    const input = screen.getByRole("textbox", { name: "Budget" });
+    const input = screen.getByRole("spinbutton", { name: "Budget" });
     await userEvent.click(screen.getByRole("button", { name: "Increase" }));
     expect(onChange).toHaveBeenLastCalledWith("10.0");
-    await userEvent.click(screen.getByRole("button", { name: "Increase" }));
+    expect(screen.getByRole("button", { name: "Increase" })).toHaveAttribute("aria-disabled", "true");
+    fireEvent.keyDown(input, { key: "ArrowUp" });
     expect(onChange).toHaveBeenLastCalledWith("10");
     fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(onChange).toHaveBeenLastCalledWith("9.5");
@@ -25,7 +26,7 @@ describe("NumberInput", () => {
     const onBlur = vi.fn();
     const onFocus = vi.fn();
     render(<NumberInput aria-label="Tokens" max="100000" onValueChange={onChange} onBlur={onBlur} onFocus={onFocus} />);
-    const input = screen.getByRole("textbox", { name: "Tokens" });
+    const input = screen.getByRole("spinbutton", { name: "Tokens" });
     await userEvent.type(input, "12a3456");
     expect(onChange).toHaveBeenLastCalledWith("123456");
     expect(onFocus).toHaveBeenCalled();
@@ -37,7 +38,7 @@ describe("NumberInput", () => {
 
   it("takes whole numbers only, with a numeric keypad and no thousands separators", async () => {
     render(<NumberInput aria-label="Days" integer defaultValue="3650" unit="days" />);
-    const input = screen.getByRole("textbox", { name: "Days" });
+    const input = screen.getByRole("spinbutton", { name: "Days" });
     expect(input).toHaveAttribute("inputmode", "numeric");
     expect(input).toHaveValue("3650");
     await userEvent.clear(input);
@@ -50,7 +51,7 @@ describe("NumberInput", () => {
   it("keeps a lone minus sign and steps up from nothing", async () => {
     const onChange = vi.fn();
     render(<NumberInput aria-label="Offset" min="-5" onValueChange={onChange} />);
-    const input = screen.getByRole("textbox", { name: "Offset" });
+    const input = screen.getByRole("spinbutton", { name: "Offset" });
     await userEvent.type(input, "-");
     fireEvent.blur(input);
     expect(onChange).toHaveBeenLastCalledWith("-");
@@ -66,7 +67,7 @@ describe("NumberInput", () => {
         <NumberInput aria-label="Budget" value="1234.5" onValueChange={onChange} />
       </LocaleProvider>,
     );
-    const input = screen.getByRole("textbox", { name: "Budget" });
+    const input = screen.getByRole("spinbutton", { name: "Budget" });
     expect(input).toHaveValue("1.234,5");
     fireEvent.focus(input);
     expect(input).toHaveValue("1234,5");
@@ -79,5 +80,19 @@ describe("NumberInput", () => {
     expect(screen.getByRole("button", { name: "Increase", hidden: true })).toBeDisabled();
     rerender(<NumberInput aria-label="Rate" hideStepper value="3" align="start" />);
     expect(screen.queryByRole("button", { name: "Increase", hidden: true })).toBeNull();
+  });
+
+  it("is a spin button that says its value, unit and limits, with one tab stop", async () => {
+    render(<NumberInput aria-label="Monthly budget" defaultValue="12500.5" min="0" max="50000" unit="USD" />);
+    const input = screen.getByRole("spinbutton", { name: "Monthly budget" });
+    expect(input).toHaveAttribute("aria-valuenow", "12500.5");
+    expect(input).toHaveAttribute("aria-valuetext", "12,500.5 USD");
+    expect(input).toHaveAttribute("aria-valuemin", "0");
+    expect(input).toHaveAttribute("aria-valuemax", "50000");
+    expect(screen.getByRole("button", { name: "Increase" })).toHaveAttribute("tabindex", "-1");
+    await userEvent.tab();
+    expect(input).toHaveFocus();
+    await userEvent.tab();
+    expect(document.body).toHaveFocus();
   });
 });

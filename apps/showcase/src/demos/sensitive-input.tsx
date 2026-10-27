@@ -1,5 +1,6 @@
 import { SensitiveInput } from "@logicplanes/kaeso-ui";
-import { Matrix } from "~/lib/states";
+import { StateSection } from "~/lib/states";
+import { FIELD_STATES, StateGrid } from "~/lib/state-grid";
 
 export const meta = {
   title: "SensitiveInput",
@@ -7,7 +8,11 @@ export const meta = {
   group: "Components",
   entry: "input",
   import: "SensitiveInput",
-  a11y: ["The reveal circle is named Show or Hide.", "Passwords show “Caps Lock is on.” in the field's description."],
+  a11y: [
+    "The reveal circle is named “Show key” or “Hide key” (“Show password” for passwords).",
+    "With Caps Lock on, a password field shows “Caps Lock” beside the reveal circle and announces it once; the field's own description stays.",
+    "A revealed key is set in mono at the same size as every other id.",
+  ],
 };
 export const examples = [
   { id: "secret", title: "Provider key", fn: "Secret" },
@@ -29,20 +34,26 @@ export function Password() {
 }
 export function States() {
   return (
-    <Matrix
-      title="States"
-      rows={[{ label: "masked" }, { label: "revealed" }]}
-      columns={[
-        { label: "Rest", props: {} },
-        { label: "Focus", props: { "data-force": "focus" } },
-        { label: "Invalid", props: { invalid: true } },
-        { label: "Disabled", props: { disabled: true } },
-      ]}
-      render={(r, p) => (
-        <div className="w-240">
-          <SensitiveInput aria-label="Provider key" defaultValue="sk-ant-api03-Xf7Lq2" defaultRevealed={r.label === "revealed"} {...p} />
+    <>
+      <StateGrid
+        title="States"
+        kinds={[
+          { label: "Masked", id: "masked" },
+          { label: "Revealed", id: "revealed" },
+        ]}
+        states={FIELD_STATES}
+        render={(k, p) => (
+          <div className="w-240">
+            <SensitiveInput aria-label="Provider key" defaultValue="sk-ant-api03-Xf7Lq2" defaultRevealed={k.id === "revealed"} {...p} />
+          </div>
+        )}
+      />
+      <StateSection title="Password, with a description">
+        <div className="flex w-320 flex-col gap-16">
+          <SensitiveInput kind="password" label="Password" description="At least 12 characters." defaultValue="correct horse" />
+          <SensitiveInput label="Provider key" description="Only the last four characters stay visible after saving." placeholder="sk-ant-…" />
         </div>
-      )}
-    />
+      </StateSection>
+    </>
   );
 }

@@ -83,13 +83,26 @@ export const ClipboardText = forwardRef<HTMLDivElement, ClipboardTextProps>(func
   { value, display, label, size = "md", className, ...props },
   ref,
 ) {
+  const text = useRef<HTMLSpanElement>(null);
+  const cut = useTruncated(text);
+  const shown = (
+    <span ref={text} className="mono min-w-0 flex-1 truncate rounded-code text-fg select-all focus-ring" {...(cut ? { tabIndex: 0 } : {})}>
+      {display ?? value}
+    </span>
+  );
   return (
     <div
       ref={ref}
       className={cn("inline-flex min-w-0 max-w-full items-center gap-8 rounded-pill bg-fill-1", KAESO_CLIPBOARD_TEXT_VARIANTS.size[size].classes, className)}
       {...props}
     >
-      <span className="mono min-w-0 flex-1 truncate text-fg select-all">{display ?? value}</span>
+      {cut ? (
+        <Tooltip content={value} shape="multiline">
+          {shown}
+        </Tooltip>
+      ) : (
+        shown
+      )}
       <CopyButton value={value} label={label} size="sm" />
     </div>
   );
@@ -181,7 +194,7 @@ export const InlineCopyText = forwardRef<HTMLButtonElement, InlineCopyTextProps>
           if (await copy(value)) onCopy?.(value);
         }}
         className={cn(
-          "group/copy relative -mx-4 inline-flex max-w-full-bleed-4 min-w-0 items-center gap-4 rounded-code px-4 align-baseline mono text-small text-fg transition-control focus-ring tap-target",
+          "group/copy relative -mx-4 inline-flex max-w-full-bleed-4 min-w-0 items-center gap-4 rounded-code px-4 align-baseline mono text-small text-fg transition-control focus-ring-inset tap-target",
           "hover:bg-fill-1 active:bg-fill-2 cursor-copy",
           className,
         )}

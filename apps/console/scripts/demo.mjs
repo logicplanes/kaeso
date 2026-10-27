@@ -140,7 +140,7 @@ async function record(browser, theme, out) {
   for (let step = 0; step < 3; step++) await click(create.getByRole("button", { name: "Continue", exact: true }), 200);
   await click(create.getByRole("button", { name: "Create key", exact: true }), 600);
   const reveal = page.getByRole("dialog", { name: "Key created" });
-  const secret = (await reveal.getByRole("textbox", { name: `Secret for ${KEY_NAME}` }).textContent()) ?? "";
+  const secret = (await reveal.getByRole("textbox", { name: `Key for ${KEY_NAME}` }).textContent()) ?? "";
   await click(reveal.getByRole("button", { name: "Copy key" }), 600);
   await click(reveal.getByRole("button", { name: "Finish", exact: true }), 300);
 

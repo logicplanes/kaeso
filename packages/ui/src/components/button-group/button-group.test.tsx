@@ -24,3 +24,21 @@ describe("ButtonGroup.Item", () => {
     expect(screen.getByRole("button", { name: "List" })).toBeInTheDocument();
   });
 });
+
+describe("ButtonGroup selection", () => {
+  it("exposes the selected item as pressed, and keeps it pressed when disabled", () => {
+    render(
+      <ButtonGroup aria-label="Period">
+        <ButtonGroup.Item pressed={false}>Day</ButtonGroup.Item>
+        <ButtonGroup.Item pressed>Week</ButtonGroup.Item>
+        <ButtonGroup.Item pressed={false} disabled>
+          Month
+        </ButtonGroup.Item>
+      </ButtonGroup>,
+    );
+    expect(screen.getByRole("group", { name: "Period" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Week", pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Day", pressed: false })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Month", pressed: false })).toBeDisabled();
+  });
+});
