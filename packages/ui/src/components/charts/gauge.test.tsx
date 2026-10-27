@@ -28,6 +28,19 @@ describe("Gauge", () => {
     expect(screen.getByRole("meter")).toHaveTextContent("Over the limit");
   });
 
+  it("shows a dash with no arc or status when the value is missing, and says there is no data", () => {
+    const { container, rerender } = render(<Gauge aria-label="Budget" value={Number.NaN} label="of $500.00 budget" />);
+    const meter = screen.getByRole("meter", { name: "Budget" });
+    expect(meter).toHaveTextContent(/^–of \$500\.00 budget$/);
+    expect(meter).toHaveAttribute("aria-valuenow", "0");
+    expect(meter).toHaveAttribute("aria-valuetext", "No data, of $500.00 budget");
+    expect(container.querySelectorAll("path")).toHaveLength(1);
+    rerender(<Gauge aria-label="Budget" value={Number.POSITIVE_INFINITY} valueLabel="$0.00" />);
+    expect(meter).toHaveTextContent(/^\$0\.00$/);
+    expect(meter).toHaveAttribute("aria-valuetext", "$0.00");
+    expect(container.querySelectorAll("path")).toHaveLength(1);
+  });
+
   it("draws no arc at zero", () => {
     const { container } = render(<Gauge aria-label="Budget" value={0} />);
     expect(container.querySelectorAll("path")).toHaveLength(1);

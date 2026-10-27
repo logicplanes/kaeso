@@ -154,7 +154,7 @@ describe("SensitiveInput", () => {
     expect(onKeyDown).toHaveBeenCalled();
     expect(onKeyUp).toHaveBeenCalled();
     await userEvent.tab();
-    expect(screen.getByRole("status")).toHaveTextContent("");
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 });
 

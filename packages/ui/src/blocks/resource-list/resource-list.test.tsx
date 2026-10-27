@@ -100,7 +100,7 @@ describe("ResourceList's ref", () => {
   it("announces how many rows a search leaves, and clears the search from its no-match state", async () => {
     render(<ResourceList aria-label="Keys" groups={groups} />);
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("");
+    expect(status).toBeEmptyDOMElement();
     await userEvent.type(screen.getByRole("searchbox", { name: "Search" }), "prod");
     expect(status).toHaveTextContent("1 result");
     await userEvent.type(screen.getByRole("searchbox", { name: "Search" }), "zzz");

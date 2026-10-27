@@ -178,6 +178,7 @@ const en: Readonly<Record<string, string>> = {
   "format.thousands": "{value}K",
   "format.yesterday": "yesterday",
   "gauge.near": "Near the limit",
+  "gauge.noData": "No data",
   "gauge.over": "Over the limit",
   "heatmap.cell": "{row} {column}: {value}",
   "heatmap.cellHeading": "{row} {column}",

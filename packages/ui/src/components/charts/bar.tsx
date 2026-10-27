@@ -136,6 +136,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
 ) {
   const t = useUiText();
   const format = formatValue ?? ((v: number) => formatNumber(v));
+  const write = (v: number) => (Number.isFinite(v) ? format(v) : "–");
   const [box, size] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<{ i: number; y: number } | null>(null);
   const [focus, setFocus] = useState<string | null>(null);
@@ -159,7 +160,11 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const color = (s: BarSeries) => s.color ?? palette.get(s.id)!;
   const axisLabel = tickLabel(formatValue ?? compactAxis);
   const ticks = empty ? [] : onlyZero(flat) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flat)).filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9);
-  const valueLabel = (ci: number, si = 0) => format(stacked ? shown.reduce((a, s) => a + (s.values[ci] ?? 0), 0) : (shown[si]?.values[ci] ?? 0));
+  const total = (ci: number) => {
+    const known = finite(shown.map((s) => s.values[ci] ?? NaN));
+    return known.length ? known.reduce((a, n) => a + n, 0) : NaN;
+  };
+  const valueLabel = (ci: number, si = 0) => write(stacked ? total(ci) : (shown[si]?.values[ci] ?? NaN));
   const widestCategory = Math.max(0, ...categories.map((c) => labelWidth(c))) * (CATEGORY_FONT / AXIS.label.fontSize);
   const cap = size.width ? size.width * 0.4 : Infinity;
   const M = horizontal
@@ -215,12 +220,12 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   };
   const table = {
     columns: [t("barChart.category", "Category"), ...series.map((s) => s.label)],
-    rows: categories.map((_, ci) => [heading(ci), ...series.map((s) => format(s.values[ci] ?? 0))]),
+    rows: categories.map((_, ci) => [heading(ci), ...series.map((s) => write(s.values[ci] ?? NaN))]),
   };
   const quiet = !!state.loading || empty || !!state.error;
   const keys = useChartKeys(quiet ? 0 : categories.length, horizontal ? { vertical: true, start: 0 } : {});
   const active = quiet ? null : (hover?.i ?? keys.index ?? (highlight !== undefined && highlight < categories.length ? highlight : null));
-  const totals = categories.map((_, ci) => shown.reduce((a, s) => a + Math.abs(s.values[ci] ?? 0), 0));
+  const totals = categories.map((_, ci) => finite(shown.map((s) => s.values[ci] ?? NaN)).reduce((a, n) => a + Math.abs(n), 0));
   const spans = categories.map((_, ci) =>
     stacked
       ? stackSpans(
@@ -254,15 +259,18 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
     };
   };
   const rowsFor = (ci: number) =>
-    shown.map((s) => ({
-      id: s.id,
-      label: s.label,
-      color: color(s),
-      value: format(s.values[ci] ?? 0),
-      ...(shares && shown.length > 1 && totals[ci]
-        ? { share: formatPercent(Math.round((Math.abs(s.values[ci] ?? 0) / (totals[ci] ?? 1)) * 100) / 100, 0) }
-        : {}),
-    }));
+    shown.map((s) => {
+      const value = s.values[ci] ?? NaN;
+      return {
+        id: s.id,
+        label: s.label,
+        color: color(s),
+        value: write(value),
+        ...(shares && shown.length > 1 && totals[ci] && Number.isFinite(value)
+          ? { share: formatPercent(Math.round((Math.abs(value) / (totals[ci] ?? 1)) * 100) / 100, 0) }
+          : {}),
+      };
+    });
   const toggle = (id: string) => {
     const next = new Set(hidden);
     if (next.has(id)) next.delete(id);
@@ -391,7 +399,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                               <title>{c}</title>
                             </text>
                             {(stacked ? [0] : shown.map((_, si) => si)).map((si) => {
-                              const raw = stacked ? shown.reduce((a, s) => a + (s.values[ci] ?? 0), 0) : (shown[si]?.values[ci] ?? 0);
+                              const raw = stacked ? total(ci) : (shown[si]?.values[ci] ?? NaN);
                               const end = stacked
                                 ? raw < 0
                                   ? Math.min(zero, ...(spans[ci] ?? []).map((sp) => (sp ? Math.min(sp.from, sp.to) : zero)))

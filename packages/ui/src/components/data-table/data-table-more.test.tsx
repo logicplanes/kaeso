@@ -115,3 +115,24 @@ describe("DataTable selection and rows", () => {
     }
   });
 });
+
+describe("DataTable load more", () => {
+  it("moves focus from Load more to the line that says every row is shown", async () => {
+    const user = userEvent.setup();
+    const table = (hasMore: boolean) => (
+      <DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} hasMore={hasMore} onLoadMore={() => undefined} />
+    );
+    const { rerender } = render(table(true));
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    expect(screen.getByRole("button", { name: "Load more" })).toHaveFocus();
+    rerender(table(false));
+    expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+    expect(screen.getByText("All rows shown")).toHaveFocus();
+  });
+
+  it("shows nothing below a table that never had more to load", () => {
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} hasMore={false} onLoadMore={() => undefined} />);
+    expect(screen.queryByRole("navigation", { name: "Pagination" })).toBeNull();
+    expect(screen.queryByText("All rows shown")).toBeNull();
+  });
+});

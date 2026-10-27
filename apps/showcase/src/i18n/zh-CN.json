@@ -739,7 +739,7 @@
   "The series, each with an `id`, a `label`, `points` of `t` (a time) and `v`, and an optional `color`.": "系列，每个包含 `id`、`label`、由 `t`（时间）和 `v` 组成的 `points`，以及可选的 `color`。",
   "The shape it stands in for: a line of text, a control, a circle or a block.": "它所代替的形状：一行文字、一个控件、一个圆形或一个方块。",
   "The shape of each step: a pill or a box.": "每个步骤的形状：胶囊或方框。",
-  "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger.": "已用比例，从 0 到 1。超过 1 时圆弧填满并变为危险色。",
+  "The share used, from 0 to 1. Values above 1 fill the arc and turn it to danger; a missing value (NaN) shows a dash and no arc.": "已用比例，从 0 到 1。超过 1 时圆弧填满并变为危险色；缺失的值（NaN）显示为短横线，不画圆弧。",
   "The sheet's content.": "侧滑面板的内容。",
   "The side it opens on.": "打开的方向。",
   "The size of each character's box.": "每个字符方框的尺寸。",

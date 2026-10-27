@@ -88,6 +88,45 @@ describe("JsonView", () => {
   });
 });
 
+describe("JsonView tab stop", () => {
+  it("moves the tab stop to a branch collapsed by its chevron while a row inside it had it", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Before</button>
+        <JsonView value={{ usage: { input: 12, output: 40 }, model: "gpt-5" }} defaultDepth={2} />
+      </>,
+    );
+    screen.getByRole("treeitem", { name: /"output"/ }).focus();
+    const usage = screen.getByRole("treeitem", { name: /"usage"/ });
+    await user.click(usage.querySelector("button")!);
+    expect(usage).toHaveAttribute("aria-expanded", "false");
+    screen.getByRole("button", { name: "Before" }).focus();
+    await user.tab();
+    expect(usage).toHaveFocus();
+  });
+
+  it("moves the tab stop to the root when the row that had it is gone from a new value", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <>
+        <button type="button">Before</button>
+        <JsonView value={{ usage: { input: 12 } }} defaultDepth={2} />
+      </>,
+    );
+    screen.getByRole("treeitem", { name: /"input"/ }).focus();
+    rerender(
+      <>
+        <button type="button">Before</button>
+        <JsonView value={{ model: "gpt-5" }} defaultDepth={2} />
+      </>,
+    );
+    screen.getByRole("button", { name: "Before" }).focus();
+    await user.tab();
+    expect(screen.getAllByRole("treeitem")[0]).toHaveFocus();
+  });
+});
+
 describe("JsonView keys", () => {
   it("opens and closes with Enter and Space and walks back up", async () => {
     const user = userEvent.setup();
