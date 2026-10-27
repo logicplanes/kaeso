@@ -4,7 +4,9 @@ import { membershipsQuery, sessionQuery } from "~/auth/session-queries";
 import { loadRouteGates } from "~/auth/route-gates-load";
 import { AppShell } from "~/shell/app-shell";
 import { GatewayUnreachable } from "~/shell/gateway-unreachable";
-import { SessionPending } from "~/shell/pending";
+import { lazyPending } from "~/shell/lazy-pending";
+
+const SessionPending = lazyPending(() => import("~/shell/pending").then((m) => m.SessionPending));
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ context, location }) => {
