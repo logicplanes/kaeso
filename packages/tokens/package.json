@@ -1,6 +1,6 @@
 {
   "name": "@logicplanes/kaeso-tokens",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Kaeso's design tokens: CSS variables, the Tailwind v4 theme, TypeScript constants and JSON.",
   "license": "MIT",
   "author": "Devin Oldenburg",
