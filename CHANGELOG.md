@@ -4,6 +4,22 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-10-28
+
+### Changed
+
+#### Gateway
+
+- A fresh install starts with models.dev's models and prices as of 28 October 2026 ([#520](https://github.com/logicplanes/kaeso/pull/520))
+
+### Fixed
+
+- Kaeso overhead no longer counts the time the app takes to upload the request body ([#519](https://github.com/logicplanes/kaeso/pull/519))
+
+#### Console
+
+- The console no longer logs a React error when a page's loading view appears before its code has loaded ([#517](https://github.com/logicplanes/kaeso/pull/517))
+
 ## [0.4.5] - 2026-10-27
 
 ### Added
@@ -925,7 +941,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.6
 [0.4.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.5
 [0.4.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.4
 [0.4.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.3

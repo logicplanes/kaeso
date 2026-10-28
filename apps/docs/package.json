@@ -1,6 +1,6 @@
 {
   "name": "kaeso-docs",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "private": true,
   "type": "module",
   "description": "Kaeso's documentation: Markdown pages in English, German and Simplified Chinese, built into a static site.",
