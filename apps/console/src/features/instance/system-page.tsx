@@ -30,7 +30,8 @@ export function InstanceSystemPage() {
       title={t("instance.system", "System")}
       description={t("instance.systemHint", "Live state of the gateway and its services, refreshed every 10 seconds.")}
     >
-      {!s && system.isError ? (
+      {/* A refetch without data puts the query back to pending; keep saying it failed until it succeeds. */}
+      {!s && (system.isError || system.errorUpdatedAt > 0) ? (
         <LoadFailed title={t("instance.systemFailed", "The system status couldn't load")} />
       ) : !s ? (
         <SettingsLoading rows={4} />
