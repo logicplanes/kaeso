@@ -1,5 +1,5 @@
 import { createRef } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChartFrame, ChartLive, ChartTooltip, Legend, Swatch } from "./core.js";
@@ -31,6 +31,38 @@ describe("ChartFrame", () => {
     expect(screen.queryByRole("list", { name: "Legend" })).toBeNull();
     expect(screen.getByRole("button", { name: "View as chart" }).parentElement!.children).toHaveLength(1);
     expect(container.querySelector("table")).not.toBeNull();
+  });
+});
+
+describe("ChartFrame states", () => {
+  it("gives screen readers no data table for a chart that couldn't load", () => {
+    const { container, rerender } = render(
+      <ChartFrame label="Requests per day" height={200} table={table}>
+        <svg />
+      </ChartFrame>,
+    );
+    expect(container.querySelector("table")).not.toBeNull();
+    rerender(
+      <ChartFrame label="Requests per day" height={200} table={table} state={{ error: true, onRetry: () => {} }}>
+        <svg />
+      </ChartFrame>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this chart");
+    expect(container.querySelector("table")).toBeNull();
+  });
+
+  it("keeps the screen readers' table out of the tab order, however narrow its hidden box", () => {
+    const wide = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(600);
+    const { container } = render(
+      <ChartFrame label="Requests per day" height={200} table={table}>
+        <svg />
+      </ChartFrame>,
+    );
+    wide.mockRestore();
+    const hidden = container.querySelector(".sr-only")!;
+    expect(hidden.querySelector("table")).not.toBeNull();
+    expect(hidden.querySelector("[tabindex]")).toBeNull();
+    expect(screen.queryByRole("group", { name: "Table, scrolls sideways" })).toBeNull();
   });
 });
 

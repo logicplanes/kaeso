@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
-import { on, requests } from "~/test/network";
+import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const cells = () => screen.getAllByRole("gridcell").map((c) => c.textContent);
@@ -214,6 +214,17 @@ describe("ModelsPage", () => {
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
     expect(await screen.findByText("gpt-5")).toBeInTheDocument();
+  });
+
+  it("says the catalogue couldn't load instead of calling it empty", async () => {
+    signedIn();
+    projectData();
+    modelsApi();
+    on("GET", "orgs/:org/projects/:project/models", apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly."));
+    await renderApp(projectPath("models"));
+
+    expect(await screen.findByText("The catalogue couldn't load")).toBeInTheDocument();
+    expect(screen.queryByText("No models yet")).not.toBeInTheDocument();
   });
 
   it("offers to add the first models to an empty catalogue", async () => {

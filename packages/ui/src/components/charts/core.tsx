@@ -239,9 +239,9 @@ export const ChartFrame = forwardRef<HTMLElement, ChartFrameProps>(function Char
           )}
         </div>
       )}
-      {table && !showTable && (
+      {table && !showTable && !failed && (
         <div className="sr-only">
-          <DataTablePlain table={table} caption={label} />
+          <DataTablePlain table={table} caption={label} hidden />
         </div>
       )}
     </figure>
@@ -251,12 +251,25 @@ ChartFrame.displayName = "ChartFrame";
 
 const NUMERIC = /^[^\p{L}]*\d[^\p{L}]*\p{L}{0,3}$/u;
 
-function DataTablePlain({ table, caption, sticky }: { table: TableData; caption?: string | undefined; sticky?: boolean | undefined }) {
+// The screen-reader copy is a bare <table>: inside sr-only's 1px box a Table always overflows,
+// and its scroller would become a tab stop nobody can see.
+function DataTablePlain({
+  table,
+  caption,
+  sticky,
+  hidden,
+}: {
+  table: TableData;
+  caption?: string | undefined;
+  sticky?: boolean | undefined;
+  hidden?: boolean | undefined;
+}) {
   const end = table.columns.map(
     (_, j) => j > 0 && table.rows.every((r) => typeof r[j] === "number" || NUMERIC.test(String(r[j] ?? "").trim()) || r[j] === "–"),
   );
+  const Shell = hidden ? "table" : Table;
   return (
-    <Table>
+    <Shell>
       {caption && <caption className="sr-only">{caption}</caption>}
       <Table.Head>
         <Table.Row>
@@ -278,7 +291,7 @@ function DataTablePlain({ table, caption, sticky }: { table: TableData; caption?
           </Table.Row>
         ))}
       </Table.Body>
-    </Table>
+    </Shell>
   );
 }
 

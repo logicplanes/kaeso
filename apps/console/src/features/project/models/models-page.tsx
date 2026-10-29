@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LoadFailed } from "~/features/org/load-failed";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AppFrame,
@@ -262,6 +263,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
           <AppFrame.Body padding="list">
             {catalogue.isPending ? (
               <List aria-label={common.models()} items={[]} loading />
+            ) : catalogue.isError ? (
+              <LoadFailed title={t("models.catalogueFailed", "The catalogue couldn't load")} />
             ) : filtered.length === 0 ? (
               <Empty
                 size="lg"
