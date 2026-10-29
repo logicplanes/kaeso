@@ -46,6 +46,7 @@ struct Shared {
     streams_dropped: AtomicUsize,
     drops: tokio::sync::Notify,
     closed: Mutex<HashMap<String, Instant>>,
+    text_sent: Mutex<HashMap<String, u64>>,
     abandoned: AtomicUsize,
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
@@ -236,6 +237,17 @@ impl MockProvider {
             .unwrap_or_else(PoisonError::into_inner)
             .get(tag)
             .copied()
+    }
+
+    // The reply text an endless stream with this tag has sent so far.
+    pub fn text_sent(&self, tag: &str) -> u64 {
+        self.shared
+            .text_sent
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(tag)
+            .copied()
+            .unwrap_or_default()
     }
 
     pub fn stream_counts(&self) -> (usize, usize, usize) {
@@ -740,7 +752,18 @@ fn endless(
         |(mut head, mut rest, guard)| async move {
             let (pause, chunk) = match head.next() {
                 Some(next) => next,
-                None => rest.chunk()?,
+                None => {
+                    let next = rest.chunk()?;
+                    if let Some(tag) = &guard.tag {
+                        guard
+                            .shared
+                            .text_sent
+                            .lock()
+                            .unwrap_or_else(PoisonError::into_inner)
+                            .insert(tag.clone(), rest.sent());
+                    }
+                    next
+                }
             };
             if !pause.is_zero() {
                 tokio::time::sleep(pause).await;
