@@ -364,9 +364,10 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
             Refusal {
                 status: 429,
                 message: format!(
-                    "Rate limit reached: {} {}{scope}; retry in {secs} seconds.",
+                    "Rate limit reached: {} {}{scope}; retry in {}.",
                     noun(l.subject),
-                    l.describe()
+                    l.describe(),
+                    crate::auth::throttle::wait(secs)
                 ),
                 retry_after: Some(Duration::from_secs(secs)),
                 param: None,

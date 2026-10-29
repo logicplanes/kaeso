@@ -1394,7 +1394,7 @@ async fn a_bounded_request_waits_until_the_token_rate_has_room_for_it() {
     );
     assert_eq!(
         r.message,
-        "Rate limit reached: this key's token rate of 100 tokens per minute; retry in 60 seconds."
+        "Rate limit reached: this key's token rate of 100 tokens per minute; retry in 1 minute."
     );
     env.app.clock.advance(time::Duration::seconds(61));
     assert_eq!(
