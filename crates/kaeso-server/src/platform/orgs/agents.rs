@@ -120,6 +120,7 @@ pub async fn revoke(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Whether the organization lets its members' agents act in it, and how far.")]
 pub struct OrgAgentPolicy {
     #[doc = "Whether members' agents may act in the organization."]

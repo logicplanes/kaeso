@@ -89,6 +89,7 @@ pub async fn get(ctx: Ctx, Path(_org): Path<String>) -> ApiResult<Json<OrgView>>
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "General settings.")]
 pub struct OrgUpdate {
     #[doc = "A new name, 1 to 100 characters."]
@@ -266,6 +267,7 @@ pub async fn restore(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Who becomes an owner.")]
 pub struct OwnershipTransfer {
     #[doc = "A member of the org who becomes an owner. The caller becomes an admin."]

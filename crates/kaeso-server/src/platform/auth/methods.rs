@@ -66,6 +66,7 @@ impl SsoProviderView {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The address to sign in with.")]
 pub struct MethodsRequest {
     #[doc = "The email address."]

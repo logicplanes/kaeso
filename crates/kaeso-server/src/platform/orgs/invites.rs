@@ -119,6 +119,7 @@ impl InviteView {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A project to join, with its role.")]
 pub struct InviteProjectRequest {
     #[doc = "An active project of the org."]
@@ -133,6 +134,7 @@ pub struct InviteProjectRequest {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new invitation.")]
 pub struct InviteRequest {
     #[doc = "The address to invite."]

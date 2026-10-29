@@ -21,6 +21,7 @@ use crate::services::orgs;
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The first user and organization.")]
 pub struct SetupRequest {
     #[doc = "The token from the setup link (`…/setup#token=…`)."]

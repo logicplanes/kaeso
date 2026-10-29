@@ -27,6 +27,7 @@ pub const CODES_PER_CHALLENGE: i32 = 3;
 pub const CODES_BEFORE_LOCK: i32 = 10;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Email and password.")]
 pub struct PasswordRequest {
     #[doc = "The account's email address."]
@@ -196,6 +197,7 @@ pub async fn password(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The second step of a password or sign-in link sign-in.")]
 pub struct TotpRequest {
     #[doc = "The challenge from `auth/password` or `auth/magic-link/verify`."]

@@ -154,17 +154,19 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
             });
         }
     }
-    let mut config: Config = Value::Table(table)
-        .try_into()
-        .map_err(|e: toml::de::Error| {
-            let message = e.message().to_owned();
-            let key = settings()
-                .iter()
-                .rev()
-                .find(|s| message.contains(s.key.rsplit('.').next().unwrap_or(&s.key)))
-                .map_or("configuration", |s| &s.key);
-            ConfigError::invalid(key, format!("is invalid: {message}"))
-        })?;
+    let mut config: Config = serde_path_to_error::deserialize(Value::Table(table)).map_err(
+        |e: serde_path_to_error::Error<toml::de::Error>| {
+            let path = e.path().to_string();
+            let message = e.inner().message();
+            match setting(&path) {
+                Some(s) => ConfigError::invalid(&s.key, format!("is invalid: {message}")),
+                None => ConfigError::invalid(
+                    "configuration",
+                    format!("is invalid at `{path}`: {message}"),
+                ),
+            }
+        },
+    )?;
     config.cors.origins = AllowedOrigins::parse(&config.cors.allowed_origins)
         .map_err(|e| ConfigError::invalid("cors.allowed_origins", e.to_string()))?;
     config.validate()?;
@@ -622,6 +624,61 @@ mod tests {
         );
         let err = load(&Map::minimal().set("KAESO_MAIL_TRANSPORT", "smtp")).unwrap_err();
         assert!(err.to_string().starts_with("KAESO_SMTP_HOST"), "{err}");
+    }
+
+    #[test]
+    fn every_unreadable_value_names_its_own_setting() {
+        for (env, value, named) in [
+            (
+                "KAESO_UPSTREAM_REQUEST_TIMEOUT",
+                "abc",
+                "upstream.request_timeout",
+            ),
+            (
+                "KAESO_STREAMS_KEEPALIVE_INTERVAL",
+                "5",
+                "streams.keepalive_interval",
+            ),
+            ("KAESO_MODELS_DEV_URL", "not a url", "models_dev.url"),
+            (
+                "KAESO_BODY_LIMITS_MODEL_API",
+                "lots",
+                "body_limits.model_api",
+            ),
+            ("KAESO_LISTEN", "nope", "listen"),
+            ("KAESO_TRUSTED_PROXIES", "1.2.3", "trusted_proxies"),
+            ("KAESO_LOG_FORMAT", "yaml", "log.format"),
+            ("KAESO_UPDATES_CHANNEL", "beta", "updates.channel"),
+            (
+                "KAESO_PROVIDERS_OPENAI_BASE_URL",
+                "not a url",
+                "providers.openai.base_url",
+            ),
+        ] {
+            let err = load(&Map::minimal().set(env, value))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with(&format!("{env} ({named}) is invalid")),
+                "{err}"
+            );
+        }
+        let file = Map::minimal().set("KAESO_CONFIG", "/etc/kaeso.toml").file(
+            "/etc/kaeso.toml",
+            "[upstream]\nrequest_timeout = \"soon\"\n",
+        );
+        let err = load(&file).unwrap_err().to_string();
+        assert!(
+            err.starts_with("KAESO_UPSTREAM_REQUEST_TIMEOUT (upstream.request_timeout)"),
+            "{err}"
+        );
+        let err = load(&Map::minimal().set("KAESO_INSTANCE_CONTENT_RETENTION_DAYS", "0"))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.starts_with("KAESO_INSTANCE_CONTENT_RETENTION_DAYS"),
+            "{err}"
+        );
     }
 
     #[test]

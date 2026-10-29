@@ -13,6 +13,7 @@ use crate::platform::json::Body;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(
     description = "Whether agents may sign in to the instance, and how far instance admins' agents may administer it."
 )]

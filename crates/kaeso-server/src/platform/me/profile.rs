@@ -113,6 +113,7 @@ pub async fn get(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Me>>
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Profile changes.")]
 pub struct ProfileUpdate {
     #[doc = "A new display name, 1 to 100 characters."]
@@ -166,6 +167,9 @@ pub struct EmailChange {
     #[doc = "A code or recovery code, needed while TOTP is on."]
     #[serde(flatten)]
     pub second_factor: SecondFactor,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 #[utoipa::path(
@@ -275,6 +279,7 @@ pub async fn change_email(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The confirmation token.")]
 pub struct EmailConfirm {
     #[doc = "The token from `…/me/email/confirm#token=…`."]
@@ -379,6 +384,7 @@ pub async fn confirm_email(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The cancel token.")]
 pub struct EmailCancel {
     #[doc = "The token from `…/me/email/confirm#cancel=…`, sent to the current address."]

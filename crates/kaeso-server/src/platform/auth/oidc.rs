@@ -41,6 +41,7 @@ pub fn secret_aad(org: OrgId) -> Vec<u8> {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Which org to sign in to, and where to go afterwards.")]
 pub struct StartRequest {
     #[doc = "The org, only from a signed-in member of it, such as on the page that\n\

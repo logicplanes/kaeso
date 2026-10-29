@@ -369,8 +369,8 @@ async fn model_access_narrows_from_member_to_service_account_to_key() {
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     let key = app
         .post(
-            &format!("{base}/keys"),
-            json!({ "name": "bot", "service_account_id": account_id }),
+            &format!("{base}/service-accounts/{account_id}/keys"),
+            json!({ "name": "bot" }),
             Some(&owner.cookie),
         )
         .await;

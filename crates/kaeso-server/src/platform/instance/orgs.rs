@@ -122,6 +122,7 @@ pub async fn list(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new org.")]
 pub struct InstanceOrgCreate {
     #[doc = "The name."]
@@ -225,6 +226,7 @@ pub async fn members_list(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The user to appoint.")]
 pub struct AppointOwner {
     #[doc = "An active user who becomes owner."]
@@ -289,6 +291,7 @@ pub async fn appoint_owner(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new name for an org.")]
 pub struct InstanceOrgUpdate {
     #[doc = "1 to 100 characters."]

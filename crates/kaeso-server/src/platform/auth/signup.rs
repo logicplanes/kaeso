@@ -29,6 +29,7 @@ async fn account_policy(state: &AppState) -> ApiResult<kaeso_core::accounts::Acc
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The address to sign up with.")]
 pub struct SignupRequest {
     #[doc = "The email address."]
@@ -125,6 +126,7 @@ pub async fn request(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The new account.")]
 pub struct SignupVerify {
     #[doc = "The token from `…/auth/signup#token=…`."]
