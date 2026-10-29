@@ -45,7 +45,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
     <>
       <ProjectHeader org={org} project={project} page={common.settings()} path="settings" />
       <AppFrame.Body padding="page">
-        <div className="mx-auto flex w-full max-w-720 flex-col">
+        <div className="flex w-full flex-col lg:mx-auto lg:max-w-720">
           {!p ? (
             <Skeleton className="h-full w-full" />
           ) : (

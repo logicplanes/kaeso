@@ -306,7 +306,7 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
   return (
     <Body ref={ref} className="relative">
       <MenuButton className="absolute top-10 left-24 z-10" />
-      <div className={cn("mx-auto w-full max-w-settings px-24 pt-16 pb-96 lg:pt-64", className)} {...props}>
+      <div className={cn("w-full px-24 pt-16 pb-96 lg:mx-auto lg:max-w-settings lg:pt-64", className)} {...props}>
         <header className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8">
           <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance">{title}</h1>
           {actions && <div className="order-last flex h-34 shrink-0 items-center gap-8 sm:order-none sm:ml-auto">{actions}</div>}

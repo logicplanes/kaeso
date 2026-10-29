@@ -85,7 +85,7 @@ EffectiveAccess.displayName = "EffectiveAccess";
 
 function Row({ term, count, quiet, children }: { term: string; count?: string | undefined; quiet?: boolean | undefined; children: ReactNode }) {
   return (
-    <div className="flex min-h-40 flex-col gap-2 py-8 not-first:hairline-t @auth:col-span-2 @auth:grid @auth:grid-cols-subgrid @auth:items-baseline @auth:gap-16">
+    <div className="flex min-h-40 flex-col justify-center gap-2 py-8 not-first:hairline-t @auth:col-span-2 @auth:grid @auth:grid-cols-subgrid @auth:content-center @auth:items-baseline @auth:gap-16">
       <dt className={cn("shrink-0 text-small font-medium @auth:min-w-140", quiet ? "text-fg-secondary" : "text-fg")}>{term}</dt>
       <dd className="flex min-w-0 flex-1 items-baseline gap-12">
         <span className="min-w-0 flex-1 text-small text-pretty text-fg-secondary">{children}</span>
