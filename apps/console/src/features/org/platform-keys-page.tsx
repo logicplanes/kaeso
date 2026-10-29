@@ -66,6 +66,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         action === "disable"
           ? t("org.platformKeys.disabled", "{name} disabled", { name: k.name })
           : t("org.platformKeys.enabled", "{name} enabled", { name: k.name }),
+        { action: { label: t("keys.undo", "Undo"), onClick: () => act.mutate({ key: k, action: action === "disable" ? "enable" : "disable" }) } },
       ),
   });
   const archive = (k: OrgKeyView) => {
