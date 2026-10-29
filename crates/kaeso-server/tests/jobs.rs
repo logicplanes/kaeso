@@ -62,8 +62,11 @@ async fn service_account_keys_warn_the_project_admins() {
     assert_eq!(account.status, StatusCode::CREATED, "{:?}", account.body);
     let key = app
         .post(
-            &format!("{base}/keys"),
-            json!({ "name": "deploy", "service_account_id": account.body["id"], "expires_in_days": 1 }),
+            &format!(
+                "{base}/service-accounts/{}/keys",
+                account.body["id"].as_str().unwrap()
+            ),
+            json!({ "name": "deploy", "expires_in_days": 1 }),
             Some(&owner.cookie),
         )
         .await;

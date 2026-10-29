@@ -18494,7 +18494,8 @@
             "description": "The token from the invitation link.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AcceptedView": {
         "type": "object",
@@ -18718,7 +18719,8 @@
             ],
             "description": "A new name."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ActorView": {
         "type": "object",
@@ -18785,7 +18787,8 @@
             "type": "boolean",
             "description": "Whether the user administers the install."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AdminSsoUpdate": {
         "type": "object",
@@ -18802,7 +18805,8 @@
               }
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AdminSsoView": {
         "type": "object",
@@ -18934,7 +18938,8 @@
             "description": "The request token from `#request=`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AgentCatalogue": {
         "type": "object",
@@ -19144,7 +19149,8 @@
             "description": "The request token from `#request=`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AgentRequestView": {
         "type": "object",
@@ -19184,7 +19190,8 @@
             "description": "Its name, 1 to 100 characters.",
             "example": "Release helper"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AgentView": {
         "type": "object",
@@ -19356,7 +19363,8 @@
             "description": "The newest offered release's version, as the person confirmed it.",
             "example": "40.2.1"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AppointOwner": {
         "type": "object",
@@ -19369,7 +19377,8 @@
             "$ref": "#/components/schemas/UserId",
             "description": "An active user who becomes owner."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "AuditEventId": {
         "type": "string",
@@ -19526,7 +19535,8 @@
             "type": "string",
             "description": "The image, base64-encoded; at most 512 KiB once decoded."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "BatchResult": {
         "type": "object",
@@ -19785,7 +19795,8 @@
             "$ref": "#/components/schemas/OrgId",
             "description": "The org; one of `sso` in `GET me/sign-in-again`."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ConfirmSsoView": {
         "type": "object",
@@ -20799,7 +20810,8 @@
             "description": "The token from `…/me/email/confirm#cancel=…`, sent to the current address.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "EmailChange": {
         "allOf": [
@@ -20835,7 +20847,8 @@
             "description": "The token from `…/me/email/confirm#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "EmailSent": {
         "type": "object",
@@ -21298,7 +21311,8 @@
             },
             "description": "Org rights."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "GenerationDialect": {
         "type": "string",
@@ -21364,7 +21378,8 @@
             "description": "The preset it started from: `observer`, `builder`, `operator` or `full`.",
             "example": "builder"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "GrantRequest": {
         "type": "object",
@@ -21403,7 +21418,8 @@
             "description": "The role: a built-in role's name or a custom role's id (`role_…`) of\nthe right scope. Org roles: `owner`, `admin`, `billing`, `developer`,\n`auditor`, `member`; project roles: `admin`, `developer`, `viewer`.",
             "example": "developer"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "GrantView": {
         "type": "object",
@@ -21657,7 +21673,8 @@
             "description": "The most instance admins' agents may have on the instance: `none`,\n`read`, `configure` or `admin`.",
             "example": "configure"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InstanceInvite": {
         "type": "object",
@@ -21671,7 +21688,8 @@
             "description": "The address to invite.",
             "example": "ada@example.com"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InstanceOrgCreate": {
         "type": "object",
@@ -21696,7 +21714,8 @@
               }
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InstanceOrgUpdate": {
         "type": "object",
@@ -21710,7 +21729,8 @@
             "description": "1 to 100 characters.",
             "example": "Acme Inc."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InstanceOrgUsage": {
         "type": "object",
@@ -22002,7 +22022,8 @@
             "description": "The project role: `admin`, `developer`, `viewer` or a custom project\nrole's id.",
             "example": "developer"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InviteProjectRole": {
         "type": "object",
@@ -22064,7 +22085,8 @@
             "description": "The org role: a built-in role's name (`owner`, `admin`, `billing`,\n`developer`, `auditor`, `member`) or a custom org role's id. Only a\nrole whose rights the inviter holds, and whose project role in the\ndefault project the inviter could grant there unless `project_roles`\nnames it; only owners invite owners.",
             "example": "developer"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InviteToken": {
         "type": "object",
@@ -22078,7 +22100,8 @@
             "description": "The token from `…/invite#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "InviteView": {
         "type": "object",
@@ -22300,7 +22323,8 @@
             "description": "The longest lifetime of new keys in days (1 to 3650); `null` for no\nlimit. Existing keys keep their expiry.",
             "example": 90
           }
-        }
+        },
+        "additionalProperties": false
       },
       "KeyRotate": {
         "allOf": [
@@ -22721,7 +22745,8 @@
             "$ref": "#/components/schemas/OrgId",
             "description": "The org; the user must be a member and the org must have an SSO\nconnection."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "List_AgentActivityView": {
         "type": "object",
@@ -25648,7 +25673,8 @@
             "description": "The account's email address.",
             "example": "owner@example.com"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "MailSettings": {
         "type": "object",
@@ -25959,7 +25985,8 @@
             "description": "The email address.",
             "example": "ada@example.com"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ModelAccess": {
         "type": "object",
@@ -26302,7 +26329,8 @@
             "type": "boolean",
             "description": "Key expiry warnings."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "OfferedModel": {
         "type": "object",
@@ -26367,7 +26395,8 @@
             "description": "The most agents may have here: `observer`, `builder`, `operator` or\n`full`; each includes the ones before it.",
             "example": "full"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "OrgAgentView": {
         "type": "object",
@@ -26425,7 +26454,8 @@
             "description": "The name.",
             "example": "Acme"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "OrgCreation": {
         "type": "string",
@@ -26487,7 +26517,8 @@
               "usage.org.view"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "OrgId": {
         "type": "string",
@@ -26729,7 +26760,8 @@
             "description": "A new name, 1 to 100 characters.",
             "example": "Acme Inc."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "OrgView": {
         "type": "object",
@@ -26831,7 +26863,8 @@
             "$ref": "#/components/schemas/UserId",
             "description": "A member of the org who becomes an owner. The caller becomes an admin."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "Party": {
         "type": "object",
@@ -26876,7 +26909,8 @@
             "description": "The new password, 12 to 128 characters.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PasswordChanged": {
         "type": "object",
@@ -26911,7 +26945,8 @@
             "description": "The password.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "PlaygroundModel": {
         "type": "object",
@@ -27162,7 +27197,8 @@
             "description": "A new display name, 1 to 100 characters.",
             "example": "Ada Lovelace"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProjectCreate": {
         "type": "object",
@@ -27176,7 +27212,8 @@
             "description": "The name, 1 to 100 characters.",
             "example": "Support bot"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProjectGrantBody": {
         "type": "object",
@@ -27197,7 +27234,8 @@
             },
             "description": "Project rights from the rights catalogue."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProjectId": {
         "type": "string",
@@ -27219,7 +27257,8 @@
             "description": "The longest lifetime of new keys in days; never above the org's\nmaximum; `null` for the org's limit.",
             "example": 30
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProjectLogSettings": {
         "type": "object",
@@ -27455,7 +27494,8 @@
             ],
             "description": "A new name, 1 to 100 characters."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProjectView": {
         "type": "object",
@@ -27550,7 +27590,8 @@
             },
             "description": "Projects and their rights, when not `all`."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ProviderId": {
         "type": "string",
@@ -27799,7 +27840,8 @@
             "description": "The token from `…/auth/password-reset#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ResetRequest": {
         "type": "object",
@@ -27813,7 +27855,8 @@
             "description": "The account's email address.",
             "example": "owner@example.com"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "ResetVerifyRequest": {
         "type": "object",
@@ -27834,7 +27877,8 @@
             "description": "The token from `…/auth/password-reset#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "Revoked": {
         "type": "object",
@@ -27974,7 +28018,8 @@
             "description": "`org` or `project`; fixed once created.",
             "example": "project"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "RoleRef": {
         "type": "object",
@@ -28040,7 +28085,8 @@
             },
             "description": "The new rights of its scope."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "RoleView": {
         "type": "object",
@@ -28234,7 +28280,8 @@
             "description": "Or one of the recovery codes (each works once).",
             "example": "abcd-efgh-jkmn-pqrs"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SecurityView": {
         "type": "object",
@@ -28571,7 +28618,8 @@
             "description": "The install's IANA time zone, such as `Europe/Berlin` or `UTC`.",
             "example": "Europe/Berlin"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SettingsView": {
         "type": "object",
@@ -28715,7 +28763,8 @@
             "description": "The token from the setup link (`…/setup#token=…`).",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SignInMethods": {
         "type": "object",
@@ -28815,7 +28864,8 @@
             "description": "The email address.",
             "example": "ada@example.com"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SignupVerify": {
         "type": "object",
@@ -28844,7 +28894,8 @@
             "description": "The token from `…/auth/signup#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SourceView": {
         "type": "object",
@@ -29080,7 +29131,8 @@
             ],
             "description": "Refuse ID tokens that don't mark the address as verified with\n`email_verified`. Turn off only for a provider that never sends the\nclaim and verifies every address itself; `email_verified: false` is\nalways refused. Leave out to keep the stored choice; on for a new\nconnection."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SsoView": {
         "type": "object",
@@ -29174,7 +29226,8 @@
               }
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "StartResponse": {
         "type": "object",
@@ -29302,7 +29355,8 @@
             "type": "boolean",
             "description": "On or off."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "SystemView": {
         "type": "object",
@@ -29359,7 +29413,8 @@
             ],
             "description": "The recipient; default: the caller."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "TestEmailResult": {
         "type": "object",
@@ -29409,7 +29464,8 @@
             "description": "A 6-digit code.",
             "example": "123456"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "TotpEnabled": {
         "type": "object",
@@ -29455,7 +29511,8 @@
             "description": "Or one of the recovery codes (each works once).",
             "example": "abcd-efgh-jkmn-pqrs"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "TotpRequired": {
         "type": "object",
@@ -29706,7 +29763,8 @@
             "$ref": "#/components/schemas/UpdateWeekday",
             "description": "The day of a weekly update; ignored for a daily one."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "UpdateScheduleView": {
         "type": "object",
@@ -29777,7 +29835,8 @@
               }
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "UpdateSettingsView": {
         "type": "object",
@@ -30158,7 +30217,8 @@
             "description": "The token from `…/auth/magic-link#token=…`.",
             "writeOnly": true
           }
-        }
+        },
+        "additionalProperties": false
       },
       "WhatsNewRelease": {
         "type": "object",

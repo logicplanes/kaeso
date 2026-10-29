@@ -1,8 +1,35 @@
 use axum::extract::rejection::JsonRejection;
 use axum::extract::{FromRequest, Request};
-use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::de::{DeserializeOwned, Deserializer, MapAccess, Visitor};
 
 use super::error::ApiError;
+
+// serde can't combine `deny_unknown_fields` with `flatten`; a request that flattens shared
+// fields ends with this, which takes whatever no other field took and refuses it.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct NoOtherFields;
+
+impl<'de> Deserialize<'de> for NoOtherFields {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Refuse;
+        impl<'de> Visitor<'de> for Refuse {
+            type Value = NoOtherFields;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("no further fields")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<NoOtherFields, A::Error> {
+                match map.next_key::<String>()? {
+                    Some(field) => Err(serde::de::Error::unknown_field(&field, &[])),
+                    None => Ok(NoOtherFields),
+                }
+            }
+        }
+        deserializer.deserialize_map(Refuse)
+    }
+}
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Body<T>(pub T);
@@ -98,6 +125,43 @@ mod tests {
         };
         match data_error(&e.body_text()) {
             ApiError::InvalidRequest { message, param } => (message, param),
+            other => panic!("{other:?}"),
+        }
+    }
+
+    #[derive(Debug, Default, Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Shared {
+        code: Option<String>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct Flattening {
+        name: String,
+        #[serde(flatten)]
+        shared: Shared,
+        #[serde(flatten)]
+        _other: NoOtherFields,
+    }
+
+    #[test]
+    fn a_body_that_flattens_shared_fields_refuses_any_other() {
+        let axum::Json(read) =
+            axum::Json::<Flattening>::from_bytes(br#"{"name": "a", "code": "123456"}"#).unwrap();
+        assert_eq!(
+            (read.name.as_str(), read.shared.code.as_deref()),
+            ("a", Some("123456"))
+        );
+        let Err(JsonRejection::JsonDataError(e)) =
+            axum::Json::<Flattening>::from_bytes(br#"{"name": "a", "cdoe": "123456"}"#)
+        else {
+            panic!("an unknown field was accepted");
+        };
+        match data_error(&e.body_text()) {
+            ApiError::InvalidRequest { message, param } => {
+                assert_eq!(message, "`cdoe` is not a field of this request.");
+                assert_eq!(param.as_deref(), Some("cdoe"));
+            }
             other => panic!("{other:?}"),
         }
     }

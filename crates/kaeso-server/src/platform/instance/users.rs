@@ -169,6 +169,7 @@ pub async fn orgs(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An invitation to the install.")]
 pub struct InstanceInvite {
     #[doc = "The address to invite."]
@@ -446,6 +447,7 @@ pub async fn reset_2fa(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The instance admin flag.")]
 pub struct AdminFlag {
     #[doc = "Whether the user administers the install."]

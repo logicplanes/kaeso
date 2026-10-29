@@ -23,6 +23,7 @@ use crate::state::AppState;
 pub const LIFETIME: Duration = Duration::minutes(15);
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The address to send a link to.")]
 pub struct MagicLinkRequest {
     #[doc = "The account's email address."]
@@ -103,6 +104,7 @@ pub async fn request(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The token from the link.")]
 pub struct VerifyRequest {
     #[doc = "The token from `…/auth/magic-link#token=…`."]

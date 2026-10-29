@@ -30,6 +30,9 @@ pub struct OrgKeyCreate {
     #[doc = "When it expires."]
     #[serde(flatten)]
     pub expiry: ExpiryRequest,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 #[utoipa::path(

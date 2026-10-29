@@ -146,6 +146,7 @@ pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SettingsView>>
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The org whose single sign-on may administer the instance.")]
 pub struct AdminSsoUpdate {
     #[doc = "An org with an SSO connection, or `null` for none."]
@@ -191,6 +192,7 @@ pub async fn set_admin_sso(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Changes to the instance settings.")]
 pub struct SettingsUpdate {
     #[doc = "Who may create an account without an invitation."]
@@ -347,6 +349,7 @@ fn allowed_domains(domains: &[String]) -> ApiResult<Vec<String>> {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Where to send a test email.")]
 pub struct TestEmail {
     #[doc = "The recipient; default: the caller."]

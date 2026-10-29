@@ -15,6 +15,7 @@ use crate::state::AppState;
 pub const MAX_BYTES: usize = 512 * 1024;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A picture to set.")]
 pub struct AvatarUpload {
     #[doc = "`image/png`, `image/jpeg` or `image/webp`."]

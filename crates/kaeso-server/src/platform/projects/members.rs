@@ -98,6 +98,9 @@ pub struct AddMember {
     #[doc = "Their project role and rights."]
     #[serde(flatten)]
     pub grant: GrantRequest,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 #[utoipa::path(

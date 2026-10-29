@@ -234,6 +234,7 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new custom role.")]
 pub struct RoleCreate {
     #[doc = "`org` or `project`; fixed once created."]
@@ -255,6 +256,7 @@ pub struct RoleCreate {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Changes to a custom role.")]
 pub struct RoleUpdate {
     #[doc = "A new name."]

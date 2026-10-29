@@ -23,6 +23,7 @@ use crate::state::AppState;
 const ALREADY_ON: &str = "Two-factor authentication is already on; turn it off to set it up again.";
 
 #[derive(Debug, Default, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A second factor, needed while TOTP is on.")]
 pub struct SecondFactor {
     #[doc = "A 6-digit code from the authenticator app."]
@@ -132,6 +133,7 @@ async fn rotate(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new password.")]
 pub struct PasswordChange {
     #[doc = "The current password, required when one is set."]
@@ -265,6 +267,7 @@ pub async fn totp_begin(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Js
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The first code from the authenticator app.")]
 pub struct TotpConfirm {
     #[doc = "A 6-digit code."]

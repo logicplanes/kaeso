@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
 use common::{App, Owner};
+use kaeso_core::clock::Clock;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -114,6 +115,52 @@ async fn keys_show_their_secret_once_and_follow_the_expiry_rules() {
         "{:?}",
         r.body
     );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_key_expires_on_the_date_sent_and_a_misspelt_field_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}/keys", owner.org_id);
+    let on = (app.clock.now() + time::Duration::days(20)).date();
+    let (_, created) = key(
+        &app,
+        &owner,
+        &project,
+        json!({ "name": "dated", "expires_on": on.to_string() }),
+    )
+    .await;
+    assert_eq!(created["expires_at"], format!("{on}T00:00:00Z"));
+
+    let refused = |body: Value| {
+        let (app, owner, base) = (&app, &owner, &base);
+        async move {
+            let r = app.post(base, body, Some(&owner.cookie)).await;
+            assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+            (
+                r.body["error"]["param"].clone(),
+                r.body["error"]["message"].clone(),
+            )
+        }
+    };
+    refused(json!({ "name": "x", "expires_on": "18.11.2026" })).await;
+    let (param, message) = refused(json!({ "name": "x", "expires_in_day": 30 })).await;
+    assert_eq!(param, "expires_in_day");
+    assert_eq!(message, "`expires_in_day` is not a field of this request.");
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{}/projects/{project}", owner.org_id),
+            Some(json!({ "nmae": "renamed" })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "nmae");
     s.cleanup().await;
 }
 

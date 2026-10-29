@@ -110,6 +110,9 @@ pub struct AccountCreate {
     #[doc = "Its project rights."]
     #[serde(flatten)]
     pub grant: GrantRequest,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 #[utoipa::path(
@@ -201,6 +204,7 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Changes to a service account.")]
 pub struct AccountUpdate {
     #[doc = "A new name."]

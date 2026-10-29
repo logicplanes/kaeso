@@ -93,6 +93,7 @@ impl RoleRef {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Rights as a role plus individual changes.")]
 pub struct GrantRequest {
     #[doc = "The role: a built-in role's name or a custom role's id (`role_…`) of\n\
