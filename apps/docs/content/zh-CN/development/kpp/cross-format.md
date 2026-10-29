@@ -207,7 +207,7 @@ Anthropic 的网页搜索工具走相反的方向：Claude Code 的 `WebSearch` 
 | `web_search_20260209` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
 | `web_search_20260318` | `anthropic_messages` | `openai_chat` | 总是：Chat Completions 没有托管搜索 |
 
-要求使用被省略工具的 `tool_choice`（直接指定或在 `allowed_tools` 中）为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，并在 `kaeso-left-out` 中注明，因为服务商在没有工具时会拒绝它们。`tool_choice: "required"` 或指定某个工具为 `Unsupported`，因为已没有可调用的工具。
+要求使用被省略工具的 `tool_choice`（直接指定或在 `allowed_tools` 中）为 `Unsupported`。所有工具都被省略时，`tool_choice: "auto"` 或 `"none"` 以及 `parallel_tool_calls` 也随之省略，并在 `kaeso-left-out` 中注明，因为服务商在没有工具时会拒绝它们。`tool_choice: "required"` 或指定某个工具为 `Unsupported`，因为已没有可调用的工具。只有 OpenAI 的 Responses API 接受应用在没有工具的请求中发送的 `tool_choice`，例如 Codex 的辅助调用；对其他所有提供商，`auto` 和 `none` 同样省略，强制使用某个工具则为 `invalid_request`。
 
 Claude 的搜索以 `web_search_call` 项到达 Responses 应用。名为 `web_search` 的 `server_tool_use` 块变为 ID 为 `ws_kaeso_…`、带 `action: {type: search, query}` 的项。匹配的 `web_search_tool_result` 到达后，其状态为 `completed`；该结果是错误时为 `failed`；回复在它之前结束时为 `in_progress`，例如 `pause_turn`。流会发送 `response.output_item.added`、`response.web_search_call.in_progress`、`.searching`、`.completed` 和 `response.output_item.done`。搜索结果本身和回答中的引用会被省略，与应用格式无法显示的其他数据一样。
 
@@ -230,7 +230,17 @@ Responses 模型的搜索会像 Claude 的搜索一样到达 Anthropic 应用。
 | `local_shell_call` | 名为 `local_shell` 的 `Block::ToolCall`，其 `action` 对象作为参数 |
 | `local_shell_call_output` | 对应其 `id` 所指调用的 `Block::ToolResult`；Codex 改为发送 `function_call_output` |
 
-OpenAI 和 SpaceX 原样收到这些项：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
+OpenAI 原样收到这些项，SpaceX 原样收到其中的 `custom_tool_call` 和 `custom_tool_call_output`：SpaceX 能根据这样的历史作答（`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`）。SpaceX 接受的是 `shell_call` 项，因此 `local_shell_call` 和 `local_shell_call_output` 按上文作为工具调用和结果发给它。发给 SpaceX 时会省略 GPT 的推理项，因为 SpaceX 无法解密 OpenAI 的 `encrypted_content`，会拒绝该请求（参见 [SpaceX](openai-responses.md#spacex)）。不符合上述形状的项仍是未知块，并像未知块一样被拒绝。
+
+## Codex 智能体消息
+
+Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通信：根智能体交给子智能体的任务（`NEW_TASK`），以及各智能体的回复，带有 `author` 和 `recipient` 路径，例如 `/root/request_path`。只有 OpenAI 能读取它们。其他所有提供商在每种格式下都把它们作为消息收到：
+
+- **角色。** 发起请求的智能体自己写的消息成为 `assistant` 消息，收到的消息成为 `user` 消息。若第一条智能体消息之前没有来自模型的内容（子智能体的第一次请求），发起请求的智能体就是它的接收方，否则是它的作者（根智能体）。
+- **文本。** 消息的 `input_text` 和 `output_text` 部分，以及 Codex 写入任务明文的 `encrypted_content` 部分。Codex 自己的头部（`Message Type: …`、`Sender: …`）保留在开头；没有头部时，文本以 `Message from <author> to <recipient>:` 开头。
+- **省略。** item 的 `id`，只有 OpenAI 能解析。每条消息都在回复的 `kaeso-adapted` 头部中列出，例如 `agent message amsg_…`。
+
+若 `encrypted_content` 是密文（一段连续的 base64），只有 OpenAI 能读取，因此在其他地方都是 `Unsupported`，其他类型的部分同样如此。Fixtures：`openai_responses/providers/xai/requests/codex-multi-agent.json`（子智能体的第一次请求）和 `codex-multi-agent-root.json`（根智能体之后的一轮）。
 
 ## 工具调用参数
 

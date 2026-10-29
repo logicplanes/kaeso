@@ -207,7 +207,7 @@ These tools are left out of a request instead of refused (`cross::TOOLS_LEFT_OUT
 | `web_search_20260209` | `anthropic_messages` | `openai_chat` | always: Chat Completions has no hosted search |
 | `web_search_20260318` | `anthropic_messages` | `openai_chat` | always: Chat Completions has no hosted search |
 
-A `tool_choice` that asks for a tool left out, itself or in `allowed_tools`, is `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them and are named in `kaeso-left-out`, because providers refuse them without tools; `tool_choice: "required"` or a named tool is `Unsupported`, since no tool would be left to call.
+A `tool_choice` that asks for a tool left out, itself or in `allowed_tools`, is `Unsupported`. When every tool is left out, `tool_choice: "auto"` or `"none"` and `parallel_tool_calls` go with them and are named in `kaeso-left-out`, because providers refuse them without tools; `tool_choice: "required"` or a named tool is `Unsupported`, since no tool would be left to call. Only OpenAI's Responses API takes a `tool_choice` in a request the app sent without tools, such as a Codex helper call; for every other provider, `auto` and `none` are left out the same way, and a forced tool is an `invalid_request`.
 
 Claude's searches reach a Responses app as `web_search_call` items. A `server_tool_use` block named `web_search` becomes an item with the id `ws_kaeso_…` and `action: {type: search, query}`. Its status is `completed` once the matching `web_search_tool_result` arrives, `failed` when that result is an error, and `in_progress` when the reply ends before it, as with `pause_turn`. Streams send `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` and `response.output_item.done`. The results themselves and the citations of the answer are left out, like other data the app's format can't show.
 
@@ -230,7 +230,17 @@ A Codex thread that started on a GPT model holds items only OpenAI Responses has
 | `local_shell_call` | `Block::ToolCall` named `local_shell`, its `action` object as the arguments |
 | `local_shell_call_output` | `Block::ToolResult` for the call its `id` names; Codex sends a `function_call_output` instead |
 
-OpenAI and SpaceX get the items as sent: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). GPT's reasoning items are left out for SpaceX, which can't decrypt OpenAI's `encrypted_content` and would refuse the request ([SpaceX](openai-responses.md#spacex)). An item that doesn't have the shape above stays an unknown block and is refused like one.
+OpenAI gets the items as sent, and SpaceX its `custom_tool_call` and `custom_tool_call_output` items: SpaceX answers from such a history (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). SpaceX gets `local_shell_call` and `local_shell_call_output` as tool calls and results, as above, because it takes `shell_call` items instead. GPT's reasoning items are left out for SpaceX, which can't decrypt OpenAI's `encrypted_content` and would refuse the request ([SpaceX](openai-responses.md#spacex)). An item that doesn't have the shape above stays an unknown block and is refused like one.
+
+## Codex agent messages
+
+When Codex runs subagents, the agents write to each other with `agent_message` input items: the root agent's task to a subagent (`NEW_TASK`) and each agent's answers, with an `author` and a `recipient` path such as `/root/request_path`. Only OpenAI reads them. Every other provider, in every format, gets each as a message:
+
+- **Role.** A message the requesting agent wrote is an `assistant` message, and one it received is a `user` message. The requesting agent is the recipient of the first agent message when nothing before it came from the model (a subagent's first request), and its author otherwise (the root agent).
+- **Text.** The message's `input_text` and `output_text` parts, and its `encrypted_content` parts, which Codex fills with the task's plain text. Codex's own header (`Message Type: …`, `Sender: …`) stays at the start; without one, the text starts with `Message from <author> to <recipient>:`.
+- **Left out.** The item's `id`, which only OpenAI can resolve. Each message is named in the reply's `kaeso-adapted` header, such as `agent message amsg_…`.
+
+An `encrypted_content` that is ciphertext, one unbroken run of base64, can be read only at OpenAI, so it is `Unsupported` everywhere else, as is a part of another type. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (a subagent's first request) and `codex-multi-agent-root.json` (the root agent's later turn).
 
 ## Tool call arguments
 

@@ -1258,8 +1258,7 @@ expression: outcomes
           "role": "user"
         }
       ],
-      "model": "gpt-5.5",
-      "tool_choice": "auto"
+      "model": "gpt-5.5"
     },
     "path": "/v1/chat/completions"
   },
@@ -1566,6 +1565,173 @@ expression: outcomes
       "model": "grok-4.7",
       "parallel_tool_calls": true,
       "reasoning_effort": "medium",
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+            "name": "exec_command",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "cmd": {
+                  "description": "Shell command to execute.",
+                  "type": "string"
+                },
+                "workdir": {
+                  "description": "Working directory for the command. Defaults to the turn cwd.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cmd"
+              ],
+              "type": "object"
+            },
+            "strict": false
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/xai/codex-multi-agent": {
+    "body": {
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+              "type": "text"
+            },
+            {
+              "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+              "type": "text"
+            },
+            {
+              "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+              "type": "text"
+            },
+            {
+              "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+              "type": "text"
+            }
+          ],
+          "role": "system"
+        },
+        {
+          "content": "Explain the request path.",
+          "role": "user"
+        },
+        {
+          "content": "Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root\nPayload:\nTrace how a request moves through the Kaeso gateway, read-only. Name the files.",
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "parallel_tool_calls": true,
+      "prompt_cache_key": "01a1889c-5f0e-7c42-9a3d-2b7e4c1f8a90",
+      "reasoning_effort": "high",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+            "name": "exec_command",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "cmd": {
+                  "description": "Shell command to execute.",
+                  "type": "string"
+                },
+                "workdir": {
+                  "description": "Working directory for the command. Defaults to the turn cwd.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cmd"
+              ],
+              "type": "object"
+            },
+            "strict": false
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/xai/codex-multi-agent-root": {
+    "body": {
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+              "type": "text"
+            },
+            {
+              "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+              "type": "text"
+            },
+            {
+              "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+              "type": "text"
+            },
+            {
+              "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+              "type": "text"
+            }
+          ],
+          "role": "system"
+        },
+        {
+          "content": "Explain the request path, with a subagent.",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"cmd\":\"ls crates\"}",
+                "name": "exec_command"
+              },
+              "id": "call_spawn_1",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "kaeso-server\nkaeso-codecs",
+          "role": "tool",
+          "tool_call_id": "call_spawn_1"
+        },
+        {
+          "content": "Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root\nPayload:\nTrace how a request moves through the Kaeso gateway, read-only. Name the files.",
+          "role": "assistant"
+        },
+        {
+          "content": "Message Type: TASK_RESULT\nTask name: /root/request_path\nSender: /root/request_path\nPayload:\nRequests go through crates/kaeso-server/src/model_api/pipeline.rs.",
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "parallel_tool_calls": true,
+      "prompt_cache_key": "01a1889c-5f0e-7c42-9a3d-2b7e4c1f8a90",
+      "reasoning_effort": "high",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
       "tool_choice": "auto",
       "tools": [
         {

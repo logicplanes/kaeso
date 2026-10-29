@@ -33,7 +33,7 @@ pub const RESPONSES_PATH: &str = "/v1/responses";
 pub const INPUT_TOKENS_PATH: &str = "/v1/responses/input_tokens";
 
 pub use plan::for_chatgpt_plan;
-pub use profile::{ReasoningReplay, ResponsesProfile, WebSearchTool};
+pub use profile::{InputItems, ReasoningReplay, ResponsesProfile, WebSearchTool, XAI_INPUT_ITEMS};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
