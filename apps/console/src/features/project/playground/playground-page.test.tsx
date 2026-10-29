@@ -191,6 +191,16 @@ describe("PlaygroundPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini,openai/gpt-5.4-mini" }));
   });
 
+  it("says the models couldn't load instead of offering none", async () => {
+    signedIn();
+    on("GET", MODELS, apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly."));
+    await renderApp(PLAYGROUND);
+
+    const select = await screen.findByRole("button", { description: "Model" });
+    await waitFor(() => expect(select).toHaveTextContent("The models couldn't load"));
+    expect(select).toBeDisabled();
+  });
+
   it("asks for a model when the link names one the project doesn't have", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));

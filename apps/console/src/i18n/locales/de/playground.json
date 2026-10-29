@@ -12,6 +12,7 @@
   "playground.errorWithRequest": "{error} Anfrage {id}",
   "playground.full": "Bis zu {count} Modelle gleichzeitig vergleichen",
   "playground.loadingModels": "Modelle werden geladen",
+  "playground.modelsFailed": "Die Modelle konnten nicht geladen werden",
   "playground.modelError": "Das Modell brach mit einem Fehler ab. Bitte erneut versuchen.",
   "playground.noProviderKeyShort": "Kein {provider}-Schlüssel",
   "playground.parameters": "Parameter",
