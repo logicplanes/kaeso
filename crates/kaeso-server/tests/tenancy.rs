@@ -870,11 +870,15 @@ async fn deleting_an_org_waits_its_grace_period_and_can_be_undone() {
         StatusCode::OK
     );
     app.wait_for_mail("admin@example.com", 2).await;
+    // Deletion is due at the time of day it was scheduled, and the notice says that time.
+    let due = r.body["deletion_due_at"].as_str().unwrap_or_default();
+    let until = format!("Until {} UTC that day,", due.get(11..16).unwrap_or("?"));
     assert!(
         app.mail
             .to("admin@example.com")
             .iter()
-            .any(|m| m.kind.as_str() == "org_scheduled_for_deletion")
+            .any(|m| m.kind.as_str() == "org_scheduled_for_deletion" && m.text.contains(&until)),
+        "{until}"
     );
     let r = app
         .post(&format!("/orgs/{org}/restore"), json!({}), Some(&cookie))

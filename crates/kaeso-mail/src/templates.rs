@@ -1,4 +1,4 @@
-use time::{Date, PrimitiveDateTime};
+use time::PrimitiveDateTime;
 
 use crate::layout::{Content, Instance, Reason};
 use crate::locale::{Locale, zh};
@@ -805,18 +805,22 @@ pub fn org_scheduled_for_deletion<'a>(
     to: &str,
     org: &str,
     by: impl Into<Actor<'a>>,
-    due: Date,
+    due: PrimitiveDateTime,
+    zone: &str,
     url: &str,
 ) -> Email {
     let by = by.into().name(lang);
-    let due = lang.date(due);
+    // Deletion is due at the time of day it was scheduled, not at the end of that day.
+    let at = format!("{:02}:{:02} {zone}", due.hour(), due.minute());
+    let (hour, minute) = (due.hour().to_string(), format!("{:02}", due.minute()));
+    let due = lang.date(due.date());
     let (subject, heading, sentence, action, note) = match lang {
         Locale::En => (
             format!("{org} is scheduled for deletion"),
             format!("{org} will be deleted on {due}"),
             format!("{by} scheduled it for deletion; its API keys stopped working."),
             "Open organization",
-            "Until then, an owner or an instance admin can restore it.",
+            format!("Until {at} that day, an owner or an instance admin can restore it."),
         ),
         Locale::De => (
             format!("{org} ist zur Löschung vorgemerkt"),
@@ -825,14 +829,24 @@ pub fn org_scheduled_for_deletion<'a>(
                 "{by} hat sie zur Löschung vorgemerkt; ihre API-Schlüssel funktionieren nicht mehr."
             ),
             "Organisation öffnen",
-            "Bis dahin kann ein Inhaber oder ein Instanz-Admin sie wiederherstellen.",
+            format!(
+                "Bis {at} an diesem Tag kann ein Inhaber oder ein Instanz-Admin sie wiederherstellen."
+            ),
         ),
         Locale::ZhCn => (
             zh(&[org, "已计划删除"]),
             zh(&[org, "将于", &due, "删除"]),
             zh(&[&by, "已计划删除该组织；其 API 密钥已失效。"]),
             "打开组织",
-            "在此之前，所有者或实例管理员可以恢复它。",
+            zh(&[
+                "在当天",
+                zone,
+                "时间",
+                &hour,
+                "时",
+                &minute,
+                "分之前，所有者或实例管理员可以恢复它。",
+            ]),
         ),
     };
     Email::new(
@@ -1088,7 +1102,15 @@ mod tests {
             email_change_requested(l, TO, "new@example.com", URL),
             sessions_ended(l, TO, Actor::Administrator),
             account_deactivated(l, TO),
-            org_scheduled_for_deletion(l, TO, "Acme", "Ada Lovelace", date!(2026 - 11 - 10), URL),
+            org_scheduled_for_deletion(
+                l,
+                TO,
+                "Acme",
+                "Ada Lovelace",
+                datetime!(2026 - 11 - 10 14:05),
+                "UTC",
+                URL,
+            ),
             ownership_transferred(l, TO, "Acme", "Ada Lovelace", URL),
             key_expiry_warning(
                 l,
@@ -1253,7 +1275,7 @@ mod tests {
                 two_factor_reset(l, TO, evil),
                 email_changed(l, TO, evil),
                 sessions_ended(l, TO, evil),
-                org_scheduled_for_deletion(l, TO, evil, evil, day, URL),
+                org_scheduled_for_deletion(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 ownership_transferred(l, TO, evil, evil, URL),
                 key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 budget_alert(l, TO, &monthly_spend(evil), BudgetScope::Key(evil), 80, URL),

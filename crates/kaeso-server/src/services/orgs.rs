@@ -108,9 +108,14 @@ pub async fn notify_deletion(
         Some(None) => Actor::Member,
         None => Actor::Administrator,
     };
-    let Some(due) = org.deletion_due_at.map(|d| d.date()) else {
+    let Some(due) = org.deletion_due_at else {
         return Ok(());
     };
+    let zone = crate::time_zone::or_utc(&kaeso_store::pg::instance::time_zone(&state.pg).await?);
+    let (due, zone) = (
+        crate::time_zone::local(due, &zone),
+        zone.iana_name().unwrap_or("UTC"),
+    );
     let url = format!(
         "{}orgs/{}",
         state.config.public_url,
@@ -151,7 +156,7 @@ pub async fn notify_deletion(
         state
             .mailer
             .send(kaeso_mail::templates::org_scheduled_for_deletion(
-                lang, &to, &org.name, by, due, &url,
+                lang, &to, &org.name, by, due, zone, &url,
             ));
     }
     Ok(())
