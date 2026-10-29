@@ -549,6 +549,14 @@ async fn a_maintenance_flag_that_stays_is_left_for_a_person() {
 async fn a_compose_file_that_cannot_be_written_at_the_end_is_a_warning() {
     use std::os::unix::fs::PermissionsExt;
     let dir = fresh("compose-readonly");
+    let probe = dir.join("compose.yaml");
+    std::fs::set_permissions(&probe, std::fs::Permissions::from_mode(0o444)).unwrap();
+    if std::fs::OpenOptions::new().write(true).open(&probe).is_ok() {
+        // Root writes through a read-only mode, so no file here can be made unwritable.
+        eprintln!("skipped: this user can write to a read-only file");
+        return;
+    }
+    std::fs::set_permissions(&probe, std::fs::Permissions::from_mode(0o644)).unwrap();
     let mut daemon = Daemon::install();
     on_start(&mut daemon, &dir, |dir| {
         std::fs::set_permissions(
