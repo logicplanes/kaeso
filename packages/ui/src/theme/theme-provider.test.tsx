@@ -55,6 +55,24 @@ describe("ThemeProvider", () => {
     expect(document.documentElement).not.toHaveAttribute("data-theme");
   });
 
+  it("switches the theme without transitions, for the one frame it changes in", async () => {
+    mockSystem(false);
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => frames.push(cb));
+    render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>,
+    );
+    act(() => frames.splice(0).forEach((cb) => cb(0)));
+    await userEvent.click(screen.getByRole("button", { name: "Dark" }));
+    const root = document.documentElement;
+    expect(root).toHaveAttribute("data-theme", "dark");
+    expect(root).toHaveAttribute("data-k-theming");
+    act(() => frames.splice(0).forEach((cb) => cb(0)));
+    expect(root).not.toHaveAttribute("data-k-theming");
+  });
+
   it("keeps the theme the head script applied while it mounts", () => {
     mockSystem(false);
     localStorage.setItem(THEME_STORAGE_KEY, "dark");
