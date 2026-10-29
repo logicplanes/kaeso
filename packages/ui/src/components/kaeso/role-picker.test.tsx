@@ -63,4 +63,8 @@ describe("EffectiveAccess", () => {
     expect(screen.getByText("Members")).toBeInTheDocument();
     expect(screen.getByText("Developer")).toBeInTheDocument();
   });
+  it("centres a group on one line in its 40px row, stacked or in columns", () => {
+    render(<EffectiveAccess groups={[{ label: "Keys", rights: [{ code: "keys.view", label: "View keys", description: "", granted: true }] }]} />);
+    expect(screen.getByText("Keys").parentElement).toHaveClass("min-h-40", "justify-center", "@auth:content-center");
+  });
 });
