@@ -20,6 +20,10 @@ function setUp({
   on("GET", LOG_SETTINGS, settings);
 }
 
+// The name's Save comes first on the page, the key lifetime's second.
+const saveName = () => screen.getAllByRole("button", { name: "Save" })[0] as HTMLElement;
+const saveLifetime = () => screen.getAllByRole("button", { name: "Save" }).at(-1) as HTMLElement;
+
 describe("project settings", () => {
   it("shows the project's name, id, creation date and that it is the default", async () => {
     setUp();
@@ -65,17 +69,24 @@ describe("project settings", () => {
     expect(requests("GET", LOG_SETTINGS)).toHaveLength(before.logging);
   });
 
-  it("puts the name back when it is left empty or unchanged", async () => {
+  it("saves the name only with Save or Enter, and says why Save waits", async () => {
     setUp();
+    on("PATCH", PROJECT_URL, ({ body }: { body: { name: string } }) => project({ name: body.name }));
     const { user } = await renderApp(projectPath("settings"));
 
     const input = await screen.findByRole("textbox", { name: "Project name" });
-    await user.click(input);
-    await user.tab();
+    const save = saveName();
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, save, "No change to save");
     await user.clear(input);
     await user.tab();
-    expect(input).toHaveValue("Checkout assistant");
+    await hoverReason(user, save, "Enter a name");
+    await user.type(input, "Checkout bot");
+    await user.click(document.body);
     expect(requests("PATCH", PROJECT_URL)).toHaveLength(0);
+    await user.click(save);
+    expect(await notifications().findByText("Project renamed")).toBeInTheDocument();
+    expect(requests("PATCH", PROJECT_URL).map((r) => r.body)).toEqual([{ name: "Checkout bot" }]);
   });
 
   it("shows the API's message and keeps the typed name when the rename is refused", async () => {
@@ -86,7 +97,7 @@ describe("project settings", () => {
     const input = await screen.findByRole("textbox", { name: "Project name" });
     await user.clear(input);
     await user.type(input, "Support triage");
-    await user.tab();
+    await user.click(saveName());
     expect((await notifications().findAllByText("That name is taken.")).length).toBeGreaterThan(0);
     expect(input).toHaveValue("Support triage");
   });
@@ -112,6 +123,7 @@ describe("project settings", () => {
 
     const input = await screen.findByRole("textbox", { name: "Project name" });
     expect(input).toBeDisabled();
+    expect(saveName()).toBeDisabled();
     const upload = screen.getByRole("button", { name: "Upload" });
     expect(upload).toHaveAttribute("aria-disabled", "true");
     await hoverReason(user, upload, /You need Edit project/);
@@ -150,7 +162,7 @@ describe("project settings", () => {
     const { user } = await renderApp(projectPath("settings"));
 
     expect(await screen.findByRole("spinbutton", { name: "Maximum key lifetime" })).toBeDisabled();
-    await hoverReason(user, screen.getByRole("button", { name: "Save" }), "An archived project can't change");
+    await hoverReason(user, saveLifetime(), "An archived project can't change");
   });
 
   it("removes the picture", async () => {
@@ -213,16 +225,16 @@ describe("key lifetime", () => {
 
     const days = await screen.findByRole("spinbutton", { name: "Maximum key lifetime" });
     expect(days).toHaveValue("14");
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(saveLifetime()).toBeDisabled();
     await user.clear(days);
     await user.type(days, "45");
-    await hoverReason(user, screen.getByRole("button", { name: "Save" }), "The organization allows at most 30 days.");
+    await hoverReason(user, saveLifetime(), "The organization allows at most 30 days.");
     await user.clear(days);
     await user.type(days, "0");
-    await hoverReason(user, screen.getByRole("button", { name: "Save" }), "Enter whole days, at least 1.");
+    await hoverReason(user, saveLifetime(), "Enter whole days, at least 1.");
     await user.clear(days);
     await user.type(days, "21");
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(saveLifetime());
     await waitFor(() => expect(requests("PUT", KEY_POLICY).map((r) => r.body)).toEqual([{ max_key_lifetime_days: 21 }]));
 
     await user.click(screen.getByRole("switch", { name: "Use the organization's limit" }));
