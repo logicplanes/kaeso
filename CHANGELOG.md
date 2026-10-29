@@ -4,6 +4,41 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Vercel AI Gateway is a built-in provider: add its key and call its models from any app format ([#537](https://github.com/logicplanes/kaeso/pull/537))
+
+### Changed
+
+- Dependencies updated ([#522](https://github.com/logicplanes/kaeso/pull/522))
+
+### Fixed
+
+- Names refuse invisible characters everywhere, and a NUL byte no longer causes a server error ([#523](https://github.com/logicplanes/kaeso/pull/523))
+- The console says when the catalogue, aliases or a chart couldn't load, and charts add no invisible tab stops ([#526](https://github.com/logicplanes/kaeso/pull/526))
+- Usage tiles say when they couldn't load, Add member shows its whole message, and docs tables get names of their own ([#528](https://github.com/logicplanes/kaeso/pull/528))
+- Console and UI library: status not by colour alone, wrapping list rows on phones, a clean theme switch, Undo for key disables and a Save button for project names ([#529](https://github.com/logicplanes/kaeso/pull/529))
+- Toast actions close their toast, errors don't pile up or outlive a retry, and list focus survives a removed row ([#531](https://github.com/logicplanes/kaeso/pull/531))
+- The service account sheet keeps Rename on screen on phones, and tables no longer redraw every row while scrolling ([#532](https://github.com/logicplanes/kaeso/pull/532))
+- Rate-limited answers say how long to wait in the right unit, and "1 minute" rather than "1 minutes" ([#533](https://github.com/logicplanes/kaeso/pull/533))
+- Codex sessions with subagents work on Grok and every other non-OpenAI model, and a tool_choice without tools no longer reaches providers that refuse it ([#535](https://github.com/logicplanes/kaeso/pull/535))
+- Settings pages share the phone bar's edges on tablets, and access rows, the timing bar and the providers table line up ([#536](https://github.com/logicplanes/kaeso/pull/536))
+- After an upgrade that adds a built-in provider, its models.dev models appear at once instead of after models.dev next changes ([#540](https://github.com/logicplanes/kaeso/pull/540))
+
+#### Gateway
+
+- Keys expire on the date chosen, the Platform API refuses unknown fields, both log retentions shrink together, and unreadable settings are named ([#521](https://github.com/logicplanes/kaeso/pull/521))
+- A replaced provider key is no longer used for up to 30 seconds after the change ([#524](https://github.com/logicplanes/kaeso/pull/524))
+- Key expiry and organization deletion emails say the time, on the install's clock, instead of implying the whole day ([#534](https://github.com/logicplanes/kaeso/pull/534))
+
+#### Console
+
+- The System page keeps saying the status couldn't load while it refreshes, instead of flickering back to loading ([#530](https://github.com/logicplanes/kaeso/pull/530))
+
+### Security
+
+- Invitations send one address at most five emails an hour ([#527](https://github.com/logicplanes/kaeso/pull/527))
+
 ## [0.4.6] - 2026-10-28
 
 ### Changed
