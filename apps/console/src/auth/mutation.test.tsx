@@ -32,4 +32,37 @@ describe("a change that fails", () => {
     await user.click(await screen.findByRole("switch", { name: "Budget alerts" }));
     expect((await (await notifications()).findAllByText("The change wasn't made; reload the page and try again.")).length).toBeGreaterThan(0);
   });
+
+  it("takes its error away once the same change goes through", async () => {
+    signedIn();
+    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
+    let calls = 0;
+    on("PUT", "me/notifications", ({ body }: { body: { budget_alerts: boolean; key_expiry: boolean } }) =>
+      ++calls === 1 ? apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly.") : body,
+    );
+    const { user } = await renderApp(PATH);
+    const toggle = await screen.findByRole("switch", { name: "Budget alerts" });
+    await user.click(toggle);
+    const region = await notifications();
+    expect((await region.findAllByText("Kaeso can't reach its database right now; try again shortly.")).length).toBeGreaterThan(0);
+    await user.click(toggle);
+    await waitFor(() => expect(calls).toBe(2));
+    await waitFor(() => expect(region.queryByText("Kaeso can't reach its database right now; try again shortly.")).not.toBeInTheDocument());
+  });
+
+  it("shows one error, not one per attempt, when the same change keeps failing", async () => {
+    signedIn();
+    on("GET", "me/notifications", { budget_alerts: false, key_expiry: false });
+    on("PUT", "me/notifications", apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly."));
+    const { user } = await renderApp(PATH);
+    const toggle = await screen.findByRole("switch", { name: "Budget alerts" });
+    await user.click(toggle);
+    const region = await notifications();
+    await region.findAllByText("Kaeso can't reach its database right now; try again shortly.");
+    await user.click(toggle);
+    await waitFor(() => expect(requests("PUT", "me/notifications")).toHaveLength(2));
+    await new Promise((r) => setTimeout(r, 300));
+    const shown = region.getAllByText("Kaeso can't reach its database right now; try again shortly.").filter((el) => el.closest(".k-toast"));
+    expect(shown).toHaveLength(1);
+  });
 });

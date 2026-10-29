@@ -39,16 +39,32 @@ interface ToastData {
 
 const stays = (tone: Tone, o: ToastOptions) => tone === "error" || !!o.action;
 
+let added = 0;
+
 function add(tone: Tone, title: ReactNode, o: ToastOptions = {}) {
   const timeout = o.timeout ?? (stays(tone, o) ? 0 : undefined);
+  const id = o.id ?? `k-toast-${++added}`;
+  const action = o.action;
   return toastManager.add({
+    id,
     title,
     type: tone,
     ...(o.description !== undefined ? { description: o.description } : {}),
     ...(timeout !== undefined ? { timeout } : {}),
-    ...(o.id ? { id: o.id } : {}),
     ...(tone === "error" ? { priority: "high" as const } : {}),
-    ...(o.action ? { actionProps: { children: o.action.label, onClick: o.action.onClick } } : {}),
+    // An action is the toast's answer: once taken, the toast has nothing left to offer, and it
+    // would otherwise stay, as toasts with an action do, offering the same action again.
+    ...(action
+      ? {
+          actionProps: {
+            children: action.label,
+            onClick: () => {
+              toastManager.close(id);
+              action.onClick();
+            },
+          },
+        }
+      : {}),
   });
 }
 

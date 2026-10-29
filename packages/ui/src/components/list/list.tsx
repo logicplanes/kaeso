@@ -165,6 +165,28 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     if (now) reach(now);
     else requestAnimationFrame(() => reach(line()));
   };
+  // The line focus was last in. When an action takes that line out of the list (a key disabled
+  // under Active, an item archived), focus would fall to the page, also when the row's menu or its
+  // confirmation closes after the line has gone; it moves to the line that took its place instead.
+  const lastFocus = useRef<{ key: string; index: number } | null>(null);
+  useLayoutEffect(() => {
+    const last = lastFocus.current;
+    if (!last || flat.some((f) => f.key === last.key)) return;
+    lastFocus.current = null;
+    if (!flat.length) return;
+    const index = Math.min(last.index, flat.length - 1);
+    if (document.activeElement === document.body) return focusLine(index);
+    // Still in the confirmation, which is closing: it would hand focus back to the row, now gone.
+    const layer = document.activeElement?.closest("[role=dialog], [role=alertdialog]");
+    if (!layer) return;
+    const until = performance.now() + 2000;
+    const wait = () => {
+      if (document.activeElement === document.body) {
+        if (root.current?.isConnected) focusLine(index);
+      } else if (layer.contains(document.activeElement) && performance.now() < until) requestAnimationFrame(wait);
+    };
+    requestAnimationFrame(wait);
+  });
   const hadVirtualRows = useRef(!!VirtualRows);
   useLayoutEffect(() => {
     if (VirtualRows && !hadVirtualRows.current && active >= 0 && document.activeElement === document.body) {
@@ -317,7 +339,19 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
       }}
       onPointerEnter={retryRows}
       onPointerDown={retryRows}
-      onFocus={retryRows}
+      onFocus={(e) => {
+        retryRows();
+        // A row's menu or dialog is a portal: its focus events reach here through React, not the page.
+        if (!e.currentTarget.contains(e.target)) return;
+        const index = Number((e.target as HTMLElement).closest("[role=row]")?.querySelector<HTMLElement>("[data-index]")?.dataset.index);
+        const f = flat[index];
+        lastFocus.current = f ? { key: f.key, index } : null;
+      }}
+      onBlur={(e) => {
+        // Focus that goes to nothing (a click on the page) has left the list. Focus that goes to
+        // another element may be in the row's menu or dialog, which hands it back to the row when it closes.
+        if (e.currentTarget.contains(e.target) && !e.relatedTarget) lastFocus.current = null;
+      }}
       onWheel={retryRows}
       className={cn("relative flex flex-col outline-none", inset && "overflow-hidden rounded-group bg-raised shadow-xs", className)}
     >
