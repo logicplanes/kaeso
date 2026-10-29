@@ -562,6 +562,14 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
     .await
     .expect_status(StatusCode::OK);
 
+    app.call(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "Asia/Tokyo" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "key_expiry_warnings")
@@ -597,6 +605,26 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
             .filter(|m| m.kind.as_str() == "key_expiry_warning")
             .count(),
         2
+    );
+    // A key made for 7 days stops at the time it was made, so the warning says that time, on the
+    // install's clock: Tokyo is nine hours ahead of UTC all year.
+    let expires = time::OffsetDateTime::parse(
+        created["expires_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap()
+    .to_offset(time::macros::offset!(+9));
+    let stops = format!(
+        "fail from {:02}:{:02} Asia/Tokyo that day.",
+        expires.hour(),
+        expires.minute()
+    );
+    assert!(
+        app.mail
+            .to("owner@example.com")
+            .iter()
+            .all(|m| m.kind.as_str() != "key_expiry_warning" || m.text.contains(&stops)),
+        "{stops}"
     );
     let fresh = app
         .post(

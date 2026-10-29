@@ -1,4 +1,4 @@
-use time::Date;
+use time::{Date, PrimitiveDateTime};
 
 use crate::layout::{Content, Instance, Reason};
 use crate::locale::{Locale, zh};
@@ -886,22 +886,33 @@ pub fn key_expiry_warning(
     to: &str,
     key: &str,
     project: &str,
-    expires: Date,
+    expires: PrimitiveDateTime,
+    zone: &str,
     url: &str,
 ) -> Email {
-    let expires = lang.date(expires);
+    // A key stops at a moment, not at the end of a day: one made for 7 days stops at the time it
+    // was made, and one made to expire on a date stops as that date begins. So the email says
+    // when, on the install's clock, as the console shows it.
+    let at = format!("{:02}:{:02} {zone}", expires.hour(), expires.minute());
+    let (hour, minute) = (
+        expires.hour().to_string(),
+        format!("{:02}", expires.minute()),
+    );
+    let expires = lang.date(expires.date());
     let (subject, heading, sentence, action, note) = match lang {
         Locale::En => (
             format!("The API key {key} expires on {expires}"),
             format!("API key {key} expires on {expires}"),
-            format!("Requests with this key in {project} fail after that day."),
+            format!("Requests with this key in {project} fail from {at} that day."),
             "Open API keys",
             "To rotate it, create a new key, deploy it, then disable the old one.",
         ),
         Locale::De => (
             format!("Der API-Schlüssel {key} läuft am {expires} ab"),
             format!("API-Schlüssel {key} läuft am {expires} ab"),
-            format!("Anfragen mit diesem Schlüssel in {project} schlagen nach diesem Tag fehl."),
+            format!(
+                "Anfragen mit diesem Schlüssel in {project} schlagen an diesem Tag ab {at} fehl."
+            ),
             "API-Schlüssel öffnen",
             "Zum Rotieren erstellen Sie einen neuen Schlüssel, setzen ihn ein und deaktivieren den alten.",
         ),
@@ -910,7 +921,17 @@ pub fn key_expiry_warning(
             (
                 heading.clone(),
                 heading,
-                zh(&["在", project, "中使用此密钥的请求，将在该日期之后失败。"]),
+                zh(&[
+                    "在",
+                    project,
+                    "中使用此密钥的请求，将从当天",
+                    zone,
+                    "时间",
+                    &hour,
+                    "时",
+                    &minute,
+                    "分起失败。",
+                ]),
                 "打开 API 密钥",
                 "如需轮换，请创建并部署新密钥，再停用旧密钥。",
             )
@@ -1026,7 +1047,7 @@ pub fn test(lang: Locale, to: &str) -> Email {
 mod tests {
 
     use super::*;
-    use time::macros::date;
+    use time::macros::{date, datetime};
 
     const TO: &str = "owner@example.com";
     const URL: &str =
@@ -1074,7 +1095,8 @@ mod tests {
                 TO,
                 "ci-deploy",
                 "Default project",
-                date!(2026 - 10 - 18),
+                datetime!(2026 - 10 - 18 0:00),
+                "UTC",
                 URL,
             ),
             budget_alert(l, TO, &monthly_spend("50"), BudgetScope::Project, 80, URL),
@@ -1233,7 +1255,7 @@ mod tests {
                 sessions_ended(l, TO, evil),
                 org_scheduled_for_deletion(l, TO, evil, evil, day, URL),
                 ownership_transferred(l, TO, evil, evil, URL),
-                key_expiry_warning(l, TO, evil, evil, day, URL),
+                key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 budget_alert(l, TO, &monthly_spend(evil), BudgetScope::Key(evil), 80, URL),
             ]
         }) {

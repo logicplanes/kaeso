@@ -43,7 +43,15 @@ fn every_email(to: &str) -> Vec<Email> {
                 templates::account_deactivated(l, to),
                 templates::org_scheduled_for_deletion(l, to, "Acme", "Ada Lovelace", due, url),
                 templates::ownership_transferred(l, to, "Acme", "Ada Lovelace", url),
-                templates::key_expiry_warning(l, to, "ci-deploy", "Default project", expires, url),
+                templates::key_expiry_warning(
+                    l,
+                    to,
+                    "ci-deploy",
+                    "Default project",
+                    expires.midnight(),
+                    "UTC",
+                    url,
+                ),
                 templates::budget_alert(l, to, &budget, BudgetScope::Project, 80, url),
                 templates::test(l, to),
             ]
