@@ -380,6 +380,7 @@
   "org.sso.clientStepHint": "应用的客户端 ID 和密钥。",
   "org.sso.connect": "连接身份提供商",
   "org.sso.connectFirst": "请先连接身份提供商",
+  "org.sso.connectFirstHint": "请先连接身份提供商。",
   "org.sso.connectShort": "连接",
   "org.sso.connected": "身份提供商已连接",
   "org.sso.copyRecord": "复制 TXT 值",

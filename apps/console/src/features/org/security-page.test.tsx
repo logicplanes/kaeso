@@ -376,12 +376,12 @@ describe("security requirements", () => {
     serveSecurity(security());
     const { user } = await renderApp(PATH);
     const toggle = await screen.findByRole("switch", { name: "Require single sign-on" });
-    expect(screen.getAllByText("Connect an identity provider first")).toHaveLength(1);
+    expect(screen.getByText("Connect an identity provider first.")).toBeInTheDocument();
     expect(toggle).toHaveAttribute("aria-disabled", "true");
     act(() => showTooltipsAtOnce(true));
     try {
       await user.hover(toggle);
-      await waitFor(() => expect(screen.getAllByText("Connect an identity provider first").length).toBeGreaterThan(1));
+      expect(await screen.findByText("Connect an identity provider first")).toBeInTheDocument();
     } finally {
       act(() => showTooltipsAtOnce(false));
     }
