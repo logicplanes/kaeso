@@ -82,7 +82,7 @@ export function UsageMetrics({
   const cost = sum.cost ?? (showCost && rows.length === 0 ? "0" : null);
   const known = <T extends { trend: number[] }>(props: T): T | { trend: number[] } => (loading ? { trend: [] } : props);
   if (failed) {
-    const tile = (label: string) => <StatTile label={label} value="–" detail={t("kaeso.usage.tileFailed", "Couldn't load")} />;
+    const tile = (label: string) => <StatTile label={label} value="—" detail={t("kaeso.usage.tileFailed", "Couldn't load")} />;
     return (
       <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
         {tile(t("common.requests", "Requests"))}

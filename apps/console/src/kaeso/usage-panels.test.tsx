@@ -102,7 +102,7 @@ describe("UsageMetrics", () => {
     await renderUi(<UsageMetrics rows={[]} from="2026-10-13" to="2026-10-14" showCost failed />);
     for (const name of ["Requests", "Tokens", "Cost", "Errors"]) {
       expect(tile(name)).not.toHaveAttribute("aria-busy");
-      expect(tile(name)).toHaveTextContent("–");
+      expect(tile(name)).toHaveTextContent("—");
       expect(tile(name)).toHaveTextContent("Couldn't load");
       expect(tile(name)).not.toHaveTextContent(/\d/);
     }
