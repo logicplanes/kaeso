@@ -65,7 +65,7 @@ Die Rechte eines Mitglieds in einem Projekt ergeben sich aus drei Quellen: seine
 
 - Mit `roles.manage` kann eine Organisation bis zu 50 eigene Rollen festlegen, für die Organisation oder für Projekte. Organisationsrollen enthalten Organisationsrechte und Rechte in jedem Projekt. Projektrollen enthalten Projektrechte.
 - Alle mit `org.view` sehen die eigenen Rollen.
-- Ein Name hat 1 bis 50 Zeichen und ist pro Organisation und Geltungsbereich eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Er darf weder `custom` noch der Name einer integrierten Rolle dieses Geltungsbereichs sein. Eine Beschreibung hat höchstens 200 Zeichen.
+- Ein Name hat 1 bis 50 Zeichen und ist pro Organisation und Geltungsbereich eindeutig, ohne Rücksicht auf Groß- und Kleinschreibung. Er darf weder `custom` noch der Name einer integrierten Rolle dieses Geltungsbereichs sein. Eine Beschreibung hat höchstens 200 Zeichen. Beide sind eine Zeile, ohne unsichtbare Zeichen.
 - Eigene Rollen können keine Inhaber machen. Inhaber ist nur die integrierte Rolle, und nur Inhaber haben `org.ownership.transfer`: Keine eigene Rolle und keine einzelne Änderung kann es vergeben.
 - Eine Rolle, die ein Mitglied, ein aktives Dienstkonto oder eine offene Einladung hat, können Sie nicht löschen. Ebenso wenig die Rolle, die Personen erhalten, die über Single Sign-on kommen.
 

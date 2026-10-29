@@ -60,6 +60,13 @@ async fn instance_admins_find_users_by_name_email_and_state() {
         "{:?}",
         found.body
     );
+    for list in ["/instance/users", "/instance/orgs"] {
+        let none = app
+            .get(&format!("{list}?search=ada%00"), &owner.cookie)
+            .await;
+        assert_eq!(none.status, StatusCode::OK, "{list}: {:?}", none.body);
+        assert_eq!(none.body["data"], json!([]), "{list}");
+    }
     let paged = app.get("/instance/users?limit=2", &owner.cookie).await;
     assert_eq!(paged.body["data"].as_array().unwrap().len(), 2);
     assert_eq!(paged.body["has_more"], true);

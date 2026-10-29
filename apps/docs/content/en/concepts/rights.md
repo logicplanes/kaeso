@@ -65,7 +65,7 @@ A member's rights in a project add up from three sources: their project role, th
 
 - With `roles.manage`, an organization can define up to 50 custom roles, for the organization or for projects. Organization roles hold organization rights and rights in every project. Project roles hold project rights.
 - Anyone with `org.view` sees the custom roles.
-- A name has 1 to 50 characters and is unique per organization and scope, ignoring case. It can't be `custom` or the name of a built-in role of that scope. A description has at most 200 characters.
+- A name has 1 to 50 characters and is unique per organization and scope, ignoring case. It can't be `custom` or the name of a built-in role of that scope. A description has at most 200 characters. Both are one line, without invisible characters.
 - Custom roles can't make owners. Owner is only the built-in role, and only owners hold `org.ownership.transfer`: no custom role or individual change can give it.
 - You can't delete a role that a member, an active service account or a pending invitation holds. Nor can you delete the role that people who arrive through single sign-on get.
 

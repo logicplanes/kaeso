@@ -341,6 +341,53 @@ async fn custom_roles_are_created_assigned_changed_and_deleted() {
 }
 
 #[tokio::test]
+async fn a_role_name_or_description_is_one_visible_line() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    for (field, value) in [
+        ("name", "Re\u{0}ader"),
+        ("name", "Reader\nAdmin"),
+        ("name", "Reader\u{202E}nimda"),
+        ("description", "Reads\u{0}"),
+        ("description", "Reads usage.\r\nAnd more."),
+        ("description", "Reads\u{200B}"),
+    ] {
+        let mut body = json!({ "scope": "org", "name": "Reader", "rights": ["org.view"] });
+        body[field] = json!(value);
+        let r = app
+            .post(&format!("/orgs/{org}/roles"), body, Some(&owner.cookie))
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{value:?}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], field, "{value:?}");
+        assert_eq!(
+            r.body["error"]["message"],
+            format!("`{field}` can't contain line breaks or invisible characters.")
+        );
+    }
+    let created = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "org", "name": " Leser ", "description": "Liest die Nutzung.", "rights": ["org.view"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{:?}", created.body);
+    assert_eq!(created.body["name"], "Leser");
+    let id = created.body["id"].as_str().unwrap();
+    let r = patch(
+        &app,
+        &owner,
+        &format!("/orgs/{org}/roles/{id}"),
+        json!({ "name": "Leser\u{0}" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "name");
+}
+
+#[tokio::test]
 async fn a_change_never_drops_a_needed_right_beside_one_already_missing() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;

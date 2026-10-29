@@ -359,6 +359,8 @@ fn names_resolve_alias_then_prefixed_then_native() {
     assert_eq!(catalogue.entry(gpt.id), Some(&gpt));
     assert!(super::resolve::validate_alias_name("a/b").is_err());
     assert!(super::resolve::validate_alias_name("fast chat").is_err());
+    assert!(super::resolve::validate_alias_name("gpt-4o\u{200B}").is_err());
+    assert!(super::resolve::validate_alias_name("chat\u{202E}tset").is_err());
 }
 
 #[test]

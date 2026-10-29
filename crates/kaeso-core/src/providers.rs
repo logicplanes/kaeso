@@ -113,7 +113,7 @@ impl CustomProvider {
         let name = d.name.trim();
         if name.is_empty()
             || name.chars().count() > MAX_NAME_LEN
-            || name.chars().any(char::is_control)
+            || name.chars().any(crate::text::hidden)
         {
             return Err(Problem::Name);
         }
@@ -546,6 +546,10 @@ mod tests {
         );
         assert_eq!(refused(|d| d.name = "  ".into()), Problem::Name);
         assert_eq!(refused(|d| d.name = "a\u{7}b".into()), Problem::Name);
+        assert_eq!(
+            refused(|d| d.name = "vLLM\u{202E}xet".into()),
+            Problem::Name
+        );
         assert_eq!(
             refused(|d| d.base_url = "ftp://x.example".into()),
             Problem::BaseUrlScheme
