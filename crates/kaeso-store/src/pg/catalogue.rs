@@ -18,6 +18,7 @@ pub struct SnapshotRow {
     pub fetched_at: OffsetDateTime,
     pub source_url: String,
     pub content_hash: Vec<u8>,
+    pub format: Option<Vec<u8>>,
     pub data: serde_json::Value,
     pub model_count: i32,
     pub last_attempt_at: Option<OffsetDateTime>,
@@ -27,7 +28,7 @@ pub struct SnapshotRow {
 pub async fn snapshot(db: impl PgExecutor<'_>) -> Result<Option<SnapshotRow>, StoreError> {
     Ok(sqlx::query_as!(
         SnapshotRow,
-        "SELECT fetched_at, source_url, content_hash, data, model_count, last_attempt_at, last_error \
+        "SELECT fetched_at, source_url, content_hash, format, data, model_count, last_attempt_at, last_error \
          FROM models_dev_snapshot WHERE id = 1"
     )
     .fetch_optional(db)
@@ -37,6 +38,7 @@ pub async fn snapshot(db: impl PgExecutor<'_>) -> Result<Option<SnapshotRow>, St
 #[derive(Clone, Debug)]
 pub struct SyncState {
     pub content_hash: Vec<u8>,
+    pub format: Option<Vec<u8>>,
     pub last_attempt_at: Option<OffsetDateTime>,
     pub last_error: Option<String>,
 }
@@ -44,7 +46,7 @@ pub struct SyncState {
 pub async fn sync_state(db: impl PgExecutor<'_>) -> Result<Option<SyncState>, StoreError> {
     Ok(sqlx::query_as!(
         SyncState,
-        "SELECT content_hash, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1"
+        "SELECT content_hash, format, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1"
     )
     .fetch_optional(db)
     .await?)
@@ -55,17 +57,19 @@ pub async fn put_snapshot(
     fetched_at: OffsetDateTime,
     source_url: &str,
     content_hash: &[u8],
+    format: &[u8],
     data: &serde_json::Value,
     model_count: i32,
 ) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO models_dev_snapshot (id, fetched_at, source_url, content_hash, data, model_count, last_attempt_at) \
-         VALUES (1, $1, $2, $3, $4, $5, $1) \
-         ON CONFLICT (id) DO UPDATE SET fetched_at = $1, source_url = $2, content_hash = $3, data = $4, \
-         model_count = $5, last_attempt_at = $1, last_error = NULL, updated_at = now()",
+        "INSERT INTO models_dev_snapshot (id, fetched_at, source_url, content_hash, format, data, model_count, last_attempt_at) \
+         VALUES (1, $1, $2, $3, $4, $5, $6, $1) \
+         ON CONFLICT (id) DO UPDATE SET fetched_at = $1, source_url = $2, content_hash = $3, format = $4, data = $5, \
+         model_count = $6, last_attempt_at = $1, last_error = NULL, updated_at = now()",
         fetched_at,
         source_url,
         content_hash,
+        format,
         data,
         model_count
     )

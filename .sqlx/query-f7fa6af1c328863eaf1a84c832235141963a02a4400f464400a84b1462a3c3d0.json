@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT fetched_at, source_url, content_hash, data, model_count, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1",
+  "query": "SELECT fetched_at, source_url, content_hash, format, data, model_count, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1",
   "describe": {
     "columns": [
       {
@@ -38,6 +38,17 @@
       },
       {
         "ordinal": 3,
+        "name": "format",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "models_dev_snapshot",
+            "name": "format"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
         "name": "data",
         "type_info": "Jsonb",
         "origin": {
@@ -48,7 +59,7 @@
         }
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "model_count",
         "type_info": "Int4",
         "origin": {
@@ -59,7 +70,7 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "last_attempt_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -70,7 +81,7 @@
         }
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "last_error",
         "type_info": "Text",
         "origin": {
@@ -88,11 +99,12 @@
       false,
       false,
       false,
+      true,
       false,
       false,
       true,
       true
     ]
   },
-  "hash": "c725ec3b739914cc861bd47d12883f1377b0a66625807edec7f9c48b8059c423"
+  "hash": "f7fa6af1c328863eaf1a84c832235141963a02a4400f464400a84b1462a3c3d0"
 }
