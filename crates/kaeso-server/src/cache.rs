@@ -488,6 +488,7 @@ pub struct MemoryCache<V: Send + Sync + 'static> {
     flights: Flights,
     valkey: Valkey,
     subscription: Arc<Subscription>,
+    dropped: Arc<AtomicU64>,
 }
 
 impl<V: Send + Sync + 'static> Clone for MemoryCache<V> {
@@ -499,6 +500,7 @@ impl<V: Send + Sync + 'static> Clone for MemoryCache<V> {
             flights: self.flights.clone(),
             valkey: self.valkey.clone(),
             subscription: self.subscription.clone(),
+            dropped: self.dropped.clone(),
         }
     }
 }
@@ -528,6 +530,7 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
             flights: Flights::new(10_000),
             valkey,
             subscription,
+            dropped: Arc::new(AtomicU64::new(0)),
         }
     }
 
@@ -562,10 +565,16 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
             }
             flight = None;
         }
+        let dropped = self.dropped.load(Ordering::Acquire);
         let Some(value) = load().await? else {
             return Ok(None);
         };
         let value = Arc::new(value);
+        // An invalidation during the load may have dropped what it read, such as a
+        // credential replaced meanwhile: serve it to this caller only.
+        if self.dropped.load(Ordering::Acquire) != dropped {
+            return Ok(Some(value));
+        }
         if self.subscription.still(seen) {
             self.memory.insert(key, value.clone()).await;
         } else {
@@ -593,6 +602,7 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
     }
 
     fn drop_group(&self, group: &str) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         for cache in [&self.memory, &self.fallback] {
             let prefix = format!("{group}:");
             if cache
@@ -605,10 +615,12 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
     }
 
     fn clear_subscribed(&self) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         self.memory.invalidate_all();
     }
 
     fn clear_local(&self) {
+        self.dropped.fetch_add(1, Ordering::AcqRel);
         self.memory.invalidate_all();
         self.fallback.invalidate_all();
     }
@@ -914,6 +926,42 @@ mod tests {
             tokio::task::yield_now().await;
         }
         assert_eq!(loads.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn a_load_that_overlaps_a_group_invalidation_is_not_kept() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache: MemoryCache<String> =
+            MemoryCache::new("test", unreachable_valkey(), subscription.clone());
+        let started = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let loading = {
+            let (cache, started, release) = (cache.clone(), started.clone(), release.clone());
+            tokio::spawn(async move {
+                cache
+                    .get_or_load("org", "p:openai", || async move {
+                        started.notify_one();
+                        release.notified().await;
+                        Ok::<_, String>(Some("read before the change".to_owned()))
+                    })
+                    .await
+            })
+        };
+        started.notified().await;
+        cache.drop_group("org");
+        release.notify_one();
+        let served = loading.await.unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            served,
+            Ok(Some(Arc::new("read before the change".to_owned())))
+        );
+        let next = cache
+            .get_or_load("org", "p:openai", || async {
+                Ok::<_, String>(Some("current".to_owned()))
+            })
+            .await;
+        assert_eq!(next, Ok(Some(Arc::new("current".to_owned()))));
     }
 
     #[tokio::test]
