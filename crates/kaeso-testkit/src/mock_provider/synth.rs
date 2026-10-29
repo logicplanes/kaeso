@@ -168,6 +168,7 @@ pub(super) struct Endless {
     pieces: Vec<String>,
     gap: Duration,
     next: usize,
+    sent: u64,
 }
 
 // Timers fire at most once a millisecond, so a faster pace sends that millisecond's deltas
@@ -183,6 +184,7 @@ impl Endless {
         for _ in 0..deltas {
             let piece = self.pieces.get(self.next % self.pieces.len().max(1))?;
             self.next += 1;
+            self.sent += piece.len() as u64;
             let event = serde_json::from_value::<StreamEvent>(
                 json!({ "block_delta": { "index": 0, "delta": { "text": piece } } }),
             )
@@ -190,6 +192,11 @@ impl Endless {
             bytes.extend(self.encoder.encode(&event).ok()?);
         }
         Some((self.gap.max(TICK), Bytes::from(bytes)))
+    }
+
+    /// The bytes of reply text sent so far.
+    pub(super) fn sent(&self) -> u64 {
+        self.sent
     }
 }
 
@@ -224,6 +231,7 @@ pub(super) fn endless(
         pieces: pieces(shape.out, shape.delta, seed),
         gap: Duration::from_secs_f64(TOKENS_PER_DELTA as f64 / shape.tps),
         next: 0,
+        sent: 0,
     };
     Some((head, endless))
 }
