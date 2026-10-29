@@ -16,6 +16,29 @@ const columns = [
 ];
 
 describe("DataTable selection and rows", () => {
+  it("draws a row's cells again only when its data, the columns or its state change, not on every render", () => {
+    const drawn: string[] = [];
+    const counted = [{ id: "key", header: "Key", cell: ({ row }: { row: { original: Row } }) => (drawn.push(row.original.id), row.original.key) }];
+    const table = (data: Row[], active?: string, shown = counted) => (
+      <DataTable aria-label="Keys" data={data} columns={shown} getRowId={(r) => r.id} activeRowId={active} />
+    );
+    const { rerender } = render(table(rows));
+    expect(drawn.sort()).toEqual(["a", "b"]);
+    drawn.length = 0;
+    rerender(table(rows));
+    expect(drawn).toEqual([]);
+    rerender(table(rows, "b"));
+    expect(drawn).toEqual(["b"]);
+    expect(screen.getByRole("row", { current: true })).toHaveTextContent("ci-runner");
+    drawn.length = 0;
+    rerender(table([{ ...rows[0]!, key: "checkout-api" }, rows[1]!], "b"));
+    expect(drawn.sort()).toEqual(["a", "b"]);
+    expect(screen.getByText("checkout-api")).toBeInTheDocument();
+    drawn.length = 0;
+    rerender(table(rows, "b", [...counted]));
+    expect(drawn.sort()).toEqual(["a", "b"]);
+  });
+
   it("selects all rows and single rows, controlled or not", async () => {
     const onSelection = vi.fn();
     render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable onSelectionChange={onSelection} />);
