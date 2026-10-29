@@ -310,7 +310,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         assert!(!err.message.is_empty());
         let enc = AnthropicMessages::encode_error(&err);
         assert_eq!(enc.status, status, "{name}");
-        assert_json_eq(&name, &body, &enc.body);
+        assert_json_eq(&name, &encoded_error(&meta, &body), &enc.body);
         assert_eq!(
             enc.headers.get("retry-after"),
             headers.get("retry-after"),

@@ -216,6 +216,106 @@ expression: outcomes
       "total_tokens": 251
     }
   },
+  "providers/vercel/recorded-gpt-reasoning-encrypted": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "No; it’s divisible by 7 (91 = 7 × 13).",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HK5PMQX693A7PFNPFMG6P",
+    "model": "openai/gpt-5-nano",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 67,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 22,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 89
+    }
+  },
+  "providers/vercel/recorded-text": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Paris",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HKBDYQ2XAK45YVXCG4M81",
+    "model": "mistral/mistral-nemo",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 2,
+      "completion_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "prompt_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 19
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}",
+                "name": "get_weather"
+              },
+              "id": "call-29285c97-87ea-4c1c-a7cf-bcf25ee771ec",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HKCMD3NR5YGRXH484DPH5",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 59,
+      "completion_tokens_details": {
+        "reasoning_tokens": 20
+      },
+      "prompt_tokens": 348,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 407
+    }
+  },
   "providers/xai/recorded-codex-gpt-history": {
     "choices": [
       {

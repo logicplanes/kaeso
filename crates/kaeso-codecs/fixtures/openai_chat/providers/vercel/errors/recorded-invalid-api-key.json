@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Authentication failed. Check that your Vercel credential is valid and has access to AI Gateway.",
+    "type": "authentication_error"
+  }
+}

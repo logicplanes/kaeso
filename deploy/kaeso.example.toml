@@ -79,6 +79,9 @@ base_url = "https://openrouter.ai/api"
 [providers.mistral]
 base_url = "https://api.mistral.ai"
 
+[providers.vercel]
+base_url = "https://ai-gateway.vercel.sh"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

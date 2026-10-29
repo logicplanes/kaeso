@@ -49,6 +49,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | OpenRouter（`openrouter`） | `reasoning_fields(["reasoning"])`、`error_detail(["error", "metadata", "raw"])` | OpenRouter 的推理 token 指南（`reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-free-reasoning` 和 `streams/recorded-free-reasoning-stream`；OpenRouter 的错误与调试页面（`metadata.raw`，即上游服务商的错误），`errors/recorded-upstream-rate-limited` 和 `errors/recorded-routing-fields` |
 | SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])`、`with_message_bookkeeping()`、`tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAI 的 Chat Completions 参考（`reasoning_content`）；xAI 的函数调用指南（对象根部或对象组成的联合）；Grok CLI（xAI 自己的客户端）在每个助手轮次都向它发送 `model_id`（`requests/grok-cli-model-id.json`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
 | Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
+| Vercel（`vercel`） | `reasoning_fields(["reasoning"])` | Vercel 的 Chat Completions 推理页面（`message.reasoning` 和 `delta.reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream` |
 
 ## 使用此格式的服务商
 
@@ -126,3 +127,18 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `error.metadata.raw`，即上游服务商自己的错误，与笼统的 `message` `Provider returned error` 并列 | `KppError.message` | 通过配置的 `error_detail`，Anthropic Messages 和 Responses 应用以及请求日志会得到 `Provider returned error: <原因>`，例如 `google/gemma-4-31b-it:free is temporarily rate-limited upstream…`。Chat 应用收到 OpenRouter 发来的原样错误体。 |
 | 200 之后出现的 `error` 对象，位于回复体中或与 `choices` 并列的数据块中 | `KppError` | 见[上方各行](openai-chat.md#流createchatcompletionstreamresponse)；数字 `code` 像状态码一样决定类别。 |
 | `GET /api/v1/models`：没有 `object`，模型也没有 `object` 和 `owned_by`，带 `total_count` 和 `links` | `ModelList`、extras | `GET /api/v1/models/{model}` 对每个模型都返回 404，因此模型检查依赖模型列表，而 OpenRouter 提供该列表时不检查密钥。 |
+
+### Vercel
+
+来源：Vercel 的 [Chat Completions](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions)、[reasoning](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/reasoning)和[advanced configuration](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/advanced) 页面（2026-10-29 阅读），以及 `fixtures/openai_chat/providers/vercel/` 中的实时录制。Chat Completions 是 Vercel 的 `generation` 方言，它列出的每个模型都支持。
+
+| Vercel 字段 | KPP | 说明 |
+|---|---|---|
+| `providerOptions`（`gateway` 下的路由，例如 `order`、`only`、`sort`、`models`、`byok`、`tags`、`user`）、`models`、`provider`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同（`requests/gateway-options`）。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 OpenRouter 相同。 |
+| `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；对于既非 OpenAI 也非 Anthropic 的模型，`format` 为 `"unknown"`。 |
+| 消息中和最后一个数据块 delta 中的 `provider_metadata`（`gateway.routing`、`cost`、`marketCost`、`gatewayCost`、`generationId`），以及顶层的 `generationId` | extras | 发往其他方言时省略。录制中的 `clientSessionId` 是客户端指纹，已替换为零。 |
+| `usage.cost`、`market_cost`、`gateway_cost`、`surcharge_cost`、`reporting_tag_write_cost`、`is_byok`、`cost_details`、`cache_creation_input_tokens` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用。`usage.cost` 只是推理费用：`requests/gateway-options` 中的标签产生了 0.00015 美元的附加费，只有 `gateway_cost` 包含它。 |
+| 最后一个流式数据块，同时带 `finish_reason`、`provider_metadata` 和 `usage` | `Usage` | 按 `choices: []` 的用量数据块读取。 |
+| OpenAI 错误结构中的错误，带 Vercel 自己的 `type`（`model_not_found`、`no_providers_available`、`authentication_error`）、作为对象的 `param`，以及与 `error` 并列的 `providerMetadata` | `KppError` | 类别取决于状态码：401 表示密钥错误，403 表示账户无权调用该模型（`errors/recorded-restricted-model`，免费套餐账户调用 Claude），404 表示模型未知。Chat 应用收到 Vercel 发来的原样错误体。 |
+| `GET /v1/models`：OpenAI 的结构，每个模型带 Vercel 自己的字段（`name`、`type`、`context_window`、`max_tokens`、`pricing`、`tags`、`supported_parameters`） | `ModelList`、extras | 模型列表对错误的密钥返回 401（`errors/list-invalid-api-key`），但模型检查首先询问的 `GET /v1/models/{model}` 不检查密钥就会回答。 |

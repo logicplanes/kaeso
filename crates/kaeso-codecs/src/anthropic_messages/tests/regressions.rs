@@ -231,6 +231,41 @@ fn stream_order_is_validated() {
 }
 
 #[test]
+fn openai_shaped_errors_from_anthropic_compatible_servers_keep_their_message() {
+    let body = br#"{"error":{"message":"Authentication failed.","type":"authentication_error"}}"#;
+    let e = AnthropicMessages::decode_error(401, &HeaderList::new(), body);
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::Authentication, "Authentication failed.")
+    );
+    let body = br#"{"error":{"message":"Slow down.","type":"rate_limit_exceeded","param":{"statusCode":429}},"providerMetadata":{}}"#;
+    let e = AnthropicMessages::decode_error(429, &HeaderList::new(), body);
+    assert_eq!(
+        (e.kind.clone(), e.message.as_str()),
+        (ErrorKind::RateLimited, "Slow down.")
+    );
+    let enc: Value = serde_json::from_slice(&AnthropicMessages::encode_error(&e).body).unwrap();
+    assert_eq!(
+        enc,
+        json!({"type": "error", "error": {"type": "rate_limit_error", "message": "Slow down."}, "request_id": null})
+    );
+    let e = crate::anthropic_messages::error::decode_stream_error(
+        r#"{"error":{"message":"Upstream broke."}}"#,
+    );
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::ProviderError, "Upstream broke.")
+    );
+    let e =
+        AnthropicMessages::decode_error(500, &HeaderList::new(), br#"{"error":{"message":""}}"#);
+    assert!(
+        e.message.contains("not an Anthropic error"),
+        "{}",
+        e.message
+    );
+}
+
+#[test]
 fn odd_error_bodies_are_classified_by_status() {
     let html = b"<html><body>413 Request Entity Too Large</body></html>";
     let e = AnthropicMessages::decode_error(413, &HeaderList::new(), html);

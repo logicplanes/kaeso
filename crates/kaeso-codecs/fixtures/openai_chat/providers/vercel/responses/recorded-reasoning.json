@@ -1,0 +1,95 @@
+{
+  "id": "gen_01M64HFS9C2XC1NJMYRM7PXXRF",
+  "object": "chat.completion",
+  "created": 1793301410,
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "no, because 91 = 7 × 13.",
+        "reasoning": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - Question: \"Is 91 a prime number?\"\n   - Constraints: Answer \"yes\" or \"no\" with one short reason.\n   - Key concept: Prime number definition and checking 91.\n\n2.  **Mathematical Check:**\n   - A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.\n   - Check divisibility of 91:\n     - Not even, not divisible by 2.\n     - Sum of digits: 9+1=10, not divisible by 3.\n     - Doesn't end in 0 or 5, not divisible by 5.\n     - Check 7: 7 × 13 = 91. Yes! 91 = 7 × 13.\n   - Therefore, 91 is not prime; it's composite (7 × 13).\n\n3.  **Formulate Answer:**\n   - Must answer \"yes\" or \"no\".\n   - 91 is not prime, so answer \"no\".\n   - Provide one short reason: e.g., \"It is divisible by 7 and 13.\" or \"91 = 7 × 13.\"\n   - Constraint check: \"yes or no with one short reason.\" I'll output \"no\" and a brief reason.\n\n   Possible formats:\n   - \"no, because 91 = 7 × 13.\"\n   - \"no. 91 is divisible by 7 and 13.\"\n   - The prompt says \"Answer yes or no with one short reason.\" I'll keep it concise.\n\n   I'll output: \"no, because 91 = 7 × 13.\"\n   Or just \"no. 91 = 7 × 13.\"\n\n   Let's stick to the exact requirement: answer yes/no with one short reason. I'll write: \"no, because 91 = 7 × 13.\" That's concise and meets the criteria.\n\n   Check if there's any trick: 91 is famously the first composite number that people might mistakenly think is prime, but 7*13=91 is well-known. No trick.\n\n   Final output: \"no, because 91 = 7 × 13.\"",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - Question: \"Is 91 a prime number?\"\n   - Constraints: Answer \"yes\" or \"no\" with one short reason.\n   - Key concept: Prime number definition and checking 91.\n\n2.  **Mathematical Check:**\n   - A prime number is a natural number greater than 1 that has no positive divisors other than 1 and itself.\n   - Check divisibility of 91:\n     - Not even, not divisible by 2.\n     - Sum of digits: 9+1=10, not divisible by 3.\n     - Doesn't end in 0 or 5, not divisible by 5.\n     - Check 7: 7 × 13 = 91. Yes! 91 = 7 × 13.\n   - Therefore, 91 is not prime; it's composite (7 × 13).\n\n3.  **Formulate Answer:**\n   - Must answer \"yes\" or \"no\".\n   - 91 is not prime, so answer \"no\".\n   - Provide one short reason: e.g., \"It is divisible by 7 and 13.\" or \"91 = 7 × 13.\"\n   - Constraint check: \"yes or no with one short reason.\" I'll output \"no\" and a brief reason.\n\n   Possible formats:\n   - \"no, because 91 = 7 × 13.\"\n   - \"no. 91 is divisible by 7 and 13.\"\n   - The prompt says \"Answer yes or no with one short reason.\" I'll keep it concise.\n\n   I'll output: \"no, because 91 = 7 × 13.\"\n   Or just \"no. 91 = 7 × 13.\"\n\n   Let's stick to the exact requirement: answer yes/no with one short reason. I'll write: \"no, because 91 = 7 × 13.\" That's concise and meets the criteria.\n\n   Check if there's any trick: 91 is famously the first composite number that people might mistakenly think is prime, but 7*13=91 is well-known. No trick.\n\n   Final output: \"no, because 91 = 7 × 13.\"",
+            "format": "unknown",
+            "index": 0
+          }
+        ],
+        "provider_metadata": {
+          "nvidia": {},
+          "gateway": {
+            "routing": {
+              "originalModelId": "nvidia/nemotron-3.5-lightning-free",
+              "resolvedProvider": "nvidia",
+              "fallbacksAvailable": [],
+              "planningReasoning": "System credentials planned for: nvidia. Total execution order: nvidia(system)",
+              "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+              "finalProvider": "nvidia",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "nvidia",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1793301407070,
+                      "endTime": 1793301410034,
+                      "providerRequestId": "c19419f8-a54e-42a2-8eb5-61476b684231",
+                      "statusCode": 200,
+                      "providerResponseId": "chatcmpl-6d1ecb05-d102-4ed6-9809-4cc55cf7473a"
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1,
+              "affinity": {
+                "outcome": "skipped_below_min_prefix"
+              },
+              "clientSessionId": "00000000000000000000000000000000",
+              "clientSessionIdSource": "fingerprint"
+            },
+            "cost": "0",
+            "marketCost": "0",
+            "surchargeCost": "0",
+            "gatewayCost": "0",
+            "generationId": "gen_01M64HFS9C2XC1NJMYRM7PXXRF"
+          }
+        }
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 33,
+    "completion_tokens": 515,
+    "total_tokens": 548,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": null,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 499,
+      "image_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "market_cost": 0
+  },
+  "system_fingerprint": "fp_b1wdu0s520",
+  "generationId": "gen_01M64HFS9C2XC1NJMYRM7PXXRF"
+}

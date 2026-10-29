@@ -370,14 +370,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "openai_chat"
     };
     let dir = ctx.fixtures.join(dialect);
-    let authed = if anthropic {
-        headers.get("x-api-key").is_some_and(|v| !v.is_empty())
-    } else {
-        headers
-            .get("authorization")
-            .and_then(|v| v.to_str().ok())
-            .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7)
-    };
+    let bearer = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7);
+    // Anthropic takes `x-api-key`; Anthropic-compatible servers such as Vercel AI Gateway
+    // also take a Bearer token.
+    let authed = bearer || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty());
     if !authed {
         return error_response(&dir, key_refused(dialect));
     }
@@ -492,8 +491,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             } else {
                 "string-input"
             };
-            dir.join("responses")
-                .join(format!("{}.json", fixture.as_deref().unwrap_or(default)))
+            fixture_file(
+                &dir,
+                "responses",
+                fixture.as_deref().unwrap_or(default),
+                "json",
+            )
         }
         _ => {
             let default = match dialect {

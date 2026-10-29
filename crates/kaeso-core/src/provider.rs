@@ -415,6 +415,32 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("Mistral"),
         account: None,
     },
+    Provider {
+        id: "vercel",
+        name: "Vercel",
+        key_page: KeyPage {
+            url: "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys",
+            label: "AI Gateway → API Keys",
+        },
+        key_prefix: Some("vck_"),
+        default_base_url: "https://ai-gateway.vercel.sh",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::OpenAiResponses,
+            DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
+        ],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
+        responses: ResponsesProfile::compatible("Vercel"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -687,7 +713,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel"
         );
     }
 
@@ -1006,7 +1032,8 @@ mod tests {
                 "togetherai",
                 "groq",
                 "openrouter",
-                "mistral"
+                "mistral",
+                "vercel"
             ]
         );
         assert_eq!(

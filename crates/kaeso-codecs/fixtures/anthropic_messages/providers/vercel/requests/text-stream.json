@@ -1,0 +1,11 @@
+{
+  "model": "mistral/mistral-nemo",
+  "max_tokens": 64,
+  "stream": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from one to five in words, separated by commas."
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "error": {
+    "message": "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s.",
+    "type": "rate_limit_exceeded",
+    "param": {
+      "error": "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s.",
+      "type": "rate_limit_exceeded",
+      "statusCode": 429,
+      "name": "RateLimitExceededError",
+      "message": "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s."
+    }
+  },
+  "providerMetadata": {
+    "gateway": {
+      "routing": {
+        "originalModelId": "nvidia/nemotron-3.5-lightning-free",
+        "resolvedProvider": "nvidia",
+        "fallbacksAvailable": [],
+        "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+            "success": false,
+            "providerAttemptCount": 0,
+            "providerAttempts": []
+          }
+        ],
+        "totalProviderAttemptCount": 0,
+        "affinity": {
+          "outcome": "skipped_below_min_prefix"
+        },
+        "clientSessionId": "00000000000000000000000000000000",
+        "clientSessionIdSource": "fingerprint"
+      },
+      "generationId": "gen_01M64HGJF2M9R4C8M247MHP3C1"
+    }
+  }
+}

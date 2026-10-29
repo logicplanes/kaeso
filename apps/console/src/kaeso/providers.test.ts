@@ -9,6 +9,7 @@ describe("the provider catalog", () => {
   it("names each provider as the gateway does and one it doesn't list by its id", () => {
     expect(catalog.name("xai")).toBe("SpaceX");
     expect(catalog.name("togetherai")).toBe("Together AI");
+    expect(catalog.name("vercel")).toBe("Vercel");
     expect(catalog.name("cohere")).toBe("cohere");
     expect(catalog.get("cohere")).toBeUndefined();
   });
@@ -22,11 +23,12 @@ describe("the provider catalog", () => {
   it("offers a provider's own formats, and none for one it doesn't list", () => {
     expect(catalog.dialects("anthropic")).toEqual(["anthropic_messages"]);
     expect(catalog.dialects("openai")).toEqual(["openai_responses", "openai_chat", "openai_embeddings"]);
+    expect(catalog.dialects("vercel")).toEqual(["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"]);
     expect(catalog.dialects("cohere")).toEqual([]);
   });
 
   it("sorts by name, not by id", () => {
-    expect(["xai", "togetherai", "openrouter"].sort(catalog.byName)).toEqual(["openrouter", "xai", "togetherai"]);
+    expect(["xai", "vercel", "togetherai", "openrouter"].sort(catalog.byName)).toEqual(["openrouter", "xai", "togetherai", "vercel"]);
   });
 
   it("offers only the providers the gateway lists, with the organization's key counts", () => {

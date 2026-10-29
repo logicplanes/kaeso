@@ -1,0 +1,76 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        -0.0006761959521099925,
+        -0.0008282408816739917,
+        0.02327517233788967,
+        -0.04980317875742912,
+        -0.022979557514190674,
+        0.022059349343180656,
+        -0.005735623184591532,
+        0.004240433685481548
+      ],
+      "index": 0
+    },
+    {
+      "object": "embedding",
+      "embedding": [
+        -0.030068712309002876,
+        0.006009429693222046,
+        0.006612211000174284,
+        -0.07414408028125763,
+        -0.03599115088582039,
+        0.007168665528297424,
+        -0.0017937340307980776,
+        0.016045603901147842
+      ],
+      "index": 1
+    }
+  ],
+  "model": "google/gemini-embedding-001",
+  "usage": {
+    "prompt_tokens": 12,
+    "total_tokens": 12
+  },
+  "providerMetadata": {
+    "gateway": {
+      "routing": {
+        "originalModelId": "google/gemini-embedding-001",
+        "resolvedProvider": "vertex",
+        "fallbacksAvailable": [
+          "google"
+        ],
+        "planningReasoning": "System credentials planned for: vertex, google. Total execution order: vertex(system) → google(system)",
+        "canonicalSlug": "google/gemini-embedding-001",
+        "finalProvider": "vertex",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "google/gemini-embedding-001",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "vertex",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1793301433682,
+                "endTime": 1793301434487,
+                "statusCode": 200
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1
+      },
+      "cost": "0.0000018",
+      "marketCost": "0.0000018",
+      "surchargeCost": "0",
+      "gatewayCost": "0.0000018",
+      "generationId": "gen_01M64HGK0SV8N06R646MTZDJFM"
+    }
+  }
+}

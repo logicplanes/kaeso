@@ -733,6 +733,43 @@ fn mistral_models_speak_chat_completions_and_mistral_embed_embeds() {
 }
 
 #[test]
+fn vercel_models_speak_chat_completions_and_the_ones_models_dev_marks_as_embeddings_embed() {
+    let free = eff(&entry("vercel", "nvidia/nemotron-3.5-lightning-free"));
+    assert_eq!(free.dialect, DialectId::OpenAiChat);
+    assert_eq!(free.provider.chat().provider, "Vercel");
+    assert_eq!(
+        (free.fields.input_price, free.fields.context_limit),
+        (Some(dec!(0)), Some(1_000_000))
+    );
+    let embed = eff(&entry("vercel", "google/gemini-embedding-001"));
+    assert_eq!(embed.dialect, DialectId::OpenAiEmbeddings);
+    assert!(embed.is_embeddings());
+    let mut sent_as = entry("vercel", "nvidia/nemotron-3.5-lightning-free");
+    sent_as.overrides.egress_dialect = Some(DialectId::AnthropicMessages);
+    assert_eq!(eff(&sent_as).dialect, DialectId::AnthropicMessages);
+
+    let ids = crate::provider::known_ids();
+    let feed = br#"{"anthropic":{"id":"anthropic","models":{"x-embed":{"id":"x-embed","type":"embedding"}}},
+        "openai":{"id":"openai","models":{"y-embed":{"id":"y-embed","type":"embedding"}}}}"#;
+    let parsed = models_dev::parse(feed, &ids).unwrap();
+    let dialect = |provider: &str, model: &str| {
+        effective(
+            &entry(provider, model),
+            &parsed.snapshot,
+            &Supplement::default(),
+            &OrgProviders::default(),
+        )
+        .unwrap()
+        .dialect
+    };
+    assert_eq!(dialect("openai", "y-embed"), DialectId::OpenAiEmbeddings);
+    assert_eq!(
+        dialect("anthropic", "x-embed"),
+        DialectId::AnthropicMessages
+    );
+}
+
+#[test]
 fn duties_fill_what_kpp_cannot_know() {
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     let mut req = Request::Generate(user(vec![Block::text("hi")]));

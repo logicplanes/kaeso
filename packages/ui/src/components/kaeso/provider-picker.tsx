@@ -132,7 +132,7 @@ function ProviderTiles({
                       <ProviderBadge provider={p.id} name={p.name} size="lg" />
                     </span>
                     <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-body font-medium text-fg">{nameOf(p)}</span>
+                      <span className="line-clamp-2 text-body font-medium text-pretty wrap-break-word text-fg">{nameOf(p)}</span>
                       {p.hint !== undefined && <span className="line-clamp-2 text-small text-pretty text-fg-secondary">{p.hint}</span>}
                     </span>
                   </BaseRadio.Root>

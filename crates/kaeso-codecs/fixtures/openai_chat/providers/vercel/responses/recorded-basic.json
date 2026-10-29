@@ -1,0 +1,90 @@
+{
+  "id": "gen_01M64HFNGE7BR3KY97Y0QT33N2",
+  "object": "chat.completion",
+  "created": 1793301404,
+  "model": "mistral/mistral-nemo",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Paris is the capital of France.",
+        "provider_metadata": {
+          "deepinfra": {},
+          "gateway": {
+            "routing": {
+              "originalModelId": "mistral/mistral-nemo",
+              "resolvedProvider": "deepinfra",
+              "fallbacksAvailable": [],
+              "planningReasoning": "System credentials planned for: deepinfra. Total execution order: deepinfra(system)",
+              "canonicalSlug": "mistral/mistral-nemo",
+              "finalProvider": "deepinfra",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "mistral/mistral-nemo",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "deepinfra",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1793301403446,
+                      "endTime": 1793301404052,
+                      "providerRequestId": "RcsY7aNTIxOkT1jm30XnUm0H",
+                      "statusCode": 200,
+                      "providerResponseId": "chatcmpl-RcsY7aNTIxOkT1jm30XnUm0H"
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1,
+              "affinity": {
+                "outcome": "skipped_below_min_prefix"
+              },
+              "clientSessionId": "00000000000000000000000000000000",
+              "clientSessionIdSource": "fingerprint"
+            },
+            "cost": "0.000000907",
+            "marketCost": "0.000000907",
+            "surchargeCost": "0",
+            "gatewayCost": "0.000000907",
+            "inferenceCost": "0.000000907",
+            "inputInferenceCost": "0.000000667",
+            "outputInferenceCost": "0.00000024",
+            "generationId": "gen_01M64HFNGE7BR3KY97Y0QT33N2"
+          }
+        }
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 8,
+    "total_tokens": 31,
+    "cost": 9.07e-7,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": null,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "market_cost": 9.07e-7,
+    "gateway_cost": 9.07e-7
+  },
+  "system_fingerprint": "fp_q4agf9mnrz",
+  "generationId": "gen_01M64HFNGE7BR3KY97Y0QT33N2"
+}
