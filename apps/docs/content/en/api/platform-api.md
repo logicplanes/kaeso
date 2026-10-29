@@ -174,7 +174,7 @@ The message is one short sentence for people, and the console shows it as it is.
 | 409 | `org_scheduled_for_deletion` | A change in an organization scheduled for deletion. |
 | 412 | `conflict` | `If-Match` names an older revision. |
 | 413 | `request_too_large` | The body is larger than `KAESO_BODY_LIMITS_PLATFORM_API`, 1 MiB by default. |
-| 429 | `rate_limited` | Too many sign-in attempts or unknown keys from one address, or a limit on a Playground request. `Retry-After` says when to try again. |
+| 429 | `rate_limited` | Too many sign-in attempts or unknown keys from one address, more than five invitations to one email address in an hour, or a limit on a Playground request. `Retry-After` says when to try again. |
 | 500 | `internal` | A fault in the gateway. The message names the request id to report. |
 | 503 | `unavailable` | Kaeso can't reach a database or another backing service, such as "Kaeso cannot reach its database right now; try again shortly." |
 | 429, 502, 503, 504 | `provider_error` | The provider failed, only on [Playground](#playground) requests. |

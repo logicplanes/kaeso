@@ -505,6 +505,79 @@ async fn invitations_are_resent_only_by_people_who_could_send_them() {
 }
 
 #[tokio::test]
+async fn invitations_send_an_address_at_most_five_emails_an_hour() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let invite = app
+        .post(
+            &format!("/orgs/{org}/invites"),
+            json!({ "email": "flood@example.com", "role": "member" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for _ in 0..3 {
+        app.post(
+            &format!("/orgs/{org}/invites/{invite}/resend"),
+            json!({}),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    }
+    app.post(
+        &format!("/orgs/{org}/invites"),
+        json!({ "email": "Flood@Example.com", "role": "member" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    app.wait_for_mail("flood@example.com", 5).await;
+
+    let r = app
+        .post(
+            &format!("/orgs/{org}/invites/{invite}/resend"),
+            json!({}),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Too many emails to this address; try again later."
+    );
+    app.post(
+        &format!("/orgs/{org}/invites"),
+        json!({ "email": "flood@example.com", "role": "member" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::TOO_MANY_REQUESTS);
+    app.post(
+        "/instance/users/invites",
+        json!({ "email": "flood@example.com" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::TOO_MANY_REQUESTS);
+    app.post(
+        &format!("/orgs/{org}/invites"),
+        json!({ "email": "other@example.com", "role": "member" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    assert_eq!(app.mail.to("flood@example.com").len(), 5);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn invitations_and_sso_grant_no_default_project_rights_the_inviter_lacks() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
