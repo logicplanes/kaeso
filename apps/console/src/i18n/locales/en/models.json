@@ -69,6 +69,7 @@
   "models.chooseModel": "Choose a model",
   "models.clearFilters": "Clear filters",
   "models.clearSelection": "Clear selection",
+  "models.contextHint": "Context window: {tokens} tokens",
   "models.createAlias": "Create alias",
   "models.custom": "Custom",
   "models.customListed": "models.dev lists {model}: its values are filled in.",

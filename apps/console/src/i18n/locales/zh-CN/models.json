@@ -45,6 +45,7 @@
   "models.cacheRead": "缓存读取 {read}",
   "models.cacheReadWrite": "缓存读取 {read}，缓存写入 {write}",
   "models.cacheWrite": "缓存写入 {write}",
+  "models.contextHint": "上下文窗口：{tokens} 个 Token",
   "models.cap.pdf": "PDF 输入",
   "models.cap.reasoning": "推理",
   "models.cap.structuredOutput": "结构化输出",

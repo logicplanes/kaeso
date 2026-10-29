@@ -1739,3 +1739,11 @@
     transform: translateX(-8px);
   }
 }
+
+/* Set by ThemeProvider for the frame a theme changes in. */
+[data-k-theming],
+[data-k-theming] *,
+[data-k-theming] *::before,
+[data-k-theming] *::after {
+  transition: none !important;
+}

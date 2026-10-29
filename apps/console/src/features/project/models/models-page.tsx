@@ -23,7 +23,7 @@ import {
   type Capability,
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
-import { formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
@@ -345,9 +345,17 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
         <Pill size="sm" variant="outline">
           {dialectPill(m.egress_dialect)}
         </Pill>
-        <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
-          {contextLabel(f.context_limit)}
-        </Text>
+        {f.context_limit ? (
+          <Tooltip content={t("models.contextHint", "Context window: {tokens} tokens", { tokens: formatNumber(f.context_limit) })}>
+            <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-48 text-right">
+              {contextLabel(f.context_limit)}
+            </Text>
+          </Tooltip>
+        ) : (
+          <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
+            {contextLabel(f.context_limit)}
+          </Text>
+        )}
         <Tooltip content={cache ? t("models.priceWithCache", "{unit}; {cache}", { unit, cache }) : unit}>
           <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-96 text-right">
             {priceLabel(f)}

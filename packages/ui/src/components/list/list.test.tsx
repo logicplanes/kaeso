@@ -179,6 +179,10 @@ describe("List", () => {
     const column = within(cell).getByText("Sent 13 Oct 2026").closest(".flex-col");
     expect(column).toContainElement(within(cell).getByText("shell-invitee@example.com"));
     expect(column).toContainElement(within(cell).getByText("Accepted"));
+    // A long value and date wrap onto a second line rather than clip the value.
+    const line = within(cell).getByText("Accepted").parentElement?.parentElement;
+    expect(line).toHaveClass("flex-wrap", "min-h-24");
+    expect(line).not.toHaveClass("h-24");
     unmount();
     spy.mockReturnValue(900);
     render(<List aria-label="Invitations" items={rows} />);

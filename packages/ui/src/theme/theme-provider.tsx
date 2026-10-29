@@ -80,8 +80,17 @@ export function ThemeProvider({ children, defaultTheme = "system", target }: The
   useEffect(() => {
     if (chosen === null) return;
     const el = target ? target() : document.documentElement;
+    // Every color changes at once; without this, each control's color transition replays the
+    // switch on its own, showing light controls on a dark page for a moment.
+    el.setAttribute("data-k-theming", "");
     if (chosen === "system") el.removeAttribute("data-theme");
     else el.setAttribute("data-theme", chosen);
+    void getComputedStyle(el).color;
+    const settled = requestAnimationFrame(() => el.removeAttribute("data-k-theming"));
+    return () => {
+      cancelAnimationFrame(settled);
+      el.removeAttribute("data-k-theming");
+    };
   }, [chosen, target]);
 
   const setTheme = useCallback((next: ThemePreference) => {

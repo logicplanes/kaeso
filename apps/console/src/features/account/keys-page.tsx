@@ -50,7 +50,14 @@ export function AccountKeysPage() {
     },
     invalidates: ({ key }) => keyQueries(key, where.get(key.project_id)?.org),
     onSuccess: (k, { action }) =>
-      toast(action === "disable" ? t("account.keyDisabled", "{name} disabled", { name: k.name }) : t("account.keyEnabled", "{name} enabled", { name: k.name })),
+      toast(
+        action === "disable" ? t("account.keyDisabled", "{name} disabled", { name: k.name }) : t("account.keyEnabled", "{name} enabled", { name: k.name }),
+        {
+          // One toast per key: toggling it again replaces the toast, whose Undo would otherwise undo an older state.
+          id: `key-state:${k.id}`,
+          action: { label: t("keys.undo", "Undo"), onClick: () => act.mutate({ key: k, action: action === "disable" ? "enable" : "disable" }) },
+        },
+      ),
   });
   const archive = (k: KeyView) => {
     setArchiving(k);

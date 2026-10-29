@@ -119,6 +119,13 @@ describe("ModelsPage", () => {
     await hoverReason(user, within(gpt).getAllByText("—")[1] as HTMLElement, /cache write \$2\.00$/);
   });
 
+  it("names each context size as the context window, in tokens", async () => {
+    setUp();
+    const { user } = await renderApp(projectPath("models"));
+
+    await hoverReason(user, (await screen.findAllByText("200K"))[0] as HTMLElement, "Context window: 200,000 tokens");
+  });
+
   it("sorts each provider's models by price or newest release", async () => {
     setUp();
     const { user, router } = await renderApp(projectPath("models?sort=price"));

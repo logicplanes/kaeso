@@ -45,6 +45,7 @@
   "models.cacheRead": "Cache-Lesen {read}",
   "models.cacheReadWrite": "Cache-Lesen {read}, Cache-Schreiben {write}",
   "models.cacheWrite": "Cache-Schreiben {write}",
+  "models.contextHint": "Kontextfenster: {tokens} Token",
   "models.cap.pdf": "PDF-Eingabe",
   "models.cap.reasoning": "Reasoning",
   "models.cap.structuredOutput": "Strukturierte Ausgabe",
