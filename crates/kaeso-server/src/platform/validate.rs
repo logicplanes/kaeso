@@ -1,18 +1,6 @@
-use super::error::{ApiError, ApiResult};
+use kaeso_core::text::hidden;
 
-fn hidden(c: char) -> bool {
-    c.is_control()
-        || matches!(
-            c,
-            '\u{061C}'
-                | '\u{200B}'..='\u{200F}'
-                | '\u{2028}'..='\u{202E}'
-                | '\u{2060}'..='\u{2064}'
-                | '\u{2066}'..='\u{206F}'
-                | '\u{FEFF}'
-                | '\u{FFF9}'..='\u{FFFB}'
-        )
-}
+use super::error::{ApiError, ApiResult};
 
 pub(crate) fn validate_name(param: &str, name: &str) -> ApiResult<String> {
     validate_label(param, name, 100)

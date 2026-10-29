@@ -147,7 +147,7 @@ pub fn validate_alias_name(name: &str) -> Result<(), String> {
     }
     if name
         .chars()
-        .any(|c| c.is_whitespace() || c.is_control() || c == '/')
+        .any(|c| c.is_whitespace() || crate::text::hidden(c) || c == '/')
     {
         return Err("must not contain spaces, control characters or `/`".into());
     }

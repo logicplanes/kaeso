@@ -19,3 +19,4 @@ pub mod provider;
 pub mod providers;
 pub mod rights;
 pub mod secret;
+pub mod text;
