@@ -98,6 +98,16 @@ describe("UsageMetrics", () => {
     expect(tile("Errors")).not.toHaveTextContent("of requests");
   });
 
+  it("says each tile couldn't load when the usage failed, instead of loading for ever", async () => {
+    await renderUi(<UsageMetrics rows={[]} from="2026-10-13" to="2026-10-14" showCost failed />);
+    for (const name of ["Requests", "Tokens", "Cost", "Errors"]) {
+      expect(tile(name)).not.toHaveAttribute("aria-busy");
+      expect(tile(name)).toHaveTextContent("—");
+      expect(tile(name)).toHaveTextContent("Couldn't load");
+      expect(tile(name)).not.toHaveTextContent(/\d/);
+    }
+  });
+
   it("leaves out a cost the gateway didn't price", async () => {
     await renderUi(<UsageMetrics rows={[usage({ cost: null })]} from="2026-10-14" to="2026-10-14" showCost />);
     expect(tile("Requests")).toHaveTextContent("100");

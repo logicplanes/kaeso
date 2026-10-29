@@ -30,6 +30,7 @@ interface Ctx {
   cell?: boolean;
   whole?: boolean;
   linkless?: boolean;
+  tableLabel?: string;
 }
 
 const CALLOUT: Record<CalloutKind, { key: MessageKey; tone: "neutral" | "info" | "success" | "warning" }> = {
@@ -347,7 +348,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       const short = shortColumns(b.rows, b.head.length);
       const columns = b.head.map(plainText).join(LIST_SEPARATOR[ctx.locale]);
       const stacked = b.head.length >= STACK_COLUMNS;
-      const label = ctx.t("page.table").replace("{columns}", columns);
+      const label = ctx.tableLabel ?? ctx.t("page.table").replace("{columns}", columns);
       return (
         <Fragment key={i}>
           <ScrollArea orientation="horizontal" aria-label={label} {...(stacked ? { className: "max-sm:hidden" } : {})}>
@@ -393,12 +394,48 @@ function blocks(bs: Block[], ctx: Ctx): ReactNode[] {
   return bs.map((b, i) => block(b, i, ctx));
 }
 
+// Each table is a landmark named after its columns. Tables that share columns are named after
+// their section as well (its heading under the page's last h2), then numbered if that isn't
+// enough, so no two landmarks on a page share a name.
+function tableLabels(bs: Block[], t: Translate, locale: Locale): Map<number, string> {
+  const tables: { i: number; base: string; columns: string; section: string | undefined }[] = [];
+  let h2: string | undefined;
+  let section: string | undefined;
+  bs.forEach((b, i) => {
+    if (b.t === "heading") {
+      const text = plainText(b.c);
+      if (b.level === 2) h2 = text;
+      section = b.level === 2 || !h2 ? text : `${h2} › ${text}`;
+    } else if (b.t === "table") {
+      const columns = b.head.map(plainText).join(LIST_SEPARATOR[locale]);
+      tables.push({ i, columns, base: t("page.table").replace("{columns}", columns), section });
+    }
+  });
+  const count = (xs: string[], x: string) => xs.filter((y) => y === x).length;
+  const columns = tables.map((x) => x.columns);
+  const named = tables.map((x) =>
+    count(columns, x.columns) > 1 && x.section ? t("page.tableIn").replace("{table}", x.base).replace("{section}", x.section) : x.base,
+  );
+  const labels = new Map<number, string>();
+  tables.forEach((x, n) => {
+    const name = named[n] ?? x.base;
+    const nth = named.slice(0, n + 1).filter((y) => y === name).length;
+    const label = count(named, name) > 1 && nth > 1 ? `${name} (${nth})` : name;
+    if (label !== x.base) labels.set(x.i, label);
+  });
+  return labels;
+}
+
 export function Markdown({ blocks: bs, className, lang }: { blocks: Block[]; className?: string; lang?: string | undefined }) {
   const t = useText();
   const locale = useSiteLocale();
+  const labels = tableLabels(bs, t, locale);
   return (
     <div lang={lang} className={`flex min-w-0 flex-col gap-16${className ? ` ${className}` : ""}`}>
-      {blocks(bs, { size: "body-lg", tone: "default", t, locale })}
+      {bs.map((b, i) => {
+        const tableLabel = labels.get(i);
+        return block(b, i, { size: "body-lg", tone: "default", t, locale, ...(tableLabel ? { tableLabel } : {}) });
+      })}
     </div>
   );
 }

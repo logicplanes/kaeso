@@ -30,6 +30,7 @@ export const de: Messages = {
   "page.previousStep": "Zurück: {title}",
   "page.nextStep": "Weiter: {title}",
   "page.edit": "Auf GitHub bearbeiten",
+  "page.tableIn": "{table}, unter {section}",
   "page.table": "Tabelle: {columns}",
   "page.diagram": "Diagramm: {title}",
   "page.task": "Aufgabe",

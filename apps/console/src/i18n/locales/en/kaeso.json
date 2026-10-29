@@ -298,6 +298,7 @@
   "kaeso.usage.reasoning": "Reasoning",
   "kaeso.usage.requestsPer": "Requests and errors per {granularity, select, week {week} month {month} other {day}}",
   "kaeso.usage.requestsPerUtc": "Requests and errors per {granularity, select, week {week} month {month} other {day}} (UTC)",
+  "kaeso.usage.tileFailed": "Couldn't load",
   "kaeso.usage.tokensByKind": "Tokens by kind per {granularity, select, week {week} month {month} other {day}}",
   "kaeso.usage.tokensPerUtc": "By kind, per {granularity, select, week {week} month {month} other {day}} (UTC)",
   "kaeso.usage.totalCost": "Total cost",

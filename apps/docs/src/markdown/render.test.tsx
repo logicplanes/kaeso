@@ -128,6 +128,58 @@ describe("Markdown", () => {
     expect(box).toHaveAttribute("aria-readonly", "true");
   });
 
+  it("names tables with the same columns after their sections, so no two regions share a name", () => {
+    const table = (v: string): Block => ({
+      t: "table",
+      align: ["start", "start"],
+      head: [[{ t: "text", v: "Setting" }], [{ t: "text", v: "Default" }]],
+      rows: [[[{ t: "text", v }], [{ t: "text", v: "on" }]]],
+    });
+    draw([
+      { t: "heading", level: 2, id: "gateway", c: [{ t: "text", v: "Gateway" }] },
+      table("a"),
+      { t: "heading", level: 2, id: "console", c: [{ t: "text", v: "Console" }] },
+      table("b"),
+      {
+        t: "table",
+        align: ["start", "end"],
+        head: [[{ t: "text", v: "Level" }], [{ t: "text", v: "Requests" }]],
+        rows: [[[{ t: "text", v: "Key" }], [{ t: "text", v: "60" }]]],
+      },
+    ]);
+    expect(screen.getByRole("region", { name: "Table: Setting, Default, under Gateway" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Table: Setting, Default, under Console" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Table: Level, Requests" })).toBeInTheDocument();
+  });
+
+  it("names twin tables by their section path, and numbers twins in one section", () => {
+    const table = (v: string): Block => ({
+      t: "table",
+      align: ["start", "start"],
+      head: [[{ t: "text", v: "Right" }], [{ t: "text", v: "Name" }]],
+      rows: [[[{ t: "text", v }], [{ t: "text", v }]]],
+    });
+    const heading = (level: 2 | 3, v: string): Block => ({ t: "heading", level, id: v.toLowerCase(), c: [{ t: "text", v }] });
+    draw([
+      heading(2, "Roles"),
+      table("owner"),
+      table("viewer"),
+      heading(2, "Organization rights"),
+      heading(3, "Keys"),
+      table("a"),
+      heading(2, "Project rights"),
+      heading(3, "Keys"),
+      table("b"),
+    ]);
+    const names = screen.getAllByRole("region").map((r) => r.getAttribute("aria-label"));
+    expect(names).toEqual([
+      "Table: Right, Name, under Roles",
+      "Table: Right, Name, under Roles (2)",
+      "Table: Right, Name, under Organization rights › Keys",
+      "Table: Right, Name, under Project rights › Keys",
+    ]);
+  });
+
   it("draws tables in a region that scrolls sideways", () => {
     draw([
       {
