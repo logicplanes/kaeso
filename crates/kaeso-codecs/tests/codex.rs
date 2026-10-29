@@ -46,6 +46,7 @@ fn xai(req: &Request) -> EgressCtx {
         .with_responses_profile(
             ResponsesProfile::compatible("SpaceX")
                 .xai_web_search()
+                .xai_input_items()
                 .without_null_reasoning_content()
                 .without_openai_encrypted_reasoning(),
         )
@@ -1123,5 +1124,210 @@ fn only_documented_verbosity_values_cross_formats() {
             Some("text.verbosity"),
             "{target}: {e}"
         );
+    }
+}
+
+fn xai_request(name: &str) -> Value {
+    serde_json::from_slice(&fixture(R, &format!("providers/xai/requests/{name}.json"))).unwrap()
+}
+
+fn items(sent: &Value) -> Vec<(String, String)> {
+    sent["input"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|i| {
+            (
+                i["type"].as_str().unwrap_or("message").to_owned(),
+                i["role"].as_str().unwrap_or_default().to_owned(),
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn xai_gets_a_codex_subagents_task_as_a_user_message() {
+    let body = xai_request("codex-multi-agent");
+    let req = decode_as(R, &body);
+    let mut ctx = xai(&req);
+    let sent = send(R, &req, &mut ctx).unwrap();
+    let wire = sent.to_string();
+    assert!(
+        !wire.contains("agent_message") && !wire.contains("encrypted_content\":\"Trace"),
+        "{sent}"
+    );
+    let task = sent["input"].as_array().unwrap().last().unwrap();
+    assert_eq!(
+        items(&json!({ "input": [task] })),
+        [("message".to_owned(), "user".to_owned())],
+        "{task}"
+    );
+    let text = task["content"]
+        .as_str()
+        .or(task["content"][0]["text"].as_str())
+        .unwrap();
+    assert!(
+        text.starts_with("Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root"),
+        "{text}"
+    );
+    assert!(
+        text.ends_with(
+            "Trace how a request moves through the Kaeso gateway, read-only. Name the files."
+        ),
+        "{text}"
+    );
+    assert_eq!(
+        ctx.adapted,
+        ["agent message amsg_01a188a5-ab91-72a2-b8ce-f9e63128b6d1"]
+    );
+}
+
+#[test]
+fn xai_gets_the_root_agents_own_agent_messages_as_its_own() {
+    let body = xai_request("codex-multi-agent-root");
+    let req = decode_as(R, &body);
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    let tail: Vec<(String, String)> = items(&sent).into_iter().rev().take(2).collect();
+    assert_eq!(
+        tail,
+        [
+            ("message".to_owned(), "user".to_owned()),
+            ("message".to_owned(), "assistant".to_owned())
+        ],
+        "the subagent's answer is a user message; the root's task to it is the root's own: {sent}"
+    );
+    let input = sent["input"].as_array().unwrap();
+    let own = &input[input.len() - 2];
+    let text = own["content"]
+        .as_str()
+        .or(own["content"][0]["text"].as_str())
+        .unwrap();
+    assert!(text.starts_with("Message Type: NEW_TASK"), "{own}");
+}
+
+#[test]
+fn openai_gets_codex_agent_messages_as_sent() {
+    for name in ["codex-multi-agent", "codex-multi-agent-root"] {
+        let body = xai_request(name);
+        let req = decode_as(R, &body);
+        let (sent, left_out) = sent_with(R, &req, openai(&req));
+        assert_eq!(sent["input"], body["input"], "{name}");
+        assert!(left_out.is_empty(), "{name}");
+    }
+}
+
+#[test]
+fn every_other_provider_gets_codex_agent_messages_as_messages() {
+    let body = xai_request("codex-multi-agent-root");
+    let req = decode(&body);
+    let (sent, _) = sent_with(A, &req, EgressCtx::new(&req));
+    assert!(!sent.to_string().contains("agent_message"), "{sent}");
+    assert_eq!(roles(&sent["messages"]).last(), Some(&"user"), "{sent}");
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    assert!(!sent.to_string().contains("agent_message"), "{sent}");
+    let ctx = EgressCtx::new(&req).with_responses_profile(ResponsesProfile::compatible("Groq"));
+    let (sent, _) = sent_with(R, &req, ctx);
+    assert!(!sent.to_string().contains("agent_message"), "{sent}");
+}
+
+#[test]
+fn xai_is_refused_input_items_it_doesnt_take_before_they_are_sent() {
+    let mut body = xai_request("codex-multi-agent");
+    body["input"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"type": "item_reference", "id": "msg_earlier"}));
+    let req = decode_as(R, &body);
+    let e = send(R, &req, &mut xai(&req)).unwrap_err();
+    assert!(
+        e.message.contains("SpaceX") && e.message.contains("`item_reference`"),
+        "{e}"
+    );
+    assert_eq!(e.param.as_deref(), Some("input"));
+    assert!(send(R, &req, &mut openai(&req)).is_ok());
+
+    let mut body = xai_request("codex-multi-agent");
+    let action = json!({"type": "exec", "command": ["ls"], "env": {}});
+    body["input"].as_array_mut().unwrap().extend([
+        json!({"type": "local_shell_call", "id": "lsh_1", "call_id": "call_shell_1", "status": "completed", "action": action}),
+        json!({"type": "local_shell_call_output", "id": "call_shell_1", "output": "crates"}),
+    ]);
+    let req = decode_as(R, &body);
+    let (sent, _) = sent_with(R, &req, xai(&req));
+    let kinds: Vec<String> = items(&sent).into_iter().map(|(t, _)| t).collect();
+    assert_eq!(
+        kinds[kinds.len() - 2..],
+        ["function_call", "function_call_output"],
+        "{sent}"
+    );
+}
+
+#[test]
+fn every_xai_fixture_reaches_xai_with_item_types_it_takes() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/openai_responses");
+    let mut files: Vec<std::path::PathBuf> = std::fs::read_dir(dir.join("requests"))
+        .unwrap()
+        .chain(std::fs::read_dir(dir.join("providers/xai/requests")).unwrap())
+        .map(|e| e.unwrap().path())
+        .filter(|p| p.extension().is_some_and(|e| e == "json"))
+        .collect();
+    files.sort();
+    for file in files {
+        let body: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+        let Ok(req) = dispatch::decode_request(
+            R,
+            RequestKind::Generate,
+            &serde_json::to_vec(&body).unwrap(),
+            &HeaderList::new(),
+        ) else {
+            continue;
+        };
+        let mut ctx = xai(&req);
+        let Ok(sent) = send(R, &req, &mut ctx) else {
+            continue;
+        };
+        for (ty, _) in items(&sent) {
+            assert!(
+                kaeso_codecs::openai_responses::XAI_INPUT_ITEMS.contains(&ty.as_str()),
+                "{}: SpaceX would refuse a `{ty}` input item",
+                file.display()
+            );
+        }
+    }
+}
+
+#[test]
+fn an_encrypted_agent_message_is_refused_off_openai() {
+    let mut body = xai_request("codex-multi-agent");
+    let task = body["input"].as_array_mut().unwrap().last_mut().unwrap();
+    task["content"][1]["encrypted_content"] = json!("gAAAAABn".repeat(16));
+    let req = decode_as(R, &body);
+    let e = send(R, &req, &mut xai(&req)).unwrap_err();
+    assert!(e.message.contains("only OpenAI can read it"), "{e}");
+    assert!(send(R, &req, &mut openai(&req)).is_ok());
+}
+
+#[test]
+fn tool_choice_without_tools_reaches_only_openai() {
+    let mut body = xai_request("codex-multi-agent");
+    body["tools"] = json!([]);
+    let req = decode_as(R, &body);
+    let mut ctx = xai(&req);
+    let sent = send(R, &req, &mut ctx).unwrap();
+    assert!(sent.get("tool_choice").is_none(), "{sent}");
+    assert_eq!(ctx.left_out, ["tool_choice"]);
+    let (sent, _) = sent_with(R, &req, openai(&req));
+    assert_eq!(sent["tool_choice"], "auto");
+
+    body["tool_choice"] = json!({"type": "function", "name": "exec_command"});
+    let req = decode_as(R, &body);
+    for target in [R, C, A] {
+        let mut ctx = if target == R {
+            xai(&req)
+        } else {
+            EgressCtx::new(&req)
+        };
+        let e = send(target, &req, &mut ctx).unwrap_err();
+        assert_eq!(e.param.as_deref(), Some("tool_choice"), "{target}: {e}");
     }
 }

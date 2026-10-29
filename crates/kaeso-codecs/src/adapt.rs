@@ -2,12 +2,13 @@ use std::borrow::Cow;
 
 use kaeso_kpp::{
     Block, DialectId, GenerateRequest, KppError, Message, RawJson, Request, Role, ToolCallBlock,
+    ToolChoice,
 };
 use serde_json::{Map, Value};
 
 use crate::codec::EgressCtx;
 use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, check_extras, is_chat_bookkeeping};
-use crate::openai_responses::{ReasoningReplay, history, namespaces, replay};
+use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
 use crate::{tool_roots, tool_search, verbosity, web_search};
 
@@ -76,6 +77,28 @@ impl std::ops::Deref for Adapted<'_> {
     }
 }
 
+// Only OpenAI's Responses API takes `tool_choice` in a request without tools, such as a Codex
+// helper call or a request whose tools were all left out on the way. `auto` and `none` change
+// nothing there and are left out; a choice that forces a tool can't be met.
+fn tool_choice_without_tools(d: &mut Draft<'_>) -> Result<(), KppError> {
+    let r = d.get();
+    if !r.tools.is_empty() {
+        return Ok(());
+    }
+    match &r.tool_choice {
+        Some(ToolChoice::Auto | ToolChoice::None) => {
+            d.edit().tool_choice = None;
+            d.leave_out("tool_choice".to_owned());
+            Ok(())
+        }
+        Some(ToolChoice::Required | ToolChoice::Tool(_)) => Err(KppError::invalid_request(
+            "`tool_choice` asks for a tool, but the request has no tools; send the tools or leave `tool_choice` out.",
+        )
+        .with_param("tool_choice")),
+        _ => Ok(()),
+    }
+}
+
 pub(crate) fn for_target<'a>(
     req: &'a Request,
     target: DialectId,
@@ -95,12 +118,14 @@ pub(crate) fn for_target<'a>(
         DialectId::AnthropicMessages => {
             web_search::for_anthropic(&mut draft)?;
             web_search::for_claude(&mut draft);
+            history::agent_messages(&mut draft, "Anthropic")?;
             history::as_function_calls(&mut draft)?;
             object_arguments(&mut draft, target)?;
             fold_later_system(&mut draft, target)?;
         }
         DialectId::OpenAiChat => {
             web_search::for_chat(&mut draft)?;
+            history::agent_messages(&mut draft, ctx.chat_profile.provider)?;
             history::as_function_calls(&mut draft)?;
             place_system_for_chat(&mut draft, target);
         }
@@ -108,6 +133,16 @@ pub(crate) fn for_target<'a>(
             web_search::for_responses(&mut draft, profile)?;
             if profile.reasoning_replay == ReasoningReplay::WithoutNullContent {
                 replay::without_null_reasoning_content(&mut draft);
+            }
+            match profile.input_items {
+                InputItems::AsSent => {}
+                InputItems::WithoutAgentMessages => {
+                    history::agent_messages(&mut draft, profile.provider)?;
+                }
+                InputItems::Only(allowed) => {
+                    history::agent_messages(&mut draft, profile.provider)?;
+                    history::only_items(&mut draft, allowed, profile.provider)?;
+                }
             }
         }
         _ => {}
@@ -119,6 +154,9 @@ pub(crate) fn for_target<'a>(
         namespaces::flatten(&mut draft, target)?;
     }
     tool_roots::for_target(&mut draft, target, ctx)?;
+    if !(target == DialectId::OpenAiResponses && profile.tool_choice_without_tools) {
+        tool_choice_without_tools(&mut draft)?;
+    }
     if target == DialectId::OpenAiChat
         && !ctx.chat_profile.request.message_bookkeeping
         && has_bookkeeping(draft.get())

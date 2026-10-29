@@ -1,0 +1,4 @@
+{
+  "status": 422,
+  "provenance": "gateway-relayed, not raw xAI: production Kaeso at ai.logicplanes.com, 2026-10-29 17:12 UTC, request req_01m64abc8neh89hzb6q6v4qq4d from codex-tui 0.165.0; the body is the gateway's OpenAI-shaped encoding of xAI's error"
+}

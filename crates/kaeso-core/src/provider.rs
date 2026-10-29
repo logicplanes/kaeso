@@ -293,6 +293,7 @@ pub const PROVIDERS: &[Provider] = &[
             .tool_schema_root(ToolSchemaRoot::ObjectUnions),
         responses: ResponsesProfile::compatible("SpaceX")
             .xai_web_search()
+            .xai_input_items()
             .without_null_reasoning_content()
             .without_openai_encrypted_reasoning()
             .tool_schema_root(ToolSchemaRoot::ObjectUnions),
@@ -484,7 +485,109 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kaeso_codecs::openai_responses::{ReasoningReplay, WebSearchTool};
+    use kaeso_codecs::openai_responses::{InputItems, ReasoningReplay, WebSearchTool};
+    use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
+    use kaeso_kpp::{Request, RequestKind};
+    use std::path::{Path, PathBuf};
+
+    // Every Responses request fixture, from `requests/` and each provider's `requests/`.
+    fn responses_requests() -> Vec<(PathBuf, Request)> {
+        let root =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../kaeso-codecs/fixtures/openai_responses");
+        let mut dirs = vec![root.join("requests")];
+        for provider in std::fs::read_dir(root.join("providers")).unwrap() {
+            dirs.push(provider.unwrap().path().join("requests"));
+        }
+        let mut out = Vec::new();
+        for dir in dirs.into_iter().filter(|d| d.is_dir()) {
+            for file in std::fs::read_dir(dir).unwrap() {
+                let file = file.unwrap().path();
+                if file.extension().is_none_or(|e| e != "json") {
+                    continue;
+                }
+                let body = std::fs::read(&file).unwrap();
+                if let Ok(req) = dispatch::decode_request(
+                    DialectId::OpenAiResponses,
+                    RequestKind::Generate,
+                    &body,
+                    &HeaderList::new(),
+                ) {
+                    out.push((file, req));
+                }
+            }
+        }
+        out.sort_by(|a, b| a.0.cmp(&b.0));
+        out
+    }
+
+    fn sent_to(p: &Provider, req: &Request) -> Option<serde_json::Value> {
+        let mut ctx = EgressCtx::new(req)
+            .with_provider(p.id)
+            .with_responses_profile(p.responses);
+        dispatch::check(DialectId::OpenAiResponses, req, &ctx).ok()?;
+        let enc = dispatch::encode_request(DialectId::OpenAiResponses, req, &mut ctx).ok()?;
+        serde_json::from_slice(&enc.body).ok()
+    }
+
+    #[test]
+    fn only_openai_takes_codex_agent_messages_and_a_tool_choice_without_tools() {
+        let as_sent: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.responses.input_items == InputItems::AsSent)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(as_sent, ["openai"]);
+        let bare: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.responses.tool_choice_without_tools)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(bare, ["openai"]);
+        let listed: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| matches!(p.responses.input_items, InputItems::Only(_)))
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(listed, ["xai"]);
+    }
+
+    // A provider that lists the input item types it takes gets every recorded request with only
+    // those types, or Kaeso refuses it before sending: an item type Codex adds fails here the day
+    // its fixture is recorded, and not at the provider. No provider but OpenAI ever gets Codex's
+    // agent messages.
+    #[test]
+    fn every_recorded_responses_request_keeps_to_the_item_types_each_provider_takes() {
+        let requests = responses_requests();
+        assert!(requests.len() > 50, "{} fixtures", requests.len());
+        for p in PROVIDERS.iter().filter(|p| p.id != "openai") {
+            let mut sent = 0;
+            for (file, req) in &requests {
+                let Some(body) = sent_to(p, req) else {
+                    continue;
+                };
+                sent += 1;
+                assert!(
+                    !body.to_string().contains("\"agent_message\""),
+                    "{}: {}",
+                    p.id,
+                    file.display()
+                );
+                let InputItems::Only(allowed) = p.responses.input_items else {
+                    continue;
+                };
+                for item in body["input"].as_array().into_iter().flatten() {
+                    let ty = item["type"].as_str().unwrap_or("message");
+                    assert!(
+                        allowed.contains(&ty),
+                        "{} would refuse a `{ty}` input item from {}",
+                        p.id,
+                        file.display()
+                    );
+                }
+            }
+            assert!(sent > 30, "{}: only {sent} requests encoded", p.id);
+        }
+    }
 
     #[test]
     fn only_openai_takes_tool_namespaces_and_only_spacex_changes_search_and_reasoning() {
