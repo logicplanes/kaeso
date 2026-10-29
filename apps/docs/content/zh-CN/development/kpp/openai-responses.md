@@ -371,3 +371,15 @@ order: 7
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
 | `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |
 | `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |
+
+### Vercel
+
+来源：Vercel 的 [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks-and-apis/responses) 页面（2026-10-29 阅读），以及 `fixtures/openai_responses/providers/vercel/` 中的实时录制。当 Vercel 模型的**发送格式**为 Responses 时，它以 Responses 发送；Vercel 的 `generation` 方言是 Chat Completions。它的配置是 `compatible`。
+
+| Vercel 字段 | KPP | 说明 |
+|---|---|---|
+| `response.reasoning.delta` 和 `response.reasoning.done` 事件 | 与 `response.reasoning_text.delta` 和 `response.reasoning_text.done` 相同 | Vercel 对 OpenAI 推理文本事件的命名，字段相同；Responses 应用原样收到 Vercel 发送的事件，其他方言得到推理内容（`streams/recorded-reasoning-stream`）。 |
+| 带 `content`（`reasoning_text`）、不带 `encrypted_content` 的 `reasoning` 项 | 与 OpenAI 相同 | 请求要求时，OpenAI 的模型会加上 `encrypted_content`（`responses/recorded-gpt-reasoning-encrypted`）。 |
+| 回复中的 `provider_metadata`、`usage.input_tokens_details.cache_write_tokens` | extras、用量的 `raw` | 与 Chat Completions 相同。 |
+| `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 在发送任何内容之前就拒绝为 Vercel 模型计数 Token。 |
+| 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-providers.md#vercel) 相同。 |

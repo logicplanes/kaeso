@@ -1,0 +1,432 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "anthropic/claude-haiku-5.5",
+      "object": "model",
+      "created": 1755815280,
+      "released": 1791331200,
+      "owned_by": "anthropic",
+      "name": "Claude Haiku 5.5",
+      "description": "Claude Haiku 5.5 brings adaptive reasoning to Anthropic’s low-cost Haiku family for everyday tasks, tool use, and scaled sub-agent deployments. It is the first Haiku with adjustable effort levels, letting developers balance reasoning depth and token usage for each task, with the option to turn thinking off for simpler requests.",
+      "context_window": 1000000,
+      "max_tokens": 128000,
+      "type": "language",
+      "zdr": "all",
+      "no_training": "all",
+      "tags": [
+        "explicit-caching",
+        "file-input",
+        "reasoning",
+        "tool-use",
+        "vision",
+        "web-search",
+        "structured-output"
+      ],
+      "regions": [
+        "au",
+        "eu",
+        "jp",
+        "us"
+      ],
+      "supported_specifications": [
+        "v2",
+        "v3",
+        "v4"
+      ],
+      "modalities": {
+        "input": [
+          "text",
+          "image",
+          "pdf"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "stop",
+        "tools",
+        "tool_choice",
+        "reasoning",
+        "include_reasoning",
+        "response_format",
+        "structured_outputs"
+      ],
+      "temperature": false,
+      "reasoning_options": [
+        {
+          "type": "toggle"
+        },
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        }
+      ],
+      "pricing": {
+        "input": "0.0000001",
+        "input_tiers": [
+          {
+            "cost": "0.0000001",
+            "min": 0,
+            "max": 100001
+          },
+          {
+            "cost": "0.0000005",
+            "min": 100001
+          }
+        ],
+        "output": "0.0000005",
+        "output_tiers": [
+          {
+            "cost": "0.0000005",
+            "min": 0,
+            "max": 100001
+          },
+          {
+            "cost": "0.0000025",
+            "min": 100001
+          }
+        ],
+        "input_cache_read": "0.00000001",
+        "input_cache_read_tiers": [
+          {
+            "cost": "0.00000001",
+            "min": 0,
+            "max": 100001
+          },
+          {
+            "cost": "0.00000005",
+            "min": 100001
+          }
+        ],
+        "input_cache_write": "0.000000125",
+        "input_cache_write_tiers": [
+          {
+            "cost": "0.000000125",
+            "min": 0,
+            "max": 100001
+          },
+          {
+            "cost": "0.000000625",
+            "min": 100001
+          }
+        ],
+        "web_search": "10",
+        "regional": {
+          "au": {
+            "input": "0.00000011",
+            "input_tiers": [
+              {
+                "cost": "0.00000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000055",
+                "min": 100001
+              }
+            ],
+            "output": "0.00000055",
+            "output_tiers": [
+              {
+                "cost": "0.00000055",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000275",
+                "min": 100001
+              }
+            ],
+            "input_cache_read": "0.000000011",
+            "input_cache_read_tiers": [
+              {
+                "cost": "0.000000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.000000055",
+                "min": 100001
+              }
+            ],
+            "input_cache_write": "0.0000001375",
+            "input_cache_write_tiers": [
+              {
+                "cost": "0.0000001375",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.0000006875",
+                "min": 100001
+              }
+            ]
+          },
+          "eu": {
+            "input": "0.00000011",
+            "input_tiers": [
+              {
+                "cost": "0.00000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000055",
+                "min": 100001
+              }
+            ],
+            "output": "0.00000055",
+            "output_tiers": [
+              {
+                "cost": "0.00000055",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000275",
+                "min": 100001
+              }
+            ],
+            "input_cache_read": "0.000000011",
+            "input_cache_read_tiers": [
+              {
+                "cost": "0.000000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.000000055",
+                "min": 100001
+              }
+            ],
+            "input_cache_write": "0.0000001375",
+            "input_cache_write_tiers": [
+              {
+                "cost": "0.0000001375",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.0000006875",
+                "min": 100001
+              }
+            ]
+          },
+          "jp": {
+            "input": "0.00000011",
+            "input_tiers": [
+              {
+                "cost": "0.00000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000055",
+                "min": 100001
+              }
+            ],
+            "output": "0.00000055",
+            "output_tiers": [
+              {
+                "cost": "0.00000055",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000275",
+                "min": 100001
+              }
+            ],
+            "input_cache_read": "0.000000011",
+            "input_cache_read_tiers": [
+              {
+                "cost": "0.000000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.000000055",
+                "min": 100001
+              }
+            ],
+            "input_cache_write": "0.0000001375",
+            "input_cache_write_tiers": [
+              {
+                "cost": "0.0000001375",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.0000006875",
+                "min": 100001
+              }
+            ]
+          },
+          "us": {
+            "input": "0.00000011",
+            "input_tiers": [
+              {
+                "cost": "0.00000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000055",
+                "min": 100001
+              }
+            ],
+            "output": "0.00000055",
+            "output_tiers": [
+              {
+                "cost": "0.00000055",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.00000275",
+                "min": 100001
+              }
+            ],
+            "input_cache_read": "0.000000011",
+            "input_cache_read_tiers": [
+              {
+                "cost": "0.000000011",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.000000055",
+                "min": 100001
+              }
+            ],
+            "input_cache_write": "0.0000001375",
+            "input_cache_write_tiers": [
+              {
+                "cost": "0.0000001375",
+                "min": 0,
+                "max": 100001
+              },
+              {
+                "cost": "0.0000006875",
+                "min": 100001
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-embedding-001",
+      "object": "model",
+      "created": 1755815280,
+      "released": 1747699200,
+      "owned_by": "google",
+      "name": "Gemini Embedding 001",
+      "description": "State-of-the-art embedding model with excellent performance across English, multilingual and code tasks.",
+      "context_window": 0,
+      "max_tokens": 0,
+      "type": "embedding",
+      "zdr": "some",
+      "no_training": "all",
+      "regions": [
+        "us"
+      ],
+      "supported_specifications": [
+        "v2",
+        "v3",
+        "v4"
+      ],
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "knowledge": "2025-05",
+      "pricing": {
+        "input": "0.00000015",
+        "regional": {
+          "us": {
+            "input": "0.00000015"
+          }
+        }
+      }
+    },
+    {
+      "id": "nvidia/nemotron-3.5-lightning-free",
+      "object": "model",
+      "created": 1755815280,
+      "released": 1791936000,
+      "owned_by": "nvidia",
+      "name": "Nemotron 3.5 Lightning Free",
+      "description": "Nemotron 3.5 Lightning is an open-weight reasoning and chat model for long-running agents, sub-agent work, chatbots, and RAG systems. The model has 30B parameters with 3B active per token, in a hybrid Mixture-of-Experts design that interleaves Mamba-2 and MoE layers with a few attention layers. It has a 1M token context window and supports tool calling and structured outputs. The provider may retain prompts and responses for model improvement.",
+      "context_window": 1000000,
+      "max_tokens": 65000,
+      "type": "language",
+      "zdr": "none",
+      "no_training": "none",
+      "tags": [
+        "reasoning",
+        "tool-use",
+        "structured-output",
+        "implicit-caching",
+        "open-weights"
+      ],
+      "supported_specifications": [
+        "v2",
+        "v3",
+        "v4"
+      ],
+      "modalities": {
+        "input": [
+          "text"
+        ],
+        "output": [
+          "text"
+        ]
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "temperature",
+        "stop",
+        "tools",
+        "tool_choice",
+        "reasoning",
+        "include_reasoning",
+        "response_format",
+        "structured_outputs"
+      ],
+      "temperature": true,
+      "reasoning_options": [
+        {
+          "type": "toggle"
+        },
+        {
+          "type": "effort",
+          "values": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      ],
+      "pricing": {
+        "input": "0",
+        "output": "0"
+      }
+    }
+  ]
+}

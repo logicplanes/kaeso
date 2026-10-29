@@ -125,6 +125,7 @@ modal
 model-oracle-ai
 modelis
 modelscope
+modular
 moonshotai
 moonshotai-cn
 morph

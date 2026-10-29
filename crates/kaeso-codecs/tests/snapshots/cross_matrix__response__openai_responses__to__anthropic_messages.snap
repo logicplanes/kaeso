@@ -196,6 +196,96 @@ expression: outcomes
       }
     }
   },
+  "providers/vercel/recorded-gpt-reasoning-encrypted": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwic3VtbWFyeSI6WyIqKkRldGVybWluaW5nIGlmIDkxIGlzIHByaW1lKipcblxuSSB3YW50IHRvIHByb3ZpZGUgYSBjbGVhciB5ZXMgb3Igbm8gYW5zd2VyIHdpdGggYSBicmllZiBleHBsYW5hdGlvbi4gU2luY2UgOTEgZXF1YWxzIDcgdGltZXMgMTMsIGl0IGlzbid0IGEgcHJpbWUgbnVtYmVyLiBTbywgSSBjYW4gc2F5OiBcIk5vOyBpdCBpcyBkaXZpc2libGUgYnkgNyBhbmQgMTMuXCIgS2VlcGluZyBpdCBjb25jaXNlIG1ha2VzIGl0IGVhc2llciB0byB1bmRlcnN0YW5kISJdLCJvcGFxdWUiOlt7Im9yaWdpbiI6eyJkaWFsZWN0Ijoib3BlbmFpX3Jlc3BvbnNlcyJ9LCJraW5kIjoib3BlbmFpX3JlYXNvbmluZ19pdGVtX2lkIiwiZGF0YSI6InJzXzBlNWRmZTFmMWQ0NjViYTkwMTZhZTM5YzBlZjRkMDg3ZDFhZWU5N2Q0Mzk4ZjUyNTllIn0seyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9lbmNyeXB0ZWRfcmVhc29uaW5nIiwiZGF0YSI6ImdBQUFBQUJxNDV3UXR6RWhTUjRBQTJaazlsdjNPVDhja0gzdnJSUFpkZjFxTTJFWlRsOEtiRHlvX01rVjM4OHVyWlpRdzRwNW54Tjd5cHNmMU91VVd4Q0czUXMzRlFNbEFNRGxvX21BUmR2MV9KaXNpZ3dTdHowZFBNU1NGOE1xRHBad1ZGQ0tZdkROeHJtSDBNYXZJVENlcURrM0c2WTlSSTBLYl85eXNsODkwWW1ScU1QRm1MNzg5WUdxZGczWHZpWlNjU3JRQlJFQkN2OVk4N1ZJdG1DYkU2ZklWVmlfOVBQVXF4X2I1b1RWSlVRX0FDci0zZllGc19GZXczVDdCYUVtZGhpaWhjVFh1Qzg0bjQyX0xkRDcyLXVXM2dKZl84YUgwbERRVGZRTVZ5ajBQR0pRQmRITFlLNVJfUkwxdGh1eXFGZlp3dDcwZXByOHFmNEdDSjAxV2gzaTB6NzlUcVZKWEgxVXBFRzNKSS05OHBJOVJ0eGNZbmljT1NqZi1kUFBtMVlvdGE0VUJWTDhMN3dkZ2dzNHNsVjJZTU82enJNczFhQ0E5emlfUHQxbDlDZkZ0Nm5TaFNBZjE2NmxRMndlR0QwMURFV1ZSX3VHV0JMOGZXNlNXMjR1U3RJRnRsVVlYTkJweW1Na1lUejZqM3BjbzJnZjRuZzZmRWMyR3Bfb1I0V1BUYllxelJFUUxUcDNaV2stS21nOGN6NlhzQnQ4SlQyWU1rUko5Y3pKeG83U3BiUm9NaUNhNW52REhlekdjZFZobEF2UGlZek9sNnU4aUhxZ19ITHdCaTQ5Sm9ldnh1MHRtcmtKbVlEazE0ellPQUx6Z1U5UTl5cEZfSTMxSkE5MUVsNVBNcC1Jd2xYX1EtTG9pYTN3eDhLOTRiejd4M3JNTzRBTVVYcjl3SmFWcU1oeGI1RGtHTWY5VmxyMWdPenJrZkFzaGJfOXRHMmR5RFJzaXRNUHota0ZXelVSd2FLeGQxVExHbnVWRXRfN2xHWWllcDhwaVZEbHA5NzAwT3NNZ24xRWY1NzZDNjF1d2xKRGZ4MndQd0FWamg2OHphZlVvcDBXU2d5amd3dE9LTVJLbE56SDlkTm9xV3JsOEU5bjZFcVhGOGJGVVRrUm92MTdVd3RHZUNUVHBLdzkzLWM2SU82anNBQURncF9lUW51ZlRQSkxiUXl3alNCY2NzWmhha3VkX0xKLTNnSE9rOVZtams2RXVxa1pwa3FXaGx5bnU5NWRiS2l6bERVTlFENmtIZmdUNUpPV3RyazZLZHFEaUdndTZPYWJCYXJVOTljZFRheUdQN2U1SmRTdTg1b3M4dTYzX1RsVGRtb212TWxJUnEwZ2RNWmFVZ0FuU3FOdm95QmpKNkhfQlR2dEpncUt2X3lvZWxJRE9od3c1SHdWVldTZ1U2QXlOdDdCTERJVUJXS05fY25JZkFGak5HVEpKZzVFSHhObk91S3RoMnM4bWpiTmJrd09HT2tkZU1vV1RUR2RoZ0VscUZLUFBUejA5UVhIWXFrWjMzQXhQcWh0U3hHWmNaN3FYQVlFWnpIYnVuaTIyWnlTeHBxcWpFdnl1MGt4dkhFc1RFZmY1elFWOElfa3N3aGkydWYtZWsxM1JFSUd5dWlOQlVHSWt3blhwcnVXZGxpODNvaTFrNVdqV3V2T3ZoV2VXUE1IN2RveWxNVnhwTzJTZmxmRTFwd254OGNnZ0tqbHpQR3o0ZHVMcFlrQTU1cmp4dl9xU1NvV3FDY1h0aV9oX3phYVZSWEQwVHVGbzZZbFU1d3Q0Y3VwVGRJSDl6UjZ6SGRvdXNpS0tsam0yQjN5c0ctd2RMaFFhb1pJcUlQamxWWjN1dHlpVEVJeHk0TFZtMEdNNjZyQXpETFg1M1ViYkVfeWRDclNDZGRqZ1h0UEd1SzAzSXVVWVg1RWRQdnRoaVUzVzRLeGgwMGFDM29KemhOR0dHWW9SanBWdVhaMzBxaWNSRlRWM0ZpQ2lCMHV1Q3dOUFVBSHNEZ0RzX2tfem9SUk9KUm1wWE4tenNORGRMZVRJM2NhT1V3aTVSQWJieXRhQ2JvczRfUGV3Z1pzZ0NPdlRHaF9zSFc4M3JhdHEtY0NSRXFlb21yQ2V1TkphNWd0ZUotWEE5TE4yUGg2LW1NN25zSUM3TlNDMmhtekI5VGpYTnZBeElzdkZkektvYWtXZjBHYjJhUnFJbmNBT19IdGdtX1BoLVFjSXRyNmVUSGw0cERUbG1qenV4TTVrTTVPM1ZkREhpNG95ck42bm13MVRQUEZpaTlWX29TMGRqelJuVGhKMVhzNFNRUkUxT1Q4YVFoTW5fdkFSRlJraGxHdnJWYjJpcDRxM1BwZXdWYzVrTktZQjlwS3VYbTdISlFZNndmMFNIYi1URVl2MUdkclZMY0d5WnVNOVduWks2ZVAwUlhoN0x0TS1WYW1tcld6ajBoYzdPcmg0NkFDOHI5MTFMak0ybDZCaGoxWUpGZlJndmdwR2tqekxDWnluc00wSjhSMGt0M2tHbk5HM1ljcWpLaF8zc3ViRVpncE1uY2g3eW91RTZDTl9zWkdReVExZ3RHdUtXMHdjOEtnaVpOcTloUm5NYzlPM3doQnZsaDVxeTZzY2swTFIyWlI3T3FXamFOX3Y2WGQ0MXZrZElocVNTRDhVMWJINmZDTFdncWtIYkFBTmpHQXpJVGt5eTBnX203VERGS01oWjhjblo1Ynh0S2VHUEtWIn1dfQ",
+        "thinking": "**Determining if 91 is prime**\n\nI want to provide a clear yes or no answer with a brief explanation. Since 91 equals 7 times 13, it isn't a prime number. So, I can say: \"No; it is divisible by 7 and 13.\" Keeping it concise makes it easier to understand!",
+        "type": "thinking"
+      },
+      {
+        "text": "No; it’s divisible by 7 (91 = 7 × 13).",
+        "type": "text"
+      }
+    ],
+    "id": "gen_01M64HK5PMQX693A7PFNPFMG6P",
+    "model": "openai/gpt-5-nano",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 67,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/vercel/recorded-text": {
+    "content": [
+      {
+        "text": "Paris",
+        "type": "text"
+      }
+    ],
+    "id": "gen_01M64HKBDYQ2XAK45YVXCG4M81",
+    "model": "mistral/mistral-nemo",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 17,
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "content": [
+      {
+        "signature": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwidGV4dCI6WyJXZSBuZWVkIHRvIGNhbGwgZ2V0X3dlYXRoZXIgd2l0aCBsb2NhdGlvbiBcIlBhcmlzLCBGcmFuY2VcIiBhbmQgdW5pdCBcImNlbHNpdXNcIi4iXSwib3BhcXVlIjpbeyJvcmlnaW4iOnsiZGlhbGVjdCI6Im9wZW5haV9yZXNwb25zZXMifSwia2luZCI6Im9wZW5haV9yZWFzb25pbmdfaXRlbV9pZCIsImRhdGEiOiJyc18xNzkzMzAxNTI1NjM5XzlpbDIwaHBncjIifV19",
+        "thinking": "We need to call get_weather with location \"Paris, France\" and unit \"celsius\".",
+        "type": "thinking"
+      },
+      {
+        "id": "call-29285c97-87ea-4c1c-a7cf-bcf25ee771ec",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "gen_01M64HKCMD3NR5YGRXH484DPH5",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 348,
+      "output_tokens": 59,
+      "output_tokens_details": {
+        "thinking_tokens": 20
+      }
+    }
+  },
   "providers/xai/recorded-codex-gpt-history": {
     "content": [
       {

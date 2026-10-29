@@ -179,6 +179,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_PROVIDERS_GROQ_BASE_URL`<br>`providers.groq.base_url` | 文本 | `https://api.groq.com/openai` | Groq API 的基础 URL。 |
 | `KAESO_PROVIDERS_OPENROUTER_BASE_URL`<br>`providers.openrouter.base_url` | 文本 | `https://openrouter.ai/api` | OpenRouter API 的基础 URL。 |
 | `KAESO_PROVIDERS_MISTRAL_BASE_URL`<br>`providers.mistral.base_url` | 文本 | `https://api.mistral.ai` | Mistral API 的基础 URL。 |
+| `KAESO_PROVIDERS_VERCEL_BASE_URL`<br>`providers.vercel.base_url` | 文本 | `https://ai-gateway.vercel.sh` | Vercel API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |

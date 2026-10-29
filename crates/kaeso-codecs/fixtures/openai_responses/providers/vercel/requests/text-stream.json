@@ -1,0 +1,16 @@
+{
+  "model": "mistral/mistral-nemo",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Count from one to five in words, separated by commas."
+        }
+      ]
+    }
+  ],
+  "max_output_tokens": 64,
+  "stream": true
+}

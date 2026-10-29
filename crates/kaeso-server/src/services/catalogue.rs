@@ -105,6 +105,10 @@ mod tests {
                 entry("openrouter", "openai/gpt-4o"),
                 entry("openai", "gpt-4o"),
             ),
+            (
+                entry("vercel", "openai/gpt-5-nano"),
+                entry("openai", "gpt-5-nano"),
+            ),
         ] {
             let both = Catalogue::new(vec![routed.clone(), direct.clone()], vec![]);
             let routed_name = request_name(&routed, &both);

@@ -1478,6 +1478,133 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/vercel/gpt-reasoning-encrypted": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-5-nano",
+      "reasoning_effort": "low"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/vercel/reasoning-stream": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "reasoning_effort": "low",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/vercel/text": {
+    "body": {
+      "max_completion_tokens": 64,
+      "messages": [
+        {
+          "content": "Answer in one short sentence.",
+          "role": "system"
+        },
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "model": "mistral/mistral-nemo"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/vercel/text-stream": {
+    "body": {
+      "max_completion_tokens": 64,
+      "messages": [
+        {
+          "content": "Count from one to five in words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "model": "mistral/mistral-nemo",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/vercel/tools": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "You are a concise travel assistant. Use the tools for live data.",
+          "role": "system"
+        },
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather for a location.",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "City and country, e.g. Paris, France",
+                  "type": "string"
+                },
+                "unit": {
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location",
+                "unit"
+              ],
+              "type": "object"
+            },
+            "strict": false
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/vercel/unknown-model": {
+    "body": {
+      "max_completion_tokens": 16,
+      "messages": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-example/no-such-model"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/xai/codex-gpt-history": {
     "body": {
       "messages": [

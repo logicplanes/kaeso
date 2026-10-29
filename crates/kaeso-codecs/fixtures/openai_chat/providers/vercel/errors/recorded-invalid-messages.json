@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "At least one message is required",
+    "type": "invalid_request_error",
+    "param": "messages",
+    "code": "invalid_request_error"
+  }
+}

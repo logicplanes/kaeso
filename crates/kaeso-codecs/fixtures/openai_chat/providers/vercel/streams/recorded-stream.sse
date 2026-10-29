@@ -1,0 +1,28 @@
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"role":"assistant"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":"1"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":","},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":" "},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":"2"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":","},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":" "},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":"3"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":","},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":" "},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":"4"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"content":", 5"},"logprobs":null,"finish_reason":null}],"system_fingerprint":"fp_4nldcsbnp5"}
+
+data: {"id":"gen_01M64HFWHXYXBKHK3J10YSV2CP","object":"chat.completion.chunk","created":1793301410,"model":"mistral/mistral-nemo","choices":[{"index":0,"delta":{"provider_metadata":{"deepinfra":{},"gateway":{"routing":{"originalModelId":"mistral/mistral-nemo","resolvedProvider":"deepinfra","fallbacksAvailable":[],"planningReasoning":"System credentials planned for: deepinfra. Total execution order: deepinfra(system)","canonicalSlug":"mistral/mistral-nemo","finalProvider":"deepinfra","modelAttemptCount":1,"modelAttempts":[{"canonicalSlug":"mistral/mistral-nemo","success":true,"providerAttemptCount":1,"providerAttempts":[{"provider":"deepinfra","credentialType":"system","success":true,"startTime":1793301410386,"endTime":1793301412148,"providerRequestId":"RpChAWemv7EuNnEs0O1IfDAk","statusCode":200,"providerResponseId":"chatcmpl-RpChAWemv7EuNnEs0O1IfDAk"}]}],"totalProviderAttemptCount":1,"affinity":{"outcome":"skipped_below_min_prefix"},"clientSessionId":"00000000000000000000000000000000","clientSessionIdSource":"fingerprint"},"cost":"0.000000913","marketCost":"0.000000913","surchargeCost":"0","gatewayCost":"0.000000913","inferenceCost":"0.000000913","inputInferenceCost":"0.000000493","outputInferenceCost":"0.00000042","generationId":"gen_01M64HFWHXYXBKHK3J10YSV2CP"}}},"logprobs":null,"finish_reason":"stop"}],"usage":{"prompt_tokens":17,"completion_tokens":14,"total_tokens":31,"cost":9.13e-7,"is_byok":false,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0,"video_tokens":0},"cost_details":{"upstream_inference_cost":null,"upstream_inference_prompt_cost":0,"upstream_inference_completions_cost":0},"completion_tokens_details":{"reasoning_tokens":0,"image_tokens":0},"cache_creation_input_tokens":0,"market_cost":9.13e-7,"gateway_cost":9.13e-7},"system_fingerprint":"fp_4nldcsbnp5","generationId":"gen_01M64HFWHXYXBKHK3J10YSV2CP"}
+
+data: [DONE]
+

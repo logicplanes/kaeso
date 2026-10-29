@@ -230,6 +230,35 @@ fn stream_events_are_typed() {
 }
 
 #[test]
+fn vercels_reasoning_events_are_reasoning_text_as_its_done_event_and_item_say() {
+    let name = "providers/vercel/recorded-reasoning-stream";
+    let bytes = fixture("streams", name, "sse");
+    let done: String = parse_all(&bytes)
+        .unwrap()
+        .into_iter()
+        .filter_map(|item| match item {
+            SseItem::Event(e) if e.data.contains("\"response.reasoning.done\"") => {
+                serde_json::from_str::<Value>(&e.data).ok()
+            }
+            _ => None,
+        })
+        .map(|v| v["text"].as_str().unwrap().to_owned())
+        .collect();
+    assert!(done.starts_with("Here's a thinking process"), "{done}");
+    let reasoning: String = stream(name)
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ReasoningText(t),
+                ..
+            }) => Some(t.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(reasoning, done);
+}
+
+#[test]
 fn provider_errors_in_the_stream() {
     let ev = stream("error-mid-stream");
     let Some(StreamEvent::Error(e)) = ev.last() else {

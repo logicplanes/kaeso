@@ -1,0 +1,5 @@
+{
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "messages": [],
+  "max_tokens": 16
+}

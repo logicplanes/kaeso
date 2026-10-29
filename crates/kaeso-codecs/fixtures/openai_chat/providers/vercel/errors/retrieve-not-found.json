@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "The model 'kaeso-example/no-such-model' does not exist",
+    "type": "model_not_found",
+    "param": null,
+    "code": "model_not_found"
+  }
+}

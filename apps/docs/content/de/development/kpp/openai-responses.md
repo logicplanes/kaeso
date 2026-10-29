@@ -371,3 +371,15 @@ Quellen: die [Responses-Referenz](https://docs.x.ai/developers/rest-api-referenc
 | `presence_penalty` (Anfrage) | Extras | SpaceX ignoriert es und gibt `0.0` zurück. |
 | `max_output_tokens` (Anfrage) | `sampling.max_output_tokens` | SpaceX wendet es nur auf die sichtbare Ausgabe an, nicht auf Reasoning-Token (Responses-Referenz), wie bei [Chat Completions](openai-chat-providers.md#spacex). |
 | `{"error": "<message>"}` | `KppError` | Siehe die Fehlertabelle oben. |
+
+### Vercel
+
+Quellen: Vercels Seiten zur [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks-and-apis/responses), gelesen am 2026-10-29, und die Live-Aufzeichnungen in `fixtures/openai_responses/providers/vercel/`. Ein Vercel-Modell wird als Responses gesendet, wenn sein Wert **Sendet als** das sagt; Vercels `generation`-Dialekt ist Chat Completions. Sein Profil ist `compatible`.
+
+| Vercel-Feld | KPP | Hinweise |
+|---|---|---|
+| Ereignisse `response.reasoning.delta` und `response.reasoning.done` | wie `response.reasoning_text.delta` und `response.reasoning_text.done` | Vercels Namen für OpenAIs Ereignisse zum Reasoning-Text, mit denselben Feldern; Responses-Apps erhalten sie so, wie Vercel sie geschickt hat, andere Dialekte erhalten das Reasoning (`streams/recorded-reasoning-stream`). |
+| `reasoning`-Items mit `content` (`reasoning_text`) und ohne `encrypted_content` | wie bei OpenAI | Die Modelle von OpenAI fügen `encrypted_content` hinzu, wenn die Anfrage danach fragt (`responses/recorded-gpt-reasoning-encrypted`). |
+| `provider_metadata` an der Antwort, `usage.input_tokens_details.cache_write_tokens` | Extras, `raw` der Nutzung | Wie bei Chat Completions. |
+| `POST /v1/responses/input_tokens` | — | Vercel antwortet mit 404, und Kaeso lehnt die Token-Zählung für Vercel-Modelle ab, bevor etwas gesendet wird. |
+| Fehler | `KppError` | OpenAIs Hülle mit Vercels eigenem `type`, wie bei [Chat Completions](openai-chat-providers.md#vercel). |

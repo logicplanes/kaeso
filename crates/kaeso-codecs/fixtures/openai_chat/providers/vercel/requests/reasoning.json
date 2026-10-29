@@ -1,0 +1,13 @@
+{
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 91 a prime number? Answer yes or no with one short reason."
+    }
+  ],
+  "reasoning": {
+    "effort": "low"
+  },
+  "max_tokens": 1024
+}

@@ -32,6 +32,7 @@ export const providers = [
   { id: "groq", name: "Groq" },
   { id: "openrouter", name: "OpenRouter" },
   { id: "mistral", name: "Mistral" },
+  { id: "vercel", name: "Vercel" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

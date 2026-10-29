@@ -85,3 +85,7 @@ order: 8
 ### Mistral
 
 来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400。这些错误响应体没有 `error` 对象，因此应用会收到引用它们的 OpenAI 错误。
+
+### Vercel
+
+来源：Vercel 的 [嵌入](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/embeddings) 页面（2026-10-29 阅读），以及 `fixtures/openai_embeddings/providers/vercel/` 中使用 `google/gemini-embedding-001` 和 `dimensions: 8` 的实时录制。当 models.dev 给某个 Vercel 模型 `type: "embedding"`（Vercel 的模型列表也是如此）时，它就是嵌入模型。回复中的 `providerMetadata`（路由和费用）保留在 extras 中，原样往返。免费套餐账户无权调用某些嵌入模型，例如 `openai/text-embedding-3-small`，它们返回 403。

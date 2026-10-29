@@ -1,0 +1,131 @@
+{
+  "id": "gen_01M64HK5PMQX693A7PFNPFMG6P",
+  "object": "response",
+  "created_at": 1793301520,
+  "status": "completed",
+  "completed_at": 1793301520,
+  "incomplete_details": null,
+  "error": null,
+  "output": [
+    {
+      "type": "reasoning",
+      "id": "rs_0e5dfe1f1d465ba9016ae39c0ef4d087d1aee97d4398f5259e",
+      "summary": [
+        {
+          "type": "summary_text",
+          "text": "**Determining if 91 is prime**\n\nI want to provide a clear yes or no answer with a brief explanation. Since 91 equals 7 times 13, it isn't a prime number. So, I can say: \"No; it is divisible by 7 and 13.\" Keeping it concise makes it easier to understand!"
+        }
+      ],
+      "encrypted_content": "gAAAAABq45wQtzEhSR4AA2Zk9lv3OT8ckH3vrRPZdf1qM2EZTl8KbDyo_MkV388urZZQw4p5nxN7ypsf1OuUWxCG3Qs3FQMlAMDlo_mARdv1_JisigwStz0dPMSSF8MqDpZwVFCKYvDNxrmH0MavITCeqDk3G6Y9RI0Kb_9ysl890YmRqMPFmL789YGqdg3XviZScSrQBREBCv9Y87VItmCbE6fIVVi_9PPUqx_b5oTVJUQ_ACr-3fYFs_Few3T7BaEmdhiihcTXuC84n42_LdD72-uW3gJf_8aH0lDQTfQMVyj0PGJQBdHLYK5R_RL1thuyqFfZwt70epr8qf4GCJ01Wh3i0z79TqVJXH1UpEG3JI-98pI9RtxcYnicOSjf-dPPm1Yota4UBVL8L7wdggs4slV2YMO6zrMs1aCA9zi_Pt1l9CfFt6nShSAf166lQ2weGD01DEWVR_uGWBL8fW6SW24uStIFtlUYXNBpymMkYTz6j3pco2gf4ng6fEc2Gp_oR4WPTbYqzREQLTp3ZWk-Kmg8cz6XsBt8JT2YMkRJ9czJxo7SpbRoMiCa5nvDHezGcdVhlAvPiYzOl6u8iHqg_HLwBi49Joevxu0tmrkJmYDk14zYOALzgU9Q9ypF_I31JA91El5PMp-IwlX_Q-Loia3wx8K94bz7x3rMO4AMUXr9wJaVqMhxb5DkGMf9Vlr1gOzrkfAshb_9tG2dyDRsitMPz-kFWzURwaKxd1TLGnuVEt_7lGYiep8piVDlp9700OsMgn1Ef576C61uwlJDfx2wPwAVjh68zafUop0WSgyjgwtOKMRKlNzH9dNoqWrl8E9n6EqXF8bFUTkRov17UwtGeCTTpKw93-c6IO6jsAADgp_eQnufTPJLbQywjSBccsZhakud_LJ-3gHOk9Vmjk6EuqkZpkqWhlynu95dbKizlDUNQD6kHfgT5JOWtrk6KdqDiGgu6OabBarU99cdTayGP7e5JdSu85os8u63_TlTdmomvMlIRq0gdMZaUgAnSqNvoyBjJ6H_BTvtJgqKv_yoelIDOhww5HwVVWSgU6AyNt7BLDIUBWKN_cnIfAFjNGTJJg5EHxNnOuKth2s8mjbNbkwOGOkdeMoWTTGdhgElqFKPPTz09QXHYqkZ33AxPqhtSxGZcZ7qXAYEZzHbuni22ZySxpqqjEvyu0kxvHEsTEff5zQV8I_kswhi2uf-ek13REIGyuiNBUGIkwnXpruWdli83oi1k5WjWuvOvhWeWPMH7doylMVxpO2SflfE1pwnx8cggKjlzPGz4duLpYkA55rjxv_qSSoWqCcXti_h_zaaVRXD0TuFo6YlU5wt4cupTdIH9zR6zHdousiKKljm2B3ysG-wdLhQaoZIqIPjlVZ3utyiTEIxy4LVm0GM66rAzDLX53UbbE_ydCrSCddjgXtPGuK03IuUYX5EdPvthiU3W4Kxh00aC3oJzhNGGGYoRjpVuXZ30qicRFTV3FiCiB0uuCwNPUAHsDgDs_k_zoRROJRmpXN-zsNDdLeTI3caOUwi5RAbbytaCbos4_PewgZsgCOvTGh_sHW83ratq-cCREqeomrCeuNJa5gteJ-XA9LN2Ph6-mM7nsIC7NSC2hmzB9TjXNvAxIsvFdzKoakWf0Gb2aRqIncAO_Htgm_Ph-QcItr6eTHl4pDTlmjzuxM5kM5O3VdDHi4oyrN6nmw1TPPFii9V_oS0djzRnThJ1Xs4SQRE1OT8aQhMn_vARFRkhlGvrVb2ip4q3PpewVc5kNKYB9pKuXm7HJQY6wf0SHb-TEYv1GdrVLcGyZuM9WnZK6eP0RXh7LtM-VammrWzj0hc7Orh46AC8r911LjM2l6Bhj1YJFfRgvgpGkjzLCZynsM0J8R0kt3kGnNG3YcqjKh_3subEZgpMnch7youE6CN_sZGQyQ1gtGuKW0wc8KgiZNq9hRnMc9O3whBvlh5qy6sck0LR2ZR7OqWjaN_v6Xd41vkdIhqSSD8U1bH6fCLWgqkHbAANjGAzITkyy0g_m7TDFKMhZ8cnZ5bxtKeGPKV"
+    },
+    {
+      "type": "message",
+      "id": "msg_1793301520114_zn1kruwhjxi",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "No; it’s divisible by 7 (91 = 7 × 13).",
+          "annotations": [],
+          "logprobs": []
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 22,
+    "output_tokens": 67,
+    "total_tokens": 89,
+    "input_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0
+    },
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  },
+  "model": "openai/gpt-5-nano",
+  "instructions": null,
+  "previous_response_id": null,
+  "temperature": 1,
+  "top_p": 1,
+  "max_output_tokens": 1024,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "top_logprobs": 0,
+  "tools": [],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "max_tool_calls": null,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "truncation": "disabled",
+  "reasoning": {
+    "effort": "low",
+    "summary": "auto"
+  },
+  "store": false,
+  "background": false,
+  "service_tier": "default",
+  "metadata": {},
+  "safety_identifier": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "provider_metadata": {
+    "openai": {
+      "responseId": "resp_0e5dfe1f1d465ba9016ae39c0e636c87d1a6112aaafd91593e",
+      "serviceTier": "default",
+      "reasoningContext": "current_turn"
+    },
+    "gateway": {
+      "routing": {
+        "originalModelId": "openai/gpt-5-nano",
+        "resolvedProvider": "openai",
+        "fallbacksAvailable": [
+          "azure"
+        ],
+        "planningReasoning": "System credentials planned for: openai, azure. Total execution order: openai(system) → azure(system)",
+        "canonicalSlug": "openai/gpt-5-nano",
+        "finalProvider": "openai",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "openai/gpt-5-nano",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "openai",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1793301518266,
+                "endTime": 1793301520114,
+                "providerRequestId": "req_4f2bed973cc34a04a68bbdce62c88db0",
+                "statusCode": 200,
+                "providerResponseId": "resp_0e5dfe1f1d465ba9016ae39c0e636c87d1a6112aaafd91593e"
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1,
+        "affinity": {
+          "outcome": "skipped_below_min_prefix"
+        },
+        "clientSessionId": "00000000000000000000000000000000",
+        "clientSessionIdSource": "fingerprint"
+      },
+      "cost": "0.0000279",
+      "marketCost": "0.0000279",
+      "surchargeCost": "0",
+      "gatewayCost": "0.0000279",
+      "inferenceCost": "0.0000279",
+      "inputInferenceCost": "0.0000011",
+      "outputInferenceCost": "0.0000268",
+      "generationId": "gen_01M64HK5PMQX693A7PFNPFMG6P"
+    }
+  }
+}

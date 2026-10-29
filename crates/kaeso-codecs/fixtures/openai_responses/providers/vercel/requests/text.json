@@ -1,0 +1,6 @@
+{
+  "model": "mistral/mistral-nemo",
+  "instructions": "Answer in one short sentence.",
+  "input": "What is the capital of France?",
+  "max_output_tokens": 64
+}

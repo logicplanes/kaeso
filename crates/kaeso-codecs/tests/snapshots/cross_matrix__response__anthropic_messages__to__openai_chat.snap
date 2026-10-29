@@ -247,6 +247,97 @@ expression: outcomes
       "total_tokens": 5330
     }
   },
+  "providers/vercel/recorded-text": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "Paris",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HGCXHNDXAG6G04YXCMKQY",
+    "model": "mistral/mistral-nemo",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 2,
+      "prompt_tokens": 23,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 25
+    }
+  },
+  "providers/vercel/recorded-thinking": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": "No. It is divisible by 7 and 13.",
+          "refusal": null,
+          "role": "assistant"
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HGFRNVRHG1YXKX8NFSP1B",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 489,
+      "prompt_tokens": 33,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 522
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "choices": [
+      {
+        "finish_reason": "tool_calls",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": [],
+          "content": null,
+          "refusal": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n        \"location\": \"Paris, France\",\n        \"unit\": \"celsius\"\n      }",
+                "name": "get_weather"
+              },
+              "id": "call-5315343c-1294-488f-88f8-5e76164d77ad",
+              "type": "function"
+            }
+          ]
+        }
+      }
+    ],
+    "created": 1760000000,
+    "id": "gen_01M64HKDK2V30WXAJMZ05FSN4C",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "object": "chat.completion",
+    "usage": {
+      "completion_tokens": 93,
+      "prompt_tokens": 348,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "total_tokens": 441
+    }
+  },
   "recorded-cache-prewarm": {
     "choices": [
       {

@@ -85,3 +85,7 @@ Source: OpenRouter's [embeddings reference](https://openrouter.ai/docs/api_refer
 ### Mistral
 
 Sources: Mistral's [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`, `EmbeddingResponse`), read 2026-10-19, and the live recordings in `fixtures/openai_embeddings/providers/mistral/`, with `mistral-embed`. Mistral takes `encoding_format: base64` but answers with floats; for an app that asked for base64 the codec encodes them as base64. Mistral refuses OpenAI's `dimensions` and token-id input with a 422, and `output_dimension` on `mistral-embed` with a 400. Those error bodies have no `error` object, so apps get an OpenAI error that quotes them.
+
+### Vercel
+
+Sources: Vercel's [embeddings](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/embeddings) page, read 2026-10-29, and the live recordings in `fixtures/openai_embeddings/providers/vercel/`, with `google/gemini-embedding-001` and `dimensions: 8`. A Vercel model is an embeddings model when models.dev gives it `type: "embedding"`, as Vercel's listing does. The reply's `providerMetadata` (routing and cost) stays in extras and round-trips unchanged. A free-tier account may not call some embedding models, such as `openai/text-embedding-3-small`, which answer 403.

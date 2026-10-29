@@ -1,0 +1,26 @@
+{
+  "model": "mistral/mistral-nemo",
+  "models": [
+    "mistral/ministral-3b"
+  ],
+  "providerOptions": {
+    "gateway": {
+      "order": [
+        "mistral"
+      ],
+      "sort": "cost",
+      "tags": [
+        "kaeso-fixture"
+      ],
+      "user": "kaeso-fixture-user"
+    }
+  },
+  "reasoning_effort": "low",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello in French."
+    }
+  ],
+  "max_tokens": 32
+}

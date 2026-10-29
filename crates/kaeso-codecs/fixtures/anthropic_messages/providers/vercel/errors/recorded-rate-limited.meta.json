@@ -1,0 +1,14 @@
+{
+  "status": 429,
+  "headers": {
+    "retry-after": "48"
+  },
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s."
+    },
+    "request_id": null
+  }
+}

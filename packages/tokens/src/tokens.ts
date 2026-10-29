@@ -102,6 +102,7 @@ export const providerMark = {
   togetherai: mode("#000000", "#ffffff"),
   openrouter: mode("#03080a", "#fcfcfe"),
   mistral: mode("#161525", "#ffffff"),
+  vercel: mode("#000000", "#ffffff"),
 } as const;
 
 export const type = {

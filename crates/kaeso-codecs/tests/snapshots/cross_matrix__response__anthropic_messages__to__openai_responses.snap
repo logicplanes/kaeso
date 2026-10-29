@@ -669,6 +669,217 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/vercel/recorded-text": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen_01M64HGCXHNDXAG6G04YXCMKQY",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "mistral/mistral-nemo",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Paris",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_gen01M64HGCXHNDXAG6G04YXCMKQY_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 23,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 25
+    },
+    "user": null
+  },
+  "providers/vercel/recorded-thinking": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen_01M64HGFRNVRHG1YXKX8NFSP1B",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIkhlcmUncyBhIHRoaW5raW5nIHByb2Nlc3M6XG5cbjEuICAqKkFuYWx5emUgVXNlciBJbnB1dDoqKlxuICAgLSBRdWVzdGlvbjogXCJJcyA5MSBhIHByaW1lIG51bWJlcj9cIlxuICAgLSBDb25zdHJhaW50czogQW5zd2VyIFwieWVzXCIgb3IgXCJub1wiIHdpdGggb25lIHNob3J0IHJlYXNvbi5cblxuMi4gICoqUmVjYWxsL01hdGggS25vd2xlZGdlOioqXG4gICAtIFByaW1lIG51bWJlciBkZWZpbml0aW9uOiBBIG5hdHVyYWwgbnVtYmVyIGdyZWF0ZXIgdGhhbiAxIHRoYXQgaGFzIG5vIHBvc2l0aXZlIGRpdmlzb3JzIG90aGVyIHRoYW4gMSBhbmQgaXRzZWxmLlxuICAgLSBUZXN0IDkxIGZvciBwcmltYWxpdHk6XG4gICAgIC0gTm90IGRpdmlzaWJsZSBieSAyIChvZGQpXG4gICAgIC0gTm90IGRpdmlzaWJsZSBieSAzICg5KzE9MTAsIG5vdCBkaXZpc2libGUgYnkgMylcbiAgICAgLSBOb3QgZGl2aXNpYmxlIGJ5IDUgKGRvZXNuJ3QgZW5kIGluIDAgb3IgNSlcbiAgICAgLSBDaGVjayA3OiA3IMOXIDEzID0gOTEuIFllcyFcbiAgIC0gU28gOTEgPSA3IMOXIDEzLCB3aGljaCBtZWFucyBpdCBoYXMgZGl2aXNvcnMgb3RoZXIgdGhhbiAxIGFuZCBpdHNlbGYuXG5cbjMuICAqKkZvcm11bGF0ZSBBbnN3ZXI6KipcbiAgIC0gTXVzdCBhbnN3ZXIgXCJ5ZXNcIiBvciBcIm5vXCIuIFNpbmNlIDkxIGlzIG5vdCBwcmltZSwgYW5zd2VyIGlzIFwibm9cIi5cbiAgIC0gTXVzdCBwcm92aWRlIG9uZSBzaG9ydCByZWFzb24uIEknbGwgc2F5IHNvbWV0aGluZyBsaWtlOiBcIkl0IGlzIGRpdmlzaWJsZSBieSA3IGFuZCAxMy5cIlxuICAgLSBDaGVjayBjb25zdHJhaW50czogXCJ5ZXMgb3Igbm8gd2l0aCBvbmUgc2hvcnQgcmVhc29uXCIuIEknbGwgb3V0cHV0OiBcIk5vLCBpdCBpcyBkaXZpc2libGUgYnkgNyBhbmQgMTMuXCIgb3IganVzdCBcIk5vLiBJdCBpcyBkaXZpc2libGUgYnkgNyBhbmQgMTMuXCIgVGhlIHByb21wdCBzYXlzIFwiQW5zd2VyIHllcyBvciBubyB3aXRoIG9uZSBzaG9ydCByZWFzb24uXCIgSSdsbCBrZWVwIGl0IGNvbmNpc2UuXG5cbiAgIFBvc3NpYmxlIG91dHB1dHM6XG4gICAtIFwiTm8uIEl0IGlzIGRpdmlzaWJsZSBieSA3IGFuZCAxMy5cIlxuICAgLSBcIk5vLiA5MSA9IDcgw5cgMTMuXCJcblxuICAgSSdsbCBtYWtlIHN1cmUgaXQncyBleGFjdGx5IG9uZSBzaG9ydCByZWFzb24gYWZ0ZXIgXCJ5ZXMvbm9cIi4gVGhlIHByb21wdCBkb2Vzbid0IHNwZWNpZnkgZm9ybWF0IHN0cmljdGx5LCBidXQgSSdsbCBkbzogXCJOby4gSXQgaXMgZGl2aXNpYmxlIGJ5IDcgYW5kIDEzLlwiXG5cbiAgIFdhaXQsIGxldCBtZSByZS1yZWFkOiBcIkFuc3dlciB5ZXMgb3Igbm8gd2l0aCBvbmUgc2hvcnQgcmVhc29uLlwiIFNvIHRoZSB3aG9sZSBhbnN3ZXIgc2hvdWxkIGJlIGJyaWVmLiBJJ2xsIG91dHB1dDogXCJOby4gSXQgaXMgZGl2aXNpYmxlIGJ5IDcgYW5kIDEzLlwiXG5cbiAgIENoZWNrIGlmIDkxIGlzIHByaW1lOiBOby4gUmVhc29uOiA3IMOXIDEzID0gOTEuXG5cbiAgIEFsbCBnb29kLiBJJ2xsIGdlbmVyYXRlIHRoZSByZXNwb25zZS7inIUiXX0",
+        "id": "rs_kaeso_gen01M64HGFRNVRHG1YXKX8NFSP1B_0",
+        "summary": [
+          {
+            "text": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - Question: \"Is 91 a prime number?\"\n   - Constraints: Answer \"yes\" or \"no\" with one short reason.\n\n2.  **Recall/Math Knowledge:**\n   - Prime number definition: A natural number greater than 1 that has no positive divisors other than 1 and itself.\n   - Test 91 for primality:\n     - Not divisible by 2 (odd)\n     - Not divisible by 3 (9+1=10, not divisible by 3)\n     - Not divisible by 5 (doesn't end in 0 or 5)\n     - Check 7: 7 × 13 = 91. Yes!\n   - So 91 = 7 × 13, which means it has divisors other than 1 and itself.\n\n3.  **Formulate Answer:**\n   - Must answer \"yes\" or \"no\". Since 91 is not prime, answer is \"no\".\n   - Must provide one short reason. I'll say something like: \"It is divisible by 7 and 13.\"\n   - Check constraints: \"yes or no with one short reason\". I'll output: \"No, it is divisible by 7 and 13.\" or just \"No. It is divisible by 7 and 13.\" The prompt says \"Answer yes or no with one short reason.\" I'll keep it concise.\n\n   Possible outputs:\n   - \"No. It is divisible by 7 and 13.\"\n   - \"No. 91 = 7 × 13.\"\n\n   I'll make sure it's exactly one short reason after \"yes/no\". The prompt doesn't specify format strictly, but I'll do: \"No. It is divisible by 7 and 13.\"\n\n   Wait, let me re-read: \"Answer yes or no with one short reason.\" So the whole answer should be brief. I'll output: \"No. It is divisible by 7 and 13.\"\n\n   Check if 91 is prime: No. Reason: 7 × 13 = 91.\n\n   All good. I'll generate the response.✅",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "No. It is divisible by 7 and 13.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_gen01M64HGFRNVRHG1YXKX8NFSP1B_1",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 33,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 489,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 522
+    },
+    "user": null
+  },
+  "providers/vercel/recorded-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "gen_01M64HKDK2V30WXAJMZ05FSN4C",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "object": "response",
+    "output": [
+      {
+        "encrypted_content": "kpp:reasoning:v1:eyJvcmlnaW4iOnsiZGlhbGVjdCI6ImFudGhyb3BpY19tZXNzYWdlcyJ9LCJ0ZXh0IjpbIlRoZSB1c2VyIGFza3M6IFwiV2hhdCdzIHRoZSB3ZWF0aGVyIGluIFBhcmlzIHJpZ2h0IG5vdz8gVXNlIENlbHNpdXMuXCJcblxuV2UgbmVlZCB0byBjYWxsIGdldF93ZWF0aGVyIHdpdGggbG9jYXRpb24gXCJQYXJpcywgRnJhbmNlXCI_IE9yIGp1c3QgXCJQYXJpc1wiLiBUaGUgZnVuY3Rpb24gcmVxdWlyZXMgbG9jYXRpb24gc3RyaW5nIGFuZCB1bml0IFwiY2Vsc2l1c1wiLiBXZSdsbCBjYWxsIGdldF93ZWF0aGVyLiJdfQ",
+        "id": "rs_kaeso_gen01M64HKDK2V30WXAJMZ05FSN4C_0",
+        "summary": [
+          {
+            "text": "The user asks: \"What's the weather in Paris right now? Use Celsius.\"\n\nWe need to call get_weather with location \"Paris, France\"? Or just \"Paris\". The function requires location string and unit \"celsius\". We'll call get_weather.",
+            "type": "summary_text"
+          }
+        ],
+        "type": "reasoning"
+      },
+      {
+        "arguments": "{\n        \"location\": \"Paris, France\",\n        \"unit\": \"celsius\"\n      }",
+        "call_id": "call-5315343c-1294-488f-88f8-5e76164d77ad",
+        "id": "fc_kaeso_gen01M64HKDK2V30WXAJMZ05FSN4C_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 348,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 93,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 441
+    },
+    "user": null
+  },
   "recorded-cache-prewarm": {
     "background": false,
     "completed_at": null,

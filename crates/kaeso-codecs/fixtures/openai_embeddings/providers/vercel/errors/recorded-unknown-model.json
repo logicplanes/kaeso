@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "Model 'kaeso-example/no-such-embedding' not found",
+    "type": "model_not_found",
+    "param": {
+      "modelId": "kaeso-example/no-such-embedding"
+    }
+  }
+}

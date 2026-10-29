@@ -1,0 +1,11 @@
+{
+  "status": 403,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "permission_error",
+      "message": "Free tier users do not have access to this model. Upgrade to paid credits at https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dtop-up for unrestricted access."
+    },
+    "request_id": null
+  }
+}

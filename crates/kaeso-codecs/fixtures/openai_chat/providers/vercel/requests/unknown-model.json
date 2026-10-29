@@ -1,0 +1,10 @@
+{
+  "model": "kaeso-example/no-such-model",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "max_tokens": 16
+}

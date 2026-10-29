@@ -12,7 +12,7 @@ use crate::provider::{ProviderId, known_ids};
 
 pub const EMBEDDED: &str = include_str!("../data/models-dev.json");
 
-pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-28 03:19:08 UTC);
+pub const EMBEDDED_FETCHED_AT: OffsetDateTime = datetime!(2026-10-29 19:21:10 UTC);
 
 pub const DEFAULT_URL: &str = "https://models.dev/api.json";
 
@@ -116,6 +116,10 @@ pub struct Model {
     pub cost: Option<Cost>,
     #[serde(default)]
     pub status: Option<String>,
+    /// What the model makes, such as `embedding`; models.dev leaves it out for most
+    /// generation models.
+    #[serde(default, rename = "type")]
+    pub kind: Option<String>,
 }
 
 impl Model {
