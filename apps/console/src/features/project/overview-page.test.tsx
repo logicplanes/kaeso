@@ -339,6 +339,7 @@ describe("OverviewPage", () => {
     const requestsChart = (await screen.findByRole("heading", { name: "Requests" })).closest("section") as HTMLElement;
     expect(await within(requestsChart).findByText("Couldn't load this chart")).toBeInTheDocument();
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
+    expect(screen.getAllByText("Couldn't load").length).toBeGreaterThanOrEqual(3);
     failing = false;
     await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());

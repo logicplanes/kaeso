@@ -57,6 +57,7 @@ export function UsageMetrics({
   compare,
   showCost,
   loading,
+  failed,
 }: {
   rows: UsageRow[];
   previous?: UsageRow[] | undefined;
@@ -66,6 +67,7 @@ export function UsageMetrics({
   compare?: string | undefined;
   showCost: boolean;
   loading?: boolean | undefined;
+  failed?: boolean | undefined;
 }) {
   const sum = totals(rows);
   const p = previous && compare ? totals(previous) : undefined;
@@ -79,6 +81,17 @@ export function UsageMetrics({
   const rate = sum.requests ? sum.errors / sum.requests : 0;
   const cost = sum.cost ?? (showCost && rows.length === 0 ? "0" : null);
   const known = <T extends { trend: number[] }>(props: T): T | { trend: number[] } => (loading ? { trend: [] } : props);
+  if (failed) {
+    const tile = (label: string) => <StatTile label={label} value="–" detail={t("kaeso.usage.tileFailed", "Couldn't load")} />;
+    return (
+      <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
+        {tile(t("common.requests", "Requests"))}
+        {tile(t("common.tokens", "Tokens"))}
+        {showCost && tile(t("common.cost", "Cost"))}
+        {tile(t("kaeso.usage.errors", "Errors"))}
+      </StatGrid>
+    );
+  }
   return (
     <StatGrid aria-label={t("kaeso.usage.inPeriod", "Usage in the period")}>
       <StatTile

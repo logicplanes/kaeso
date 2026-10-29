@@ -205,6 +205,7 @@
   "kaeso.usage.errorRate": "占请求的 {percent}",
   "kaeso.usage.errors": "错误",
   "kaeso.usage.inPeriod": "时段内用量",
+  "kaeso.usage.tileFailed": "无法加载",
   "kaeso.usage.input": "输入",
   "kaeso.usage.lessThan": "低于 {amount}",
   "kaeso.usage.noCost": "此时段内无费用。",

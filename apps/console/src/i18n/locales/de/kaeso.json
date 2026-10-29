@@ -205,6 +205,7 @@
   "kaeso.usage.errorRate": "{percent} der Anfragen",
   "kaeso.usage.errors": "Fehler",
   "kaeso.usage.inPeriod": "Nutzung im Zeitraum",
+  "kaeso.usage.tileFailed": "Konnte nicht geladen werden",
   "kaeso.usage.input": "Eingabe",
   "kaeso.usage.lessThan": "unter {amount}",
   "kaeso.usage.noCost": "Keine Kosten in diesem Zeitraum.",
