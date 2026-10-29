@@ -160,8 +160,8 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
             {
               label: common.name(),
               value: (
-                <span className="flex items-center gap-8">
-                  {a.name}
+                <span className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                  <span className="min-w-0 wrap-break-word">{a.name}</span>
                   {!archived && (
                     <Button variant="ghost" size="xs" disabled={!!readOnly} {...(readOnly ? { disabledReason: readOnly } : {})} onClick={() => setName(a.name)}>
                       {common.rename()}
