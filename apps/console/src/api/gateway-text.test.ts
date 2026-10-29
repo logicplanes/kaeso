@@ -47,6 +47,18 @@ describe("the gateway's messages", () => {
     );
   });
 
+  it("say how long to wait in the unit the gateway wrote, in every language", async () => {
+    const wait = async (w: string) => (await errorFromResponse(failure(`Too many attempts from your address; try again in ${w}.`, 429))).message;
+    expect(await wait("1 minute")).toBe("Too many attempts from your address; try again in 1 minute.");
+    expect(await wait("3 seconds")).toBe("Too many attempts from your address; try again in 3 seconds.");
+    await speak("de");
+    expect(await wait("3 seconds")).toBe("Zu viele Versuche von Ihrer Adresse; in 3 Sek. erneut versuchen.");
+    expect(await wait("2 hours")).toBe("Zu viele Versuche von Ihrer Adresse; in 2 Std. erneut versuchen.");
+    await speak("zh-CN");
+    expect(await wait("1 minute")).toBe("来自您地址的尝试次数过多，请 1 分钟后重试。");
+    expect(await wait("soon")).toBe("Too many attempts from your address; try again in soon.");
+  });
+
   it("name the provider that does not serve a model, in every language", async () => {
     const unserved = "Together AI does not serve `meta-llama/Llama-3.3-70B` to this project's key; check the key's access.";
     await speak("de");
