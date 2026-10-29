@@ -248,11 +248,15 @@ mod tests {
         assert!(!listed.permits(ip("10.2.0.1")));
         assert!(!listed.permits(ip("::1")));
         assert!(listed.permits(ip("8.8.8.8")));
+        let shared = Reach::networks(vec![net("100.64.0.0/10")]);
+        assert!(shared.permits(ip("100.100.100.201")));
+        assert!(!shared.permits(ip("100.100.100.200")));
         let everything = Reach::networks(vec![net("0.0.0.0/0"), net("::/0")]);
         for metadata in [
             "169.254.169.254",
             "fd00:ec2::254",
             "168.63.129.16",
+            "100.100.100.200",
             "fe80::1",
         ] {
             assert!(!everything.permits(ip(metadata)), "{metadata}");
