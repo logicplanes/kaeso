@@ -550,8 +550,8 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
             )}
           </span>
           {lines && (
-            <span className="flex h-24 min-w-0 items-center gap-8">
-              {item.meta && <span className={cn("flex min-w-0 items-center gap-6 overflow-hidden", off && "opacity-50")}>{item.meta}</span>}
+            <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-x-8">
+              {item.meta && <span className={cn("flex min-w-0 max-w-full items-center gap-6 overflow-hidden", off && "opacity-50")}>{item.meta}</span>}
               {item.date && (
                 <span className={cn("shrink-0 text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>{item.date}</span>
               )}
