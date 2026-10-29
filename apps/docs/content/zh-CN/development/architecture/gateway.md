@@ -118,7 +118,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `efforts` | 模型支持的推理强度级别，在 models.dev 未列出时使用 |
 | `egress_dialect` | Kaeso 发送的格式：服务商的方言之一，默认是其生成方言（OpenAI 为 `openai_responses`） |
 
-目录条目的值依次取自其覆盖值、models.dev 和补充数据。models.dev 给出 `type: "embedding"` 的模型，若其服务商支持 Embeddings 格式，就以 Embeddings 发送，因此 Vercel AI Gateway 的嵌入模型不需要补充数据条目。除非 `KAESO_MODELS_DEV_SYNC` 为 `false`，网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`）。它保留与快照相同的服务商，并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。
+目录条目的值依次取自其覆盖值、models.dev 和补充数据。models.dev 给出 `type: "embedding"` 的模型，若其服务商支持 Embeddings 格式，就以 Embeddings 发送，因此 Vercel AI Gateway 的嵌入模型不需要补充数据条目。除非 `KAESO_MODELS_DEV_SYNC` 为 `false`，网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`）。它保留与快照相同的服务商，并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。如果存储的数据来自服务商或模型字段更少的版本，缺少的服务商会从内置快照补齐，并立即重新同步，即使 models.dev 没有变化。
 
 发布前刷新快照：
 

@@ -1,4 +1,6 @@
-use std::sync::{Arc, PoisonError, RwLock};
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::sync::{Arc, LazyLock, PoisonError, RwLock};
 use std::time::Duration;
 
 use kaeso_core::catalogue::{Fields, Supplement};
@@ -19,6 +21,34 @@ pub const EMBEDDED_SOURCE: &str = "embedded";
 const MAX_DOCUMENT: usize = 64 << 20;
 
 const MAX_REDIRECTS: usize = 3;
+
+// A build that adds a provider or a models.dev field gets a new format: data an older build stored
+// is then completed from the built-in snapshot and fetched again, however new it is.
+static FORMAT: LazyLock<Vec<u8>> = LazyLock::new(|| {
+    let model = models_dev::Model {
+        modalities: Some(models_dev::Modalities::default()),
+        limit: Some(models_dev::Limits::default()),
+        cost: Some(models_dev::Cost::default()),
+        ..models_dev::Model::default()
+    };
+    let providers = kaeso_core::provider::known_ids()
+        .into_iter()
+        .map(|id| {
+            let provider = models_dev::Provider {
+                id: id.to_string(),
+                name: None,
+                models: BTreeMap::from([(String::new(), model.clone())]),
+            };
+            (id.to_string(), provider)
+        })
+        .collect();
+    let shape = serde_json::to_vec(&Snapshot { providers }).unwrap_or_default();
+    Sha256::digest(shape).to_vec()
+});
+
+fn in_this_format(format: Option<&[u8]>) -> bool {
+    format == Some(FORMAT.as_slice())
+}
 
 #[derive(Clone, Debug)]
 pub struct Loaded {
@@ -72,7 +102,7 @@ impl ModelsDev {
 pub async fn init(state: &AppState) -> Result<(), StoreError> {
     let stored = catalogue::snapshot(&state.pg).await?;
     match stored {
-        Some(row) if row.fetched_at >= models_dev::EMBEDDED_FETCHED_AT => {
+        Some(row) if preferred_over_embedded(&row) => {
             load_row(state, row);
             Ok(())
         }
@@ -92,16 +122,39 @@ pub async fn init(state: &AppState) -> Result<(), StoreError> {
     }
 }
 
+fn preferred_over_embedded(row: &catalogue::SnapshotRow) -> bool {
+    match row.fetched_at.cmp(&models_dev::EMBEDDED_FETCHED_AT) {
+        Ordering::Greater => true,
+        Ordering::Equal => in_this_format(row.format.as_deref()),
+        Ordering::Less => false,
+    }
+}
+
 fn load_row(state: &AppState, row: catalogue::SnapshotRow) {
+    let complete = in_this_format(row.format.as_deref());
     match serde_json::from_value::<Snapshot>(row.data) {
-        Ok(snapshot) => state.models_dev.replace(Loaded {
-            snapshot,
-            fetched_at: row.fetched_at,
-            source: row.source_url,
-        }),
+        Ok(mut snapshot) => {
+            if !complete {
+                add_missing_providers(&mut snapshot);
+            }
+            state.models_dev.replace(Loaded {
+                snapshot,
+                fetched_at: row.fetched_at,
+                source: row.source_url,
+            });
+        }
         Err(e) => {
             tracing::error!(error = %e, "the stored models.dev data does not parse; keeping the current data")
         }
+    }
+}
+
+fn add_missing_providers(snapshot: &mut Snapshot) {
+    let Ok(embedded) = models_dev::embedded() else {
+        return;
+    };
+    for (id, provider) in embedded.providers {
+        snapshot.providers.entry(id).or_insert(provider);
     }
 }
 
@@ -264,7 +317,7 @@ async fn apply_locked(
     }
     let data = serde_json::to_value(&new).map_err(|e| StoreError::Corrupt(e.to_string()))?;
     let count = i32::try_from(new.model_count()).unwrap_or(i32::MAX);
-    catalogue::put_snapshot(&mut *tx, fetched_at, source, hash, &data, count).await?;
+    catalogue::put_snapshot(&mut *tx, fetched_at, source, hash, &FORMAT, &data, count).await?;
     tx.commit().await?;
     Ok((
         applied,
@@ -340,6 +393,7 @@ async fn fetch_and_apply(state: &AppState, now: OffsetDateTime) -> Result<Synced
     let hash = Sha256::digest(&body).to_vec();
     if let Some(stored) = catalogue::sync_state(&state.pg).await?
         && stored.content_hash == hash
+        && in_this_format(stored.format.as_deref())
     {
         return Ok(Synced::Unchanged);
     }
@@ -410,6 +464,9 @@ pub async fn due(state: &AppState) -> Result<bool, StoreError> {
     let Some(row) = catalogue::sync_state(&state.pg).await? else {
         return Ok(true);
     };
+    if !in_this_format(row.format.as_deref()) && row.last_error.is_none() {
+        return Ok(true);
+    }
     if row.last_error.is_some() {
         interval = interval.min(time::Duration::HOUR);
     }

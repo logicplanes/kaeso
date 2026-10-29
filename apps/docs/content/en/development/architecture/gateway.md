@@ -118,7 +118,7 @@ The supplement holds these fields:
 | `efforts` | The effort levels the model supports, used when models.dev lists none |
 | `egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI) |
 
-A catalogue entry's value is its override, else models.dev, else the supplement. A model that models.dev gives `type: "embedding"` is sent as Embeddings when its provider has that format, so Vercel AI Gateway's embedding models need no supplement entry. Unless `KAESO_MODELS_DEV_SYNC` is `false`, the gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`). It keeps the same providers as the snapshot and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins.
+A catalogue entry's value is its override, else models.dev, else the supplement. A model that models.dev gives `type: "embedding"` is sent as Embeddings when its provider has that format, so Vercel AI Gateway's embedding models need no supplement entry. Unless `KAESO_MODELS_DEV_SYNC` is `false`, the gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`). It keeps the same providers as the snapshot and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins. Data stored by a release with fewer providers or model fields gets the missing providers from the built-in snapshot and is synced again right away, even when models.dev hasn't changed.
 
 Refresh the snapshot before a release:
 
