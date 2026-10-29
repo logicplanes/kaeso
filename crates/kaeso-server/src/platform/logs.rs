@@ -175,7 +175,8 @@ pub async fn update_org_settings(
             },
         )
         .await?;
-    } else if org.content_retention_days < before.content_retention_days {
+    }
+    if org.content_retention_days < before.content_retention_days {
         let cut = now - time::Duration::days(i64::from(org.content_retention_days));
         log_jobs::enqueue(
             &mut *tx,

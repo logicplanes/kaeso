@@ -990,6 +990,52 @@ async fn retention_shrinks_and_deletions_remove_rows() {
 }
 
 #[tokio::test]
+async fn shortening_both_retentions_at_once_drops_content_past_the_new_content_retention() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    seed(&env, 1, now - time::Duration::days(10)).await;
+    seed(&env, 1, now - time::Duration::hours(1)).await;
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{}/logs/settings", env.owner.org_id),
+            Some(json!({ "metadata_retention_days": 30, "content_retention_days": 7 })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    kaeso_server::services::logs::run_jobs(&env.app.state)
+        .await
+        .unwrap();
+    let listed = logs(&env, "?limit=100").await;
+    let rows = listed["data"].as_array().unwrap();
+    assert_eq!(rows.len(), 2, "metadata is kept for 30 days");
+    let content = |id: String| {
+        let env = &env;
+        async move {
+            env.app
+                .get(&format!("{}/logs/{id}", base(env)), &env.owner.cookie)
+                .await
+                .body["content"]
+                .clone()
+        }
+    };
+    let id = |i: usize| rows[i]["id"].as_str().unwrap().to_owned();
+    let (recent, old) = (id(0), id(1));
+    let mut left = Value::Null;
+    for _ in 0..100 {
+        left = content(old.clone()).await;
+        if left.is_null() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert_eq!(left, Value::Null, "content older than 7 days is removed");
+    assert!(!content(recent).await.is_null(), "newer content stays");
+}
+
+#[tokio::test]
 async fn no_query_reaches_another_orgs_logs() {
     let env = env(&[]).await;
     let r = call(
