@@ -30,6 +30,7 @@ export const zhCN: Messages = {
   "page.previousStep": "上一页：{title}",
   "page.nextStep": "下一页：{title}",
   "page.edit": "在 GitHub 上编辑",
+  "page.tableIn": "{table}，位于{section}下",
   "page.table": "表格：{columns}",
   "page.diagram": "图示：{title}",
   "page.task": "任务",
