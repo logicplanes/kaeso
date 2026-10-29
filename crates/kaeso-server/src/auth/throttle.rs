@@ -46,6 +46,14 @@ pub const EMAILS_PER_ADDRESS: Throttle = Throttle {
     window: Duration::from_secs(60 * 60),
     on_outage: Outage::Allow,
 };
+// Invitations count apart from the sign-in emails above, so a burst of invitations never keeps
+// the invited person from getting a sign-in link.
+pub const INVITES_PER_ADDRESS: Throttle = Throttle {
+    name: "invite",
+    limit: 5,
+    window: Duration::from_secs(60 * 60),
+    on_outage: Outage::Allow,
+};
 pub const EMAILS_PER_IP: Throttle = Throttle {
     name: "email_ip",
     limit: 30,

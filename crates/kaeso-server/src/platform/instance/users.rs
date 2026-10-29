@@ -195,6 +195,7 @@ pub async fn invite(
             "{email} already has an account."
         )));
     }
+    crate::platform::orgs::invites::throttle_invites(&state, &email).await?;
     let token = random_token();
     let id = InviteId::new();
     let mut tx = state.pg.begin().await?;
