@@ -191,6 +191,8 @@ describe("logColumns", () => {
     expect(within(cached as HTMLElement).getByText("· 75%")).toHaveClass("text-fg-tertiary");
     expect(unmarked).toHaveTextContent("563,000 / 10· 0%");
     expect(within(unmarked as HTMLElement).getByText("· 0%")).toHaveClass("text-warning-text");
+    expect(within(unmarked as HTMLElement).getByRole("img", { name: "No cache breakpoint" })).toBeInTheDocument();
+    expect(within(cached as HTMLElement).queryByRole("img")).not.toBeInTheDocument();
     expect(embedding).toHaveTextContent(/^120 \/ 48$/);
     expect(cachedWithoutMarks).toHaveTextContent("100 / 10· 90%");
     expect(within(cachedWithoutMarks as HTMLElement).getByText("· 90%")).toHaveClass("text-fg-tertiary");
