@@ -45,6 +45,7 @@ redis = { version = "1.7", default-features = false, features = ["tokio-comp", "
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
 humantime-serde = "1.1"
+serde_path_to_error = "0.1"
 clap = { version = "4.6", features = ["derive", "env"] }
 
 tracing = "0.1"
