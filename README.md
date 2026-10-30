@@ -29,4 +29,4 @@ The [quick start](https://docs.kaeso.app/get-started/quick-start) installs Kaeso
 
 ## License
 
-[MIT](LICENSE). The Kaeso name and logo are not covered by the license. Third-party notices are in [NOTICE.md](NOTICE.md).
+[MIT](LICENSE). The Kaeso name and logo are not covered by the license. All trademarks belong to their owners; Kaeso is not affiliated with any provider or client it names. Third-party notices, trademarks included, are in [NOTICE.md](NOTICE.md).
