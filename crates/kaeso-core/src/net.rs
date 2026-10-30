@@ -13,8 +13,11 @@ pub fn is_public(ip: IpAddr) -> bool {
 // https://learn.microsoft.com/azure/virtual-network/what-is-ip-address-168-63-129-16
 const AZURE_WIRE_SERVER: Ipv4Addr = Ipv4Addr::new(168, 63, 129, 16);
 
+// https://www.alibabacloud.com/help/en/ecs/user-guide/view-instance-metadata
+const ALIBABA_METADATA: Ipv4Addr = Ipv4Addr::new(100, 100, 100, 200);
+
 fn is_metadata_v4(ip: Ipv4Addr) -> bool {
-    ip.is_link_local() || ip == AZURE_WIRE_SERVER
+    ip.is_link_local() || ip == AZURE_WIRE_SERVER || ip == ALIBABA_METADATA
 }
 
 pub fn is_link_local_or_metadata(ip: IpAddr) -> bool {
@@ -88,6 +91,8 @@ mod tests {
             "fd00:ec2::254",
             "::ffff:169.254.169.254",
             "::ffff:168.63.129.16",
+            "100.100.100.200",
+            "::ffff:100.100.100.200",
         ] {
             assert!(is_link_local_or_metadata(ip.parse().unwrap()), "{ip}");
         }
@@ -98,6 +103,7 @@ mod tests {
             "fd00::1",
             "1.1.1.1",
             "168.63.129.17",
+            "100.100.100.201",
             "::1",
         ] {
             assert!(!is_link_local_or_metadata(ip.parse().unwrap()), "{ip}");
