@@ -536,6 +536,8 @@ function DataTableInner<T>(
           onRowClick && "cursor-pointer",
           rowTone(onRaised, on),
           "data-fresh:animate-row-fresh",
+          // A virtual row's place is its transform; animating it makes rows glide whenever the list re-measures.
+          style?.transform !== undefined && "[transition-property:background-color,color,box-shadow,opacity]",
           "forced-colors:data-active:outline-2 forced-colors:data-active:-outline-offset-2 forced-colors:data-active:outline-solid",
         )}
       >

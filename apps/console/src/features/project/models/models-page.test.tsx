@@ -173,7 +173,7 @@ describe("ModelsPage", () => {
     expect(screen.queryByRole("button", { description: "Provider" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Filters" }));
     const panel = await screen.findByRole("dialog", { name: "Filter models" });
-    await user.click(within(panel).getByRole("switch", { name: "Only overridden" }));
+    await user.click(within(panel).getByRole("button", { name: "Only overridden" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true }));
     expect(screen.getByRole("button", { name: "Filters · 1" })).toBeInTheDocument();
     expect(within(panel).getByRole("button", { description: "Provider" })).toHaveTextContent("All providers");
@@ -204,11 +204,11 @@ describe("ModelsPage", () => {
     await user.click(await screen.findByRole("option", { name: "Any capability" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
 
-    await user.click(screen.getByRole("switch", { name: "Only overridden" }));
+    await user.click(screen.getByRole("button", { name: "Only overridden" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true }));
     expect(cells()).toHaveLength(2);
     expect(screen.getByText("claude-sonnet-4-5")).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Only overridden" }));
+    await user.click(screen.getByRole("button", { name: "Only overridden" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 

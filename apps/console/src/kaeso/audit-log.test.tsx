@@ -223,7 +223,7 @@ describe("AuditLog", () => {
     await table();
     await waitFor(() => expect(within(row()).getByText("Grace Hopper")).toBeInTheDocument());
     expect(within(row()).getByRole("img", { name: /Grace Hopper.*Release helper/ })).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Done by agents" }));
+    await user.click(screen.getByRole("button", { name: "Agents" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ by_agents: true }));
     await waitFor(() => expect(logQuery()).toContainEqual(expect.objectContaining({ by_agents: "true" })));
     await user.click(row());
@@ -234,7 +234,7 @@ describe("AuditLog", () => {
     orgLog([auditEvent({ id: "evt_gone", actor: { kind: "agent", id: OTHER_USER, agent: { id: "agt_gone", name: null, model: null } } })]);
     const { user, router } = await renderApp(`${PATH}?by_agents=true`);
     expect(await within(await table()).findByRole("img", { name: /Grace Hopper via Deleted agent \(Unknown\)/ })).toBeInTheDocument();
-    await user.click(screen.getByRole("switch", { name: "Done by agents" }));
+    await user.click(screen.getByRole("button", { name: "Agents" }));
     await waitFor(() => expect(router.state.location.search).not.toHaveProperty("by_agents"));
   });
 

@@ -48,6 +48,7 @@ export * from "./components/thumbnail/index.js";
 export * from "./components/calendar/index.js";
 export * from "./components/date-picker/index.js";
 export * from "./components/filter-chip/index.js";
+export * from "./components/filter-toggle/index.js";
 export * from "./components/display-options/index.js";
 export * from "./components/dialog/index.js";
 export * from "./components/sheet/index.js";

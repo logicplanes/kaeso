@@ -45,7 +45,8 @@ export const docs = {
       onValueChange: "Called with the chosen value, or the list of values with `multiple`.",
       searchDelay: "Milliseconds of quiet typing before `onInputValueChange` is called, so a server search runs once per pause, not per keystroke.",
       optional: "Adds “Optional” to the label, for forms where most fields are required.",
-      options: "The options to choose from.",
+      options:
+        "The options to choose from: a label, and optionally a description under it, a short meta value on the row's end (such as a time zone's offset), and a leading icon or element.",
       placeholder: "Text shown while there is no value.",
       required: "Marks it as required in a form.",
       size: "The height of the input.",

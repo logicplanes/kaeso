@@ -537,6 +537,12 @@ describe("LayerDialog", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
     expect(screen.getByText("Review values")).toBeInTheDocument();
   });
+  it("puts the first layer's title beside the close button, and only a later layer's under the back button", async () => {
+    render(<LayerDialog defaultOpen layers={[{ title: "Add model", content: <p>Search</p> }]} />);
+    await frames();
+    expect(screen.getByText("Add model").closest("[data-dialog-titles]")).toHaveClass("flex-1");
+    expect(screen.getByText("Add model").closest("[data-dialog-titles]")).not.toHaveClass("basis-full");
+  });
   it("opened from a List row with Enter, moves the focus into the new layer, and Back returns it to the row", async () => {
     const onSubmit = vi.fn();
     await openAddModels(onSubmit);

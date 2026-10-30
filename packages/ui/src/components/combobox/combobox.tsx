@@ -40,6 +40,8 @@ export interface ComboboxOption {
   value: string;
   label: string;
   description?: ReactNode | undefined;
+  /** A short value on the row's end, such as a time zone's offset. */
+  meta?: ReactNode | undefined;
   icon?: IconData | undefined;
   leading?: ReactNode | undefined;
   disabled?: boolean | undefined;
@@ -333,6 +335,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                         </span>
                         {o.description && <span className="text-small font-regular text-fg-secondary">{o.description}</span>}
                       </span>
+                      {o.meta && <span className="shrink-0 text-small font-regular text-fg-tertiary tabular">{o.meta}</span>}
                       <BaseCombobox.ItemIndicator
                         keepMounted
                         className="flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-selected:opacity-100"

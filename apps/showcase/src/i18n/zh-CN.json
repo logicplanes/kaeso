@@ -1178,5 +1178,17 @@
   "The Stop button's label, shown while a response streams (\"Stop\" by default).": "停止按钮的文字，在响应流式返回时显示（默认为“停止”）。",
   "USD as a decimal string, shown with its own decimals (two at least, six at most): \"0.004213\" reads \"$0.004213\", \"1.2311\" reads \"$1.2311\", zero reads \"$0\" and less than a millionth reads \"< $0.000001\".": "以十进制字符串表示的美元金额，按其自身的小数位显示（至少两位，最多六位）：“0.004213”显示为“$0.004213”，“1.2311”显示为“$1.2311”，零显示为“$0”，不足百万分之一显示为“< $0.000001”。",
   "Under the response, on its text line: its metrics, actions.": "位于响应下方、与其文字对齐：指标、操作。",
-  "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.": "请求发送的时间（Date.now()）：在实时状态下，总计会安静地递增，十秒内以十分之一秒计，之后以整秒计，直到 `duration` 到达。"
+  "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.": "请求发送的时间（Date.now()）：在实时状态下，总计会安静地递增，十秒内以十分之一秒计，之后以整秒计，直到 `duration` 到达。",
+  "An on-or-off filter as a pill that sits in a row of selects: quiet like an unset select when off, a check and full text when on. Use it instead of a switch in filter rows and toolbars.": "以胶囊形式呈现的开关式筛选，可与一排选择框并列：关闭时像未选值的选择框一样低调，开启时显示对勾和正常文字。在筛选行和工具栏中用它代替开关。",
+  "Whether the filter is on.": "筛选是否开启。",
+  "Called with the new state when it is pressed.": "按下时以新状态调用。",
+  "Its height, matched to the selects beside it.": "它的高度，与旁边的选择框一致。",
+  "An on-or-off filter as a pill that sits in a row of selects.": "以胶囊形式呈现、与一排选择框并列的开关式筛选。",
+  "In a filter row": "在筛选行中",
+  "A button with aria-pressed, named by its label; the check is decoration.": "带 aria-pressed 的按钮，以其标签命名；对勾仅为装饰。",
+  "Turns the filter on or off": "开启或关闭筛选",
+  "The options to choose from: a label, and optionally a description under it, a short meta value on the row's end (such as a time zone's offset), and a leading icon or element.": "可供选择的选项：一个标签，以及可选的下方说明、行尾的简短数值（例如时区的偏移）和前置图标或元素。",
+  "Space or Enter": "空格键或回车键",
+  "With a name, puts the model id on its own line under it, so neither is cut short; for rows tall enough for two lines.": "有名称时，将模型 ID 放在其下方单独一行，两者都不会被截断；适用于足够容纳两行的行。",
+  "What the filter keeps, such as “Agents”.": "筛选保留的内容，例如“智能体”。"
 }

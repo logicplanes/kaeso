@@ -78,6 +78,7 @@ export const docs = {
     props: {
       capabilities: "What the model can do, shown as small marks after its name.",
       mark: "Shows the provider's mark first (default); turn it off in a list grouped under each provider's mark.",
+      stacked: "With a name, puts the model id on its own line under it, so neither is cut short; for rows tall enough for two lines.",
       model: "The model id, in mono: after the name, quieter, or alone when there's no name.",
       name: "The display name, first.",
       provider: "The provider id, such as `openai` or `anthropic`.",

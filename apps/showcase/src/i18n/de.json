@@ -1178,5 +1178,17 @@
   "The Stop button's label, shown while a response streams (\"Stop\" by default).": "Die Beschriftung des Stopp-Buttons, sichtbar, während eine Antwort eintrifft (standardmäßig „Stoppen“).",
   "USD as a decimal string, shown with its own decimals (two at least, six at most): \"0.004213\" reads \"$0.004213\", \"1.2311\" reads \"$1.2311\", zero reads \"$0\" and less than a millionth reads \"< $0.000001\".": "USD als Dezimalzeichenkette, mit ihren eigenen Nachkommastellen (mindestens zwei, höchstens sechs): „0.004213“ wird zu „0,004213 $“, „1.2311“ zu „1,2311 $“, null zu „0 $“ und weniger als ein Millionstel zu „< 0,000001 $“.",
   "Under the response, on its text line: its metrics, actions.": "Unter der Antwort, auf ihrer Textlinie: ihre Metriken, Aktionen.",
-  "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.": "Wann die Anfrage gesendet wurde (Date.now()): Während `live` zählt Gesamt ruhig hoch, in Zehntelsekunden und ab zehn Sekunden in ganzen Sekunden, bis `duration` eintrifft."
+  "When the request was sent (Date.now()): while live, Total counts up quietly, in tenths of a second and in whole seconds past ten, until `duration` arrives.": "Wann die Anfrage gesendet wurde (Date.now()): Während `live` zählt Gesamt ruhig hoch, in Zehntelsekunden und ab zehn Sekunden in ganzen Sekunden, bis `duration` eintrifft.",
+  "An on-or-off filter as a pill that sits in a row of selects: quiet like an unset select when off, a check and full text when on. Use it instead of a switch in filter rows and toolbars.": "Ein Filter zum Ein- und Ausschalten als Pill, die in einer Reihe von Auswahlfeldern sitzt: zurückhaltend wie ein leeres Auswahlfeld, wenn er aus ist, mit Häkchen und voller Schrift, wenn er an ist. Verwenden Sie ihn in Filterzeilen und Werkzeugleisten statt eines Schalters.",
+  "Whether the filter is on.": "Ob der Filter an ist.",
+  "Called with the new state when it is pressed.": "Wird beim Drücken mit dem neuen Zustand aufgerufen.",
+  "Its height, matched to the selects beside it.": "Seine Höhe, passend zu den Auswahlfeldern daneben.",
+  "An on-or-off filter as a pill that sits in a row of selects.": "Ein Filter zum Ein- und Ausschalten als Pill in einer Reihe von Auswahlfeldern.",
+  "In a filter row": "In einer Filterzeile",
+  "A button with aria-pressed, named by its label; the check is decoration.": "Eine Schaltfläche mit aria-pressed, benannt nach ihrer Beschriftung; das Häkchen ist Dekoration.",
+  "Turns the filter on or off": "Schaltet den Filter ein oder aus",
+  "The options to choose from: a label, and optionally a description under it, a short meta value on the row's end (such as a time zone's offset), and a leading icon or element.": "Die Optionen zur Auswahl: eine Beschriftung und optional eine Beschreibung darunter, ein kurzer Wert am Zeilenende (etwa die Abweichung einer Zeitzone) und ein vorangestelltes Symbol oder Element.",
+  "Space or Enter": "Leertaste oder Eingabetaste",
+  "With a name, puts the model id on its own line under it, so neither is cut short; for rows tall enough for two lines.": "Setzt bei einem Namen die Modell-ID in eine eigene Zeile darunter, damit keins von beiden gekürzt wird; für Zeilen, die hoch genug für zwei Zeilen sind.",
+  "What the filter keeps, such as “Agents”.": "Was der Filter behält, etwa „Agenten“."
 }

@@ -85,7 +85,7 @@ After an update, everyone who opens the console sees **What's new in Kaeso** onc
 
 ## Read the audit log
 
-The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and **Done by agents** shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)).
+The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and the **Agents** filter shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)).
 
 ## Next steps
 

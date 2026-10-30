@@ -15,7 +15,7 @@ import {
   ModelLabel,
   ProviderPicker,
   SearchInput,
-  Switch,
+  FilterToggle,
   Text,
   col,
   icons,
@@ -298,7 +298,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       <div className="flex w-full flex-wrap items-center gap-8 sm:flex-nowrap">
         {picker}
         {searchInput}
-        <Switch size="sm" label={t("models.includeDeprecated", "Include deprecated")} checked={deprecated} onCheckedChange={setDeprecated} />
+        <FilterToggle label={t("models.includeDeprecated", "Include deprecated")} pressed={deprecated} onPressedChange={setDeprecated} />
       </div>
     ),
     content: (
@@ -321,6 +321,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               columns={columns}
               getRowId={(h) => h.model_id}
               loading={hits.isPending && !!provider}
+              density="comfortable"
               selectable
               canSelectRow={(h) => !h.catalogue_model_id}
               selection={Object.fromEntries(ids.map((id) => [id, true]))}
@@ -338,15 +339,17 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
             })}
           </Text>
         )}
-        <Text variant="small" tone="secondary">
-          {tRich("models.wantAll", "Want them all? {all}", {
-            all: (
-              <Button variant="link" size="sm" onClick={() => setView("all")}>
-                {t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}
-              </Button>
-            ),
-          })}
-        </Text>
+        {hits.isSuccess && (
+          <Text variant="small" tone="secondary">
+            {tRich("models.wantAll", "Want them all? {all}", {
+              all: (
+                <Button variant="link" size="sm" onClick={() => setView("all")}>
+                  {t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}
+                </Button>
+              ),
+            })}
+          </Text>
+        )}
       </div>
     ),
     footerStart: (
@@ -537,6 +540,7 @@ function hitColumns(providerName: (id: string) => string, review: (modelId: stri
               providerName={providerName(h.provider)}
               model={h.model_id}
               mark={false}
+              stacked
               {...(h.name && h.name !== h.model_id ? { name: h.name } : {})}
             />
             {h.catalogue_model_id ? (

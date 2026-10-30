@@ -300,7 +300,7 @@
   "kaeso.agents.topic.security": "Sicherheit",
   "kaeso.agents.topic.settings": "Einstellungen",
   "kaeso.agents.topic.usage": "Nutzung und Kosten",
-  "kaeso.audit.byAgents": "Von Agenten",
+  "kaeso.audit.byAgents": "Agenten",
   "kaeso.audit.deletedAgent": "Gelöschter Agent",
   "kaeso.audit.viaAgent": "{name} · über {agent} ({model})"
 }

@@ -56,7 +56,7 @@
   "kaeso.audit.back": "Back to the audit log",
   "kaeso.audit.before": "Before",
   "kaeso.audit.beforeAfter": "Before → after",
-  "kaeso.audit.byAgents": "Done by agents",
+  "kaeso.audit.byAgents": "Agents",
   "kaeso.audit.change": "Change",
   "kaeso.audit.copyRequestId": "Copy request id",
   "kaeso.audit.copyTargetId": "Copy target id",

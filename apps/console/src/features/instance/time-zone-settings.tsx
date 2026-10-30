@@ -13,7 +13,7 @@ export function TimeZoneSettings({ settings }: { settings: SettingsView }) {
   const browser = browserTimeZone();
   const options = useMemo(() => {
     const now = new Date();
-    return timeZoneNames(zone).map((name) => ({ value: name, label: name, description: offsetOf(name, now) }));
+    return timeZoneNames(zone).map((name) => ({ value: name, label: name, meta: offsetOf(name, now) }));
   }, [zone]);
   const save = useApiMutation({
     mutationFn: async (timezone: string) => data(await api.PATCH("/platform/v1/instance/settings", { body: { timezone } })),

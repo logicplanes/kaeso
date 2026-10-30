@@ -36,10 +36,11 @@ describe("PillTabs", () => {
 });
 
 describe("Tabs", () => {
-  it("leaves underline tabs inside the column and pads each label 12px inside its box", () => {
+  it("leaves underline tabs inside the column with the first label on the content edge", () => {
     render(<InsetContent>{underline}</InsetContent>);
     expect(screen.getByRole("tablist").className).not.toMatch(/(^|\s)-m[xl]?-\d+/);
-    expect(screen.getByText("Overview")).toHaveClass("px-12", "focus-ring-inset");
+    expect(screen.getByRole("tablist")).toHaveClass("gap-24");
+    expect(screen.getByText("Overview").className).not.toMatch(/(^|\s)p[xl]-\d+/);
   });
   it("selects with Enter or Space after arrows move focus", async () => {
     render(underline);

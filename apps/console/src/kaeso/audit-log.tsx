@@ -18,7 +18,7 @@ import {
   Section,
   Sheet,
   Skeleton,
-  Switch,
+  FilterToggle,
   Text,
   Tooltip,
   col,
@@ -209,11 +209,10 @@ export function AuditLog({
             onBlur={() => target.trim() !== (filters.target ?? "") && set({ target: target.trim() || undefined, event: undefined })}
           />
         </div>
-        <Switch
-          size="sm"
-          label={t("kaeso.audit.byAgents", "Done by agents")}
-          checked={!!filters.by_agents}
-          onCheckedChange={(on) => set({ by_agents: on || undefined, event: undefined })}
+        <FilterToggle
+          label={t("kaeso.audit.byAgents", "Agents")}
+          pressed={!!filters.by_agents}
+          onPressedChange={(on) => set({ by_agents: on || undefined, event: undefined })}
         />
         <DateRangePicker
           size="sm"

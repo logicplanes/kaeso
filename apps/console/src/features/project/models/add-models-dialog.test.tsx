@@ -178,7 +178,7 @@ describe("AddModelsDialog", () => {
     const { user, dialog } = await open();
 
     await within(dialog).findByText("gpt-5-mini");
-    await user.click(within(dialog).getByRole("switch"));
+    await user.click(within(dialog).getByRole("button", { name: "Include deprecated" }));
     expect(await within(dialog).findByText("Deprecated")).toBeInTheDocument();
     await user.type(within(dialog).getByRole("searchbox", { name: "Search models" }), "mini");
     await waitFor(() => expect(searches()).toContainEqual({ q: "mini", provider: "openai", include_deprecated: "true", limit: "50" }));

@@ -94,7 +94,7 @@ export function buttonClasses({
   fullWidth?: boolean | undefined;
 } = {}) {
   return cn(
-    "relative inline-flex max-w-full shrink-0 select-none items-center justify-center whitespace-nowrap no-underline",
+    "relative inline-flex max-w-full shrink-0 select-none ghost-start:max-w-none ghost-end:max-w-none items-center justify-center whitespace-nowrap no-underline",
     "cursor-pointer transition-control focus-ring tap-target disabled:cursor-not-allowed",
     KAESO_BUTTON_VARIANTS.size[size].classes,
     KAESO_BUTTON_VARIANTS.shape[shape].classes,

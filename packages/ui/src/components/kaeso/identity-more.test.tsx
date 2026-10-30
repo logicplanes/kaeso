@@ -47,6 +47,13 @@ describe("identity parts", () => {
     expect(screen.getByRole("img", { name: "Anthropic" })).toBeInTheDocument();
   });
 
+  it("stacked, puts the whole model id on its own line under the name", () => {
+    render(<ModelLabel provider="openai" model="gpt-daybreak-blue-latest" name="Daybreak Blue" mark={false} stacked />);
+    const id = screen.getByText("gpt-daybreak-blue-latest");
+    expect(id.parentElement).toBe(screen.getByText("Daybreak Blue").parentElement);
+    expect(id.parentElement).toHaveClass("flex-col");
+  });
+
   it("names a model's capabilities", () => {
     render(<ModelLabel provider="anthropic" model="claude-sonnet-4-5" name="Claude Sonnet 4.5" capabilities={["tools", "vision", "structuredOutput"]} />);
     const img = screen.getByRole("img", { name: "Capabilities: Tool calling, Image input, Structured output" });

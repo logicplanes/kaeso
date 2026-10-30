@@ -108,7 +108,7 @@ Das **Audit-Log** der Organisation unter **Organisationseinstellungen** verzeich
 
 Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Aktion und ihr Ziel. Filtern Sie nach Akteur, Aktion, Ziel-ID und Tagen. Wählen Sie einen Eintrag, um IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher zu sehen.
 
-Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit einem kleinen Bot-Abzeichen unten rechts. Fahren Sie darüber, um Mitglied, Agent und Modellfamilie zu sehen. **Von Agenten ausgeführt** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
+Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit einem kleinen Bot-Abzeichen unten rechts. Fahren Sie darüber, um Mitglied, Agent und Modellfamilie zu sehen. der Filter **Agenten** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
 
 | Aktion | Recht |
 | --- | --- |

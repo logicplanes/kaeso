@@ -300,7 +300,7 @@
   "kaeso.agents.topic.security": "安全",
   "kaeso.agents.topic.settings": "设置",
   "kaeso.agents.topic.usage": "用量和费用",
-  "kaeso.audit.byAgents": "由智能体执行",
+  "kaeso.audit.byAgents": "智能体",
   "kaeso.audit.deletedAgent": "已删除的智能体",
   "kaeso.audit.viaAgent": "{name} · 通过 {agent}（{model}）"
 }

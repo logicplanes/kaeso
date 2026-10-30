@@ -85,7 +85,7 @@ Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**.
 
 ## Audit-Log lesen
 
-Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und **Von Agenten ausgeführt** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)).
+Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und der Filter **Agenten** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)).
 
 ## Nächste Schritte
 

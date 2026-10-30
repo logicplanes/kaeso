@@ -9,7 +9,8 @@ export const KAESO_TABS_VARIANTS = {
   variant: {
     underline: {
       classes: "",
-      description: "Underline tabs for detail pages: 40px, labels 12px in like every box, a 2px ink indicator under the label that slides",
+      description:
+        "Underline tabs for detail pages: 40px, the first label on the content edge like the heading above, 24px apart, a 2px ink indicator under the label that slides",
     },
     pill: { classes: "", description: "Header tabs: separate 32px pills, the active one filled; the first pill's edge on the gutter" },
   },
@@ -84,14 +85,14 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ class
       ref={refs}
       className={cn(
         "relative flex min-w-0 items-center overflow-x-auto scroll-px-16 scrollbar-none scroll-fade-x",
-        variant === "underline" ? "hairline-b-strong" : "gap-4",
+        variant === "underline" ? "gap-24 hairline-b-strong" : "gap-4",
         className,
       )}
       {...props}
     >
       {children}
       {variant === "underline" && (
-        <BaseTabs.Indicator className="absolute bottom-0 left-0 flex h-2 w-(--active-tab-width) translate-x-(--active-tab-left) px-12 indicator-motion">
+        <BaseTabs.Indicator className="absolute bottom-0 left-0 flex h-2 w-(--active-tab-width) translate-x-(--active-tab-left) indicator-motion">
           <span className="h-2 flex-1 rounded-pill bg-ink forced-line" />
         </BaseTabs.Indicator>
       )}
@@ -127,7 +128,7 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>(function TabsTab({ value, ch
       )}
     >
       {variant === "underline" ? (
-        <span className="inline-flex h-28 items-center gap-6 rounded-pill px-12 transition-control focus-ring-inset group-hover/tab:bg-fill-1 group-active/tab:bg-fill-2 group-disabled/tab:bg-transparent group-focus-visible/tab:outline-focus group-focus-visible/tab:outline-solid">
+        <span className="inline-flex h-28 items-center gap-6 rounded-item outline-offset-4 group-focus-visible/tab:outline-2 group-focus-visible/tab:outline-focus group-focus-visible/tab:outline-solid">
           {icon && <Icon icon={icon} size="sm" />}
           {children}
           {count !== undefined && <span className="text-body font-regular text-fg-secondary tabular">{count}</span>}

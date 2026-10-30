@@ -108,9 +108,8 @@ function ProviderTiles({
           {sections.map((section, si) => (
             <div key={section.id} {...(section.label ? { role: "group", "aria-label": section.label } : {})} className="flex flex-col gap-8">
               {section.label && (
-                <div aria-hidden className="flex items-center justify-between text-caption font-medium text-fg-secondary">
-                  <span>{section.label}</span>
-                  <span className="font-regular text-fg-tertiary tabular">{section.items.length}</span>
+                <div aria-hidden className="text-caption font-medium text-fg-secondary">
+                  {section.label}
                 </div>
               )}
               <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
@@ -169,8 +168,8 @@ export function useProviderGroups(providers: ProviderPickerOption[], allLabel?: 
     const groups: CommandListGroup[] = [];
     if (allLabel) groups.push({ id: "all", items: [{ value: ALL, label: allLabel }] });
     if (connected.length && rest.length) {
-      groups.push({ id: "connected", label: t("providerPicker.connected", "Connected"), count: connected.length, items: connected.map(item) });
-      groups.push({ id: "other", label: t("providerPicker.other", "Other providers"), count: rest.length, items: rest.map(item) });
+      groups.push({ id: "connected", label: t("providerPicker.connected", "Connected"), items: connected.map(item) });
+      groups.push({ id: "other", label: t("providerPicker.other", "Other providers"), items: rest.map(item) });
     } else groups.push({ id: "providers", items: [...connected, ...rest].map(item) });
     return groups;
   }, [providers, allLabel, t, locale]);

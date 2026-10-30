@@ -15,7 +15,7 @@ import {
   ProviderBadge,
   ProviderPicker,
   Select,
-  Switch,
+  FilterToggle,
   Text,
   Toolbar,
   Tooltip,
@@ -189,11 +189,10 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
         options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
       />
-      <Switch
-        size="sm"
+      <FilterToggle
         label={t("models.onlyOverridden", "Only overridden")}
-        checked={!!search.overridden}
-        onCheckedChange={(v) => setSearch({ overridden: v || undefined })}
+        pressed={!!search.overridden}
+        onPressedChange={(v) => setSearch({ overridden: v || undefined })}
       />
     </>
   );

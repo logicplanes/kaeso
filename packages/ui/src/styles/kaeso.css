@@ -1492,28 +1492,19 @@
   }
 }
 
+/* A dialog's layers and steps crossfade in place: content that slides sideways inside a popup that is itself
+   fading and scaling reads as two motions fighting. */
 @keyframes k-layer-in {
   from {
     opacity: 0;
-    transform: translateX(16px);
   }
 }
 @utility animate-layer-in {
   animation: k-layer-in var(--k-duration-dialog) var(--k-ease-overlay);
 }
-@keyframes k-step-in {
-  from {
-    opacity: 0;
-    transform: translateX(var(--k-step-from));
-  }
-}
 @utility step-motion {
-  --k-step-from: 8px;
-  &[data-enter="back"] {
-    --k-step-from: -8px;
-  }
   &[data-enter] {
-    animation: k-step-in var(--k-duration-dialog) var(--k-ease-overlay);
+    animation: k-layer-in var(--k-duration-dialog) var(--k-ease-overlay);
   }
 }
 [data-resizing] {
