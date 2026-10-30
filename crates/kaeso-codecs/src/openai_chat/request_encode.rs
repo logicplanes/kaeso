@@ -140,6 +140,9 @@ pub(crate) fn encode_generate(
     for message in &req.messages {
         encode_message(message, &mut names, &mut w.messages)?;
     }
+    if rules.partial_prefill && !own && ends_with_prefill(req) {
+        mark_partial(&mut w.messages)?;
+    }
 
     let (extra, verbatim) = super::convert::own_keys(&req.extras);
     let mut extra: IndexMap<String, RawJson> = extra
@@ -216,6 +219,34 @@ fn apply_profile(
         rename_null(&mut out.verbatim, "user", None);
         rename_null(&mut out.verbatim, "safety_identifier", None);
     }
+    Ok(())
+}
+
+fn ends_with_prefill(req: &GenerateRequest) -> bool {
+    req.messages.last().is_some_and(|last| {
+        last.role == Role::Assistant && !last.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))
+    })
+}
+
+fn mark_partial(messages: &mut [RawJson]) -> Result<(), KppError> {
+    let Some(last) = messages.last_mut() else {
+        return Ok(());
+    };
+    let mut message: IndexMap<String, &serde_json::value::RawValue> =
+        serde_json::from_str(last.get()).map_err(|e| {
+            KppError::provider(format!(
+                "Kaeso could not read the message it built ({e}). This is a bug in Kaeso; please report it."
+            ))
+        })?;
+    let partial = RawJson::from_string("true".to_owned()).map_err(|e| {
+        KppError::provider(format!(
+            "Kaeso could not build `partial` ({e}). This is a bug in Kaeso; please report it."
+        ))
+    })?;
+    let partial = partial.into_inner();
+    message.insert("partial".to_owned(), &partial);
+    let marked = to_raw(&message)?;
+    *last = marked;
     Ok(())
 }
 

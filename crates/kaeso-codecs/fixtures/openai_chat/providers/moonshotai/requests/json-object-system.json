@@ -1,0 +1,20 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer with a JSON object that has one key, colour."
+    },
+    {
+      "role": "user",
+      "content": "Name a colour."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "response_format": {
+    "type": "json_object"
+  },
+  "max_completion_tokens": 30
+}

@@ -1,0 +1,62 @@
+{
+  "id": "chatcmpl-6ae4cc9c2c59c3916352113b",
+  "object": "chat.completion",
+  "created": 1793379492,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Blue",
+        "reasoning_content": ""
+      },
+      "finish_reason": "stop",
+      "logprobs": {
+        "content": [
+          {
+            "token": "Blue",
+            "logprob": -0.2226128876209259,
+            "bytes": [
+              66,
+              108,
+              117,
+              101
+            ],
+            "top_logprobs": [
+              {
+                "token": "Blue",
+                "logprob": -0.2226128876209259,
+                "bytes": [
+                  66,
+                  108,
+                  117,
+                  101
+                ]
+              },
+              {
+                "token": "Azure",
+                "logprob": -1.8894715309143066,
+                "bytes": [
+                  65,
+                  122,
+                  117,
+                  114,
+                  101
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 16,
+    "completion_tokens": 4,
+    "total_tokens": 20,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

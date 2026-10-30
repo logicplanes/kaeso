@@ -1,0 +1,13 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 50, separated by commas."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "max_completion_tokens": 10
+}

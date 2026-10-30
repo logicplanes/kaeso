@@ -1123,3 +1123,30 @@ fn legacy_function_conversations_round_trip_and_stay_in_their_dialect() {
         err.message
     );
 }
+
+#[test]
+fn moonshot_error_types_choose_the_kind_where_the_status_alone_would_mislead() {
+    let cases = [
+        ("recorded-invalid-api-key", ErrorKind::Authentication),
+        ("recorded-unknown-model", ErrorKind::NotFound),
+        ("recorded-temperature", ErrorKind::InvalidRequest),
+        ("recorded-rate-limited", ErrorKind::RateLimited),
+        ("exceeded-current-quota", ErrorKind::Billing),
+        ("engine-overloaded", ErrorKind::Overloaded),
+    ];
+    let bodies = fixtures(D, "errors", "json");
+    for (name, kind) in cases {
+        let full = format!("providers/moonshotai/{name}");
+        let body = &bodies.iter().find(|(n, _)| *n == full).unwrap().1;
+        let status = u16::try_from(
+            sidecar(D, "errors", &full, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body);
+        assert_eq!(err.kind, kind, "{name}");
+        let original: Value = serde_json::from_slice(body).unwrap();
+        assert_eq!(err.message, original["error"]["message"], "{name}");
+    }
+}

@@ -1561,6 +1561,307 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/moonshotai/developer-role": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/image": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/invalid-api-key": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/json-object-system": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/logit-bias-refused": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/logprobs": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/max-completion-tokens-honoured": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/max-tokens-honoured": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/parallel-tool-calls-false": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/partial": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/prefill-without-partial": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/rate-limited": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/reasoning": {
+    "body": {
+      "input": [
+        {
+          "content": "Is 1001 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 800,
+      "model": "kimi-k2.6",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/reasoning-effort-low": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 1001 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 800,
+      "model": "kimi-k3",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/reasoning-effort-none": {
+    "body": {
+      "input": [
+        {
+          "content": "Is 1001 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "kimi-k3",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/reasoning-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 7 times 8? Answer with the number only.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "kimi-k2.6",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/reasoning-tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "kimi-k2.6",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/reasoning-tools-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "kimi-k2.6",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/stream-thinking-off": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/system-name-stop": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/moonshotai/temperature": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
+  "providers/moonshotai/thinking-disabled": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/tool-choice-required-thinking": {
+    "body": {
+      "input": [
+        {
+          "content": "Tell me a joke.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "kimi-k2.6",
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/tool-result": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"city\": \"Paris\"}",
+          "call_id": "get_weather_0_2fdaa899",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "get_weather_0_2fdaa899",
+          "output": "18 °C and sunny",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "kimi-k2.6",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/moonshotai/top-p": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/moonshotai/unknown-model": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
   "providers/ollama-cloud/image": {
     "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

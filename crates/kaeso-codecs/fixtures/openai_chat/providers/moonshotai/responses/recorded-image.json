@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4cd14c68f6a6d58fddc5f",
+  "object": "chat.completion",
+  "created": 1793379608,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Black",
+        "reasoning_content": ""
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 4,
+    "total_tokens": 27,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

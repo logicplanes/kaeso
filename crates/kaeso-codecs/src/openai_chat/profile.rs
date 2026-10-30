@@ -27,6 +27,7 @@ pub struct RequestProfile {
     pub message_bookkeeping: bool,
     pub greedy_top_p: bool,
     pub stop_list: bool,
+    pub partial_prefill: bool,
     pub tool_schema_root: ToolSchemaRoot,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
@@ -72,6 +73,7 @@ impl RequestProfile {
         message_bookkeeping: false,
         greedy_top_p: false,
         stop_list: false,
+        partial_prefill: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
         refused_fields: &[],
         refused_message_fields: &[],
@@ -153,6 +155,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn stop_list(mut self) -> Self {
         self.request.stop_list = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn partial_prefill(mut self) -> Self {
+        self.request.partial_prefill = true;
         self
     }
 

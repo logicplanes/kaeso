@@ -18,6 +18,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Groq").reasoning_fields(&["reasoning"]),
     ),
     (
+        "moonshotai",
+        ChatProfile::compatible("Moonshot AI").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "ollama-cloud",
         ChatProfile::compatible("Ollama Cloud").reasoning_fields(&["reasoning"]),
     ),
@@ -174,6 +178,13 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ),
         ("groq", "recorded-plain-developer-string", "reasoning"),
         ("groq", "recorded-reasoning-format-parsed", "reasoning"),
+        ("moonshotai", "recorded-reasoning", "reasoning_content"),
+        (
+            "moonshotai",
+            "recorded-reasoning-effort-low",
+            "reasoning_content",
+        ),
+        ("moonshotai", "recorded-tool-result", "reasoning_content"),
         ("ollama-cloud", "recorded-reasoning-effort", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-object", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-sent-back", "reasoning"),
@@ -290,6 +301,66 @@ fn ollama_cloud_reasoning_comes_before_its_tool_call_in_replies_and_streams() {
 }
 
 #[test]
+fn moonshot_reasoning_comes_before_its_tool_call_and_thinking_off_opens_no_reasoning() {
+    let resp = reply(
+        "moonshotai",
+        &recorded(
+            "responses",
+            "json",
+            "moonshotai",
+            "recorded-reasoning-tools",
+        ),
+    );
+    assert!(
+        matches!(resp.blocks[0], Block::Reasoning(_)),
+        "{:?}",
+        resp.blocks
+    );
+    assert!(
+        resp.blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(c) if c.name == "get_weather")),
+        "{:?}",
+        resp.blocks
+    );
+    let bytes = recorded(
+        "streams",
+        "sse",
+        "moonshotai",
+        "recorded-reasoning-tools-stream",
+    );
+    let got = shape(&stream("moonshotai", &bytes));
+    assert_eq!(got.reasoning, streamed_field(&bytes, "reasoning_content"));
+    assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
+    assert!(
+        got.order.iter().any(|o| o.starts_with("tool call")),
+        "{:?}",
+        got.order
+    );
+
+    for name in ["recorded-thinking-disabled", "recorded-image"] {
+        let resp = reply(
+            "moonshotai",
+            &recorded("responses", "json", "moonshotai", name),
+        );
+        assert!(
+            !resp.blocks.iter().any(|b| matches!(b, Block::Reasoning(_))),
+            "{name}: {:?}",
+            resp.blocks
+        );
+    }
+    let bytes = recorded(
+        "streams",
+        "sse",
+        "moonshotai",
+        "recorded-stream-thinking-off",
+    );
+    let got = shape(&stream("moonshotai", &bytes));
+    assert!(got.reasoning.is_empty(), "{:?}", got.order);
+    assert_eq!(got.text, streamed_field(&bytes, "content"));
+}
+
+#[test]
 fn without_the_setting_and_with_an_empty_field_the_reasoning_stays_as_sent() {
     let body = recorded(
         "responses",
@@ -342,6 +413,12 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "groq",
             "recorded-stream-reasoning-parsed",
             "reasoning",
+            answered,
+        ),
+        (
+            "moonshotai",
+            "recorded-reasoning-stream",
+            "reasoning_content",
             answered,
         ),
         (

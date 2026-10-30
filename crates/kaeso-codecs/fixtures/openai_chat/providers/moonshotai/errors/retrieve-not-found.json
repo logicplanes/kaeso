@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "The requested resource was not found",
+    "type": "resource_not_found_error"
+  }
+}

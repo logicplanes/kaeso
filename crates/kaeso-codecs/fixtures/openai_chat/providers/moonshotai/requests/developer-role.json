@@ -1,0 +1,17 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Answer in French."
+    },
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "max_completion_tokens": 20
+}

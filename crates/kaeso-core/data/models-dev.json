@@ -3461,6 +3461,283 @@
   "name": "Mistral",
   "npm": "@ai-sdk/mistral"
  },
+ "moonshotai": {
+  "api": "https://api.moonshot.ai/v1",
+  "doc": "https://platform.moonshot.ai/docs/api/chat",
+  "env": [
+   "MOONSHOT_API_KEY"
+  ],
+  "id": "moonshotai",
+  "models": {
+   "kimi-k2.6": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k2.6",
+    "cost": {
+     "cache_read": 0.16,
+     "input": 0.95,
+     "output": 4
+    },
+    "description": "Multimodal Kimi workhorse for agent loops, coding tasks, and visual context",
+    "family": "kimi-k2",
+    "id": "kimi-k2.6",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-01",
+    "last_updated": "2026-04-20",
+    "limit": {
+     "context": 262144,
+     "output": 262144
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K2.6",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     }
+    ],
+    "release_date": "2026-04-20",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   },
+   "kimi-k2.7-code": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k2.7-code",
+    "cost": {
+     "cache_read": 0.19,
+     "input": 0.95,
+     "output": 4
+    },
+    "description": "Coding-focused Kimi model, stronger on long-horizon repo work with less overthinking",
+    "family": "kimi-k2",
+    "id": "kimi-k2.7-code",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-01",
+    "last_updated": "2026-06-12",
+    "limit": {
+     "context": 262144,
+     "output": 262144
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K2.7 Code",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [],
+    "release_date": "2026-06-12",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   },
+   "kimi-k2.7-code-highspeed": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k2.7-code",
+    "cost": {
+     "cache_read": 0.38,
+     "input": 1.9,
+     "output": 8
+    },
+    "description": "Coding-focused Kimi model, stronger on long-horizon repo work with less overthinking",
+    "family": "kimi-k2",
+    "id": "kimi-k2.7-code-highspeed",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-01",
+    "last_updated": "2026-06-12",
+    "limit": {
+     "context": 262144,
+     "output": 262144
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K2.7 Code HighSpeed",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [],
+    "release_date": "2026-06-12",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   },
+   "kimi-k3": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k3",
+    "cost": {
+     "cache_read": 0.3,
+     "cache_write": 3,
+     "input": 3,
+     "output": 15
+    },
+    "description": "Multimodal Kimi model with 1M context and toggleable max-effort thinking for long-horizon agent work",
+    "family": "kimi-k3",
+    "id": "kimi-k3",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "last_updated": "2026-07-16",
+    "limit": {
+     "context": 1048576,
+     "output": 1048576
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K3",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-07-16",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   },
+   "kimi-k3.1-pro": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k3.1-pro",
+    "cost": {
+     "cache_read": 0.2,
+     "cache_write": 2,
+     "input": 2,
+     "output": 10
+    },
+    "description": "Multimodal Kimi model with 1M context and always-on reasoning for coding, 3D creation, financial research, and agentic work",
+    "family": "kimi-k3",
+    "id": "kimi-k3.1-pro",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "last_updated": "2026-10-23",
+    "limit": {
+     "context": 1048576,
+     "output": 1048576
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K3.1 Pro",
+    "open_weights": false,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-10-23",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   },
+   "kimi-k3.1-pro-highspeed": {
+    "attachment": true,
+    "canonical_model_id": "moonshotai/kimi-k3.1-pro",
+    "cost": {
+     "cache_read": 0.2,
+     "cache_write": 4,
+     "input": 4,
+     "output": 20
+    },
+    "description": "Multimodal Kimi model with 1M context and always-on reasoning for coding, 3D creation, financial research, and agentic work",
+    "family": "kimi-k3",
+    "id": "kimi-k3.1-pro-highspeed",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "last_updated": "2026-10-23",
+    "limit": {
+     "context": 1048576,
+     "output": 1048576
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image",
+      "video"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Kimi K3.1 Pro Highspeed",
+    "open_weights": false,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "low",
+       "high",
+       "max"
+      ]
+     }
+    ],
+    "release_date": "2026-10-23",
+    "structured_output": true,
+    "temperature": false,
+    "tool_call": true
+   }
+  },
+  "name": "Moonshot AI",
+  "npm": "@ai-sdk/openai-compatible"
+ },
  "ollama-cloud": {
   "api": "https://ollama.com/v1",
   "doc": "https://docs.ollama.com/cloud",
@@ -17632,8 +17909,8 @@
     "attachment": true,
     "cost": {
      "cache_read": 0.003,
-     "input": 0.1,
-     "output": 1
+     "input": 0.05,
+     "output": 0.5
     },
     "description": "Multimodal reasoning model for visual analysis, planning, and tool use",
     "id": "particle-ai/particle-1",
@@ -20587,9 +20864,9 @@
     "attachment": false,
     "canonical_model_id": "tencent/hy3",
     "cost": {
-     "cache_read": 0.033,
-     "input": 0.132,
-     "output": 0.528
+     "cache_read": 0.020625,
+     "input": 0.0825,
+     "output": 0.33
     },
     "description": "Tencent Hy reasoning model for coding, instruction following, and agent tasks",
     "family": "Hy",
@@ -20672,9 +20949,9 @@
     "attachment": false,
     "canonical_model_id": "tencent/hy4-preview",
     "cost": {
-     "cache_read": 0.042,
-     "input": 0.834,
-     "output": 2.501
+     "cache_read": 0.0378,
+     "input": 0.7506,
+     "output": 2.2509
     },
     "description": "Tencent Hy reasoning model for coding, instruction following, and agent tasks",
     "family": "Hy",
@@ -22798,8 +23075,8 @@
    "~deepseek/deepseek-v4-flash-latest": {
     "attachment": false,
     "cost": {
-     "cache_read": 0.0442,
-     "input": 0.0452,
+     "cache_read": 0.0321,
+     "input": 0.0331,
      "output": 0.3
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
@@ -22954,9 +23231,9 @@
    "~moonshotai/kimi-latest": {
     "attachment": true,
     "cost": {
-     "cache_read": 0.16,
-     "input": 0.1615,
-     "output": 9.75
+     "cache_read": 0.15,
+     "input": 0.1529,
+     "output": 10.5572
     },
     "description": "Kimi multimodal agent model for visual understanding, coding, and planning",
     "family": "kimi",

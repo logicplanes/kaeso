@@ -11,7 +11,7 @@ pub fn hashes_equal(a: &[u8], b: &[u8]) -> bool {
 
 const TOKEN_PREFIXES: &[&str] = &[
     "sk-", "sk_", "org-", "proj_", "proj-", "key-", "xai-", "gsk_", "nvapi-", "AIza", "tgp_v1_",
-    "vck_", "cohere_",
+    "vck_", "cohere_", "ak-",
 ];
 
 const ACCOUNT_LABELS: &[&str] = &[
@@ -168,6 +168,12 @@ mod tests {
         assert_eq!(
             redact_tokens("Incorrect API key provided: cohere_0AbCdEf123456."),
             "Incorrect API key provided: cohere_[redacted]."
+        );
+        assert_eq!(
+            redact_tokens(
+                "Your account org-0a1b2c3d4e5f6a7b<ak-0a1b2c3d4e5f6a7b8c> request reached organization max RPM: 3"
+            ),
+            "Your account org-[redacted]<ak-[redacted]> request reached organization max RPM: 3"
         );
     }
 

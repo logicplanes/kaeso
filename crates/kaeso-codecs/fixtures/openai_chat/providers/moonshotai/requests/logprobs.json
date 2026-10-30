@@ -1,0 +1,15 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name a colour. Answer with one word."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "logprobs": true,
+  "top_logprobs": 2,
+  "max_completion_tokens": 10
+}

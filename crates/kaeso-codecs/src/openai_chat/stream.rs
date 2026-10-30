@@ -12,7 +12,7 @@ use super::error::{decode_body, with_detail};
 use super::profile::ReplyReasoning;
 use super::response::{
     ChatPart, FORM_THINKING, REASONING_CONTENT, decode_finish, decode_usage, plain_text_part,
-    read_part, take_reasoning_field,
+    read_part, take_empty_reasoning_field, take_reasoning_field,
 };
 use super::wire::{ChunkChoice, ChunkWire, ToolCallChunk};
 use crate::codec::{EgressCtx, StreamDecoder};
@@ -661,10 +661,24 @@ impl ChatStreamDecoder {
             form.insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
             thoughts.push((thought, None));
         }
+        // Moonshot AI ends its thinking with an empty `reasoning_content` delta; inside an open
+        // reasoning block it is an empty piece of that block, not a chunk of its own.
+        let empty_piece = thoughts.is_empty()
+            && self.reasoning.is_some()
+            && take_empty_reasoning_field(self.reasoning_fields, &mut d_extra).is_some_and(
+                |field| {
+                    form.insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
+                    thoughts.push((String::new(), None));
+                    true
+                },
+            );
         for (key, value) in d_extra {
             fields.insert(format!("delta.{key}"), value);
         }
-        for (thought, rest) in thoughts.into_iter().filter(|(t, _)| !t.is_empty()) {
+        for (thought, rest) in thoughts
+            .into_iter()
+            .filter(|(t, _)| empty_piece || !t.is_empty())
+        {
             let index = match self.reasoning {
                 Some(index) => index,
                 None => {

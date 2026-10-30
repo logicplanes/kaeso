@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Invalid request: logit_bias is not supported yet",
+    "type": "invalid_request_error"
+  }
+}

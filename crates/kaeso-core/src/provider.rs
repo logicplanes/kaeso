@@ -503,6 +503,40 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("Ollama Cloud"),
         account: None,
     },
+    Provider {
+        id: "moonshotai",
+        name: "Moonshot AI",
+        key_page: KeyPage {
+            url: "https://platform.kimi.ai/console/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk-"),
+        default_base_url: "https://api.moonshot.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        chat: ChatProfile::compatible("Moonshot AI")
+            .system_role()
+            .partial_prefill()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "metadata",
+                "modalities",
+                "parallel_tool_calls",
+                "service_tier",
+                "store",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Moonshot AI"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -775,7 +809,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai"
         );
     }
 
@@ -978,6 +1012,74 @@ mod tests {
     }
 
     #[test]
+    fn moonshot_ai_gets_system_messages_and_a_prefill_marked_partial() {
+        let refused =
+            sent_with_profile("openai", "providers/moonshotai/requests/developer-role").unwrap();
+        assert_eq!(refused["messages"][0]["role"], "developer");
+        let sent = sent_with_profile("moonshotai", "providers/moonshotai/requests/developer-role")
+            .unwrap();
+        assert_eq!(sent["messages"][0]["role"], "system");
+
+        let mut g = kaeso_kpp::GenerateRequest::new("kimi-k2.6");
+        g.extras.origin = Some(kaeso_kpp::Origin::new(DialectId::AnthropicMessages));
+        g.messages = vec![
+            kaeso_kpp::Message::user("Name three colours as a numbered list."),
+            kaeso_kpp::Message::new(
+                kaeso_kpp::Role::Assistant,
+                vec![kaeso_kpp::Block::text("1. Red\n2.")],
+            ),
+        ];
+        let req = kaeso_kpp::Request::Generate(g);
+        let mut ctx = kaeso_codecs::EgressCtx::new(&req)
+            .with_chat_profile(provider("moonshotai").unwrap().chat);
+        let out =
+            kaeso_codecs::dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx).unwrap();
+        let sent: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        let recorded: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(format!(
+                "{}/../kaeso-codecs/fixtures/openai_chat/providers/moonshotai/requests/partial.json",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(sent["messages"][1], recorded["messages"][1]);
+    }
+
+    #[test]
+    fn moonshot_ai_refuses_the_fields_moonshot_ignores_and_keeps_the_rest() {
+        assert_eq!(
+            sent_with_profile(
+                "moonshotai",
+                "providers/moonshotai/requests/parallel-tool-calls-false"
+            )
+            .unwrap_err(),
+            "parallel_tool_calls"
+        );
+        assert_eq!(
+            sent_with_profile("moonshotai", "requests/identifiers-metadata-store").unwrap_err(),
+            "metadata"
+        );
+        for kept in [
+            "providers/moonshotai/requests/logprobs",
+            "providers/moonshotai/requests/system-name-stop",
+            "providers/moonshotai/requests/json-object-system",
+            "providers/moonshotai/requests/partial",
+            "providers/moonshotai/requests/thinking-disabled",
+        ] {
+            let sent = sent_with_profile("moonshotai", kept).unwrap();
+            assert!(sent.get("parallel_tool_calls").is_none(), "{kept}");
+        }
+        let sent = sent_with_profile(
+            "moonshotai",
+            "providers/moonshotai/requests/thinking-disabled",
+        )
+        .unwrap();
+        assert_eq!(sent["thinking"]["type"], "disabled");
+        assert_eq!(sent["max_completion_tokens"], 20);
+    }
+
+    #[test]
     fn only_mistral_reads_its_context_window_message_as_context_too_long() {
         let message =
             "Prompt contains 65673 tokens, too large for model with 32768 maximum context length";
@@ -1155,7 +1257,8 @@ mod tests {
                 "mistral",
                 "vercel",
                 "cohere",
-                "ollama-cloud"
+                "ollama-cloud",
+                "moonshotai"
             ]
         );
         assert_eq!(

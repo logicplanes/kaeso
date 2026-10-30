@@ -185,6 +185,22 @@
       "count_tokens": null,
       "embeddings": null,
       "account": null
+    },
+    {
+      "id": "moonshotai",
+      "name": "Moonshot AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://platform.kimi.ai/console/api-keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "sk-",
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null
     }
   ],
   "has_more": false,

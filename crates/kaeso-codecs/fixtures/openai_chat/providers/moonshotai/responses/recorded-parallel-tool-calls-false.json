@@ -1,0 +1,45 @@
+{
+  "id": "chatcmpl-6ae4cd2e22b979ecd05adc6c",
+  "object": "chat.completion",
+  "created": 1793379630,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "get_weather_0_f6e0e747",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          },
+          {
+            "index": 1,
+            "id": "get_weather_1_6cb64aba",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Rome\"}"
+            }
+          }
+        ],
+        "reasoning_content": ""
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 59,
+    "completion_tokens": 35,
+    "total_tokens": 94,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

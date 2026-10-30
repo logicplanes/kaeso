@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4cba7739a2b6d9ed3ffe0",
+  "object": "chat.completion",
+  "created": 1793379240,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "1001 is not a prime number because it can be factored as $7 \\times 11 \\times 13$.",
+        "reasoning_content": "The user is asking whether 1001 is a prime number, and wants the answer in one sentence.\n\n1001 is not a prime number. It can be factored as 7 × 11 × 13 = 1001.\n\nSo I need to answer in exactly one sentence. Let me formulate a concise sentence.\n\n\"No, 1001 is not a prime number because it equals 7 × 11 × 13.\" or \"1001 is not a prime number, as it can be factored into 7 × 11 × 13.\"\n\nLet me check: 7 × 11 = 77, 77 × 13 = 1001. Yes, that's correct.\n\nThe user asked for one sentence. I should make sure it's a single sentence.\n\n\"1001 is not a prime number because it can be factored as 7 × 11 × 13.\"\n\nThat works."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 212,
+    "total_tokens": 232,
+    "completion_tokens_details": {
+      "reasoning_tokens": 185
+    }
+  }
+}

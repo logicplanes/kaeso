@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4ccd1790ba935d13d1231",
+  "object": "chat.completion",
+  "created": 1793379537,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "1. Red\n2. Blue\n3. Green",
+        "reasoning_content": ""
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 27,
+    "completion_tokens": 14,
+    "total_tokens": 41,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

@@ -1,5 +1,6 @@
 use kaeso_kpp::{
-    DialectId, ErrorKind, GenerateRequest, KppError, Message, Origin, Request, StreamMode,
+    Block, DialectId, ErrorKind, GenerateRequest, KppError, Message, Origin, RawJson, Request,
+    Role, StreamMode,
 };
 use serde_json::{Value, json};
 
@@ -526,4 +527,51 @@ fn a_stop_list_profile_sends_a_chat_apps_single_stop_string_as_a_list() {
     )
     .unwrap();
     assert_eq!(listed["stop"], json!(["END"]));
+}
+
+#[test]
+fn a_partial_prefill_profile_marks_another_formats_prefill_and_nothing_else() {
+    let partial = ChatProfile::compatible("Example Cloud").partial_prefill();
+    let mut prefill = foreign(DialectId::AnthropicMessages);
+    prefill.messages.push(Message::new(
+        Role::Assistant,
+        vec![Block::text("1. Red\n2.")],
+    ));
+    let req = Request::Generate(prefill);
+    let sent = encode_with(&req, partial).unwrap();
+    assert_eq!(
+        sent["messages"][1],
+        json!({"role": "assistant", "content": "1. Red\n2.", "partial": true})
+    );
+    let plain = encode_with(&req, ChatProfile::compatible("Example Cloud")).unwrap();
+    assert!(plain["messages"][1].get("partial").is_none(), "{plain}");
+
+    let ends_with_user = encode_with(
+        &Request::Generate(foreign(DialectId::AnthropicMessages)),
+        partial,
+    )
+    .unwrap();
+    assert!(
+        ends_with_user["messages"][0].get("partial").is_none(),
+        "{ends_with_user}"
+    );
+
+    let mut calling = foreign(DialectId::OpenAiResponses);
+    calling.messages.push(Message::new(
+        Role::Assistant,
+        vec![Block::tool_call(
+            "call_1",
+            "get_weather",
+            RawJson::from_serialize(&json!({"city": "Paris"})).unwrap(),
+        )],
+    ));
+    let sent = encode_with(&Request::Generate(calling), partial).unwrap();
+    assert!(sent["messages"][1].get("partial").is_none(), "{sent}");
+
+    let own = chat(json!({"model": "m", "messages": [
+        {"role": "user", "content": "Name three colours."},
+        {"role": "assistant", "content": "1. Red"}
+    ]}));
+    let sent = encode_with(&own, partial).unwrap();
+    assert!(sent["messages"][1].get("partial").is_none(), "{sent}");
 }

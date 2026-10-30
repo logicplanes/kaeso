@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-6ae4cc2d81c3fb4bf2773d31",
+  "object": "chat.completion",
+  "created": 1793379373,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "get_weather_0_2fdaa899",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ],
+        "reasoning_content": "The user is asking for the weather in Paris. I have a function called `get_weather` that takes a city name as a parameter. I should call this function with \"Paris\" as the argument to get the current weather information."
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 56,
+    "completion_tokens": 67,
+    "total_tokens": 123,
+    "completion_tokens_details": {
+      "reasoning_tokens": 49
+    }
+  }
+}
