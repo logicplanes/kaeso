@@ -2,6 +2,12 @@
 
 Kaeso includes no code adapted from other projects. If code is ever adapted from an MIT- or Apache-licensed project, its attribution goes here. Every dependency's license is checked by `cargo deny` and `pnpm licenses:check` against the [license policy](https://docs.kaeso.app/development/contributing#add-a-dependency).
 
+## Trademarks
+
+All trademarks, logos and product names belong to their owners. Kaeso is not affiliated with, endorsed or sponsored by any provider, client or other company it names. Kaeso names them and shows their marks only to identify the service a key, model, request or set of install steps belongs to (nominative use).
+
+Some providers' terms don't permit their logos in an interface like Kaeso's without their consent: Anthropic's [trademark guidelines](https://www.anthropic.com/legal/trademark-guidelines), Cohere's [terms of use](https://cohere.com/terms-of-use) and Groq's [trademark policy](https://groq.com/trademark-policy). Kaeso shows their marks anyway, unchanged and only to identify the provider. An owner who wants its mark taken out can [open an issue](https://github.com/logicplanes/kaeso/issues); Kaeso then shows the provider's first letter instead, as it does for providers without a mark.
+
 ## Data
 
 - `crates/kaeso-core/data/models-dev.json`: a snapshot of [models.dev](https://models.dev) (`https://models.dev/api.json`), MIT licensed, © models.dev contributors, source at https://github.com/anomalyco/models.dev. Its provenance and fetch date are in [`crates/kaeso-core/data/README.md`](crates/kaeso-core/data/README.md).
@@ -26,7 +32,7 @@ The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` are t
 - Vercel: the black and white Vercel Symbol from the [Vercel brand assets](https://vercel.com/geist/brands), black on light and white on dark, as the brand page asks.
 - Cohere: the black (`#17171C`) and white symbols from the press kit on Cohere's [newsroom](https://cohere.com/newsroom), black on light and white on dark.
 
-Groq is a trademark of Groq LLC and/or its affiliates. Kaeso is not affiliated with or endorsed by any of these providers.
+Groq is a trademark of Groq LLC and/or its affiliates. See [Trademarks](#trademarks) for the providers whose terms restrict the use of their logos.
 
 ## Client marks
 
