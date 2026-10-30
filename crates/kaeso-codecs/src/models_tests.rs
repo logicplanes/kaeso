@@ -1144,3 +1144,64 @@ fn a_moonshot_listing_keeps_its_model_details_and_refuses_a_wrong_key() {
     assert_eq!(e.kind, ErrorKind::Authentication);
     assert_eq!(e.message, "Invalid Authentication");
 }
+
+#[test]
+fn an_alibaba_listing_decodes_with_its_paging_ids_and_refuses_a_wrong_key() {
+    let body = fixture("openai_chat", "providers/alibaba/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert!(!l.has_more);
+    assert_eq!(l.models.len(), 102);
+    assert!(
+        l.models
+            .iter()
+            .all(|m| m.owned_by.as_deref() == Some("system"))
+    );
+    for id in [
+        "qwen3.7-flash",
+        "qwen3-vl-plus",
+        "text-embedding-v4",
+        "kimi-k3",
+    ] {
+        assert!(l.models.iter().any(|m| m.id == id), "{id}");
+    }
+    assert_json_eq(
+        "providers/alibaba/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/alibaba/retrieve-recorded"),
+    );
+    assert_eq!(one.id, "qwen3.7-flash");
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/alibaba/retrieve-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    assert!(
+        e.message.contains("kaeso-example-no-such-model"),
+        "{}",
+        e.message
+    );
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/alibaba/list-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+}

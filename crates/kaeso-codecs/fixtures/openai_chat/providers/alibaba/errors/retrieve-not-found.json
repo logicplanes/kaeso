@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The model 'kaeso-example-no-such-model' does not exist",
+    "type": "invalid_request_error",
+    "param": "model",
+    "code": "model_not_found"
+  },
+  "request_id": "7bc04a3d-d488-9397-ae87-661002442d67"
+}

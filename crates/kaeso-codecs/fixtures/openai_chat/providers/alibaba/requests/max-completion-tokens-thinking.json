@@ -1,0 +1,11 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "How many primes are there between 100 and 200? Answer with the number."
+    }
+  ],
+  "max_completion_tokens": 300,
+  "enable_thinking": true
+}

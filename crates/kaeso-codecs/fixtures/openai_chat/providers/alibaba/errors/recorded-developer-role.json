@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "developer is not one of ['system', 'assistant', 'user', 'tool', 'function']",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-a8579d12-cc34-953d-bfac-9b770143a529",
+  "request_id": "a8579d12-cc34-953d-bfac-9b770143a529"
+}

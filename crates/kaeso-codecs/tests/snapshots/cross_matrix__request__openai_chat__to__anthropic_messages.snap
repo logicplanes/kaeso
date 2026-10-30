@@ -583,6 +583,318 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/alibaba/allowed-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/assistant-prefill": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/audio-fields": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/alibaba/basic": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/developer-role": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/embeddings-model": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "text-embedding-v4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/enable-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/free-tier-exhausted": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-plus"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/alibaba/image": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/image-too-small": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/invalid-api-key": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen3.7-flash"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/logit-bias-field": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/alibaba/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/alibaba/max-completion-tokens-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/max-tokens-beyond-reasoning": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/output-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/prediction-field": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "providers/alibaba/reasoning-effort": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-effort-alone": {
+    "body": {
+      "max_tokens": 2000,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Answer with the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwen-flash",
+      "output_config": {
+        "effort": "high"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/reasoning-effort-max": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-sent-back": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/sampling": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/store-metadata-fields": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/alibaba/stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/stream-only-model": {
+    "body": {
+      "max_tokens": 300,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is 17 times 23? Answer with the number.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "qwq-plus-2025-03-05"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/structured-output": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-kimi": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-over-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-zero": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-only-model-off": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tool-result": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-named": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-required": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/unknown-model": {
+    "body": {
+      "max_tokens": 10,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-example-no-such-model"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/alibaba/user-hints": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "max_tokens": 4096,

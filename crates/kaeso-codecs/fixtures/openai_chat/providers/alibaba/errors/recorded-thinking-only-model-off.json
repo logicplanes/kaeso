@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: The value of the enable_thinking parameter is restricted to True.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-a1b1293c-0ea4-9fdb-86a1-70b4c90cc417",
+  "request_id": "a1b1293c-0ea4-9fdb-86a1-70b4c90cc417"
+}

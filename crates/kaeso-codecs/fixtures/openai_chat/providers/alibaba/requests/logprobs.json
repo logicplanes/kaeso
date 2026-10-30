@@ -1,0 +1,13 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 40, separated by spaces."
+    }
+  ],
+  "max_completion_tokens": 3,
+  "logprobs": true,
+  "top_logprobs": 2,
+  "enable_thinking": false
+}

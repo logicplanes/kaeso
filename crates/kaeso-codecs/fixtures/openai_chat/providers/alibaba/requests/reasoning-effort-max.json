@@ -1,0 +1,12 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ],
+  "max_completion_tokens": 300,
+  "reasoning_effort": "max",
+  "enable_thinking": true
+}

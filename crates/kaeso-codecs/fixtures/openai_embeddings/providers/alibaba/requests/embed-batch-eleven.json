@@ -1,0 +1,16 @@
+{
+  "model": "text-embedding-v4",
+  "input": [
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven"
+  ]
+}

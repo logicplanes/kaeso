@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: Value error, dimension for embedding is invalid, its value should be in [64, 128, 256, 512, 768, 1024]: parameters.dimension",
+    "type": "InvalidParameter",
+    "param": null,
+    "code": "InvalidParameter"
+  },
+  "id": "bd75ad71-818f-9338-88ca-f754bd804105",
+  "request_id": "bd75ad71-818f-9338-88ca-f754bd804105"
+}

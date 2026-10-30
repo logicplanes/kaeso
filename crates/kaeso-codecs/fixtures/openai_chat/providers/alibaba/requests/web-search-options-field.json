@@ -1,0 +1,13 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the newest Qwen model? One sentence."
+    }
+  ],
+  "max_completion_tokens": 60,
+  "web_search_options": {},
+  "verbosity": "low",
+  "enable_thinking": false
+}

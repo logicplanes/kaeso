@@ -1,0 +1,104 @@
+{
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "logprobs": {
+        "content": [
+          {
+            "bytes": [
+              49
+            ],
+            "logprob": -6.071869283914566E-4,
+            "token": "1",
+            "top_logprobs": [
+              {
+                "bytes": [
+                  49
+                ],
+                "logprob": -6.071869283914566E-4,
+                "token": "1"
+              },
+              {
+                "bytes": [
+                  60,
+                  116,
+                  104,
+                  105,
+                  110,
+                  107,
+                  62
+                ],
+                "logprob": -8.25060749053955,
+                "token": "<think>"
+              }
+            ]
+          },
+          {
+            "bytes": [
+              32
+            ],
+            "logprob": -7.533743337262422E-5,
+            "token": " ",
+            "top_logprobs": [
+              {
+                "bytes": [
+                  32
+                ],
+                "logprob": -7.533743337262422E-5,
+                "token": " "
+              },
+              {
+                "bytes": [
+                  50
+                ],
+                "logprob": -10.375075340270996,
+                "token": "2"
+              }
+            ]
+          },
+          {
+            "bytes": [
+              50
+            ],
+            "logprob": -8.821448318485636E-6,
+            "token": "2",
+            "top_logprobs": [
+              {
+                "bytes": [
+                  50
+                ],
+                "logprob": -8.821448318485636E-6,
+                "token": "2"
+              },
+              {
+                "bytes": [
+                  51
+                ],
+                "logprob": -12.250008583068848,
+                "token": "3"
+              }
+            ]
+          }
+        ]
+      },
+      "message": {
+        "content": "1 2",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379311,
+  "id": "chatcmpl-3101c9ee-0467-95ba-9fdb-3e2864f9634b",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 3,
+    "prompt_tokens": 25,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 25
+    },
+    "total_tokens": 28
+  }
+}

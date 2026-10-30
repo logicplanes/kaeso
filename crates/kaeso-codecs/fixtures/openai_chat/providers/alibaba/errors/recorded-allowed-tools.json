@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "Expected field `function` in `tool_choice`. Correct usage: `{\"type\": \"function\", \"function\": {\"name\": \"my_function\"}}`",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-65865d91-b059-9d7a-9be6-b09e032130fd",
+  "request_id": "65865d91-b059-9d7a-9be6-b09e032130fd"
+}

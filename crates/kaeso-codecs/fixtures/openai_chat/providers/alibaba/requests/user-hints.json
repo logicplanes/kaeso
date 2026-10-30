@@ -1,0 +1,14 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "max_completion_tokens": 10,
+  "user": "user-1234",
+  "safety_identifier": "user-1234",
+  "prompt_cache_key": "kaeso-example",
+  "enable_thinking": false
+}

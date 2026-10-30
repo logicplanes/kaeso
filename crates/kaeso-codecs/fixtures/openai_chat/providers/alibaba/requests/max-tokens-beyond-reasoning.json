@@ -1,0 +1,12 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23?"
+    }
+  ],
+  "max_tokens": 50,
+  "enable_thinking": true,
+  "thinking_budget": 400
+}

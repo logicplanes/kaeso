@@ -1,0 +1,29 @@
+{
+  "choices": [
+    {
+      "finish_reason": "function_call",
+      "index": 0,
+      "message": {
+        "content": "",
+        "function_call": {
+          "arguments": "{\"city\": \"Paris\"}",
+          "name": "get_weather"
+        },
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379309,
+  "id": "chatcmpl-5b8f5b5d-989b-99bc-89ef-3fa8cf073e98",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 25,
+    "prompt_tokens": 278,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 278
+    },
+    "total_tokens": 303
+  }
+}

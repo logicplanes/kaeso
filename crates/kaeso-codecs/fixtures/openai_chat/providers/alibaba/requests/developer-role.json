@@ -1,0 +1,15 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Reply only with the word PINEAPPLE."
+    },
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ],
+  "max_completion_tokens": 10,
+  "enable_thinking": false
+}

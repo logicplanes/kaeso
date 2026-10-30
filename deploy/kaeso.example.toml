@@ -91,6 +91,9 @@ base_url = "https://ollama.com"
 [providers.moonshotai]
 base_url = "https://api.moonshot.ai"
 
+[providers.alibaba]
+base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

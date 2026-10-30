@@ -1,0 +1,30 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "14",
+        "reasoning_content": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User previously said: \"Pick a number between 1 and 10.\"\n   - I responded: \"7\"\n   - User now says: \"Now double it. Answer with the number.\"\n\n2.  **Identify Key Requirements:**\n   - Take the number I picked (7)\n   - Double it (7 * 2 = 14)\n   -",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379317,
+  "id": "chatcmpl-35f4872f-25f6-9932-9b8f-b7bc7fc59103",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 105,
+    "completion_tokens_details": {
+      "reasoning_tokens": 100,
+      "text_tokens": 105
+    },
+    "prompt_tokens": 41,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 41
+    },
+    "total_tokens": 146
+  }
+}

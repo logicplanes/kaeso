@@ -1,0 +1,16 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "max_completion_tokens": 10,
+  "store": true,
+  "metadata": {
+    "team": "example"
+  },
+  "service_tier": "flex",
+  "enable_thinking": false
+}

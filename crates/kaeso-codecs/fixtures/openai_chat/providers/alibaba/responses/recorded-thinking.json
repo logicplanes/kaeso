@@ -1,0 +1,30 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "391",
+        "reasoning_content": "Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - Question: \"What is 17 times 23?\"\n   - Constraint: \"Answer with the number.\"\n   - Expected output: Just the numerical result of 17 * 23.\n\n2.  **Perform Calculation:**\n   - 17 * 23\n   - Break it down: \n     - 17 * 20 = 340\n     - 17 * 3 = 51\n     - 340 + 51 = 391\n   - Alternatively, standard multiplication:\n     ```\n       17\n     x 23\n     ----\n       51  (17 * 3)\n      340  (17 * 20)\n     ----\n      391\n     ```\n   - Result",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379329,
+  "id": "chatcmpl-fee50b82-e44e-903c-8071-e64878260ec3",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 206,
+    "completion_tokens_details": {
+      "reasoning_tokens": 200,
+      "text_tokens": 206
+    },
+    "prompt_tokens": 25,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 25
+    },
+    "total_tokens": 231
+  }
+}

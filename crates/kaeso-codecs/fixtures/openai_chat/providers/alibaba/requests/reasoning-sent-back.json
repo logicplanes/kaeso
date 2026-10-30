@@ -1,0 +1,21 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Pick a number between 1 and 10."
+    },
+    {
+      "role": "assistant",
+      "content": "7",
+      "reasoning_content": "The user wants one number; 7 is a common pick."
+    },
+    {
+      "role": "user",
+      "content": "Now double it. Answer with the number."
+    }
+  ],
+  "max_completion_tokens": 1000,
+  "enable_thinking": true,
+  "thinking_budget": 100
+}

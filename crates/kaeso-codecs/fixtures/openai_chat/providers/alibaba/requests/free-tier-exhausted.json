@@ -1,0 +1,10 @@
+{
+  "model": "qwen-plus",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ],
+  "max_completion_tokens": 10
+}

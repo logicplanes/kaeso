@@ -575,3 +575,71 @@ fn a_partial_prefill_profile_marks_another_formats_prefill_and_nothing_else() {
     let sent = encode_with(&own, partial).unwrap();
     assert!(sent["messages"][1].get("partial").is_none(), "{sent}");
 }
+
+#[test]
+fn a_thinking_switch_profile_turns_thinking_on_and_off_and_sends_a_budget_as_written() {
+    let switch = ChatProfile::compatible("Example Cloud").thinking_switch();
+    let sent = |req: &Request| encode_with(req, switch).unwrap();
+    let thinking = |mode, effort, budget| {
+        let mut g = foreign(DialectId::AnthropicMessages);
+        let mut r = kaeso_kpp::ReasoningConfig::default();
+        r.mode = mode;
+        r.effort = effort;
+        r.budget_tokens = budget;
+        g.reasoning = Some(r);
+        Request::Generate(g)
+    };
+    use kaeso_kpp::{ReasoningEffort, ReasoningMode};
+
+    let budget = thinking(Some(ReasoningMode::Enabled), None, Some(2048));
+    let out = sent(&budget);
+    assert_eq!(
+        (&out["enable_thinking"], &out["thinking_budget"]),
+        (&json!(true), &json!(2048))
+    );
+    assert!(out.get("reasoning_effort").is_none(), "{out}");
+    let openai = encode_with(&budget, ChatProfile::compatible("Example Cloud")).unwrap();
+    assert_eq!(openai["reasoning_effort"], "low");
+    assert!(openai.get("enable_thinking").is_none(), "{openai}");
+
+    let off = sent(&thinking(Some(ReasoningMode::Disabled), None, None));
+    assert_eq!(off["enable_thinking"], false);
+    assert!(off.get("reasoning_effort").is_none(), "{off}");
+
+    let adaptive = sent(&thinking(Some(ReasoningMode::Adaptive), None, None));
+    assert_eq!(adaptive["enable_thinking"], true);
+    assert!(adaptive.get("thinking_budget").is_none(), "{adaptive}");
+
+    let effort = sent(&thinking(None, Some(ReasoningEffort::Low), None));
+    assert_eq!(
+        (&effort["enable_thinking"], &effort["reasoning_effort"]),
+        (&json!(true), &json!("low"))
+    );
+    assert!(effort.get("thinking_budget").is_none(), "{effort}");
+
+    for none in ["none", "minimal"] {
+        let out = sent(&chat(json!({
+            "model": "m", "messages": [{"role": "user", "content": "Hi"}], "reasoning_effort": none
+        })));
+        assert_eq!(out["enable_thinking"], false, "{none}");
+        assert!(out.get("reasoning_effort").is_none(), "{out}");
+    }
+
+    let own = sent(&chat(json!({
+        "model": "m", "messages": [{"role": "user", "content": "Hi"}],
+        "reasoning_effort": "high", "enable_thinking": false, "thinking_budget": 300
+    })));
+    assert_eq!(
+        (
+            &own["enable_thinking"],
+            &own["thinking_budget"],
+            &own["reasoning_effort"]
+        ),
+        (&json!(false), &json!(300), &json!("high"))
+    );
+
+    let plain = sent(&chat(
+        json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]}),
+    ));
+    assert!(plain.get("enable_thinking").is_none(), "{plain}");
+}
