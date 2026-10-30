@@ -316,7 +316,7 @@ describe("ProviderKeyDialog", () => {
     await choose(user, dialog, "Cohere");
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Cohere API key" })).toBeVisible();
-    const link = within(dialog).getByRole("link", { name: (name) => name.startsWith("dashboard.cohere.com") });
+    const link = within(dialog).getByRole("link", { name: "dashboard.cohere.com (opens in a new tab)" });
     expect(link).toHaveAttribute("href", "https://dashboard.cohere.com/api-keys");
     expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
       "Create one at dashboard.cohere.com under API Keys.",
