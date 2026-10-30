@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "model \"no-such-model:1b\" not found. Try gemma4:31b-cloud, which is in the Free plan.",
+    "type": "not_found_error",
+    "param": null,
+    "code": null
+  }
+}

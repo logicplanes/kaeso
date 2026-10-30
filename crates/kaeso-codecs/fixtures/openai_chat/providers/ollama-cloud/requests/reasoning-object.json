@@ -1,0 +1,13 @@
+{
+  "model": "gpt-oss:20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name one prime number above 100."
+    }
+  ],
+  "reasoning": {
+    "effort": "low"
+  },
+  "max_tokens": 400
+}

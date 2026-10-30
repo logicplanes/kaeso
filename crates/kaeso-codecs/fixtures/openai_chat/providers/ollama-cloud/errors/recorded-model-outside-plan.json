@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "this model is not included in your free usage, add usage credits to pay as you go: https://ollama.com/settings or upgrade for included usage: https://ollama.com/upgrade. Try gemma4:31b-cloud, which is in the Free plan. (ref: 9f6afaf9-69e7-4397-ac71-5aea23d4e1eb)",
+    "type": "api_error",
+    "param": null,
+    "code": null
+  }
+}

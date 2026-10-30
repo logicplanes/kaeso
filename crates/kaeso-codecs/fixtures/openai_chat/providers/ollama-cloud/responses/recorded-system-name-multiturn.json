@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-887",
+  "object": "chat.completion",
+  "created": 1793373711,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Boil them for 9 to 12 minutes. For a classic hard-boiled egg, 11 minutes is usually perfect!"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 80,
+    "completion_tokens": 29,
+    "total_tokens": 109,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

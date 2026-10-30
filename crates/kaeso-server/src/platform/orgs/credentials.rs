@@ -163,8 +163,9 @@ impl CredentialView {
 #[schema(description = "A new provider key.")]
 pub struct CredentialCreate {
     #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n\
-        `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`, or one of\n\
-        the organization's custom providers that takes a key."]
+        `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n\
+        `ollama-cloud`, or one of the organization's custom providers that takes a\n\
+        key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
@@ -255,10 +256,7 @@ pub(super) fn validate_provider(
     kaeso_core::provider::lookup(provider).map_err(|_| {
         ApiError::invalid(
             "provider",
-            format!(
-                "The provider must be one of {}.",
-                kaeso_core::provider::ids()
-            ),
+            "This organization has no such provider; choose one under Providers.",
         )
     })
 }
@@ -270,14 +268,9 @@ pub(super) async fn provider_in_org(
 ) -> ApiResult<ProviderRef> {
     let providers = crate::services::custom_providers::of_org(state, &state.pg, org).await?;
     providers.get(provider).ok_or_else(|| {
-        let mut ids: Vec<&str> = kaeso_core::provider::PROVIDERS
-            .iter()
-            .map(|p| p.id)
-            .collect();
-        ids.extend(providers.custom().iter().map(|c| c.id().as_str()));
         ApiError::invalid(
             "provider",
-            format!("The provider must be one of {}.", ids.join(", ")),
+            "This organization has no such provider; choose one under Providers.",
         )
     })
 }

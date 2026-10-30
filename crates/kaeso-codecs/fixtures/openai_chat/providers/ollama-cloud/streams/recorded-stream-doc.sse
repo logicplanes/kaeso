@@ -1,0 +1,24 @@
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"role":"assistant","content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" How"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" can"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" I"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" help"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" you"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":" today"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":"?"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{"content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-741","object":"chat.completion.chunk","created":1793373710,"model":"gemma4:31b","system_fingerprint":"fp_ollama","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: [DONE]
+

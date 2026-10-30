@@ -350,7 +350,7 @@ const messages = (): Rule[] => [
   rule("errors.secretLength", (v) => t("errors.secretLength", "The secret must be {min} to {max} characters.", v)),
   rule("errors.secretCharacters", () => t("errors.secretCharacters", "The secret must not contain spaces or control characters.")),
   rule("errors.providerIdForm", () => t("errors.providerIdForm", "`provider` must be a provider id, such as `openai`.")),
-  rule("errors.providerOneOf", (v) => t("errors.providerOneOf", "The provider must be one of {providers}.", v)),
+  rule("errors.providerUnknown", () => t("errors.providerUnknown", "This organization has no such provider; choose one under Providers.")),
   rule("errors.customProvider.turnedOff", () => t("errors.customProvider.turnedOff", "Custom providers are turned off on this install; ask its operator.")),
   rule("errors.customProvider.idForm", () => t("errors.customProvider.idForm", "`id` must be lowercase letters and digits with single hyphens between them.")),
   rule("errors.customProvider.idLength", () => t("errors.customProvider.idLength", "`id` can have at most 40 characters.")),

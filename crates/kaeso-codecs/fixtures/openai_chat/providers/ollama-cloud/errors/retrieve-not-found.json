@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "model \"no-such-model:1b\" not found. Try glm-5.3-flash:cloud.",
+    "type": "not_found_error",
+    "param": null,
+    "code": null
+  }
+}

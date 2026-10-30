@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-885",
+  "object": "chat.completion",
+  "created": 1793373708,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Blue waves kiss the sand,\nEndless depths of salt and mist,\n"
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 28,
+    "completion_tokens": 16,
+    "total_tokens": 44,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

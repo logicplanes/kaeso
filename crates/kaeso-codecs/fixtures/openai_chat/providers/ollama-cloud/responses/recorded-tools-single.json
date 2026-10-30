@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-909",
+  "object": "chat.completion",
+  "created": 1793373713,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_u5a4vdpz",
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"Celsius\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 123,
+    "completion_tokens": 23,
+    "total_tokens": 146,
+    "prompt_tokens_details": {
+      "cached_tokens": 96
+    }
+  }
+}
