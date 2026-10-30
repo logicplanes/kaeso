@@ -799,7 +799,7 @@ fn kimi_k3_models_think_at_the_effort_levels_moonshot_documents() {
     for model in ["kimi-k3", "kimi-k3.1-pro", "kimi-k3.1-pro-highspeed"] {
         let k3 = eff(&entry("moonshotai", model));
         assert_eq!(k3.dialect, DialectId::OpenAiChat, "{model}");
-        assert_eq!(k3.provider.chat().provider, "Moonshot AI");
+        assert_eq!(k3.provider.chat().provider, "Moonshot");
         assert_eq!(
             effort_levels(&k3, DialectId::OpenAiChat),
             ["low", "high", "max"],
@@ -1315,7 +1315,7 @@ fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
 fn alibaba_models_speak_chat_completions_and_take_effort_levels_only_where_listed() {
     let flash = eff(&entry("alibaba", "qwen3.7-flash"));
     assert_eq!(flash.dialect, DialectId::OpenAiChat);
-    assert_eq!(flash.provider.chat().provider, "Alibaba Cloud");
+    assert_eq!(flash.provider.chat().provider, "QwenCloud");
     assert!(!flash.is_embeddings());
     assert_eq!(
         (flash.fields.input_price, flash.fields.output_price),

@@ -661,7 +661,7 @@ impl ChatStreamDecoder {
             form.insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
             thoughts.push((thought, None));
         }
-        // Moonshot AI ends its thinking with an empty `reasoning_content` delta; inside an open
+        // Moonshot ends its thinking with an empty `reasoning_content` delta; inside an open
         // reasoning block it is an empty piece of that block, not a chunk of its own.
         let empty_piece = thoughts.is_empty()
             && self.reasoning.is_some()

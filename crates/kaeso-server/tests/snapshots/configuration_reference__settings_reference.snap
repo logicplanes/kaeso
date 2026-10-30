@@ -53,8 +53,8 @@ expression: settings_reference()
 | `KAESO_PROVIDERS_VERCEL_BASE_URL` | `providers.vercel.base_url` | text | `https://ai-gateway.vercel.sh` | Base URL of the Vercel API. |
 | `KAESO_PROVIDERS_COHERE_BASE_URL` | `providers.cohere.base_url` | text | `https://api.cohere.ai/compatibility` | Base URL of the Cohere API. |
 | `KAESO_PROVIDERS_OLLAMA_CLOUD_BASE_URL` | `providers.ollama-cloud.base_url` | text | `https://ollama.com` | Base URL of the Ollama Cloud API. |
-| `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL` | `providers.moonshotai.base_url` | text | `https://api.moonshot.ai` | Base URL of the Moonshot AI API. |
-| `KAESO_PROVIDERS_ALIBABA_BASE_URL` | `providers.alibaba.base_url` | text | `https://dashscope-intl.aliyuncs.com/compatible-mode` | Base URL of the Alibaba Cloud API. |
+| `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL` | `providers.moonshotai.base_url` | text | `https://api.moonshot.ai` | Base URL of the Moonshot API. |
+| `KAESO_PROVIDERS_ALIBABA_BASE_URL` | `providers.alibaba.base_url` | text | `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode` | Base URL of the QwenCloud API. |
 | `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy, on an API format Kaeso speaks. Off refuses requests to the ones they added. |
 | `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`; plain `http` reaches only these. Kaeso checks every connection after DNS resolution; link-local and cloud metadata addresses stay refused. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT` | `upstream.connect_timeout` | text | `10s` | Connect timeout to providers, TCP and TLS; at most 24h. |

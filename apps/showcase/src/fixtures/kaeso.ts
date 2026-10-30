@@ -34,8 +34,8 @@ export const providers = [
   { id: "mistral", name: "Mistral" },
   { id: "vercel", name: "Vercel" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
-  { id: "moonshotai", name: "Moonshot AI" },
-  { id: "alibaba", name: "Alibaba Cloud" },
+  { id: "moonshotai", name: "Moonshot" },
+  { id: "alibaba", name: "QwenCloud" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

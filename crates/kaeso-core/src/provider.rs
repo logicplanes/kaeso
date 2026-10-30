@@ -505,7 +505,7 @@ pub const PROVIDERS: &[Provider] = &[
     },
     Provider {
         id: "moonshotai",
-        name: "Moonshot AI",
+        name: "Moonshot",
         key_page: KeyPage {
             url: "https://platform.kimi.ai/console/api-keys",
             label: "API Keys",
@@ -520,7 +520,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
-        chat: ChatProfile::compatible("Moonshot AI")
+        chat: ChatProfile::compatible("Moonshot")
             .system_role()
             .partial_prefill()
             .reasoning_fields(&["reasoning_content"])
@@ -534,18 +534,18 @@ pub const PROVIDERS: &[Provider] = &[
                 "verbosity",
                 "web_search_options",
             ]),
-        responses: ResponsesProfile::compatible("Moonshot AI"),
+        responses: ResponsesProfile::compatible("Moonshot"),
         account: None,
     },
     Provider {
         id: "alibaba",
-        name: "Alibaba Cloud",
+        name: "QwenCloud",
         key_page: KeyPage {
-            url: "https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key",
-            label: "Model Studio → API Key",
+            url: "https://home.qwencloud.com/api-keys",
+            label: "API keys",
         },
         key_prefix: Some("sk-"),
-        default_base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode",
+        default_base_url: "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode",
         auth: AuthStyle::Bearer,
         generation: DialectId::OpenAiChat,
         count_tokens: None,
@@ -554,7 +554,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
-        chat: ChatProfile::compatible("Alibaba Cloud")
+        chat: ChatProfile::compatible("QwenCloud")
             .system_role()
             .thinking_switch()
             .reasoning_fields(&["reasoning_content"])
@@ -569,7 +569,7 @@ pub const PROVIDERS: &[Provider] = &[
                 "verbosity",
                 "web_search_options",
             ]),
-        responses: ResponsesProfile::compatible("Alibaba Cloud"),
+        responses: ResponsesProfile::compatible("QwenCloud"),
         account: None,
     },
 ];

@@ -321,7 +321,7 @@ async fn fields_model_studio_ignores_are_refused_before_it_is_called() {
         assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
         assert_eq!(
             r.json()["error"]["message"],
-            format!("`{field}` is not supported by Alibaba Cloud; remove it from the request.")
+            format!("`{field}` is not supported by QwenCloud; remove it from the request.")
         );
     }
     assert!(env.mock.received().is_empty());

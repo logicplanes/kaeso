@@ -11,7 +11,7 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, fixtures};
 const PROFILES: &[(&str, ChatProfile)] = &[
     (
         "alibaba",
-        ChatProfile::compatible("Alibaba Cloud").reasoning_fields(&["reasoning_content"]),
+        ChatProfile::compatible("QwenCloud").reasoning_fields(&["reasoning_content"]),
     ),
     (
         "deepseek",
@@ -23,7 +23,7 @@ const PROFILES: &[(&str, ChatProfile)] = &[
     ),
     (
         "moonshotai",
-        ChatProfile::compatible("Moonshot AI").reasoning_fields(&["reasoning_content"]),
+        ChatProfile::compatible("Moonshot").reasoning_fields(&["reasoning_content"]),
     ),
     (
         "ollama-cloud",

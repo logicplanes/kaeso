@@ -188,7 +188,7 @@
     },
     {
       "id": "moonshotai",
-      "name": "Moonshot AI",
+      "name": "Moonshot",
       "custom": false,
       "takes_key": true,
       "hides_built_in": null,
@@ -204,13 +204,13 @@
     },
     {
       "id": "alibaba",
-      "name": "Alibaba Cloud",
+      "name": "QwenCloud",
       "custom": false,
       "takes_key": true,
       "hides_built_in": null,
       "key_page": {
-        "url": "https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key",
-        "label": "Model Studio → API Key"
+        "url": "https://home.qwencloud.com/api-keys",
+        "label": "API keys"
       },
       "key_prefix": "sk-",
       "dialects": ["openai_chat", "openai_embeddings"],

@@ -31,7 +31,7 @@ const BILLING: &[&str] = &[
     "billing_hard_limit_reached",
     "billing_not_active",
     "subscription_sharing_usage_limit_exceeded",
-    // Moonshot AI's 429 for an empty balance or a disabled account:
+    // Moonshot's 429 for an empty balance or a disabled account:
     // https://platform.kimi.ai/docs/api/errors
     "exceeded_current_quota_error",
 ];

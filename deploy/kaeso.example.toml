@@ -92,7 +92,7 @@ base_url = "https://ollama.com"
 base_url = "https://api.moonshot.ai"
 
 [providers.alibaba]
-base_url = "https://dashscope-intl.aliyuncs.com/compatible-mode"
+base_url = "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode"
 
 [custom_providers]
 enabled = true

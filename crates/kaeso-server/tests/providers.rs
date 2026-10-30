@@ -87,7 +87,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(cohere["count_tokens"], Value::Null);
     assert_eq!(cohere["key_prefix"], Value::Null);
     let alibaba = listed.iter().find(|p| p["id"] == "alibaba").unwrap();
-    assert_eq!(alibaba["name"], "Alibaba Cloud");
+    assert_eq!(alibaba["name"], "QwenCloud");
     assert_eq!(
         alibaba["dialects"],
         json!(["openai_chat", "openai_embeddings"])

@@ -104,6 +104,7 @@ export const providerMark = {
   mistral: mode("#161525", "#ffffff"),
   vercel: mode("#000000", "#ffffff"),
   cohere: mode("#17171c", "#ffffff"),
+  alibaba: mode("#4f21ff", "#a48bff"),
 } as const;
 
 export const type = {
