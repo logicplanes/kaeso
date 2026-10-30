@@ -169,14 +169,9 @@ pub(super) async fn org_providers(state: &AppState, ctx: &Ctx) -> ApiResult<OrgP
 
 fn provider_of(providers: &OrgProviders, id: &str) -> ApiResult<ProviderRef> {
     providers.get(id).ok_or_else(|| {
-        let mut ids: Vec<&str> = kaeso_core::provider::PROVIDERS
-            .iter()
-            .map(|p| p.id)
-            .collect();
-        ids.extend(providers.custom().iter().map(|c| c.id().as_str()));
         ApiError::invalid(
             "provider",
-            format!("The provider must be one of {}.", ids.join(", ")),
+            "This organization has no such provider; choose one under Providers.",
         )
     })
 }
