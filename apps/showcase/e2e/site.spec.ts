@@ -136,7 +136,7 @@ test.describe("for search engines and link previews", () => {
   test("the manifest, the icons and the preview image are served", async ({ request }) => {
     const manifest = (await (await request.get("/site.webmanifest")).json()) as { name: string; icons: { src: string }[] };
     expect(manifest.name).toBe("Kaeso UI");
-    for (const src of ["/favicon.svg", "/favicon-32.png", "/apple-touch-icon.png", ...manifest.icons.map((i) => i.src)])
+    for (const src of ["/favicon.svg", "/favicon-32.png", "/favicon-dark-32.png", "/apple-touch-icon.png", ...manifest.icons.map((i) => i.src)])
       expect((await request.get(src)).status(), src).toBe(200);
     const png = Buffer.from(await (await request.get("/og.png")).body());
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
