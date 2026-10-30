@@ -4,11 +4,15 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-10-30
+
 ### Added
 
 - Moonshot (Kimi) is a built-in provider: add its key and call its models from any app format ([#561](https://github.com/logicplanes/kaeso/pull/561))
 - QwenCloud, Alibaba's model platform outside mainland China, formerly Model Studio, is a built-in provider: add its key and call its models and embeddings from any app format ([#562](https://github.com/logicplanes/kaeso/pull/562))
 - Every provider's mark shows in its owner's colours, in light and dark mode
+- Cohere is a built-in provider: add its key and call its models from any app format ([#557](https://github.com/logicplanes/kaeso/pull/557))
+- Ollama Cloud is a built-in provider: add its key and call its models from any app format ([#560](https://github.com/logicplanes/kaeso/pull/560))
 
 ### Changed
 
@@ -16,11 +20,24 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - Underline tabs start on the content edge, under the page heading, and preview the selection line on hover
 - A dialog's layers and steps crossfade in place instead of sliding sideways
 - Add models shows each model's name over its full id
+- Kaeso names every provider mark's owner and says it is not affiliated with any of them ([#558](https://github.com/logicplanes/kaeso/pull/558))
+- Dependencies updated ([#547](https://github.com/logicplanes/kaeso/pull/547), [#548](https://github.com/logicplanes/kaeso/pull/548), [#549](https://github.com/logicplanes/kaeso/pull/549), [#550](https://github.com/logicplanes/kaeso/pull/550), [#554](https://github.com/logicplanes/kaeso/pull/554), [#555](https://github.com/logicplanes/kaeso/pull/555), [#556](https://github.com/logicplanes/kaeso/pull/556))
+
+#### UI library
+
+- The UI library's site uses the same favicon as the documentation and the console ([#545](https://github.com/logicplanes/kaeso/pull/545))
+- The UI library's changelog now links to kaeso.app/changelog instead of a page of its own ([#546](https://github.com/logicplanes/kaeso/pull/546))
 
 ### Fixed
 
 - Rows with a second line no longer overflow into the next row in menus and comboboxes, and time zones show their offset at the row's end
 - A button at the edge of a settings row, such as See what's new, is no longer cut short
+
+### Security
+
+#### Gateway
+
+- Custom providers and SSO discovery never reach Alibaba Cloud's metadata service ([#544](https://github.com/logicplanes/kaeso/pull/544))
 
 ## [0.4.7] - 2026-10-30
 
@@ -1000,7 +1017,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.7...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.8...HEAD
+[0.4.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.8
 [0.4.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.7
 [0.4.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.6
 [0.4.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.5
