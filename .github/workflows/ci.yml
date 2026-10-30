@@ -207,7 +207,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           workspaces: |
             .
@@ -227,10 +227,10 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
         with:
           tool: cargo-llvm-cov
       - run: cargo coverage-kpp
@@ -272,7 +272,7 @@ jobs:
           rustup toolchain install "$version" --profile minimal
           echo "RUSTUP_TOOLCHAIN=$version" >> "$GITHUB_ENV"
           echo "$CRATE is checked with Rust $version." >> "$GITHUB_STEP_SUMMARY"
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           key: ${{ matrix.crate }}
           save-if: ${{ github.ref == 'refs/heads/dev' }}
@@ -295,11 +295,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           key: published-crates
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
         with:
           tool: cargo-semver-checks
       - name: Both crates package and would publish
@@ -352,10 +352,10 @@ jobs:
       - name: Pull the development stack while the toolchain installs
         run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait
@@ -386,7 +386,7 @@ jobs:
       - name: Every file states the version only where the release sets it
         run: node scripts/version.mjs check
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
       - run: cargo test -p xtask -p kpp-conformance
@@ -407,10 +407,10 @@ jobs:
       - name: Pull PostgreSQL while the toolchain installs
         run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet postgres > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283
+      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91
         with:
           tool: sqlx-cli
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
@@ -428,7 +428,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           shared-key: openapi
           save-if: ${{ github.ref == 'refs/heads/dev' }}
@@ -463,7 +463,7 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           workspaces: fuzz
           save-if: ${{ github.ref == 'refs/heads/dev' }}
@@ -480,10 +480,10 @@ jobs:
         with:
           persist-credentials: false
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.13"
           cache: pip
@@ -504,10 +504,10 @@ jobs:
       - name: Pull the development stack while the toolchain installs
         run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.13"
           cache: pip
@@ -711,7 +711,7 @@ jobs:
           merge-multiple: true
           path: ${{ runner.temp }}/images
       - run: for image in "$RUNNER_TEMP"/images/*.tar; do docker load --input "$image"; done
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: "3.13"
           cache: pip
