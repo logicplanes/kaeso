@@ -1,0 +1,10 @@
+{
+  "model": "gemma4:31b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 40, separated by commas."
+    }
+  ],
+  "max_completion_tokens": 20
+}

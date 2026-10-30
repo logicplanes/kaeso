@@ -31,6 +31,7 @@ The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` are t
 - Mistral: the black (`#161525`) and white icons from the [Mistral AI brand assets](https://mistral.ai/brand).
 - Vercel: the black and white Vercel Symbol from the [Vercel brand assets](https://vercel.com/geist/brands), black on light and white on dark, as the brand page asks.
 - Cohere: the black (`#17171C`) and white symbols from the press kit on Cohere's [newsroom](https://cohere.com/newsroom), black on light and white on dark.
+- Ollama Cloud: the llama from Ollama's logo, as [Simple Icons](https://simpleicons.org) 16.36.0 draws it from the [mark Ollama published](https://github.com/ollama/ollama/issues/2152#issuecomment-1905286922), in the text colour as on [ollama.com](https://ollama.com).
 
 Groq is a trademark of Groq LLC and/or its affiliates. See [Trademarks](#trademarks) for the providers whose terms restrict the use of their logos.
 

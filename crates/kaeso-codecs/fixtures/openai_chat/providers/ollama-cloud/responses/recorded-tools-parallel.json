@@ -1,0 +1,45 @@
+{
+  "id": "chatcmpl-454",
+  "object": "chat.completion",
+  "created": 1793373712,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_dunvhu1f",
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            }
+          },
+          {
+            "id": "call_qrsgo35q",
+            "index": 1,
+            "type": "function",
+            "function": {
+              "name": "get_local_time",
+              "arguments": "{\"timezone\":\"Asia/Tokyo\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 199,
+    "completion_tokens": 42,
+    "total_tokens": 241,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

@@ -18,6 +18,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Groq").reasoning_fields(&["reasoning"]),
     ),
     (
+        "ollama-cloud",
+        ChatProfile::compatible("Ollama Cloud").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "openrouter",
         ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
     ),
@@ -170,6 +174,9 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ),
         ("groq", "recorded-plain-developer-string", "reasoning"),
         ("groq", "recorded-reasoning-format-parsed", "reasoning"),
+        ("ollama-cloud", "recorded-reasoning-effort", "reasoning"),
+        ("ollama-cloud", "recorded-reasoning-object", "reasoning"),
+        ("ollama-cloud", "recorded-reasoning-sent-back", "reasoning"),
         ("openrouter", "recorded-free-reasoning", "reasoning"),
         ("togetherai", "recorded-reasoning-reply", "reasoning"),
         (
@@ -243,6 +250,46 @@ fn reasoning_before_a_tool_call_comes_first() {
 }
 
 #[test]
+fn ollama_cloud_reasoning_comes_before_its_tool_call_in_replies_and_streams() {
+    let resp = reply(
+        "ollama-cloud",
+        &recorded(
+            "responses",
+            "json",
+            "ollama-cloud",
+            "recorded-reasoning-tools",
+        ),
+    );
+    assert!(
+        matches!(resp.blocks[0], Block::Reasoning(_)),
+        "{:?}",
+        resp.blocks
+    );
+    assert!(
+        resp.blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(c) if c.name == "get_weather")),
+        "{:?}",
+        resp.blocks
+    );
+
+    let bytes = recorded(
+        "streams",
+        "sse",
+        "ollama-cloud",
+        "recorded-reasoning-tools-stream",
+    );
+    let got = shape(&stream("ollama-cloud", &bytes));
+    assert_eq!(got.reasoning, streamed_field(&bytes, "reasoning"));
+    assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
+    assert!(
+        got.order.contains(&"tool call 1".to_owned()),
+        "{:?}",
+        got.order
+    );
+}
+
+#[test]
 fn without_the_setting_and_with_an_empty_field_the_reasoning_stays_as_sent() {
     let body = recorded(
         "responses",
@@ -294,6 +341,12 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
         (
             "groq",
             "recorded-stream-reasoning-parsed",
+            "reasoning",
+            answered,
+        ),
+        (
+            "ollama-cloud",
+            "recorded-reasoning-stream",
             "reasoning",
             answered,
         ),

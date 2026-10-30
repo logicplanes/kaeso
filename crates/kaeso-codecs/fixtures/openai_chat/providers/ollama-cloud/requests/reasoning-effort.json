@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss:20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 1001 a prime number? Answer in one sentence."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_tokens": 400
+}

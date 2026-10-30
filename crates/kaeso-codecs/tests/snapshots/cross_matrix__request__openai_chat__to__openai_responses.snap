@@ -1561,6 +1561,247 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/ollama-cloud/image": {
+    "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 10"
+  },
+  "providers/ollama-cloud/max-completion-tokens-ignored": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from 1 to 40, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "gemma4:31b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/max-tokens-honoured": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from 1 to 40, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "gemma4:31b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/model-outside-plan": {
+    "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 10"
+  },
+  "providers/ollama-cloud/reasoning-effort": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 1001 a prime number? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/reasoning-object": {
+    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning"
+  },
+  "providers/ollama-cloud/reasoning-sent-back": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Pick a number from 1 to 10.",
+          "role": "user"
+        },
+        {
+          "content": "7",
+          "role": "assistant"
+        },
+        {
+          "content": "Now double it.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Name one prime number above 100.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/reasoning-tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/reasoning-tools-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/tool-result": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"city\":\"Paris\"}",
+          "call_id": "call_paris",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_paris",
+          "output": "18 °C and sunny",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gemma4:31b",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ollama-cloud/unknown-model": {
+    "message": "`max_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_tokens",
+    "unsupported": "max_tokens 10"
+  },
   "providers/openrouter/free-basic": {
     "body": {
       "input": [

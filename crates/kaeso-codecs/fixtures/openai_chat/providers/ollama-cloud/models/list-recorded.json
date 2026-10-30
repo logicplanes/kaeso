@@ -1,0 +1,135 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-v4.1-flash:1017",
+      "object": "model",
+      "created": 1792231200,
+      "owned_by": "ollama"
+    },
+    {
+      "id": "gemma4:31b",
+      "object": "model",
+      "created": 1775149200,
+      "owned_by": "ollama"
+    },
+    {
+      "id": "gpt-oss:20b",
+      "object": "model",
+      "created": 1754352000,
+      "owned_by": "ollama"
+    }
+  ],
+  "models": [
+    {
+      "slug": "deepseek-v4.1-flash:1017",
+      "display_name": "deepseek-v4.1-flash:1017",
+      "default_reasoning_level": "high",
+      "supported_reasoning_levels": [
+        {
+          "effort": "none",
+          "description": "Disable thinking"
+        },
+        {
+          "effort": "low",
+          "description": "low reasoning effort"
+        },
+        {
+          "effort": "high",
+          "description": "high reasoning effort"
+        },
+        {
+          "effort": "max",
+          "description": "max reasoning effort"
+        }
+      ],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "base_instructions": "You are a coding assistant. Help the user complete software tasks using the available tools. Follow the user's instructions and the repository's guidance.",
+      "supports_reasoning_summary_parameter": false,
+      "support_verbosity": false,
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 10000
+      },
+      "context_window": 1048576,
+      "max_context_window": 1048576,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ]
+    },
+    {
+      "slug": "gemma4:31b",
+      "display_name": "gemma4:31b",
+      "default_reasoning_level": "none",
+      "supported_reasoning_levels": [
+        {
+          "effort": "none",
+          "description": "Disable thinking"
+        },
+        {
+          "effort": "medium",
+          "description": "Enable thinking"
+        }
+      ],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "base_instructions": "You are a coding assistant. Help the user complete software tasks using the available tools. Follow the user's instructions and the repository's guidance.",
+      "supports_reasoning_summary_parameter": false,
+      "support_verbosity": false,
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 10000
+      },
+      "context_window": 262144,
+      "max_context_window": 262144,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ]
+    },
+    {
+      "slug": "gpt-oss:20b",
+      "display_name": "gpt-oss:20b",
+      "default_reasoning_level": "medium",
+      "supported_reasoning_levels": [
+        {
+          "effort": "low",
+          "description": "low reasoning effort"
+        },
+        {
+          "effort": "medium",
+          "description": "medium reasoning effort"
+        },
+        {
+          "effort": "high",
+          "description": "high reasoning effort"
+        }
+      ],
+      "shell_type": "unified_exec",
+      "visibility": "list",
+      "supported_in_api": true,
+      "priority": 0,
+      "base_instructions": "You are a coding assistant. Help the user complete software tasks using the available tools. Follow the user's instructions and the repository's guidance.",
+      "supports_reasoning_summary_parameter": false,
+      "support_verbosity": false,
+      "truncation_policy": {
+        "mode": "tokens",
+        "limit": 10000
+      },
+      "context_window": 131072,
+      "max_context_window": 131072,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text"
+      ]
+    }
+  ]
+}

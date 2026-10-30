@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "invalid message format (ref: 88d2a8ba-fe64-49e9-9364-bee86f948f70)",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": null
+  }
+}

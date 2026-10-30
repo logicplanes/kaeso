@@ -230,6 +230,8 @@ fn streamed_reasoning_of_chat_providers_is_logged_as_one_reasoning_block() {
         ("deepseek", "recorded-thinking-tools-stream"),
         ("groq", "recorded-stream-doc"),
         ("groq", "recorded-stream-reasoning-parsed"),
+        ("ollama-cloud", "recorded-reasoning-stream"),
+        ("ollama-cloud", "recorded-reasoning-tools-stream"),
         ("openrouter", "recorded-free-reasoning-stream"),
         ("togetherai", "recorded-reasoning-stream"),
         ("xai", "recorded-reasoning-content-stream"),

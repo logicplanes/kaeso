@@ -169,6 +169,22 @@
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null
+    },
+    {
+      "id": "ollama-cloud",
+      "name": "Ollama Cloud",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://ollama.com/settings/keys",
+        "label": "Settings → Keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null
     }
   ],
   "has_more": false,

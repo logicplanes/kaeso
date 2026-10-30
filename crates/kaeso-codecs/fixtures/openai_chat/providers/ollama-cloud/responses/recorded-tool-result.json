@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-27",
+  "object": "chat.completion",
+  "created": 1793373701,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The current weather in Paris is 18°C and sunny."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 98,
+    "completion_tokens": 19,
+    "total_tokens": 117,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

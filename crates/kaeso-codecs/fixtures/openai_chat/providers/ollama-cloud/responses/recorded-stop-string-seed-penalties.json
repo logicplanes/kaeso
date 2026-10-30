@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-282",
+  "object": "chat.completion",
+  "created": 1793373709,
+  "model": "gemma4:31b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Apple\nBanana\nCherry\nDate\nElderberry\nFig\nGrape\nHoneydew\nKiwi\nLemon\nMango\nNectarine\nOrange\nPapaya\nQuince\nRaspberry\nStrawberry\nTangerine\nUgli fruit\nWatermelon\n"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 24,
+    "completion_tokens": 57,
+    "total_tokens": 81,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  }
+}

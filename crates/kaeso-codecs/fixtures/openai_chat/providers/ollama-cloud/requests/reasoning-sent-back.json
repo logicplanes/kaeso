@@ -1,0 +1,20 @@
+{
+  "model": "gpt-oss:20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Pick a number from 1 to 10."
+    },
+    {
+      "role": "assistant",
+      "content": "7",
+      "reasoning": "The user wants one number; 7 is a common pick."
+    },
+    {
+      "role": "user",
+      "content": "Now double it."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_tokens": 400
+}

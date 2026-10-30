@@ -479,6 +479,30 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("Cohere"),
         account: None,
     },
+    Provider {
+        id: "ollama-cloud",
+        name: "Ollama Cloud",
+        key_page: KeyPage {
+            url: "https://ollama.com/settings/keys",
+            label: "Settings → Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://ollama.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        chat: ChatProfile::compatible("Ollama Cloud")
+            .max_tokens()
+            .reasoning_fields(&["reasoning"])
+            .refusing(&["logit_bias", "logprobs", "top_logprobs"]),
+        responses: ResponsesProfile::compatible("Ollama Cloud"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -751,7 +775,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud"
         );
     }
 
@@ -893,6 +917,64 @@ mod tests {
         let greedy =
             sent_with_profile("mistral", "providers/mistral/requests/greedy-sampling").unwrap();
         assert_eq!(greedy["top_p"], 1.0, "{greedy}");
+    }
+
+    #[test]
+    fn ollama_cloud_gets_every_apps_output_limit_as_the_max_tokens_it_honours() {
+        let recorded = sent_with_profile(
+            "ollama-cloud",
+            "providers/ollama-cloud/requests/max-completion-tokens-ignored",
+        )
+        .unwrap();
+        assert_eq!(recorded["max_tokens"], 20, "{recorded}");
+        assert!(
+            recorded.get("max_completion_tokens").is_none(),
+            "{recorded}"
+        );
+
+        let mut g = kaeso_kpp::GenerateRequest::new("gpt-oss:20b");
+        g.extras.origin = Some(kaeso_kpp::Origin::new(DialectId::AnthropicMessages));
+        g.messages = vec![kaeso_kpp::Message::user("Count to forty.")];
+        g.sampling.max_output_tokens = Some(60);
+        let req = kaeso_kpp::Request::Generate(g);
+        let mut ctx = kaeso_codecs::EgressCtx::new(&req)
+            .with_chat_profile(provider("ollama-cloud").unwrap().chat);
+        let out =
+            kaeso_codecs::dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx).unwrap();
+        let sent: serde_json::Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["max_tokens"], 60, "{sent}");
+        assert!(sent.get("max_completion_tokens").is_none(), "{sent}");
+    }
+
+    #[test]
+    fn ollama_cloud_refuses_the_fields_ollama_ignores_and_keeps_the_rest() {
+        for (request, param) in [
+            ("requests/logit-bias", "logit_bias"),
+            ("requests/logprobs-top-logprobs-doc", "logprobs"),
+        ] {
+            assert_eq!(
+                sent_with_profile("ollama-cloud", request).unwrap_err(),
+                param,
+                "{request}"
+            );
+        }
+        let developer =
+            sent_with_profile("ollama-cloud", "requests/plain-developer-string").unwrap();
+        assert_eq!(developer["messages"][0]["role"], "developer");
+        let named = sent_with_profile("ollama-cloud", "requests/system-name-multiturn").unwrap();
+        assert!(named["messages"][0].get("name").is_some(), "{named}");
+        let seed =
+            sent_with_profile("ollama-cloud", "requests/stop-string-seed-penalties").unwrap();
+        assert!(seed.get("seed").is_some(), "{seed}");
+        let reasoning = sent_with_profile(
+            "ollama-cloud",
+            "providers/ollama-cloud/requests/reasoning-sent-back",
+        )
+        .unwrap();
+        assert_eq!(
+            reasoning["messages"][1]["reasoning"],
+            "The user wants one number; 7 is a common pick."
+        );
     }
 
     #[test]
@@ -1072,7 +1154,8 @@ mod tests {
                 "openrouter",
                 "mistral",
                 "vercel",
-                "cohere"
+                "cohere",
+                "ollama-cloud"
             ]
         );
         assert_eq!(

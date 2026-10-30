@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-497",
+  "object": "chat.completion",
+  "created": 1793373701,
+  "model": "gpt-oss:20b",
+  "system_fingerprint": "fp_ollama",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning": "Need to call get_weather.",
+        "tool_calls": [
+          {
+            "id": "call_p4wpxak3",
+            "index": 0,
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 129,
+    "completion_tokens": 30,
+    "total_tokens": 159,
+    "prompt_tokens_details": {
+      "cached_tokens": 128
+    }
+  }
+}

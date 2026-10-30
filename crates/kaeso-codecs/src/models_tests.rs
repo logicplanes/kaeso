@@ -1049,3 +1049,38 @@ fn a_listing_request_refuses_what_the_provider_cannot_take() {
         }
     }
 }
+
+#[test]
+fn an_ollama_cloud_listing_keeps_tagged_ids_and_its_codex_catalogue() {
+    let body = fixture("openai_chat", "providers/ollama-cloud/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        ["deepseek-v4.1-flash:1017", "gemma4:31b", "gpt-oss:20b"]
+    );
+    assert!(
+        l.models
+            .iter()
+            .all(|m| m.owned_by.as_deref() == Some("ollama"))
+    );
+    assert!(!l.has_more);
+    assert_json_eq(
+        "providers/ollama-cloud/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/ollama-cloud/retrieve-recorded"),
+    );
+    assert_eq!(one.id, "gpt-oss:20b");
+    let missing = fixtures("openai_chat", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/ollama-cloud/retrieve-not-found")
+        .unwrap()
+        .1;
+    let e = dispatch::decode_model(DialectId::OpenAiChat, 404, &h(), &missing).unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    assert!(e.message.contains("no-such-model:1b"), "{}", e.message);
+}
