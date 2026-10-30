@@ -50,7 +50,7 @@ Das OpenAI SDK erhält `https://kaeso.example.com/v1` als Basis-URL und sendet d
 
 ## Anthropic SDK verwenden
 
-Setzen Sie die Basis-URL auf `https://kaeso.example.com`, ohne `/v1`. Das SDK sendet den Schlüssel als `x-api-key`:
+Setzen Sie die Basis-URL auf `https://kaeso.example.com`, ohne `/v1`. Das SDK sendet den Schlüssel als `Authorization: Bearer`, `x-api-key` funktioniert ebenso:
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/messages \
