@@ -10,7 +10,7 @@ export const KAESO_TABS_VARIANTS = {
     underline: {
       classes: "",
       description:
-        "Underline tabs for detail pages: 40px, the first label on the content edge like the heading above, 24px apart, a 2px ink indicator under the label that slides",
+        "Underline tabs for detail pages: 40px, the first label on the content edge like the heading above, 24px apart, a 2px ink indicator under the label that slides; hover previews the line",
     },
     pill: { classes: "", description: "Header tabs: separate 32px pills, the active one filled; the first pill's edge on the gutter" },
   },
@@ -122,7 +122,7 @@ const Tab = forwardRef<HTMLButtonElement, TabProps>(function TabsTab({ value, ch
       className={cn(
         "relative inline-flex shrink-0 cursor-pointer items-center gap-6 text-body font-medium whitespace-nowrap text-fg-secondary transition-control tap-target hover:text-fg selected:text-fg disabled:cursor-not-allowed disabled:text-fg-disabled selected:disabled:text-fg-disabled",
         variant === "underline"
-          ? "group/tab h-40 outline-none"
+          ? "group/tab h-40 outline-none hover:tab-line-hover active:tab-line-pressed disabled:shadow-none"
           : "h-32 rounded-pill px-12 hover:bg-fill-1 active:bg-fill-2 selected:bg-fill-2 selected:hover:bg-fill-3 selected:active:bg-fill-3 focus-ring-inset",
         className,
       )}

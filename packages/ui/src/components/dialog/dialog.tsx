@@ -163,7 +163,7 @@ function DialogFrame({
   const closeButton = <IconButton icon={icons.close} aria-label={t("dialog.close", "Close")} tooltip={false} disabled={!!busy} />;
   const close = hideClose ? null : inline ? closeButton : <BaseDialog.Close render={closeButton} />;
   const Description = inline ? "p" : BaseDialog.Description;
-  const bar = headerStart != null && headerStart !== false;
+  const bar = headerStart !== undefined;
   return (
     <DialogBusy value={!!busy}>
       <div

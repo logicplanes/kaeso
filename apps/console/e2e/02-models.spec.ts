@@ -90,7 +90,7 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   await expect(dialog).not.toHaveAttribute("data-resizing");
   for (const control of [
     dialog.getByRole("button", { name: "Clear search" }),
-    dialog.getByRole("switch", { name: "Include deprecated" }),
+    dialog.getByRole("button", { name: "Include deprecated" }),
     dialog.getByRole("link", { name: "Open providers" }),
   ]) {
     await page.keyboard.press("Tab");

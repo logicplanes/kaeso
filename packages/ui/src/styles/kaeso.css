@@ -1047,6 +1047,14 @@
 @utility hairline-b-strong {
   box-shadow: inset 0 -1px 0 var(--k-line);
 }
+/* An underline tab's hover and press: a preview of the selection line, so the label can sit on the content edge
+   without a background pill around it. */
+@utility tab-line-hover {
+  box-shadow: inset 0 -2px 0 var(--k-line);
+}
+@utility tab-line-pressed {
+  box-shadow: inset 0 -2px 0 var(--k-line-strong);
+}
 @utility hairline-t-strong {
   box-shadow: inset 0 1px 0 var(--k-line);
 }
