@@ -26,15 +26,15 @@
     "e2e": "playwright test"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "7.3.3",
-    "@astrojs/mdx": "8.1.0",
-    "@astrojs/react": "7.1.0",
+    "@astrojs/markdown-remark": "7.3.4",
+    "@astrojs/mdx": "8.1.1",
+    "@astrojs/react": "7.1.1",
     "@hugeicons/core-free-icons": "4.3.5",
     "@hugeicons/react": "1.1.10",
     "@logicplanes/kaeso-tokens": "workspace:*",
     "@logicplanes/kaeso-ui": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
-    "astro": "7.4.0",
+    "astro": "7.4.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3"
@@ -46,7 +46,7 @@
     "@types/pngjs": "6.0.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "oxlint": "1.88.0",
+    "oxlint": "1.89.0",
     "pngjs": "7.0.0",
     "typescript": "5.9.3"
   }

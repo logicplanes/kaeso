@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.135.0",
-    "knip": "6.41.0",
+    "knip": "6.42.1",
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.1",
     "semver": "7.8.5"
