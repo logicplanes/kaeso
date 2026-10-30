@@ -12,6 +12,8 @@ use crate::state::AppState;
 
 pub async fn run(state: AppState) -> Result<String, JobError> {
     let now = state.clock.now();
+    let zone = crate::time_zone::or_utc(&kaeso_store::pg::instance::time_zone(&state.pg).await?);
+    let zone_name = zone.iana_name().unwrap_or("UTC");
     let mut sent = 0;
     for days in [1, 7] {
         let expiring = keys::expiring(&state.pg, now, days).await?;
@@ -72,7 +74,8 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
                     email,
                     &key.name,
                     &key.project_name,
-                    key.expires_at.date(),
+                    crate::time_zone::local(key.expires_at, &zone),
+                    zone_name,
                     &url,
                 ));
                 sent += 1;

@@ -437,6 +437,7 @@ pub async fn check(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Up
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "When automatic updates run.")]
 pub struct UpdateSchedule {
     #[doc = "Every day or once a week."]
@@ -449,6 +450,7 @@ pub struct UpdateSchedule {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Changes to the update settings.")]
 pub struct UpdateSettingsChange {
     #[doc = "Which releases are offered."]
@@ -542,6 +544,7 @@ pub async fn settings(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The release to update to.")]
 pub struct ApplyUpdate {
     #[doc = "The newest offered release's version, as the person confirmed it."]

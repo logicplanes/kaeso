@@ -1,0 +1,11 @@
+{
+  "status": 404,
+  "encoded": {
+    "type": "error",
+    "error": {
+      "type": "not_found_error",
+      "message": "Model 'kaeso-example/no-such-model' not found"
+    },
+    "request_id": null
+  }
+}

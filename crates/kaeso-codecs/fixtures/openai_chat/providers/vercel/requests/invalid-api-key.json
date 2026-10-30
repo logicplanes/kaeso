@@ -1,0 +1,10 @@
+{
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "max_tokens": 16
+}

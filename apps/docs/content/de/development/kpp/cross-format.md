@@ -207,7 +207,7 @@ Diese Tools werden aus einer Anfrage weggelassen statt abgelehnt (`cross::TOOLS_
 | `web_search_20260209` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 | `web_search_20260318` | `anthropic_messages` | `openai_chat` | immer: Chat Completions hat keine gehostete Suche |
 
-Eine `tool_choice`, die ein weggelassenes Tool verlangt, selbst oder in `allowed_tools`, ist `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls` und werden in `kaeso-left-out` genannt, weil Anbieter sie ohne Tools ablehnen. `tool_choice: "required"` oder ein benanntes Tool ist `Unsupported`, da kein Tool zum Aufrufen bliebe.
+Eine `tool_choice`, die ein weggelassenes Tool verlangt, selbst oder in `allowed_tools`, ist `Unsupported`. Wird jedes Tool weggelassen, entfallen auch `tool_choice: "auto"` oder `"none"` und `parallel_tool_calls` und werden in `kaeso-left-out` genannt, weil Anbieter sie ohne Tools ablehnen. `tool_choice: "required"` oder ein benanntes Tool ist `Unsupported`, da kein Tool zum Aufrufen bliebe. Nur die Responses-API von OpenAI nimmt eine `tool_choice` in einer Anfrage an, die die App ohne Tools gesendet hat, etwa einen Hilfsaufruf von Codex; für jeden anderen Anbieter entfallen `auto` und `none` ebenso, und ein erzwungenes Tool ist ein `invalid_request`.
 
 Claudes Suchen erreichen eine Responses-App als `web_search_call`-Items. Ein `server_tool_use`-Block namens `web_search` wird zu einem Item mit der ID `ws_kaeso_…` und `action: {type: search, query}`. Sein Status ist `completed`, sobald das passende `web_search_tool_result` eintrifft, `failed`, wenn dieses Ergebnis ein Fehler ist, und `in_progress`, wenn die Antwort vorher endet, wie bei `pause_turn`. Streams senden `response.output_item.added`, `response.web_search_call.in_progress`, `.searching`, `.completed` und `response.output_item.done`. Die Ergebnisse selbst und die Zitate der Antwort werden weggelassen, wie andere Daten, die das Format der App nicht zeigen kann.
 
@@ -230,7 +230,17 @@ Ein Codex-Thread, der auf einem GPT-Modell begann, enthält Items, die nur OpenA
 | `local_shell_call` | `Block::ToolCall` namens `local_shell`, sein `action`-Objekt als Argumente |
 | `local_shell_call_output` | `Block::ToolResult` für den Aufruf, den seine `id` nennt; Codex sendet stattdessen ein `function_call_output` |
 
-OpenAI und SpaceX bekommen die Items wie gesendet: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+OpenAI bekommt die Items wie gesendet, SpaceX seine `custom_tool_call`- und `custom_tool_call_output`-Items: SpaceX antwortet aus einem solchen Verlauf (`openai_responses/providers/xai/responses/recorded-codex-gpt-history.json`). `local_shell_call` und `local_shell_call_output` bekommt SpaceX wie oben als Tool-Aufrufe und Ergebnisse, weil es stattdessen `shell_call`-Items annimmt. Die Reasoning-Items von GPT fallen für SpaceX weg, weil SpaceX OpenAIs `encrypted_content` nicht entschlüsseln kann und die Anfrage ablehnen würde ([SpaceX](openai-responses.md#spacex)). Ein Item, das nicht die Form oben hat, bleibt ein unbekannter Block und wird wie einer abgelehnt.
+
+## Agentennachrichten von Codex
+
+Wenn Codex Subagenten startet, schreiben sich die Agenten mit `agent_message`-Input-Items: die Aufgabe des Root-Agenten an einen Subagenten (`NEW_TASK`) und die Antworten jedes Agenten, mit einem Pfad als `author` und `recipient`, etwa `/root/request_path`. Nur OpenAI liest sie. Jeder andere Anbieter erhält sie in jedem Format als Nachrichten:
+
+- **Rolle.** Eine Nachricht, die der anfragende Agent geschrieben hat, wird eine `assistant`-Nachricht, eine empfangene eine `user`-Nachricht. Der anfragende Agent ist der Empfänger der ersten Agentennachricht, wenn vor ihr nichts vom Modell kam (die erste Anfrage eines Subagenten), sonst ihr Autor (der Root-Agent).
+- **Text.** Die `input_text`- und `output_text`-Teile der Nachricht und ihre `encrypted_content`-Teile, in die Codex den Klartext der Aufgabe schreibt. Der eigene Kopf von Codex (`Message Type: …`, `Sender: …`) bleibt am Anfang; ohne ihn beginnt der Text mit `Message from <author> to <recipient>:`.
+- **Weggelassen.** Die `id` des Items, die nur OpenAI auflösen kann. Jede Nachricht wird im Header `kaeso-adapted` der Antwort genannt, etwa `agent message amsg_…`.
+
+Ein `encrypted_content`, das Chiffretext ist (eine ununterbrochene Base64-Folge), kann nur OpenAI lesen; überall sonst ist es `Unsupported`, ebenso ein Teil anderen Typs. Fixtures: `openai_responses/providers/xai/requests/codex-multi-agent.json` (die erste Anfrage eines Subagenten) und `codex-multi-agent-root.json` (ein späterer Zug des Root-Agenten).
 
 ## Argumente von Tool-Aufrufen
 

@@ -229,6 +229,24 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Vercel key with Vercel's own key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "vercel", name: "Gateway", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Vercel");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Vercel API key" })).toBeVisible();
+    expectKeyHint(dialog, "vercel.com", "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys", "AI Gateway → API Keys", "vck_");
+    const secret = within(dialog).getByLabelText("Vercel API key");
+    expect(secret).toHaveAttribute("placeholder", "vck_…");
+    await user.type(secret, "vck_123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Gateway");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Gateway is the Vercel default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "vercel", name: "Gateway", secret: "vck_123", make_default: false }]);
+  });
+
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "Anthropic");

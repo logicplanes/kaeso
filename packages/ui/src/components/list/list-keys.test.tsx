@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createRef, type KeyboardEvent } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { createPortal } from "react-dom";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { List, type ListGroup, type ListItemData } from "./list.js";
 import { Dialog } from "../dialog/dialog.js";
@@ -28,6 +29,106 @@ const withActions = (list: ListItemData[]) =>
 const cell = (name: string) => screen.getByText(name).closest<HTMLElement>("[role=gridcell]")!;
 
 describe("List keyboard", () => {
+  it("moves focus to the line that takes the place of one an action removed", async () => {
+    const user = userEvent.setup();
+    const flatItems = items.map(({ id, title }) => ({ id, title }));
+    const { rerender } = render(<List aria-label="Keys" items={withActions(flatItems)} />);
+    await act(() => lazyModulesSettled());
+    await user.click(screen.getByRole("button", { name: "More for stage" }));
+    expect(screen.getByRole("button", { name: "More for stage" })).toHaveFocus();
+    rerender(<List aria-label="Keys" items={withActions(flatItems.filter((i) => i.id !== "stage"))} />);
+    expect(cell("development")).toHaveFocus();
+    rerender(<List aria-label="Keys" items={withActions(flatItems.filter((i) => i.id === "prod"))} />);
+    expect(cell("production")).toHaveFocus();
+  });
+
+  it("also when the line goes while focus is in the row's menu, a portal outside the list", async () => {
+    const user = userEvent.setup();
+    const flatItems = withActions(items.map(({ id, title }) => ({ id, title })));
+    const withMenu = flatItems.map((i) =>
+      i.id === "stage"
+        ? {
+            ...i,
+            actions: (
+              <>
+                {i.actions}
+                {createPortal(<button type="button">Disable</button>, document.body)}
+              </>
+            ),
+          }
+        : i,
+    );
+    const { rerender } = render(<List aria-label="Keys" items={withMenu} />);
+    await act(() => lazyModulesSettled());
+    await user.click(screen.getByRole("button", { name: "More for stage" }));
+    await user.click(screen.getByRole("button", { name: "Disable" }));
+    act(() => screen.getByRole("button", { name: "Disable" }).blur());
+    rerender(<List aria-label="Keys" items={flatItems.filter((i) => i.id !== "stage")} />);
+    expect(cell("development")).toHaveFocus();
+  });
+
+  it("also when the line goes while its confirmation is still closing", async () => {
+    const user = userEvent.setup();
+    const flatItems = withActions(items.map(({ id, title }) => ({ id, title })));
+    const view = (list: ListItemData[], confirming: boolean) => (
+      <>
+        <List aria-label="Keys" items={list} />
+        {confirming && (
+          <div role="alertdialog" aria-label="Archive stage?">
+            <button type="button">Archive</button>
+          </div>
+        )}
+      </>
+    );
+    const { rerender } = render(view(flatItems, true));
+    await act(() => lazyModulesSettled());
+    await user.click(screen.getByRole("button", { name: "More for stage" }));
+    await user.click(screen.getByRole("button", { name: "Archive" }));
+    rerender(
+      view(
+        flatItems.filter((i) => i.id !== "stage"),
+        true,
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Archive" })).toHaveFocus();
+    rerender(
+      view(
+        flatItems.filter((i) => i.id !== "stage"),
+        false,
+      ),
+    );
+    await waitFor(() => expect(cell("development")).toHaveFocus());
+  });
+
+  it("leaves focus alone when it had already left the list before the line went", async () => {
+    const user = userEvent.setup();
+    const flatItems = items.map(({ id, title }) => ({ id, title }));
+    const { rerender } = render(
+      <>
+        <List aria-label="Keys" items={withActions(flatItems)} />
+        <button type="button">Elsewhere</button>
+      </>,
+    );
+    await act(() => lazyModulesSettled());
+    await user.click(screen.getByRole("button", { name: "More for stage" }));
+    await user.click(screen.getByRole("button", { name: "Elsewhere" }));
+    rerender(
+      <>
+        <List aria-label="Keys" items={withActions(flatItems.filter((i) => i.id !== "stage"))} />
+        <button type="button">Elsewhere</button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Elsewhere" })).toHaveFocus();
+    (document.activeElement as HTMLElement).blur();
+    rerender(
+      <>
+        <List aria-label="Keys" items={withActions(flatItems.filter((i) => i.id === "prod"))} />
+        <button type="button">Elsewhere</button>
+      </>,
+    );
+    expect(document.body).toHaveFocus();
+  });
+
   it("is one tab stop: Tab enters on a row and the next Tab leaves, past every checkbox and action", async () => {
     const user = userEvent.setup();
     render(

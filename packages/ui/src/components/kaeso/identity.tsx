@@ -263,8 +263,8 @@ export const RequestTimeline = forwardRef<
       aria-label={t("requestTimeline.label", "Time to first byte {ttfb} of {total} total", { ttfb: fmt(ttfbMs), total: fmt(totalMs) })}
     >
       <div className="flex h-6 w-full gap-2 overflow-hidden rounded-pill">
-        <span className="h-full rounded-l-pill bg-viz-1" style={{ width: `${ratio * 100}%` }} />
-        <span className="h-full flex-1 rounded-r-pill bg-fill-3" />
+        {ratio > 0 && <span className="h-full rounded-l-pill bg-viz-1" style={{ width: `${ratio * 100}%` }} />}
+        {ratio < 1 && <span className="h-full flex-1 rounded-r-pill bg-fill-3" />}
       </div>
       <div className="flex justify-between gap-8 text-caption font-medium text-fg-tertiary">
         <span className="flex min-w-0 flex-col">

@@ -490,10 +490,22 @@ function DataTableInner<T>(
     }
   };
 
+  // The virtualizer renders the table again for every scroll event, but a row's cells change only
+  // with its data, the columns shown and whether it is active or selected. A row hands back the
+  // cells it drew last time, so React skips them instead of drawing every visible row again.
+  const cellDeps = [columns, cols.map((c) => c.id).join(" "), inset, pinEnd, stickyFirstColumn, onRaised];
+  const drawn = useRef<{ deps: unknown[]; rows: WeakMap<Row<T>, { state: string; cells: ReactNode }> } | null>(null);
+  if (!drawn.current || cellDeps.some((d, i) => d !== drawn.current?.deps[i])) drawn.current = { deps: cellDeps, rows: new WeakMap() };
+  const drawnRows = drawn.current.rows;
+
   const renderRow = (row: Row<T>, i: number, style?: CSSProperties) => {
-    const cells = row.getVisibleCells().filter((c) => !hidden.has(c.column.id));
     const active = row.id === activeRowId;
-    const on = active || (!!selectable && row.getIsSelected());
+    const selected = !!selectable && row.getIsSelected();
+    const on = active || selected;
+    const state = `${active} ${selected}`;
+    const kept = drawnRows.get(row);
+    const cells = kept?.state === state ? kept.cells : drawCells(row, on);
+    if (kept?.state !== state) drawnRows.set(row, { state, cells });
     const el = (
       <div
         role="row"
@@ -527,36 +539,7 @@ function DataTableInner<T>(
           "forced-colors:data-active:outline-2 forced-colors:data-active:-outline-offset-2 forced-colors:data-active:outline-solid",
         )}
       >
-        {cells.map((cell, i) => {
-          const meta = cell.column.columnDef.meta;
-          const content = flexRender(cell.column.columnDef.cell, cell.getContext());
-          const raw = cell.getValue();
-          const text = meta?.text ? meta.text(row.original) : typeof raw === "string" ? raw : undefined;
-          const tone = meta?.tone?.(row.original);
-          return (
-            <div
-              key={cell.id}
-              role="cell"
-              className={cn(
-                cellPad(i),
-                meta?.align === "end" && "justify-end text-right tabular",
-                meta?.mono && "mono text-small",
-                tone && STATUS_TONE_TEXT[tone],
-                stickyCol(i, false, on),
-              )}
-            >
-              {text !== undefined && typeof content !== "object" ? (
-                <Text truncate tone={tone ?? "default"} className={cn("min-w-0", meta?.mono && "text-small")} mono={!!meta?.mono}>
-                  {text}
-                </Text>
-              ) : cell.column.id === "__select" ? (
-                <span className="flex">{content}</span>
-              ) : (
-                <TruncatedText className={cn("min-w-0 cell-fit", meta?.grow && "flex-1")}>{content}</TruncatedText>
-              )}
-            </div>
-          );
-        })}
+        {cells}
       </div>
     );
     if (!rowMenu) return <div key={row.id}>{el}</div>;
@@ -567,6 +550,42 @@ function DataTableInner<T>(
       </ContextMenu>
     );
   };
+
+  function drawCells(row: Row<T>, on: boolean) {
+    return row
+      .getVisibleCells()
+      .filter((c) => !hidden.has(c.column.id))
+      .map((cell, i) => {
+        const meta = cell.column.columnDef.meta;
+        const content = flexRender(cell.column.columnDef.cell, cell.getContext());
+        const raw = cell.getValue();
+        const text = meta?.text ? meta.text(row.original) : typeof raw === "string" ? raw : undefined;
+        const tone = meta?.tone?.(row.original);
+        return (
+          <div
+            key={cell.id}
+            role="cell"
+            className={cn(
+              cellPad(i),
+              meta?.align === "end" && "justify-end text-right tabular",
+              meta?.mono && "mono text-small",
+              tone && STATUS_TONE_TEXT[tone],
+              stickyCol(i, false, on),
+            )}
+          >
+            {text !== undefined && typeof content !== "object" ? (
+              <Text truncate tone={tone ?? "default"} className={cn("min-w-0", meta?.mono && "text-small")} mono={!!meta?.mono}>
+                {text}
+              </Text>
+            ) : cell.column.id === "__select" ? (
+              <span className="flex">{content}</span>
+            ) : (
+              <TruncatedText className={cn("min-w-0 cell-fit", meta?.grow && "flex-1")}>{content}</TruncatedText>
+            )}
+          </div>
+        );
+      });
+  }
 
   const header = (h: ReturnType<typeof table.getHeaderGroups>[number]["headers"][number], i: number) => {
     const meta = h.column.columnDef.meta;

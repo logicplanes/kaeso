@@ -1,0 +1,105 @@
+{
+  "id": "gen_01M64HFYZT354PP1X51YE4CECP",
+  "object": "chat.completion",
+  "created": 1793301413,
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "reasoning": "We need to fetch weather for Paris, unit Celsius. Use function get_weather with location \"Paris, France\"? Probably just \"Paris\". Provide unit celsius.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "We need to fetch weather for Paris, unit Celsius. Use function get_weather with location \"Paris, France\"? Probably just \"Paris\". Provide unit celsius.",
+            "format": "unknown",
+            "index": 0
+          }
+        ],
+        "tool_calls": [
+          {
+            "id": "call-4eae9857-3f6d-4503-abc6-e85a8c535f41",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}"
+            }
+          }
+        ],
+        "provider_metadata": {
+          "nvidia": {},
+          "gateway": {
+            "routing": {
+              "originalModelId": "nvidia/nemotron-3.5-lightning-free",
+              "resolvedProvider": "nvidia",
+              "fallbacksAvailable": [],
+              "planningReasoning": "System credentials planned for: nvidia. Total execution order: nvidia(system)",
+              "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+              "finalProvider": "nvidia",
+              "modelAttemptCount": 1,
+              "modelAttempts": [
+                {
+                  "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+                  "success": true,
+                  "providerAttemptCount": 1,
+                  "providerAttempts": [
+                    {
+                      "provider": "nvidia",
+                      "credentialType": "system",
+                      "success": true,
+                      "startTime": 1793301412894,
+                      "endTime": 1793301413439,
+                      "providerRequestId": "479dda95-f811-4a37-a55f-f92cedc723b2",
+                      "statusCode": 200,
+                      "providerResponseId": "chatcmpl-bc8d5534-88db-48d5-a07b-67f8223a29eb"
+                    }
+                  ]
+                }
+              ],
+              "totalProviderAttemptCount": 1,
+              "affinity": {
+                "outcome": "skipped_below_min_prefix"
+              },
+              "clientSessionId": "00000000000000000000000000000000",
+              "clientSessionIdSource": "fingerprint"
+            },
+            "cost": "0",
+            "marketCost": "0",
+            "surchargeCost": "0",
+            "gatewayCost": "0",
+            "generationId": "gen_01M64HFYZT354PP1X51YE4CECP"
+          }
+        }
+      },
+      "logprobs": null,
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 348,
+    "completion_tokens": 72,
+    "total_tokens": 420,
+    "cost": 0,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": null,
+      "upstream_inference_prompt_cost": 0,
+      "upstream_inference_completions_cost": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 33,
+      "image_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "market_cost": 0
+  },
+  "system_fingerprint": "fp_ex73nddphs",
+  "generationId": "gen_01M64HFYZT354PP1X51YE4CECP"
+}

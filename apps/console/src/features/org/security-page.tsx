@@ -494,7 +494,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
           description={
             security.sso
               ? t("org.sso.requireHint", "Accounts at its domains use only SSO; guests keep their own.")
-              : t("org.sso.connectFirst", "Connect an identity provider first")
+              : t("org.sso.connectFirstHint", "Connect an identity provider first.")
           }
           control={
             <Switch

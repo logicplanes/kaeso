@@ -71,6 +71,7 @@ pub async fn list(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Sso
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The org whose identity provider to link the account to.")]
 pub struct LinkRequest {
     #[doc = "The org; the user must be a member and the org must have an SSO\n\
@@ -248,6 +249,7 @@ pub async fn confirm_ways(State(state): State<AppState>, ctx: Ctx) -> ApiResult<
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The org whose identity provider confirms the sign-in.")]
 pub struct ConfirmRequest {
     #[doc = "The org; one of `sso` in `GET me/sign-in-again`."]

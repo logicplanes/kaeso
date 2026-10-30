@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
 use common::{App, Owner};
+use kaeso_core::clock::Clock;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 
@@ -114,6 +115,52 @@ async fn keys_show_their_secret_once_and_follow_the_expiry_rules() {
         "{:?}",
         r.body
     );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_key_expires_on_the_date_sent_and_a_misspelt_field_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}/keys", owner.org_id);
+    let on = (app.clock.now() + time::Duration::days(20)).date();
+    let (_, created) = key(
+        &app,
+        &owner,
+        &project,
+        json!({ "name": "dated", "expires_on": on.to_string() }),
+    )
+    .await;
+    assert_eq!(created["expires_at"], format!("{on}T00:00:00Z"));
+
+    let refused = |body: Value| {
+        let (app, owner, base) = (&app, &owner, &base);
+        async move {
+            let r = app.post(base, body, Some(&owner.cookie)).await;
+            assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+            (
+                r.body["error"]["param"].clone(),
+                r.body["error"]["message"].clone(),
+            )
+        }
+    };
+    refused(json!({ "name": "x", "expires_on": "18.11.2026" })).await;
+    let (param, message) = refused(json!({ "name": "x", "expires_in_day": 30 })).await;
+    assert_eq!(param, "expires_in_day");
+    assert_eq!(message, "`expires_in_day` is not a field of this request.");
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{}/projects/{project}", owner.org_id),
+            Some(json!({ "nmae": "renamed" })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "nmae");
     s.cleanup().await;
 }
 
@@ -562,6 +609,14 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
     .await
     .expect_status(StatusCode::OK);
 
+    app.call(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "Asia/Tokyo" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
     let job = kaeso_server::jobs::all()
         .into_iter()
         .find(|j| j.name == "key_expiry_warnings")
@@ -597,6 +652,26 @@ async fn users_manage_their_own_keys_and_get_expiry_warnings() {
             .filter(|m| m.kind.as_str() == "key_expiry_warning")
             .count(),
         2
+    );
+    // A key made for 7 days stops at the time it was made, so the warning says that time, on the
+    // install's clock: Tokyo is nine hours ahead of UTC all year.
+    let expires = time::OffsetDateTime::parse(
+        created["expires_at"].as_str().unwrap(),
+        &time::format_description::well_known::Rfc3339,
+    )
+    .unwrap()
+    .to_offset(time::macros::offset!(+9));
+    let stops = format!(
+        "fail from {:02}:{:02} Asia/Tokyo that day.",
+        expires.hour(),
+        expires.minute()
+    );
+    assert!(
+        app.mail
+            .to("owner@example.com")
+            .iter()
+            .all(|m| m.kind.as_str() != "key_expiry_warning" || m.text.contains(&stops)),
+        "{stops}"
     );
     let fresh = app
         .post(

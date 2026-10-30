@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LoadFailed } from "~/features/org/load-failed";
 import {
   AlertDialog,
   Badge,
@@ -66,6 +67,8 @@ export function AliasesTab({
     <>
       {aliases.isPending ? (
         <List aria-label={t("models.aliases", "Aliases")} items={[]} loading />
+      ) : aliases.isError ? (
+        <LoadFailed title={t("models.alias.loadFailed", "The aliases couldn't load")} />
       ) : list.length === 0 ? (
         <Empty
           size="lg"

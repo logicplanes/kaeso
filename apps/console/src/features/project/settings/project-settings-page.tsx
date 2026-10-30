@@ -45,7 +45,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
     <>
       <ProjectHeader org={org} project={project} page={common.settings()} path="settings" />
       <AppFrame.Body padding="page">
-        <div className="mx-auto flex w-full max-w-720 flex-col">
+        <div className="flex w-full flex-col lg:mx-auto lg:max-w-720">
           {!p ? (
             <Skeleton className="h-full w-full" />
           ) : (
@@ -107,12 +107,9 @@ function General({
     invalidates: [projectListKey(org), projectViewKey(org, project), ["me", "memberships"], ["session"]],
     onSuccess: () => toast.success(t("project.settings.renamed", "Project renamed")),
   });
-  const save = () => {
-    const next = draft.trim();
-    if (rename.isPending) return;
-    if (!next || next === name) return setDraft(name);
-    rename.mutate(next);
-  };
+  const next = draft.trim();
+  const locked = !canUpdate ? needs("project.update") : archived ? archivedReadOnly() : undefined;
+  const reason = locked ?? (!next ? t("org.general.enterName", "Enter a name") : next === name ? t("org.noChange", "No change to save") : undefined);
   return (
     <SettingsSection title={common.project()}>
       <SettingsGroup>
@@ -127,17 +124,27 @@ function General({
           title={common.name()}
           description={t("project.settings.nameHint", "Shown in the sidebar and in request logs.")}
           control={
-            <div className="w-240">
-              <Input
-                aria-label={t("project.settings.projectName", "Project name")}
+            <div className="flex min-w-0 items-center gap-8">
+              <div className="w-240 min-w-0">
+                <Input
+                  aria-label={t("project.settings.projectName", "Project name")}
+                  size="sm"
+                  value={draft}
+                  maxLength={100}
+                  disabled={!canUpdate || archived}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !reason && !rename.isPending && rename.mutate(next)}
+                />
+              </div>
+              <Button
                 size="sm"
-                value={draft}
-                maxLength={100}
-                disabled={!canUpdate || archived}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={save}
-                onKeyDown={(e) => e.key === "Enter" && save()}
-              />
+                disabled={!!reason}
+                {...(reason && !locked ? { disabledReason: reason } : {})}
+                loading={rename.isPending}
+                onClick={() => rename.mutate(next)}
+              >
+                {common.save()}
+              </Button>
             </div>
           }
         />

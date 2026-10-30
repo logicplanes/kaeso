@@ -25,6 +25,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | OpenRouter `openrouter` | Chat Completions、Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys)，`sk-or-v1-` |
 | SpaceX `xai` | Responses、Chat Completions | `api.x.ai` | [console.x.ai](https://console.x.ai/team/default/api-keys)，`xai-` |
 | Together AI `togetherai` | Chat Completions、Embeddings | `api.together.ai` | [api.together.ai](https://api.together.ai/settings/projects/~current/api-keys)，`tgp_v1_` |
+| Vercel `vercel` | Chat Completions、Responses、Messages、Embeddings | `ai-gateway.vercel.sh` | [vercel.com](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys)，`vck_` |
 
 ## 补充说明
 
@@ -36,3 +37,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 - **OpenAI。** 服务商密钥也可以是一个 ChatGPT 账户，其请求按 OpenAI 的相应规则使用该账户的 ChatGPT 套餐（[使用 ChatGPT 账户登录](../console/provider-keys.md#使用-chatgpt-账户登录)）。
 - **OpenRouter。** 模型 ID 包含模型开发者，例如 `anthropic/claude-sonnet-4.5`。请以 `openrouter/anthropic/claude-sonnet-4.5` 的形式调用，这样请求不会发往该开发者自己的服务商（[请求如何指定模型](../console/models-and-aliases.md#请求如何指定模型)）。Kaeso 按目录中的价格记录费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。OpenRouter 列出模型时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。
 - **SpaceX。** 即 xAI 的 API，提供 Grok 等模型。作为实验性选项，服务商密钥也可以是套餐包含 API 访问权限的 Grok 账户（[使用 Grok 账户登录](../console/provider-keys.md#使用-grok-账户登录)）。
+- **Vercel。** 即 Vercel AI Gateway，另一个网关，其自身的路由和回退在 Kaeso 之后运行。模型 ID 包含模型开发者，例如 `openai/gpt-5-nano`。请以 `vercel/openai/gpt-5-nano` 的形式调用，这样请求不会发往该开发者自己的服务商（[请求如何指定模型](../console/models-and-aliases.md#请求如何指定模型)）。模型的**发送格式**可以选择 Vercel 同样提供的 Responses 或 Messages；通过 Messages，Vercel 会把 Anthropic 的 `cache_control` 传给 Claude 模型。Kaeso 按目录中的价格记录费用，而不是按 Vercel 在 `usage.cost` 中报告的费用，后者不含 Vercel 自己的附加费。Vercel 只为 Claude 模型精确计数 Token，对其余模型只做估算，因此 Kaeso 拒绝为任何 Vercel 模型计数 Token。Vercel 回答模型信息时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。免费套餐的 Vercel 账户无法调用 Claude 等付费模型：Vercel 返回 403，应用会将其视为服务商密钥被拒绝，请求日志中保留 Vercel 给出的原因。

@@ -7,7 +7,7 @@ use kaeso_kpp::{
 use serde_json::{Value, json};
 
 use super::*;
-use crate::test_support::{assert_json_eq, fixtures, sidecar};
+use crate::test_support::{assert_json_eq, encoded_error, fixtures, sidecar};
 
 const DIALECT: &str = "anthropic_messages";
 const A: DialectId = DialectId::AnthropicMessages;

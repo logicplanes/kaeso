@@ -137,6 +137,9 @@ describe("platform keys", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
     expect(await notifications().findByText("Terraform disabled")).toBeInTheDocument();
     expect(requests("POST", "orgs/:org/platform-keys/opk_terraform/disable")).toHaveLength(1);
+    on("POST", "orgs/:org/platform-keys/:key/enable", platformKey());
+    await user.click(notifications().getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(requests("POST", "orgs/:org/platform-keys/opk_terraform/enable")).toHaveLength(1));
   });
 
   it("enables a disabled key", async () => {

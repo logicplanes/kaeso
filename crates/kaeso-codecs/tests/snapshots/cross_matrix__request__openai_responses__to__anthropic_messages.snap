@@ -1531,10 +1531,7 @@ expression: outcomes
           "role": "user"
         }
       ],
-      "model": "gpt-5.5",
-      "tool_choice": {
-        "type": "auto"
-      }
+      "model": "gpt-5.5"
     },
     "path": "/v1/messages"
   },
@@ -1863,6 +1860,198 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/vercel/gpt-reasoning-encrypted": {
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-5-nano",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/vercel/reasoning-stream": {
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/vercel/text": {
+    "body": {
+      "max_tokens": 64,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is the capital of France?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral/mistral-nemo",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer in one short sentence.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/vercel/text-stream": {
+    "body": {
+      "max_tokens": 64,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Count from one to five in words, separated by commas.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistral/mistral-nemo",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/vercel/tools": {
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather in Paris right now? Use Celsius.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a concise travel assistant. Use the tools for live data.",
+          "type": "text"
+        }
+      ],
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a location.",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather",
+          "strict": false
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/vercel/unknown-model": {
+    "body": {
+      "max_tokens": 16,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Say hi.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-example/no-such-model"
+    },
+    "path": "/v1/messages"
+  },
   "providers/xai/codex-gpt-history": {
     "body": {
       "max_tokens": 4096,
@@ -2027,6 +2216,223 @@ expression: outcomes
         {
           "name": "web_search",
           "type": "web_search_20250305"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-multi-agent": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Explain the request path.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root\nPayload:\nTrace how a request moves through the Kaeso gateway, read-only. Name the files.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/xai/codex-multi-agent-root": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Explain the request path, with a subagent.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_spawn_1",
+              "input": {
+                "cmd": "ls crates"
+              },
+              "name": "exec_command",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "content": [
+                {
+                  "text": "kaeso-server\nkaeso-codecs",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_spawn_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root\nPayload:\nTrace how a request moves through the Kaeso gateway, read-only. Name the files.",
+              "type": "text"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Message Type: TASK_RESULT\nTask name: /root/request_path\nSender: /root/request_path\nPayload:\nRequests go through crates/kaeso-server/src/model_api/pipeline.rs.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "grok-4.7",
+      "output_config": {
+        "effort": "high"
+      },
+      "stream": true,
+      "system": [
+        {
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled.",
+          "type": "text"
+        },
+        {
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>",
+          "type": "text"
+        },
+        {
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>",
+          "type": "text"
+        },
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "disable_parallel_tool_use": false,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "cmd": {
+                "description": "Shell command to execute.",
+                "type": "string"
+              },
+              "workdir": {
+                "description": "Working directory for the command. Defaults to the turn cwd.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cmd"
+            ],
+            "type": "object"
+          },
+          "name": "exec_command",
+          "strict": false
         }
       ]
     },

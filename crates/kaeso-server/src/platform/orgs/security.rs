@@ -163,6 +163,7 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An SSO connection.")]
 pub struct SsoRequest {
     #[doc = "The issuer URL; Kaeso fetches `/.well-known/openid-configuration` from it."]
@@ -496,6 +497,7 @@ pub async fn delete_sso(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A switch.")]
 pub struct Switch {
     #[doc = "On or off."]
@@ -599,6 +601,7 @@ pub async fn require_2fa(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A key lifetime policy.")]
 pub struct KeyPolicy {
     #[doc = "The longest lifetime of new keys in days (1 to 3650); `null` for no\n\

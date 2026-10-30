@@ -119,6 +119,7 @@ impl InviteView {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A project to join, with its role.")]
 pub struct InviteProjectRequest {
     #[doc = "An active project of the org."]
@@ -133,6 +134,7 @@ pub struct InviteProjectRequest {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new invitation.")]
 pub struct InviteRequest {
     #[doc = "The address to invite."]
@@ -238,6 +240,7 @@ pub async fn create(
             "{email} is already a member of this organization."
         )));
     }
+    throttle_invites(&state, &email).await?;
     let token = random_token();
     let id = InviteId::new();
     let roles_json = serde_json::to_value(&roles).map_err(ApiError::internal)?;
@@ -373,6 +376,22 @@ pub(crate) async fn caller_project_rights(
     })
 }
 
+// Sending and resending invitations is otherwise unlimited, so one address could be sent any
+// number of emails from this install.
+pub(crate) async fn throttle_invites(state: &AppState, email: &str) -> ApiResult<()> {
+    crate::auth::throttle::hit(
+        state,
+        crate::auth::throttle::INVITES_PER_ADDRESS,
+        &kaeso_core::email::canonical(email),
+    )
+    .await
+    .map_err(|r| {
+        crate::platform::auth::refused(r, |_| {
+            "Too many emails to this address; try again later.".to_owned()
+        })
+    })
+}
+
 async fn send(
     state: &AppState,
     ctx: &Ctx,
@@ -463,6 +482,7 @@ pub async fn resend(
         .await?
         .ok_or_else(|| ApiError::not_found("pending invite"))?;
     check_resend(&state, &ctx, &pending, &book).await?;
+    throttle_invites(&state, &pending.email).await?;
     let token = random_token();
     let mut tx = state.pg.begin().await?;
     if !invites::renew(

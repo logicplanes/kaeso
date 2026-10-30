@@ -38,6 +38,15 @@ describe("AliasesTab", () => {
     await hoverReason(user, within(haiku).getByText("Shadows a model"), "Apps that send `claude-haiku-4-5` get this alias, not the model with the same name.");
   });
 
+  it("says the aliases couldn't load instead of offering the first one", async () => {
+    setUp();
+    on("GET", ALIASES, apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly."));
+    await renderApp(projectPath("models?tab=aliases"));
+
+    expect(await screen.findByText("The aliases couldn't load")).toBeInTheDocument();
+    expect(screen.queryByText("No aliases yet")).not.toBeInTheDocument();
+  });
+
   it("offers to create the first alias", async () => {
     setUp({ list: [] });
     const { user } = await renderApp(projectPath("models?tab=aliases"));

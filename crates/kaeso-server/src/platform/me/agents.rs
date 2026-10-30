@@ -27,6 +27,7 @@ use crate::services::agents::{self as service, Granting, MODELS};
 use crate::state::AppState;
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(
     description = "What an agent may do: its rights on the instance, the account and each organization."
 )]
@@ -58,6 +59,7 @@ pub struct GrantBody {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An agent's rights in one organization.")]
 pub struct OrgGrantBody {
     #[doc = "The organization."]
@@ -74,6 +76,7 @@ pub struct OrgGrantBody {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An agent's rights in the projects of one organization.")]
 pub struct ProjectsGrantBody {
     #[doc = "Every project, including ones created later, with `rights`; `false`:\n\
@@ -99,6 +102,7 @@ impl Default for ProjectsGrantBody {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An agent's rights in one project.")]
 pub struct ProjectGrantBody {
     #[doc = "The project."]
@@ -108,6 +112,7 @@ pub struct ProjectGrantBody {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An agent's rights in organizations its user joins later.")]
 pub struct FutureGrantBody {
     #[doc = "Org rights."]
@@ -259,6 +264,7 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new name for an agent.")]
 pub struct AgentUpdate {
     #[doc = "Its name, 1 to 100 characters."]
@@ -741,6 +747,7 @@ pub async fn grantable(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Jso
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(
     description = "A sign-in request of an agent, from the fragment of the console's consent page."
 )]
@@ -802,6 +809,7 @@ pub async fn request(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The user's decision to let an agent sign in.")]
 pub struct AgentApproval {
     #[doc = "The request token from `#request=`."]

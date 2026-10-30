@@ -20,6 +20,7 @@ use crate::services::users as lifecycle;
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new org.")]
 pub struct OrgCreate {
     #[doc = "The name."]
@@ -208,6 +209,7 @@ pub async fn leave(
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Alert emails the user wants.")]
 pub struct Notifications {
     #[doc = "Budget threshold alerts."]

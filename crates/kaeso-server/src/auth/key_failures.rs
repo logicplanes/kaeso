@@ -16,8 +16,8 @@ pub struct Throttled {
 impl Throttled {
     pub fn message(self) -> String {
         format!(
-            "Too many requests with unknown API keys from your address; try again in {} seconds.",
-            self.retry_after
+            "Too many requests with unknown API keys from your address; try again in {}.",
+            throttle::wait(self.retry_after)
         )
     }
 

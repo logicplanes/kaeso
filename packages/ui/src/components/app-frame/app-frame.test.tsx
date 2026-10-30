@@ -45,6 +45,12 @@ describe("AppFrame.Settings", () => {
     expect(actions).not.toHaveClass("ml-auto");
     expect(screen.getByRole("heading", { level: 1 }).closest("header")!.parentElement).toHaveClass("pt-16", "lg:pt-64");
   });
+  it("without the sidebar, spans the panel on the phone bar's gutter, and beside it centres a column of its own", () => {
+    render(<Page />);
+    const column = screen.getByRole("heading", { level: 1 }).closest("header")!.parentElement!;
+    expect(column).toHaveClass("w-full", "px-24", "lg:mx-auto", "lg:max-w-settings");
+    expect(column).not.toHaveClass("mx-auto", "max-w-settings");
+  });
 });
 
 function Shell({ brandHref, phoneActions }: { brandHref?: string; phoneActions?: ReactNode }) {

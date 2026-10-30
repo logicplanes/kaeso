@@ -1,0 +1,13 @@
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Is 91 a prime number? Answer yes or no with one short reason.",
+  "reasoning": {
+    "effort": "low",
+    "summary": "auto"
+  },
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "store": false,
+  "max_output_tokens": 1024
+}

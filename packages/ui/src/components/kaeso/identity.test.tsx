@@ -92,4 +92,18 @@ describe("RequestTimeline", () => {
     expect(labelWidth(first!) + 8 + labelWidth(total!)).toBeLessThanOrEqual(160);
     expect(labelWidth("9999.9 s") * 2 + 8).toBeLessThanOrEqual(160);
   });
+  it("fills the whole track when the first byte is the whole time, and none of it before one", () => {
+    const track = (ttfb: number, total: number) => {
+      const { container, unmount } = render(<RequestTimeline ttfbMs={ttfb} totalMs={total} />);
+      const parts = [...container.firstElementChild!.firstElementChild!.children].map((s) =>
+        s.classList.contains("bg-viz-1") ? `first byte ${(s as HTMLElement).style.width}` : "rest",
+      );
+      unmount();
+      return parts;
+    };
+    expect(track(1, 1)).toEqual(["first byte 100%"]);
+    expect(track(2, 1)).toEqual(["first byte 100%"]);
+    expect(track(0, 1840)).toEqual(["rest"]);
+    expect(track(460, 1840)).toEqual(["first byte 25%", "rest"]);
+  });
 });

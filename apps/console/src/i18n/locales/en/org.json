@@ -380,6 +380,7 @@
   "org.sso.clientStepHint": "The app's client id and secret.",
   "org.sso.connect": "Connect an identity provider",
   "org.sso.connectFirst": "Connect an identity provider first",
+  "org.sso.connectFirstHint": "Connect an identity provider first.",
   "org.sso.connectShort": "Connect",
   "org.sso.connected": "Identity provider connected",
   "org.sso.copyRecord": "Copy TXT value",

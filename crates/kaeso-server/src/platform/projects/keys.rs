@@ -40,6 +40,9 @@ pub struct KeyCreate {
     pub models: Option<Vec<kaeso_core::id::CatalogueModelId>>,
     #[doc = "Limits on the key, only tighter than its member's and the project's."]
     pub limits: Option<Vec<super::limits::KeyLimit>>,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 struct Rotation<'a> {
@@ -551,6 +554,7 @@ async fn replacement(
         expiry: req.expiry.clone(),
         models: models.map(|m| m.into_iter().map(CatalogueModelId::from_uuid).collect()),
         limits: (!limits.is_empty()).then_some(limits),
+        other: crate::platform::json::NoOtherFields,
     })
 }
 

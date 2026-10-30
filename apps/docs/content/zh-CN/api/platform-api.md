@@ -174,7 +174,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 409 | `org_scheduled_for_deletion` | 在已计划删除的组织中进行更改。 |
 | 412 | `conflict` | `If-Match` 指定的是较旧的修订版本。 |
 | 413 | `request_too_large` | 正文大于 `KAESO_BODY_LIMITS_PLATFORM_API`，默认为 1 MiB。 |
-| 429 | `rate_limited` | 来自同一地址的登录尝试或未知密钥过多，或试验场请求触及限额。`Retry-After` 说明何时重试。 |
+| 429 | `rate_limited` | 来自同一地址的登录尝试或未知密钥过多，一小时内向同一邮箱地址发送超过五封邀请，或试验场请求触及限额。`Retry-After` 说明何时重试。 |
 | 500 | `internal` | 网关内部故障。消息会给出可报告的请求 ID。 |
 | 503 | `unavailable` | Kaeso 无法连接数据库或其他后端服务，例如“Kaeso cannot reach its database right now; try again shortly.” |
 | 429、502、503、504 | `provider_error` | 服务商出错，仅用于[试验场](#试验场)请求。 |

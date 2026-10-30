@@ -254,6 +254,7 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - 提示过长与其他错误一样是 400 `invalid_request_error`，只有消息能区分它。如果 Anthropic 改变措辞，该错误会被解码为 `InvalidRequest`。
 - 未知的 `error.type`，或不是 `ErrorResponse` 的响应体，按状态码确定类型。这类响应体的例子有 Cloudflare 的 HTML 413、`type` 不是 `error` 的 JSON，以及顶层带有 Kaeso 无法承载的键的 JSON。状态码和原始响应体（不是 JSON 时以字符串保存）都会保留，这类响应体会以 Anthropic 的错误结构重新编码。
 - 状态码 400、409 和 422 为 `InvalidRequest`，401 为 `Authentication`，402 为 `Billing`，403 为 `PermissionDenied`，404 为 `NotFound`。状态码 408 和 504 为 `Timeout`，413 为 `RequestTooLarge`，429 为 `RateLimited`，503 和 529 为 `Overloaded`。其他任何状态码以及没有状态码的流错误为 `ProviderError`。文档中的 `error.type` 总是优先于状态码。
+- OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
 - `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。

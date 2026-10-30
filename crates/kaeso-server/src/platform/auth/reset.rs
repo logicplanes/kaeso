@@ -21,6 +21,7 @@ use crate::platform::json::Body;
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The address to send a reset link to.")]
 pub struct ResetRequest {
     #[doc = "The account's email address."]
@@ -103,6 +104,7 @@ pub async fn request(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The token from a reset link.")]
 pub struct ResetLookupRequest {
     #[doc = "The token from `…/auth/password-reset#token=…`."]
@@ -161,6 +163,7 @@ pub async fn lookup(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The token and the new password.")]
 pub struct ResetVerifyRequest {
     #[doc = "The token from `…/auth/password-reset#token=…`."]

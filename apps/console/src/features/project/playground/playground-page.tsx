@@ -266,7 +266,13 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           aria-label={common.model()}
                           appearance="ghost"
                           size="sm"
-                          placeholder={catalogue.isPending ? t("playground.loadingModels", "Loading models") : t("playground.chooseModel", "Choose a model")}
+                          placeholder={
+                            catalogue.isPending
+                              ? t("playground.loadingModels", "Loading models")
+                              : catalogue.isError
+                                ? t("playground.modelsFailed", "The models couldn't load")
+                                : t("playground.chooseModel", "Choose a model")
+                          }
                           value={m ? ref : null}
                           onValueChange={(v) => {
                             rememberModel(project, v);
@@ -275,7 +281,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           options={options}
                           providers={pickerProviders}
                           recent={recentModels(project)}
-                          disabled={catalogue.isPending}
+                          disabled={catalogue.isPending || catalogue.isError}
                           fullWidth
                         />
                       }

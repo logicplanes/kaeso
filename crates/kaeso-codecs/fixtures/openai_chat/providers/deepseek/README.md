@@ -44,7 +44,7 @@ No recording has DeepSeek's keep-alive lines or its HTTP 402, because neither ca
 
 | difference | how KPP carries it | source |
 |---|---|---|
-| `message.reasoning_content`, `delta.reasoning_content` | a reasoning block before the answer, through the `chat` profile's `reasoning_fields(["reasoning_content"])`; Chat apps get the field back as sent, Anthropic Messages and Responses apps get a thinking block or reasoning item ([provider profiles](https://docs.kaeso.app/development/kpp/openai-chat#provider-profiles)) | API reference, `reasoning_content` |
+| `message.reasoning_content`, `delta.reasoning_content` | a reasoning block before the answer, through the `chat` profile's `reasoning_fields(["reasoning_content"])`; Chat apps get the field back as sent, Anthropic Messages and Responses apps get a thinking block or reasoning item ([provider profiles](https://docs.kaeso.app/development/kpp/openai-chat-providers#provider-profiles)) | API reference, `reasoning_content` |
 | `reasoning_content` on an assistant message sent back | extras of the message, sent again as it is; DeepSeek accepts it | `responses/recorded-reasoning-content-sent-back.json` |
 | the [thinking-mode guide](https://api-docs.deepseek.com/guides/thinking_mode/) asks for `reasoning_content` on every later request with tools, or a 400 | apps in other formats can't send it back, since replies to them leave it out; the live API answers without it | `responses/recorded-tool-turn-without-reasoning-content.json`, `responses/recorded-pro-tool-turn-without-reasoning-content.json` |
 | `thinking` in a request | extras of the request; `Unsupported` towards other formats | API reference, `thinking` |

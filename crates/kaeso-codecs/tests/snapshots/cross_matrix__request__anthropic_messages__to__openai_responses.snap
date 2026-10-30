@@ -563,6 +563,179 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/vercel/rate-limited": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/restricted-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "anthropic/claude-haiku-4.5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/text": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Answer in one short sentence.",
+      "max_output_tokens": 64,
+      "model": "mistral/mistral-nemo",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/text-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from one to five in words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 64,
+      "model": "mistral/mistral-nemo",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/thinking": {
+    "body": {
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/thinking-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a concise travel assistant. Use the tools for live data.",
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a location.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "City and country, e.g. Paris, France",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location",
+              "unit"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/vercel/unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hi.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "kaeso-example/no-such-model",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "refusal": {
     "body": {
       "input": [

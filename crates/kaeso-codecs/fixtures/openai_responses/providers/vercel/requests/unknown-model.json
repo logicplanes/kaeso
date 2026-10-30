@@ -1,0 +1,5 @@
+{
+  "model": "kaeso-example/no-such-model",
+  "input": "Say hi.",
+  "max_output_tokens": 16
+}

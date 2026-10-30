@@ -79,7 +79,8 @@ export function OverviewPage({ org, project, search }: { org: string; project: s
               granularity={g}
               compare={compare}
               showCost={showCost}
-              loading={daily.isPending || daily.isError || previous.isLoading}
+              loading={daily.isPending || previous.isLoading}
+              failed={daily.isError}
             />
             <RequestsChart {...dailyState} />
             <TokensChart {...dailyState} />

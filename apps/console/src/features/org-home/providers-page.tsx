@@ -230,7 +230,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
         ),
       ),
       col.custom(
-        { id: "key", header: t("orgHome.key", "Key"), size: accounts ? ACCOUNT_KEY_WIDTH : KEY_WIDTH, priority: 1, grow: true },
+        { id: "key", header: t("orgHome.key", "Key"), size: accounts ? ACCOUNT_KEY_WIDTH : KEY_WIDTH, minWidth: 128, priority: 1, grow: true },
         (r: Row) => r,
         (r: Row) => {
           const defaultBelow = r.key.is_default && hidden.includes("projects");

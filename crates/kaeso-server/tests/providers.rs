@@ -66,6 +66,18 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         json!(["openai_responses", "openai_chat", "openai_embeddings"])
     );
     assert_eq!(openai["count_tokens"], "openai_responses");
+    let vercel = listed.iter().find(|p| p["id"] == "vercel").unwrap();
+    assert_eq!(
+        vercel["dialects"],
+        json!([
+            "openai_chat",
+            "openai_responses",
+            "anthropic_messages",
+            "openai_embeddings"
+        ])
+    );
+    assert_eq!(vercel["count_tokens"], Value::Null);
+    assert_eq!(vercel["key_prefix"], "vck_");
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

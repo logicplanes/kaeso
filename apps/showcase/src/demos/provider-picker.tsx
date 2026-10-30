@@ -10,6 +10,7 @@ const providers: ProviderPickerOption[] = [
   { id: "mistral", name: "Mistral" },
   { id: "openrouter", name: "OpenRouter" },
   { id: "togetherai", name: "Together AI" },
+  { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },
 ];
 

@@ -788,3 +788,139 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     body.lock().unwrap().0 = 200;
     assert_eq!(run_sync_job(&app).await, "unchanged");
 }
+
+async fn store_as_an_older_build(
+    app: &App,
+    body: &str,
+    source: &str,
+    fetched_at: time::OffsetDateTime,
+) {
+    let without_mistral: Vec<_> = kaeso_core::provider::known_ids()
+        .into_iter()
+        .filter(|id| id.as_str() != "mistral")
+        .collect();
+    let old = kaeso_core::models_dev::parse(body.as_bytes(), &without_mistral)
+        .unwrap()
+        .snapshot;
+    sqlx::query(
+        "UPDATE models_dev_snapshot SET fetched_at = $1, source_url = $2, \
+         content_hash = sha256(convert_to($3, 'UTF8')), format = NULL, data = $4, model_count = $5, \
+         last_attempt_at = $1, last_error = NULL WHERE id = 1",
+    )
+    .bind(fetched_at)
+    .bind(source)
+    .bind(body)
+    .bind(serde_json::to_value(&old).unwrap())
+    .bind(i32::try_from(old.model_count()).unwrap())
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+}
+
+fn mistral_models(app: &App) -> usize {
+    app.state
+        .models_dev
+        .current()
+        .snapshot
+        .providers
+        .get("mistral")
+        .map_or(0, |p| p.models.len())
+}
+
+#[tokio::test]
+async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_it_again() {
+    let s = TestServices::start().await;
+    let mut doc: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
+    doc["anthropic"]["models"]["claude-haiku-4-5"]["cost"]["input"] = json!(1.5);
+    let served = doc.to_string();
+    let body = Arc::new(Mutex::new((200u16, served.clone())));
+    let url = stub_models_dev(body.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_MODELS_DEV_URL", url.as_str()),
+            ("KAESO_MODELS_DEV_SYNC", "true"),
+            ("KAESO_MODELS_DEV_INTERVAL", "24h"),
+        ],
+    )
+    .await;
+    let now = (kaeso_core::models_dev::EMBEDDED_FETCHED_AT + time::Duration::DAY).max(
+        time::OffsetDateTime::now_utc()
+            .replace_nanosecond(0)
+            .unwrap(),
+    );
+    app.clock.set(now);
+    let fetched_at = now - time::Duration::HOUR;
+    store_as_an_older_build(&app, &served, &url, fetched_at).await;
+    let built_in = kaeso_core::models_dev::embedded().unwrap().providers["mistral"]
+        .models
+        .len();
+    assert!(built_in > 0);
+
+    kaeso_server::services::models_dev::init(&app.state)
+        .await
+        .unwrap();
+    let loaded = app.state.models_dev.current();
+    assert_eq!(loaded.source, url);
+    assert_eq!(loaded.fetched_at, fetched_at);
+    assert_eq!(mistral_models(&app), built_in);
+    let haiku = loaded
+        .snapshot
+        .model("anthropic", "claude-haiku-4-5")
+        .unwrap();
+    assert_eq!(
+        haiku.cost.as_ref().unwrap().input.unwrap().to_string(),
+        "1.5",
+        "the stored data stays in use for the providers it has"
+    );
+
+    body.lock().unwrap().0 = 500;
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "models_dev_sync")
+        .unwrap();
+    assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock.advance(time::Duration::HOUR);
+    body.lock().unwrap().0 = 200;
+    assert_eq!(
+        run_sync_job(&app).await,
+        "applied: 0 price changes, 0 delisted, 0 listed again",
+        "the same models.dev data is applied again for the new provider"
+    );
+    assert_eq!(mistral_models(&app), built_in);
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock.advance(time::Duration::DAY);
+    assert_eq!(run_sync_job(&app).await, "unchanged");
+
+    kaeso_server::services::models_dev::init(&app.state)
+        .await
+        .unwrap();
+    assert_eq!(app.state.models_dev.current().source, url);
+    assert_eq!(mistral_models(&app), built_in);
+}
+
+#[tokio::test]
+async fn an_older_builds_copy_of_the_built_in_snapshot_is_replaced() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    store_as_an_older_build(
+        &app,
+        kaeso_core::models_dev::EMBEDDED,
+        kaeso_server::services::models_dev::EMBEDDED_SOURCE,
+        kaeso_core::models_dev::EMBEDDED_FETCHED_AT,
+    )
+    .await;
+
+    kaeso_server::services::models_dev::init(&app.state)
+        .await
+        .unwrap();
+    assert!(mistral_models(&app) > 0);
+    let (count, formatted): (i32, bool) =
+        sqlx::query_as("SELECT model_count, format IS NOT NULL FROM models_dev_snapshot")
+            .fetch_one(&app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(usize::try_from(count).unwrap(), embedded_model_count());
+    assert!(formatted);
+}

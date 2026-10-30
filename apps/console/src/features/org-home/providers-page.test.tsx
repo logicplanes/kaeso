@@ -518,6 +518,31 @@ describe("organization providers", () => {
     expect(header().split(" ").slice(2, 4)).toEqual(["minmax(456px,", "1fr)"]);
   });
 
+  describe("on a phone", () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it("fits the provider, the key and its menu in a 375px screen without scrolling sideways", async () => {
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+        width: 327,
+        height: 0,
+        top: 0,
+        left: 0,
+        right: 327,
+        bottom: 0,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+      signedIn();
+      keys([production, staging]);
+      await renderApp(PATH);
+      await row("Staging");
+      const header = within(await table()).getAllByRole("row")[0] as HTMLElement;
+      expect(header.style.gridTemplateColumns).toMatch(/^minmax\(128px, 1fr\) minmax\(128px, 1fr\) /);
+      expect(parseFloat(header.style.minWidth)).toBeLessThanOrEqual(327);
+    });
+  });
+
   describe("on a tablet", () => {
     afterEach(() => vi.restoreAllMocks());
 

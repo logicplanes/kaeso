@@ -1,0 +1,121 @@
+{
+  "model": "grok-4.7",
+  "input": [
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c01-7000-8000-000000000001",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are Codex, an agent based on Grok 4.7. You and the user share one workspace, and your job is to collaborate with them until their intended goal is completely handled."
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_019a0e5b-7c02-7000-8000-000000000002",
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "<skills_instructions>\n## Skills\nA skill is a set of local instructions to follow that is stored in a `SKILL.md` file.\n</skills_instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<permissions instructions>\nFilesystem sandboxing defines which files can be read or written. `sandbox_mode` is `read-only`.\n</permissions instructions>"
+        },
+        {
+          "type": "input_text",
+          "text": "<collaboration_mode># Collaboration Mode: Default\n\nYou are now in Default mode.\n</collaboration_mode>"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Explain the request path, with a subagent."
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_spawn_1",
+      "name": "exec_command",
+      "arguments": "{\"cmd\":\"ls crates\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_spawn_1",
+      "output": "kaeso-server\nkaeso-codecs"
+    },
+    {
+      "type": "agent_message",
+      "id": "amsg_01a188a5-ab91-72a2-b8ce-f9e63128b6d1",
+      "author": "/root",
+      "recipient": "/root/request_path",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Message Type: NEW_TASK\nTask name: /root/request_path\nSender: /root\nPayload:\n"
+        },
+        {
+          "type": "encrypted_content",
+          "encrypted_content": "Trace how a request moves through the Kaeso gateway, read-only. Name the files."
+        }
+      ]
+    },
+    {
+      "type": "agent_message",
+      "id": "amsg_01a188a6-0c3e-7d10-b2f4-6e9a1c5d7b23",
+      "author": "/root/request_path",
+      "recipient": "/root",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Message Type: TASK_RESULT\nTask name: /root/request_path\nSender: /root/request_path\nPayload:\nRequests go through crates/kaeso-server/src/model_api/pipeline.rs."
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "exec_command",
+      "description": "Runs a command in a PTY, returning output or a session ID for ongoing interaction.",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cmd": {
+            "type": "string",
+            "description": "Shell command to execute."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "Working directory for the command. Defaults to the turn cwd."
+          }
+        },
+        "required": [
+          "cmd"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": {
+    "effort": "high",
+    "summary": "auto"
+  },
+  "store": false,
+  "stream": true,
+  "include": [
+    "reasoning.encrypted_content"
+  ],
+  "prompt_cache_key": "01a1889c-5f0e-7c42-9a3d-2b7e4c1f8a90"
+}

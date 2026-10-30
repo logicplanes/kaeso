@@ -137,6 +137,22 @@
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%2Fapi-keys",
+        "label": "AI Gateway → API Keys"
+      },
+      "key_prefix": "vck_",
+      "dialects": ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null
     }
   ],
   "has_more": false,

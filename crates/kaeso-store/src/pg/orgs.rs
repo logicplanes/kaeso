@@ -105,6 +105,10 @@ pub async fn list(
     order: OrgOrder,
     sso: Option<bool>,
 ) -> Result<Vec<Org>, StoreError> {
+    // PostgreSQL text can't hold NUL, so no row matches one, and the driver refuses it.
+    if search.is_some_and(|s| s.contains('\0')) {
+        return Ok(Vec::new());
+    }
     let pattern = search.map(|s| {
         format!(
             "%{}%",

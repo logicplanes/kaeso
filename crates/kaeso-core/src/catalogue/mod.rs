@@ -213,7 +213,8 @@ impl Fields {
             output_price: cost.output,
             cache_read_price: cost.cache_read,
             cache_write_price: cost.cache_write,
-            egress_dialect: None,
+            egress_dialect: (m.kind.as_deref() == Some("embedding"))
+                .then_some(DialectId::OpenAiEmbeddings),
             adaptive_thinking: None,
             thinking_binding: None,
             forced_tool_choice: None,
@@ -560,11 +561,14 @@ pub fn effective(
     let fields = if provider.custom().is_some() {
         entry.overrides.clone()
     } else {
-        let upstream = snapshot
+        let mut upstream = snapshot
             .model(&entry.provider, &entry.model_id)
             .or(entry.last_known.as_ref())
             .map(Fields::from_models_dev)
             .unwrap_or_default();
+        upstream.egress_dialect = upstream
+            .egress_dialect
+            .filter(|d| provider.dialects().contains(d));
         let supplemental = supplement
             .get(&entry.provider, &entry.model_id)
             .cloned()

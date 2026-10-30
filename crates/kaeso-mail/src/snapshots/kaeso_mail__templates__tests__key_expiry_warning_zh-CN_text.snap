@@ -6,7 +6,7 @@ Subject: API 密钥 ci-deploy 将于 2026年10月18日过期
 
 API 密钥 ci-deploy 将于 2026年10月18日过期
 
-在 Default project 中使用此密钥的请求，将在该日期之后失败。
+在 Default project 中使用此密钥的请求，将从当天 UTC 时间 0 时 00 分起失败。
 
 打开 API 密钥：
 https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK

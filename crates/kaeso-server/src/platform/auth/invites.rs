@@ -23,6 +23,7 @@ use crate::services::invites::{Accepted, accept};
 use crate::state::AppState;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The token from an invitation link.")]
 pub struct InviteToken {
     #[doc = "The token from `…/invite#token=…`."]
@@ -108,6 +109,7 @@ pub async fn lookup(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Accepting an invitation.")]
 pub struct AcceptRequest {
     #[doc = "The token from the invitation link."]

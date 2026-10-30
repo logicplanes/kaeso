@@ -20,7 +20,47 @@ pub struct ResponsesProfile {
     pub openai_encrypted_reasoning: bool,
     /// What the provider takes at the root of a function tool's parameter schema.
     pub tool_schema_root: ToolSchemaRoot,
+    /// Which input item types reach the provider.
+    pub input_items: InputItems,
+    /// Whether the provider takes `tool_choice` in a request without tools; otherwise `auto`
+    /// and `none` are left out of such a request and a choice that forces a tool is refused.
+    pub tool_choice_without_tools: bool,
 }
+
+/// Which input item types a Responses provider takes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum InputItems {
+    /// Every type, as the app wrote it.
+    AsSent,
+    /// Every type but Codex's `agent_message`, which only OpenAI reads: each becomes a message.
+    WithoutAgentMessages,
+    /// Only these types. `agent_message` becomes a message, Codex's `local_shell_call` and
+    /// `local_shell_call_output` become a function call and its output, and any other type
+    /// is refused before the request is sent.
+    Only(&'static [&'static str]),
+}
+
+/// The input item types xAI's Responses API takes: the types its 422 lists for any other
+/// type (from a production refusal on 2026-10-29), and `custom_tool_call_output`, which
+/// that list leaves out but xAI answered in
+/// `providers/xai/responses/recorded-codex-gpt-history.json`.
+pub const XAI_INPUT_ITEMS: &[&str] = &[
+    "message",
+    "reasoning",
+    "function_call",
+    "function_call_output",
+    "shell_call",
+    "shell_call_output",
+    "web_search_call",
+    "file_search_call",
+    "code_interpreter_call",
+    "mcp_call",
+    "custom_tool_call",
+    "custom_tool_call_output",
+    "image_generation_call",
+    "compaction",
+];
 
 /// The hosted `web_search` tool a Responses provider takes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -52,16 +92,27 @@ impl ResponsesProfile {
         reasoning_replay: ReasoningReplay::AsSent,
         openai_encrypted_reasoning: true,
         tool_schema_root: ToolSchemaRoot::AsSent,
+        input_items: InputItems::AsSent,
+        tool_choice_without_tools: true,
     };
 
-    /// Another provider's Responses API: as OpenAI's, but without tool namespaces, which
-    /// only OpenAI documents.
+    /// Another provider's Responses API: as OpenAI's, but without tool namespaces, Codex's
+    /// agent messages and `tool_choice` in a request without tools, which only OpenAI takes.
     pub const fn compatible(provider: &'static str) -> Self {
         ResponsesProfile {
             provider,
             tool_namespaces: false,
+            input_items: InputItems::WithoutAgentMessages,
+            tool_choice_without_tools: false,
             ..ResponsesProfile::OPENAI
         }
+    }
+
+    /// The provider takes only xAI's input item types, [`XAI_INPUT_ITEMS`].
+    #[must_use]
+    pub const fn xai_input_items(mut self) -> Self {
+        self.input_items = InputItems::Only(XAI_INPUT_ITEMS);
+        self
     }
 
     /// The provider takes xAI's hosted `web_search` tool.

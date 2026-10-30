@@ -223,6 +223,70 @@ fn a_together_ai_listing_that_is_a_bare_array_decodes_and_writes_back_as_one() {
 }
 
 #[test]
+fn a_vercel_listing_keeps_its_own_fields_and_refuses_a_wrong_key() {
+    let body = fixture("openai_chat", "providers/vercel/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert!(!l.has_more);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "anthropic/claude-haiku-5.5",
+            "google/gemini-embedding-001",
+            "nvidia/nemotron-3.5-lightning-free"
+        ]
+    );
+    let free = &l.models[2];
+    assert_eq!(free.owned_by.as_deref(), Some("nvidia"));
+    assert!(free.created_at.is_some());
+    for field in ["pricing", "context_window", "max_tokens", "type", "tags"] {
+        assert!(free.extras.fields.contains_key(field), "{field}");
+    }
+    assert_eq!(l.models[1].extras.fields["type"].get(), r#""embedding""#);
+    assert_json_eq(
+        "providers/vercel/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/vercel/retrieve-recorded"),
+    );
+    assert_eq!(one.id, "nvidia/nemotron-3.5-lightning-free");
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/vercel/retrieve-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (
+            ErrorKind::NotFound,
+            "The model 'kaeso-example/no-such-model' does not exist"
+        )
+    );
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/vercel/list-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+}
+
+#[test]
 fn anthropic_fields_map_to_kpp() {
     let l = list(A, &fixture("anthropic_messages", "list"));
     assert!(!l.has_more);

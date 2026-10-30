@@ -69,7 +69,8 @@ export function OrgOverviewPage({ org, search }: { org: string; search: OrgOverv
                 granularity={g}
                 compare={compare}
                 showCost={showCost}
-                loading={daily.isPending || daily.isError || previous.isLoading}
+                loading={daily.isPending || previous.isLoading}
+                failed={daily.isError}
               />
               <RequestsChart {...dailyState} />
               <TokensChart {...dailyState} />

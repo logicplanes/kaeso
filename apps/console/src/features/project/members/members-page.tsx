@@ -150,16 +150,14 @@ function AddMemberDialog({ org, project, existing, onClose }: { org: string; pro
           <Text variant="small" tone="secondary">
             {t("project.members.needsOrgMembers", "Choosing a member means seeing the organization's members. {reason}", { reason: needs("members.view") })}
           </Text>
+        ) : !orgMembers.isPending && !candidates.length ? (
+          <Text variant="small" tone="secondary">
+            {t("project.members.allIn", "Every member is in this project")}
+          </Text>
         ) : (
           <Combobox
             label={t("project.members.member", "Member")}
-            placeholder={
-              orgMembers.isPending
-                ? t("project.members.loading", "Loading members…")
-                : candidates.length
-                  ? t("project.members.choose", "Choose a member")
-                  : t("project.members.allIn", "Every member is in this project")
-            }
+            placeholder={orgMembers.isPending ? t("project.members.loading", "Loading members…") : t("project.members.choose", "Choose a member")}
             options={candidates.map((m) => ({
               value: m.user.id,
               label: m.user.name,

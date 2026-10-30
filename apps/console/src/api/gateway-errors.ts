@@ -3,7 +3,7 @@ import { locale, t } from "~/i18n";
 import english from "~/i18n/locales/en/errors.json";
 
 type Values = Record<string, string>;
-type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice" | "timeoutStage";
+type Convert = "limit" | "who" | "whoList" | "number" | "date" | "codeList" | "toolChoice" | "timeoutStage" | "wait";
 
 type ErrorKey = keyof typeof english;
 
@@ -113,9 +113,9 @@ const messages = (): Rule[] => [
   rule("errors.notFound.link", () => t("errors.notFound.link", "No such link, or you cannot see it.")),
   rule("errors.notFound.totpSetup", () => t("errors.notFound.totpSetup", "No such TOTP setup, or you cannot see it.")),
   rule("errors.wrongCredentials", () => t("errors.wrongCredentials", "The email or password is wrong.")),
-  rule("errors.tooManySignIns", (v) => t("errors.tooManySignIns", "Too many failed sign-ins; try again in {minutes} minutes or use a sign-in link.", v)),
+  rule("errors.tooManySignIns", (v) => t("errors.tooManySignIns", "Too many failed sign-ins; try again in {wait} or use a sign-in link.", v), { wait: "wait" }),
   rule("errors.signInUnavailable", () => t("errors.signInUnavailable", "Signing in is unavailable right now; try again shortly.")),
-  rule("errors.tooManyAttempts", (v) => t("errors.tooManyAttempts", "Too many attempts from your address; try again in {minutes} minutes.", v)),
+  rule("errors.tooManyAttempts", (v) => t("errors.tooManyAttempts", "Too many attempts from your address; try again in {wait}.", v), { wait: "wait" }),
   rule("errors.passwordSignInOff", () => t("errors.passwordSignInOff", "Password sign-in is turned off on this install.")),
   rule("errors.magicLinkOff", () => t("errors.magicLinkOff", "Sign-in links are turned off on this install.")),
   rule("errors.accountDeactivated", () => t("errors.accountDeactivated", "This account is deactivated.")),
@@ -498,13 +498,18 @@ const messages = (): Rule[] => [
     amount: "number",
   }),
   rule("errors.lowerLimitsFirst", (v) => t("errors.lowerLimitsFirst", "First lower the limits that allow more than this one: {list}.", v), { list: "whoList" }),
-  rule("errors.rateLimit.project", (v) => t("errors.rateLimit.project", "Rate limit reached: the project's {limit}; retry in {seconds} seconds.", v), {
+  rule("errors.rateLimit.project", (v) => t("errors.rateLimit.project", "Rate limit reached: the project's {limit}; retry in {wait}.", v), {
     limit: "limit",
+    wait: "wait",
   }),
-  rule("errors.rateLimit.member", (v) => t("errors.rateLimit.member", "Rate limit reached: the member's {limit}; retry in {seconds} seconds.", v), {
+  rule("errors.rateLimit.member", (v) => t("errors.rateLimit.member", "Rate limit reached: the member's {limit}; retry in {wait}.", v), {
     limit: "limit",
+    wait: "wait",
   }),
-  rule("errors.rateLimit.key", (v) => t("errors.rateLimit.key", "Rate limit reached: this key's {limit}; retry in {seconds} seconds.", v), { limit: "limit" }),
+  rule("errors.rateLimit.key", (v) => t("errors.rateLimit.key", "Rate limit reached: this key's {limit}; retry in {wait}.", v), {
+    limit: "limit",
+    wait: "wait",
+  }),
   rule("errors.mayExceed.project", (v) => t("errors.mayExceed.project", "This request could exceed the project's {limit}; ask for fewer output tokens.", v), {
     limit: "limit",
   }),
@@ -598,9 +603,9 @@ const messages = (): Rule[] => [
   rule("errors.notFound.update", () => t("errors.notFound.update", "No such update, or you cannot see it.")),
   rule(
     "errors.unknownKeysThrottled",
-    (v) => t("errors.unknownKeysThrottled", "Too many requests with unknown API keys from your address; try again in {seconds} seconds.", v),
+    (v) => t("errors.unknownKeysThrottled", "Too many requests with unknown API keys from your address; try again in {wait}.", v),
     {
-      seconds: "number",
+      wait: "wait",
     },
   ),
   rule("errors.apiKeyInvalid", () => t("errors.apiKeyInvalid", "This API key is not valid; check that it is complete and current.")),
@@ -871,6 +876,14 @@ const converters: Record<Convert, (value: string) => string | undefined> = {
   timeoutStage: (value) => apply(compiled().timeoutStages, value),
   number: (value) => (/^\d+(\.\d+)?$/.test(value) ? formatNumber(Number(value), { maximumFractionDigits: 9 }) : value),
   date: (value) => (Number.isNaN(Date.parse(value)) ? value : formatDate(value, { time: true })),
+  wait: (value) => {
+    const m = /^(\d+) (second|minute|hour)s?$/.exec(value);
+    if (!m) return undefined;
+    const count = Number(m[1]);
+    if (m[2] === "second") return t("errors.wait.seconds", "{count, plural, one {# second} other {# seconds}}", { count });
+    if (m[2] === "minute") return t("errors.wait.minutes", "{count, plural, one {# minute} other {# minutes}}", { count });
+    return t("errors.wait.hours", "{count, plural, one {# hour} other {# hours}}", { count });
+  },
 };
 
 function apply(rules: Compiled[], text: string): string | undefined {

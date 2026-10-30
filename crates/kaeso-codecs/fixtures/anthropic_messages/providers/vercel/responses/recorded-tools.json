@@ -1,0 +1,71 @@
+{
+  "id": "gen_01M64HKDK2V30WXAJMZ05FSN4C",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user asks: \"What's the weather in Paris right now? Use Celsius.\"\n\nWe need to call get_weather with location \"Paris, France\"? Or just \"Paris\". The function requires location string and unit \"celsius\". We'll call get_weather."
+    },
+    {
+      "type": "tool_use",
+      "id": "call-5315343c-1294-488f-88f8-5e76164d77ad",
+      "name": "get_weather",
+      "input": {
+        "location": "Paris, France",
+        "unit": "celsius"
+      }
+    }
+  ],
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 348,
+    "output_tokens": 93
+  },
+  "provider_metadata": {
+    "nvidia": {},
+    "gateway": {
+      "routing": {
+        "originalModelId": "nvidia/nemotron-3.5-lightning-free",
+        "resolvedProvider": "nvidia",
+        "fallbacksAvailable": [],
+        "planningReasoning": "System credentials planned for: nvidia. Total execution order: nvidia(system)",
+        "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+        "finalProvider": "nvidia",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "nvidia",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1793301526155,
+                "endTime": 1793301526909,
+                "providerRequestId": "b9a6c974-0789-484b-b2f7-9962123f4ce0",
+                "statusCode": 200,
+                "providerResponseId": "chatcmpl-c160f247-f8e4-4d83-9f76-44a253b87463"
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1,
+        "affinity": {
+          "outcome": "skipped_below_min_prefix"
+        },
+        "clientSessionId": "00000000000000000000000000000000",
+        "clientSessionIdSource": "fingerprint"
+      },
+      "cost": "0",
+      "marketCost": "0",
+      "surchargeCost": "0",
+      "gatewayCost": "0",
+      "generationId": "gen_01M64HKDK2V30WXAJMZ05FSN4C"
+    }
+  }
+}

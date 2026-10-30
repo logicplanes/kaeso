@@ -1,0 +1,11 @@
+{
+  "model": "mistral/mistral-nemo",
+  "max_tokens": 64,
+  "system": "You are a helpful assistant. Answer in one short sentence.",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ]
+}

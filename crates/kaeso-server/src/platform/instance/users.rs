@@ -169,6 +169,7 @@ pub async fn orgs(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "An invitation to the install.")]
 pub struct InstanceInvite {
     #[doc = "The address to invite."]
@@ -195,6 +196,7 @@ pub async fn invite(
             "{email} already has an account."
         )));
     }
+    crate::platform::orgs::invites::throttle_invites(&state, &email).await?;
     let token = random_token();
     let id = InviteId::new();
     let mut tx = state.pg.begin().await?;
@@ -446,6 +448,7 @@ pub async fn reset_2fa(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The instance admin flag.")]
 pub struct AdminFlag {
     #[doc = "Whether the user administers the install."]

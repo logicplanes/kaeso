@@ -44,6 +44,16 @@ describe("toast", () => {
     expect(await screen.findByText("Key disabled")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
   });
+  it("closes a toast once its action is taken, so it never offers the same Undo twice", async () => {
+    const undo = vi.fn();
+    render(<Toaster />);
+    act(() => {
+      toast("Key disabled", { action: { label: "Undo", onClick: undo } });
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Undo" }));
+    expect(undo).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByText("Key disabled")).not.toBeInTheDocument());
+  });
   it("announces errors with high priority", async () => {
     render(<Toaster />);
     act(() => {

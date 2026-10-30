@@ -39,6 +39,26 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
         DialectId::OpenAiChat,
         "custom and local shell calls become tool calls",
     ),
+    (
+        "providers/xai/codex-multi-agent",
+        DialectId::AnthropicMessages,
+        "agent messages become messages",
+    ),
+    (
+        "providers/xai/codex-multi-agent",
+        DialectId::OpenAiChat,
+        "agent messages become messages",
+    ),
+    (
+        "providers/xai/codex-multi-agent-root",
+        DialectId::AnthropicMessages,
+        "agent messages become messages",
+    ),
+    (
+        "providers/xai/codex-multi-agent-root",
+        DialectId::OpenAiChat,
+        "agent messages become messages",
+    ),
 ];
 
 fn fixtures_dir(dialect: DialectId) -> PathBuf {

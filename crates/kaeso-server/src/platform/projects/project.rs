@@ -123,6 +123,7 @@ pub async fn list(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new project.")]
 pub struct ProjectCreate {
     #[doc = "The name, 1 to 100 characters."]
@@ -185,6 +186,7 @@ pub async fn get(ctx: Ctx, Path(_p): Path<(String, String)>) -> ApiResult<Json<P
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Project changes.")]
 pub struct ProjectUpdate {
     #[doc = "A new name, 1 to 100 characters."]
@@ -263,6 +265,7 @@ pub async fn update(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A project key lifetime policy.")]
 pub struct ProjectKeyPolicy {
     #[doc = "The longest lifetime of new keys in days; never above the org's\n\

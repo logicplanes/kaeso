@@ -28,6 +28,7 @@ export const en = {
   "page.previousStep": "Previous: {title}",
   "page.nextStep": "Next: {title}",
   "page.edit": "Edit on GitHub",
+  "page.tableIn": "{table}, under {section}",
   "page.table": "Table: {columns}",
   "page.diagram": "Diagram: {title}",
   "page.task": "Task",

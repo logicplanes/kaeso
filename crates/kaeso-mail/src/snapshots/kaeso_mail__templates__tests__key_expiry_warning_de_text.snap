@@ -6,7 +6,7 @@ Subject: Der API-Schlüssel ci-deploy läuft am 18. Okt. 2026 ab
 
 API-Schlüssel ci-deploy läuft am 18. Okt. 2026 ab
 
-Anfragen mit diesem Schlüssel in Default project schlagen nach diesem Tag fehl.
+Anfragen mit diesem Schlüssel in Default project schlagen an diesem Tag ab 00:00 UTC fehl.
 
 API-Schlüssel öffnen:
 https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK

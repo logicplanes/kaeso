@@ -1,0 +1,65 @@
+{
+  "id": "gen_01M64HGCXHNDXAG6G04YXCMKQY",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Paris"
+    }
+  ],
+  "model": "mistral/mistral-nemo",
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 23,
+    "output_tokens": 2
+  },
+  "provider_metadata": {
+    "deepinfra": {},
+    "gateway": {
+      "routing": {
+        "originalModelId": "mistral/mistral-nemo",
+        "resolvedProvider": "deepinfra",
+        "fallbacksAvailable": [],
+        "planningReasoning": "System credentials planned for: deepinfra. Total execution order: deepinfra(system)",
+        "canonicalSlug": "mistral/mistral-nemo",
+        "finalProvider": "deepinfra",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "mistral/mistral-nemo",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "deepinfra",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1793301427150,
+                "endTime": 1793301427370,
+                "providerRequestId": "RPf5116DxZZWnae3xtXlP548",
+                "statusCode": 200,
+                "providerResponseId": "chatcmpl-RPf5116DxZZWnae3xtXlP548"
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1,
+        "affinity": {
+          "outcome": "skipped_below_min_prefix"
+        },
+        "clientSessionId": "00000000000000000000000000000000",
+        "clientSessionIdSource": "fingerprint"
+      },
+      "cost": "0.000000727",
+      "marketCost": "0.000000727",
+      "surchargeCost": "0",
+      "gatewayCost": "0.000000727",
+      "inferenceCost": "0.000000727",
+      "inputInferenceCost": "0.000000667",
+      "outputInferenceCost": "0.00000006",
+      "generationId": "gen_01M64HGCXHNDXAG6G04YXCMKQY"
+    }
+  }
+}

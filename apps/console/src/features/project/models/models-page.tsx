@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LoadFailed } from "~/features/org/load-failed";
 import { useNavigate } from "@tanstack/react-router";
 import {
   AppFrame,
@@ -22,7 +23,7 @@ import {
   type Capability,
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
-import { formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
@@ -262,6 +263,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
           <AppFrame.Body padding="list">
             {catalogue.isPending ? (
               <List aria-label={common.models()} items={[]} loading />
+            ) : catalogue.isError ? (
+              <LoadFailed title={t("models.catalogueFailed", "The catalogue couldn't load")} />
             ) : filtered.length === 0 ? (
               <Empty
                 size="lg"
@@ -342,9 +345,17 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
         <Pill size="sm" variant="outline">
           {dialectPill(m.egress_dialect)}
         </Pill>
-        <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
-          {contextLabel(f.context_limit)}
-        </Text>
+        {f.context_limit ? (
+          <Tooltip content={t("models.contextHint", "Context window: {tokens} tokens", { tokens: formatNumber(f.context_limit) })}>
+            <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-48 text-right">
+              {contextLabel(f.context_limit)}
+            </Text>
+          </Tooltip>
+        ) : (
+          <Text variant="small" tone="secondary" tabular className="min-w-48 text-right">
+            {contextLabel(f.context_limit)}
+          </Text>
+        )}
         <Tooltip content={cache ? t("models.priceWithCache", "{unit}; {cache}", { unit, cache }) : unit}>
           <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-96 text-right">
             {priceLabel(f)}

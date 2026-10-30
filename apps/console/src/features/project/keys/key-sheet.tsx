@@ -108,6 +108,8 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
     onError: () => void queryClient.invalidateQueries({ queryKey: keyQuery(org, project, keyId).queryKey }),
     onSuccess: (_k, action) =>
       toast(action === "disable" ? t("keys.disabled", "Key disabled") : t("keys.enabled", "Key enabled"), {
+        // One toast per key: toggling it again replaces the toast, whose Undo would otherwise undo an older state.
+        id: `key-state:${keyId}`,
         action: { label: t("keys.undo", "Undo"), onClick: () => toggle.mutate(action === "disable" ? "enable" : "disable") },
       }),
   });

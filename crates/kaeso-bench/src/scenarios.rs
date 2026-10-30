@@ -104,6 +104,7 @@ pub(crate) struct SlowResult {
     pub(crate) growth_bytes: Option<i64>,
     pub(crate) growth_per_stream_bytes: Option<f64>,
     pub(crate) budget_bytes: u64,
+    pub(crate) kept_reply_bytes: u64,
     pub(crate) healthy_overhead_ms: Summary,
     pub(crate) healthy: Profile,
     pub(crate) healthy_added_ttfb_ms: Summary,
@@ -493,7 +494,14 @@ impl Bench<'_> {
             (Some(p), Some(b)) => Some(p as i64 - b as i64),
             _ => None,
         };
-        let budget = n as u64 * MEMORY_PER_STREAM;
+        // The gateway reaches the mock over OpenAI Responses, whose decoder keeps a reply's
+        // text until the stream ends, to replay the provider's closing events exactly. That is
+        // the reply, not a buffer for the app: a stalled stream may hold all the mock sent it.
+        let kept: u64 = slow
+            .iter()
+            .map(|r| self.install.mock.text_sent(&r.tag))
+            .sum();
+        let budget = n as u64 * MEMORY_PER_STREAM + kept;
         let healthy_runs = runs.iter().filter(|r| r.role == Role::Healthy);
         let healthy = Profile::of(healthy_runs.clone());
         let healthy_n = healthy_runs.clone().count();
@@ -531,7 +539,9 @@ impl Bench<'_> {
                 scenario,
                 "memory stayed bounded",
                 growth.is_some_and(|g| g < budget as i64),
-                format!("grew by {growth:?} bytes, budget {budget}"),
+                format!(
+                    "grew by {growth:?} bytes, budget {budget} with {kept} bytes of stalled replies"
+                ),
             );
         }
         // Beside disconnects, `cancel_result` has checked these for the same streams.
@@ -563,6 +573,7 @@ impl Bench<'_> {
             growth_bytes: growth,
             growth_per_stream_bytes: growth.map(|g| g as f64 / n.max(1) as f64),
             budget_bytes: budget,
+            kept_reply_bytes: kept,
             healthy_overhead_ms: Summary::of(&overheads(
                 runs.iter().filter(|r| r.role == Role::Healthy),
             )),

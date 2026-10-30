@@ -1282,6 +1282,111 @@ expression: outcomes
       "output_tokens": 107
     }
   },
+  "providers/vercel/recorded-basic": {
+    "content": [
+      {
+        "text": "Paris is the capital of France.",
+        "type": "text"
+      }
+    ],
+    "id": "gen_01M64HFNGE7BR3KY97Y0QT33N2",
+    "model": "mistral/mistral-nemo",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 23,
+      "output_tokens": 8,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/vercel/recorded-gateway-options": {
+    "content": [
+      {
+        "text": "\"Hello\" in French translates to \"Bonjour\".",
+        "type": "text"
+      }
+    ],
+    "id": "gen_01M64HFPDJZ4VTJY3XKAP132MR",
+    "model": "mistral/mistral-nemo",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 9,
+      "output_tokens": 12,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/vercel/recorded-reasoning": {
+    "content": [
+      {
+        "text": "no, because 91 = 7 × 13.",
+        "type": "text"
+      }
+    ],
+    "id": "gen_01M64HFS9C2XC1NJMYRM7PXXRF",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 33,
+      "output_tokens": 515,
+      "output_tokens_details": {
+        "thinking_tokens": 499
+      }
+    }
+  },
+  "providers/vercel/recorded-tools": {
+    "content": [
+      {
+        "id": "call-4eae9857-3f6d-4503-abc6-e85a8c535f41",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "gen_01M64HFYZT354PP1X51YE4CECP",
+    "model": "nvidia/nemotron-3.5-lightning-free",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 348,
+      "output_tokens": 72,
+      "output_tokens_details": {
+        "thinking_tokens": 33
+      }
+    }
+  },
   "providers/xai/recorded-json-schema": {
     "content": [
       {

@@ -96,6 +96,13 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
             err
         }
         None => {
+            if let Some((ty, message)) = openai_shaped(raw.as_ref()) {
+                let kind = kind_for_type(ty)
+                    .unwrap_or_else(|| status.map_or(ErrorKind::ProviderError, kind_for_status));
+                let mut err = KppError::new(kind, message.to_owned()).with_origin(origin);
+                err.raw = raw;
+                return err;
+            }
             let text = String::from_utf8_lossy(body);
             let message = match status {
                 Some(s) => format!(
@@ -113,6 +120,18 @@ fn decode_body(body: &[u8], status: Option<u16>) -> KppError {
             err
         }
     }
+}
+
+// An Anthropic-compatible server that answers with OpenAI's error shape, `{"error": {"message",
+// "type"}}`, as Vercel AI Gateway does on `/v1/messages`: its type and message.
+fn openai_shaped(raw: Option<&Value>) -> Option<(&str, &str)> {
+    let error = raw?.get("error")?;
+    let message = error.get("message")?.as_str().filter(|m| !m.is_empty())?;
+    let ty = error
+        .get("type")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
+    Some((ty, message))
 }
 
 fn own_body(err: &KppError) -> Option<&serde_json::Map<String, Value>> {

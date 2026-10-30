@@ -158,6 +158,48 @@ describe("your API keys", () => {
     expect(requests("POST", "me/keys/:key/disable").map((r) => r.params.key)).toEqual(["key_support"]);
   });
 
+  it("undoes a disable from its toast", async () => {
+    signedIn();
+    keys();
+    act("disable");
+    act("enable");
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    const toasts = await notifications();
+    await user.click(await toasts.findByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(requests("POST", "me/keys/:key/enable").map((r) => r.params.key)).toEqual(["key_support"]));
+  });
+
+  it("keeps one toast per key, so a key toggled again shows only its newest state and Undo", async () => {
+    signedIn();
+    keys();
+    act("disable");
+    act("enable");
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    const toasts = await notifications();
+    await user.click(await toasts.findByRole("button", { name: "Undo" }));
+    expect(await toasts.findByText("support-bot enabled")).toBeInTheDocument();
+    await waitFor(() => expect(toasts.queryByText("support-bot disabled")).not.toBeInTheDocument());
+    expect(toasts.getAllByRole("button", { name: "Undo" })).toHaveLength(1);
+  });
+
+  it("undoes an enable from its toast", async () => {
+    signedIn();
+    keys([key({ state: "disabled" })]);
+    act("enable");
+    act("disable");
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("tab", { name: "All" }));
+    await user.click(await screen.findByRole("button", { name: "Actions for support-bot" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Enable" }));
+    const toasts = await notifications();
+    await user.click(await toasts.findByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(requests("POST", "me/keys/:key/disable").map((r) => r.params.key)).toEqual(["key_support"]));
+  });
+
   it("enables a disabled key", async () => {
     signedIn();
     keys([key({ state: "disabled" })]);

@@ -169,8 +169,8 @@ pub(crate) async fn throttle_ip(state: &AppState, ctx: &Ctx, t: Throttle) -> Api
     throttle::hit(state, t, &subject).await.map_err(|r| {
         refused(r, |retry_after| {
             format!(
-                "Too many attempts from your address; try again in {} minutes.",
-                retry_after.div_ceil(60)
+                "Too many attempts from your address; try again in {}.",
+                crate::auth::throttle::wait(retry_after)
             )
         })
     })

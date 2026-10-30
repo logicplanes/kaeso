@@ -124,8 +124,8 @@ describe("MembersPage", () => {
     const { user } = await renderApp(projectPath("members?add=true"));
 
     const dialog = await screen.findByRole("dialog", { name: "Add member" });
-    const picker = within(dialog).getByRole("combobox", { name: "Member" });
-    await waitFor(() => expect(picker).toHaveAttribute("placeholder", "Every member is in this project"));
+    expect(await within(dialog).findByText("Every member is in this project")).toBeVisible();
+    expect(within(dialog).queryByRole("combobox", { name: "Member" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Add member" })).not.toBeInTheDocument());
   });

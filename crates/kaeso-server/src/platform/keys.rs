@@ -38,6 +38,8 @@ impl KeyAccess {
     }
 }
 
+time::serde::format_description!(iso_date, Date, "[year]-[month]-[day]");
+
 #[derive(Clone, Debug, Default, Deserialize, ToSchema)]
 #[schema(
     description = "When a new key expires: `expires_in_days` (1, 7, 30 or 90), or\n\
@@ -49,6 +51,7 @@ pub struct ExpiryRequest {
     pub expires_in_days: Option<u32>,
     #[doc = "A date; the key stops at its start (UTC)."]
     #[schema(value_type = Option<String>, format = Date, example = "2026-12-31")]
+    #[serde(default, with = "iso_date::option")]
     pub expires_on: Option<Date>,
 }
 
@@ -86,6 +89,9 @@ pub struct KeyRotate {
     #[doc = "When the new key expires."]
     #[serde(flatten)]
     pub expiry: ExpiryRequest,
+    #[serde(flatten)]
+    #[schema(ignore)]
+    pub other: crate::platform::json::NoOtherFields,
 }
 
 impl KeyRotate {

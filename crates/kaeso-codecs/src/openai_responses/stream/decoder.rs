@@ -510,7 +510,8 @@ impl Decoder {
             }
             "response.reasoning_summary_text.done"
             | "response.reasoning_summary_part.done"
-            | "response.reasoning_text.done" => Action::Pre,
+            | "response.reasoning_text.done"
+            | "response.reasoning.done" => Action::Pre,
             "response.content_part.done" => {
                 if let (Some(oi), Some(ci)) = (oi, ci)
                     && let Some(index) = self.parts.remove(&(oi, ci))
@@ -549,7 +550,8 @@ impl Decoder {
                     _ => self.broken(f),
                 }
             }
-            "response.reasoning_text.delta" => {
+            // Vercel AI Gateway names the reasoning text events `response.reasoning.*`.
+            "response.reasoning_text.delta" | "response.reasoning.delta" => {
                 match (oi.and_then(|oi| self.items.get(&oi)), delta()) {
                     (Some((index, ItemKind::Reasoning)), Some(t)) => {
                         Action::Main(vec![block_delta(*index, Delta::ReasoningText(t))])

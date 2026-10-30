@@ -1,0 +1,8 @@
+{
+  "model": "google/gemini-embedding-001",
+  "input": [
+    "Kaeso routes models.",
+    "Vercel AI Gateway serves them."
+  ],
+  "dimensions": 8
+}

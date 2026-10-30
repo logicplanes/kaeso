@@ -234,6 +234,7 @@ pub async fn get(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "A new custom role.")]
 pub struct RoleCreate {
     #[doc = "`org` or `project`; fixed once created."]
@@ -255,6 +256,7 @@ pub struct RoleCreate {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Changes to a custom role.")]
 pub struct RoleUpdate {
     #[doc = "A new name."]
@@ -363,13 +365,7 @@ fn check_holds(caller: &OrgScope, role: &OrgHolding) -> ApiResult<()> {
 }
 
 fn validate_name(scope: &str, name: &str) -> ApiResult<String> {
-    let name = name.trim();
-    if name.is_empty() || name.chars().count() > 50 {
-        return Err(ApiError::invalid(
-            "name",
-            "`name` must be 1 to 50 characters.",
-        ));
-    }
+    let name = crate::platform::validate::validate_label("name", name, 50)?;
     let lower = name.to_lowercase();
     let builtin = if scope == "org" {
         OrgPreset::ALL.iter().any(|p| p.as_str() == lower)
@@ -382,7 +378,7 @@ fn validate_name(scope: &str, name: &str) -> ApiResult<String> {
             "That's the name of a built-in role; choose another.",
         ));
     }
-    Ok(name.to_owned())
+    Ok(name)
 }
 
 fn validate_description(d: &str) -> ApiResult<String> {
@@ -391,6 +387,12 @@ fn validate_description(d: &str) -> ApiResult<String> {
         return Err(ApiError::invalid(
             "description",
             "`description` must be at most 200 characters.",
+        ));
+    }
+    if d.chars().any(kaeso_core::text::hidden) {
+        return Err(ApiError::invalid(
+            "description",
+            "`description` can't contain line breaks or invisible characters.",
         ));
     }
     Ok(d.to_owned())

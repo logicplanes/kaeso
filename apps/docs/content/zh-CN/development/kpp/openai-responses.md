@@ -113,7 +113,8 @@ order: 7
 | `function_call_output`（`FunctionCallOutputItemParam`） | 当前用户消息中的 `Block::ToolResult` | `call_id`；`output` 字符串 → 一个文本块，部分列表 → 文本、图像和文档块（本可用字符串表示时带形式标记 `parts`）。`id`、`status`：形式标记；`name`、`namespace`、未知键：extras。来自其他方言的 `is_error` 会被丢弃。来自其他方言的空内容：`output: ""`。 |
 | `reasoning`（`ReasoningItem`） | 当前助手消息中的 `Block::Reasoning`（来源 `openai_responses`） | Kaeso 生成的 ID（`rs_kaeso_…`）不会保留（形式标记 `kaeso_id`）；这类 item 如果没有 `encrypted_content`，根本不会发给服务商，因为它既没有 `id`，也没有 OpenAI 能用的内容。`id` → 不透明的 `OpenAiReasoningItemId`，`encrypted_content` → 不透明的 `OpenAiEncryptedReasoning`，`summary[].text` → `summary`，`content[].text` → `text`；`status` 和各部分的 `type`：形式标记；未知键：extras。只回放给同一服务商的 `openai_responses`（参见[推理](reasoning.md)）。如果 item 的 `encrypted_content` 是一个推理数据块（`kpp:reasoning:v1:…`，即 Kaeso 交给应用的其他方言的推理，参见[推理数据块](reasoning.md#推理数据块)），无论 item 其余部分写了什么，都会解码为其中的原始块，连同来源（例如 Claude 的签名思考）。在 Kaeso 以 `store: false` 发送的请求中（来自其他方言的请求，参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)），没有加密内容的推理不会发送，因为 OpenAI 无法解析该 item ID。 |
 | `custom_tool_call`、`custom_tool_call_output`、`local_shell_call`、`local_shell_call_output` | 同下；发往 Anthropic 和 Chat Completions 时变为工具调用和结果（参见 [Codex 工具历史](cross-format.md#codex-工具历史)） | |
-| `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言。 |
+| `agent_message`（Codex 智能体之间的消息） | 同下；除 OpenAI 外的所有提供商收到一条消息（[Codex 智能体消息](cross-format.md#codex-智能体消息)） | |
+| `item_reference` 及所有其他 item 类型（服务端工具的调用与输出、`compaction`、未来的类型） | 一条只含一个 `Block::Unknown` 的消息，形式标记 `raw_item` | 以 `_call` 结尾的类型以及 `mcp_list_tools`、`mcp_approval_request` 的角色为 `Assistant`；其余为 `User`。角色只对 KPP 校验有意义，因为这些 item 永远不会发往其他方言。仅限同一方言；SpaceX 只接受其列出的类型，其他类型由 Kaeso 在发送前拒绝（[SpaceX](#spacex)）。 |
 | 无法按其类型解析的 item（例如 `call_id: null` 的 `function_call_output`） | `Block::Unknown`（同上） | 无损保留；由服务商判断。 |
 
 分组：连续的 `function_call` 和 `reasoning` item 并入当前助手消息，连续的 `function_call_output` item 并入当前用户消息。消息 item 并入同一角色、尚未包含消息 item 的消息；system 和 developer item 从不并入已有消息。
@@ -368,6 +369,20 @@ order: 7
 | 根部联合的分支并非都是内联对象、或根部带有 `allOf` 的工具参数（请求） | 一个对象 schema（`tool_schema_root(ToolSchemaRoot::ObjectUnions)`） | SpaceX 会以 `invalid_client_tool_schema` 拒绝它们（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | 发回的 `reasoning` 项上的 `content: null`（请求） | 省略（`without_null_reasoning_content()`） | Codex 以这种方式发回之前的推理项。带着这个 `null` 时，SpaceX 无法读取该项的 `encrypted_content`（`Could not decode the compaction blob`）。 |
 | `usage.num_sources_used`、`num_server_side_tools_used`、`server_side_tool_usage_details`、`cost_in_usd_ticks`、`context_details` | 用量的 `raw` | Responses 应用会收到它们；Token 数按上文的类型化字段处理。 |
+| 输入 item 类型（请求） | 仅 `XAI_INPUT_ITEMS`（`xai_input_items()`） | SpaceX 以 422 拒绝其他类型，并列出它接受的类型（`errors/recorded-codex-agent-message.json`）；它也接受该列表遗漏的 `custom_tool_call_output`（`responses/recorded-codex-gpt-history.json`）。Codex 的 `agent_message` 变为一条消息，`local_shell_call` 和 `local_shell_call_output` 变为函数调用及其输出；其他类型在发送前即为 `Unsupported`。 |
+| 没有工具的请求中的 `tool_choice`（请求） | 省略 | SpaceX 拒绝它（`A tool_choice was set on the request but no tools were specified`），Codex 的辅助调用会这样发送（[省略的工具](cross-format.md#省略的工具)）。 |
 | `presence_penalty`（请求） | extras | SpaceX 会忽略它，并回显 `0.0`。 |
 | `max_output_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Responses 参考），与 [Chat Completions](openai-chat-providers.md#spacex) 相同。 |
 | `{"error": "<message>"}` | `KppError` | 见上方的错误表。 |
+
+### Vercel
+
+来源：Vercel 的 [OpenAI Responses API](https://vercel.com/docs/ai-gateway/sdks-and-apis/responses) 页面（2026-10-29 阅读），以及 `fixtures/openai_responses/providers/vercel/` 中的实时录制。当 Vercel 模型的**发送格式**为 Responses 时，它以 Responses 发送；Vercel 的 `generation` 方言是 Chat Completions。它的配置是 `compatible`。
+
+| Vercel 字段 | KPP | 说明 |
+|---|---|---|
+| `response.reasoning.delta` 和 `response.reasoning.done` 事件 | 与 `response.reasoning_text.delta` 和 `response.reasoning_text.done` 相同 | Vercel 对 OpenAI 推理文本事件的命名，字段相同；Responses 应用原样收到 Vercel 发送的事件，其他方言得到推理内容（`streams/recorded-reasoning-stream`）。 |
+| 带 `content`（`reasoning_text`）、不带 `encrypted_content` 的 `reasoning` 项 | 与 OpenAI 相同 | 请求要求时，OpenAI 的模型会加上 `encrypted_content`（`responses/recorded-gpt-reasoning-encrypted`）。 |
+| 回复中的 `provider_metadata`、`usage.input_tokens_details.cache_write_tokens` | extras、用量的 `raw` | 与 Chat Completions 相同。 |
+| `POST /v1/responses/input_tokens` | — | Vercel 返回 404，Kaeso 在发送任何内容之前就拒绝为 Vercel 模型计数 Token。 |
+| 错误 | `KppError` | OpenAI 的错误结构，带 Vercel 自己的 `type`，与 [Chat Completions](openai-chat-providers.md#vercel) 相同。 |

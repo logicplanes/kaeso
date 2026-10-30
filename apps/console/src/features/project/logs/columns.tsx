@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, InlineCopyText, Pill, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { errorKindLabel } from "~/format/labels";
@@ -305,8 +305,10 @@ function TokensCell({ row }: { row: LogView }) {
     <span className="inline-flex items-baseline gap-6">
       <Text tabular>{text}</Text>
       {share !== null && (
-        <Text variant="small" tone={unmarked ? "warning" : "tertiary"} tabular>
-          {`· ${formatPercent(share, 0)}`}
+        <Text variant="small" tone={unmarked ? "warning" : "tertiary"} tabular className="inline-flex items-center gap-4">
+          {"· "}
+          {unmarked && <Icon icon={icons.warning} size="xs" label={t("logs.inspector.noBreakpoint", "No cache breakpoint")} />}
+          {formatPercent(share, 0)}
         </Text>
       )}
     </span>

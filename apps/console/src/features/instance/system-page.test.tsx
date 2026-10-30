@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { act, screen, waitFor } from "@testing-library/react";
 import { signedIn, whoAmI, user as account } from "~/test/fixtures";
 import { instanceSettings, system } from "~/test/fixtures/instance-account";
 import { apiError, on, requests } from "~/test/network";
@@ -72,6 +72,19 @@ describe("instance system page", () => {
     on("GET", "instance/system", apiError(429, "rate_limited", "Too many requests; try again in a minute."));
     await renderApp(PATH);
     expect(await screen.findByText("The system status couldn't load")).toBeInTheDocument();
+  });
+
+  it("keeps saying it couldn't load while the next refresh tries again", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout"], shouldAdvanceTime: true });
+    onTestFinished(() => void vi.useRealTimers());
+    signedIn();
+    let calls = 0;
+    on("GET", "instance/system", () => (++calls === 1 ? apiError(429, "rate_limited", "Too many requests; try again in a minute.") : new Promise(() => {})));
+    await renderApp(PATH);
+    expect(await screen.findByText("The system status couldn't load")).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    await waitFor(() => expect(calls).toBeGreaterThan(1));
+    expect(screen.getByText("The system status couldn't load")).toBeInTheDocument();
   });
 });
 

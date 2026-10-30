@@ -1,0 +1,139 @@
+{
+  "id": "gen_01M64HKCMD3NR5YGRXH484DPH5",
+  "object": "response",
+  "created_at": 1793301525,
+  "status": "completed",
+  "completed_at": 1793301525,
+  "incomplete_details": null,
+  "error": null,
+  "output": [
+    {
+      "type": "reasoning",
+      "id": "rs_1793301525639_9il20hpgr2",
+      "summary": [],
+      "content": [
+        {
+          "type": "reasoning_text",
+          "text": "We need to call get_weather with location \"Paris, France\" and unit \"celsius\"."
+        }
+      ]
+    },
+    {
+      "type": "function_call",
+      "id": "fc_1793301525639_vv9761b67os",
+      "call_id": "call-29285c97-87ea-4c1c-a7cf-bcf25ee771ec",
+      "name": "get_weather",
+      "arguments": "{\"location\":\"Paris, France\",\"unit\":\"celsius\"}",
+      "status": "completed"
+    }
+  ],
+  "usage": {
+    "input_tokens": 348,
+    "output_tokens": 59,
+    "total_tokens": 407,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "reasoning_tokens": 20
+    }
+  },
+  "model": "nvidia/nemotron-3.5-lightning-free",
+  "instructions": "You are a concise travel assistant. Use the tools for live data.",
+  "previous_response_id": null,
+  "temperature": 1,
+  "top_p": 1,
+  "max_output_tokens": 1024,
+  "presence_penalty": 0,
+  "frequency_penalty": 0,
+  "top_logprobs": 0,
+  "tools": [
+    {
+      "type": "function",
+      "name": "get_weather",
+      "description": "Get the current weather for a location.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "City and country, e.g. Paris, France"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "celsius",
+              "fahrenheit"
+            ]
+          }
+        },
+        "required": [
+          "location",
+          "unit"
+        ]
+      },
+      "strict": false
+    }
+  ],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "max_tool_calls": null,
+  "text": {
+    "format": {
+      "type": "text"
+    }
+  },
+  "truncation": "disabled",
+  "reasoning": null,
+  "store": false,
+  "background": false,
+  "service_tier": "auto",
+  "metadata": {},
+  "safety_identifier": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": null,
+  "provider_metadata": {
+    "nvidia": {},
+    "gateway": {
+      "routing": {
+        "originalModelId": "nvidia/nemotron-3.5-lightning-free",
+        "resolvedProvider": "nvidia",
+        "fallbacksAvailable": [],
+        "planningReasoning": "System credentials planned for: nvidia. Total execution order: nvidia(system)",
+        "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+        "finalProvider": "nvidia",
+        "modelAttemptCount": 1,
+        "modelAttempts": [
+          {
+            "canonicalSlug": "nvidia/nemotron-3.5-lightning-free",
+            "success": true,
+            "providerAttemptCount": 1,
+            "providerAttempts": [
+              {
+                "provider": "nvidia",
+                "credentialType": "system",
+                "success": true,
+                "startTime": 1793301525155,
+                "endTime": 1793301525635,
+                "providerRequestId": "a1af924e-a32c-4833-9fd2-8f0d455a23b1",
+                "statusCode": 200,
+                "providerResponseId": "chatcmpl-af4d9fab-44ec-4bf4-951f-a0b668c1173c"
+              }
+            ]
+          }
+        ],
+        "totalProviderAttemptCount": 1,
+        "affinity": {
+          "outcome": "skipped_below_min_prefix"
+        },
+        "clientSessionId": "00000000000000000000000000000000",
+        "clientSessionIdSource": "fingerprint"
+      },
+      "cost": "0",
+      "marketCost": "0",
+      "surchargeCost": "0",
+      "gatewayCost": "0",
+      "generationId": "gen_01M64HKCMD3NR5YGRXH484DPH5"
+    }
+  }
+}

@@ -46,6 +46,14 @@ pub const EMAILS_PER_ADDRESS: Throttle = Throttle {
     window: Duration::from_secs(60 * 60),
     on_outage: Outage::Allow,
 };
+// Invitations count apart from the sign-in emails above, so a burst of invitations never keeps
+// the invited person from getting a sign-in link.
+pub const INVITES_PER_ADDRESS: Throttle = Throttle {
+    name: "invite",
+    limit: 5,
+    window: Duration::from_secs(60 * 60),
+    on_outage: Outage::Allow,
+};
 pub const EMAILS_PER_IP: Throttle = Throttle {
     name: "email_ip",
     limit: 30,
@@ -132,4 +140,34 @@ pub async fn clear(state: &AppState, t: Throttle, subject: &str) {
     let key = key(state, t, subject);
     let mut conn = state.valkey.conn();
     let _: Result<i64, _> = redis::cmd("DEL").arg(key).query_async(&mut conn).await;
+}
+
+/// How long to wait, for a message: the largest unit that fits, rounded up so the wait never
+/// reads shorter than `Retry-After`: "1 second", "45 seconds", "2 minutes", "3 hours".
+pub fn wait(secs: u64) -> String {
+    let (n, unit) = match secs {
+        0..60 => (secs.max(1), "second"),
+        60..3600 => (secs.div_ceil(60), "minute"),
+        _ => (secs.div_ceil(3600), "hour"),
+    };
+    format!("{n} {unit}{}", if n == 1 { "" } else { "s" })
+}
+
+#[cfg(test)]
+mod wait_tests {
+    use super::wait;
+
+    #[test]
+    fn says_the_wait_in_the_largest_unit_that_fits_rounded_up() {
+        assert_eq!(wait(0), "1 second");
+        assert_eq!(wait(1), "1 second");
+        assert_eq!(wait(3), "3 seconds");
+        assert_eq!(wait(59), "59 seconds");
+        assert_eq!(wait(60), "1 minute");
+        assert_eq!(wait(61), "2 minutes");
+        assert_eq!(wait(900), "15 minutes");
+        assert_eq!(wait(3599), "60 minutes");
+        assert_eq!(wait(3600), "1 hour");
+        assert_eq!(wait(50_000), "14 hours");
+    }
 }

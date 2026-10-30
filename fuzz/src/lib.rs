@@ -1,3 +1,4 @@
+use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::sse::{SseError, SseItem, SseParser, write_item};
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
@@ -103,6 +104,13 @@ fn request(dialect: DialectId, req: &Request) {
             continue;
         }
         let _ = dispatch::encode_request(target, req, &mut ctx);
+    }
+    // A compatible provider that lists the input item types it takes, whose profile rewrites
+    // what OpenAI's leaves alone: agent messages, local shell items, a bare tool_choice.
+    let mut ctx = EgressCtx::new(req)
+        .with_responses_profile(ResponsesProfile::compatible("SpaceX").xai_input_items());
+    if dispatch::check(DialectId::OpenAiResponses, req, &ctx).is_ok() {
+        let _ = dispatch::encode_request(DialectId::OpenAiResponses, req, &mut ctx);
     }
     let _ = dispatch::encode_response(
         dialect,

@@ -36,4 +36,8 @@ export const PROVIDER_MARKS: Record<string, ProviderMark> = {
     d: "M8 5H5v3h3zm0 9H5v3h3zm3 3H2v3h9zm0-9H5v3h6zm3 6h-3v3h3zm6-3H5v3h15zm0-3h-6v3h6zm0-3h-3v3h3zm0 9h-3v3h3zm3 3h-9v3h9z",
     color: "text-mark-mistral",
   },
+  vercel: {
+    d: "M12 1.608 24 22.392H0Z",
+    color: "text-mark-vercel",
+  },
 };

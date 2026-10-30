@@ -484,11 +484,16 @@ impl Config {
                 "must not be longer than instance.metadata_retention_days (content is never kept longer than metadata)".into(),
             );
         }
-        if i.metadata_retention_days == 0 || i.content_retention_days == 0 {
-            return invalid(
+        for (key, days) in [
+            (
                 "instance.metadata_retention_days",
-                "retention must be at least 1 day".into(),
-            );
+                i.metadata_retention_days,
+            ),
+            ("instance.content_retention_days", i.content_retention_days),
+        ] {
+            if days == 0 {
+                return invalid(key, "must be at least 1 day".into());
+            }
         }
         for (key, days) in [
             (

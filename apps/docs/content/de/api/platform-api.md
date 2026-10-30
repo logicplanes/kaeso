@@ -174,7 +174,7 @@ Die Meldung ist ein kurzer Satz für Menschen, und die Konsole zeigt ihn unverä
 | 409 | `org_scheduled_for_deletion` | Eine Änderung in einer zur Löschung vorgemerkten Organisation. |
 | 412 | `conflict` | `If-Match` nennt eine ältere Revision. |
 | 413 | `request_too_large` | Der Body ist größer als `KAESO_BODY_LIMITS_PLATFORM_API`, standardmäßig 1 MiB. |
-| 429 | `rate_limited` | Zu viele Anmeldeversuche oder unbekannte Schlüssel von einer Adresse, oder ein Limit bei einer Playground-Anfrage. `Retry-After` sagt, wann es wieder geht. |
+| 429 | `rate_limited` | Zu viele Anmeldeversuche oder unbekannte Schlüssel von einer Adresse, mehr als fünf Einladungen an eine E-Mail-Adresse in einer Stunde, oder ein Limit bei einer Playground-Anfrage. `Retry-After` sagt, wann es wieder geht. |
 | 500 | `internal` | Ein Fehler im Gateway. Die Meldung nennt die Anfrage-ID, die Sie melden können. |
 | 503 | `unavailable` | Kaeso erreicht eine Datenbank oder einen anderen Dienst nicht, etwa „Kaeso cannot reach its database right now; try again shortly.“ |
 | 429, 502, 503, 504 | `provider_error` | Der Anbieter ist gescheitert, nur bei [Playground](#playground)-Anfragen. |

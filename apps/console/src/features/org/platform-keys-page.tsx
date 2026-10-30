@@ -66,6 +66,11 @@ export function PlatformKeysPage({ org }: { org: string }) {
         action === "disable"
           ? t("org.platformKeys.disabled", "{name} disabled", { name: k.name })
           : t("org.platformKeys.enabled", "{name} enabled", { name: k.name }),
+        {
+          // One toast per key: toggling it again replaces the toast, whose Undo would otherwise undo an older state.
+          id: `key-state:${k.id}`,
+          action: { label: t("keys.undo", "Undo"), onClick: () => act.mutate({ key: k, action: action === "disable" ? "enable" : "disable" }) },
+        },
       ),
   });
   const archive = (k: OrgKeyView) => {

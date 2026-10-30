@@ -27,6 +27,7 @@ pub const CODES_PER_CHALLENGE: i32 = 3;
 pub const CODES_BEFORE_LOCK: i32 = 10;
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "Email and password.")]
 pub struct PasswordRequest {
     #[doc = "The account's email address."]
@@ -66,8 +67,8 @@ fn wrong() -> ApiError {
 
 fn locked(retry_after: u64) -> String {
     format!(
-        "Too many failed sign-ins; try again in {} minutes or use a sign-in link.",
-        retry_after.div_ceil(60)
+        "Too many failed sign-ins; try again in {} or use a sign-in link.",
+        throttle::wait(retry_after)
     )
 }
 
@@ -196,6 +197,7 @@ pub async fn password(
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 #[schema(description = "The second step of a password or sign-in link sign-in.")]
 pub struct TotpRequest {
     #[doc = "The challenge from `auth/password` or `auth/magic-link/verify`."]
