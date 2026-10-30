@@ -87,9 +87,9 @@ test("model sources, system and the instance audit log", async ({ page }) => {
   await openInstance(page, "Model sources");
   const source = page.getByRole("table", { name: "Model sources" }).getByRole("row", { name: /models\.dev/ });
   await expect(source.getByText("In use")).toBeVisible();
-  await expect(source.getByText(/\d+ models/)).toBeVisible();
+  await expect(source.getByText(/\d[\d,]* models/)).toBeVisible();
   await page.getByRole("button", { name: "Sync now" }).click();
-  await expect(toastText(page, /Synced: \d+ models|models\.dev couldn't be fetched/)).toBeVisible({ timeout: 30_000 });
+  await expect(toastText(page, /Synced: \d[\d,]* models|models\.dev couldn't be fetched/)).toBeVisible({ timeout: 30_000 });
 
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
   await expect(page.getByText("Ready")).toBeVisible();
