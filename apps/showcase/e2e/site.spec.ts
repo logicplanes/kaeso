@@ -35,9 +35,28 @@ test.describe("links to the source", () => {
     expect([...refs]).toEqual([TAG]);
   });
 
-  test("llms.txt and the changelog point at the release tag", async ({ request }) => {
+  test("llms.txt points at the release tag", async ({ request }) => {
     expect(await (await request.get("/llms.txt")).text()).toContain(`- Source: https://github.com/logicplanes/kaeso/tree/${TAG}/packages/ui\n`);
-    expect(await (await request.get("/changelog")).text()).toContain(`href="https://github.com/logicplanes/kaeso/blob/${TAG}/openapi.json"`);
+  });
+});
+
+test.describe("the changelog", () => {
+  const words = { en: "Changelog", de: "Änderungen", "zh-CN": "更新日志" } as const;
+  for (const lang of LANGS) {
+    test(`the sidebar's changelog leads to kaeso.app in ${lang}`, async ({ page }) => {
+      await open(page, at(lang, "/"));
+      const site = lang === "en" ? "https://kaeso.app" : `https://kaeso.app/${lang}`;
+      await expect(page.getByRole("navigation").getByRole("link", { name: words[lang], exact: true })).toHaveAttribute("href", `${site}/changelog`);
+    });
+  }
+
+  test("the package version in the bar leads to its release on kaeso.app", async ({ page }) => {
+    await open(page, "/de");
+    await expect(page.getByRole("link", { name: `@logicplanes/kaeso-ui v${version}` })).toHaveAttribute("href", `https://kaeso.app/de/changelog/${version}`);
+  });
+
+  test("the site keeps no changelog of its own", async ({ request }) => {
+    for (const path of ["/changelog", "/de/changelog", "/zh-CN/changelog"]) expect((await request.get(path)).status(), path).toBe(404);
   });
 });
 
@@ -65,7 +84,6 @@ test.describe("for search engines and link previews", () => {
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => (m[1] ?? "").slice(SITE.length) || "/");
     const pages = [...overviewPages, ...componentPages];
     expect(new Set(locs)).toEqual(new Set(LANGS.flatMap((lang) => pages.map((p) => at(lang, p)))));
-    for (const lang of LANGS) expect(locs).toContain(at(lang, "/changelog"));
     expect(locs.filter((l) => /\/(examples|states|404)$/.test(l))).toEqual([]);
     const button = /<url>\s*<loc>https:\/\/ui\.kaeso\.app\/de\/components\/button<\/loc>([\s\S]*?)<\/url>/.exec(xml)?.[1] ?? "";
     expect([...button.matchAll(/hreflang="([^"]+)" href="([^"]+)"/g)].map((m) => [m[1], m[2]])).toEqual([

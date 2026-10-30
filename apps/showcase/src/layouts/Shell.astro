@@ -10,15 +10,14 @@ interface Props {
   description?: string;
   path?: string;
   notFound?: boolean;
-  feed?: { title: string; href: string } | undefined;
 }
-const { title, description, path, notFound = false, feed } = Astro.props;
+const { title, description, path, notFound = false } = Astro.props;
 const lang = docsLangOf(Astro.params.lang);
 const t = (s: string) => docsText(lang, s);
 const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(lang, path);
 ---
 
-<Base title={title} description={description} path={path} notFound={notFound} feed={feed}>
+<Base title={title} description={description} path={path} notFound={notFound}>
   <div class="isolate flex h-dvh w-full flex-col overflow-hidden bg-chrome text-fg lg:flex-row">
     <DocsSidebar client:load transition:persist="docs-sidebar" sections={sections(lang)} path={here} />
     <header class="shrink-0 bg-panel safe-area-bar lg:hidden">

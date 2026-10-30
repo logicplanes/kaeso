@@ -5,6 +5,7 @@ export interface NavItem {
   title: string;
   href: string;
   icon?: string;
+  external?: boolean;
 }
 export interface NavSection {
   title: string;
@@ -16,7 +17,7 @@ export const overview: NavItem[] = [
   { icon: "download", title: "Installation", href: "/installation" },
   { icon: "themeLight", title: "Theming", href: "/theming" },
   { icon: "serviceAccount", title: "For agents", href: "/for-agents" },
-  { icon: "time", title: "Changelog", href: "/changelog" },
+  { icon: "time", title: "Changelog", href: "/changelog", external: true },
 ];
 
 const pages = Object.values(demos);
@@ -27,7 +28,7 @@ export const components: NavItem[] = pages
   .map((p) => ({ title: p.title, href: `/components/${p.slug}` }));
 
 export function sections(lang: DocsLang): NavSection[] {
-  const local = (items: NavItem[]) => items.map((it) => ({ ...it, href: localizedPath(lang, it.href) }));
+  const local = (items: NavItem[]) => items.map((it) => ({ ...it, href: it.external ? kaesoApp(lang, it.href) : localizedPath(lang, it.href) }));
   return [
     { title: "Overview", items: local(overview) },
     { title: "Components", items: local(components) },
@@ -35,3 +36,6 @@ export function sections(lang: DocsLang): NavSection[] {
 }
 
 export const GITHUB = "https://github.com/logicplanes/kaeso";
+
+/** An address on kaeso.app in the page's language, such as its changelog. */
+export const kaesoApp = (lang: DocsLang, path: string) => `https://kaeso.app${lang === "en" ? "" : `/${lang}`}${path}`;

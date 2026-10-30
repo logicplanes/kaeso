@@ -16,7 +16,7 @@ const withPage = (name: string) =>
     .sort()
     .map((d) => `/components/${d}/${name}`);
 
-export const overviewPages = ["/", "/installation", "/theming", "/for-agents", "/changelog"];
+export const overviewPages = ["/", "/installation", "/theming", "/for-agents"];
 export const componentPages = slugs.map((s) => `/components/${s}`);
 export const localizedPages = ["de", "zh-CN"].flatMap((lang) => [...overviewPages, "/components/button", "/404"].map((p) => (p === "/" ? `/${lang}` : `/${lang}${p}`)));
 export const examplePages = withPage("examples");

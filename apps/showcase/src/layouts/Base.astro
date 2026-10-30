@@ -12,7 +12,6 @@ interface Props {
   path?: string | undefined;
   notFound?: boolean;
   noindex?: boolean;
-  feed?: { title: string; href: string } | undefined;
 }
 const {
   title,
@@ -21,7 +20,6 @@ const {
   path,
   notFound = false,
   noindex = false,
-  feed,
 } = Astro.props;
 const lang = docsLangOf(Astro.params.lang);
 const shownTitle = docsText(lang, title);
@@ -63,7 +61,6 @@ const website =
     {indexed && <link rel="canonical" href={href(lang)} />}
     {indexed && DOCS_LANGUAGES.map((l) => <link rel="alternate" hreflang={l.value} href={href(l.value)} />)}
     {indexed && <link rel="alternate" hreflang="x-default" href={href("en")} />}
-    {feed && <link rel="alternate" type="application/atom+xml" title={feed.title} href={feed.href} />}
     {!indexed && <meta name="robots" content="noindex" />}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Kaeso UI" />

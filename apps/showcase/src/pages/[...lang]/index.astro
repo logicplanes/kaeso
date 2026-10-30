@@ -1,7 +1,7 @@
 ---
 import Shell from "~/layouts/Shell.astro";
 import ComponentGrid from "~/components/ComponentGrid";
-import { GITHUB, components } from "~/lib/nav";
+import { GITHUB, components, kaesoApp } from "~/lib/nav";
 import ui from "../../../../../packages/ui/package.json";
 import { docsText, prepareDocsPage } from "~/lib/locale";
 import { languagePaths, localizedPath } from "~/lib/languages";
@@ -20,7 +20,7 @@ const count = components.length;
     </h1>
     <div class="flex items-center gap-4">
       <a
-        href={`${localizedPath(lang, "/changelog")}#v${ui.version}`}
+        href={kaesoApp(lang, `/changelog/${ui.version}`)}
         class="hidden h-32 items-center rounded-pill px-10 mono text-small text-fg-secondary transition-control hover:text-fg focus-ring sm:inline-flex"
       >
         @logicplanes/kaeso-ui v{ui.version}
