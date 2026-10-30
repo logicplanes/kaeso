@@ -105,7 +105,7 @@ for (const block of message.content) {
 | SDK | 基础 URL | 密钥的发送方式 |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
-| Anthropic | `https://kaeso.example.com` | `x-api-key` |
+| Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
 
 任何格式都能调用项目目录中的任何生成模型。[调用模型](../get-started/calling-models.md)展示了流式传输以及两种 SDK 的更多用法。
 
