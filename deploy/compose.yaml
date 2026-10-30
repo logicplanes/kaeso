@@ -217,7 +217,7 @@ services:
       retries: 30
 
   clickhouse:
-    image: clickhouse/clickhouse-server:26.3.52.9-alpine@sha256:af1f9005d173a321b2c4b428c868a94027530ca775e98a8f71734e8d62cb20ad
+    image: clickhouse/clickhouse-server:26.3.59.10-alpine@sha256:b10f8517402e545025dbed6f47a2407a40712f599a5e6ccb99911d1838c512de
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
