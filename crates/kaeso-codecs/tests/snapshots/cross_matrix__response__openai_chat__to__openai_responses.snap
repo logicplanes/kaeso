@@ -689,6 +689,839 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/cohere/recorded-assistant-prefill": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "981e54f8-1c3b-4fb7-8a5c-66fcef3b6850",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "3, 4, 5",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_981e54f81c3b4fb78a5c66fcef3b6850_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 18,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 7,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 25
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-basic": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "c890e04c-9060-4dbc-afb5-ca49e449e9b2",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of France is Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_c890e04c90604dbcafb5ca49e449e9b2_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 19,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 7,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 26
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-developer-role": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "5c502a3f-a533-43bb-aab6-482377a5a4ec",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The capital of France is Paris.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_5c502a3fa53343bbaab6482377a5a4ec_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 13,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 7,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 20
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-functions-field": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "e3cf601b-7d89-40a0-a471-55fb26e37c43",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'm unable to provide real-time information, including current weather conditions in Paris or any other location. My knowledge is based on data available up to October 2023, and I don't have access to live updates.\n\nTo find out the current weather in Paris, I recommend checking a reliable weather website or using a weather application on your device. These sources will provide you with the most up-to-date and accurate information about the weather conditions in Paris.\n\nIf you have any other questions or need information about Paris that doesn't require real-time data, feel free to ask!",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_e3cf601b7d8940a0a47155fb26e37c43_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 9,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 124,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 133
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-image": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "3c6e3420-ac73-4d6c-879f-be45344d22fa",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-vision-07-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Red",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_3c6e3420ac734d6c879fbe45344d22fa_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 270,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 271
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-reasoning": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "cb642247-ebe9-43ab-a7da-5c24542420ca",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-reasoning-08-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "To find the product of \\(17\\) and \\(23\\), follow these easy-to-understand steps:\n\n1. **Multiply the units digits:**\n   \\[\n   7 \\times 3 = 21\n   \\]\n   - Write down the **1** and carry over the **2**.\n\n2. **Multiply the tens digit of the first number by the units digit of the second number, and add the carried-over value:**\n   \\[\n   1 \\times 3 + 2 = 3 + 2 = 5\n   \\]\n   - Write down the **5**.\n\n3. **Multiply the units digit of the first number by the tens digit of the second number:**\n   \\[\n   7 \\times 2 = 14\n   \\]\n   - Write down the **4** and carry over the **1**.\n\n4. **Multiply the tens digits of both numbers, and add the carried-over value:**\n   \\[\n   1 \\times 2 + 1 = 2 + 1 = 3\n   \\]\n   - Write down the **3**.\n\n5. **Combine all the written-down digits to get the final product:**\n   \\[\n   391\n   \\]\n\n\\(\\boxed{391}\\)",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_cb642247ebe943aba7da5c24542420ca_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 15,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 461,
+      "output_tokens_details": {
+        "reasoning_tokens": 200
+      },
+      "total_tokens": 476
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-reasoning-off": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "e39ab270-a579-4afa-bcc5-e8a4729882fe",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-reasoning-08-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "5",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_e39ab270a5794afabcc5e8a4729882fe_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 13,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 14
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-sampling": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "b4d2fefe-e693-42ba-9197-19a503dd4772",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "To count from 1 to 9, we can follow these steps:\n\n1. Start by identifying the first step first the first step: 1.\n2. Add 1 to the current count.\n3. If the current count is less than 9, add the difference to the差值 to the current count.\n4. If the current count is greater than 9, subtract the difference from the current count.\n5. Repeat steps 2-4 until the count reaches 9.\n\nLet's go through the process step-by-step:\n\n1. **Initial Count:** 1\n2. **Step 2:** Add 1 to theinitial count. New count: 1 + 1 = 2.\n3. **Check Condition:** Is thenew count (2) less than 9? \n   - Yes: The count is2 is is isis greater than 9, so subtract thedifference (2 - 1 = 1. New count: 2 - 1 = 1.\n   - No: Thenew count is2 isless than 9, so continue**Repeat:** Go back toto step 2.\n\n4. **Final Count:** After repeating thesteps 5, thefinal count is 9.\n\nFollowing this process:\n\n1. Start with count 1.\n2. Add 1: New count = 2.\n3. Check if 2 < 9: \n   - Yes: Subtract 1 from 2, add the difference to the count. New count: 2 - 1 = 1.\n   - No: The count is already 9, so no change is needed. New count remains 9.\n\n4. Subtract 1 from the new count, add the difference to the count. New count: 1 - 1 = 0.\n   - No: The count is already 0, so no change is needed. New count remains 0.\n\n**Final Count:** After following the steps, the final count is 9.\n\nThe answer is **9**.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_b4d2fefee69342ba919719a503dd4772_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 12,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 439,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 451
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-structured-output": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "d4327d23-71db-4829-aa00-bbfa5216f0b8",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "{\"city\": \"Tokyo\", \"country\": \"Japan\"}",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_d4327d2371db4829aa00bbfa5216f0b8_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 7,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 12,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 19
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-tool-result": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "4a056db8-148a-4f13-9495-c10bed01d106",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The weather in Paris is currently 18 °C and sunny.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_4a056db8148a4f139495c10bed01d106_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 53,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 67
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-tools": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "085a2816-3c8b-4a6c-a2db-6e6e5d7510cf",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\"city\":\"Paris\"}",
+        "call_id": "get_weather_xsavt6yr6px5",
+        "id": "fc_kaeso_085a28163c8b4a6ca2db6e6e5d7510cf_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 44,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 24,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 68
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-tools-required": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "60e7c761-e139-44cd-8751-6d546c26e02e",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "arguments": "{\"city\":\"Paris\"}",
+        "call_id": "get_weather_g9b2jsp96nqm",
+        "id": "fc_kaeso_60e7c761e13944cd87516d546c26e02e_0",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 44,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 22,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 66
+    },
+    "user": null
+  },
+  "providers/cohere/recorded-web-search-options-field": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "14e1d7dc-f066-40ee-96fc-6ed03f2a33d4",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "command-a-03-2025",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "I'm unable to search the web in real-time, so I can't provide you with the most up-to-date information on yesterday's football match in Madrid. However, I can suggest a few ways for you to find this information:\n\n1. **Check sports websites**: Websites like ESPN, BBC Sport, or Marca often have live updates and match reports.\n2. **Use a search engine**: Try searching for \"football match results Madrid [date]\" on Google or another search engine.\n3. **Check social media**: Twitter, Facebook, or Instagram accounts of the teams or sports journalists might have posted updates.\n\nIf you provide me with the date and the teams involved, I might be able to give you some general information or historical context about the match.\n\nPlease note that my knowledge cutoff is until October 2023, so I might not have the most recent information.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_14e1d7dcf06640ee96fc6ed03f2a33d4_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 13,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 186,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 199
+    },
+    "user": null
+  },
   "providers/deepseek/recorded-json-object-system": {
     "background": false,
     "completed_at": 1760000000,

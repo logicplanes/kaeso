@@ -18,6 +18,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 | Provider | Formats | Host | Key |
 | --- | --- | --- | --- |
 | Anthropic `anthropic` | Messages, token counts | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
+| Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), no fixed prefix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
 | Mistral `mistral` | Chat Completions, Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys), no fixed prefix |
@@ -31,6 +32,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 What else to know about some providers. [Provider profiles](../development/kpp/openai-chat-providers.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
 
+- **Cohere.** Cohere's [Compatibility API](https://docs.cohere.com/docs/compatibility-api), which covers part of Cohere's own API: documents, citations and rerank aren't reachable through it. Cohere refuses some fields, such as `logit_bias` and `parallel_tool_calls`, and gets a single `stop` string as a list. Its reasoning models think at `reasoning_effort` `none` or `high` only. Its Embed models, such as `embed-v4.0`, aren't on models.dev: add them as custom models that send as Embeddings, with their price.
 - **DeepSeek.** Gets `developer` messages as `system` messages.
 - **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.
 - **Mistral.** Gets `developer` messages as `system` messages, and some fields under its own names, such as `seed` as `random_seed`. It refuses others, such as `logit_bias`, and a conversation that ends with an assistant message.

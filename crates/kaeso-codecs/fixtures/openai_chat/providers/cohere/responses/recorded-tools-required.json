@@ -1,0 +1,42 @@
+{
+  "id": "60e7c761-e139-44cd-8751-6d546c26e02e",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "get_weather_g9b2jsp96nqm",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}"
+            }
+          }
+        ]
+      },
+      "logprobs": null
+    }
+  ],
+  "created": 1793373685,
+  "model": "command-a-03-2025",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 44,
+    "completion_tokens": 22,
+    "total_tokens": 66,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  }
+}

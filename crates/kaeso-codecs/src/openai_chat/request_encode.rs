@@ -71,7 +71,7 @@ pub(crate) fn encode_generate(
     w.stop = match (s.stop.as_slice(), stop_form) {
         ([], Some("array")) => Some(StringOr::List(Vec::new())),
         ([], _) => None,
-        ([one], Some("string")) => Some(StringOr::String(one.clone())),
+        ([one], Some("string")) if !rules.stop_list => Some(StringOr::String(one.clone())),
         (stops, _) => Some(StringOr::List(stops.to_vec())),
     };
     if form(FORM_N).is_some() {

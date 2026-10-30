@@ -1,0 +1,32 @@
+{
+  "id": "14e1d7dc-f066-40ee-96fc-6ed03f2a33d4",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "I'm unable to search the web in real-time, so I can't provide you with the most up-to-date information on yesterday's football match in Madrid. However, I can suggest a few ways for you to find this information:\n\n1. **Check sports websites**: Websites like ESPN, BBC Sport, or Marca often have live updates and match reports.\n2. **Use a search engine**: Try searching for \"football match results Madrid [date]\" on Google or another search engine.\n3. **Check social media**: Twitter, Facebook, or Instagram accounts of the teams or sports journalists might have posted updates.\n\nIf you provide me with the date and the teams involved, I might be able to give you some general information or historical context about the match.\n\nPlease note that my knowledge cutoff is until October 2023, so I might not have the most recent information."
+      },
+      "logprobs": null
+    }
+  ],
+  "created": 1793373720,
+  "model": "command-a-03-2025",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 13,
+    "completion_tokens": 186,
+    "total_tokens": 199,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  }
+}

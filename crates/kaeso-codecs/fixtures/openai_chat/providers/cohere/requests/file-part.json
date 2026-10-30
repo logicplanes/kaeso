@@ -1,0 +1,21 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Summarise the file."
+        },
+        {
+          "type": "file",
+          "file": {
+            "filename": "example.pdf",
+            "file_data": "data:application/pdf;base64,JVBERi0xLjQK"
+          }
+        }
+      ]
+    }
+  ]
+}

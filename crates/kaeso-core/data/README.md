@@ -9,9 +9,9 @@ A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model da
 | | |
 |---|---|
 | Source | `https://models.dev/api.json` |
-| Fetched | 2026-10-30T03:29:11Z |
-| Content | the providers Kaeso calls (`anthropic`, `deepseek`, `groq`, `mistral`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`), unchanged otherwise; 966 models |
-| SHA-256 | `fcd88a1c4e0478d5e694dd5626f266c1d8f199ad28fafb99fdc27870387beeb2` |
+| Fetched | 2026-10-30T15:17:27Z |
+| Content | the providers Kaeso calls (`anthropic`, `cohere`, `deepseek`, `groq`, `mistral`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`), unchanged otherwise; 983 models |
+| SHA-256 | `ed8ce426f05e84b08a14582d8e64fad8e1a9546657c3cbdc43ce6222daeb2da0` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 `models-dev-providers.txt` lists every provider id in the same `api.json`. To refresh both for a release:
@@ -32,5 +32,6 @@ Every entry comes from one of these sources, checked on 2026-10-11:
 | `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
 | `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |
 | `mistral-embed` | the Embeddings endpoint only | Mistral, [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`); live check on 2026-10-19: `POST /v1/embeddings` answers with 1024 floats, and `GET /v1/models` lists it with `completion_chat: false` |
+| Cohere's `command-a-plus-05-2026`, `command-a-reasoning-08-2025`, `north-mini-code-1-0` | effort `none` or `high` only | Cohere, [Compatibility API](https://docs.cohere.com/docs/compatibility-api) (`reasoning_effort`: only `none` and `high`); live check on 2026-10-30: each model answers `high` with `reasoning_content` and `medium` with 422 `reasoning_effort 'medium' and 'low' are not supported` |
 
 The one-hour cache write price, which models.dev doesn't list, is Anthropic's: twice the input price ([pricing](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-19).

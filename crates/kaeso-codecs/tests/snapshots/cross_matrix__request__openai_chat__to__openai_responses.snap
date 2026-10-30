@@ -513,6 +513,539 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/cohere/assistant-prefill": {
+    "body": {
+      "input": [
+        {
+          "content": "Count from 1 to 5, separated by commas.",
+          "role": "user"
+        },
+        {
+          "content": "1, 2,",
+          "role": "assistant"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/basic": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Answer in one short sentence.",
+      "max_output_tokens": 64,
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/developer-role": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 64,
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/file-part": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "Summarise the file.",
+              "type": "input_text"
+            },
+            {
+              "file_data": "data:application/pdf;base64,JVBERi0xLjQK",
+              "filename": "document.pdf",
+              "type": "input_file"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/cohere/image": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image? Answer in one word.",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "command-a-vision-07-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/image-on-text-model": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image?",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/logit-bias-field": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/cohere/max-tokens-over-limit": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 9999999,
+      "model": "command-a-03-2025",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/metadata-field": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "providers/cohere/modalities-field": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/cohere/parallel-tool-calls-field": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "parallel_tool_calls": false,
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "The city name.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/penalties-together": {
+    "message": "`frequency_penalty` is not supported by OpenAI Responses. The Responses API has no `frequency_penalty`. Remove it or use the Chat Completions format.",
+    "param": "frequency_penalty",
+    "unsupported": "frequency_penalty"
+  },
+  "providers/cohere/prediction-field": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "providers/cohere/reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 2048,
+      "model": "command-a-reasoning-08-2025",
+      "reasoning": {
+        "effort": "high"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/reasoning-effort-medium": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-reasoning-08-2025",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/reasoning-off": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 2 plus 3? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-reasoning-08-2025",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 2 plus 3? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "command-a-reasoning-08-2025",
+      "reasoning": {
+        "effort": "high"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/sampling": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/cohere/service-tier-field": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/cohere/stop-string": {
+    "message": "`stop sequences` is not supported by OpenAI Responses. The Responses API has no `stop` parameter. Remove the stop sequences or use the Chat Completions format.",
+    "param": "stop",
+    "unsupported": "stop sequences"
+  },
+  "providers/cohere/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/cohere/stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Answer in one short sentence.",
+      "max_output_tokens": 64,
+      "model": "command-a-03-2025",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/stream-no-options": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Answer in one short sentence.",
+      "max_output_tokens": 64,
+      "model": "command-a-03-2025",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/structured-output": {
+    "body": {
+      "input": [
+        {
+          "content": "Name one city and its country.",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "place",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "country"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/tool-result": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris right now?",
+          "role": "user"
+        },
+        {
+          "arguments": "{\"city\":\"Paris\"}",
+          "call_id": "get_weather_0example",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "get_weather_0example",
+          "output": "18 °C and sunny",
+          "type": "function_call_output"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "The city name.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/tools": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "The city name.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/tools-required": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "The city name.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/tools-stream": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "model": "command-a-03-2025",
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "The city name.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/top-logprobs-field": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/cohere/unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-example-no-such-model",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cohere/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/deepseek/authentication-fails": {
     "body": {
       "input": [

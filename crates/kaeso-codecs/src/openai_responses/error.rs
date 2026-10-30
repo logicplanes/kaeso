@@ -111,7 +111,10 @@ pub(crate) fn decode(
             }
             err
         }
-        None => match value.as_ref().and_then(|v| v.get("error")) {
+        None => match value
+            .as_ref()
+            .and_then(|v| v.get("error").or_else(|| v.get("message")))
+        {
             Some(Value::String(message)) if !message.trim().is_empty() => {
                 KppError::new(kind_for(Some(status), None, None), message.clone())
             }
@@ -361,6 +364,14 @@ mod tests {
         assert_eq!(v["error"]["type"], "invalid_request_error");
         let blank = decode(D, 400, &HeaderList::new(), br#"{"error":" "}"#);
         assert!(blank.message.contains("could not read"));
+        let body =
+            br#"{"id":"00000000-0000-0000-0000-000000000000","message":"model 'x' not found."}"#;
+        let e = decode(D, 404, &HeaderList::new(), body);
+        assert_eq!(
+            (e.kind, e.message.as_str()),
+            (ErrorKind::NotFound, "model 'x' not found.")
+        );
+        assert_eq!(e.raw, Some(serde_json::from_slice(body).unwrap()));
         let gone = decode(
             D,
             410,

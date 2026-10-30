@@ -1,0 +1,190 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "c4ai-aya-expanse-32b",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "c4ai-aya-vision-32b",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "cohere-transcribe-03-2026",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-a-03-2025",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-a-plus-05-2026",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-a-reasoning-08-2025",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-a-translate-08-2025",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-a-vision-07-2025",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-r-08-2024",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-r-plus-08-2024",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-r7b-12-2024",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "command-r7b-arabic-02-2025",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-english-light-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-english-light-v3.0-image",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-english-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-english-v3.0-image",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-multilingual-light-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-multilingual-light-v3.0-image",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-multilingual-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-multilingual-v3.0-image",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-v4.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-v5.0-fast",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "embed-v5.0-pro",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "north-mini-code-1.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "north-small-translate-1.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "parse-v5.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-english-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-multilingual-v3.0",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-v3.5",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-v4.0-fast",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-v4.0-pro",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-v5.0-fast",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "rerank-v5.0-pro",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "tiny-aya-earth",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "tiny-aya-fire",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "tiny-aya-global",
+      "object": "model",
+      "owned_by": "cohere"
+    },
+    {
+      "id": "tiny-aya-water",
+      "object": "model",
+      "owned_by": "cohere"
+    }
+  ]
+}

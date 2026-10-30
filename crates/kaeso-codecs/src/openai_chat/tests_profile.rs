@@ -495,3 +495,35 @@ fn a_greedy_top_p_profile_sends_top_p_1_with_temperature_0() {
     let out = encode_with(&Request::Generate(anthropic), greedy).unwrap();
     assert_eq!(out["top_p"], json!(1.0));
 }
+
+#[test]
+fn a_stop_list_profile_sends_a_chat_apps_single_stop_string_as_a_list() {
+    let fixture = |name: &str| {
+        fixtures("openai_chat", "requests", "json")
+            .into_iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no request fixture {name}"))
+            .1
+    };
+    let refused: Value = serde_json::from_slice(&fixture("providers/cohere/stop-string")).unwrap();
+    assert_eq!(refused["stop"], "6");
+    let req = decode(&fixture("providers/cohere/stop-string")).unwrap();
+    let as_written = encode_with(&req, ChatProfile::compatible("Example Cloud")).unwrap();
+    assert_eq!(as_written["stop"], "6");
+    let listed = encode_with(&req, ChatProfile::compatible("Example Cloud").stop_list()).unwrap();
+    assert_eq!(listed["stop"], json!(["6"]));
+    let req = chat(json!({"model": "m", "messages": [], "stop": ["a", "b"]}));
+    let listed = encode_with(&req, ChatProfile::compatible("Example Cloud").stop_list()).unwrap();
+    assert_eq!(listed["stop"], json!(["a", "b"]));
+    let req = chat(json!({"model": "m", "messages": []}));
+    let listed = encode_with(&req, ChatProfile::compatible("Example Cloud").stop_list()).unwrap();
+    assert!(listed.get("stop").is_none());
+    let mut req = foreign(DialectId::AnthropicMessages);
+    req.sampling.stop = vec!["END".to_owned()];
+    let listed = encode_with(
+        &Request::Generate(req),
+        ChatProfile::compatible("Example Cloud").stop_list(),
+    )
+    .unwrap();
+    assert_eq!(listed["stop"], json!(["END"]));
+}

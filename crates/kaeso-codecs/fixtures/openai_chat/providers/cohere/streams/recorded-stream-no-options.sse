@@ -1,0 +1,20 @@
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":"","role":"assistant"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":"The"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":" capital"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":" of"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":" France"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":" is"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":" Paris"},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":null,"delta":{"content":"."},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: {"id":"f5049e38-ef78-4bfc-85cf-64cbd706a801","choices":[{"index":0,"finish_reason":"stop","delta":{},"logprobs":null}],"created":1793373673,"model":"command-a-03-2025","object":"chat.completion.chunk"}
+
+data: [DONE]
+

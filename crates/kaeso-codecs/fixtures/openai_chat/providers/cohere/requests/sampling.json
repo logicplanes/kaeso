@@ -1,0 +1,16 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 9, separated by commas."
+    }
+  ],
+  "temperature": 0.3,
+  "top_p": 0.9,
+  "seed": 7,
+  "frequency_penalty": 0.2,
+  "stop": [
+    "6"
+  ]
+}

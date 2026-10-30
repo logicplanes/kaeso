@@ -1,0 +1,12 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Search the web: who won yesterday's football match in Madrid?"
+    }
+  ],
+  "web_search_options": {
+    "search_context_size": "low"
+  }
+}

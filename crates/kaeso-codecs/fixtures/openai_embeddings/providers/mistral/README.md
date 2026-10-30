@@ -13,4 +13,4 @@ Every file under `responses/` and `errors/` was recorded live from `mistral-embe
 | `errors/recorded-string-input.json` | OpenAI's `dimensions`: HTTP 422 `extra_forbidden` |
 | `errors/recorded-token-ids.json` | token ids as `input`: HTTP 422 |
 
-These error bodies have no `error` object, so the codec answers apps with an OpenAI error that quotes them; `openai_embeddings::tests::error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them` checks that instead of the round trip.
+These error bodies have no `error` object, so the codec answers apps with an OpenAI error that carries their top-level `message` when it is a string and quotes the body otherwise; `openai_embeddings::tests::error_bodies_without_an_error_object_reach_apps_as_openai_errors_with_their_message` checks that instead of the round trip.

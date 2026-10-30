@@ -1,0 +1,11 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "logprobs": true,
+  "top_logprobs": 2
+}

@@ -153,6 +153,22 @@
       "count_tokens": null,
       "embeddings": "openai_embeddings",
       "account": null
+    },
+    {
+      "id": "cohere",
+      "name": "Cohere",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "label": "API Keys",
+        "url": "https://dashboard.cohere.com/api-keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null
     }
   ],
   "has_more": false,

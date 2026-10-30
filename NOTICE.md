@@ -24,6 +24,7 @@ The provider marks in `packages/ui/src/components/kaeso/provider-marks.ts` are t
 - OpenRouter: the Ink glyph (`#03080A`) on light and the Cloud glyph (`#FCFCFE`) on dark from the [OpenRouter brand assets](https://openrouter.ai/brand).
 - Mistral: the black (`#161525`) and white icons from the [Mistral AI brand assets](https://mistral.ai/brand).
 - Vercel: the black and white Vercel Symbol from the [Vercel brand assets](https://vercel.com/geist/brands), black on light and white on dark, as the brand page asks.
+- Cohere: the black (`#17171C`) and white symbols from the press kit on Cohere's [newsroom](https://cohere.com/newsroom), black on light and white on dark.
 
 Groq is a trademark of Groq LLC and/or its affiliates. Kaeso is not affiliated with or endorsed by any of these providers.
 

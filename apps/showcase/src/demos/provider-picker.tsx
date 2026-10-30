@@ -5,6 +5,7 @@ import { StateSection } from "~/lib/states";
 const providers: ProviderPickerOption[] = [
   { id: "openai", name: "OpenAI", connected: true, hint: "2 keys" },
   { id: "anthropic", name: "Anthropic", connected: true, hint: "1 key" },
+  { id: "cohere", name: "Cohere" },
   { id: "deepseek", name: "DeepSeek" },
   { id: "groq", name: "Groq" },
   { id: "mistral", name: "Mistral" },

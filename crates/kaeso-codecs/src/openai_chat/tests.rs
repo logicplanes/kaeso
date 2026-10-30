@@ -120,6 +120,8 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     ),
 ];
 
+const COHERE: &str = "providers/cohere/";
+
 pub(super) fn raw(s: &str) -> RawJson {
     RawJson::from_string(s.to_owned()).unwrap()
 }
@@ -406,7 +408,7 @@ fn a_mistral_error_frame_in_a_stream_ends_it_with_mistrals_error() {
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(D, "errors", "json") {
-        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name) {
+        if FOREIGN_ERROR_BODIES.iter().any(|(n, _)| *n == name) || name.starts_with(COHERE) {
             continue;
         }
         let meta = sidecar(D, "errors", &name, "meta").unwrap();
@@ -427,6 +429,47 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             headers.get("retry-after"),
             "{name}"
         );
+    }
+}
+
+#[test]
+fn cohere_error_bodies_reach_apps_with_cohere_message_and_status() {
+    let bodies: Vec<(String, Vec<u8>)> = fixtures(D, "errors", "json")
+        .into_iter()
+        .filter(|(n, _)| n.starts_with(COHERE))
+        .collect();
+    assert_eq!(bodies.len(), 19);
+    for (name, body) in &bodies {
+        let status = u16::try_from(
+            sidecar(D, "errors", name, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), body);
+        let original: Value = serde_json::from_slice(body).unwrap();
+        let message = original["message"].as_str().unwrap();
+        let end = if message.ends_with('.') { "" } else { "." };
+        assert_eq!(
+            err.message,
+            format!("The provider returned an error (HTTP {status}): {message}{end}"),
+            "{name}"
+        );
+        assert_eq!(err.raw.as_ref(), Some(&original), "{name}");
+        let kind = match status {
+            401 => ErrorKind::Authentication,
+            404 => ErrorKind::NotFound,
+            _ => ErrorKind::InvalidRequest,
+        };
+        assert_eq!(
+            (err.kind.clone(), err.status),
+            (kind, Some(status)),
+            "{name}"
+        );
+        let out = OpenAiChat::encode_error(&err);
+        assert_eq!(out.status, status, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
     }
 }
 
