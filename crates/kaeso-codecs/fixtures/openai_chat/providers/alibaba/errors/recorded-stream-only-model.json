@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "This model only support stream mode, please enable the stream parameter to access the model. ",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-b9a2d6d7-5a5a-947a-a4a8-ef12ecaf279a",
+  "request_id": "b9a2d6d7-5a5a-947a-a4a8-ef12ecaf279a"
+}

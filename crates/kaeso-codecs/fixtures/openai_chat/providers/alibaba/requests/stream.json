@@ -1,0 +1,15 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 5, separated by spaces."
+    }
+  ],
+  "max_completion_tokens": 50,
+  "enable_thinking": false,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

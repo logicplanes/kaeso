@@ -537,6 +537,41 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("Moonshot AI"),
         account: None,
     },
+    Provider {
+        id: "alibaba",
+        name: "Alibaba Cloud",
+        key_page: KeyPage {
+            url: "https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key",
+            label: "Model Studio → API Key",
+        },
+        key_prefix: Some("sk-"),
+        default_base_url: "https://dashscope-intl.aliyuncs.com/compatible-mode",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: true,
+        chat: ChatProfile::compatible("Alibaba Cloud")
+            .system_role()
+            .thinking_switch()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "logit_bias",
+                "metadata",
+                "modalities",
+                "prediction",
+                "service_tier",
+                "store",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Alibaba Cloud"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -809,7 +844,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba"
         );
     }
 
@@ -1080,6 +1115,76 @@ mod tests {
     }
 
     #[test]
+    fn alibaba_refuses_the_fields_model_studio_ignores_and_keeps_the_rest() {
+        for (request, param) in [
+            ("requests/logit-bias", "logit_bias"),
+            ("providers/alibaba/requests/store-metadata-fields", "store"),
+            ("providers/alibaba/requests/prediction-field", "prediction"),
+            ("providers/alibaba/requests/audio-fields", "modalities"),
+            (
+                "providers/alibaba/requests/web-search-options-field",
+                "web_search_options",
+            ),
+        ] {
+            assert_eq!(
+                sent_with_profile("alibaba", request).unwrap_err(),
+                param,
+                "{request}"
+            );
+        }
+        let developer = sent_with_profile("alibaba", "requests/plain-developer-string").unwrap();
+        assert_eq!(developer["messages"][0]["role"], "system");
+        for request in [
+            "providers/alibaba/requests/sampling",
+            "providers/alibaba/requests/logprobs",
+            "providers/alibaba/requests/structured-output",
+            "providers/alibaba/requests/tools-required",
+            "providers/alibaba/requests/functions-field",
+            "providers/alibaba/requests/assistant-prefill",
+            "providers/alibaba/requests/user-hints",
+        ] {
+            sent_with_profile("alibaba", request).unwrap_or_else(|p| panic!("{request}: {p}"));
+        }
+        let reasoning =
+            sent_with_profile("alibaba", "providers/alibaba/requests/reasoning-sent-back").unwrap();
+        assert_eq!(
+            reasoning["messages"][1]["reasoning_content"],
+            "The user wants one number; 7 is a common pick."
+        );
+    }
+
+    #[test]
+    fn alibaba_gets_an_anthropic_apps_thinking_as_enable_thinking_and_its_budget() {
+        let alibaba = provider("alibaba").unwrap();
+        assert!(alibaba.reasoning_beyond_output_limit);
+        let send = |thinking: kaeso_kpp::ReasoningConfig| {
+            let mut g = kaeso_kpp::GenerateRequest::new("qwen3.7-flash");
+            g.extras.origin = Some(kaeso_kpp::Origin::new(DialectId::AnthropicMessages));
+            g.messages = vec![kaeso_kpp::Message::user("What is 17 times 23?")];
+            g.sampling.max_output_tokens = Some(4096);
+            g.reasoning = Some(thinking);
+            let req = kaeso_kpp::Request::Generate(g);
+            let mut ctx = kaeso_codecs::EgressCtx::new(&req).with_chat_profile(alibaba.chat);
+            let out = kaeso_codecs::dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx)
+                .unwrap();
+            serde_json::from_slice::<serde_json::Value>(&out.body).unwrap()
+        };
+        let mut on = kaeso_kpp::ReasoningConfig::default();
+        on.mode = Some(kaeso_kpp::ReasoningMode::Enabled);
+        on.budget_tokens = Some(2048);
+        let sent = send(on);
+        assert_eq!(sent["enable_thinking"], true, "{sent}");
+        assert_eq!(sent["thinking_budget"], 2048, "{sent}");
+        assert_eq!(sent["max_completion_tokens"], 4096, "{sent}");
+        assert!(sent.get("reasoning_effort").is_none(), "{sent}");
+        let mut off = kaeso_kpp::ReasoningConfig::default();
+        off.mode = Some(kaeso_kpp::ReasoningMode::Disabled);
+        let sent = send(off);
+        assert_eq!(sent["enable_thinking"], false, "{sent}");
+        assert!(sent.get("thinking_budget").is_none(), "{sent}");
+    }
+
+    #[test]
     fn only_mistral_reads_its_context_window_message_as_context_too_long() {
         let message =
             "Prompt contains 65673 tokens, too large for model with 32768 maximum context length";
@@ -1258,7 +1363,8 @@ mod tests {
                 "vercel",
                 "cohere",
                 "ollama-cloud",
-                "moonshotai"
+                "moonshotai",
+                "alibaba"
             ]
         );
         assert_eq!(

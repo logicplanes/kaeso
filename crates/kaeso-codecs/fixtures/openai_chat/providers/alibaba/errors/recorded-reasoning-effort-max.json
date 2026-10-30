@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "'reasoning_effort' must be one of: 'none', 'minimal', 'low', 'medium', 'high', 'xhigh'",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-fe473e15-c5e0-93ab-8a07-55133da72527",
+  "request_id": "fe473e15-c5e0-93ab-8a07-55133da72527"
+}

@@ -1310,3 +1310,25 @@ fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
         "a custom provider speaks only the dialects it names"
     );
 }
+
+#[test]
+fn alibaba_models_speak_chat_completions_and_take_effort_levels_only_where_listed() {
+    let flash = eff(&entry("alibaba", "qwen3.7-flash"));
+    assert_eq!(flash.dialect, DialectId::OpenAiChat);
+    assert_eq!(flash.provider.chat().provider, "Alibaba Cloud");
+    assert!(!flash.is_embeddings());
+    assert_eq!(
+        (flash.fields.input_price, flash.fields.output_price),
+        (Some(dec!(0.03)), Some(dec!(0.13)))
+    );
+    assert!(effort_levels(&flash, DialectId::OpenAiResponses).is_empty());
+    kept("none", DialectId::OpenAiChat, &flash);
+    let err = refused("low", DialectId::OpenAiResponses, &flash);
+    assert!(err.contains("does not accept an effort level"), "{err}");
+    let effort = eff(&entry("alibaba", "qwen3.8-flash"));
+    assert_eq!(
+        effort_levels(&effort, DialectId::OpenAiChat),
+        ["low", "medium", "xhigh"]
+    );
+    kept("low", DialectId::OpenAiResponses, &effort);
+}

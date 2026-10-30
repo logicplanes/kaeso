@@ -1,0 +1,36 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"city\": \"Paris\"}",
+              "name": "get_time"
+            },
+            "id": "call_6023bbd3aada4b97bec6d787",
+            "index": 0,
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1793379332,
+  "id": "chatcmpl-35436293-dd0f-90b0-b015-066281f208fd",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 19,
+    "prompt_tokens": 358,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 358
+    },
+    "total_tokens": 377
+  }
+}

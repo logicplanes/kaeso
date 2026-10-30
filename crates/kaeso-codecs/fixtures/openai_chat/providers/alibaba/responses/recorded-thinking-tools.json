@@ -1,0 +1,41 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "",
+        "reasoning_content": "Thinking Process:\n1.  **Identify User Intent**: The user is asking for the current weather in Paris.\n2.  **Match with Available Tools**: The `get_weather` tool matches this intent exactly.\n3.  **Check Parameters**: The `get_weather` function requires a `city` parameter. The user provided \"Paris\".\n4.  **Construct Tool Call**: Call `get_weather` with `city: \"Paris\"`.\n5.  **Formulate Output**: Generate the tool call block.✅",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"city\": \"Paris\"}",
+              "name": "get_weather"
+            },
+            "id": "call_8a161da797f84eed83651e6e",
+            "index": 0,
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1793379327,
+  "id": "chatcmpl-f8939946-511e-9855-b00d-83cb0a837837",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 138,
+    "completion_tokens_details": {
+      "reasoning_tokens": 110,
+      "text_tokens": 138
+    },
+    "prompt_tokens": 284,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 284
+    },
+    "total_tokens": 422
+  }
+}

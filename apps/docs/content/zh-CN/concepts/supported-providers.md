@@ -17,6 +17,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 | 服务商 | 格式 | 主机 | 密钥 |
 | --- | --- | --- | --- |
+| Alibaba Cloud `alibaba` | Chat Completions、Embeddings | `dashscope-intl.aliyuncs.com` | [modelstudio.console.alibabacloud.com](https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key)，`sk-` |
 | Anthropic `anthropic` | Messages、Token 计数 | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys)，`sk-ant-` |
 | Cohere `cohere` | Chat Completions、Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys)，无固定前缀 |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys)，`sk-` |
@@ -34,6 +35,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 关于部分服务商的其他须知事项。服务商会改名或拒绝的每个 Chat Completions 字段，见[服务商配置](../development/kpp/openai-chat-providers.md#服务商配置)：
 
+- **Alibaba Cloud。** 即国际站（新加坡）地域的阿里云百炼（Model Studio），提供 `qwen3.7-flash` 等通义千问模型，以及 `kimi-k3` 等其他厂商的模型。密钥只能在创建它的地域使用。对于中国（北京）地域（models.dev 中为 `alibaba-cn`），请将 Alibaba Cloud 的[基础 URL](../self-hosting/configuration.md#服务商设置) 设为 `https://dashscope.aliyuncs.com/compatible-mode`，并使用该地域的密钥；一个实例只能连接一个地域。`developer` 消息会以 `system` 消息发送给它；百炼接受但不处理的字段（例如 `logit_bias` 和 `web_search_options`）会被拒绝。应用的思考请求以 `enable_thinking` 发送给模型，Anthropic 应用的 `budget_tokens` 以 `thinking_budget` 发送，推理强度只发送给列出了强度级别的模型，例如 `qwen3.8-max`。Chat 应用的 `max_tokens` 只限制回答，不限制思考；`max_completion_tokens` 同时限制两者。有些模型只能思考，会拒绝关闭思考，`qwq-plus` 只回答流式请求：应用会收到百炼的 400。它的嵌入模型（例如 `text-embedding-v4`）不在 models.dev 上：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **Cohere。** 即 Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api)，它只覆盖 Cohere 自身 API 的一部分：无法通过它使用文档、引用和重排序。Cohere 拒绝部分字段，例如 `logit_bias` 和 `parallel_tool_calls`；单个 `stop` 字符串会以列表形式发送给它。它的推理模型只支持 `reasoning_effort` 为 `none` 或 `high`。它的 Embed 模型（例如 `embed-v4.0`）不在 models.dev 上：请将其添加为以 Embeddings 发送的自定义模型，并填写价格。
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。
@@ -47,4 +49,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cohere 和 Groq 在其条款中限制使用其标志；Kaeso 仅出于此目的原样显示它们的标志。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Alibaba Cloud、Anthropic、Cohere 和 Groq 在其条款中限制使用其标志；Kaeso 仅出于此目的原样显示它们的标志。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

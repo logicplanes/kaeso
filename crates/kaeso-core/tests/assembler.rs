@@ -226,6 +226,7 @@ fn assembled_usage_is_known(r: &Response) -> bool {
 #[test]
 fn streamed_reasoning_of_chat_providers_is_logged_as_one_reasoning_block() {
     let cases = [
+        ("alibaba", "recorded-thinking-stream"),
         ("deepseek", "recorded-thinking-stream"),
         ("deepseek", "recorded-thinking-tools-stream"),
         ("groq", "recorded-stream-doc"),

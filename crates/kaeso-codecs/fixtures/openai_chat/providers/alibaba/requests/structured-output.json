@@ -1,0 +1,33 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Give me a fruit and its colour."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "fruit",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "fruit_name": {
+            "type": "string"
+          },
+          "hex_colour": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fruit_name",
+          "hex_colour"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "enable_thinking": false
+}

@@ -25,6 +25,7 @@ nav: Chat 服务商
 | `tool_schema_root(root)` | 把服务商不接受的函数工具根部联合合并为一个对象 schema，并在 `kaeso-adapted` 中注明该工具；`ToolSchemaRoot::ObjectUnions` 保留由内联对象组成的联合。 | 工具、它的属性和模型的参数都保留；只有根部的形状改变（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | `partial_prefill()` | 当对话的最后一条 assistant 消息由其他格式的应用发送且不调用工具时，为其加上 `partial: true`；Anthropic Messages 应用就是这样预填回复开头的。Chat 应用自己的消息按原样发送。 | 消息及其文本不变；该标记只是告诉借助它续写预填内容的服务商（例如 Moonshot AI）接着该消息续写，而不是重新回答并重复预填内容。 |
 | `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
+| `thinking_switch()` | 将请求的思考以 `enable_thinking` 发送：思考关闭或强度为 `none`、`minimal` 时为 `false`，并省略 `reasoning_effort`；其他情况为 `true`。没有强度的预算以 `thinking_budget` 发送，而不是映射成的强度；强度仍以 `reasoning_effort` 发送。Chat 应用自己发送的键保持不变。 | 服务商用自己的键开关思考；在模型默认不思考时，仅有 `reasoning_effort` 不会开启思考。开或关、预算和强度都原样到达服务商。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
@@ -45,6 +46,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 | 服务商 | 设置 | 来源 |
 |---|---|---|
+| Alibaba Cloud（`alibaba`） | `system_role()`、`thinking_switch()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`logit_bias`、`metadata`、`modalities`、`prediction`、`service_tier`、`store`、`verbosity` 和 `web_search_options` | 百炼的[深度思考](https://www.alibabacloud.com/help/en/model-studio/deep-thinking)页面（`enable_thinking`、`thinking_budget`、`reasoning_content`，2026-10-30 查阅）；`fixtures/openai_chat/providers/alibaba/errors/recorded-developer-role`（`developer` 角色返回 400）；`responses/recorded-reasoning-effort-alone`（在 `qwen-flash` 上使用 `reasoning_effort: "high"`：没有思考）和 `responses/recorded-enable-thinking`（100 token 预算用满 100 个推理 token）；`responses/recorded-thinking` 和 `streams/recorded-thinking-stream`；`responses/recorded-logit-bias-field`、`recorded-store-metadata-fields`、`recorded-prediction-field`、`recorded-audio-fields` 和 `recorded-web-search-options-field`，百炼对它们以 200 回答，就像没有这些字段 |
 | Cohere（`cohere`） | `stop_list()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`metadata`、`modalities`、`parallel_tool_calls`、`prediction`、`service_tier`、`store`、`top_logprobs`、`verbosity` 和 `web_search_options` | Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），其中列出 `store`、`metadata`、`logit_bias`、`top_logprobs`、`n`、`modalities`、`prediction`、`audio`、`service_tier` 和 `parallel_tool_calls` 不受支持；`fixtures/openai_chat/providers/cohere/errors/` 中的 422 录制，每个字段一份；`responses/recorded-functions-field` 和 `responses/recorded-web-search-options-field`，Cohere 以 200 回答并忽略该字段，`verbosity` 也是如此；`stop_list()` 依据 `errors/recorded-stop-string`（422，`stop` 必须是列表）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream`（`reasoning_content`） |
 | DeepSeek（`deepseek`） | `max_tokens()`、`system_role()`、`reasoning_fields(["reasoning_content"])` | DeepSeek 的 API 参考和思考模式指南（`reasoning_content`），`responses/recorded-thinking-reasoning-content` 和 `streams/recorded-thinking-stream`；`fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
 | Groq（`groq`） | `system_role()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色）；Groq 的推理指南（`reasoning`），`responses/recorded-reasoning-format-parsed` 和 `streams/recorded-stream-doc` |
@@ -202,3 +204,23 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `GET /v1/models`、`GET /v1/models/{model}` | `ModelList`、`ModelInfo` | OpenAI 的格式，带 `owned_by: "cohere"`；两者都以 401 拒绝错误的密钥（`errors/list-invalid-api-key`）。 |
 
 Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connectors`）和重排序无法通过 Compatibility API 使用。录制时，Cohere 有时会流式返回与问题无关的 token，还有一次返回 422 `NO_VALID_RESPONSE_GENERATED`（`errors/recorded-no-valid-response`）；两种情况重试后都恢复正常。
+
+### Alibaba Cloud
+
+来源：阿里云百炼（Model Studio）的 [OpenAI 兼容](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope)、[深度思考](https://www.alibabacloud.com/help/en/model-studio/deep-thinking)和 [API 密钥](https://www.alibabacloud.com/help/en/model-studio/get-api-key)页面（2026-10-30 查阅），以及 `fixtures/openai_chat/providers/alibaba/` 中在国际站（新加坡）地域使用 `qwen3.7-flash`、`qwen3.8-flash`、`qwen-flash` 和 `qwen3-vl-plus` 的实时录制。Kaeso 的基础 URL 为 `https://dashscope-intl.aliyuncs.com/compatible-mode`，使用 `Authorization: Bearer`。
+
+| 百炼字段 | KPP | 说明 |
+|---|---|---|
+| `max_completion_tokens`、`seed`、`stop`、两种惩罚参数、`logprobs`、`tool_choice`（`auto`、`none`、`required`、指定函数）、`parallel_tool_calls`、带 JSON Schema 的 `response_format`、旧版 `functions`、预填的助手消息、视觉模型上的 `image_url` 部分 | 与 OpenAI 相同 | 录制于 `responses/`。指定函数的 `tool_choice` 以 `finish_reason: "tool_calls"` 回答；`tool_choice` 为 `allowed_tools` 时返回 400（`errors/recorded-allowed-tools`）。 |
+| `enable_thinking`、`thinking_budget`（请求） | `reasoning.mode`、`reasoning.budget_tokens` | 通过配置的 `thinking_switch`。百炼以 400 拒绝为 0 或超过 131072 的预算、不小于 `max_completion_tokens` 的预算、`kimi-k3` 上的 `thinking_budget`（`errors/recorded-thinking-budget-*`），以及只能思考的模型上的 `enable_thinking: false`（`errors/recorded-thinking-only-model-off`）。 |
+| `reasoning_effort` | `reasoning.effort` | 与 `enable_thinking: true` 一起发送给目录条目列出了强度级别的模型，例如 `qwen3.8-max` 和 `kimi-k3`；其他模型会在发送前拒绝强度。百炼自己也会检查取值（`errors/recorded-reasoning-effort-max`）。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。思考块旁带有 `content: ""`，不会开启文本块。应用回传的思考以助手轮次上的 `reasoning_content` 发送给百炼，百炼会接受（`responses/recorded-reasoning-sent-back`）。 |
+| `max_tokens` | `max_output_tokens` | 只限制回答：开启思考时 `max_tokens: 50` 得到 453 个 completion token（`responses/recorded-max-tokens-beyond-reasoning`），而 `max_completion_tokens` 同时限制两者（`responses/recorded-max-completion-tokens-thinking`）。除非 Chat 应用写了 `max_tokens`，Kaeso 都发送 `max_completion_tokens`；预留花费时，对思考模型按模型的输出上限计算。 |
+| `usage.prompt_tokens_details.text_tokens`、`image_tokens`、`completion_tokens_details.text_tokens` | `raw` 用量 | 百炼自己的 token 明细。 |
+| `system_fingerprint`、错误顶层的 `request_id` | 扩展字段 | 发往其他方言时省略。 |
+| 流中 `id: ""`、随后 `id: null` 的参数块 | `Delta::ToolCall` | 它们延续第一个块开启的调用（`streams/recorded-tools-stream`）。 |
+| 百炼未声明的字段 | — | 百炼以 200 回答并忽略它们，因此配置会拒绝应用所依赖的字段，例如 `logit_bias`、`store` 和 `web_search_options`。 |
+| OpenAI 格式的错误，`code` 例如 `invalid_api_key`、`model_not_found` 或 `invalid_parameter_error` | `KppError` | 错误类型取决于状态码：密钥错误为 401，免费额度账号用完某个模型的免费额度时为 403（`errors/recorded-free-tier-exhausted`），未知模型为 404，其余为 400，其中包括只回答流式请求的模型（`errors/recorded-stream-only-model`）。 |
+| `GET /v1/models`、`GET /v1/models/{model}` | `ModelList`、`ModelInfo` | OpenAI 的格式，带 `owned_by: "system"`，所有模型在一页中返回，`first_id` 为 `model-id-0`；两者都以 401 拒绝错误的密钥（`errors/list-invalid-api-key`）。 |
+
+在这个地域，百炼还在 `/compatible-mode/v1/responses` 提供 OpenAI Responses，在 `/apps/anthropic/v1/messages` 提供 Anthropic Messages；只有 Chat Completions 和 Embeddings 经过录制并列出。密钥只能在其所属地域使用：中国（北京）地域为 `https://dashscope.aliyuncs.com/compatible-mode`，使用该地域自己的密钥。

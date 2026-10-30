@@ -1,0 +1,45 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"city\": \"Paris\"}",
+              "name": "get_weather"
+            },
+            "id": "call_0edfa4b3cefa4ba18230660e",
+            "index": 0,
+            "type": "function"
+          },
+          {
+            "function": {
+              "arguments": "{\"city\": \"Paris\"}",
+              "name": "get_time"
+            },
+            "id": "call_52ffcaad3d984b43b440c0a7",
+            "index": 1,
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1793379335,
+  "id": "chatcmpl-d56d7b72-269f-939c-9360-543d8c454ef0",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 51,
+    "prompt_tokens": 356,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 356
+    },
+    "total_tokens": 407
+  }
+}

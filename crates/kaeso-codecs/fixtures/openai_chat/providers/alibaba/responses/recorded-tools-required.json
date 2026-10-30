@@ -1,0 +1,36 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"city\": \"New York\"}",
+              "name": "get_weather"
+            },
+            "id": "call_70c7bd135ff24ad5b3ef8e83",
+            "index": 0,
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1793379333,
+  "id": "chatcmpl-45232917-6ed1-9729-8677-0270e1625d41",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 23,
+    "prompt_tokens": 354,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 354
+    },
+    "total_tokens": 377
+  }
+}

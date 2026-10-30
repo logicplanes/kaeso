@@ -513,6 +513,240 @@ expression: outcomes
     "param": null,
     "unsupported": "prompt_cache_options"
   },
+  "providers/alibaba/allowed-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/assistant-prefill": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/audio-fields": {
+    "message": "`modalities` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "modalities"
+  },
+  "providers/alibaba/basic": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/developer-role": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/embeddings-model": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
+  "providers/alibaba/enable-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/free-tier-exhausted": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
+  "providers/alibaba/functions-field": {
+    "message": "`functions` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "functions"
+  },
+  "providers/alibaba/image": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/image-too-small": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/invalid-api-key": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
+  "providers/alibaba/logit-bias-field": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/alibaba/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/alibaba/max-completion-tokens-thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/max-tokens-beyond-reasoning": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/output-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/prediction-field": {
+    "message": "`prediction` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "prediction"
+  },
+  "providers/alibaba/reasoning-effort": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-effort-alone": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 2000,
+      "model": "qwen-flash",
+      "reasoning": {
+        "effort": "high"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/alibaba/reasoning-effort-max": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/reasoning-sent-back": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/sampling": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/alibaba/store-metadata-fields": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/alibaba/stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/stream-only-model": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "qwq-plus-2025-03-05",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/alibaba/structured-output": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-kimi": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-over-limit": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-budget-zero": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-only-model-off": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/thinking-tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tool-result": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-named": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-required": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/tools-stream": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/unknown-model": {
+    "message": "`max_completion_tokens 10` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 10"
+  },
+  "providers/alibaba/user-hints": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
+  "providers/alibaba/web-search-options-field": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "input": [

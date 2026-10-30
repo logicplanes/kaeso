@@ -1,0 +1,30 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "391",
+        "reasoning_content": "The user wants me to calculate 17 × 23 and answer with just the number.\n\n17 × 23 = 17 × 20 + 17 × 3 = 340 + 51 = 391",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379315,
+  "id": "chatcmpl-efcf5616-3f55-9fa1-b418-fe46f5ebc3d6",
+  "model": "qwen3.8-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 62,
+    "completion_tokens_details": {
+      "reasoning_tokens": 56,
+      "text_tokens": 62
+    },
+    "prompt_tokens": 64,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 64
+    },
+    "total_tokens": 126
+  }
+}

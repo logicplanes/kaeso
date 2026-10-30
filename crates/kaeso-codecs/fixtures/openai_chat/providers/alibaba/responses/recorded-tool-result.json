@@ -1,0 +1,25 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The weather in Paris right now is 18 °C and sunny.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379331,
+  "id": "chatcmpl-1e8c0590-143f-90c6-9e5e-48f7e83a1858",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 15,
+    "prompt_tokens": 337,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 337
+    },
+    "total_tokens": 352
+  }
+}

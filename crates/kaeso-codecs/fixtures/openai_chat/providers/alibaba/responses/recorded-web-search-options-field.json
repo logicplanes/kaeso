@@ -1,0 +1,25 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The newest Qwen model is Qwen2.5, which represents the latest generation of large language models developed by Alibaba Group's Tongyi Lab.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379337,
+  "id": "chatcmpl-f2566d55-a9b8-9bfd-aff4-e96438a3c86c",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 30,
+    "prompt_tokens": 23,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 23
+    },
+    "total_tokens": 53
+  }
+}

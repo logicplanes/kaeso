@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "Unsupported model `qwen3.7-flash` for OpenAI compatibility mode.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "model_not_supported"
+  },
+  "request_id": "0eda0eeb-5303-99a7-b06d-0b3a0df21c06"
+}

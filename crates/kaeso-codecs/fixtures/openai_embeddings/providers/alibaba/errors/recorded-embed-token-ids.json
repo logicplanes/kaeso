@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: Value error, contents is neither str nor list of str.: input.contents",
+    "type": "InvalidParameter",
+    "param": null,
+    "code": "InvalidParameter"
+  },
+  "id": "68df4dc9-2fef-96ba-98a0-47ddb2130425",
+  "request_id": "68df4dc9-2fef-96ba-98a0-47ddb2130425"
+}

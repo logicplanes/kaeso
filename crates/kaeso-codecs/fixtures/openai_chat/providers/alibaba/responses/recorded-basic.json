@@ -1,0 +1,25 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "No, 1001 is not a prime number because it is divisible by 7, 11, and 13.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793379307,
+  "id": "chatcmpl-56272ea0-9790-9c9e-b10c-07399149c081",
+  "model": "qwen3.7-flash",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 29,
+    "prompt_tokens": 34,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "text_tokens": 34
+    },
+    "total_tokens": 63
+  }
+}

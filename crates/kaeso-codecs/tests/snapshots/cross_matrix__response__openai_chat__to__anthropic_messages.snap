@@ -275,6 +275,639 @@ expression: outcomes
       }
     }
   },
+  "providers/alibaba/recorded-assistant-prefill": {
+    "content": [
+      {
+        "text": "4, 5, 6,",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-a12dbc1b-4812-9d04-961a-a23b7a915340",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 42,
+      "output_tokens": 8
+    }
+  },
+  "providers/alibaba/recorded-audio-fields": {
+    "content": [
+      {
+        "text": "Hi! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-87be1982-d583-91a8-8910-56fddc8da783",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 9
+    }
+  },
+  "providers/alibaba/recorded-basic": {
+    "content": [
+      {
+        "text": "No, 1001 is not a prime number because it is divisible by 7, 11, and 13.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-56272ea0-9790-9c9e-b10c-07399149c081",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 34,
+      "output_tokens": 29
+    }
+  },
+  "providers/alibaba/recorded-enable-thinking": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-7638443b-1dfb-9d81-a90d-648e30689c46",
+    "model": "qwen-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 23,
+      "output_tokens": 108,
+      "output_tokens_details": {
+        "thinking_tokens": 100
+      }
+    }
+  },
+  "providers/alibaba/recorded-functions-field": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-5b8f5b5d-989b-99bc-89ef-3fa8cf073e98",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 278,
+      "output_tokens": 25
+    }
+  },
+  "providers/alibaba/recorded-image": {
+    "content": [
+      {
+        "text": "Red",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-30d7b818-db00-99b9-9890-02b4d4f60501",
+    "model": "qwen3-vl-plus",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 85,
+      "output_tokens": 2
+    }
+  },
+  "providers/alibaba/recorded-logit-bias-field": {
+    "content": [
+      {
+        "text": "1 2 3 4 ",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-48c4aae9-d842-9e13-91f0-e152e6b2ab52",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 8
+    }
+  },
+  "providers/alibaba/recorded-logprobs": {
+    "content": [
+      {
+        "text": "1 2",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-3101c9ee-0467-95ba-9fdb-3e2864f9634b",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 3
+    }
+  },
+  "providers/alibaba/recorded-max-completion-tokens-thinking": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-18c24d44-3cd0-9989-9cc3-c8ca75a6de05",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 31,
+      "output_tokens": 300,
+      "output_tokens_details": {
+        "thinking_tokens": 300
+      }
+    }
+  },
+  "providers/alibaba/recorded-max-tokens-beyond-reasoning": {
+    "content": [
+      {
+        "text": "To calculate $17 \\times 23$, we can use the standard multiplication method or break it down using the distributive property.\n\n### Method 1: Breaking it down (Distributive Property)\n\nWe can split $23",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-4efa4018-d641-9515-baa5-a181927067f1",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 20,
+      "output_tokens": 453,
+      "output_tokens_details": {
+        "thinking_tokens": 400
+      }
+    }
+  },
+  "providers/alibaba/recorded-output-limit": {
+    "content": [
+      {
+        "text": "1 2 3 4 5 ",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-4f861874-92d3-9001-8a9b-7324736afee3",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 10
+    }
+  },
+  "providers/alibaba/recorded-prediction-field": {
+    "content": [
+      {
+        "text": "Hi! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-0a61c2df-864d-97bd-b42e-15c7b44d2c0e",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 9
+    }
+  },
+  "providers/alibaba/recorded-reasoning-effort": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-efcf5616-3f55-9fa1-b418-fe46f5ebc3d6",
+    "model": "qwen3.8-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 64,
+      "output_tokens": 62,
+      "output_tokens_details": {
+        "thinking_tokens": 56
+      }
+    }
+  },
+  "providers/alibaba/recorded-reasoning-effort-alone": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-d1752067-8567-998b-9453-a7706d3ba6ac",
+    "model": "qwen-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 23,
+      "output_tokens": 3
+    }
+  },
+  "providers/alibaba/recorded-reasoning-sent-back": {
+    "content": [
+      {
+        "text": "14",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-35f4872f-25f6-9932-9b8f-b7bc7fc59103",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 41,
+      "output_tokens": 105,
+      "output_tokens_details": {
+        "thinking_tokens": 100
+      }
+    }
+  },
+  "providers/alibaba/recorded-sampling": {
+    "content": [
+      {
+        "text": "1 2 3 4 ",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-27c91587-03f1-9aff-80bb-14c3c7d27207",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 9
+    }
+  },
+  "providers/alibaba/recorded-store-metadata-fields": {
+    "content": [
+      {
+        "text": "Hi! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-36cc1169-3bd4-97e6-8665-810396fde423",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 9
+    }
+  },
+  "providers/alibaba/recorded-structured-output": {
+    "content": [
+      {
+        "text": "{\n  \"fruit_name\": \"Banana\",\n  \"hex_colour\": \"#FFE135\"\n}",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-0b620b02-6fb4-987a-9605-4c5089045530",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 22,
+      "output_tokens": 25
+    }
+  },
+  "providers/alibaba/recorded-thinking": {
+    "content": [
+      {
+        "text": "391",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-fee50b82-e44e-903c-8071-e64878260ec3",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 25,
+      "output_tokens": 206,
+      "output_tokens_details": {
+        "thinking_tokens": 200
+      }
+    }
+  },
+  "providers/alibaba/recorded-thinking-tools": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_8a161da797f84eed83651e6e",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-f8939946-511e-9855-b00d-83cb0a837837",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 284,
+      "output_tokens": 138,
+      "output_tokens_details": {
+        "thinking_tokens": 110
+      }
+    }
+  },
+  "providers/alibaba/recorded-tool-result": {
+    "content": [
+      {
+        "text": "The weather in Paris right now is 18 °C and sunny.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-1e8c0590-143f-90c6-9e5e-48f7e83a1858",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 337,
+      "output_tokens": 15
+    }
+  },
+  "providers/alibaba/recorded-tools": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_0edfa4b3cefa4ba18230660e",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_52ffcaad3d984b43b440c0a7",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-d56d7b72-269f-939c-9360-543d8c454ef0",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 356,
+      "output_tokens": 51
+    }
+  },
+  "providers/alibaba/recorded-tools-named": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_6023bbd3aada4b97bec6d787",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-35436293-dd0f-90b0-b015-066281f208fd",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 358,
+      "output_tokens": 19
+    }
+  },
+  "providers/alibaba/recorded-tools-required": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_70c7bd135ff24ad5b3ef8e83",
+        "input": {
+          "city": "New York"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-45232917-6ed1-9729-8677-0270e1625d41",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 354,
+      "output_tokens": 23
+    }
+  },
+  "providers/alibaba/recorded-user-hints": {
+    "content": [
+      {
+        "text": "Hi! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-6f568a97-1bef-98cc-9116-276f812958f0",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 9
+    }
+  },
+  "providers/alibaba/recorded-web-search-options-field": {
+    "content": [
+      {
+        "text": "The newest Qwen model is Qwen2.5, which represents the latest generation of large language models developed by Alibaba Group's Tongyi Lab.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-f2566d55-a9b8-9bfd-aff4-e96438a3c86c",
+    "model": "qwen3.7-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 23,
+      "output_tokens": 30
+    }
+  },
   "providers/cohere/recorded-assistant-prefill": {
     "content": [
       {

@@ -1,7 +1,8 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, ReasoningBlock, Role,
-    StreamMode, TextBlock, ToolChoice, ToolDef, ToolResultBlock,
+    Block, Extras, GenerateRequest, KppError, Message, OutputSpec, RawJson, ReasoningBlock,
+    ReasoningEffort, ReasoningMode, Role, StreamMode, TextBlock, ToolChoice, ToolDef,
+    ToolResultBlock,
 };
 use serde_json::Value;
 
@@ -163,7 +164,47 @@ pub(crate) fn encode_generate(
     }
     let mut out = Ext::with(w, extra, verbatim);
     apply_profile(&profile, seed, &req.extras, &mut out)?;
+    if profile.request.thinking_switch {
+        switch_thinking(req, &mut out)?;
+    }
     Ok(out)
+}
+
+// Qwen turns thinking on and off with `enable_thinking` and caps it with `thinking_budget`;
+// `reasoning_effort` alone neither turns it on nor sets a budget for most of its models.
+fn switch_thinking(req: &GenerateRequest, out: &mut Ext<ChatRequest>) -> Result<(), KppError> {
+    let Some(r) = &req.reasoning else {
+        return Ok(());
+    };
+    let effort = r.effort.as_ref();
+    let off = match effort {
+        Some(e) => matches!(e, ReasoningEffort::None | ReasoningEffort::Minimal),
+        None => r.mode == Some(ReasoningMode::Disabled),
+    };
+    let on = effort.is_some()
+        || r.budget_tokens.is_some()
+        || matches!(
+            r.mode,
+            Some(ReasoningMode::Enabled | ReasoningMode::Adaptive)
+        );
+    if !off && !on {
+        return Ok(());
+    }
+    let mut set = |key: &str, value: RawJson| {
+        if !out.verbatim.contains_key(key) {
+            out.extra.entry(key.to_owned()).or_insert(value);
+        }
+    };
+    set("enable_thinking", to_raw(&!off)?);
+    if off {
+        out.known.reasoning_effort = None;
+    } else if effort.is_none() {
+        out.known.reasoning_effort = None;
+        if let Some(budget) = r.budget_tokens {
+            set("thinking_budget", to_raw(&budget)?);
+        }
+    }
+    Ok(())
 }
 
 fn apply_profile(

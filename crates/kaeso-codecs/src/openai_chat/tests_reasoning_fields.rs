@@ -10,6 +10,10 @@ use crate::test_support::{assert_json_eq, assert_sse_eq, fixtures};
 
 const PROFILES: &[(&str, ChatProfile)] = &[
     (
+        "alibaba",
+        ChatProfile::compatible("Alibaba Cloud").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "deepseek",
         ChatProfile::compatible("DeepSeek").reasoning_fields(&["reasoning_content"]),
     ),
@@ -171,6 +175,13 @@ fn every_reply_and_stream_of_these_providers_round_trips_under_its_profile() {
 #[test]
 fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
     let cases = [
+        ("alibaba", "recorded-thinking", "reasoning_content"),
+        ("alibaba", "recorded-reasoning-effort", "reasoning_content"),
+        (
+            "alibaba",
+            "recorded-reasoning-sent-back",
+            "reasoning_content",
+        ),
         (
             "deepseek",
             "recorded-thinking-reasoning-content",
@@ -361,6 +372,26 @@ fn moonshot_reasoning_comes_before_its_tool_call_and_thinking_off_opens_no_reaso
 }
 
 #[test]
+fn alibaba_reasoning_comes_before_its_tool_call() {
+    let resp = reply(
+        "alibaba",
+        &recorded("responses", "json", "alibaba", "recorded-thinking-tools"),
+    );
+    assert!(
+        matches!(resp.blocks[0], Block::Reasoning(_)),
+        "{:?}",
+        resp.blocks
+    );
+    assert!(
+        resp.blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(c) if c.name == "get_weather")),
+        "{:?}",
+        resp.blocks
+    );
+}
+
+#[test]
 fn without_the_setting_and_with_an_empty_field_the_reasoning_stays_as_sent() {
     let body = recorded(
         "responses",
@@ -402,6 +433,12 @@ fn without_the_setting_and_with_an_empty_field_the_reasoning_stays_as_sent() {
 fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer() {
     let answered: &[&str] = &["reasoning 0", "stop 0", "text 1", "stop 1"];
     let cases = [
+        (
+            "alibaba",
+            "recorded-thinking-stream",
+            "reasoning_content",
+            answered,
+        ),
         (
             "deepseek",
             "recorded-thinking-stream",

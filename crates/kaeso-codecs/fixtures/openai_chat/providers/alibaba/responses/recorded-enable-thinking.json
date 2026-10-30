@@ -1,0 +1,30 @@
+{
+  "choices": [
+    {
+      "message": {
+        "content": "391",
+        "reasoning_content": "Okay, let's see. I need to find 17 times 23. Hmm, how do I do this? Maybe I can break it down. Let's think. 17 times 20 is 340, right? Because 17 times 2 is 34, so times 10 is 340. Then 17 times 3 is 51. So if I add those together, 340 plus ",
+        "role": "assistant"
+      },
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null
+    }
+  ],
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 108,
+    "total_tokens": 131,
+    "completion_tokens_details": {
+      "reasoning_tokens": 100
+    },
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "created": 1793379648,
+  "system_fingerprint": null,
+  "model": "qwen-flash",
+  "id": "chatcmpl-7638443b-1dfb-9d81-a90d-648e30689c46"
+}

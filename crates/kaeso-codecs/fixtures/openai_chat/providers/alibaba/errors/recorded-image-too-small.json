@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: The image length and width do not meet the model restrictions. [height:8 or width:8 must be larger than 10]",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-9bdf2f59-1b97-92b8-945e-60e9d5b36b57",
+  "request_id": "9bdf2f59-1b97-92b8-945e-60e9d5b36b57"
+}

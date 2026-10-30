@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "The free quota has been exhausted. To continue accessing the model on a paid basis, please complete your payment information （or disable the \"use free tier only\" mode in the management console if already completed).",
+    "type": "AllocationQuota.FreeTierOnly",
+    "param": null,
+    "code": "AllocationQuota.FreeTierOnly"
+  },
+  "id": "chatcmpl-f23d06cb-88e6-9af0-88ea-6eef08cdfe74",
+  "request_id": "f23d06cb-88e6-9af0-88ea-6eef08cdfe74"
+}

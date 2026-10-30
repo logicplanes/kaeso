@@ -17,6 +17,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 | Provider | Formats | Host | Key |
 | --- | --- | --- | --- |
+| Alibaba Cloud `alibaba` | Chat Completions, Embeddings | `dashscope-intl.aliyuncs.com` | [modelstudio.console.alibabacloud.com](https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key), `sk-` |
 | Anthropic `anthropic` | Messages, token counts | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
 | Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), no fixed prefix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
@@ -34,6 +35,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 
 What else to know about some providers. [Provider profiles](../development/kpp/openai-chat-providers.md#provider-profiles) lists every Chat Completions field a provider renames or refuses:
 
+- **Alibaba Cloud.** Alibaba Cloud Model Studio in the international (Singapore) region, with Qwen models such as `qwen3.7-flash` and other makers' models such as `kimi-k3`. A key works only in the region it was created in. For the China (Beijing) region, which models.dev lists as `alibaba-cn`, set Alibaba Cloud's [base URL](../self-hosting/configuration.md#provider-settings) to `https://dashscope.aliyuncs.com/compatible-mode` and use a key from there; an install reaches one region. Gets `developer` messages as `system` messages, and refuses fields Model Studio accepts without acting on them, such as `logit_bias` and `web_search_options`. An app's thinking reaches the model as `enable_thinking`, an Anthropic app's `budget_tokens` as `thinking_budget`, and a reasoning effort only goes to models that list effort levels, such as `qwen3.8-max`. A Chat app's `max_tokens` limits only the answer, not the thinking; `max_completion_tokens` limits both. Some models only think and refuse thinking turned off, and `qwq-plus` answers only streamed requests: the app gets Model Studio's 400. Its embeddings models, such as `text-embedding-v4`, aren't on models.dev: add them as custom models that send as Embeddings, with their price.
 - **Cohere.** Cohere's [Compatibility API](https://docs.cohere.com/docs/compatibility-api), which covers part of Cohere's own API: documents, citations and rerank aren't reachable through it. Cohere refuses some fields, such as `logit_bias` and `parallel_tool_calls`, and gets a single `stop` string as a list. Its reasoning models think at `reasoning_effort` `none` or `high` only. Its Embed models, such as `embed-v4.0`, aren't on models.dev: add them as custom models that send as Embeddings, with their price.
 - **DeepSeek.** Gets `developer` messages as `system` messages.
 - **Groq.** Gets `developer` messages as `system` messages, and refuses some fields, such as `logit_bias`.
@@ -47,4 +49,4 @@ What else to know about some providers. [Provider profiles](../development/kpp/o
 
 ## Trademarks
 
-All trademarks and logos belong to their owners. Kaeso is not affiliated with, endorsed or sponsored by any of these providers. The console shows each provider's mark only to identify the provider a key, model or request belongs to. Anthropic, Cohere and Groq restrict the use of their logos in their terms; Kaeso shows their marks unchanged and only for this purpose. [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) lists the source of every mark.
+All trademarks and logos belong to their owners. Kaeso is not affiliated with, endorsed or sponsored by any of these providers. The console shows each provider's mark only to identify the provider a key, model or request belongs to. Alibaba Cloud, Anthropic, Cohere and Groq restrict the use of their logos in their terms; Kaeso shows their marks unchanged and only for this purpose. [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) lists the source of every mark.

@@ -1,0 +1,31 @@
+{
+  "choices": [
+    {
+      "message": {
+        "content": "Red",
+        "reasoning_content": "",
+        "role": "assistant"
+      },
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null
+    }
+  ],
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 85,
+    "completion_tokens": 2,
+    "total_tokens": 87,
+    "prompt_tokens_details": {
+      "image_tokens": 66,
+      "text_tokens": 19
+    },
+    "completion_tokens_details": {
+      "text_tokens": 2
+    }
+  },
+  "created": 1793379462,
+  "system_fingerprint": null,
+  "model": "qwen3-vl-plus",
+  "id": "chatcmpl-30d7b818-db00-99b9-9890-02b4d4f60501"
+}

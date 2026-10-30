@@ -1,0 +1,16 @@
+{
+  "model": "qwen3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23? Answer with the number."
+    }
+  ],
+  "max_completion_tokens": 1000,
+  "enable_thinking": true,
+  "thinking_budget": 100,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

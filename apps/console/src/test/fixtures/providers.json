@@ -201,6 +201,22 @@
       "count_tokens": null,
       "embeddings": null,
       "account": null
+    },
+    {
+      "id": "alibaba",
+      "name": "Alibaba Cloud",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key",
+        "label": "Model Studio → API Key"
+      },
+      "key_prefix": "sk-",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null
     }
   ],
   "has_more": false,

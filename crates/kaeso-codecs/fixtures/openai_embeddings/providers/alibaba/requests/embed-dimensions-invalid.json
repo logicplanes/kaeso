@@ -1,0 +1,5 @@
+{
+  "model": "text-embedding-v3",
+  "input": "The quick brown fox.",
+  "dimensions": 100
+}

@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: Parameter thinking_budget is not supported.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "invalid_parameter_error"
+  },
+  "id": "chatcmpl-64f11522-b825-9f1e-a35a-174eeddf7430",
+  "request_id": "64f11522-b825-9f1e-a35a-174eeddf7430"
+}

@@ -1,0 +1,10 @@
+{
+  "error": {
+    "message": "<400> InternalError.Algo.InvalidParameter: Value error, batch size is invalid, it should not be larger than 10.: input.contents",
+    "type": "InvalidParameter",
+    "param": null,
+    "code": "InvalidParameter"
+  },
+  "id": "1a4d5daf-1b7f-992f-8fb7-6edc32399aea",
+  "request_id": "1a4d5daf-1b7f-992f-8fb7-6edc32399aea"
+}
