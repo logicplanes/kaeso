@@ -105,7 +105,7 @@ for (const block of message.content) {
 | SDK | Basis-URL | Sendet den Schlüssel als |
 | --- | --- | --- |
 | OpenAI | `https://kaeso.example.com/v1` | `Authorization: Bearer` |
-| Anthropic | `https://kaeso.example.com` | `x-api-key` |
+| Anthropic | `https://kaeso.example.com` | `Authorization: Bearer` |
 
 Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts. [Modelle aufrufen](../get-started/calling-models.md) zeigt Streaming und mehr von beiden SDKs.
 

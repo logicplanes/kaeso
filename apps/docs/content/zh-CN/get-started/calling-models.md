@@ -50,7 +50,7 @@ OpenAI SDK 以 `https://kaeso.example.com/v1` 为基础 URL，并以 `Authorizat
 
 ## 使用 Anthropic SDK
 
-把基础 URL 设为 `https://kaeso.example.com`，不带 `/v1`。SDK 以 `x-api-key` 发送密钥：
+把基础 URL 设为 `https://kaeso.example.com`，不带 `/v1`。SDK 以 `Authorization: Bearer` 发送密钥，`x-api-key` 同样可用：
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1/messages \
