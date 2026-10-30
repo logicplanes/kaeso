@@ -37,6 +37,7 @@ export const ALLOWED = [
   },
   { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/*/RECORDED.md", version: "0.4.2", why: "as above" },
   { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/errors/recorded-codex-*.meta.json", version: "0.4.2", why: "as above" },
+  { path: "deploy/console.Dockerfile", version: "0.4.7", why: "xcaddy's version, which only shares the number" },
 ];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
