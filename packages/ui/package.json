@@ -97,7 +97,7 @@
     "@base-ui/react": "1.9.0",
     "@logicplanes/kaeso-tokens": "workspace:*",
     "@tanstack/react-table": "8.21.3",
-    "@tanstack/react-virtual": "3.14.21",
+    "@tanstack/react-virtual": "3.14.22",
     "clsx": "2.1.1",
     "d3-array": "3.2.4",
     "d3-sankey": "0.12.3",
@@ -131,14 +131,14 @@
     "@vitest/coverage-v8": "5.0.5",
     "axe-core": "4.14.0",
     "happy-dom": "21.0.4",
-    "oxlint": "1.88.0",
+    "oxlint": "1.89.0",
     "react": "19.3.1",
     "react-docgen-typescript": "2.4.0",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5"
   }
 }
