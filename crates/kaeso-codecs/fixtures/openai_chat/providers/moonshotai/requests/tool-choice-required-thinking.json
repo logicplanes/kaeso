@@ -1,0 +1,31 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tell me a joke."
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a city",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "required",
+  "max_completion_tokens": 100
+}

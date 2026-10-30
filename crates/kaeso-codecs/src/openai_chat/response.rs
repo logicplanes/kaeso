@@ -500,6 +500,20 @@ pub(crate) fn take_reasoning_field(
     })
 }
 
+pub(crate) fn take_empty_reasoning_field(
+    fields: &[&'static str],
+    extra: &mut IndexMap<String, RawJson>,
+) -> Option<&'static str> {
+    let field = fields.iter().copied().find(|field| {
+        extra
+            .get(*field)
+            .and_then(|v| v.parse::<String>().ok())
+            .is_some_and(|t| t.is_empty())
+    })?;
+    extra.shift_remove(field);
+    Some(field)
+}
+
 fn reasoning_field(block: &ReasoningBlock) -> Option<&str> {
     block.extras.form_str(DIALECT, FORM_REASONING_FIELD)
 }

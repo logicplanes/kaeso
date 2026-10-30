@@ -9,6 +9,7 @@ const providers: ProviderPickerOption[] = [
   { id: "deepseek", name: "DeepSeek" },
   { id: "groq", name: "Groq" },
   { id: "mistral", name: "Mistral" },
+  { id: "moonshotai", name: "Moonshot AI" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "openrouter", name: "OpenRouter" },
   { id: "togetherai", name: "Together AI" },

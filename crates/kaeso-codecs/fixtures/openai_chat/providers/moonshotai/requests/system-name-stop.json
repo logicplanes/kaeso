@@ -1,0 +1,23 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer in French."
+    },
+    {
+      "role": "user",
+      "name": "alice",
+      "content": "Count from 1 to 10, separated by commas."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "stop": [
+    "5"
+  ],
+  "user": "user-1234",
+  "seed": 7,
+  "max_completion_tokens": 40
+}

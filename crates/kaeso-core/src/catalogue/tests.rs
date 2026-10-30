@@ -795,6 +795,29 @@ fn cohere_models_speak_chat_completions_and_think_at_none_or_high() {
 }
 
 #[test]
+fn kimi_k3_models_think_at_the_effort_levels_moonshot_documents() {
+    for model in ["kimi-k3", "kimi-k3.1-pro", "kimi-k3.1-pro-highspeed"] {
+        let k3 = eff(&entry("moonshotai", model));
+        assert_eq!(k3.dialect, DialectId::OpenAiChat, "{model}");
+        assert_eq!(k3.provider.chat().provider, "Moonshot AI");
+        assert_eq!(
+            effort_levels(&k3, DialectId::OpenAiChat),
+            ["low", "high", "max"],
+            "{model}"
+        );
+        kept("low", DialectId::AnthropicMessages, &k3);
+        kept("max", DialectId::OpenAiResponses, &k3);
+        let err = refused("medium", DialectId::OpenAiChat, &k3);
+        assert!(err.contains("`low`, `high`, `max`"), "{err}");
+        refused("none", DialectId::OpenAiChat, &k3);
+    }
+    let k26 = eff(&entry("moonshotai", "kimi-k2.6"));
+    kept("none", DialectId::OpenAiChat, &k26);
+    let err = refused("high", DialectId::OpenAiChat, &k26);
+    assert!(err.contains("does not accept an effort level"), "{err}");
+}
+
+#[test]
 fn duties_fill_what_kpp_cannot_know() {
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     let mut req = Request::Generate(user(vec![Block::text("hi")]));

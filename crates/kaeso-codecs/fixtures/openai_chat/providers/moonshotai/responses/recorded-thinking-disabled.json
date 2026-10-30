@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4cb9118419721e267ec43",
+  "object": "chat.completion",
+  "created": 1793379217,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Earth",
+        "reasoning_content": ""
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 4,
+    "total_tokens": 24,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

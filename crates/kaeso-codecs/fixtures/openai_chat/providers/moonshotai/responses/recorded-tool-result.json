@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4cde023f0163c1179c792",
+  "object": "chat.completion",
+  "created": 1793379808,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The current weather in Paris is **18 °C and sunny**.",
+        "reasoning_content": "The function returned the weather for Paris: 18°C and sunny. I should present this information clearly to the user."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 146,
+    "completion_tokens": 40,
+    "total_tokens": 186,
+    "completion_tokens_details": {
+      "reasoning_tokens": 25
+    }
+  }
+}

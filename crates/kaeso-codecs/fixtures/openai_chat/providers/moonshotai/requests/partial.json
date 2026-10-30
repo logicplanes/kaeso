@@ -1,0 +1,18 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name three colours as a numbered list."
+    },
+    {
+      "role": "assistant",
+      "content": "1. Red\n2.",
+      "partial": true
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "max_completion_tokens": 20
+}

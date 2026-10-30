@@ -164,8 +164,8 @@ impl CredentialView {
 pub struct CredentialCreate {
     #[doc = "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n\
         `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n\
-        `ollama-cloud`, or one of the organization's custom providers that takes a\n\
-        key."]
+        `ollama-cloud`, `moonshotai`, or one of the organization's custom providers\n\
+        that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

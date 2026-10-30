@@ -1,0 +1,10 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Is 1001 a prime number? Answer in one sentence."
+    }
+  ],
+  "max_completion_tokens": 800
+}

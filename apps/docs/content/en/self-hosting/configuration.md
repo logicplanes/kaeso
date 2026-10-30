@@ -182,6 +182,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_VERCEL_BASE_URL`<br>`providers.vercel.base_url` | text | `https://ai-gateway.vercel.sh` | Base URL of the Vercel API. |
 | `KAESO_PROVIDERS_COHERE_BASE_URL`<br>`providers.cohere.base_url` | text | `https://api.cohere.ai/compatibility` | Base URL of the Cohere API. |
 | `KAESO_PROVIDERS_OLLAMA_CLOUD_BASE_URL`<br>`providers.ollama-cloud.base_url` | text | `https://ollama.com` | Base URL of the Ollama Cloud API. |
+| `KAESO_PROVIDERS_MOONSHOTAI_BASE_URL`<br>`providers.moonshotai.base_url` | text | `https://api.moonshot.ai` | Base URL of the Moonshot AI API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

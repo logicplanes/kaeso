@@ -31,13 +31,18 @@ const BILLING: &[&str] = &[
     "billing_hard_limit_reached",
     "billing_not_active",
     "subscription_sharing_usage_limit_exceeded",
+    // Moonshot AI's 429 for an empty balance or a disabled account:
+    // https://platform.kimi.ai/docs/api/errors
+    "exceeded_current_quota_error",
 ];
 
 pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {
     Some(match code {
         "context_length_exceeded" => ErrorKind::ContextTooLong,
         c if BILLING.contains(&c) => ErrorKind::Billing,
-        "server_is_overloaded" | "service_unavailable_error" => ErrorKind::Overloaded,
+        "server_is_overloaded" | "service_unavailable_error" | "engine_overloaded_error" => {
+            ErrorKind::Overloaded
+        }
         "content_policy_violation"
         | "content_filter"
         | "bio_policy"

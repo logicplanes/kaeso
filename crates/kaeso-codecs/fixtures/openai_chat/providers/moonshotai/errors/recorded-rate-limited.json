@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Your account org-00000000000000000000000000000000\u003cak-00000000000000000000\u003e request reached organization max RPM: 3, please try again after 1 seconds",
+    "type": "rate_limit_reached_error"
+  }
+}

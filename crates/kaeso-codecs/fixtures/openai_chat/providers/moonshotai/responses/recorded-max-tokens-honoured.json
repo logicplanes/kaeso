@@ -1,0 +1,25 @@
+{
+  "id": "chatcmpl-6ae4cc5e56286f4b69dbff05",
+  "object": "chat.completion",
+  "created": 1793379439,
+  "model": "kimi-k2.6",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "1, 2, 3,",
+        "reasoning_content": ""
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 19,
+    "completion_tokens": 10,
+    "total_tokens": 29,
+    "completion_tokens_details": {
+      "reasoning_tokens": 1
+    }
+  }
+}

@@ -88,6 +88,9 @@ base_url = "https://api.cohere.ai/compatibility"
 [providers.ollama-cloud]
 base_url = "https://ollama.com"
 
+[providers.moonshotai]
+base_url = "https://api.moonshot.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

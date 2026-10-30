@@ -1,0 +1,16 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "logit_bias": {
+    "1": -100
+  },
+  "max_completion_tokens": 10
+}

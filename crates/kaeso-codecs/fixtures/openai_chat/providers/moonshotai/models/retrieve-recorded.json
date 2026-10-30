@@ -1,0 +1,38 @@
+{
+  "created": 1793362869,
+  "id": "kimi-k2.6",
+  "object": "model",
+  "owned_by": "moonshot",
+  "permission": [
+    {
+      "created": 0,
+      "id": "",
+      "object": "",
+      "organization": "moonshot",
+      "group": "moonshot",
+      "is_blocking": false
+    }
+  ],
+  "root": "",
+  "parent": "",
+  "supports_image_in": true,
+  "supports_video_in": true,
+  "supports_reasoning": true,
+  "context_length": 262144,
+  "modalities": {
+    "input": [
+      "text",
+      "image",
+      "video"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "tools": {
+    "dynamic_load": false
+  },
+  "limit": {
+    "context": 262144
+  }
+}

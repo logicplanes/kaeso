@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Account balance is insufficient or the account has been disabled",
+    "type": "exceeded_current_quota_error"
+  }
+}

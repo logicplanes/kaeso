@@ -1,0 +1,50 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "reasoning_content": "The user is asking for the weather in Paris. I have a function called `get_weather` that takes a city name as a parameter. I should call this function with \"Paris\" as the argument to get the current weather information.",
+      "tool_calls": [
+        {
+          "id": "get_weather_0_2fdaa899",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "get_weather_0_2fdaa899",
+      "content": "18 °C and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a city",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "max_completion_tokens": 400
+}

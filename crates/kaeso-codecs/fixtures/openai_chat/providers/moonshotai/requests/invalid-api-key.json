@@ -1,0 +1,13 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name one planet in our solar system. Answer with one word."
+    }
+  ],
+  "thinking": {
+    "type": "disabled"
+  },
+  "max_completion_tokens": 20
+}

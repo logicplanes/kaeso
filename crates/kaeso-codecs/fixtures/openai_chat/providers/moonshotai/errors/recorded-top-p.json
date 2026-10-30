@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "invalid top_p: only 0.95 is allowed for this model",
+    "type": "invalid_request_error"
+  }
+}

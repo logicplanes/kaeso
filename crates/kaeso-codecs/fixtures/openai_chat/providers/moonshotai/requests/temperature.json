@@ -1,0 +1,11 @@
+{
+  "model": "kimi-k2.6",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hi."
+    }
+  ],
+  "temperature": 0.5,
+  "max_completion_tokens": 10
+}

@@ -22,6 +22,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys)，`sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys)，`gsk_` |
 | Mistral `mistral` | Chat Completions、Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys)，无固定前缀 |
+| Moonshot AI `moonshotai` | Chat Completions | `api.moonshot.ai` | [platform.kimi.ai](https://platform.kimi.ai/console/api-keys)，`sk-` |
 | Ollama Cloud `ollama-cloud` | Chat Completions | `ollama.com` | [ollama.com](https://ollama.com/settings/keys)，无固定前缀 |
 | OpenAI `openai` | Responses、Chat Completions、Embeddings、Token 计数 | `api.openai.com` | [platform.openai.com](https://platform.openai.com/api-keys)，`sk-` |
 | OpenRouter `openrouter` | Chat Completions、Embeddings | `openrouter.ai` | [openrouter.ai](https://openrouter.ai/settings/keys)，`sk-or-v1-` |
@@ -37,6 +38,7 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 - **DeepSeek。** `developer` 消息会作为 `system` 消息发送给它。
 - **Groq。** `developer` 消息会作为 `system` 消息发送给它；它拒绝部分字段，例如 `logit_bias`。
 - **Mistral。** `developer` 消息会作为 `system` 消息发送给它，部分字段以它自己的名称发送，例如 `seed` 改为 `random_seed`；它拒绝其他一些字段（例如 `logit_bias`），也拒绝以助手消息结尾的对话。
+- **Moonshot AI。** 即 Kimi API，提供 Moonshot AI 的 Kimi 模型，例如 `kimi-k3` 和 `kimi-k2.6`。`developer` 消息会作为 `system` 消息发送给它；应用预填的助手消息会带上 Moonshot 的 `partial: true` 发送，使回复接着该消息续写。它拒绝部分字段，例如 `parallel_tool_calls` 和 `store`，因为 Moonshot 接受这些字段却不作处理。Kimi 模型的采样参数是固定的：Kaeso 在发送前拒绝 1 以外的 `temperature`，`top_p`、`n` 和惩罚参数的其他值则由 Moonshot 拒绝。模型的推理内容会以各种格式送达应用。K3 模型的 `reasoning_effort` 为 `low`、`high` 或 `max`，Kaeso 拒绝其他级别；`kimi-k2.6` 在 `none` 时不思考，`kimi-k2.7-code` 始终思考。Kimi 模型在思考时拒绝 `tool_choice: "required"`。
 - **Ollama Cloud。** 由 Ollama 在自己的服务器上运行的模型，例如 `gpt-oss:120b`。模型 ID 保留 Ollama 在冒号后的标签。每个应用的输出上限都以 `max_tokens` 发送给它，因为 Ollama 会忽略 `max_completion_tokens`；它拒绝 `logprobs`、`top_logprobs` 和 `logit_bias`，因为 Ollama 接受这些字段却不作处理。模型的推理内容会以各种格式送达应用。Ollama 的免费套餐只包含部分模型：对其他模型，Ollama 返回 402，应用会将其作为被拒绝的服务商密钥收到。Ollama 列出模型时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。本地 Ollama 服务器不需要密钥；请将其添加为使用 Chat Completions 的[自定义服务商](../console/custom-providers.md)。
 - **OpenAI。** 服务商密钥也可以是一个 ChatGPT 账户，其请求按 OpenAI 的相应规则使用该账户的 ChatGPT 套餐（[使用 ChatGPT 账户登录](../console/provider-keys.md#使用-chatgpt-账户登录)）。
 - **OpenRouter。** 模型 ID 包含模型开发者，例如 `anthropic/claude-sonnet-4.5`。请以 `openrouter/anthropic/claude-sonnet-4.5` 的形式调用，这样请求不会发往该开发者自己的服务商（[请求如何指定模型](../console/models-and-aliases.md#请求如何指定模型)）。Kaeso 按目录中的价格记录费用，而不是按 OpenRouter 在 `usage.cost` 中报告的费用。OpenRouter 列出模型时不检查密钥，因此**检查可用性**无法发现错误的密钥；使用该密钥的第一个请求会报告密钥被拒绝。
