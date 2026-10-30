@@ -4,6 +4,24 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Moonshot (Kimi) is a built-in provider: add its key and call its models from any app format ([#561](https://github.com/logicplanes/kaeso/pull/561))
+- QwenCloud, Alibaba's model platform outside mainland China, formerly Model Studio, is a built-in provider: add its key and call its models and embeddings from any app format ([#562](https://github.com/logicplanes/kaeso/pull/562))
+- Every provider's mark shows in its owner's colours, in light and dark mode
+
+### Changed
+
+- On-or-off filters are pills that match the selects beside them, the audit log's agent filter is called Agents, and the provider picker's groups drop their counts
+- Underline tabs start on the content edge, under the page heading, and preview the selection line on hover
+- A dialog's layers and steps crossfade in place instead of sliding sideways
+- Add models shows each model's name over its full id
+
+### Fixed
+
+- Rows with a second line no longer overflow into the next row in menus and comboboxes, and time zones show their offset at the row's end
+- A button at the edge of a settings row, such as See what's new, is no longer cut short
+
 ## [0.4.7] - 2026-10-30
 
 ### Added
