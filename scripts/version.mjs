@@ -17,7 +17,6 @@ export const ALLOWED = [
   { path: "scripts/changelog.test.mjs", why: "the versions of changelog fixtures" },
   { path: "scripts/version.test.mjs", why: "the versions of fixtures" },
   { path: "scripts/release-notes.test.mjs", why: "the versions of changelog fixtures" },
-  { path: "apps/showcase/scripts/refuse-raw-markup.test.mjs", why: "the versions of changelog fixtures" },
   { path: ".github/workflows/release.yml", why: "example versions in the run form and its errors" },
   { path: "apps/docs/content/*/development/releasing.md", why: "example versions and tags" },
   { path: "apps/docs/scripts/*.test.ts", why: "the versions of fixture packages" },

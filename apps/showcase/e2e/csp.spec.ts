@@ -39,7 +39,7 @@ test("the build writes one policy that allows its inline scripts by hash, never 
 
 const THEME = { en: "Theme", de: "Design", "zh-CN": "主题" } as const;
 const languageOf = (path: string) => (path.startsWith("/de") ? "de" : path.startsWith("/zh-CN") ? "zh-CN" : "en");
-const pages = ["/", "/installation", "/changelog", "/components/select", "/components/scroll-area", "/components/conversation-view/states", "/de", "/zh-CN/components/dialog", "/404"];
+const pages = ["/", "/installation", "/components/select", "/components/scroll-area", "/components/conversation-view/states", "/de", "/zh-CN/components/dialog", "/404"];
 
 for (const colorScheme of ["light", "dark"] as const) {
   for (const path of pages) {

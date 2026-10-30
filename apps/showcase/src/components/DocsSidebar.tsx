@@ -11,6 +11,7 @@ import {
   ThemeProvider,
   ThemeMenu,
   TooltipProvider,
+  Icon,
   icons,
 } from "@logicplanes/kaeso-ui";
 import type { NavSection } from "~/lib/nav";
@@ -65,7 +66,12 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
         {sections.map((s, i) => (
           <Sidebar.Group key={s.title} label={i === 0 ? undefined : docsText(lang, s.title)} id={s.title.toLowerCase()} defaultOpen>
             {s.items.map((it) => (
-              <Sidebar.Item key={it.href} href={it.href} active={path === it.href}>
+              <Sidebar.Item
+                key={it.href}
+                href={it.href}
+                active={path === it.href}
+                trailing={it.external ? <Icon icon={icons.externalLink} size="xs" /> : undefined}
+              >
                 {i === 0 ? docsText(lang, it.title) : it.title}
               </Sidebar.Item>
             ))}
