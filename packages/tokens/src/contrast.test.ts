@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dangerFill, diff, neutral, semantic, shadow, viz } from "./tokens.js";
+import { dangerFill, diff, neutral, providerMark, semantic, shadow, viz } from "./tokens.js";
 
 type Rgb = readonly [number, number, number];
 type Mode = "light" | "dark";
@@ -122,6 +122,19 @@ describe.each(MODES)("contrast in %s mode", (mode) => {
     expect(ratio(colour[mode], neutral["bg-panel"][mode])).toBeGreaterThanOrEqual(3);
     expect(ratio(colour[mode], neutral["fill-1"][mode])).toBeGreaterThanOrEqual(3);
   });
+});
+
+// Mistral's brand page forbids recolouring its icon, so its colours stay exact: 3:1 on the raised background in dark mode only.
+const recoloured = Object.entries(providerMark).filter(([token]) => !token.startsWith("mistral-"));
+const mistral = Object.entries(providerMark).filter(([token]) => token.startsWith("mistral-"));
+
+it.each(recoloured)("provider mark colour %s stands out from white in light mode and from its tile in dark mode", (_, colour) => {
+  expect(ratio(colour.light, neutral["bg-raised"].light)).toBeGreaterThanOrEqual(3);
+  expect(ratio(colour.dark, neutral["fill-1"].dark)).toBeGreaterThanOrEqual(3);
+});
+
+it.each(mistral)("Mistral's colour %s stands out from the raised background in dark mode", (_, colour) => {
+  expect(ratio(colour.dark, neutral["bg-raised"].dark)).toBeGreaterThanOrEqual(3);
 });
 
 it.each(darkSwitchThumbRules)("in dark mode the off switch's %s stands out from %s by %d:1", (fg, bg, min) => {

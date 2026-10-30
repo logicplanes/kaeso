@@ -87,7 +87,7 @@ export const docs = {
   },
   ProviderBadge: {
     description:
-      "A provider's mark on a quiet tile, in the provider's own one-colour version for the theme; for providers without one, the first letter of their name.",
+      "A provider's mark on a quiet tile, in the provider's own colours for the theme, or the text colour for a mark its owner draws in black and white; for a provider without a mark, the first letter of its name.",
     props: {
       name: "The provider's name from the gateway's provider list: the badge's accessible name, the text `withName` writes and the source of the letter; the id without it.",
       provider: "The provider id, such as `openai` or `anthropic`.",

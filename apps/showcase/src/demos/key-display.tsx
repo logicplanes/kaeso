@@ -9,7 +9,7 @@ export const meta = {
   entry: "kaeso",
   import: "KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, RequestTimeline",
   a11y: [
-    "Providers show their mark in its owner's one-colour version for the theme; others a letter. The name is always next to it or its accessible label.",
+    "Providers show their mark in its owner's colours for the theme; others a letter. The name is always next to it or its accessible label.",
     "Capability icons have tooltips and are summarized in an accessible label.",
     "Status codes carry their phrase for screen readers.",
   ],

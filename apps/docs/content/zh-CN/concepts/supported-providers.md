@@ -49,4 +49,4 @@ Kaeso 内置了以下服务商，按名称排列。如何使用服务商以及�
 
 ## 商标
 
-所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cohere、Groq 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的原样显示它们的标志。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。
+所有商标和标志均归其各自所有者所有。Kaeso 与这些服务商均无关联，也未获得其认可或赞助。控制台显示服务商的标志，仅用于标明密钥、模型或请求所属的服务商。Anthropic、Cohere、Groq 以及 QwenCloud 的所有者 Alibaba Cloud 在其条款中限制使用其标志；Kaeso 仅出于此目的显示它们的标志，保留所有者的形状和颜色，只在颜色需要在 Kaeso 的浅色和深色背景上保持可见时才做必要的调整。Mistral 的品牌页面要求不要给其图标重新着色或加框；Kaeso 以 Mistral 自己的颜色显示该图标，放在与其他标志相同的中性底块上。[NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md#trademarks) 列出了每个标志的来源。

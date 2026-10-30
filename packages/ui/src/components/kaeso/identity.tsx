@@ -1,11 +1,11 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef, useId, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { Badge } from "../badge/badge.js";
 import { CopyButton } from "../copy-button/copy-button.js";
-import { PROVIDER_MARKS } from "./provider-marks.js";
+import { PROVIDER_MARKS, type ProviderMark } from "./provider-marks.js";
 import { formatNumber } from "../../format/index.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 
@@ -23,6 +23,35 @@ export const providerName = (id: string, name?: string | undefined) => name?.tri
 const providerLetter = (id: string, name?: string | undefined) => (/[\p{L}\p{N}]/u.exec(providerName(id, name))?.[0] ?? id.slice(0, 1)).toLocaleUpperCase();
 
 const MARK_SIZE = { sm: "size-10", md: "size-12", lg: "size-16", xl: "size-24" } as const;
+
+function MarkGlyph({ mark, className }: { mark: ProviderMark; className: string }) {
+  // useId's characters aren't all valid in a url(#…) reference.
+  const uid = useId().replace(/[^\w-]/g, "");
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={className}>
+      {mark.parts ? (
+        <>
+          <defs>
+            {mark.parts.map((part, i) =>
+              part.gradient ? (
+                <linearGradient key={i} id={`${uid}-${i}`} x1={part.gradient.x1} y1={part.gradient.y1} x2={part.gradient.x2} y2={part.gradient.y2}>
+                  {part.gradient.stops.map((stop) => (
+                    <stop key={stop.offset} offset={stop.offset} stopColor="currentColor" className={stop.color} />
+                  ))}
+                </linearGradient>
+              ) : null,
+            )}
+          </defs>
+          {mark.parts.map((part, i) =>
+            part.gradient ? <path key={i} d={part.d} fill={`url(#${uid}-${i})`} /> : <path key={i} d={part.d} className={part.color} />,
+          )}
+        </>
+      ) : (
+        <path d={mark.d} />
+      )}
+    </svg>
+  );
+}
 
 export const ProviderBadge = forwardRef<
   HTMLSpanElement,
@@ -42,17 +71,11 @@ export const ProviderBadge = forwardRef<
       {...(!withName ? { role: "img", "aria-label": label } : {})}
       className={cn(
         "inline-flex shrink-0 items-center justify-center bg-fill-1 font-semibold shadow-ring",
-        mark ? mark.color : "text-fg-secondary",
+        mark ? (mark.color ?? "text-fg") : "text-fg-secondary",
         KAESO_IDENTITY_VARIANTS.provider[size].classes,
       )}
     >
-      {mark ? (
-        <svg viewBox="0 0 24 24" fill="currentColor" fillRule="evenodd" aria-hidden focusable="false" className={MARK_SIZE[size]}>
-          <path d={mark.d} />
-        </svg>
-      ) : (
-        providerLetter(provider, name)
-      )}
+      {mark ? <MarkGlyph mark={mark} className={MARK_SIZE[size]} /> : providerLetter(provider, name)}
     </span>
   );
   if (!withName)

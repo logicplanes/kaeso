@@ -99,12 +99,24 @@ export const vizSoft = mode("#a7c7fb", "#3d72b8");
 export const providerMark = {
   openai: mode("#000000", "#ffffff"),
   xai: mode("#000000", "#ffffff"),
-  togetherai: mode("#000000", "#ffffff"),
+  "togetherai-magenta": mode("#ef2cc1", "#ef2cc1"),
+  "togetherai-lavender": mode("#a488cd", "#caaef5"),
+  "togetherai-orange": mode("#fc4c02", "#fc4c02"),
   openrouter: mode("#03080a", "#fcfcfe"),
-  mistral: mode("#161525", "#ffffff"),
+  "mistral-yellow": mode("#ffaf01", "#ffaf01"),
+  "mistral-amber": mode("#ff8204", "#ff8204"),
+  "mistral-orange": mode("#fa500f", "#fa500f"),
+  "mistral-red": mode("#e61300", "#e61300"),
+  "mistral-crimson": mode("#c4001d", "#c4001d"),
   vercel: mode("#000000", "#ffffff"),
-  cohere: mode("#17171c", "#ffffff"),
-  alibaba: mode("#4f21ff", "#a48bff"),
+  "cohere-green": mode("#355146", "#4b685c"),
+  "cohere-lilac": mode("#be7ccf", "#d18ee2"),
+  "cohere-coral": mode("#f26b4e", "#ff7759"),
+  deepseek: mode("#4d6bfe", "#6799fe"),
+  groq: mode("#f43e01", "#f43e01"),
+  moonshotai: mode("#1783ff", "#1783ff"),
+  "alibaba-violet": mode("#4f21ff", "#543aff"),
+  "alibaba-pink": mode("#d75bfe", "#d75bfe"),
 } as const;
 
 export const type = {

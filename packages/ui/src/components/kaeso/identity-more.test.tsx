@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KeyDisplay, ModelLabel, ProviderBadge, ProviderCard, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
 import { providerMark } from "@logicplanes/kaeso-tokens";
-import { PROVIDER_MARKS } from "./provider-marks.js";
+import { PROVIDER_MARKS, type ProviderMark, type ProviderMarkPart } from "./provider-marks.js";
 import { Slider } from "../slider/slider.js";
 import { LocaleProvider } from "../../i18n/index.js";
 import { TooltipProvider } from "../tooltip/tooltip-provider.js";
@@ -214,41 +214,103 @@ function pathEndpoints(d: string) {
 }
 
 describe("provider marks", () => {
-  it.each(Object.entries(MARKED_PROVIDERS))("draws %s's own mark, named %s", (id, name) => {
+  const single = Object.entries(PROVIDER_MARKS).filter(([, mark]) => mark.d !== undefined);
+  const multi = Object.entries(PROVIDER_MARKS).filter(([, mark]) => mark.parts !== undefined);
+  const partsOf = (mark: ProviderMark): readonly ProviderMarkPart[] => mark.parts ?? [{ d: mark.d, color: mark.color }];
+
+  it.each(single)("draws %s's own mark in one colour", (id, mark) => {
+    const name = MARKED_PROVIDERS[id as keyof typeof MARKED_PROVIDERS];
     render(<ProviderBadge provider={id} name={name} />);
     const badge = screen.getByRole("img", { name });
     const svg = badge.querySelector("svg");
     expect(badge).toHaveTextContent(/^$/);
-    expect(badge).toHaveClass(PROVIDER_MARKS[id]!.color);
+    expect(badge).toHaveClass(mark.color!);
     expect(svg).toHaveAttribute("viewBox", "0 0 24 24");
     expect(svg).toHaveAttribute("fill", "currentColor");
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg).toHaveAttribute("focusable", "false");
     const paths = svg!.querySelectorAll("path");
     expect(paths).toHaveLength(1);
-    expect(paths[0]).toHaveAttribute("d", PROVIDER_MARKS[id]!.d);
+    expect(paths[0]).toHaveAttribute("d", mark.d);
     expect(paths[0]!.getAttributeNames()).toEqual(["d"]);
+  });
+
+  it.each(multi)("draws each part of %s's mark in its own colour or gradient", (id, mark) => {
+    const name = MARKED_PROVIDERS[id as keyof typeof MARKED_PROVIDERS];
+    render(<ProviderBadge provider={id} name={name} />);
+    const badge = screen.getByRole("img", { name });
+    const svg = badge.querySelector("svg")!;
+    expect(badge).toHaveTextContent(/^$/);
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    const paths = svg.querySelectorAll("path");
+    expect(paths).toHaveLength(mark.parts!.length);
+    mark.parts!.forEach((part, i) => {
+      const path = paths[i]!;
+      expect(path).toHaveAttribute("d", part.d);
+      if (part.gradient) {
+        const ref = /^url\(#(.+)\)$/.exec(path.getAttribute("fill") ?? "")?.[1];
+        const gradient = svg.querySelector(`linearGradient[id="${ref}"]`);
+        expect(gradient, `${id} part ${i}`).not.toBeNull();
+        expect(gradient).toHaveAttribute("x1", String(part.gradient.x1));
+        expect(gradient).toHaveAttribute("y2", String(part.gradient.y2));
+        const stops = gradient!.querySelectorAll("stop");
+        expect([...stops].map((stop) => [stop.getAttribute("offset"), stop.getAttribute("stop-color"), stop.getAttribute("class")])).toEqual(
+          part.gradient.stops.map((stop) => [String(stop.offset), "currentColor", stop.color]),
+        );
+      } else {
+        expect(path).toHaveClass(part.color!);
+        expect(path).not.toHaveAttribute("fill");
+      }
+    });
   });
 
   it("has a mark for every built-in provider and for nothing else", () => {
     expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
   });
 
-  it("draws each mark in its owner's one-colour version for each theme, or in the text colour where no colour is set", () => {
-    for (const [id, mark] of Object.entries(PROVIDER_MARKS)) {
-      if (mark.color === "text-fg") expect(providerMark, id).not.toHaveProperty(id);
-      else {
-        expect(mark.color, id).toBe(`text-mark-${id}`);
-        expect(providerMark, id).toHaveProperty(id);
-      }
+  it("gives every drawn gradient its own id, so two marks on one page never share one", () => {
+    const { container } = render(
+      <>
+        <ProviderBadge provider="alibaba" name="QwenCloud" />
+        <ProviderBadge provider="alibaba" name="QwenCloud" size="xl" withName />
+      </>,
+    );
+    const ids = [...container.querySelectorAll("linearGradient")].map((gradient) => gradient.id);
+    const perMark = PROVIDER_MARKS.alibaba!.parts!.filter((part) => part.gradient).length;
+    expect(ids).toHaveLength(perMark * 2);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const svg of container.querySelectorAll("svg")) {
+      const own = new Set([...svg.querySelectorAll("linearGradient")].map((gradient) => gradient.id));
+      for (const path of svg.querySelectorAll("path[fill]")) expect(own).toContain(/^url\(#(.+)\)$/.exec(path.getAttribute("fill")!)?.[1]);
     }
-    expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
   });
 
-  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, { d }) => {
-    expect(d).toMatch(/^M/);
-    expect(d).not.toMatch(/\d\.\d{4}/);
-    const points = pathEndpoints(d);
+  it("colours every part with the text colour or one of the owner's colour tokens, and leaves no token unused", () => {
+    const used = new Set<string>();
+    for (const [id, mark] of Object.entries(PROVIDER_MARKS)) {
+      const classes = partsOf(mark).flatMap((part) => (part.gradient ? part.gradient.stops.map((stop) => stop.color) : [part.color!]));
+      for (const cls of classes) {
+        if (cls === "text-fg") continue;
+        const token = cls.replace(/^text-mark-/, "");
+        expect(cls, id).toBe(`text-mark-${token}`);
+        expect(token === id || token.startsWith(`${id}-`), `${cls} belongs to ${id}`).toBe(true);
+        expect(providerMark, id).toHaveProperty(token);
+        used.add(token);
+      }
+    }
+    expect([...used].sort()).toEqual(Object.keys(providerMark).sort());
+    expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
+    expect(providerMark.groq).toEqual({ light: "#f43e01", dark: "#f43e01" });
+    expect(providerMark["alibaba-violet"]).toEqual({ light: "#4f21ff", dark: "#543aff" });
+  });
+
+  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, mark) => {
+    const parts = partsOf(mark);
+    const points = parts.flatMap((part) => {
+      expect(part.d).toMatch(/^M/);
+      expect(part.d).not.toMatch(/\d\.\d{4}/);
+      return pathEndpoints(part.d);
+    });
     expect(points.length).toBeGreaterThan(2);
     const xs = points.map((p) => p[0]);
     const ys = points.map((p) => p[1]);
