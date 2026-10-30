@@ -1,0 +1,12 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "logit_bias": {
+    "100": 1
+  }
+}

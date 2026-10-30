@@ -1,0 +1,5 @@
+{
+  "error_type": "TOO_MANY_TOKENS",
+  "id": "26f12450-b4ea-46f3-bbcf-0882272e90f7",
+  "message": "too many tokens: max tokens must be less than or equal to 8192, the maximum output length for this model - received 9999999."
+}

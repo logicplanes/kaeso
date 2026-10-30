@@ -880,6 +880,565 @@
   "name": "Anthropic",
   "npm": "@ai-sdk/anthropic"
  },
+ "cohere": {
+  "doc": "https://docs.cohere.com/docs/models",
+  "env": [
+   "COHERE_API_KEY"
+  ],
+  "id": "cohere",
+  "models": {
+   "c4ai-aya-expanse-32b": {
+    "attachment": false,
+    "canonical_model_id": "cohere/c4ai-aya-expanse-32b",
+    "cost": {
+     "input": 0.5,
+     "output": 1.5
+    },
+    "description": "Open multilingual model optimized for generation across 23 languages",
+    "id": "c4ai-aya-expanse-32b",
+    "last_updated": "2024-10-24",
+    "limit": {
+     "context": 128000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Aya Expanse 32B",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2024-10-24",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": false
+   },
+   "c4ai-aya-vision-32b": {
+    "attachment": true,
+    "canonical_model_id": "cohere/c4ai-aya-vision-32b",
+    "description": "Open multilingual vision model for OCR, visual reasoning, and image question answering",
+    "id": "c4ai-aya-vision-32b",
+    "last_updated": "2025-05-14",
+    "limit": {
+     "context": 16000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Aya Vision 32B",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2025-03-04",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": false
+   },
+   "command-a-03-2025": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-a-03-2025",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Cohere command model for multilingual enterprise agents, tools, and chat",
+    "family": "command-a",
+    "id": "command-a-03-2025",
+    "knowledge": "2024-06-01",
+    "last_updated": "2025-03-13",
+    "limit": {
+     "context": 256000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command A",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2025-03-13",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-a-plus-05-2026": {
+    "attachment": true,
+    "canonical_model_id": "cohere/command-a-plus-05-2026",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Cohere's stronger command model for multilingual agents and enterprise workflows",
+    "family": "command-a",
+    "id": "command-a-plus-05-2026",
+    "knowledge": "2025-04-01",
+    "last_updated": "2026-06-09",
+    "limit": {
+     "context": 128000,
+     "output": 64000
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command A Plus",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "min": 1,
+      "type": "budget_tokens"
+     }
+    ],
+    "release_date": "2026-05-20",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-a-reasoning-08-2025": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-a-reasoning-08-2025",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Cohere reasoning model for multilingual enterprise agents, tools, and complex workflows",
+    "family": "command-a",
+    "id": "command-a-reasoning-08-2025",
+    "knowledge": "2024-06-01",
+    "last_updated": "2025-08-21",
+    "limit": {
+     "context": 256000,
+     "output": 32000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command A Reasoning",
+    "open_weights": true,
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "toggle"
+     },
+     {
+      "min": 1,
+      "type": "budget_tokens"
+     }
+    ],
+    "release_date": "2025-08-21",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-a-translate-08-2025": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-a-translate-08-2025",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Translation model for multilingual conversion, localization, and cross-language workflows",
+    "family": "command-a",
+    "id": "command-a-translate-08-2025",
+    "knowledge": "2024-06-01",
+    "last_updated": "2025-08-28",
+    "limit": {
+     "context": 8000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command A Translate",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2025-08-28",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-a-vision-07-2025": {
+    "attachment": true,
+    "canonical_model_id": "cohere/command-a-vision-07-2025",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Cohere vision model for multilingual document analysis, OCR, and image understanding",
+    "family": "command-a",
+    "id": "command-a-vision-07-2025",
+    "knowledge": "2024-06-01",
+    "last_updated": "2025-07-31",
+    "limit": {
+     "context": 128000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text",
+      "image"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command A Vision",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2025-07-31",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": false
+   },
+   "command-r-08-2024": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-r-08-2024",
+    "cost": {
+     "input": 0.15,
+     "output": 0.6
+    },
+    "description": "Cohere retrieval model for long-context chat and enterprise RAG workflows",
+    "family": "command-r",
+    "id": "command-r-08-2024",
+    "knowledge": "2024-06-01",
+    "last_updated": "2024-08-30",
+    "limit": {
+     "context": 128000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command R",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2024-08-30",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-r-plus-08-2024": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-r-plus-08-2024",
+    "cost": {
+     "input": 2.5,
+     "output": 10
+    },
+    "description": "Cohere's RAG workhorse for long-context enterprise search and tool use",
+    "family": "command-r",
+    "id": "command-r-plus-08-2024",
+    "knowledge": "2024-06-01",
+    "last_updated": "2024-08-30",
+    "limit": {
+     "context": 128000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command R+",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2024-08-30",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-r7b-12-2024": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-r7b-12-2024",
+    "cost": {
+     "input": 0.0375,
+     "output": 0.15
+    },
+    "description": "Cohere retrieval model for long-context chat and enterprise RAG workflows",
+    "family": "command-r",
+    "id": "command-r7b-12-2024",
+    "knowledge": "2024-06-01",
+    "last_updated": "2024-12-13",
+    "limit": {
+     "context": 128000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command R7B",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2024-12-13",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "command-r7b-arabic-02-2025": {
+    "attachment": false,
+    "canonical_model_id": "cohere/command-r7b-arabic-02-2025",
+    "cost": {
+     "input": 0.0375,
+     "output": 0.15
+    },
+    "description": "Open Command R model optimized for Arabic enterprise chat, RAG, and cultural knowledge",
+    "family": "command-r",
+    "id": "command-r7b-arabic-02-2025",
+    "knowledge": "2024-06-01",
+    "last_updated": "2025-02-27",
+    "limit": {
+     "context": 128000,
+     "output": 4000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Command R7B Arabic",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2025-02-27",
+    "structured_output": true,
+    "temperature": true,
+    "tool_call": true
+   },
+   "north-mini-code-1-0": {
+    "attachment": false,
+    "canonical_model_id": "cohere/north-mini-code-1-0",
+    "cost": {
+     "input": 0,
+     "output": 0
+    },
+    "description": "Cohere coding model for practical software engineering and agentic edits",
+    "family": "north",
+    "id": "north-mini-code-1-0",
+    "interleaved": {
+     "field": "reasoning_content"
+    },
+    "knowledge": "2025-09-23",
+    "last_updated": "2026-06-09",
+    "limit": {
+     "context": 256000,
+     "output": 64000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "North Mini Code",
+    "open_weights": true,
+    "provider": {
+     "api": "https://api.cohere.ai/compatibility/v1",
+     "npm": "@ai-sdk/openai-compatible"
+    },
+    "reasoning": true,
+    "reasoning_options": [
+     {
+      "type": "effort",
+      "values": [
+       "none",
+       "high"
+      ]
+     }
+    ],
+    "release_date": "2026-06-09",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": true
+   },
+   "north-small-translate-09-2026": {
+    "attachment": false,
+    "canonical_model_id": "cohere/north-small-translate-1-0",
+    "cost": {
+     "input": 0,
+     "output": 0
+    },
+    "description": "Open-weight translation model for more than 50 languages and locale variants",
+    "family": "north",
+    "id": "north-small-translate-09-2026",
+    "last_updated": "2026-09-09",
+    "limit": {
+     "context": 32768,
+     "output": 16000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "North Small Translate",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2026-09-09",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": false
+   },
+   "tiny-aya-earth": {
+    "attachment": false,
+    "canonical_model_id": "cohere/tiny-aya-earth",
+    "description": "Compact multilingual model specialized for West Asian and African languages",
+    "id": "tiny-aya-earth",
+    "last_updated": "2026-02-17",
+    "limit": {
+     "context": 8000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Tiny Aya Earth",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2026-02-17",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": true
+   },
+   "tiny-aya-fire": {
+    "attachment": false,
+    "canonical_model_id": "cohere/tiny-aya-fire",
+    "description": "Compact multilingual model specialized for South Asian languages",
+    "id": "tiny-aya-fire",
+    "last_updated": "2026-02-17",
+    "limit": {
+     "context": 8000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Tiny Aya Fire",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2026-02-17",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": true
+   },
+   "tiny-aya-global": {
+    "attachment": false,
+    "canonical_model_id": "cohere/tiny-aya-global",
+    "description": "Compact multilingual model balanced across 70 languages and regions",
+    "id": "tiny-aya-global",
+    "last_updated": "2026-02-17",
+    "limit": {
+     "context": 8000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Tiny Aya Global",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2026-02-17",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": true
+   },
+   "tiny-aya-water": {
+    "attachment": false,
+    "canonical_model_id": "cohere/tiny-aya-water",
+    "description": "Compact multilingual model specialized for European and Asia-Pacific languages",
+    "id": "tiny-aya-water",
+    "last_updated": "2026-02-17",
+    "limit": {
+     "context": 8000,
+     "output": 8000
+    },
+    "modalities": {
+     "input": [
+      "text"
+     ],
+     "output": [
+      "text"
+     ]
+    },
+    "name": "Tiny Aya Water",
+    "open_weights": true,
+    "reasoning": false,
+    "release_date": "2026-02-17",
+    "structured_output": false,
+    "temperature": true,
+    "tool_call": true
+   }
+  },
+  "name": "Cohere",
+  "npm": "@ai-sdk/cohere"
+ },
  "deepseek": {
   "api": "https://api.deepseek.com",
   "doc": "https://api-docs.deepseek.com/quick_start/pricing",
@@ -7856,9 +8415,9 @@
     "attachment": false,
     "canonical_model_id": "deepseek/deepseek-v3.2",
     "cost": {
-     "cache_read": 0.028,
-     "input": 0.28,
-     "output": 0.42
+     "cache_read": 0.13,
+     "input": 0.26,
+     "output": 0.38
     },
     "description": "DeepSeek chat model for instruction following, coding, and analysis",
     "family": "deepseek",
@@ -7867,7 +8426,7 @@
     "last_updated": "2025-12-01",
     "limit": {
      "context": 163840,
-     "output": 65536
+     "output": 147456
     },
     "modalities": {
      "input": [
@@ -8110,9 +8669,9 @@
     "attachment": false,
     "canonical_model_id": "deepseek/deepseek-v4-pro-0813",
     "cost": {
-     "cache_read": 0.044,
-     "input": 1.32,
-     "output": 3.96
+     "cache_read": 0.022,
+     "input": 0.66,
+     "output": 1.98
     },
     "description": "DeepSeek V4 Pro snapshot with million-token context and support for thinking and non-thinking modes",
     "family": "deepseek-thinking",
@@ -8198,9 +8757,9 @@
     "attachment": true,
     "canonical_model_id": "deepseek/deepseek-v4.1-flash-1017",
     "cost": {
-     "cache_read": 0.006,
-     "input": 0.3,
-     "output": 1.2
+     "cache_read": 0.003,
+     "input": 0.15,
+     "output": 0.6
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
     "family": "deepseek-flash",
@@ -9605,9 +10164,9 @@
     "attachment": true,
     "canonical_model_id": "google/gemma-4-26b-a4b-it",
     "cost": {
-     "cache_read": 0.0425,
-     "input": 0.0765,
-     "output": 0.255
+     "cache_read": 0.05,
+     "input": 0.09,
+     "output": 0.3
     },
     "description": "Open Gemma instruction model for efficient chat and self-hosted deployments",
     "family": "gemma",
@@ -12313,8 +12872,8 @@
     "canonical_model_id": "moonshotai/kimi-k2.7-code",
     "cost": {
      "cache_read": 0.15,
-     "input": 0.56,
-     "output": 3.1
+     "input": 0.6,
+     "output": 3.5
     },
     "description": "Coding-focused Kimi model, stronger on long-horizon repo work with less overthinking",
     "family": "kimi-k2",
@@ -16077,7 +16636,7 @@
    "particle-ai/particle-1": {
     "attachment": true,
     "cost": {
-     "cache_read": 0.03,
+     "cache_read": 0.003,
      "input": 0.25,
      "output": 1
     },
@@ -18025,9 +18584,9 @@
     "attachment": true,
     "canonical_model_id": "alibaba/qwen3.8-27b",
     "cost": {
-     "cache_read": 0.0039,
-     "input": 0.039,
-     "output": 1.25
+     "cache_read": 0.0375,
+     "input": 0.15,
+     "output": 1.875
     },
     "description": "Qwen vision-language model for visual reasoning, documents, and agent tasks",
     "family": "qwen",
@@ -18035,7 +18594,7 @@
     "last_updated": "2026-08-14",
     "limit": {
      "context": 1000000,
-     "output": 65536
+     "output": 235929
     },
     "modalities": {
      "input": [
@@ -20795,9 +21354,9 @@
     "attachment": true,
     "canonical_model_id": "zhipuai/glm-5.3-flash",
     "cost": {
-     "cache_read": 0.03,
-     "input": 0.0477,
-     "output": 0.0701
+     "cache_read": 0.0197,
+     "input": 0.0197,
+     "output": 0.1324
     },
     "description": "GLM vision model for visual reasoning, documents, and multimodal agents",
     "family": "glm-flash",
@@ -21159,9 +21718,9 @@
    "~deepseek/deepseek-flash-latest": {
     "attachment": true,
     "cost": {
-     "cache_read": 0.0336,
-     "input": 0.0339,
-     "output": 1.14
+     "cache_read": 0.004,
+     "input": 0.022,
+     "output": 0.192
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
     "family": "deepseek-flash",
@@ -21244,9 +21803,9 @@
    "~deepseek/deepseek-v4-flash-latest": {
     "attachment": false,
     "cost": {
-     "cache_read": 0.055,
-     "input": 0.056,
-     "output": 0.3
+     "cache_read": 0.028,
+     "input": 0.0429,
+     "output": 0.1518
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
     "family": "deepseek",
@@ -21401,7 +21960,7 @@
     "attachment": true,
     "cost": {
      "cache_read": 0.17,
-     "input": 0.1719,
+     "input": 0.171,
      "output": 10.5572
     },
     "description": "Kimi multimodal agent model for visual understanding, coding, and planning",
@@ -21842,9 +22401,9 @@
    "~z-ai/glm-flash-latest": {
     "attachment": true,
     "cost": {
-     "cache_read": 0.03,
-     "input": 0.0477,
-     "output": 0.0701
+     "cache_read": 0.0197,
+     "input": 0.0197,
+     "output": 0.1324
     },
     "description": "GLM vision model for visual reasoning, documents, and multimodal agents",
     "family": "glm-flash",
@@ -27473,9 +28032,9 @@
     "attachment": true,
     "canonical_model_id": "deepseek/deepseek-v4.1-flash",
     "cost": {
-     "cache_read": 0.0015,
-     "input": 0.075,
-     "output": 0.3
+     "cache_read": 0.007,
+     "input": 0.3,
+     "output": 1.2
     },
     "description": "DeepSeek V4.1 Flash model for reasoning and agentic coding",
     "family": "deepseek-flash",
@@ -27519,9 +28078,9 @@
     "attachment": true,
     "canonical_model_id": "deepseek/deepseek-v4.1-flash-1017",
     "cost": {
-     "cache_read": 0.0015,
-     "input": 0.075,
-     "output": 0.3
+     "cache_read": 0.007,
+     "input": 0.3,
+     "output": 1.2
     },
     "description": "Fast DeepSeek model for efficient chat, coding help, and agent loops",
     "family": "deepseek-flash",
@@ -27530,7 +28089,7 @@
     "last_updated": "2026-10-17",
     "limit": {
      "context": 1048576,
-     "output": 1048576
+     "output": 262144
     },
     "modalities": {
      "input": [

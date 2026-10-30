@@ -73,11 +73,11 @@ describe("AddModelsDialog", () => {
 
   it("starts on the first provider the gateway lists when the remembered one is gone", async () => {
     setUp();
-    remember(["add-models", "provider"], "cohere");
+    remember(["add-models", "provider"], "cerebras");
     const { dialog } = await open();
 
     expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
-    expect(searches().map((q) => q.provider)).not.toContain("cohere");
+    expect(searches().map((q) => q.provider)).not.toContain("cerebras");
     expect(searches()).toContainEqual({ provider: "openai", include_deprecated: "false", limit: "50" });
     expect(within(dialog).getByRole("button", { description: "Provider" })).toHaveTextContent("OpenAI");
   });

@@ -62,7 +62,7 @@ fn every_response_fixture_round_trips() {
 }
 
 #[test]
-fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_them() {
+fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_with_their_message() {
     for name in FOREIGN_ERROR_BODIES {
         let body = fixture("errors", name);
         let status = u16::try_from(
@@ -77,16 +77,56 @@ fn error_bodies_without_an_error_object_reach_apps_as_openai_errors_that_quote_t
             (&ErrorKind::InvalidRequest, Some(status)),
             "{name}"
         );
-        let quoted: String = String::from_utf8_lossy(&body).chars().take(200).collect();
-        assert!(
-            err.message.contains(quoted.trim()),
-            "{name}: {}",
-            err.message
-        );
+        let original: Value = serde_json::from_slice(&body).unwrap();
+        match original["message"].as_str() {
+            Some(message) => assert_eq!(err.message, message, "{name}"),
+            None => {
+                let quoted: String = String::from_utf8_lossy(&body).chars().take(200).collect();
+                assert!(
+                    err.message.contains(quoted.trim()),
+                    "{name}: {}",
+                    err.message
+                );
+            }
+        }
         let out = OpenAiEmbeddings::encode_error(&err);
         assert_eq!(out.status, 400, "{name}");
         let sent: Value = serde_json::from_slice(&out.body).unwrap();
         assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
+    }
+}
+
+#[test]
+fn cohere_error_bodies_reach_apps_with_cohere_message() {
+    for (name, status, message) in [
+        (
+            "providers/cohere/recorded-embed-dimensions-v3",
+            400,
+            "invalid request: output_dimension is not supported for this model",
+        ),
+        (
+            "providers/cohere/recorded-embed-generation-model",
+            400,
+            "invalid request: model 'command-a-03-2025' is not supported by the embed API",
+        ),
+        (
+            "providers/cohere/recorded-embed-token-ids",
+            422,
+            "invalid type: parameter '' is of type number but should be of type Object",
+        ),
+    ] {
+        let body = fixture("errors", name);
+        let meta = sidecar(DIR, "errors", name, "meta").unwrap();
+        assert_eq!(meta["status"], status, "{name}");
+        let err = OpenAiEmbeddings::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!(
+            (&err.kind, err.message.as_str()),
+            (&ErrorKind::InvalidRequest, message),
+            "{name}"
+        );
+        let sent: Value =
+            serde_json::from_slice(&OpenAiEmbeddings::encode_error(&err).body).unwrap();
+        assert_eq!(sent["error"]["message"], message, "{name}");
     }
 }
 
@@ -110,7 +150,7 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
-        if FOREIGN_ERROR_BODIES.contains(&name.as_str()) {
+        if FOREIGN_ERROR_BODIES.contains(&name.as_str()) || name.starts_with("providers/cohere/") {
             continue;
         }
         let meta = sidecar(DIR, "errors", &name, "meta").unwrap();

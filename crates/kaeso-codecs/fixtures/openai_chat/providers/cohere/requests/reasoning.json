@@ -1,0 +1,11 @@
+{
+  "model": "command-a-reasoning-08-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23? Answer with the number."
+    }
+  ],
+  "reasoning_effort": "high",
+  "max_tokens": 2048
+}

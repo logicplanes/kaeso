@@ -282,6 +282,7 @@ order: 7
 | 429 | `RateLimited` |
 | 408、504、`vector_store_timeout` | `Timeout` |
 | 其他状态码 | `ProviderError` |
+| 没有 `error` 对象、顶层 `message` 为非空字符串的响应体，例如 Cohere 的 `{"id", "message"}` | 该状态码对应的错误类型，消息为该 `message`；保留状态码和原始响应体 |
 | 不是 OpenAI 错误的响应体，无论状态码如何（例如代理返回的 HTML 429） | 按上面各行取该状态码对应的错误类型（代理返回的 429 为 `RateLimited`，502 为 `ProviderError`），消息为 ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``，响应体去掉首尾空白；保留状态码和原始响应体 |
 | `{"error": "<message>"}`，SpaceX 以此格式发送（400 时带 `"code": "invalid-argument"`） | 该状态码对应的错误类型，以该字符串为消息；SpaceX 对错误密钥的回复（`Incorrect API key provided`，列在其 `refused_key_messages` 中）由网关报告为 `Authentication`。未更改的错误以 OpenAI 格式和其原始状态码编码 |
 

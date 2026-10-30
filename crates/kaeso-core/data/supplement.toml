@@ -93,3 +93,12 @@ egress_dialect = "openai_responses"
 
 [mistral."mistral-embed"]
 egress_dialect = "openai_embeddings"
+
+[cohere."command-a-plus-05-2026"]
+efforts = ["none", "high"]
+
+[cohere."command-a-reasoning-08-2025"]
+efforts = ["none", "high"]
+
+[cohere."north-mini-code-1-0"]
+efforts = ["none", "high"]

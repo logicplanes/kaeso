@@ -441,6 +441,44 @@ pub const PROVIDERS: &[Provider] = &[
         responses: ResponsesProfile::compatible("Vercel"),
         account: None,
     },
+    Provider {
+        id: "cohere",
+        name: "Cohere",
+        key_page: KeyPage {
+            url: "https://dashboard.cohere.com/api-keys",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.cohere.ai/compatibility",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        chat: ChatProfile::compatible("Cohere")
+            .stop_list()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "metadata",
+                "modalities",
+                "parallel_tool_calls",
+                "prediction",
+                "service_tier",
+                "store",
+                "top_logprobs",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Cohere"),
+        account: None,
+    },
 ];
 
 const _: () = {
@@ -713,7 +751,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere"
         );
     }
 
@@ -1033,7 +1071,8 @@ mod tests {
                 "groq",
                 "openrouter",
                 "mistral",
-                "vercel"
+                "vercel",
+                "cohere"
             ]
         );
         assert_eq!(

@@ -1,0 +1,6 @@
+{
+  "model": "embed-v4.0",
+  "input": "The quick brown fox.",
+  "dimensions": 256,
+  "encoding_format": "float"
+}

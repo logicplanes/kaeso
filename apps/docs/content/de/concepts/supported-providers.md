@@ -18,6 +18,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 | Anbieter | Formate | Host | Schlüssel |
 | --- | --- | --- | --- |
 | Anthropic `anthropic` | Messages, Token-Zählung | `api.anthropic.com` | [platform.claude.com](https://platform.claude.com/settings/keys), `sk-ant-` |
+| Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), kein festes Präfix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | Groq `groq` | Chat Completions | `api.groq.com` | [console.groq.com](https://console.groq.com/keys), `gsk_` |
 | Mistral `mistral` | Chat Completions, Embeddings | `api.mistral.ai` | [console.mistral.ai](https://console.mistral.ai/api-keys), kein festes Präfix |
@@ -31,6 +32,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 
 Was Sie über manche Anbieter noch wissen sollten. Die [Anbieterprofile](../development/kpp/openai-chat-providers.md#anbieterprofile) nennen jedes Feld von Chat Completions, das ein Anbieter umbenennt oder ablehnt:
 
+- **Cohere.** Coheres [Compatibility API](https://docs.cohere.com/docs/compatibility-api), die einen Teil von Coheres eigener API abdeckt: Dokumente, Zitate und Rerank sind darüber nicht erreichbar. Cohere lehnt einige Felder ab, etwa `logit_bias` und `parallel_tool_calls`, und erhält einen einzelnen `stop`-String als Liste. Seine Reasoning-Modelle denken nur mit `reasoning_effort` `none` oder `high`. Seine Embed-Modelle wie `embed-v4.0` stehen nicht auf models.dev: Fügen Sie sie als eigene Modelle hinzu, die als Embeddings senden, mit ihrem Preis.
 - **DeepSeek.** Erhält `developer`-Nachrichten als `system`-Nachrichten.
 - **Groq.** Erhält `developer`-Nachrichten als `system`-Nachrichten und lehnt manche Felder ab, etwa `logit_bias`.
 - **Mistral.** Erhält `developer`-Nachrichten als `system`-Nachrichten und manche Felder unter eigenem Namen, etwa `seed` als `random_seed`. Mistral lehnt andere ab, etwa `logit_bias`, ebenso ein Gespräch, das mit einer Assistentennachricht endet.

@@ -84,8 +84,12 @@ order: 8
 
 ### Mistral
 
-来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400。这些错误响应体没有 `error` 对象，因此应用会收到引用它们的 OpenAI 错误。
+来源：Mistral 的 [API 参考](https://docs.mistral.ai/api/)（`EmbeddingRequest`、`EmbeddingResponse`，2026-10-19 查阅），以及 `fixtures/openai_embeddings/providers/mistral/` 中使用 `mistral-embed` 的实时录制。Mistral 接受 `encoding_format: base64`，但以浮点数回答；对于要求 base64 的应用，编解码器会把它们编码为 base64。Mistral 对 OpenAI 的 `dimensions` 和以 token ID 作为输入返回 422，对 `mistral-embed` 上的 `output_dimension` 返回 400。这些错误响应体没有 `error` 对象：响应体以字符串给出消息时，应用收到带有 Mistral 消息的 OpenAI 错误，否则收到引用整个响应体的 OpenAI 错误。
 
 ### Vercel
 
 来源：Vercel 的 [嵌入](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/embeddings) 页面（2026-10-29 阅读），以及 `fixtures/openai_embeddings/providers/vercel/` 中使用 `google/gemini-embedding-001` 和 `dimensions: 8` 的实时录制。当 models.dev 给某个 Vercel 模型 `type: "embedding"`（Vercel 的模型列表也是如此）时，它就是嵌入模型。回复中的 `providerMetadata`（路由和费用）保留在 extras 中，原样往返。免费套餐账户无权调用某些嵌入模型，例如 `openai/text-embedding-3-small`，它们返回 403。
+
+### Cohere
+
+来源：Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/cohere/` 中使用 `embed-english-light-v3.0` 和 `embed-v4.0` 的实时录制。Cohere 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答。其页面称不支持 `dimensions`，但 `embed-v4.0` 会遵循它（`responses/recorded-embed-dimensions`，256 个浮点数）；v3 模型以 400 拒绝。以 token ID 作为输入会被 422 拒绝。Cohere 的错误响应体为 `{"id", "message"}`，因此应用会收到带有 Cohere 消息的 OpenAI 错误。models.dev 未列出 Cohere 的 Embed 模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。

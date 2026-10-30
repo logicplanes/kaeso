@@ -1,0 +1,10 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Count from 1 to 9, separated by commas."
+    }
+  ],
+  "stop": "6"
+}

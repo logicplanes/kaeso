@@ -30,12 +30,12 @@ describe("identity parts", () => {
     render(
       <>
         <ProviderBadge provider="gemini" withName />
-        <ProviderBadge provider="cohere" name="" />
+        <ProviderBadge provider="cerebras" name="" />
         <ModelLabel provider="vertex" model="gemini-3-pro" />
       </>,
     );
     expect(screen.getByText("gemini")).toBeVisible();
-    expect(screen.getByRole("img", { name: "cohere" })).toHaveTextContent(/^C$/);
+    expect(screen.getByRole("img", { name: "cerebras" })).toHaveTextContent(/^C$/);
     expect(screen.getByRole("img", { name: "vertex" })).toHaveTextContent(/^V$/);
     expect(providerName("gemini")).toBe("gemini");
     expect(providerName("gemini", "  ")).toBe("gemini");
@@ -152,6 +152,7 @@ const MARKED_PROVIDERS = {
   openrouter: "OpenRouter",
   mistral: "Mistral",
   vercel: "Vercel",
+  cohere: "Cohere",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 

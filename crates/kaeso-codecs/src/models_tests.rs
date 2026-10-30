@@ -287,6 +287,72 @@ fn a_vercel_listing_keeps_its_own_fields_and_refuses_a_wrong_key() {
 }
 
 #[test]
+fn a_cohere_listing_decodes_and_refuses_a_wrong_key_in_cohere_words() {
+    let body = fixture("openai_chat", "providers/cohere/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert!(!l.has_more);
+    assert_eq!(l.models.len(), 37);
+    assert!(
+        l.models
+            .iter()
+            .all(|m| m.owned_by.as_deref() == Some("cohere"))
+    );
+    for id in [
+        "command-a-03-2025",
+        "command-a-reasoning-08-2025",
+        "embed-v4.0",
+    ] {
+        assert!(l.models.iter().any(|m| m.id == id), "{id}");
+    }
+    assert_json_eq(
+        "providers/cohere/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = model(
+        DialectId::OpenAiChat,
+        &fixture("openai_chat", "providers/cohere/retrieve-recorded"),
+    );
+    assert_eq!(one.id, "command-a-03-2025");
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/cohere/retrieve-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+    assert!(
+        e.message
+            .contains("model 'kaeso-example-no-such-model' not found"),
+        "{}",
+        e.message
+    );
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/cohere/list-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::Authentication);
+    assert!(
+        e.message.contains("Incorrect API key provided"),
+        "{}",
+        e.message
+    );
+}
+
+#[test]
 fn anthropic_fields_map_to_kpp() {
     let l = list(A, &fixture("anthropic_messages", "list"));
     assert!(!l.has_more);

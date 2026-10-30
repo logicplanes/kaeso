@@ -770,6 +770,31 @@ fn vercel_models_speak_chat_completions_and_the_ones_models_dev_marks_as_embeddi
 }
 
 #[test]
+fn cohere_models_speak_chat_completions_and_think_at_none_or_high() {
+    let command = eff(&entry("cohere", "command-a-03-2025"));
+    assert_eq!(command.dialect, DialectId::OpenAiChat);
+    assert_eq!(command.provider.chat().provider, "Cohere");
+    assert!(!command.is_embeddings());
+    assert_eq!(
+        (
+            command.fields.input_price,
+            command.fields.output_price,
+            command.fields.context_limit
+        ),
+        (Some(dec!(2.5)), Some(dec!(10)), Some(256_000))
+    );
+    let reasoning = eff(&entry("cohere", "command-a-reasoning-08-2025"));
+    assert_eq!(
+        effort_levels(&reasoning, DialectId::AnthropicMessages),
+        ["none", "high"]
+    );
+    kept("high", DialectId::OpenAiChat, &reasoning);
+    kept("none", DialectId::OpenAiResponses, &reasoning);
+    let err = refused("medium", DialectId::OpenAiChat, &reasoning);
+    assert!(err.contains("`none`, `high`"), "{err}");
+}
+
+#[test]
 fn duties_fill_what_kpp_cannot_know() {
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     let mut req = Request::Generate(user(vec![Block::text("hi")]));

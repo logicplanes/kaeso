@@ -1,0 +1,32 @@
+{
+  "id": "d4327d23-71db-4829-aa00-bbfa5216f0b8",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\": \"Tokyo\", \"country\": \"Japan\"}"
+      },
+      "logprobs": null
+    }
+  ],
+  "created": 1793373684,
+  "model": "command-a-03-2025",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 7,
+    "completion_tokens": 12,
+    "total_tokens": 19,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  }
+}

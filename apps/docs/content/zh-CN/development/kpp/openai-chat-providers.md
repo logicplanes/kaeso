@@ -23,6 +23,7 @@ nav: Chat 服务商
 | `without_verbosity()` | 省略 OpenAI Responses 应用的 `text.verbosity`，而不是作为 `verbosity` 发送，并在 `kaeso-left-out` 中注明。`compatible(name)` 会设置它。 | `text.verbosity` 是提示（[字段类别](index.md#字段类别)）。 |
 | `with_message_bookkeeping()` | 发送 Chat 应用助手消息中的簿记键，即 `cross::CHAT_ASSISTANT_BOOKKEEPING`（目前是 Grok CLI 的 `model_id`，包括 `null`）。没有此设置时，编码器省略它们。 | 模型从不读取它们，而多数 Chat 提供商会拒绝未声明的消息字段（Groq、Mistral 以及兼容 OpenAI 的代理），因此只有已知接受它们的提供商才会收到。 |
 | `tool_schema_root(root)` | 把服务商不接受的函数工具根部联合合并为一个对象 schema，并在 `kaeso-adapted` 中注明该工具；`ToolSchemaRoot::ObjectUnions` 保留由内联对象组成的联合。 | 工具、它的属性和模型的参数都保留；只有根部的形状改变（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
+| `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
 | `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
@@ -43,6 +44,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 | 服务商 | 设置 | 来源 |
 |---|---|---|
+| Cohere（`cohere`） | `stop_list()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`metadata`、`modalities`、`parallel_tool_calls`、`prediction`、`service_tier`、`store`、`top_logprobs`、`verbosity` 和 `web_search_options` | Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），其中列出 `store`、`metadata`、`logit_bias`、`top_logprobs`、`n`、`modalities`、`prediction`、`audio`、`service_tier` 和 `parallel_tool_calls` 不受支持；`fixtures/openai_chat/providers/cohere/errors/` 中的 422 录制，每个字段一份；`responses/recorded-functions-field` 和 `responses/recorded-web-search-options-field`，Cohere 以 200 回答并忽略该字段，`verbosity` 也是如此；`stop_list()` 依据 `errors/recorded-stop-string`（422，`stop` 必须是列表）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream`（`reasoning_content`） |
 | DeepSeek（`deepseek`） | `max_tokens()`、`system_role()`、`reasoning_fields(["reasoning_content"])` | DeepSeek 的 API 参考和思考模式指南（`reasoning_content`），`responses/recorded-thinking-reasoning-content` 和 `streams/recorded-thinking-stream`；`fixtures/openai_chat/providers/deepseek/responses/recorded-max-completion-tokens-limit`：DeepSeek 忽略 `max_completion_tokens`（要求 20，实际 133 个 completion token），而其 API 参考记载的是 `max_tokens`；`fixtures/openai_chat/providers/deepseek/errors/recorded-plain-developer-string`：DeepSeek 对 `developer` 角色返回 422 `unknown variant` |
 | Groq（`groq`） | `system_role()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs`，以及消息中的 `name` 和 `refusal` | Groq 的 OpenAI 兼容性页面（https://console.groq.com/docs/openai，其中列出 `logprobs`、`logit_bias`、`top_logprobs` 和 `messages[].name` 不受支持）；`fixtures/openai_chat/providers/groq/errors/` 中的 `recorded-logit-bias`、`recorded-logprobs-top-logprobs-doc`、`recorded-tools-results-parallel-error`（assistant 消息中的 `refusal`）和 `recorded-tools-single`（Qwen 的聊天模板拒绝 `developer` 角色）；Groq 的推理指南（`reasoning`），`responses/recorded-reasoning-format-parsed` 和 `streams/recorded-stream-doc` |
 | Mistral（`mistral`） | `max_tokens()`、`system_role()`、`random_seed()`、`without_end_user()`、`without_prefill()`、`greedy_top_p()`、`thinking_parts()`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`moderation`、`prompt_cache_options`、`prompt_cache_retention`、`store`、`verbosity` 和 `web_search_options`，以及消息中的 `name` 和 `refusal` | Mistral 的 OpenAPI 文档（https://docs.mistral.ai/openapi.yaml，2026-10-19 查阅），其中 `ChatCompletionRequest` 及其消息类型（如 `AssistantMessage`）禁止未声明的字段，并规定 `random_seed` 的 `minimum: 0`；`fixtures/openai_chat/providers/mistral/errors/` 中的 `422 extra_forbidden` 录制文件，每个被拒绝或改名的字段一个；`responses/recorded-audio-field`，其中 Mistral 接受 `audio` 却只以文本回答；另有 `recorded-assistant-prefill`（400 `invalid_request_message_order`）和 `responses/recorded-assistant-prefix`，其回复重复了预填内容；`thinking_parts()` 依据 `responses/recorded-reasoning-effort-high` 和 `streams/recorded-reasoning-effort-high-stream`；`greedy_top_p()` 依据 `errors/greedy-sampling`（400 `invalid_request_greedy_sampling`） |
@@ -142,3 +144,19 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | 最后一个流式数据块，同时带 `finish_reason`、`provider_metadata` 和 `usage` | `Usage` | 按 `choices: []` 的用量数据块读取。 |
 | OpenAI 错误结构中的错误，带 Vercel 自己的 `type`（`model_not_found`、`no_providers_available`、`authentication_error`）、作为对象的 `param`，以及与 `error` 并列的 `providerMetadata` | `KppError` | 类别取决于状态码：401 表示密钥错误，403 表示账户无权调用该模型（`errors/recorded-restricted-model`，免费套餐账户调用 Claude），404 表示模型未知。Chat 应用收到 Vercel 发来的原样错误体。 |
 | `GET /v1/models`：OpenAI 的结构，每个模型带 Vercel 自己的字段（`name`、`type`、`context_window`、`max_tokens`、`pricing`、`tags`、`supported_parameters`） | `ModelList`、extras | 模型列表对错误的密钥返回 401（`errors/list-invalid-api-key`），但模型检查首先询问的 `GET /v1/models/{model}` 不检查密钥就会回答。 |
+
+### Cohere
+
+来源：Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），以及 `fixtures/openai_chat/providers/cohere/` 中使用 `command-a-03-2025`、`command-a-reasoning-08-2025` 和 `command-a-vision-07-2025` 的实时录制。Kaeso 的基础 URL 为 `https://api.cohere.ai/compatibility`，使用 `Authorization: Bearer`。
+
+| Cohere 字段 | KPP | 说明 |
+|---|---|---|
+| `developer` 消息、`max_completion_tokens`、`seed`、`tool_choice`（`auto`、`none`、`required`、指定函数）、严格工具、带 JSON Schema 的 `response_format`、视觉模型上的 `image_url` 部分 | 与 OpenAI 相同 | 录制于 `responses/`。`developer` 消息的作用与 `system` 消息相同。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；`completion_tokens_details.reasoning_tokens` 计入其中。 |
+| `reasoning_effort` | `reasoning.effort` | 仅 `none` 和 `high`；目录为 Cohere 的推理模型提供这两个级别，因此 Kaeso 会在发送前拒绝或映射其他级别。Cohere 对 `medium` 和 `low` 返回 422（`errors/recorded-reasoning-effort-medium`）。 |
+| Cohere 未声明的字段 | — | Cohere 以 200 回答并忽略它们，因此配置会拒绝应用所依赖的字段，例如 `functions` 和 `web_search_options`。 |
+| `usage`，含为零的 `audio_tokens` 和预测 token 明细 | `Usage`、`raw` 用量 | 流只有在设置 `stream_options.include_usage`（网关会设置）时才发送用量，位于 `choices: []` 的最后一个块中（`streams/recorded-stream`；`streams/recorded-stream-no-options` 没有）。 |
+| 错误：`{"id", "message"}`，有时带 `error_type` | `KppError` | 没有 OpenAI 的 `error` 对象。错误类型取决于状态码：密钥错误为 401，未知模型为 404，Cohere 拒绝的请求为 400 和 422。应用会收到带有 Cohere 消息的 OpenAI 错误，即 ``The provider returned an error (HTTP 404): model '…' not found, …``；`openai_chat::tests::cohere_error_bodies_reach_apps_with_cohere_message_and_status` 代替往返测试检查每个录制的响应体。有些值要到发送后才被 Cohere 拒绝：同时使用 `frequency_penalty` 和 `presence_penalty`、大多数模型上的 `logprobs`、超过模型输出上限的 `max_tokens`、发给无视觉能力模型的图像，以及 `file` 和 `input_audio` 部分。 |
+| `GET /v1/models`、`GET /v1/models/{model}` | `ModelList`、`ModelInfo` | OpenAI 的格式，带 `owned_by: "cohere"`；两者都以 401 拒绝错误的密钥（`errors/list-invalid-api-key`）。 |
+
+Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connectors`）和重排序无法通过 Compatibility API 使用。录制时，Cohere 有时会流式返回与问题无关的 token，还有一次返回 422 `NO_VALID_RESPONSE_GENERATED`（`errors/recorded-no-valid-response`）；两种情况重试后都恢复正常。

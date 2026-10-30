@@ -282,6 +282,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | 429 | `RateLimited` |
 | 408, 504, `vector_store_timeout` | `Timeout` |
 | andere Status | `ProviderError` |
+| ein Body ohne `error`-Objekt, dessen `message` auf oberster Ebene ein nicht leerer String ist, etwa Coheres `{"id", "message"}` | die Art des Status, mit dieser `message`; Status und Roh-Body bleiben erhalten |
 | ein Body, der kein OpenAI-Fehler ist, bei jedem Status (etwa ein HTML-429 eines Proxys) | die Art des Status nach den Zeilen oben (ein 429 eines Proxys ist `RateLimited`, ein 502 `ProviderError`), mit der Meldung ``The provider returned HTTP <status> with a body Kaeso could not read: <the body, cut to 300 bytes>``, der Body ohne Leerraum am Anfang und Ende; Status und roher Body bleiben erhalten |
 | `{"error": "<message>"}`, wie SpaceX es sendet (mit `"code": "invalid-argument"` bei einem 400) | die Art des Status, mit dem String als Meldung; die Antwort von SpaceX auf einen falschen Schlüssel (`Incorrect API key provided`, in seinen `refused_key_messages`) macht das Gateway zu `Authentication`. Ein unveränderter Fehler wird in der OpenAI-Form mit seinem eigenen Status kodiert |
 

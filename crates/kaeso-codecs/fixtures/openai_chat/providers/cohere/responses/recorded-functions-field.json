@@ -1,0 +1,32 @@
+{
+  "id": "e3cf601b-7d89-40a0-a471-55fb26e37c43",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "I'm unable to provide real-time information, including current weather conditions in Paris or any other location. My knowledge is based on data available up to October 2023, and I don't have access to live updates.\n\nTo find out the current weather in Paris, I recommend checking a reliable weather website or using a weather application on your device. These sources will provide you with the most up-to-date and accurate information about the weather conditions in Paris.\n\nIf you have any other questions or need information about Paris that doesn't require real-time data, feel free to ask!"
+      },
+      "logprobs": null
+    }
+  ],
+  "created": 1793373587,
+  "model": "command-a-03-2025",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 124,
+    "total_tokens": 133,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  }
+}

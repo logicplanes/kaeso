@@ -78,6 +78,14 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     );
     assert_eq!(vercel["count_tokens"], Value::Null);
     assert_eq!(vercel["key_prefix"], "vck_");
+    let cohere = listed.iter().find(|p| p["id"] == "cohere").unwrap();
+    assert_eq!(cohere["name"], "Cohere");
+    assert_eq!(
+        cohere["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(cohere["count_tokens"], Value::Null);
+    assert_eq!(cohere["key_prefix"], Value::Null);
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

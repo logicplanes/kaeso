@@ -1,0 +1,4 @@
+{
+  "id": "7a52f9d7-006e-407f-ab9c-096d9dfe4109",
+  "message": "invalid request: frequency_penalty with presence_penalty is not supported for this model"
+}

@@ -1,0 +1,32 @@
+{
+  "id": "e39ab270-a579-4afa-bcc5-e8a4729882fe",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "5"
+      },
+      "logprobs": null
+    }
+  ],
+  "created": 1793373589,
+  "model": "command-a-reasoning-08-2025",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 13,
+    "completion_tokens": 1,
+    "total_tokens": 14,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  }
+}

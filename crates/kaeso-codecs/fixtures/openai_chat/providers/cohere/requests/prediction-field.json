@@ -1,0 +1,13 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "prediction": {
+    "type": "content",
+    "content": "Hello"
+  }
+}

@@ -103,6 +103,7 @@ export const providerMark = {
   openrouter: mode("#03080a", "#fcfcfe"),
   mistral: mode("#161525", "#ffffff"),
   vercel: mode("#000000", "#ffffff"),
+  cohere: mode("#17171c", "#ffffff"),
 } as const;
 
 export const type = {

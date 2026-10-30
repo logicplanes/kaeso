@@ -1,0 +1,10 @@
+{
+  "model": "command-a-reasoning-08-2025",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "reasoning_effort": "medium"
+}

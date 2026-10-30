@@ -1,0 +1,14 @@
+{
+  "model": "command-a-03-2025",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "max_completion_tokens": 64
+}

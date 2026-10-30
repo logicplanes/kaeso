@@ -110,13 +110,13 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("offers only the providers the gateway lists, even when the organization still has a key for another", async () => {
-    const { dialog } = await open({ keys: [credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" })] });
+    const { dialog } = await open({ keys: [credential({ id: "cred_cerebras", provider: "cerebras", name: "Cerebras main" })] });
     expect(
       within(dialog)
         .getAllByRole("radio")
         .map((o) => o.textContent),
     ).toHaveLength(providers.length);
-    expect(within(dialog).queryByRole("radio", { name: /Cohere/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio", { name: /Cerebras/ })).not.toBeInTheDocument();
   });
 
   it("says when the providers can't load and loads them again", async () => {
@@ -309,12 +309,36 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Cohere");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Cohere API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: (name) => name.startsWith("dashboard.cohere.com") });
+    expect(link).toHaveAttribute("href", "https://dashboard.cohere.com/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create one at dashboard.cohere.com under API Keys.",
+    );
+    const secret = within(dialog).getByLabelText("Cohere API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "AbCdEf0123456789AbCdEf0123456789AbCdEf01");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cohere prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Cohere prod is the Cohere default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "cohere", name: "Cohere prod", secret: "AbCdEf0123456789AbCdEf0123456789AbCdEf01", make_default: false },
+    ]);
+  });
+
   it("asks only for the provider's key for a provider it has no hint for", async () => {
-    const cohere = credential({ id: "cred_cohere", provider: "cohere", name: "Cohere main" });
-    const { dialog } = await open({ keys: [cohere], replace: cohere });
-    expect(within(dialog).getByRole("heading", { name: "Paste the new cohere key" })).toBeInTheDocument();
+    const cerebras = credential({ id: "cred_cerebras", provider: "cerebras", name: "Cerebras main" });
+    const { dialog } = await open({ keys: [cerebras], replace: cerebras });
+    expect(within(dialog).getByRole("heading", { name: "Paste the new cerebras key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("cohere API key")).not.toHaveAttribute("placeholder");
+    expect(within(dialog).getByLabelText("cerebras API key")).not.toHaveAttribute("placeholder");
   });
 
   it("links a provider's key page without a prefix when its keys have none", async () => {
