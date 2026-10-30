@@ -4,6 +4,8 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-10-30
+
 ### Added
 
 - Vercel AI Gateway is a built-in provider: add its key and call its models from any app format ([#537](https://github.com/logicplanes/kaeso/pull/537))
@@ -11,6 +13,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 ### Changed
 
 - Dependencies updated ([#522](https://github.com/logicplanes/kaeso/pull/522))
+
+#### Gateway
+
+- A fresh install starts with models.dev's models and prices as of 30 October 2026 ([#542](https://github.com/logicplanes/kaeso/pull/542))
 
 ### Fixed
 
@@ -976,7 +982,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.6...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.7...HEAD
+[0.4.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.7
 [0.4.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.6
 [0.4.5]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.5
 [0.4.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.4
