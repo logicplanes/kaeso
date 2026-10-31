@@ -133,6 +133,8 @@
   "logs.loadFailed": "Requests couldn't load",
   "logs.noMatch": "No requests match these filters",
   "logs.noMatchHint": "Remove a filter or widen the time range.",
+  "logs.off": "Request logs are off on this install",
+  "logs.offHint": "Usage, limits and budgets still count every request.",
   "logs.openById": "Open a request by id",
   "logs.param.choices": "Choices",
   "logs.param.maxCompletionTokens": "Max completion tokens",

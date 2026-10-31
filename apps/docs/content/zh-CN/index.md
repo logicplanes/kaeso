@@ -79,7 +79,7 @@ flowchart TD
 
 | 部分 | 说明 |
 | --- | --- |
-| 网关 | 您的应用调用的服务器。它在 `/v1` 下提供模型 API，在 `/platform/v1` 下提供 Platform API。数据保存在 PostgreSQL，请求日志保存在 ClickHouse，计数器保存在 Valkey。 |
+| 网关 | 您的应用调用的服务器。它在 `/v1` 下提供模型 API，在 `/platform/v1` 下提供 Platform API。数据和用量保存在 PostgreSQL，请求日志保存在 ClickHouse（实例可以将其关闭），计数器保存在 Valkey。 |
 | 控制台 | Web 界面，与网关使用同一域名。它只使用 Platform API，因此控制台能做的，脚本都能做。 |
 | KPP | Kaeso Provider Protocol：一种模型请求的规范格式，每种 API 格式都有一个与它双向转换的编解码器。 |
 

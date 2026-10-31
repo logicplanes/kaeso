@@ -113,13 +113,7 @@ async fn clickhouse_migrations_create_the_log_tables_once() {
         .collect();
     assert_eq!(
         tables,
-        [
-            "kaeso_migrations",
-            "request_content",
-            "request_log",
-            "usage_daily",
-            "usage_daily_mv"
-        ]
+        ["kaeso_migrations", "request_content", "request_log"]
     );
     s.clickhouse
         .client()

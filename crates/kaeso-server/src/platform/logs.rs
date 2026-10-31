@@ -10,6 +10,7 @@ use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId};
 use kaeso_core::rights::ProjectRight;
 use kaeso_kpp::DialectId;
+use kaeso_store::clickhouse::ClickHouse;
 use kaeso_store::clickhouse::logs::{self as ch, Filter, LogRow};
 use kaeso_store::pg::{instance, log_jobs, orgs, projects};
 use serde::{Deserialize, Serialize};
@@ -30,8 +31,17 @@ use crate::state::AppState;
 
 const LOGS_UNAVAILABLE: &str = "Request logs are unavailable right now; try again shortly.";
 
+pub(crate) const LOGS_OFF: &str = "Request logs are off on this install.";
+
 fn unavailable(e: impl std::fmt::Display) -> ApiError {
     ApiError::unavailable(LOGS_UNAVAILABLE, e)
+}
+
+fn log_store(state: &AppState) -> ApiResult<&ClickHouse> {
+    state
+        .clickhouse
+        .as_ref()
+        .ok_or_else(|| ApiError::NotFound(LOGS_OFF.to_owned()))
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, ToSchema)]
@@ -324,10 +334,11 @@ pub struct StorageView {
 }
 
 pub(crate) async fn disk_factors(state: &AppState) -> ApiResult<(f64, f64)> {
-    let log = ch::table_size(&state.clickhouse, "request_log")
+    let clickhouse = log_store(state)?;
+    let log = ch::table_size(clickhouse, "request_log")
         .await
         .map_err(unavailable)?;
-    let content = ch::table_size(&state.clickhouse, "request_content")
+    let content = ch::table_size(clickhouse, "request_content")
         .await
         .map_err(unavailable)?;
     let per_row = if log.rows == 0 {
@@ -361,7 +372,7 @@ pub async fn storage(
     Path(_o): Path<String>,
 ) -> ApiResult<Json<StorageView>> {
     let org = ctx.org()?.org.id;
-    let rows = ch::storage(&state.clickhouse, org)
+    let rows = ch::storage(log_store(&state)?, org)
         .await
         .map_err(unavailable)?;
     let factors = disk_factors(&state).await?;
@@ -487,6 +498,7 @@ pub async fn delete(
     JsonBody(req): JsonBody<DeletionRequest>,
 ) -> ApiResult<(StatusCode, Json<LogJobView>)> {
     let org = ctx.org()?.org.id;
+    log_store(&state)?;
     let (from, to) = (parse_time("from", &req.from)?, parse_time("to", &req.to)?);
     if from >= to {
         return Err(ApiError::invalid("to", "`to` must be after `from`."));
@@ -910,7 +922,7 @@ pub async fn list(
     let page = page.page_by(decode_cursor)?;
     let p = &ctx.project()?.project;
     let rows = ch::search(
-        &state.clickhouse,
+        log_store(&state)?,
         p.org_id,
         p.id,
         &f.filter()?,
@@ -975,12 +987,13 @@ pub async fn get(
     let id: RequestId = id.parse().map_err(|_| ApiError::not_found("log entry"))?;
     let scope = ctx.project()?;
     let p = &scope.project;
-    let row = ch::get(&state.clickhouse, p.org_id, p.id, id.uuid())
+    let clickhouse = log_store(&state)?;
+    let row = ch::get(clickhouse, p.org_id, p.id, id.uuid())
         .await
         .map_err(unavailable)?
         .ok_or_else(|| ApiError::not_found("log entry"))?;
     let content = if row.has_content && scope.rights.contains(ProjectRight::LogsContentView) {
-        ch::contents(&state.clickhouse, p.org_id, p.id, &[row.request_id])
+        ch::contents(clickhouse, p.org_id, p.id, &[row.request_id])
             .await
             .map_err(unavailable)?
             .first()
@@ -1105,7 +1118,7 @@ const EXPORT_PAGE: usize = 1000;
 const EXPORT_CONTENT_BYTES: u64 = 64 << 20;
 
 struct ExportState {
-    state: AppState,
+    clickhouse: ClickHouse,
     org: Uuid,
     project: Uuid,
     filter: Filter,
@@ -1148,7 +1161,7 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
             return None;
         }
         match ch::search(
-            &s.state.clickhouse,
+            &s.clickhouse,
             s.org,
             s.project,
             &s.filter,
@@ -1177,7 +1190,7 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
             .filter(|r| r.has_content)
             .map(|r| r.request_id)
             .collect();
-        match ch::contents(&s.state.clickhouse, s.org, s.project, &ids).await {
+        match ch::contents(&s.clickhouse, s.org, s.project, &ids).await {
             Ok(c) => c,
             Err(e) => return Some(Err(export_failed(s, &e))),
         }
@@ -1241,8 +1254,9 @@ pub async fn export(
         });
     }
     let filter = f.filter()?;
+    let clickhouse = log_store(&state)?.clone();
     ch::search(
-        &state.clickhouse,
+        &clickhouse,
         scope.project.org_id,
         scope.project.id,
         &filter,
@@ -1259,7 +1273,7 @@ pub async fn export(
         .write(&mut *state.pg.acquire().await?)
         .await?;
     let start = ExportState {
-        state: state.clone(),
+        clickhouse,
         org: scope.project.org_id,
         project: scope.project.id,
         filter,

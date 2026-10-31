@@ -1,6 +1,6 @@
 use clickhouse::Row;
 use serde::{Deserialize, Serialize};
-use time::{Date, OffsetDateTime};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use super::ClickHouse;
@@ -356,101 +356,7 @@ pub async fn delete_range(
     Ok(())
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Row, Deserialize)]
-pub struct UsageGroup {
-    pub key: String,
-    pub requests: u64,
-    pub errors: u64,
-    pub input_tokens: u64,
-    pub output_tokens: u64,
-    pub cache_read_tokens: u64,
-    pub cache_write_tokens: u64,
-    pub reasoning_tokens: u64,
-    pub cost: i128,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum GroupBy {
-    Day,
-    Week,
-    Month,
-    Project,
-    Model,
-    Key,
-    Member,
-    Route,
-}
-
-pub async fn usage(
-    ch: &ClickHouse,
-    org: Uuid,
-    project: Option<Uuid>,
-    from: Date,
-    to: Date,
-    group: GroupBy,
-) -> Result<Vec<UsageGroup>, StoreError> {
-    let key = match group {
-        GroupBy::Day => "toString(day)",
-        GroupBy::Week => "toString(toMonday(day))",
-        GroupBy::Month => "toString(toStartOfMonth(day))",
-        GroupBy::Project => "toString(project_id)",
-        GroupBy::Model => "concat(provider, '/', model)",
-        GroupBy::Key => "toString(key_id)",
-        GroupBy::Member => "concat(principal_kind, ':', toString(principal_id))",
-        GroupBy::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
-    };
-    let mut sql = format!(
-        "SELECT {key} AS key, sum(requests) AS requests, sum(errors) AS errors, sum(input_tokens) AS input_tokens, \
-         sum(output_tokens) AS output_tokens, sum(cache_read_tokens) AS cache_read_tokens, \
-         sum(cache_write_tokens) AS cache_write_tokens, sum(reasoning_tokens) AS reasoning_tokens, \
-         toDecimal128(sum(cost), 12) AS cost FROM usage_daily WHERE org_id = ? AND day >= ? AND day <= ?"
-    );
-    if project.is_some() {
-        sql.push_str(" AND project_id = ?");
-    }
-    sql.push_str(" GROUP BY key ORDER BY key");
-    let mut q = ch
-        .client()
-        .query(&sql)
-        .bind(org)
-        .bind(from.max(FIRST_DAY).to_string())
-        .bind(to.max(FIRST_DAY).to_string());
-    if let Some(p) = project {
-        q = q.bind(p);
-    }
-    Ok(q.fetch_all::<UsageGroup>().await?)
-}
-
-const FIRST_DAY: Date = time::macros::date!(1970 - 01 - 01);
-
-pub async fn usage_span(
-    ch: &ClickHouse,
-    org: Uuid,
-    project: Option<Uuid>,
-) -> Result<Option<(Date, Date)>, StoreError> {
-    #[derive(Row, Deserialize)]
-    struct Span {
-        days: u64,
-        #[serde(with = "clickhouse::serde::time::date")]
-        first: Date,
-        #[serde(with = "clickhouse::serde::time::date")]
-        last: Date,
-    }
-    let mut sql = String::from(
-        "SELECT count() AS days, min(day) AS first, max(day) AS last FROM usage_daily WHERE org_id = ?",
-    );
-    if project.is_some() {
-        sql.push_str(" AND project_id = ?");
-    }
-    let mut q = ch.client().query(&sql).bind(org);
-    if let Some(p) = project {
-        q = q.bind(p);
-    }
-    let span = q.fetch_one::<Span>().await?;
-    Ok((span.days > 0).then_some((span.first, span.last)))
-}
-
-const ORG_TABLES: &[&str] = &["request_log", "request_content", "usage_daily"];
+const ORG_TABLES: &[&str] = &["request_log", "request_content"];
 
 pub async fn delete_org(ch: &ClickHouse, org: Uuid) -> Result<(), StoreError> {
     for table in ORG_TABLES {

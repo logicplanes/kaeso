@@ -40,7 +40,7 @@ flowchart TD
 | `gateway` | Serves the model API, the Platform API and the health checks on port 8080, and metrics on port 9100. Calls the providers and sends email | None |
 | `console` | Serves the web interface | None |
 | `postgres` | Stores users, organizations, projects, keys, encrypted provider keys, catalogues, limits, usage and audit logs | The volume `postgres` |
-| `clickhouse` | Stores request logs and usage rollups | The volume `clickhouse` |
+| `clickhouse` | Stores request logs. An install can use its own ClickHouse instead, or keep no request logs ([choose how to keep request logs](installation.md#choose-how-to-keep-request-logs)) | The volume `clickhouse` |
 | `valkey` | Holds rate and budget counters and shared caches | The volume `valkey` |
 
 The optional updater adds two services, `updater` and `docker-proxy`, that install releases from the console ([the updater](upgrades.md#the-updater)).
@@ -66,7 +66,7 @@ Keep copies of `.env` and `master-keys` apart from the database backups ([backup
 
 1. PostgreSQL, ClickHouse and Valkey start. The gateway waits until PostgreSQL and Valkey are healthy.
 2. The gateway checks its settings. A missing or invalid setting stops it with a message that names the setting, never its value.
-3. The gateway migrates PostgreSQL before it serves anything. It migrates ClickHouse in the background and retries until ClickHouse answers.
+3. The gateway migrates PostgreSQL before it serves anything. It migrates ClickHouse in the background and retries until ClickHouse answers. With request logs off, it logs that and skips ClickHouse.
 4. While the install has no users, the gateway logs that it isn't set up yet. It never logs the setup link, because anyone who reads the log could take the install over with it.
 5. Once the gateway and the console are healthy, Caddy starts and gets the certificate in the background.
 

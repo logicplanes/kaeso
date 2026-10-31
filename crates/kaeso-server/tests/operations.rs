@@ -38,7 +38,13 @@ async fn get_json(
 async fn health_and_readiness() {
     let s = TestServices::start().await;
     let state = common::state(&s).await;
-    state.clickhouse.migrate(&state.pg).await.unwrap();
+    state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&state.pg)
+        .await
+        .unwrap();
     let (status, body, headers) =
         get_json(kaeso_server::app::router(state.clone()), "/healthz").await;
     assert_eq!(status, StatusCode::OK);
@@ -68,6 +74,19 @@ async fn clickhouse_down_is_degraded_and_valkey_down_is_not_ready() {
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(body["status"], "not_ready");
     assert_eq!(body["valkey"], "down");
+    assert_eq!(body["postgres"], "ok");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_install_without_request_logs_is_ready_and_says_logs_are_off() {
+    let s = TestServices::start().await;
+    let state = common::state_with(&s, &[("KAESO_CLICKHOUSE_URL", "")]).await;
+    assert!(!state.request_logs());
+    let (status, body, _) = get_json(kaeso_server::app::router(state.clone()), "/readyz").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["status"], "ready");
+    assert_eq!(body["clickhouse"], "off");
     assert_eq!(body["postgres"], "ok");
     s.cleanup().await;
 }

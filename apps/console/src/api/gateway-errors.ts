@@ -306,6 +306,7 @@ const messages = (): Rule[] => [
   rule("errors.toAfterFrom", () => t("errors.toAfterFrom", "`to` must be after `from`.")),
   rule("errors.fromOnOrBeforeTo", () => t("errors.fromOnOrBeforeTo", "`from` must be on or before `to`.")),
   rule("errors.logsUnavailable", () => t("errors.logsUnavailable", "Request logs are unavailable right now; try again shortly.")),
+  rule("errors.logsOff", () => t("errors.logsOff", "Request logs are off on this install.")),
   rule("errors.daysRangeInstall", (v) => t("errors.daysRangeInstall", "Must be 1 to {max} days on this install.", v)),
   rule("errors.orgContentLoggingOff", () => t("errors.orgContentLoggingOff", "The org has content logging off; a project cannot switch it on.")),
   rule("errors.orgResponseCacheOff", () => t("errors.orgResponseCacheOff", "The organization has the response cache off; a project cannot turn it on.")),

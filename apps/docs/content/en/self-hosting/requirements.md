@@ -17,6 +17,19 @@ Kaeso runs on one Linux server with Docker. Size the disk by how many requests y
 
 [The updater](upgrades.md#the-updater) also needs Docker Engine 25 or newer.
 
+## Memory and images
+
+ClickHouse, which keeps the request logs, takes more memory than all other databases together. Measured on 2026-10-31 with Docker 29.5.2, before and after a run of the [gateway benchmark](../development/benchmark.md):
+
+| Service | Memory at idle | Memory after the benchmark | Image |
+| --- | --- | --- | --- |
+| ClickHouse | 647 MiB | 1.81 GiB | 981 MB |
+| PostgreSQL | 75 MiB | 75 MiB | 672 MB |
+| Valkey | 15 MiB | 15 MiB | — |
+| Gateway | — | — | 117 to 141 MB |
+
+With [request logs off](installation.md#choose-how-to-keep-request-logs), the install doesn't run ClickHouse. That saves about 0.65 GB of memory at idle and 1.8 GB under load, and the 981 MB image. Usage, limits and budgets work the same either way.
+
 ## Network
 
 The install needs a domain whose DNS record points at the server, and these connections:
@@ -40,7 +53,7 @@ Without internet access, Kaeso works with the model data built into the release,
 
 ## Disk for request logs
 
-Request logs live in ClickHouse. Plan for this much disk per million requests:
+Request logs live in ClickHouse, and take no disk when they are off. Plan for this much disk per million requests:
 
 | Logging | Per million requests |
 | --- | --- |

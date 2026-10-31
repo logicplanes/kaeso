@@ -229,6 +229,7 @@
   "errors.limitsUnavailable": "Kaeso cannot check this project's limits right now; try again shortly.",
   "errors.listModelIds": "List 1 to 200 model ids.",
   "errors.logDeletionsWaiting": "{count} log deletions are still waiting; try again once they have run.",
+  "errors.logsOff": "Request logs are off on this install.",
   "errors.logsUnavailable": "Request logs are unavailable right now; try again shortly.",
   "errors.lowerLimitsFirst": "First lower the limits that allow more than this one: {list}.",
   "errors.magicLinkOff": "Sign-in links are turned off on this install.",

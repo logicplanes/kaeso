@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { LogRange } from "~/api/queries/logs";
+import { sessionQuery, useRequestLogs } from "~/auth/session";
+import { LogsOff } from "~/features/project/logs/logs-off";
 import { LogsPage, type LogsSearch } from "~/features/project/logs/logs-page";
 import { parseDay } from "~/format/period-search";
 
@@ -39,6 +41,7 @@ export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({
     return filters;
   },
   loader: ({ context, params, deps }) => {
+    if (context.queryClient.getQueryData(sessionQuery.queryKey)?.request_logs === false) return;
     void import("~/api/queries/route-prefetch").then((m) => m.prefetchLogs(context.queryClient, params.org, params.project, deps));
   },
   component: Logs,
@@ -46,5 +49,7 @@ export const Route = createFileRoute("/_app/orgs/$org/projects/$project/logs")({
 
 function Logs() {
   const { org, project } = Route.useParams();
-  return <LogsPage org={org} project={project} search={Route.useSearch({ select: validateLogsSearch, structuralSharing: true })} />;
+  const search = Route.useSearch({ select: validateLogsSearch, structuralSharing: true });
+  if (!useRequestLogs()) return <LogsOff org={org} project={project} />;
+  return <LogsPage org={org} project={project} search={search} />;
 }

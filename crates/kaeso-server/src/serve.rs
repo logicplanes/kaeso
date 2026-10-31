@@ -85,7 +85,12 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
     let pool = pg::connect(&config.postgres.url, config.postgres.pool_size)?;
     migrate_postgres(&pool).await?;
     crate::services::master_key::check(&pool, &keyring).await?;
-    let clickhouse = ClickHouse::new(&config.clickhouse.url, &config.clickhouse.database)?;
+    let clickhouse = config
+        .clickhouse
+        .url
+        .as_ref()
+        .map(|url| ClickHouse::new(url, &config.clickhouse.database))
+        .transpose()?;
     let valkey = Valkey::new(&config.valkey.url, &config.valkey.key_prefix)?;
     instance::seed(&pool, &instance_defaults(&config)).await?;
     pg::updates::seed(&pool, &crate::services::updates::defaults(&config)).await?;
@@ -162,9 +167,13 @@ fn instance_defaults(config: &Config) -> instance::InstanceSettings {
 }
 
 pub fn spawn_clickhouse_migrations(state: AppState, shutdown: CancellationToken) {
+    let Some(clickhouse) = state.clickhouse.clone() else {
+        tracing::info!("request logs are off: KAESO_CLICKHOUSE_URL is not set");
+        return;
+    };
     tokio::spawn(async move {
         loop {
-            match state.clickhouse.migrate(&state.pg).await {
+            match clickhouse.migrate(&state.pg).await {
                 Ok(()) => {
                     state.set_clickhouse_migrated();
                     return;

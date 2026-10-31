@@ -12,7 +12,8 @@ import { useMemberships, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { useCreateAction } from "./create-action";
 import { readLast } from "./last";
-import { ORG_AREA_PAGES, PROJECT_PAGES, orgPath, projectPath } from "./pages";
+import { ORG_AREA_PAGES, orgPath, projectPath } from "./pages";
+import { useProjectPages } from "./project-pages";
 import { defaultProjectOf } from "./place";
 import { readRecent, recentHint, type RecentIcons } from "./recent";
 import { ACCOUNT_PAGES, INSTANCE_PAGES, ORG_SETTINGS_PAGES } from "./settings-pages";
@@ -205,6 +206,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   const project = params.project ?? (org === last?.org ? last?.project : undefined) ?? defaultProjectOf(memberships, org) ?? "";
   const projectRights = useProjectRights(org, project);
   const orgRights = useOrgRights(org);
+  const projectPages = useProjectPages(org, project);
   const projects = useQuery({ ...orgProjectsQuery(org), enabled: !!org });
   const create = useCreateAction();
   const { setTheme } = useTheme();
@@ -223,14 +225,16 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
       void navigate({ to });
     };
     const goto: CommandItem[] = [
-      ...PROJECT_PAGES.filter((p) => project && !orgContext && projectRights.has(p.right)).map((p) => ({
-        id: `page:${p.id}`,
-        label: p.label(),
-        icon: p.icon,
-        hint: t("common.project", "Project"),
-        ...(p.shortcut ? { shortcut: p.shortcut } : {}),
-        onSelect: go(p.path ? `${projectPath(org, project)}/${p.path}` : projectPath(org, project)),
-      })),
+      ...projectPages
+        .filter(() => project && !orgContext)
+        .map((p) => ({
+          id: `page:${p.id}`,
+          label: p.label(),
+          icon: p.icon,
+          hint: t("common.project", "Project"),
+          ...(p.shortcut ? { shortcut: p.shortcut } : {}),
+          onSelect: go(p.path ? `${projectPath(org, project)}/${p.path}` : projectPath(org, project)),
+        })),
       ...ORG_AREA_PAGES.filter((p) => org && orgRights.has(p.right)).map((p) => ({
         id: `org:${p.id}`,
         label: p.label(),
@@ -392,6 +396,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
     orgContext,
     orgRights,
     project,
+    projectPages,
     projectRights,
     projects.data,
     session.user.is_instance_admin,

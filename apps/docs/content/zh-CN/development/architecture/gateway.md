@@ -130,6 +130,12 @@ cargo xtask models-dev
 
 该任务下载 `https://models.dev/api.json`，进行筛选，并检查网关能否读取结果。`--url` 或 `MODELS_DEV_URL` 可以更改地址。随后它写出快照、`crates/kaeso-core/data/README.md` 中的表格以及 `crates/kaeso-core/src/models_dev.rs` 中的获取时间，并由测试检查三者一致。
 
+## 用量和请求日志
+
+模型 API 把每个结束的请求交给一个接收器。它把请求的用量加到内存中的一个批次里，按天、项目、密钥、成员、模型和路由归类，并每 10 秒把该批次写入 PostgreSQL 的 `usage_daily`。同一个接收器还会在 Valkey 中计入限额计数器，这些计数器从 `usage_daily` 重建。用量页面、Platform API 的 `usage` 端点以及实例中各组织的合计只读取 `usage_daily`。
+
+请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。
+
 ## 记录的回复
 
 开启内容记录后，网关把每个回复以 `kaeso_kpp::Response` 的 serde JSON 形式存入 ClickHouse 中 `request_content` 的 `reply` 列。控制台的日志查看器按存储的原样绘制它。组织最多可以保留内容 36,500 天，所以之后的每个控制台版本都必须还能读取今天记录的回复。

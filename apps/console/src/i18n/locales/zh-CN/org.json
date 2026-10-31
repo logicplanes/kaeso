@@ -152,6 +152,8 @@
   "org.logging.noDeletions": "暂无删除记录。",
   "org.logging.noLogs": "暂无请求日志",
   "org.logging.notYet": "尚未完成",
+  "org.logging.off": "此安装已关闭请求日志",
+  "org.logging.offHint": "用量、限额和预算仍会统计每个请求；实例管理员可以开启日志。",
   "org.logging.onDisk": "磁盘占用",
   "org.logging.period": "时间段",
   "org.logging.queued": "排队中",

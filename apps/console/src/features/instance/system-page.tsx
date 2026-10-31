@@ -22,9 +22,13 @@ export function InstanceSystemPage() {
   const s = system.data;
   const status = statuses()[s?.status ?? ""] ?? { tone: "warning" as const, label: s?.status ?? "" };
   const size = (bytes: number | null | undefined) => (bytes == null ? t("common.unknown", "Unknown") : formatBytes(bytes));
-  const service = (state: string) => (
-    <StatusDot tone={state === "ok" ? "success" : "danger"}>{state === "ok" ? t("instance.up", "Up") : t("instance.down", "Down")}</StatusDot>
-  );
+  const service = (state: string) =>
+    state === "off" ? (
+      <StatusDot tone="neutral">{t("instance.off", "Off")}</StatusDot>
+    ) : (
+      <StatusDot tone={state === "ok" ? "success" : "danger"}>{state === "ok" ? t("instance.up", "Up") : t("instance.down", "Down")}</StatusDot>
+    );
+  const logsOff = s?.clickhouse === "off";
   return (
     <InstancePage
       title={t("instance.system", "System")}
@@ -47,46 +51,58 @@ export function InstanceSystemPage() {
             <SettingsGroup>
               <SettingsRow
                 title={SERVICE.postgres}
-                description={t("instance.postgresHint", "Users, organizations, keys and settings.")}
+                description={t("instance.postgresHint", "Users, organizations, keys, settings and usage.")}
                 control={service(s.postgres)}
               />
-              <SettingsRow title={SERVICE.clickhouse} description={t("instance.clickhouseHint", "Request logs and usage.")} control={service(s.clickhouse)} />
+              <SettingsRow
+                title={SERVICE.clickhouse}
+                description={logsOff ? t("instance.clickhouseOffHint", "Not set up, so request logs are off.") : t("instance.clickhouseHint", "Request logs.")}
+                control={service(s.clickhouse)}
+              />
               <SettingsRow title={SERVICE.valkey} description={t("instance.valkeyHint", "Limits and caches.")} control={service(s.valkey)} />
             </SettingsGroup>
           </SettingsSection>
-          <SettingsSection title={t("instance.logBuffer", "Request log buffer")}>
-            <SettingsGroup>
-              <SettingsRow
-                title={t("instance.waiting", "Waiting")}
-                description={t("instance.waitingHint", "Entries this instance holds until ClickHouse takes them.")}
-                control={<Text tabular>{formatNumber(s.log_buffer.rows)}</Text>}
-              />
-              <SettingsRow
-                title={t("instance.dropped", "Dropped since start")}
-                description={
-                  s.log_buffer.dropped > 0
-                    ? t("instance.droppedHint", "The buffer was full: these requests have no log entry.")
-                    : t("instance.droppedNone", "Every request since the start was logged.")
-                }
-                control={
-                  <Text tabular tone={s.log_buffer.dropped > 0 ? "danger" : "default"}>
-                    {formatNumber(s.log_buffer.dropped)}
-                  </Text>
-                }
-              />
-            </SettingsGroup>
-          </SettingsSection>
+          {!logsOff && (
+            <SettingsSection title={t("instance.logBuffer", "Request log buffer")}>
+              <SettingsGroup>
+                <SettingsRow
+                  title={t("instance.waiting", "Waiting")}
+                  description={t("instance.waitingHint", "Entries this instance holds until ClickHouse takes them.")}
+                  control={<Text tabular>{formatNumber(s.log_buffer.rows)}</Text>}
+                />
+                <SettingsRow
+                  title={t("instance.dropped", "Dropped since start")}
+                  description={
+                    s.log_buffer.dropped > 0
+                      ? t("instance.droppedHint", "The buffer was full: these requests have no log entry.")
+                      : t("instance.droppedNone", "Every request since the start was logged.")
+                  }
+                  control={
+                    <Text tabular tone={s.log_buffer.dropped > 0 ? "danger" : "default"}>
+                      {formatNumber(s.log_buffer.dropped)}
+                    </Text>
+                  }
+                />
+              </SettingsGroup>
+            </SettingsSection>
+          )}
           <SettingsSection
             title={t("instance.storage", "Storage")}
             description={t("instance.storageHint", "The whole install; each organization shows its own on its Logging page.")}
           >
             <SettingsGroup>
               <SettingsRow title={SERVICE.postgres} control={<Text tabular>{size(s.storage.postgres_bytes)}</Text>} />
-              <SettingsRow title={SERVICE.clickhouse} control={<Text tabular>{size(s.storage.clickhouse_bytes_on_disk)}</Text>} />
-              <SettingsRow
-                title={t("instance.logEntries", "Request log entries")}
-                control={<Text tabular>{s.storage.request_log_rows == null ? t("common.unknown", "Unknown") : formatNumber(s.storage.request_log_rows)}</Text>}
-              />
+              {!logsOff && (
+                <>
+                  <SettingsRow title={SERVICE.clickhouse} control={<Text tabular>{size(s.storage.clickhouse_bytes_on_disk)}</Text>} />
+                  <SettingsRow
+                    title={t("instance.logEntries", "Request log entries")}
+                    control={
+                      <Text tabular>{s.storage.request_log_rows == null ? t("common.unknown", "Unknown") : formatNumber(s.storage.request_log_rows)}</Text>
+                    }
+                  />
+                </>
+              )}
             </SettingsGroup>
           </SettingsSection>
           {settings.data && <Mail settings={settings.data} />}

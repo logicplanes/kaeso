@@ -91,7 +91,7 @@ pub struct PostgresConfig {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ClickHouseConfig {
-    pub url: SecretString,
+    pub url: Option<SecretString>,
     pub database: String,
 }
 

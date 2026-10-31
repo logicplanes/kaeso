@@ -1,10 +1,9 @@
 use axum::Json;
 use axum::extract::State;
-use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{ApiKeyId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_kpp::DialectId;
-use kaeso_store::clickhouse::logs::{self as ch, GroupBy};
+use kaeso_store::pg::usage::{self as store, GroupBy, UsageGroup};
 use serde::{Deserialize, Serialize};
 use time::Date;
 use utoipa::{IntoParams, ToSchema};
@@ -100,15 +99,18 @@ fn embedding_route(group: GroupBy, key: &str) -> bool {
     group == GroupBy::Route && key.split(':').take(2).any(|format| format == embeddings)
 }
 
-fn cache_hit_rate(group: GroupBy, r: &ch::UsageGroup) -> Option<f64> {
+fn cache_hit_rate(group: GroupBy, r: &UsageGroup) -> Option<f64> {
     if embedding_route(group, &r.key) {
         return None;
     }
-    let input = r
-        .input_tokens
-        .saturating_add(r.cache_read_tokens)
-        .saturating_add(r.cache_write_tokens);
-    (input > 0).then(|| r.cache_read_tokens as f64 / input as f64)
+    let input = count(r.input_tokens)
+        .saturating_add(count(r.cache_read_tokens))
+        .saturating_add(count(r.cache_write_tokens));
+    (input > 0).then(|| count(r.cache_read_tokens) as f64 / input as f64)
+}
+
+fn count(n: i64) -> u64 {
+    u64::try_from(n).unwrap_or(0)
 }
 
 fn parse_day(field: &str, s: Option<&str>, default: Date) -> ApiResult<Date> {
@@ -162,7 +164,7 @@ async fn usage(
             "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.",
         ));
     }
-    let rows = ch::usage(&state.clickhouse, org, project, from, to, group)
+    let rows = store::usage(&state.pg, org, project, from, to, group)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
     Ok(Json(List::complete(
@@ -170,14 +172,14 @@ async fn usage(
             .map(|r| UsageRow {
                 cache_hit_rate: cache_hit_rate(group, &r),
                 key: public_key(group, r.key),
-                requests: r.requests,
-                errors: r.errors,
-                input_tokens: r.input_tokens,
-                output_tokens: r.output_tokens,
-                cache_read_tokens: r.cache_read_tokens,
-                cache_write_tokens: r.cache_write_tokens,
-                reasoning_tokens: r.reasoning_tokens,
-                cost: costs.then(|| cost_from_raw(r.cost).to_string()),
+                requests: count(r.requests),
+                errors: count(r.errors),
+                input_tokens: count(r.input_tokens),
+                output_tokens: count(r.output_tokens),
+                cache_read_tokens: count(r.cache_read_tokens),
+                cache_write_tokens: count(r.cache_write_tokens),
+                reasoning_tokens: count(r.reasoning_tokens),
+                cost: costs.then(|| r.cost.normalize().to_string()),
             })
             .collect(),
     )))
@@ -234,7 +236,7 @@ pub struct UsageSpan {
 }
 
 async fn span(state: &AppState, org: Uuid, project: Option<Uuid>) -> ApiResult<Json<UsageSpan>> {
-    let span = ch::usage_span(&state.clickhouse, org, project)
+    let span = store::span(&state.pg, org, project)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
     Ok(Json(UsageSpan {

@@ -9,7 +9,7 @@ Jedes Release gibt allen Teilen von Kaeso eine Versionsnummer und folgt Semantic
 ## Von Hand aktualisieren
 
 1. Lesen Sie die Release-Notizen auf Schritte, die etwas von Ihnen verlangen. Sie stehen auf der [Release-Seite](https://github.com/logicplanes/kaeso/releases) und unter **Instanz** › **Updates**.
-2. [Sichern](backups.md) Sie PostgreSQL und ClickHouse, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
+2. [Sichern](backups.md) Sie PostgreSQL, und ClickHouse, solange es Anfrageprotokolle speichert, damit Sie bei Bedarf [zurückgehen](#downgrade) können.
 3. Setzen Sie im Ordner der Installation `version` auf das Release, auf das Sie aktualisieren, und laden, prüfen und starten Sie es dann. Die Befehle laden `compose.yaml` und `release.json` in einen temporären Ordner und prüfen sie, mit der angemeldeten [GitHub CLI](https://cli.github.com) und `jq`:
    - die Signatur des Release-Workflows von Kaeso auf `release.json`;
    - den Hash der `compose.yaml`, den `release.json` nennt, und damit den Digest jedes Kaeso-Images;

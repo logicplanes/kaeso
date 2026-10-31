@@ -110,7 +110,7 @@ Ein Proxy oder Load Balancer zwischen App und Kaeso schließt Verbindungen, die 
 
 ## Anfrageprotokolle fehlen oder kommen spät
 
-Einträge erscheinen wenige Sekunden nach der Anfrage. Erscheinen keine, nimmt ClickHouse keine Schreibvorgänge an: `/readyz` meldet `degraded`, und `kaeso_log_buffer_rows` wächst.
+Einträge erscheinen wenige Sekunden nach der Anfrage. Erscheinen keine, nimmt ClickHouse keine Schreibvorgänge an: `/readyz` meldet `degraded`, und `kaeso_log_buffer_rows` wächst. Zeigt die Konsole gar keine **Anfrageprotokolle** und meldet `/readyz` `clickhouse` als `off`, speichert die Installation keine Anfrageprotokolle ([festlegen, wie Anfrageprotokolle gespeichert werden](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)).
 
 1. Führen Sie `docker compose logs clickhouse` aus und beheben Sie, was dort gemeldet wird.
 2. Suchen Sie im Protokoll des Gateways nach `ClickHouse migrations failed`.

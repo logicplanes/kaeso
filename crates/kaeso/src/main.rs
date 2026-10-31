@@ -157,8 +157,15 @@ async fn run(command: Command) -> Result<()> {
         }
         Command::Migrate => {
             let state = kaeso_server::serve::prepare(config).await?;
-            state.clickhouse.migrate(&state.pg).await?;
-            say!("Migrations are up to date.");
+            match &state.clickhouse {
+                Some(clickhouse) => {
+                    clickhouse.migrate(&state.pg).await?;
+                    say!("Migrations are up to date.");
+                }
+                None => say!(
+                    "PostgreSQL migrations are up to date. Request logs are off, so ClickHouse has none to run."
+                ),
+            }
         }
         Command::SetupLink => {
             let state = kaeso_server::serve::prepare(config).await?;

@@ -152,6 +152,8 @@
   "org.logging.noDeletions": "No deletions yet.",
   "org.logging.noLogs": "No request logs yet",
   "org.logging.notYet": "Not yet",
+  "org.logging.off": "Request logs are off on this install",
+  "org.logging.offHint": "Usage, limits and budgets still count every request; instance admins can turn logs on.",
   "org.logging.onDisk": "On disk",
   "org.logging.period": "Period",
   "org.logging.queued": "Queued",

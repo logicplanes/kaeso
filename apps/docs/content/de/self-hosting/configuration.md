@@ -24,7 +24,8 @@ services:
 | `KAESO_DOMAIN` | ja | Die Domain, die Caddy bereitstellt und für die er ein Zertifikat bezieht. Die öffentliche URL ist `https://` und die Domain. |
 | `POSTGRES_PASSWORD` | ja | Das Passwort des PostgreSQL-Benutzers `kaeso`, als der sich das Gateway anmeldet. |
 | `POSTGRES_SUPERUSER_PASSWORD` | ja | Das Passwort des PostgreSQL-Superusers `postgres`. Kaeso verwendet es nie. |
-| `CLICKHOUSE_PASSWORD` | ja | Das Passwort des ClickHouse-Benutzers `kaeso`. |
+| `CLICKHOUSE_PASSWORD` | ja | Das Passwort des ClickHouse-Benutzers `kaeso`. Compose prüft es auch, wenn das mitgelieferte ClickHouse aus ist. |
+| `KAESO_CLICKHOUSE_URL` | nein | Die URL Ihres eigenen ClickHouse, oder leer, um Anfrageprotokolle auszuschalten ([festlegen, wie Anfrageprotokolle gespeichert werden](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)). |
 | `VALKEY_PASSWORD` | ja | Das Passwort, das Valkey von jeder Verbindung verlangt. |
 | `KAESO_PUBLIC_URL` | nein | Die öffentliche URL, wenn sie nicht `https://` und die Domain ist, etwa hinter Ihrem eigenen Proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, sofern E-Mails nicht nur protokolliert werden | Wie das Gateway E-Mails sendet ([E-Mail](#e-mail)). |
@@ -106,7 +107,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | Text, Secret | erforderlich | Verbindungs-URL für PostgreSQL. |
 | `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Höchstzahl der PostgreSQL-Verbindungen je Gateway-Instanz, mindestens 1. Hintergrundjobs halten ihre Sperren zusätzlich über einige weitere Verbindungen. |
-| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | Text, Secret | erforderlich | HTTP-URL für ClickHouse mit Benutzer und Passwort, etwa `http://kaeso:secret@clickhouse:8123`. |
+| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | Text, Secret | — | HTTP-URL für ClickHouse mit Benutzer und Passwort, etwa `http://kaeso:secret@clickhouse:8123`. Nicht gesetzt oder leer schaltet die Anfrageprotokolle aus. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | Text | `kaeso` | ClickHouse-Datenbank für die Anfrageprotokolle, aus Buchstaben, Ziffern und `_`. Das Gateway legt sie an, wenn sie fehlt. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | Text, Secret | erforderlich | URL für Valkey (oder Redis) mit dem Passwort, etwa `redis://:secret@valkey:6379`. |
 | `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | Text | `kaeso:` | Präfix aller Valkey-Schlüssel und -Kanäle, um eine Valkey-Instanz zwischen Installationen zu teilen, die einander vertrauen. |

@@ -344,3 +344,14 @@ describe("the switcher for a person outside every organization", () => {
     expect(within(menu).getByRole("menuitem", { name: "Account" })).toHaveAttribute("href", "/settings/account/profile");
   });
 });
+
+describe("the sidebar on an install without request logs", () => {
+  it("leaves request logs out", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    on("GET", "orgs/:org/projects/:project/limits", page([]));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}/limits`);
+    const nav = await screen.findByRole("navigation", { name: "Console" });
+    await within(nav).findByRole("link", { name: "Limits" });
+    expect(within(nav).queryByRole("link", { name: "Request logs" })).not.toBeInTheDocument();
+  });
+});

@@ -110,7 +110,7 @@ docker compose exec gateway kaeso setup-link
 
 ## 请求日志缺失或延迟
 
-日志条目会在请求后几秒内出现。如果一直没有出现，说明 ClickHouse 不接受写入：`/readyz` 报告 `degraded`，`kaeso_log_buffer_rows` 持续增长。
+日志条目会在请求后几秒内出现。如果一直没有出现，说明 ClickHouse 不接受写入：`/readyz` 报告 `degraded`，`kaeso_log_buffer_rows` 持续增长。如果控制台完全不显示**请求日志**，且 `/readyz` 把 `clickhouse` 报告为 `off`，说明该实例不保存请求日志（[选择请求日志的保存方式](installation.md#选择请求日志的保存方式)）。
 
 1. 运行 `docker compose logs clickhouse`，解决其中报告的问题。
 2. 在网关日志中搜索 `ClickHouse migrations failed`。

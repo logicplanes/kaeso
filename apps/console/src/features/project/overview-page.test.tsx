@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
-import { signedIn, without } from "~/test/fixtures";
+import { signedIn, whoAmI, without } from "~/test/fixtures";
 import { apiKey, catalogueModel, failedLog, limit, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -300,6 +300,17 @@ describe("OverviewPage", () => {
     expect(screen.queryByText("Limits")).not.toBeInTheDocument();
     expect(screen.queryByText("Recent errors")).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/limits")).toHaveLength(0);
+    expect(requests("GET", "orgs/:org/projects/:project/logs")).toHaveLength(0);
+  });
+
+  it("leaves out recent errors on an install without request logs", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData({ models: [catalogueModel()] });
+    usage();
+    await renderApp(projectPath(`?${PERIOD}`));
+
+    expect(await screen.findByRole("grid", { name: "This project" })).toBeInTheDocument();
+    expect(screen.queryByText("Recent errors")).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/logs")).toHaveLength(0);
   });
 

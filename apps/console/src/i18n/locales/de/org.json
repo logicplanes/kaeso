@@ -152,6 +152,8 @@
   "org.logging.noDeletions": "Noch keine Löschungen.",
   "org.logging.noLogs": "Noch keine Anfrageprotokolle",
   "org.logging.notYet": "Noch nicht",
+  "org.logging.off": "Anfrageprotokolle sind in dieser Installation ausgeschaltet",
+  "org.logging.offHint": "Nutzung, Limits und Budgets zählen weiter jede Anfrage; Instanz-Admins schalten Protokolle ein.",
   "org.logging.onDisk": "Auf Datenträger",
   "org.logging.period": "Zeitraum",
   "org.logging.queued": "In Warteschlange",

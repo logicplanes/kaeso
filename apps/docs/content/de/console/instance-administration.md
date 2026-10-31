@@ -68,7 +68,7 @@ Nur die Konsolensitzung eines Instanz-Admins ändert die Richtlinie; kein Agent 
 
 ## System prüfen
 
-**System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. Es zeigt außerdem den Puffer der Anfrageprotokolle, den Speicher und wie das Gateway E-Mails sendet. Die Seite aktualisiert sich alle 10 Sekunden.
+**System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. ClickHouse erscheint als aus, wenn die Installation keine Anfrageprotokolle speichert. Es zeigt außerdem den Puffer der Anfrageprotokolle, den Speicher und wie das Gateway E-Mails sendet. Die Seite aktualisiert sich alle 10 Sekunden.
 
 ## Kaeso aktualisieren
 

@@ -877,6 +877,8 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     env.app
         .state
         .clickhouse
+        .as_ref()
+        .unwrap()
         .migrate(&env.app.state.pg)
         .await
         .unwrap();

@@ -96,6 +96,9 @@ pub struct WhoAmI {
     #[doc = "The install's IANA time zone: the console shows every time in it."]
     #[schema(example = "Europe/Berlin")]
     pub timezone: String,
+    #[doc = "Whether the install keeps request logs. When `false`, the logs\n\
+        endpoints answer `404` and usage is still counted."]
+    pub request_logs: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -197,6 +200,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
             users::get_locale(&state.pg, user.id).await?.as_deref(),
         ),
         timezone: instance.timezone,
+        request_logs: state.request_logs(),
     }))
 }
 

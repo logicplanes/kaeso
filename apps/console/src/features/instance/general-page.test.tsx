@@ -470,4 +470,13 @@ describe("single sign-on for instance admins", () => {
     await choose(user, "Single sign-on for instance admins", "Acme");
     expect(await screen.findByRole("dialog", { name: "Sign in another way" })).toBeInTheDocument();
   });
+
+  it("says request logs are off instead of offering retention", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    settingsApi();
+    await renderApp(LOGGING);
+    expect(await screen.findByText("Request logs are off on this install")).toBeInTheDocument();
+    expect(screen.getByText("Set KAESO_CLICKHOUSE_URL and restart the gateway to keep request logs.")).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+  });
 });

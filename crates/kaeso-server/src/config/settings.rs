@@ -84,7 +84,7 @@ const ROWS: &[Row] = &[
     s("cors.allowed_origins", "KAESO_CORS_ALLOWED_ORIGINS", Text, None, false, "Comma-separated origins of the web apps that may call the model API from a browser, such as `https://app.example.com`, never `*`; only these get CORS headers, and only on `/v1`."),
     s("postgres.url", "KAESO_POSTGRES_URL", Text, None, true, "PostgreSQL connection URL. Required."),
     s("postgres.pool_size", "KAESO_POSTGRES_POOL_SIZE", Integer, Some("20"), false, "Maximum PostgreSQL connections per gateway instance."),
-    s("clickhouse.url", "KAESO_CLICKHOUSE_URL", Text, None, true, "ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Required."),
+    s("clickhouse.url", "KAESO_CLICKHOUSE_URL", Text, None, true, "ClickHouse HTTP URL, with user and password, e.g. `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off."),
     s("clickhouse.database", "KAESO_CLICKHOUSE_DATABASE", Text, Some("kaeso"), false, "ClickHouse database for request logs; created when missing."),
     s("valkey.url", "KAESO_VALKEY_URL", Text, None, true, "Valkey (or Redis) URL, e.g. `redis://valkey:6379`. Required."),
     s("valkey.key_prefix", "KAESO_VALKEY_KEY_PREFIX", Text, Some("kaeso:"), false, "Prefix of every Valkey key and channel, for sharing one Valkey between installs that trust each other."),
@@ -233,10 +233,4 @@ pub fn parse_provider_env(
     Ok((provider, field))
 }
 
-pub const REQUIRED: &[&str] = &[
-    "public_url",
-    "postgres.url",
-    "clickhouse.url",
-    "valkey.url",
-    "master_keys",
-];
+pub const REQUIRED: &[&str] = &["public_url", "postgres.url", "valkey.url", "master_keys"];

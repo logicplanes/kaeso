@@ -5,10 +5,10 @@ import { useCreateAction } from "./create-action";
 import { takeEarlyKeys } from "./early-keys";
 import { readLast } from "./last";
 import { isPaletteOpen } from "./palette-store";
-import { PROJECT_PAGES, orgPath, projectPath } from "./pages";
+import { orgPath, projectPath } from "./pages";
+import { useProjectPages } from "./project-pages";
 import { ORG_SETTINGS_PAGES } from "./settings-pages";
 import { onShortcutSheet, openShortcutSheet } from "./shortcuts-store";
-import { useProjectRights } from "~/auth/rights";
 
 function typing(target: EventTarget | null): boolean {
   return target instanceof Element && !!target.closest("input, textarea, select, [contenteditable=true], [role=combobox]");
@@ -24,7 +24,7 @@ export function ShortcutsHost() {
   const create = useCreateAction();
   const org = params.org ?? readLast()?.org;
   const project = params.project;
-  const rights = useProjectRights(org ?? "", project ?? "");
+  const pages = useProjectPages(org ?? "", project ?? "");
   const orgRights = useOrgRights(org ?? "");
   const pendingG = useRef<number>(0);
 
@@ -34,8 +34,8 @@ export function ShortcutsHost() {
       if (Date.now() - pendingG.current < 1200) {
         pendingG.current = 0;
         const key = e.key;
-        const page = PROJECT_PAGES.find((p) => p.key === key);
-        if (page && org && project && rights.has(page.right)) {
+        const page = pages.find((p) => p.key === key);
+        if (page && org && project) {
           e.preventDefault();
           void navigate({ to: page.path ? `${projectPath(org, project)}/${page.path}` : projectPath(org, project) });
         } else if (key === "o" && org && !project && orgRights.has("org.view")) {
@@ -78,7 +78,7 @@ export function ShortcutsHost() {
     window.addEventListener("keydown", onKey);
     for (const e of takeEarlyKeys()) onKey(e);
     return () => window.removeEventListener("keydown", onKey);
-  }, [create, navigate, org, orgRights, project, rights]);
+  }, [create, navigate, org, orgRights, pages, project]);
 
   return <ShortcutSheetHost />;
 }

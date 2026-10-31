@@ -130,6 +130,12 @@ cargo xtask models-dev
 
 Die Aufgabe lädt `https://models.dev/api.json` herunter, filtert die Daten und prüft, dass das Gateway das Ergebnis lesen kann. `--url` oder `MODELS_DEV_URL` ändert die Adresse. Dann schreibt sie den Snapshot, die Tabelle in `crates/kaeso-core/data/README.md` und den Abrufzeitpunkt in `crates/kaeso-core/src/models_dev.rs`, und Tests prüfen, dass die drei übereinstimmen.
 
+## Nutzung und Anfrageprotokolle
+
+Die Modell-API übergibt jede beendete Anfrage an eine Senke. Sie addiert die Nutzung der Anfrage zu einem Stapel im Speicher, geordnet nach Tag, Projekt, Schlüssel, Mitglied, Modell und Route, und schreibt den Stapel alle 10 Sekunden in `usage_daily` in PostgreSQL. Dieselbe Senke bucht die Limit-Zähler in Valkey, die aus `usage_daily` neu aufgebaut werden. Die Nutzungsseiten, die `usage`-Endpunkte der Platform API und die Summen der Organisationen für die Instanz lesen nur `usage_daily`.
+
+Anfrageprotokolle gehen über einen eigenen Puffer an `request_log` und `request_content` in ClickHouse. Ohne `clickhouse.url` ist `AppState::clickhouse` `None`: Das Gateway führt keine ClickHouse-Migrationen aus, startet keinen Protokollschreiber, behält keine Inhalte zum Protokollieren, und die Protokoll-Endpunkte antworten mit `404`. Die ClickHouse-Migration 0007 hat das eigene `usage_daily` von ClickHouse entfernt, als die Nutzung nach PostgreSQL wechselte.
+
 ## Protokollierte Antworten
 
 Bei eingeschalteter Inhaltsprotokollierung speichert das Gateway jede Antwort als serde-JSON von `kaeso_kpp::Response` in der Spalte `reply` von `request_content` in ClickHouse. Der Log-Inspektor der Konsole zeichnet sie so, wie sie gespeichert ist. Eine Organisation darf Inhalte bis zu 36.500 Tage aufbewahren, also muss jede spätere Konsole eine heute protokollierte Antwort noch lesen können.

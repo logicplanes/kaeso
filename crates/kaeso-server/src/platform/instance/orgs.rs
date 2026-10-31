@@ -502,10 +502,11 @@ pub struct InstanceOrgUsage {
     #[doc = "Cost in USD in the last 30 days."]
     #[schema(value_type = String)]
     pub cost_30d: String,
-    #[doc = "Log entries."]
-    pub log_entries: u64,
-    #[doc = "Logged content as received, in bytes."]
-    pub log_logical_bytes: u64,
+    #[doc = "Log entries; `null` when the install keeps no request logs."]
+    pub log_entries: Option<u64>,
+    #[doc = "Logged content as received, in bytes; `null` when the install keeps\n\
+        no request logs."]
+    pub log_logical_bytes: Option<u64>,
 }
 
 #[utoipa::path(
@@ -521,34 +522,47 @@ pub async fn usage(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<Json<InstanceOrgUsage>> {
-    use kaeso_store::clickhouse::logs as ch;
+    use kaeso_store::pg::usage as store;
     let o = org(&state, &id).await?;
     let to = ctx.now.date();
     let unavailable = |e: kaeso_store::StoreError| {
         ApiError::unavailable(crate::platform::usage::USAGE_UNAVAILABLE, e)
     };
-    let rows = ch::usage(
-        &state.clickhouse,
+    let rows = store::usage(
+        &state.pg,
         o.id,
         None,
         to - time::Duration::days(29),
         to,
-        ch::GroupBy::Project,
+        store::GroupBy::Project,
     )
     .await
     .map_err(unavailable)?;
-    let storage = ch::storage(&state.clickhouse, o.id)
-        .await
-        .map_err(unavailable)?;
-    let cost: i128 = rows.iter().map(|r| r.cost).sum();
+    let storage = match &state.clickhouse {
+        Some(ch) => Some(
+            kaeso_store::clickhouse::logs::storage(ch, o.id)
+                .await
+                .map_err(unavailable)?,
+        ),
+        None => None,
+    };
+    let count = |n: i64| u64::try_from(n).unwrap_or(0);
+    let cost: rust_decimal::Decimal = rows.iter().map(|r| r.cost).sum();
     Ok(Json(InstanceOrgUsage {
-        requests_30d: rows.iter().map(|r| r.requests).sum(),
+        requests_30d: rows.iter().map(|r| count(r.requests)).sum(),
         tokens_30d: rows
             .iter()
-            .map(|r| r.input_tokens + r.output_tokens + r.cache_read_tokens + r.cache_write_tokens)
+            .map(|r| {
+                count(r.input_tokens)
+                    + count(r.output_tokens)
+                    + count(r.cache_read_tokens)
+                    + count(r.cache_write_tokens)
+            })
             .sum(),
-        cost_30d: kaeso_core::cost::cost_from_raw(cost).to_string(),
-        log_entries: storage.iter().map(|s| s.entries).sum(),
-        log_logical_bytes: storage.iter().map(|s| s.logical_bytes).sum(),
+        cost_30d: cost.normalize().to_string(),
+        log_entries: storage.as_ref().map(|s| s.iter().map(|p| p.entries).sum()),
+        log_logical_bytes: storage
+            .as_ref()
+            .map(|s| s.iter().map(|p| p.logical_bytes).sum()),
     }))
 }

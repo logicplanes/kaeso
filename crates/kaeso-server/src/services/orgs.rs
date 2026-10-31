@@ -289,9 +289,12 @@ pub async fn purge(
 }
 
 async fn delete_logs(state: &crate::state::AppState, org: uuid::Uuid) -> Result<(), StoreError> {
+    let Some(clickhouse) = state.clickhouse.as_ref() else {
+        return Ok(());
+    };
     if !state.clickhouse_migrated() {
-        state.clickhouse.migrate(&state.pg).await?;
+        clickhouse.migrate(&state.pg).await?;
         state.set_clickhouse_migrated();
     }
-    kaeso_store::clickhouse::logs::delete_org(&state.clickhouse, org).await
+    kaeso_store::clickhouse::logs::delete_org(clickhouse, org).await
 }

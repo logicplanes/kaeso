@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { pictureUpload } from "./png.mjs";
 import { clickhouse, writeHistory } from "./seed-history.mjs";
-import { STACKS, setupToken, urls } from "./stack.mjs";
+import { STACKS, psql, setupToken, urls } from "./stack.mjs";
 import { sendTraffic } from "./traffic.mjs";
 
 const stack = STACKS.dev;
@@ -283,6 +283,7 @@ const history = await writeHistory({
   perDay: 2400,
   prices: priceOf(projects),
   weights: (template) => volume.get(template.project_id) ?? 1,
+  recordUsage: (sql) => psql(stack, sql),
 });
 console.log(`seed: ${OWNER.org} (${org}) with ${projects.length} projects, ${people.length + 1} members, ${keys.length + 1} keys`);
 console.log(`seed: ${sent} requests through the gateway (${refused} refused on purpose) and ${history} earlier requests over 70 days`);

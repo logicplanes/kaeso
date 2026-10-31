@@ -9,7 +9,7 @@ order: 8
 ## 手动更新
 
 1. 阅读发布说明，看是否有需要您处理的事项。发布说明位于[版本页面](https://github.com/logicplanes/kaeso/releases)，以及**实例** › **更新**中。
-2. [备份](backups.md) PostgreSQL 和 ClickHouse，以便在需要时[回退](#降级)。
+2. [备份](backups.md) PostgreSQL，以及保存请求日志的 ClickHouse，以便在需要时[回退](#降级)。
 3. 在实例文件夹中，把 `version` 设为要更新到的版本，然后下载、检查并启动它。这些命令会把 `compose.yaml` 和 `release.json` 下载到一个临时文件夹，并借助已登录的 [GitHub CLI](https://cli.github.com) 和 `jq` 检查：
    - `release.json` 上 Kaeso Release 工作流的签名；
    - `release.json` 写明的 `compose.yaml` 哈希，进而检查每个 Kaeso 镜像的摘要；

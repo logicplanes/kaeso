@@ -31,6 +31,7 @@ pub mod sso_identities;
 pub mod tokens;
 pub mod totp;
 pub mod updates;
+pub mod usage;
 pub mod users;
 
 pub static MIGRATOR: Migrator = sqlx::migrate!("migrations/postgres");

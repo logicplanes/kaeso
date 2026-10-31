@@ -86,6 +86,13 @@ export function down(stack) {
   compose(stack, ["down", "--volumes", "--remove-orphans"], { stdio: "inherit" });
 }
 
+export function psql(stack, sql, database = "kaeso") {
+  return compose(stack, ["exec", "--no-TTY", "postgres", "psql", "--quiet", "--set", "ON_ERROR_STOP=1", "--username", "kaeso", "--dbname", database], {
+    input: sql,
+    stdio: ["pipe", "pipe", "inherit"],
+  });
+}
+
 export function resetTwoFactor(stack, email) {
   compose(stack, ["exec", "--no-TTY", "gateway", "kaeso", "user", "reset-2fa", email], { stdio: ["ignore", "pipe", "inherit"] });
 }

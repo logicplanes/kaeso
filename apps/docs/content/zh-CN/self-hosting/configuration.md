@@ -24,7 +24,8 @@ services:
 | `KAESO_DOMAIN` | 是 | Caddy 提供服务并为其申请证书的域名。公开 URL 为 `https://` 加该域名。 |
 | `POSTGRES_PASSWORD` | 是 | PostgreSQL 用户 `kaeso` 的密码，网关以该用户登录。 |
 | `POSTGRES_SUPERUSER_PASSWORD` | 是 | PostgreSQL 超级用户 `postgres` 的密码。Kaeso 从不使用它。 |
-| `CLICKHOUSE_PASSWORD` | 是 | ClickHouse 用户 `kaeso` 的密码。 |
+| `CLICKHOUSE_PASSWORD` | 是 | ClickHouse 用户 `kaeso` 的密码。即使自带的 ClickHouse 已关闭，Compose 仍会检查它。 |
+| `KAESO_CLICKHOUSE_URL` | 否 | 您自己的 ClickHouse 的 URL，或留空以关闭请求日志（[选择请求日志的保存方式](installation.md#选择请求日志的保存方式)）。 |
 | `VALKEY_PASSWORD` | 是 | Valkey 要求每个连接提供的密码。 |
 | `KAESO_PUBLIC_URL` | 否 | 公开 URL 不是 `https://` 加域名时使用，例如在您自己的代理后面。 |
 | `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS`、`KAESO_SMTP_USER`、`KAESO_SMTP_PASSWORD`、`KAESO_SMTP_FROM` | 除非只记录邮件，否则需要 `KAESO_SMTP_HOST` | 网关发送邮件的方式（[电子邮件](#电子邮件)）。 |
@@ -106,7 +107,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | 文本，机密 | 必填 | PostgreSQL 连接 URL。 |
 | `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 最大连接数，至少为 1。后台任务另用几条连接持有锁。 |
-| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | 文本，机密 | 必填 | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。 |
+| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | 文本，机密 | — | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。不设置或为空时关闭请求日志。 |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
 | `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | 文本 | `kaeso:` | 每个 Valkey 键和频道的前缀，便于相互信任的多个安装共用一个 Valkey。 |

@@ -28,6 +28,7 @@ import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { ProjectHeader } from "~/shell/project-header";
 import { ResponseCacheSection } from "./response-cache-section";
 import { useProjectRights } from "~/auth/rights";
+import { useRequestLogs } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -40,6 +41,7 @@ const logSettingsQuery = (org: string, project: string) => ({
 
 export function ProjectSettingsPage({ org, project }: { org: string; project: string }) {
   const rights = useProjectRights(org, project);
+  const requestLogs = useRequestLogs();
   const view = useQuery(projectQuery(org, project));
   const p = view.data;
   return (
@@ -65,7 +67,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
               {rights.has("security.key_policy.project.manage") && (
                 <KeyLifetime org={org} project={project} days={p.max_key_lifetime_days ?? null} archived={!!p.archived_at} />
               )}
-              <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />
+              {requestLogs && <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />}
               <ResponseCacheSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
               {p.archived_at ? (
                 <ArchivedOn date={p.archived_at} />

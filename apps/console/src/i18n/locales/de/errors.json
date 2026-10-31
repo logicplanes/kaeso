@@ -154,6 +154,7 @@
   "errors.limitRefused": "Ein Limit dieses Projekts hat die Anfrage abgelehnt; später erneut versuchen.",
   "errors.listModelIds": "1 bis 200 Modell-IDs angeben.",
   "errors.logsUnavailable": "Die Anfrageprotokolle sind gerade nicht verfügbar; gleich erneut versuchen.",
+  "errors.logsOff": "Anfrageprotokolle sind in dieser Installation ausgeschaltet.",
   "errors.lowerLimitsFirst": "Zuerst die Limits senken, die mehr erlauben als dieses: {list}.",
   "errors.magicLinkOff": "Anmeldelinks sind in dieser Installation ausgeschaltet.",
   "errors.maxCustomRoles": "Eine Organisation kann höchstens {max} eigene Rollen haben.",

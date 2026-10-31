@@ -16,6 +16,8 @@ async fn env(extra: &[(&str, &str)]) -> Env {
     e.app
         .state
         .clickhouse
+        .as_ref()
+        .unwrap()
         .migrate(&e.app.state.pg)
         .await
         .unwrap();

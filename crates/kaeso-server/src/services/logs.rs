@@ -146,13 +146,16 @@ where
 }
 
 async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> Flushed {
+    let Some(clickhouse) = state.clickhouse.as_ref() else {
+        return Flushed::Wrote(0);
+    };
     let batch = state.logs.take(state.config.logs.flush_rows as usize);
     if batch.is_empty() {
         return Flushed::Wrote(0);
     }
     let taken = batch.len();
     let logs: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
-    match within(deadline, ch::insert_logs(&state.clickhouse, logs)).await {
+    match within(deadline, ch::insert_logs(clickhouse, logs)).await {
         Some(Ok(())) => {}
         Some(Err(e)) => return Flushed::Failed(keep_unwritten(state, batch, e)),
         None => {
@@ -169,7 +172,7 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
         .iter()
         .filter_map(|e| e.content.as_ref())
         .collect();
-    match within(deadline, ch::insert_contents(&state.clickhouse, contents)).await {
+    match within(deadline, ch::insert_contents(clickhouse, contents)).await {
         Some(Ok(())) => Flushed::Wrote(taken),
         Some(Err(e)) => Flushed::Failed(keep_unwritten(state, unwritten, e)),
         None => {
@@ -209,6 +212,9 @@ pub async fn flush_all(state: &AppState, timeout: Duration) -> usize {
 }
 
 pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
+    if !state.request_logs() {
+        return;
+    }
     tokio::spawn(async move {
         let interval = state.config.logs.flush_interval;
         loop {
@@ -250,6 +256,9 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
 }
 
 pub async fn keeps_content(state: &AppState, project: Uuid) -> bool {
+    if !state.request_logs() {
+        return false;
+    }
     match settings(state, project).await {
         Ok(Some(cfg)) => cfg.org_content && cfg.project_content,
         Ok(None) => false,
@@ -330,6 +339,9 @@ fn reply_json(reply: &Response) -> Result<String, serde_json::Error> {
 
 pub async fn record(state: &AppState, o: &Outcome) {
     let Some(caller) = &o.caller else { return };
+    if !state.request_logs() {
+        return;
+    }
     let cfg = match settings(state, caller.project_id).await {
         Ok(Some(cfg)) => cfg,
         Ok(None) => return,
@@ -481,11 +493,14 @@ impl Sink for Recorder {
 }
 
 pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
+    let Some(clickhouse) = state.clickhouse.as_ref() else {
+        return Ok("request logs are off; log jobs wait".to_owned());
+    };
     let jobs = log_jobs::pending(&state.pg, 20).await?;
     let mut done = 0;
     for job in jobs {
         let result = ch::delete_range(
-            &state.clickhouse,
+            clickhouse,
             job.org_id,
             job.project_id,
             job.from_at,

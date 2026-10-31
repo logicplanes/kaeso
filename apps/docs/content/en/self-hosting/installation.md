@@ -56,6 +56,48 @@ services:
 
 Apply the change with `docker compose up -d --wait`. Compose recreates only the services whose settings changed. [Configuration](configuration.md) lists every setting of the gateway.
 
+## Choose how to keep request logs
+
+Request logs live in ClickHouse. The bundled ClickHouse in `compose.yaml` is the recommended setup: it needs nothing from you and keeps the logs on the same server. Usage, limits, budgets and budget alerts don't depend on it, because Kaeso keeps usage in PostgreSQL. ClickHouse takes the most memory of the services ([requirements](requirements.md#memory-and-images)), so an install can also use a ClickHouse you already run, or keep no request logs at all.
+
+| Request logs | `KAESO_CLICKHOUSE_URL` in `.env` | Bundled `clickhouse` service |
+| --- | --- | --- |
+| In the bundled ClickHouse, the default | Not set | Runs |
+| In your own ClickHouse | Your ClickHouse's URL | Off |
+| Off | Set and empty | Off |
+
+The gateway reads the setting when it starts. To go back to the default, remove both changes below and run `docker compose up -d --wait`.
+
+### Turn request logs off
+
+1. Add `KAESO_CLICKHOUSE_URL=` with an empty value to `.env`. Keep `CLICKHOUSE_PASSWORD` there: Compose checks it even while the bundled ClickHouse is off.
+2. Keep Compose from starting the bundled ClickHouse by putting it in a profile you never turn on:
+
+   ```yaml title="compose.override.yaml"
+   services:
+     clickhouse:
+       profiles: [logs]
+   ```
+
+3. Start the gateway with the new settings, then remove the ClickHouse container that still runs. Its volume `kaeso_clickhouse` keeps the earlier logs until you remove it.
+
+   ```bash
+   docker compose up -d --wait
+   docker compose rm -sf clickhouse
+   ```
+
+The console then shows no **Request logs**, and the organization's **Logging** page says that request logs are off. The Platform API answers `404` on the logs endpoints, and `/readyz` reports `clickhouse` as `off`. Requests served while logs are off are never logged, even after you turn logs back on.
+
+### Use your own ClickHouse
+
+The gateway needs only ClickHouse's HTTP interface, plain or with TLS, and a user that may create a database and its tables. Put the URL, with that user and password, in `.env`. Percent-encode any character in them other than letters and digits:
+
+```bash
+KAESO_CLICKHOUSE_URL=https://kaeso:secret@clickhouse.example.com:8443
+```
+
+Then turn off the bundled ClickHouse with the same `compose.override.yaml` and commands as [above](#turn-request-logs-off). The gateway creates the database `KAESO_CLICKHOUSE_DATABASE`, `kaeso` by default, and runs its migrations there. Back up that ClickHouse as you back up the rest of it.
+
 ## Run Kaeso's commands
 
 The gateway image is also Kaeso's command line. Run a command in the running gateway container, where it uses the gateway's settings:
@@ -73,7 +115,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso instance admin-sso <org\|none>` | Chooses the organization whose single sign-on may administer the instance, by an id such as `org_…`, or `none` for none, when no instance admin can change it in the console ([instance admins](sign-in.md#instance-admins)). The organization needs an SSO connection. The instance audit log records it |
 | `kaeso master-key generate` | Prints a new master key as `id:base64` |
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotate-the-master-key)) |
-| `kaeso migrate` | Runs the PostgreSQL and ClickHouse migrations, then exits |
+| `kaeso migrate` | Runs the PostgreSQL migrations, and the ClickHouse ones while request logs are on, then exits |
 | `kaeso serve` | Runs the gateway. It is the image's default command |
 
 ## Next steps

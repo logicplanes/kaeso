@@ -18,6 +18,8 @@ async fn env(extra: &[(&str, &str)]) -> Env {
         e.app
             .state
             .clickhouse
+            .as_ref()
+            .unwrap()
             .migrate(&e.app.state.pg)
             .await
             .unwrap();
@@ -211,6 +213,9 @@ async fn requests_are_logged_with_metadata_and_content() {
     assert_eq!(next["data"][0]["id"], request_id);
     assert_eq!(next["has_more"], false);
 
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
     let usage = env
         .app
         .get(
@@ -518,6 +523,9 @@ async fn streams_that_fail_after_their_headers_are_logged_as_failures() {
             .len(),
         1
     );
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
     let usage = env
         .app
         .get(
@@ -695,10 +703,10 @@ async fn seed(env: &Env, n: u64, at: OffsetDateTime) {
             )
         })
         .unzip();
-    ch::insert_logs(&env.app.state.clickhouse, &logs)
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &logs)
         .await
         .unwrap();
-    ch::insert_contents(&env.app.state.clickhouse, &contents)
+    ch::insert_contents(env.app.state.clickhouse.as_ref().unwrap(), &contents)
         .await
         .unwrap();
 }
@@ -891,7 +899,7 @@ async fn retention_shrinks_and_deletions_remove_rows() {
     let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
     let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
     let rows = ch::search(
-        &env.app.state.clickhouse,
+        env.app.state.clickhouse.as_ref().unwrap(),
         org.uuid(),
         project.uuid(),
         &ch::Filter::default(),
@@ -1227,10 +1235,10 @@ async fn content_exports_fetch_large_bodies_a_few_at_a_time() {
             (log, content)
         })
         .unzip();
-    ch::insert_logs(&env.app.state.clickhouse, &logs)
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &logs)
         .await
         .unwrap();
-    ch::insert_contents(&env.app.state.clickhouse, &contents)
+    ch::insert_contents(env.app.state.clickhouse.as_ref().unwrap(), &contents)
         .await
         .unwrap();
     let req = axum::http::Request::builder()

@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { providers as providerList, signedIn, without } from "~/test/fixtures";
+import { providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
@@ -973,5 +973,17 @@ describe("Export dialog", () => {
     expect(await notifications().findByText("Requests exported")).toBeInTheDocument();
     expect(written.join("")).toBe("id,status\nreq_0001,200\n");
     Reflect.deleteProperty(window, "showSaveFilePicker");
+  });
+});
+
+describe("LogsPage on an install without request logs", () => {
+  it("says logs are off and never asks for them", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData();
+    await renderApp(projectPath("logs"));
+    expect(await screen.findByText("Request logs are off on this install")).toBeInTheDocument();
+    expect(screen.getByText("Usage, limits and budgets still count every request.")).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Requests" })).not.toBeInTheDocument();
+    expect(requests("GET", LOGS)).toHaveLength(0);
   });
 });

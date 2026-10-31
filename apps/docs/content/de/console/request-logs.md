@@ -6,6 +6,9 @@ order: 8
 
 Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, Token, Kosten, Zeiten, den Schlüssel und wer sie gesendet hat. Mit eingeschalteter Inhaltsprotokollierung speichert es auch, was die App gesendet und zurückbekommen hat. Eine Anfrage erscheint wenige Sekunden nach ihrem Ende.
 
+> [!NOTE]
+> Eine Installation kann mit ausgeschalteten Anfrageprotokollen laufen ([festlegen, wie Anfrageprotokolle gespeichert werden](../self-hosting/installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)). Ihre Projekte haben dann keine Seite **Anfrageprotokolle**, und **Protokollierung** sagt, dass die Protokolle aus sind. Nutzung und Kosten werden gleich gezählt.
+
 ## Anfrage finden
 
 Öffnen Sie die Seite **Anfrageprotokolle** eines Projekts. Sie listet Anfragen, die neuesten zuerst, aus der letzten Stunde, den letzten 24 Stunden, 7 Tagen oder 30 Tagen oder einem selbst gewählten Zeitraum.

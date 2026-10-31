@@ -11,9 +11,11 @@ use crate::state::AppState;
 pub struct InstanceStorageView {
     #[doc = "PostgreSQL database size in bytes."]
     pub postgres_bytes: Option<i64>,
-    #[doc = "ClickHouse bytes on disk, all tables of the logs database."]
+    #[doc = "ClickHouse bytes on disk, all tables of the logs database; `null`\n\
+        when request logs are off or ClickHouse doesn't answer."]
     pub clickhouse_bytes_on_disk: Option<u64>,
-    #[doc = "ClickHouse rows in the request log."]
+    #[doc = "ClickHouse rows in the request log; `null` when request logs are off\n\
+        or ClickHouse doesn't answer."]
     pub request_log_rows: Option<u64>,
 }
 
@@ -29,7 +31,7 @@ pub struct SystemView {
     pub postgres: &'static str,
     #[doc = "`ok` or `down`."]
     pub valkey: &'static str,
-    #[doc = "`ok` or `down`."]
+    #[doc = "`ok`, `down`, or `off` when the install keeps no request logs."]
     pub clickhouse: &'static str,
     #[doc = "Storage."]
     pub storage: InstanceStorageView,
@@ -59,10 +61,13 @@ pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SystemView>> {
         .await
         .inspect_err(|e| tracing::warn!(error = %e, "cannot read the PostgreSQL database size"))
         .ok();
-    let disk = kaeso_store::clickhouse::logs::disk(&state.clickhouse)
-        .await
-        .inspect_err(|e| tracing::warn!(error = %e, "cannot read the request log's disk usage"))
-        .ok();
+    let disk = match &state.clickhouse {
+        Some(ch) => kaeso_store::clickhouse::logs::disk(ch)
+            .await
+            .inspect_err(|e| tracing::warn!(error = %e, "cannot read the request log's disk usage"))
+            .ok(),
+        None => None,
+    };
     Ok(Json(SystemView {
         version: env!("CARGO_PKG_VERSION"),
         status: health.status,

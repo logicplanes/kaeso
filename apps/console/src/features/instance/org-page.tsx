@@ -120,8 +120,8 @@ function usageTiles(u: InstanceOrgUsage) {
     <StatTile
       key="logs"
       label={t("instance.logs", "Logs")}
-      value={formatBytes(u.log_logical_bytes)}
-      detail={t("instance.entryCount", "{count, plural, one {# entry} other {# entries}}", { count: u.log_entries })}
+      value={u.log_logical_bytes == null ? t("instance.logsOffValue", "Off") : formatBytes(u.log_logical_bytes)}
+      detail={u.log_entries == null ? undefined : t("instance.entryCount", "{count, plural, one {# entry} other {# entries}}", { count: u.log_entries })}
     />,
   ];
 }

@@ -104,4 +104,17 @@ describe("the instance area", () => {
     expect(await screen.findByRole("heading", { name: "General", level: 1 })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/settings/instance/general");
   });
+
+  it("shows ClickHouse as off and leaves out the request log when the install keeps none", async () => {
+    signedIn();
+    on("GET", "instance/system", system({ clickhouse: "off", storage: { postgres_bytes: 2_097_152, clickhouse_bytes_on_disk: null, request_log_rows: null } }));
+    await renderApp(PATH);
+    expect(await screen.findByText("Off")).toBeInTheDocument();
+    expect(screen.getByText("Not set up, so request logs are off.")).toBeInTheDocument();
+    expect(screen.getAllByText("Up")).toHaveLength(2);
+    expect(screen.queryByText("Down")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Request log buffer" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Request log entries")).not.toBeInTheDocument();
+    expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
+  });
 });
