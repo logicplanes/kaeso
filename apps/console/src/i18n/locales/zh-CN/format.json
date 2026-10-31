@@ -213,5 +213,9 @@
   "format.audit.action.instanceAgentsPolicy": "实例的智能体策略已更改",
   "format.audit.action.securityAgentsPolicy": "组织的智能体策略已更改",
   "format.audit.kind.agent": "智能体",
-  "format.targetKind.agent": "智能体"
+  "format.targetKind.agent": "智能体",
+  "format.audit.action.modelsDevSync": "已同步 models.dev",
+  "format.audit.action.modelsDevPriceChange": "models.dev 上的价格已变更",
+  "format.audit.action.modelsDevModelDelisted": "模型已从 models.dev 下架",
+  "format.audit.kind.modelsDev": "models.dev"
 }

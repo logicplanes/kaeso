@@ -100,14 +100,14 @@ sequenceDiagram
 
 KPMR 用 Ed25519 为每个目录签名，并在 `KPMR-Signature` 标头中以 `keyid=<key id>, ed25519=<signature>` 的形式发送针对响应体原始字节的签名。网关信任 KPMR 的内置密钥 `kpmr-2026-10` 以及 `kpmr.public_keys` 中的密钥。未签名、由不受信任的密钥签名或签名不匹配的目录会被拒绝，网关继续使用已有的数据。
 
-签名让镜像变得安全：镜像可以从任何地方提供目录，只要提供的是 KPMR 签名的字节。如果您运行自己的注册表，请以 `<key id>:<base64 Ed25519 public key>` 的形式把它的公钥加入 `kpmr.public_keys`。
+签名让镜像变得安全：镜像可以从任何地方提供目录，只要它把 KPMR 的应答连同 `KPMR-Signature` 标头逐字节转发，例如保留标头的缓存反向代理。静态的文件副本没有签名标头，会被拒绝。如果您运行自己的注册表，请以 `<key id>:<base64 Ed25519 public key>` 的形式把它的公钥加入 `kpmr.public_keys`。
 
 ## 无法访问互联网时
 
 Kaeso 的每个版本都内置一份目录快照。新实例从它开始，在网关无法访问 KPMR 时它也会继续使用。对于无法访问互联网的实例，请在[配置](../self-hosting/configuration.md#kpmr)中选择以下之一：
 
 - `kpmr.sync = false` 保留内置快照。每次升级都会带来更新的快照。
-- 把 `kpmr.url` 指向您网络中提供 KPMR 签名目录的镜像。
+- 把 `kpmr.url` 指向您网络中的镜像，它要把 KPMR 的应答连同 `KPMR-Signature` 标头逐字节转发，例如缓存反向代理；静态文件会被拒绝。
 
 ## 下一步
 

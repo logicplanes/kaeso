@@ -15,8 +15,16 @@ const RAW_SCALE: u32 = 12;
 
 pub const COST_RAW_MAX: i128 = 10_i128.pow(38) - 1;
 
+// Anthropic bills a one-hour cache write at twice the input price, and so does Claude through
+// other providers: https://platform.claude.com/docs/en/about-claude/pricing
+const ONE_HOUR_WRITE_FACTOR: Decimal = Decimal::from_parts(2, 0, 0, false, 0);
+
 pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
-    prices.cache_write_1h_price.or(prices.cache_write_price)
+    prices.cache_write_1h_price.or_else(|| {
+        prices
+            .input_price
+            .and_then(|p| p.checked_mul(ONE_HOUR_WRITE_FACTOR))
+    })
 }
 
 pub fn unpriced_model(
@@ -201,24 +209,46 @@ mod tests {
             output_price: Some(dec!(15)),
             cache_read_price: Some(dec!(0.3)),
             cache_write_price: Some(dec!(3.75)),
-            cache_write_1h_price: Some(dec!(6)),
+            cache_write_1h_price: Some(dec!(7)),
             ..Fields::default()
         };
         let mut u = Usage::default();
         u.cache_write_tokens = 3_000_000;
         assert_eq!(cost(&u, &prices), dec!(11.25));
         u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(1_000_000, 2_000_000));
-        assert_eq!(cost(&u, &prices), dec!(15.75));
+        assert_eq!(cost(&u, &prices), dec!(17.75));
         u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(0, 9_000_000));
-        assert_eq!(cost(&u, &prices), dec!(18));
+        assert_eq!(cost(&u, &prices), dec!(21));
+    }
+
+    #[test]
+    fn the_one_hour_write_price_is_kpmrs_or_an_overrides_else_twice_the_input_price() {
+        let kpmr = Fields {
+            input_price: Some(dec!(3)),
+            cache_write_price: Some(dec!(3.75)),
+            cache_write_1h_price: Some(dec!(6.5)),
+            ..Fields::default()
+        };
+        assert_eq!(one_hour_cache_write_price(&kpmr), Some(dec!(6.5)));
+        let overridden = Fields {
+            cache_write_1h_price: Some(dec!(9)),
+            ..Fields::default()
+        }
+        .over(&kpmr);
+        assert_eq!(one_hour_cache_write_price(&overridden), Some(dec!(9)));
+        let unlisted = Fields {
+            cache_write_1h_price: None,
+            ..kpmr.clone()
+        };
+        assert_eq!(one_hour_cache_write_price(&unlisted), Some(dec!(6)));
+        let mut u = Usage::default();
+        u.cache_write_tokens = 1_000_000;
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(0, 1_000_000));
+        assert_eq!(cost(&u, &unlisted), dec!(6));
         let unpriced_input = Fields {
             cache_write_price: Some(dec!(3.75)),
             ..Fields::default()
         };
-        assert_eq!(
-            one_hour_cache_write_price(&unpriced_input),
-            Some(dec!(3.75))
-        );
-        assert_eq!(one_hour_cache_write_price(&Fields::default()), None);
+        assert_eq!(one_hour_cache_write_price(&unpriced_input), None);
     }
 }

@@ -51,7 +51,7 @@ services:
 | `kaeso_log_rows_dropped_total`, `kaeso_clickhouse_write_failures_total` | Jeder Anstieg: Protokollzeilen gingen verloren oder sind gefährdet |
 | `kaeso_usage_rows_dropped_total` | Jeder Anstieg: PostgreSQL hat Nutzung endgültig abgelehnt, und die Logzeile `a usage row cannot be recorded` nennt den Grund |
 | `kaeso_valkey_failures_total{operation}`, `kaeso_limits_fail_open_total{reason}` | Probleme mit Valkey. Währenddessen lehnen harte Budgets Anfragen mit 503 ab, und andere Limits lassen sie ungeprüft durch |
-| `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` bei Hintergrundjobs |
+| `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` bei Hintergrundjobs. `job="kpmr_sync"` ist der Abgleich mit [KPMR](../concepts/kpmr.md), in früheren Versionen `models_dev_sync` |
 | `kaeso_auth_failures_total{method, reason}` | Häufungen fehlgeschlagener Anmeldungen oder Schlüssel. `reason="throttled"` zählt Anfragen, die die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) abgelehnt hat |
 | `kaeso_key_failure_blocks_total` | Jeder Anstieg: Eine Adresse rät API-Schlüssel |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` oder `dropped`: Prüfen Sie die Einstellungen für [E-Mail](email.md) |

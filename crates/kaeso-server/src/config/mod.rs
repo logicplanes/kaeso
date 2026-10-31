@@ -13,7 +13,9 @@ use url::Url;
 
 pub use crate::http::cors::AllowedOrigins;
 
-pub use load::{ConfigError, MapSource, ProcessSource, Source, load, unknown_variables};
+pub use load::{
+    ConfigError, MapSource, ProcessSource, Source, deprecations, load, unknown_variables,
+};
 pub use settings::{
     Kind, PROVIDER_ENV_PREFIX, PROVIDER_FIELDS, ProviderField, ProviderVarError, REQUIRED, Setting,
     parse_provider_env, provider_env, provider_key, setting, settings,

@@ -114,6 +114,7 @@ const SAME_IN_EVERY_LANGUAGE = new Set([
   "Gemini",
   "Mistral",
   "KPMR",
+  "models.dev",
   "GitHub",
   "Terraform",
   "curl",

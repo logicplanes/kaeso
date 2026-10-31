@@ -113,7 +113,7 @@ A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Compl
 | `forced_tool_choice` | `capabilities.forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
 | `efforts` | `reasoning.efforts` | The effort levels the model supports; levels this version doesn't know are left out |
 | `egress_dialect` | `gateway.egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI). A model of kind `embedding` is sent as Embeddings when its provider has that format |
-| `cache_write_1h_price` | `pricing.cache_write_1h` | The price of a one-hour cache write; absent means the cache write price |
+| `cache_write_1h_price` | `pricing.cache_write_1h` | The price of a one-hour cache write; absent, or dropped when an override sets the input price, means twice the input price |
 
 A catalogue entry's value is its override, else KPMR's. Unless `KAESO_KPMR_SYNC` is `false`, the `kpmr_sync` job checks every 5 minutes whether the gateway is due to ask KPMR again, by `KAESO_KPMR_INTERVAL` or the catalogue's `refresh_seconds`. It sends the stored ETag, takes `304` as unchanged, refuses a catalogue no trusted key signed, and stores the result with its ETag in PostgreSQL. Other instances reload it through Valkey. At startup, the newer of the stored and the built-in snapshot wins. Data stored by a release with fewer providers or fields gets the missing providers from the built-in snapshot and is fetched again right away, even when KPMR hasn't changed.
 

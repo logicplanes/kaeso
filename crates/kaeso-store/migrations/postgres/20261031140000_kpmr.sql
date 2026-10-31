@@ -6,11 +6,6 @@ ALTER TABLE kpmr_snapshot ADD COLUMN etag text;
 UPDATE agents SET instance_rights = array_remove(instance_rights, 'instance.model_sources.manage')
 WHERE 'instance.model_sources.manage' = ANY (instance_rights);
 
-ALTER TABLE audit_events DISABLE TRIGGER audit_events_append_only;
-UPDATE audit_events SET action = 'kpmr.' || substr(action, length('models_dev.') + 1)
-WHERE action LIKE 'models\_dev.%';
-ALTER TABLE audit_events ENABLE TRIGGER audit_events_append_only;
-
 CREATE TEMPORARY TABLE kpmr_registry (provider text, model_id text, values jsonb) ON COMMIT DROP;
 INSERT INTO kpmr_registry VALUES
     ('anthropic', 'claude-haiku-4-5', '{"adaptive_thinking": false, "efforts": []}'),

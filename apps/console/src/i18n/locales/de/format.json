@@ -213,5 +213,9 @@
   "format.audit.action.instanceAgentsPolicy": "Agenten-Richtlinie der Instanz geändert",
   "format.audit.action.securityAgentsPolicy": "Agenten-Richtlinie der Organisation geändert",
   "format.audit.kind.agent": "Agenten",
-  "format.targetKind.agent": "Agent"
+  "format.targetKind.agent": "Agent",
+  "format.audit.action.modelsDevSync": "models.dev synchronisiert",
+  "format.audit.action.modelsDevPriceChange": "Preis auf models.dev geändert",
+  "format.audit.action.modelsDevModelDelisted": "Modell von models.dev entfernt",
+  "format.audit.kind.modelsDev": "models.dev"
 }

@@ -83,8 +83,8 @@ pub struct Fields {
     )]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
     pub cache_write_price: Option<Decimal>,
-    #[doc = "USD per million cache-write tokens kept for an hour; absent means the\n\
-        cache-write price."]
+    #[doc = "USD per million cache-write tokens kept for an hour; absent means twice\n\
+        the input price."]
     #[serde(
         default,
         deserialize_with = "price",
@@ -531,6 +531,10 @@ pub fn effective(
         upstream.egress_dialect = upstream
             .egress_dialect
             .filter(|d| provider.dialects().contains(d));
+        // A negotiated input price keeps its one-hour write at twice that price, not KPMR's list price.
+        if entry.overrides.input_price.is_some() {
+            upstream.cache_write_1h_price = None;
+        }
         entry.overrides.clone().over(&upstream)
     };
     let dialect = fields.egress_dialect.unwrap_or(provider.generation());

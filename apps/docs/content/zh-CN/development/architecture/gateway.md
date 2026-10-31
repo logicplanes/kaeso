@@ -113,7 +113,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `forced_tool_choice` | `capabilities.forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定工具。缺省表示模型接受 |
 | `efforts` | `reasoning.efforts` | 模型支持的推理强度级别；本版本不认识的级别会被略去 |
 | `egress_dialect` | `gateway.egress_dialect` | Kaeso 发送的格式：服务商的某个方言，默认为其生成方言（OpenAI 为 `openai_responses`）。类型为 `embedding` 的模型，若其服务商支持 Embeddings 格式，则以 Embeddings 发送 |
-| `cache_write_1h_price` | `pricing.cache_write_1h` | 保留一小时的缓存写入价格；缺省时使用缓存写入价格 |
+| `cache_write_1h_price` | `pricing.cache_write_1h` | 保留一小时的缓存写入价格；缺省时，或覆盖值设置了输入价格时，为输入价格的两倍 |
 
 目录条目的值取自其覆盖值，否则取自 KPMR。除非 `KAESO_KPMR_SYNC` 为 `false`，`kpmr_sync` 任务每 5 分钟检查一次网关是否该再次询问 KPMR，依据是 `KAESO_KPMR_INTERVAL` 或目录的 `refresh_seconds`。它发送保存的 ETag，把 `304` 视为未变更，拒绝没有受信任密钥签名的目录，并把结果连同 ETag 存入 PostgreSQL。其他实例通过 Valkey 重新加载。启动时，存储的快照和内置快照中较新的一个生效。由服务商或字段较少的版本存储的数据，会从内置快照补齐缺少的服务商，并立即重新获取，即使 KPMR 没有变化。
 

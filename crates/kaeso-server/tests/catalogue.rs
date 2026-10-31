@@ -814,6 +814,30 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
 }
 
 #[tokio::test]
+async fn an_install_that_turned_models_dev_sync_off_never_asks_kpmr() {
+    let s = TestServices::start().await;
+    let served = common::kpmr::Served::new(kaeso_core::kpmr::EMBEDDED.to_owned());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", ""),
+            ("KAESO_MODELS_DEV_SYNC", "false"),
+        ],
+    )
+    .await;
+    assert!(!app.state.config.kpmr.sync);
+    app.clock
+        .set(after_the_built_in_snapshot(time::Duration::DAY));
+    assert_eq!(run_sync_job(&app).await, "not due");
+    let owner = app.setup().await;
+    let system = app.get("/instance/system", &owner.cookie).await;
+    assert_eq!(system.body["model_data"]["sync_enabled"], false);
+    assert_eq!(system.body["model_data"]["built_in"], true);
+}
+
+#[tokio::test]
 async fn by_default_the_sync_job_follows_the_interval_kpmr_suggests() {
     let s = TestServices::start().await;
     let mut doc = common::kpmr::built_in();

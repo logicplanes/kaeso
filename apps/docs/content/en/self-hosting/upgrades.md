@@ -73,6 +73,8 @@ services:
 
 The gateway then uses the model data built into the release, the **Updates** page shows the running version, and you update by hand. If you keep a mirror that answers like `update.kaeso.app` or GitHub's releases API, point `KAESO_UPDATES_RELEASES_URL` at it instead, and a mirror of the KPMR catalogue goes into `KAESO_KPMR_URL` ([KPMR](../concepts/kpmr.md#without-internet-access)).
 
+An install that set `KAESO_MODELS_DEV_SYNC: "false"` or `[models_dev]` in `kaeso.toml` keeps working in 0.5 and stays offline, with a warning at startup; 0.6 no longer reads them, so rename them to `KAESO_KPMR_SYNC` and `[kpmr]` ([configuration](configuration.md#kpmr)).
+
 ## The updater
 
 The updater is an optional service in `compose.yaml`, with its own Docker socket proxy. It is the only part of Kaeso that talks to Docker, so it is off until you turn it on.

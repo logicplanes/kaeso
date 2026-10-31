@@ -158,6 +158,58 @@ fn overrides_win_over_kpmrs_values() {
 }
 
 #[test]
+fn the_one_hour_write_price_follows_an_override_then_an_overridden_input_price_then_kpmr() {
+    let ids = crate::provider::known_ids();
+    let feed = catalogue(
+        r#"{"anthropic":{"id":"anthropic","models":{
+        "listed":{"id":"listed","pricing":{"unit":"usd_per_million_tokens","input":"3","cache_write":"3.75","cache_write_1h":"6.5"}},
+        "unlisted":{"id":"unlisted","pricing":{"unit":"usd_per_million_tokens","input":"3","cache_write":"3.75","cache_write_1h":null}}
+    }}}"#,
+    );
+    let parsed = kpmr::parse(&feed, &ids).unwrap();
+    let one_hour = |model: &str, overrides: Fields| {
+        let mut e = entry("anthropic", model);
+        e.overrides = overrides;
+        let x = effective(&e, &parsed.catalogue, &OrgProviders::default()).unwrap();
+        crate::cost::one_hour_cache_write_price(&x.fields)
+    };
+    assert_eq!(
+        one_hour("listed", Fields::default()),
+        Some(dec!(6.5)),
+        "KPMR's price"
+    );
+    assert_eq!(
+        one_hour(
+            "listed",
+            Fields {
+                cache_write_1h_price: Some(dec!(9)),
+                input_price: Some(dec!(1)),
+                ..Fields::default()
+            }
+        ),
+        Some(dec!(9)),
+        "an override of the one-hour price wins"
+    );
+    assert_eq!(
+        one_hour(
+            "listed",
+            Fields {
+                input_price: Some(dec!(2)),
+                ..Fields::default()
+            }
+        ),
+        Some(dec!(4)),
+        "an overridden input price keeps twice itself"
+    );
+    assert_eq!(
+        one_hour("unlisted", Fields::default()),
+        Some(dec!(6)),
+        "twice the input price"
+    );
+    assert_eq!(one_hour("absent", Fields::default()), None);
+}
+
+#[test]
 fn delisted_models_keep_their_last_known_values() {
     let snap = snapshot();
     let mut e = entry("openai", "gone-model");

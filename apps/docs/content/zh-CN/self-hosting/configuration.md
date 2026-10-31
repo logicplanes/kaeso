@@ -158,6 +158,8 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为时长，例如 `6h`。 |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
 
+早期版本的 `models_dev.*` 设置（`KAESO_MODELS_DEV_*`）已弃用：0.5 中仍可使用，0.6 中将被移除。在此之前，未设置 `kpmr.sync` 时 `models_dev.sync` 视为 `kpmr.sync`，`models_dev.url` 和 `models_dev.interval` 会被忽略；网关启动时会为每一项记录一条警告。请把它们改为上面的 `kpmr.*` 设置。
+
 ### 更新
 
 前三项设置只用于初始化新实例。之后由实例管理员在**实例** › **更新**中修改（[升级](upgrades.md)）。

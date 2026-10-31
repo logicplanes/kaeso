@@ -158,6 +158,8 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration such as `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
 
+The `models_dev.*` settings of earlier versions (`KAESO_MODELS_DEV_*`) are deprecated: they still work in 0.5 and are removed in 0.6. Until then, `models_dev.sync` counts as `kpmr.sync` when `kpmr.sync` isn't set, and `models_dev.url` and `models_dev.interval` are ignored; the gateway logs a warning for each at startup. Rename them to the `kpmr.*` settings above.
+
 ### Updates
 
 The first three settings only seed a new install. After that, instance admins change them under **Instance** › **Updates** ([upgrades](upgrades.md)).

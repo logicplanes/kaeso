@@ -531,7 +531,6 @@ mod tests {
     fn a_request_that_asks_for_one_hour_caching_reserves_its_write_price() {
         let mut prices = priced("3", "15");
         prices.cache_write_price = Some(dec!(3.75));
-        prices.cache_write_1h_price = Some(dec!(6));
         let plain = WorstCase::of(&generate(Some(0)), 4000, &prices, openai());
         assert_eq!(plain.nano_usd, 1000 * 3750);
         let kaeso_kpp::Request::Generate(mut g) = generate(Some(0)) else {
@@ -542,8 +541,16 @@ mod tests {
             kaeso_kpp::CacheTtl::OneHour,
         )));
         g.system.push(kaeso_kpp::Block::Text(system));
-        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices, openai());
-        assert_eq!(one_hour.nano_usd, 1000 * 6000);
+        let request = kaeso_kpp::Request::Generate(g);
+        let one_hour = WorstCase::of(&request, 4000, &prices, openai());
+        assert_eq!(one_hour.nano_usd, 1000 * 6000, "twice the input price");
+        prices.cache_write_1h_price = Some(dec!(7));
+        let listed = WorstCase::of(&request, 4000, &prices, openai());
+        assert_eq!(
+            listed.nano_usd,
+            1000 * 7000,
+            "the catalogue's one-hour price"
+        );
     }
 
     #[test]

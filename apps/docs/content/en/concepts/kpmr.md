@@ -100,14 +100,14 @@ If an attempt fails, the data in use stays, and **Instance** › **System** show
 
 KPMR signs every catalogue with Ed25519 and sends the signature in the `KPMR-Signature` header, as `keyid=<key id>, ed25519=<signature>`, over the exact bytes of the body. The gateway trusts KPMR's built-in key, `kpmr-2026-10`, and the keys in `kpmr.public_keys`. It refuses a catalogue that is unsigned, signed with a key it doesn't trust, or whose signature doesn't match, and keeps the data it has.
 
-The signature makes a mirror safe: it may serve the catalogue from anywhere, as long as it serves the bytes KPMR signed. If you run a registry of your own, add its public key to `kpmr.public_keys` as `<key id>:<base64 Ed25519 public key>`.
+The signature makes a mirror safe: it may serve the catalogue from anywhere, as long as it passes on KPMR's answer byte for byte with its `KPMR-Signature` header, such as a caching reverse proxy that keeps the headers. A static copy of the file has no signature header and is refused. If you run a registry of your own, add its public key to `kpmr.public_keys` as `<key id>:<base64 Ed25519 public key>`.
 
 ## Without internet access
 
 Every release of Kaeso has a snapshot of the catalogue built in. A new install starts from it, and it stays in use while the gateway can't reach KPMR. For an install without internet access, choose one of these in the [configuration](../self-hosting/configuration.md#kpmr):
 
 - `kpmr.sync = false` keeps the built-in snapshot. Each upgrade brings a newer one.
-- `kpmr.url` pointed at a mirror on your network that serves the catalogue KPMR signed.
+- `kpmr.url` pointed at a mirror on your network that passes on KPMR's answer byte for byte with its `KPMR-Signature` header, such as a caching reverse proxy; a static file is refused.
 
 ## Next steps
 

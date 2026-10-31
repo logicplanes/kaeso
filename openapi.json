@@ -21255,7 +21255,7 @@
               "string",
               "null"
             ],
-            "description": "USD per million cache-write tokens kept for an hour; absent means the\ncache-write price."
+            "description": "USD per million cache-write tokens kept for an hour; absent means twice\nthe input price."
           },
           "cache_write_price": {
             "type": [
@@ -21431,7 +21431,7 @@
               "string",
               "null"
             ],
-            "description": "USD per million cache-write tokens kept for an hour; absent means the\ncache-write price."
+            "description": "USD per million cache-write tokens kept for an hour; absent means twice\nthe input price."
           },
           "cache_write_price": {
             "oneOf": [

@@ -52,7 +52,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 | Display name | The name the console shows |
 | Inputs, outputs | Inputs: text, images, PDF, audio and video. Outputs: text, images, audio and embeddings |
 | Context, output limit | The model's token limits |
-| Input, output, cache read, cache write and one-hour cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models; without it, they cost the cache write price |
+| Input, output, cache read, cache write and one-hour cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models. Without it, or when you override the input price, they cost twice the input price |
 | Sends as | The API format Kaeso calls the model with: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
 | Temperature | Whether the model takes `temperature` |

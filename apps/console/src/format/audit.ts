@@ -16,6 +16,7 @@ const KIND_LABELS: Record<string, () => string> = {
   member: () => t("format.audit.kind.member", "Members"),
   kpmr: () => t("format.audit.kind.kpmr", "KPMR"),
   model_access: () => t("format.audit.kind.modelAccess", "Model access"),
+  models_dev: () => t("format.audit.kind.modelsDev", "models.dev"),
   org: () => t("format.audit.kind.org", "Organization"),
   platform_key: () => t("format.audit.kind.platformKey", "Platform keys"),
   project: () => t("format.audit.kind.project", "Projects"),
@@ -151,7 +152,14 @@ export const AUDIT_ACTIONS: Record<string, string[]> = Object.keys(ACTION_LABELS
   return kinds;
 }, {});
 
-export const auditActionLabel = (action: string): string => ACTION_LABELS[action]?.() ?? action;
+// Events an older gateway wrote, before KPMR replaced models.dev; the audit log keeps them as they are.
+const RETIRED_ACTION_LABELS: Record<string, () => string> = {
+  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
+  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
+  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+};
+
+export const auditActionLabel = (action: string): string => (ACTION_LABELS[action] ?? RETIRED_ACTION_LABELS[action])?.() ?? action;
 
 export function auditActionOptions(): { value: string; label: string; description: string }[] {
   return Object.entries(AUDIT_ACTIONS).flatMap(([kind, actions]) => [

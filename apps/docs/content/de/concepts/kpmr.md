@@ -100,14 +100,14 @@ Schlägt ein Versuch fehl, bleiben die verwendeten Daten in Gebrauch, und **Inst
 
 KPMR signiert jeden Katalog mit Ed25519 und sendet die Signatur im Header `KPMR-Signature` als `keyid=<key id>, ed25519=<signature>`, über die genauen Bytes des Bodys. Das Gateway vertraut dem eingebauten Schlüssel von KPMR, `kpmr-2026-10`, und den Schlüsseln in `kpmr.public_keys`. Es lehnt einen Katalog ab, der nicht signiert ist, mit einem Schlüssel signiert ist, dem es nicht vertraut, oder dessen Signatur nicht passt, und behält die Daten, die es hat.
 
-Die Signatur macht einen Spiegel sicher: Er darf den Katalog von überall ausliefern, solange er die Bytes ausliefert, die KPMR signiert hat. Betreiben Sie eine eigene Registry, tragen Sie ihren öffentlichen Schlüssel als `<key id>:<base64 Ed25519 public key>` in `kpmr.public_keys` ein.
+Die Signatur macht einen Spiegel sicher: Er darf den Katalog von überall ausliefern, solange er die Antwort von KPMR Byte für Byte mit ihrem Header `KPMR-Signature` weitergibt, etwa als zwischenspeichernder Reverse Proxy, der die Header behält. Eine statische Kopie der Datei hat keinen Signatur-Header und wird abgelehnt. Betreiben Sie eine eigene Registry, tragen Sie ihren öffentlichen Schlüssel als `<key id>:<base64 Ed25519 public key>` in `kpmr.public_keys` ein.
 
 ## Ohne Internetzugang
 
 Jedes Release von Kaeso enthält einen Snapshot des Katalogs. Eine neue Installation startet damit, und er bleibt in Gebrauch, solange das Gateway KPMR nicht erreicht. Für eine Installation ohne Internetzugang wählen Sie in der [Konfiguration](../self-hosting/configuration.md#kpmr) eines davon:
 
 - `kpmr.sync = false` behält den eingebauten Snapshot. Jedes Upgrade bringt einen neueren mit.
-- `kpmr.url` auf einen Spiegel in Ihrem Netz, der den von KPMR signierten Katalog ausliefert.
+- `kpmr.url` auf einen Spiegel in Ihrem Netz, der die Antwort von KPMR Byte für Byte mit ihrem Header `KPMR-Signature` weitergibt, etwa einen zwischenspeichernden Reverse Proxy; eine statische Datei wird abgelehnt.
 
 ## Nächste Schritte
 

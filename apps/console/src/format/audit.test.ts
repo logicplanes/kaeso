@@ -124,6 +124,9 @@ describe("target names in snapshots", () => {
 describe("target kinds", () => {
   it("are named in English and German, and an unknown kind stays as written", async () => {
     expect([targetKindLabel("role"), targetKindLabel("update")]).toEqual(["Role", "Update"]);
+    expect(auditActionLabel("models_dev.price_change")).toBe("Price changed on models.dev");
+    expect(auditActionLabel("models_dev.model_delisted")).toBe("Model taken off models.dev");
+    expect(auditActionLabel("models_dev.sync")).toBe("models.dev synced");
     const kinds = ["user", "org", "invite", "project", "service_account", "limit", "credential", "catalogue_model", "alias", "platform_key", "key"];
     expect(kinds.map(targetKindLabel)).toEqual([
       "User",

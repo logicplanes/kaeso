@@ -158,6 +158,8 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer wie `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | Text | — | Kommagetrennte Schlüssel, denen das Gateway neben dem eingebauten Schlüssel von KPMR vertraut, je `<key id>:<base64 Ed25519 public key>`, für eine eigene Registry; ein Katalog, dessen Signatur kein vertrauenswürdiger Schlüssel bestätigt, wird abgelehnt. |
 
+Die Einstellungen `models_dev.*` früherer Versionen (`KAESO_MODELS_DEV_*`) sind veraltet: Sie funktionieren in 0.5 noch und werden in 0.6 entfernt. Bis dahin gilt `models_dev.sync` als `kpmr.sync`, wenn `kpmr.sync` nicht gesetzt ist, und `models_dev.url` und `models_dev.interval` werden ignoriert; das Gateway schreibt beim Start für jede eine Warnung ins Log. Benennen Sie sie in die obigen Einstellungen `kpmr.*` um.
+
 ### Updates
 
 Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Instanz** › **Updates** ([Upgrades](upgrades.md)).
