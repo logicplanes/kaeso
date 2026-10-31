@@ -40,6 +40,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "request_upload",
         sql: include_str!("../../migrations/clickhouse/0005_request_upload.sql"),
     },
+    Migration {
+        version: 6,
+        name: "response_cache",
+        sql: include_str!("../../migrations/clickhouse/0006_response_cache.sql"),
+    },
 ];
 
 #[derive(Clone)]

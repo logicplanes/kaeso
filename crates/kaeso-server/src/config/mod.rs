@@ -53,6 +53,7 @@ pub struct Config {
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
+    pub response_cache: ResponseCacheConfig,
     pub body_limits: BodyLimitsConfig,
     pub logs: LogsConfig,
     pub instance: InstanceConfig,
@@ -230,6 +231,14 @@ pub struct StreamsConfig {
 pub struct ContinuityConfig {
     #[serde(with = "humantime_serde")]
     pub reasoning_ttl: Duration,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ResponseCacheConfig {
+    pub enabled: bool,
+    pub max_entry_size: ByteSize,
+    pub memory_share: u8,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -456,6 +465,12 @@ impl Config {
                 "must be 0s (off) or between 1m and 24h".into(),
             );
         }
+        if !(1..=90).contains(&self.response_cache.memory_share) {
+            return invalid(
+                "response_cache.memory_share",
+                "must be between 1 and 90 (percent of Valkey's maxmemory)".into(),
+            );
+        }
         if !(Duration::from_secs(1)..=Duration::from_secs(3600)).contains(&self.key_failures.window)
         {
             return invalid("key_failures.window", "must be between 1s and 1h".into());
@@ -469,6 +484,10 @@ impl Config {
                 self.body_limits.provider_response,
             ),
             ("logs.buffer_size", self.logs.buffer_size),
+            (
+                "response_cache.max_entry_size",
+                self.response_cache.max_entry_size,
+            ),
         ] {
             if size.0 == 0 {
                 return invalid(key, "must be larger than zero".into());

@@ -174,6 +174,10 @@ Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`
 
 Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-Completions-App ein Modell auf, das über ein anderes Format bedient wird, behält Kaeso das Reasoning des Modells vor jedem Tool-Aufruf. In der nächsten Runde der App fügt Kaeso das Reasoning wieder ein ([Formatübersetzung](../concepts/format-translation.md#chat-completions)).
 
+## Antwort-Cache
+
+Ein Projekt kann eine wiederholte, gleiche Anfrage aus einer gespeicherten Antwort beantworten ([Antwort-Cache](../console/response-cache.md)). Senden Sie `Cache-Control: no-cache`, um den Anbieter erneut zu fragen und die neue Antwort zu speichern, oder `Cache-Control: no-store`, um den Cache für diese Anfrage zu umgehen.
+
 ## Antwort-Header
 
 | Header | Wert |
@@ -183,6 +187,8 @@ Chat Completions hat kein Feld für das Reasoning eines Modells. Ruft eine Chat-
 | `kaeso-model` | Die Modell-ID des Anbieters, sobald das Modell feststeht, auch bei Fehlern |
 | `kaeso-left-out` | Was Kaeso weggelassen hat, weil das Modell keine Entsprechung hat, so benannt wie in der Anfrage, etwa `tools[1], text.verbosity`; ein Item der Unterhaltung mit Typ und ID, etwa `web_search_call ws_67c9…`. Nur an Antworten, die etwas weggelassen haben ([weggelassene Tools](../development/kpp/cross-format.md#weggelassene-tools)) |
 | `kaeso-adapted` | Die Tools, deren Parameter-Schema Kaeso zu einem Objekt zusammengeführt hat, weil das Modell keine Union an seiner Wurzel annimmt, mit ihrem Pfad in der Anfrage, etwa `tools[0].tools[3]`. Das Modell sieht die Varianten in der Beschreibung des Tools, und seine Aufrufe erreichen die App unverändert. Außerdem die Tool-Aufrufe im Gespräch, deren Argumente Kaeso für ein Modell, das nur Objekte annimmt, zu einem Objekt gemacht hat, als `tool call` mit der ID des Aufrufs, etwa `tool call call_abc`. Nur an Antworten, die ein Tool oder einen Aufruf angepasst haben ([Tool-Schemas mit Union-Wurzel](../development/kpp/cross-format.md#tool-schemas-mit-union-wurzel), [Argumente von Tool-Aufrufen](../development/kpp/cross-format.md#argumente-von-tool-aufrufen)) |
+| `kaeso-cache` | `hit`, wenn der [Antwort-Cache](../console/response-cache.md) geantwortet hat, `miss`, wenn die Anfrage zum Anbieter ging, `bypass`, wenn sie nicht cachebar war oder die App `Cache-Control: no-store` gesendet hat. Nur in Projekten mit eingeschaltetem Cache |
+| `age` | Die Sekunden seit dem Speichern der gecachten Antwort. Nur bei `kaeso-cache: hit` |
 | `server-timing` | `upload;dur=…`, die Zeit in Millisekunden, die die App zum Senden des Bodys brauchte. Danach `kaeso;dur=…`, die eigene Zeit von Kaeso in Millisekunden, bevor es den Anbieter aufrief, oder bis zur Antwort, wenn die Anfrage keinen erreichte, ohne den Upload. Zuletzt `upstream;dur=…`, die Zeit des Anbieters bis zu seinem ersten Byte, sobald sie bekannt ist. Ein Stream sendet den Header mit seinen übrigen Headern, daher steht die Zeit, die Kaeso für das Übersetzen des Streams braucht, nur im [Anfrageprotokoll](../console/request-logs.md#anfrage-lesen) |
 
 ## Aufrufe aus dem Browser
@@ -191,7 +197,7 @@ Ein Browser erlaubt einer Webseite den Aufruf eines anderen Origins nur, wenn di
 
 - **Exakte Origins.** Schema, Host und Port müssen übereinstimmen: `https://app.example.com` lässt weder `http://app.example.com` noch `https://www.app.example.com` zu. Kaeso lehnt `*` beim Start ab, weil damit jede Website Anfragen mit den Schlüsseln ihrer Besucher senden könnte.
 - **Preflights.** Eine `OPTIONS`-Anfrage mit `Origin` und `Access-Control-Request-Method` von einem gelisteten Origin erhält ohne Schlüssel 204. Die Antwort trägt `Access-Control-Allow-Origin` mit diesem Origin, `Access-Control-Allow-Methods: GET, POST` und `Access-Control-Max-Age: 7200`. `Access-Control-Allow-Headers` nennt diejenigen angefragten Header, die die offiziellen SDKs senden: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` und `x-stainless-…`. Ein Preflight ist keine Modellanfrage: Er wird weder protokolliert noch berechnet noch auf Limits angerechnet.
-- **Antworten.** Jede Antwort an einen gelisteten Origin, auch eine Fehlerantwort, trägt `Access-Control-Allow-Origin` mit diesem Origin und `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, retry-after, retry-after-ms`, damit die App diese Header lesen kann.
+- **Antworten.** Jede Antwort an einen gelisteten Origin, auch eine Fehlerantwort, trägt `Access-Control-Allow-Origin` mit diesem Origin und `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-cache, age, retry-after, retry-after-ms`, damit die App diese Header lesen kann.
 - **Andere Origins** erhalten keine CORS-Header, also blockiert der Browser den Aufruf, und ihre Preflights erhalten ein leeres 204. Jede Antwort auf `/v1` trägt `Vary: Origin`, damit Caches die Antworten auseinanderhalten.
 - **Keine Cookies.** Kaeso sendet nie `Access-Control-Allow-Credentials`, da Schlüssel in Headern übertragen werden. Die Platform API, die Health-Checks und die Metriken beantworten nie Cross-Origin-Anfragen.
 

@@ -970,15 +970,17 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms"
+            ",usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache"
         )
     );
     let row = lines.next().unwrap();
     let (_, rest) = row.split_once(",\"playground\",").unwrap();
-    let [overhead, processing, breakpoints, upload] = rest.split(',').collect::<Vec<_>>()[..]
+    let [overhead, processing, breakpoints, upload, cache] =
+        rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
     };
+    assert_eq!(cache, "\"\"", "the cache is off in a new project: {row}");
     assert!(
         [overhead, processing, upload]
             .iter()

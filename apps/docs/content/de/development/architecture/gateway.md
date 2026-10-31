@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: Verbuchen, protokollieren
 ```
 
+In einem Projekt mit eingeschaltetem [Antwort-Cache](../../console/response-cache.md) schlägt das Gateway die kodierte Anfrage in Valkey nach, bevor es sie sendet. Ein Treffer wird aus seinem versiegelten Eintrag dekodiert und für die App kodiert, ohne den Anbieter (`crates/kaeso-server/src/services/response_cache.rs`).
+
 Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff, einem Plattform-Schlüssel oder dem Access-Token eines Agenten. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.
 
 | Code | Wo |

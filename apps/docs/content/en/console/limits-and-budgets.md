@@ -25,7 +25,7 @@ Seeing limits needs the right **View limits**, and changing them **Manage limits
 | Request rate | Requests | A sliding minute |
 | Token rate | Tokens | A sliding minute |
 
-Days and months are calendar days and months in UTC, and a total never resets. A limit applies to every model or to one.
+Days and months are calendar days and months in UTC, and a total never resets. A limit applies to every model or to one. A request the [response cache](response-cache.md) answers costs nothing, but counts its request and tokens.
 
 A limit can't be higher than the same limit one level up. A key's spend budget stays within its owner's, and a member's within the project's.
 

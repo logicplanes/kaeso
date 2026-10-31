@@ -16,6 +16,8 @@ pub const UPSTREAM_ERRORS: &str = "kaeso_upstream_errors_total";
 pub const STREAM_FAILURES: &str = "kaeso_stream_failures_total";
 pub const USAGE_ESTIMATES: &str = "kaeso_usage_estimates_total";
 pub const REASONING_CONTINUITY: &str = "kaeso_reasoning_continuity_total";
+pub const RESPONSE_CACHE_LOOKUPS: &str = "kaeso_response_cache_lookups_total";
+pub const RESPONSE_CACHE_WRITES: &str = "kaeso_response_cache_writes_total";
 pub const LOG_BUFFER_BYTES: &str = "kaeso_log_buffer_bytes";
 pub const LOG_BUFFER_ROWS: &str = "kaeso_log_buffer_rows";
 pub const LOG_ROWS_DROPPED: &str = "kaeso_log_rows_dropped_total";
@@ -74,6 +76,14 @@ pub fn describe() {
     describe_counter!(
         REASONING_CONTINUITY,
         "Reasoning kept between turns for OpenAI Chat apps, by outcome (kept, restored, missing, unavailable)."
+    );
+    describe_counter!(
+        RESPONSE_CACHE_LOOKUPS,
+        "Requests of projects with the response cache on, by result (hit, miss, bypass)."
+    );
+    describe_counter!(
+        RESPONSE_CACHE_WRITES,
+        "Replies offered to the response cache, by outcome (stored, too_large, full, failed)."
     );
     describe_gauge!(
         LOG_BUFFER_BYTES,

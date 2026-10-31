@@ -145,6 +145,7 @@ pub struct Outcome {
     pub usage_estimated: bool,
     pub content_kept: bool,
     pub cache_breakpoints: Option<usize>,
+    pub response_cache: Option<crate::services::response_cache::Verdict>,
 }
 
 impl Outcome {

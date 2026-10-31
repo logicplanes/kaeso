@@ -592,6 +592,40 @@ pub struct LogFilter {
         `anthropic_messages`, `openai_chat`, `openai_responses` or\n\
         `openai_embeddings`."]
     pub egress_dialect: Option<String>,
+    #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
+        or passed by (`bypass`)."]
+    pub response_cache: Option<ResponseCacheResult>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "What the response cache did with a request.")]
+pub enum ResponseCacheResult {
+    #[doc = "Answered from the cache."]
+    Hit,
+    #[doc = "Not in the cache; sent to the provider."]
+    Miss,
+    #[doc = "Not cacheable, or skipped by `Cache-Control`."]
+    Bypass,
+}
+
+impl ResponseCacheResult {
+    fn as_str(self) -> &'static str {
+        match self {
+            ResponseCacheResult::Hit => "hit",
+            ResponseCacheResult::Miss => "miss",
+            ResponseCacheResult::Bypass => "bypass",
+        }
+    }
+
+    fn parse(s: &str) -> Option<ResponseCacheResult> {
+        match s {
+            "hit" => Some(ResponseCacheResult::Hit),
+            "miss" => Some(ResponseCacheResult::Miss),
+            "bypass" => Some(ResponseCacheResult::Bypass),
+            _ => None,
+        }
+    }
 }
 
 impl LogFilter {
@@ -637,6 +671,7 @@ impl LogFilter {
                 .as_deref()
                 .map(|d| dialect_filter("egress_dialect", d))
                 .transpose()?,
+            response_cache: self.response_cache.map(|c| c.as_str().to_owned()),
         })
     }
 }
@@ -765,6 +800,11 @@ pub struct LogView {
         other formats, for requests refused before Kaeso encoded them and for\n\
         requests logged before Kaeso recorded it."]
     pub cache_breakpoints: Option<u16>,
+    #[doc = "What the project's response cache did: `hit` (answered from the\n\
+        cache, at no provider cost), `miss` (sent to the provider) or `bypass`\n\
+        (not cacheable, such as a stream, or skipped by `Cache-Control`);\n\
+        `null` when the cache was off."]
+    pub response_cache: Option<ResponseCacheResult>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -835,6 +875,7 @@ fn view(r: &LogRow) -> LogView {
             processing_ms: r.stream_processing_ms,
         }),
         cache_breakpoints: r.cache_breakpoints,
+        response_cache: ResponseCacheResult::parse(&r.response_cache),
     }
 }
 
@@ -962,7 +1003,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1040,6 +1081,11 @@ fn csv_line(v: &LogView) -> String {
         number(progress.and_then(|p| p.processing_ms)),
         number(v.cache_breakpoints),
         number(v.request_upload_ms),
+        Text(
+            v.response_cache
+                .map(|c| c.as_str().to_owned())
+                .unwrap_or_default(),
+        ),
     ];
     let mut line = cells
         .iter()

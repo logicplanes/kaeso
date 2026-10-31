@@ -25,6 +25,7 @@ pub struct Inner {
     pub clock: SharedClock,
     pub mailer: Mailer,
     pub caches: Caches,
+    pub response_cache: crate::services::response_cache::Shared,
     pub models_dev: crate::services::models_dev::ModelsDev,
     pub upstream: kaeso_upstream::Upstream,
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
@@ -59,6 +60,7 @@ pub struct Parts {
 impl AppState {
     pub fn new(p: Parts) -> AppState {
         let caches = Caches::new(&p.valkey, &p.keyring);
+        let response_cache = crate::services::response_cache::Shared::new(&p.keyring);
         let connect_timeout = p.config.upstream.connect_timeout;
         let reach = kaeso_upstream::guard::Reach::networks(
             p.config.custom_providers.allowed_networks.clone(),
@@ -74,6 +76,7 @@ impl AppState {
             clock: p.clock,
             mailer: p.mailer,
             caches,
+            response_cache,
             models_dev: crate::services::models_dev::ModelsDev::embedded(),
             upstream: kaeso_upstream::Upstream::new(
                 connect_timeout,

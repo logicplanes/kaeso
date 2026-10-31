@@ -1,7 +1,7 @@
 ---
 title: Playground
 description: Send one prompt to up to four models and compare their replies side by side.
-order: 9
+order: 10
 ---
 
 The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.

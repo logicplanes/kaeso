@@ -41,6 +41,7 @@ import { afterToday, DAY_PRESETS, pickedDay } from "~/format/picked-day";
 import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
+import { OrgResponseCacheSection } from "./response-cache-section";
 import type { LoggingTab } from "~/api/queries/settings-prefetch";
 import { useNeedsRight } from "~/auth/needs-right";
 
@@ -81,6 +82,7 @@ export function OrgLoggingPage({ org, tab }: { org: string; tab: LoggingTab }) {
         </Tabs.List>
         <Tabs.Panel value="settings">
           <LogSettings org={org} />
+          <OrgResponseCacheSection org={org} />
         </Tabs.Panel>
         <Tabs.Panel value="storage">
           <Storage org={org} />

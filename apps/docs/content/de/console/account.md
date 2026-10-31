@@ -1,7 +1,7 @@
 ---
 title: Konto und Sprache
 description: Schützen Sie Ihr Konto, melden Sie andere Browser ab und wählen Sie Design und Sprache.
-order: 10
+order: 11
 ---
 
 Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat diese Seiten:
