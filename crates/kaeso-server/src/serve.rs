@@ -209,6 +209,7 @@ pub async fn run(
     crate::jobs::spawn_all(&state, &shutdown);
     spawn_usage_flusher(state.clone(), shutdown.clone());
     crate::services::logs::spawn_writer(state.clone(), shutdown.clone());
+    crate::services::response_cache::spawn_memory_watch(state.clone(), shutdown.clone());
 
     crate::setup::announce(&state).await;
 

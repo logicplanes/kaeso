@@ -1,7 +1,7 @@
 ---
 title: Playground
 description: Senden Sie einen Prompt an bis zu vier Modelle und vergleichen Sie ihre Antworten nebeneinander.
-order: 9
+order: 10
 ---
 
 Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugleich und zeigt ihre Antworten nebeneinander. Jede Spalte ist ein eigenes Gespräch. Ihn zu nutzen erfordert das Recht **Playground nutzen**, das Admins und Entwickler eines Projekts haben.

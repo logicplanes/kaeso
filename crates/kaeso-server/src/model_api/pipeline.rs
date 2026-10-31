@@ -33,6 +33,7 @@ use super::stream;
 use crate::services::availability::{self, Probe};
 use crate::services::continuity;
 use crate::services::credentials::{self, ResolveError as CredentialError};
+use crate::services::response_cache::{self, Verdict};
 use crate::state::AppState;
 
 const MAX_ERROR_BODY: usize = 1 << 20;
@@ -61,6 +62,7 @@ pub(super) struct Recording {
     reservation: Reservation,
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
+    keep_in_cache: Option<response_cache::Slot>,
 }
 
 impl Recording {
@@ -212,6 +214,7 @@ fn blank_outcome() -> Outcome {
         usage_estimated: false,
         content_kept: false,
         cache_breakpoints: None,
+        response_cache: None,
     }
 }
 
@@ -298,6 +301,7 @@ pub async fn serve_with(
         reservation: Reservation::default(),
         sent_input: None,
         held: None,
+        keep_in_cache: None,
     };
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
@@ -323,6 +327,10 @@ pub async fn serve_with(
         }
         Err(failure) => {
             let mut resp = answer(&failure);
+            if let Some(v) = rec.outcome().response_cache {
+                resp.headers_mut()
+                    .insert(response_cache::HEADER, v.header());
+            }
             rec.time(&mut resp);
             rec.fail(failure.logged(), resp.status().as_u16()).await;
             resp
@@ -914,6 +922,35 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             provider_said: None,
         }
     };
+    let cached = consult_cache(
+        state,
+        rec,
+        &headers,
+        response_cache::Request {
+            org: caller.org_id,
+            project: caller.project_id,
+            kind,
+            dialect: plan.dialect,
+            provider: eff.provider.id(),
+            entry: entry.id,
+            model: &eff.model_id,
+            encoded: &encoded,
+        },
+        stream,
+    )
+    .await;
+    rec.keep_in_cache = match cached {
+        Consulted::Hit(stored) => {
+            let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req)).with_created_at(
+                u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0),
+            );
+            return replay(state, rec, *stored, &encode_ctx, carry, &served)
+                .await
+                .map_err(fail(Stage::Reply));
+        }
+        Consulted::Store(slot) => Some(slot),
+        Consulted::Skip => None,
+    };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
     let sent_bytes = encoded.body.len();
@@ -1057,6 +1094,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let (tx, rx) = tokio::sync::mpsc::channel::<Bytes>(32);
             let taken = stream::Taken::default();
             let timing = rec.timing();
+            let verdict = rec.outcome().response_cache;
             let task_rec = Recording {
                 state: rec.state.clone(),
                 sink: rec.sink.clone(),
@@ -1065,6 +1103,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 reservation: std::mem::take(&mut rec.reservation),
                 sent_input: None,
                 held: rec.held.take(),
+                keep_in_cache: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
@@ -1089,6 +1128,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
             h.insert("x-accel-buffering", HeaderValue::from_static("no"));
             h.insert(TIMING_HEADER, timing);
+            if let Some(v) = verdict {
+                h.insert(response_cache::HEADER, v.header());
+            }
             stamp(&mut resp, &served);
             Ok(Done::Streaming(resp))
         }
@@ -1176,6 +1218,27 @@ async fn reply_with(
 ) -> Result<Done, KppError> {
     record_usage(rec, &reply, counter).await;
     let out = out?;
+    if let Some(slot) = rec.keep_in_cache.take() {
+        let o = rec.outcome();
+        let stored = response_cache::Stored {
+            reply: reply.clone(),
+            usage: o.usage.clone().unwrap_or_default(),
+            usage_estimated: o.usage_estimated,
+            stored_at_ms: response_cache::unix_ms(state.clock.now()),
+        };
+        response_cache::put(state, slot, stored);
+    }
+    answer_with(state, rec, reply, out, carry, served).await
+}
+
+async fn answer_with(
+    state: &AppState,
+    rec: &mut Recording,
+    reply: Reply,
+    out: Vec<u8>,
+    carry: Option<uuid::Uuid>,
+    served: &Served,
+) -> Result<Done, KppError> {
     if let Some(key_id) = carry
         && let Reply::Generate(r) = &reply
     {
@@ -1185,12 +1248,87 @@ async fn reply_with(
         rec.outcome().reply = Some(r);
     }
     let mut resp = Response::new(Body::from(out));
-    resp.headers_mut().insert(
+    let h = resp.headers_mut();
+    h.insert(
         header::CONTENT_TYPE,
         HeaderValue::from_static("application/json"),
     );
+    if let Some(v) = rec.outcome().response_cache {
+        h.insert(response_cache::HEADER, v.header());
+    }
     stamp(&mut resp, served);
     Ok(Done::Complete(resp, StatusCode::OK.as_u16()))
+}
+
+enum Consulted {
+    Skip,
+    Store(response_cache::Slot),
+    Hit(Box<response_cache::Stored>),
+}
+
+async fn consult_cache(
+    state: &AppState,
+    rec: &mut Recording,
+    headers: &HeaderMap,
+    request: response_cache::Request<'_>,
+    stream: bool,
+) -> Consulted {
+    let Some(active) = response_cache::active(state, request.project).await else {
+        return Consulted::Skip;
+    };
+    let directive = response_cache::directive(headers);
+    let decided = |rec: &mut Recording, v: Verdict| {
+        rec.outcome().response_cache = Some(v);
+        response_cache::count_lookup(v);
+    };
+    if !response_cache::cacheable(request.kind, stream) || !directive.write && !directive.read {
+        decided(rec, Verdict::Bypass);
+        return Consulted::Skip;
+    }
+    let slot = response_cache::slot(state, active, &request);
+    if directive.read
+        && let Some(stored) = response_cache::get(state, &slot).await
+    {
+        decided(rec, Verdict::Hit);
+        return Consulted::Hit(Box::new(stored));
+    }
+    decided(rec, Verdict::Miss);
+    if directive.write {
+        Consulted::Store(slot)
+    } else {
+        Consulted::Skip
+    }
+}
+
+async fn replay(
+    state: &AppState,
+    rec: &mut Recording,
+    stored: response_cache::Stored,
+    encode_ctx: &EncodeCtx,
+    carry: Option<uuid::Uuid>,
+    served: &Served,
+) -> Result<Done, KppError> {
+    let age = stored.age(state.clock.now());
+    let out = dispatch::encode_response(rec.outcome().ingress, &stored.reply, encode_ctx)?;
+    let overhead = rec
+        .started
+        .elapsed()
+        .saturating_sub(rec.outcome().upload.unwrap_or_default());
+    let o = rec.outcome();
+    o.usage = Some(stored.usage);
+    o.usage_estimated = stored.usage_estimated;
+    o.overhead = Some(overhead);
+    o.response_model = match &stored.reply {
+        Reply::Generate(r) => Some(r.model.clone()),
+        Reply::Embed(e) => Some(e.model.clone()),
+        _ => None,
+    };
+    let mut done = answer_with(state, rec, stored.reply, out, carry, served).await?;
+    if let Done::Complete(resp, _) = &mut done {
+        resp.headers_mut()
+            .insert(header::AGE, HeaderValue::from(age.as_secs()));
+    }
+    Ok(done)
 }
 
 fn provider_error(

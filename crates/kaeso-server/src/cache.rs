@@ -635,6 +635,7 @@ pub struct Caches {
     pub project_models: TieredCache<kaeso_store::pg::catalogue::ProjectModels>,
     pub project_limits: TieredCache<Vec<kaeso_core::limits::Limit>>,
     pub log_settings: TieredCache<crate::services::logs::Cached>,
+    pub response_cache: TieredCache<crate::services::response_cache::Cached>,
     pub models_dev_changed: Arc<tokio::sync::Notify>,
     pub touched: Cache<uuid::Uuid, ()>,
     pub unknown_keys: Cache<String, ()>,
@@ -667,6 +668,12 @@ impl Caches {
             ),
             log_settings: TieredCache::new(
                 "lcfg",
+                valkey.clone(),
+                subscription.clone(),
+                mac.clone(),
+            ),
+            response_cache: TieredCache::new(
+                "rcfg",
                 valkey.clone(),
                 subscription.clone(),
                 mac.clone(),
@@ -724,6 +731,7 @@ impl Caches {
                 Some(("pmod", key)) => self.project_models.drop_local(key).await,
                 Some(("plim", key)) => self.project_limits.drop_local(key).await,
                 Some(("lcfg", key)) => self.log_settings.drop_local(key).await,
+                Some(("rcfg", key)) => self.response_cache.drop_local(key).await,
                 Some(("mdev", _)) => self.models_dev_changed.notify_one(),
                 _ => self.clear_local(),
             },
@@ -738,6 +746,7 @@ impl Caches {
         self.project_models.clear_subscribed();
         self.project_limits.clear_subscribed();
         self.log_settings.clear_subscribed();
+        self.response_cache.clear_subscribed();
     }
 
     fn clear_local(&self) {
@@ -748,6 +757,7 @@ impl Caches {
         self.project_models.clear_local();
         self.project_limits.clear_local();
         self.log_settings.clear_local();
+        self.response_cache.clear_local();
     }
 }
 

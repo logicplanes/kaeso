@@ -45,6 +45,7 @@ services:
 | `kaeso_usage_estimates_total{reason, provider}` | Kaeso 不得不估算的用量。`unreported`：服务商结束回复时没有报告用量。`cancelled` 和 `failed`：断开连接的应用和中途中断的流 |
 | `kaeso_limit_refusals_total{kind, level}` | 预算即将用完 |
 | `kaeso_reasoning_continuity_total{outcome}` | `unavailable`：Valkey 出现问题。大量 `missing`：对话持续时间超过 `KAESO_CONTINUITY_REASONING_TTL` |
+| `kaeso_response_cache_lookups_total{result}`, `kaeso_response_cache_writes_total{outcome}` | [响应缓存](../console/response-cache.md)的命中率，`hit` 对比 `miss`。`outcome="full"` 的写入：Valkey 超过了 `KAESO_RESPONSE_CACHE_MEMORY_SHARE`。`failed`：Valkey 出现问题 |
 | `kaeso_tokens_total{provider, kind}`、`kaeso_cost_microusd_total{provider}` | 支出趋势 |
 | `kaeso_log_buffer_rows`、`kaeso_log_buffer_bytes` | 缓冲区持续增长：ClickHouse 不接受写入 |
 | `kaeso_log_rows_dropped_total`、`kaeso_clickhouse_write_failures_total` | 任何增长：日志行已丢失或面临丢失 |

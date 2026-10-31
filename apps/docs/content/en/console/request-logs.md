@@ -43,6 +43,8 @@ Anthropic caches only the parts of a prompt that a request marks with `cache_con
 
 A request's **Usage** also lists **Read from the cache** and, for Anthropic's format, how many **Cache breakpoints** Kaeso sent. The CSV export has that count as `cache_breakpoints`.
 
+In a project with the [response cache](response-cache.md) on, **Usage** also says what the **Response cache** did: answered the request, sent it to the provider, or passed it by. The CSV export has it as `response_cache`.
+
 ## Export logs
 
 **Export** downloads the requests that match the current filters:

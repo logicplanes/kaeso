@@ -40,6 +40,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "request_upload",
         sql: include_str!("../../migrations/clickhouse/0005_request_upload.sql"),
     },
+    Migration {
+        version: 6,
+        name: "response_cache",
+        sql: include_str!("../../migrations/clickhouse/0006_response_cache.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -192,7 +197,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 10);
+        assert_eq!(all.len(), 11);
         assert!(
             all.iter()
                 .all(|s| s.starts_with("CREATE ") || s.starts_with("ALTER TABLE "))

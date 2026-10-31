@@ -58,6 +58,7 @@ pub struct LogRow {
     pub stream_processing_ms: Option<u32>,
     pub cache_breakpoints: Option<u16>,
     pub request_upload_ms: Option<u32>,
+    pub response_cache: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -123,6 +124,7 @@ pub struct Filter {
     pub source: Option<String>,
     pub ingress_dialect: Option<String>,
     pub egress_dialect: Option<String>,
+    pub response_cache: Option<String>,
 }
 
 pub async fn search(
@@ -226,6 +228,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(d) = &f.ingress_dialect {
         sql.push_str(" AND ingress_dialect = ?");
         binds.push(Bind::Str(d.clone()));
+    }
+    if let Some(c) = &f.response_cache {
+        sql.push_str(" AND response_cache = ?");
+        binds.push(Bind::Str(c.clone()));
     }
     if let Some(d) = &f.egress_dialect {
         sql.push_str(" AND egress_dialect = ?");

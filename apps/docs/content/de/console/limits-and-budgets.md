@@ -25,7 +25,7 @@ Limits zu sehen erfordert das Recht **Limits ansehen**, sie zu ändern **Limits 
 | Anfragerate | Anfragen | Eine gleitende Minute |
 | Token-Rate | Token | Eine gleitende Minute |
 
-Tage und Monate sind Kalendertage und -monate in UTC, und „insgesamt“ beginnt nie neu. Ein Limit gilt für alle Modelle oder für eines.
+Tage und Monate sind Kalendertage und -monate in UTC, und „insgesamt“ beginnt nie neu. Ein Limit gilt für alle Modelle oder für eines. Eine Anfrage, die der [Antwort-Cache](response-cache.md) beantwortet, kostet nichts, zählt aber ihre Anfrage und ihre Token.
 
 Ein Limit kann nicht höher sein als dasselbe Limit eine Ebene darüber. Das Ausgabenbudget eines Schlüssels bleibt in dem seines Inhabers, das eines Mitglieds in dem des Projekts.
 

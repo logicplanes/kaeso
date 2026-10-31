@@ -1,7 +1,7 @@
 ---
 title: Instanzverwaltung
 description: Verwalten Sie Benutzer, Organisationen, Einstellungen und Updates der ganzen Installation.
-order: 11
+order: 12
 ---
 
 Instanz-Admins betreiben die Installation. Der erste Benutzer, angelegt über den Einrichtungslink, ist einer und kann weitere zu Instanz-Admins machen. Instanz-Admin zu sein gibt keine Rechte in Organisationen: Sie sehen deren Metadaten, nie ihre Schlüssel, Protokolle oder Inhalte.

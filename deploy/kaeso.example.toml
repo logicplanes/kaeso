@@ -112,6 +112,11 @@ max_bytes = "0"
 [continuity]
 reasoning_ttl = "1h"
 
+[response_cache]
+enabled = true
+max_entry_size = "1MiB"
+memory_share = 50
+
 [body_limits]
 model_api = "8MiB"
 in_flight = "512MiB"

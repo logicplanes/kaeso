@@ -174,6 +174,10 @@ x-api-key: sk-kso-…
 
 Chat Completions 没有存放模型推理内容的字段。Chat Completions 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。
 
+## 响应缓存
+
+项目可以用已存储的回复应答重复的相同请求（[响应缓存](../console/response-cache.md)）。发送 `Cache-Control: no-cache` 可重新询问服务商并存储新回复，发送 `Cache-Control: no-store` 可让该请求跳过缓存。
+
 ## 响应头
 
 | 响应头 | 值 |
@@ -183,6 +187,8 @@ Chat Completions 没有存放模型推理内容的字段。Chat Completions 应�
 | `kaeso-model` | 服务商的模型 ID；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)） |
 | `kaeso-adapted` | 因模型不接受参数 schema 根部的联合、Kaeso 把参数 schema 合并为一个对象的工具，按它们在请求中的路径列出，例如 `tools[0].tools[3]`。模型会在工具描述中看到各个变体，它的调用原样到达应用。还包括对话中 Kaeso 为只接受对象的模型把参数变为对象的工具调用，以 `tool call` 加调用 ID 列出，例如 `tool call call_abc`。只出现在调整了工具或调用的响应上（[联合类型的工具 schema](../development/kpp/cross-format.md#联合类型的工具-schema)、[工具调用参数](../development/kpp/cross-format.md#工具调用参数)） |
+| `kaeso-cache` | [响应缓存](../console/response-cache.md)应答时为 `hit`，请求发往服务商时为 `miss`，请求无法缓存或应用发送了 `Cache-Control: no-store` 时为 `bypass`。只出现在开启缓存的项目中 |
+| `age` | 缓存的回复存储以来的秒数。只出现在 `kaeso-cache: hit` 时 |
 | `server-timing` | `upload;dur=…`：应用发送请求体所用的毫秒数。随后是 `kaeso;dur=…`：Kaeso 调用服务商之前自身花费的毫秒数，不含上传；请求未到达服务商时，则是到 Kaeso 作出响应为止的时间。最后是 `upstream;dur=…`：服务商返回第一个字节所用的时间，得知后即带有。流式回复随响应头一起发送它，因此 Kaeso 转换流所花的时间只记录在[请求日志](../console/request-logs.md#查看请求)中 |
 
 ## 从浏览器调用
@@ -191,7 +197,7 @@ Chat Completions 没有存放模型推理内容的字段。Chat Completions 应�
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
 - **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key` 和 `x-stainless-…`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
-- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, retry-after, retry-after-ms`，以便应用读取这些响应头。
+- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
 - **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。
 

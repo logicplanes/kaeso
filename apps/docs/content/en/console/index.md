@@ -24,6 +24,7 @@ A list, such as API keys or members, is a single Tab stop. Move between its rows
 - [API keys](api-keys.md): Create keys for apps and scripts, limit them, and turn them off.
 - [Limits and budgets](limits-and-budgets.md): Cap the requests, tokens and spending of a project, a member or a key.
 - [Request logs](request-logs.md): Find any request, export logs, and choose what is kept.
+- [Response cache](response-cache.md): Answer repeated identical requests from a stored reply.
 - [Playground](playground.md): Compare up to four models side by side.
 - [Account and language](account.md): Secure your account, and choose your theme and language.
 - [Instance administration](instance-administration.md): Manage the users, organizations, settings and updates of the install.
