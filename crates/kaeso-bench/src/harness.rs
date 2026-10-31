@@ -145,7 +145,7 @@ impl Gateway {
             .env("KAESO_VALKEY_KEY_PREFIX", &services.valkey_prefix)
             .env("KAESO_MASTER_KEYS", MASTER_KEY)
             .env("KAESO_MAIL_TRANSPORT", "log")
-            .env("KAESO_MODELS_DEV_SYNC", "false")
+            .env("KAESO_KPMR_SYNC", "false")
             .env("KAESO_UPDATES_CHECK", "false")
             .env("KAESO_PROVIDERS_OPENAI_BASE_URL", mock)
             .env(

@@ -41,14 +41,14 @@ pub struct CatalogueModelView {
         or an alias."]
     #[schema(example = "claude-sonnet-4-5")]
     pub model_id: String,
-    #[doc = "Not in models.dev: every required field is an override."]
+    #[doc = "Not in KPMR: every required field is an override."]
     pub custom: bool,
-    #[doc = "Whether models.dev lists it. An unlisted entry keeps its last known values."]
+    #[doc = "Whether KPMR lists it. An unlisted entry keeps its last known values."]
     pub listed: bool,
-    #[doc = "When models.dev stopped listing it."]
+    #[doc = "When KPMR stopped listing it."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub delisted_at: Option<OffsetDateTime>,
-    #[doc = "Whether models.dev marks it deprecated."]
+    #[doc = "Whether KPMR marks it deprecated."]
     pub deprecated: bool,
     #[doc = "Whether the provider serves it to the project's provider key, as the\n\
         last check or request found."]
@@ -59,7 +59,7 @@ pub struct CatalogueModelView {
     pub availability_checked_at: Option<OffsetDateTime>,
     #[doc = "The overridden fields."]
     pub overrides: Fields,
-    #[doc = "The values in use: override, else models.dev, else Kaeso's supplement."]
+    #[doc = "The values in use: override, else KPMR's."]
     pub effective: Fields,
     #[doc = "The dialect Kaeso sends to the provider."]
     #[schema(example = "anthropic_messages")]
@@ -74,7 +74,7 @@ pub struct CatalogueModelView {
     #[doc = "Last changed."]
     #[serde(with = "time::serde::rfc3339")]
     pub updated_at: OffsetDateTime,
-    #[doc = "Goes up with every change, also when models.dev stops or starts listing\n\
+    #[doc = "Goes up with every change, also when KPMR stops or starts listing\n\
         it. Send it as `If-Match: \"<revision>\"` to change or remove the entry only\n\
         if nothing changed it since."]
     #[schema(example = 1)]
@@ -148,7 +148,7 @@ fn named_view(
         custom: row.custom,
         listed: row.delisted_at.is_none() && !row.custom,
         delisted_at: row.delisted_at,
-        deprecated: entry.is_deprecated(&state.models_dev.current().snapshot),
+        deprecated: entry.is_deprecated(&state.kpmr.current().snapshot),
         availability: entry.availability.into(),
         availability_checked_at: row.availability_checked_at,
         overrides: entry.overrides,
@@ -176,10 +176,10 @@ fn provider_of(providers: &OrgProviders, id: &str) -> ApiResult<ProviderRef> {
     })
 }
 
-fn models_dev_lists(state: &AppState, provider: &ProviderRef, model: &str) -> bool {
+fn kpmr_lists(state: &AppState, provider: &ProviderRef, model: &str) -> bool {
     provider.custom().is_none()
         && state
-            .models_dev
+            .kpmr
             .current()
             .snapshot
             .model(provider.id(), model)
@@ -238,7 +238,7 @@ pub struct SearchParams {
     #[doc = "Only this provider."]
     #[param(value_type = Option<ProviderId>)]
     pub provider: Option<String>,
-    #[doc = "Include models models.dev marks deprecated (default false)."]
+    #[doc = "Include models KPMR marks deprecated (default false)."]
     pub include_deprecated: Option<bool>,
     #[doc = "How many results, 1 to 200 (default 50)."]
     pub limit: Option<u32>,
@@ -248,7 +248,7 @@ pub struct SearchParams {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
-#[schema(description = "A models.dev model.")]
+#[schema(description = "A model in KPMR.")]
 pub struct SearchHit {
     #[doc = "The provider."]
     pub provider: String,
@@ -260,7 +260,7 @@ pub struct SearchHit {
     pub family: Option<String>,
     #[doc = "Release date."]
     pub release_date: Option<String>,
-    #[doc = "Whether models.dev marks it deprecated."]
+    #[doc = "Whether KPMR marks it deprecated."]
     pub deprecated: bool,
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
@@ -275,7 +275,7 @@ pub struct SearchHit {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
-#[schema(description = "The models.dev models matching a search, newest first per provider.")]
+#[schema(description = "The KPMR models matching a search, newest first per provider.")]
 pub struct ModelSearch {
     #[doc = "The first `limit` matches."]
     pub data: Vec<SearchHit>,
@@ -287,22 +287,11 @@ pub struct ModelSearch {
     pub not_in_catalogue: u32,
 }
 
-fn is_current(
-    state: &AppState,
-    provider: &str,
-    id: &str,
-    m: &kaeso_core::models_dev::Model,
-) -> bool {
+fn is_current(m: &kaeso_core::kpmr::Model) -> bool {
     if m.is_deprecated() {
         return false;
     }
-    let embeddings = state
-        .models_dev
-        .supplement()
-        .get(provider, id)
-        .and_then(|f| f.egress_dialect)
-        == Some(kaeso_kpp::DialectId::OpenAiEmbeddings);
-    embeddings
+    m.egress_dialect() == Some(kaeso_kpp::DialectId::OpenAiEmbeddings)
         || m.modalities
             .as_ref()
             .is_some_and(|x| x.output.iter().any(|o| o == "text"))
@@ -311,7 +300,7 @@ fn is_current(
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/models/search",
-    summary = "Searches models.dev for models to add, newest first per provider.",
+    summary = "Searches KPMR for models to add, newest first per provider.",
     tag = "models",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), SearchParams),
     responses((status = 200, body = ModelSearch))
@@ -341,7 +330,7 @@ pub async fn search(
             .entry((r.provider.as_str(), r.model_id.as_str()))
             .or_insert(r.id);
     }
-    let loaded = state.models_dev.current();
+    let loaded = state.kpmr.current();
     let mut hits: Vec<SearchHit> = Vec::new();
     for (pid, prov) in &loaded.snapshot.providers {
         if p.provider.as_deref().is_some_and(|x| x != pid)
@@ -353,7 +342,7 @@ pub async fn search(
             if m.is_deprecated() && !p.include_deprecated.unwrap_or(false) {
                 continue;
             }
-            if p.current.unwrap_or(false) && !is_current(&state, pid, mid, m) {
+            if p.current.unwrap_or(false) && !is_current(m) {
                 continue;
             }
             if let Some(q) = &q
@@ -398,12 +387,7 @@ pub async fn search(
     .unwrap_or(u32::MAX);
     hits.truncate(limit as usize);
     for h in &mut hits {
-        if let Some(f) = core::preview(
-            &h.provider,
-            &h.model_id,
-            &loaded.snapshot,
-            state.models_dev.supplement(),
-        ) {
+        if let Some(f) = core::preview(&h.provider, &h.model_id, &loaded.snapshot) {
             h.input_price = f.input_price;
             h.output_price = f.output_price;
             h.context_limit = f.context_limit;
@@ -434,7 +418,7 @@ pub struct Preview {
     pub provider: String,
     #[doc = "The model id."]
     pub model_id: String,
-    #[doc = "models.dev's values, completed by Kaeso's supplement."]
+    #[doc = "KPMR's values."]
     pub fields: Fields,
     #[doc = "The dialect Kaeso would send."]
     pub egress_dialect: String,
@@ -445,7 +429,7 @@ pub struct Preview {
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/models/preview",
-    summary = "The models.dev values of a model, as a form to start an entry from.",
+    summary = "The KPMR values of a model, as a form to start an entry from.",
     tag = "models",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), PreviewParams),
     responses((status = 200, body = Preview))
@@ -458,20 +442,15 @@ pub async fn preview(
 ) -> ApiResult<Json<Preview>> {
     let providers = org_providers(&state, &ctx).await?;
     let prov = provider_of(&providers, &p.provider)?;
-    let loaded = state.models_dev.current();
-    let fields = core::preview(
-        &p.provider,
-        &p.model,
-        &loaded.snapshot,
-        state.models_dev.supplement(),
-    )
-    .filter(|_| prov.custom().is_none())
-    .ok_or_else(|| {
-        ApiError::NotFound(format!(
-            "The model `{}` is not on models.dev for `{}`; add it as a custom model.",
-            p.model, p.provider
-        ))
-    })?;
+    let loaded = state.kpmr.current();
+    let fields = core::preview(&p.provider, &p.model, &loaded.snapshot)
+        .filter(|_| prov.custom().is_none())
+        .ok_or_else(|| {
+            ApiError::NotFound(format!(
+                "The model `{}` is not in KPMR for `{}`; add it as a custom model.",
+                p.model, p.provider
+            ))
+        })?;
     let rows = catalogue::list(&state.pg, ctx.project()?.project.id).await?;
     Ok(Json(Preview {
         egress_dialect: fields
@@ -489,12 +468,13 @@ pub async fn preview(
     }))
 }
 
-// A custom server's prices are its operator's own, so the same model's price on
-// models.dev would charge budgets at someone else's rate.
-fn detected_fields(snapshot: &kaeso_core::models_dev::Snapshot, m: &ModelInfo) -> Fields {
+// A custom server's prices are its operator's own, so the same model's price in
+// KPMR would charge budgets at someone else's rate; what KPMR knows about how Kaeso
+// calls a provider's model says nothing about another server.
+fn detected_fields(snapshot: &kaeso_core::kpmr::Catalogue, m: &ModelInfo) -> Fields {
     let known = snapshot
         .same_model(&m.id)
-        .map(Fields::from_models_dev)
+        .map(Fields::from_kpmr)
         .unwrap_or_default();
     Fields {
         context_limit: provider_detection::context_limit(m).or(known.context_limit),
@@ -503,6 +483,13 @@ fn detected_fields(snapshot: &kaeso_core::models_dev::Snapshot, m: &ModelInfo) -
         output_price: None,
         cache_read_price: None,
         cache_write_price: None,
+        cache_write_1h_price: None,
+        egress_dialect: known
+            .egress_dialect
+            .filter(|d| *d == kaeso_kpp::DialectId::OpenAiEmbeddings),
+        adaptive_thinking: None,
+        thinking_binding: None,
+        forced_tool_choice: None,
         ..known
     }
 }
@@ -524,7 +511,7 @@ pub struct OfferedModel {
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
     #[doc = "Values to start its entry from: the limits the listing gives, and the\n\
-        inputs, outputs, limits and capabilities of the model models.dev lists\n\
+        inputs, outputs, limits and capabilities of the model KPMR lists\n\
         under the same name. Never prices."]
     pub detected: Fields,
 }
@@ -560,7 +547,7 @@ pub async fn offered(
     let Some(custom) = prov.custom() else {
         return Err(ApiError::invalid(
             "provider",
-            "Only custom providers list their models here; search models.dev for the others.",
+            "Only custom providers list their models here; search KPMR for the others.",
         ));
     };
     let id = custom.id().as_str();
@@ -609,7 +596,7 @@ pub async fn offered(
             },
         })?;
     let rows = catalogue::list(&state.pg, project.id).await?;
-    let loaded = state.models_dev.current();
+    let loaded = state.kpmr.current();
     Ok(Json(OfferedModels {
         data: listed
             .into_iter()
@@ -638,7 +625,7 @@ pub struct ModelCreate {
     #[doc = "Fields to override (see the entry's `effective` fields for names)."]
     #[schema(value_type = Option<FieldsInput>)]
     pub overrides: Option<serde_json::Map<String, serde_json::Value>>,
-    #[doc = "`true` for a model models.dev does not list; its required fields\n\
+    #[doc = "`true` for a model KPMR does not list; its required fields\n\
         (modalities, limits, input and output prices, egress dialect) must\n\
         then be overrides."]
     #[serde(default)]
@@ -664,7 +651,7 @@ pub async fn create(
     let providers = org_providers(&state, &ctx).await?;
     let prov = provider_of(&providers, &req.provider)?;
     validate_model_id(&req.model_id)?;
-    let listed = models_dev_lists(&state, &prov, &req.model_id);
+    let listed = kpmr_lists(&state, &prov, &req.model_id);
     match (listed, req.custom) {
         (false, false) if prov.custom().is_some() => {
             return Err(ApiError::invalid(
@@ -679,7 +666,7 @@ pub async fn create(
             return Err(ApiError::invalid(
                 "model_id",
                 format!(
-                    "The model `{}` is not on models.dev for `{}`; send `custom: true` to add it anyway.",
+                    "The model `{}` is not in KPMR for `{}`; send `custom: true` to add it anyway.",
                     req.model_id, req.provider
                 ),
             ));
@@ -688,7 +675,7 @@ pub async fn create(
             return Err(ApiError::invalid(
                 "custom",
                 format!(
-                    "The model `{}` is on models.dev; add it without `custom`.",
+                    "The model `{}` is in KPMR; add it without `custom`.",
                     req.model_id
                 ),
             ));
@@ -764,9 +751,9 @@ pub struct ModelBatch {
     #[doc = "The provider."]
     #[schema(value_type = ProviderId, example = "anthropic")]
     pub provider: String,
-    #[doc = "The model ids to add (models.dev models only)."]
+    #[doc = "The model ids to add (KPMR models only)."]
     pub model_ids: Option<Vec<String>>,
-    #[doc = "Add every current model of the provider instead: listed by models.dev,\n\
+    #[doc = "Add every current model of the provider instead: listed by KPMR,\n\
         not deprecated, producing text or embeddings."]
     #[serde(default)]
     pub all_current: bool,
@@ -806,7 +793,7 @@ pub async fn batch(
             "Add a custom provider's models one at a time, with their values.",
         ));
     }
-    let loaded = state.models_dev.current();
+    let loaded = state.kpmr.current();
     let models = loaded.snapshot.providers.get(prov.id()).map(|p| &p.models);
     let ids: Vec<String> = match (&req.model_ids, req.all_current) {
         (Some(ids), false) => {
@@ -820,7 +807,7 @@ pub async fn batch(
                 return Err(ApiError::invalid(
                     "model_ids",
                     format!(
-                        "The model `{missing}` is not on models.dev for `{}`; add it alone as a custom model.",
+                        "The model `{missing}` is not in KPMR for `{}`; add it alone as a custom model.",
                         prov.id()
                     ),
                 ));
@@ -830,7 +817,7 @@ pub async fn batch(
         (None, true) => models
             .into_iter()
             .flatten()
-            .filter(|(id, m)| is_current(&state, prov.id(), id, m))
+            .filter(|(_, m)| is_current(m))
             .map(|(id, _)| id.clone())
             .collect(),
         _ => {
@@ -945,7 +932,7 @@ async fn locked_entry(
 #[serde(deny_unknown_fields)]
 #[schema(description = "Override changes.")]
 pub struct ModelUpdate {
-    #[doc = "Fields to set; a field set to `null` returns to models.dev's value."]
+    #[doc = "Fields to set; a field set to `null` returns to KPMR's value."]
     #[schema(value_type = FieldsInput)]
     pub overrides: serde_json::Map<String, serde_json::Value>,
 }

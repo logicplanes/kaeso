@@ -352,7 +352,7 @@ async fn ids_and_addresses_are_checked_before_a_custom_provider_is_added() {
         (
             json!({ "id": "lmstudio" }),
             "id",
-            "`lmstudio` is a provider listed on models.dev that Kaeso may add; choose another id.",
+            "`lmstudio` is a provider listed in KPMR that Kaeso may add; choose another id.",
         ),
         (
             json!({ "id": "My_Lab" }),
@@ -1864,7 +1864,7 @@ async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_but_no
         detected["context_limit"], 131072,
         "the listing's own limit wins"
     );
-    assert_eq!(detected["tool_call"], true, "models.dev knows the model");
+    assert_eq!(detected["tool_call"], true, "KPMR knows the model");
     assert_eq!(detected["input_modalities"], json!(["text"]));
     for price in [
         "input_price",

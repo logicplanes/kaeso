@@ -41,10 +41,11 @@ oidc_allow_private_networks = false
 per_address = 100
 window = "1m"
 
-[models_dev]
+[kpmr]
 sync = true
-url = "https://models.dev/api.json"
-interval = "24h"
+url = "https://kpmr.kaeso.app/v1/catalogue"
+interval = "auto"
+public_keys = ""
 
 [updates]
 check = true

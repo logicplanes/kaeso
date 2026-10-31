@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO kpmr_snapshot (id, fetched_at, source_url, content_hash, etag, format, data, model_count, last_attempt_at) VALUES (1, $1, $2, $3, $4, $5, $6, $7, $1) ON CONFLICT (id) DO UPDATE SET fetched_at = $1, source_url = $2, content_hash = $3, etag = $4, format = $5, data = $6, model_count = $7, last_attempt_at = $1, last_error = NULL, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Text",
+        "Bytea",
+        "Text",
+        "Bytea",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "742aad52ba2c0bb5978aebb77873aaee7129450cb614d4644267e7b9a7e572c9"
+}

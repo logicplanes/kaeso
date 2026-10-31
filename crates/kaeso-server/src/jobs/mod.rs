@@ -1,6 +1,6 @@
 pub mod cleanup;
 pub mod key_expiry;
-pub mod models_dev;
+pub mod kpmr;
 pub mod org_deletion;
 pub mod update_check;
 
@@ -13,7 +13,7 @@ use kaeso_store::StoreError;
 use kaeso_store::pg::{locks, try_with_advisory_lock};
 use tokio_util::sync::CancellationToken;
 
-use crate::services::models_dev::SyncError;
+use crate::services::kpmr::SyncError;
 use crate::state::AppState;
 
 #[derive(Debug, thiserror::Error)]
@@ -21,7 +21,7 @@ pub enum JobError {
     #[error(transparent)]
     Store(#[from] StoreError),
     #[error(transparent)]
-    ModelsDev(#[from] SyncError),
+    Kpmr(#[from] SyncError),
     #[error("the job panicked: {0}")]
     Panicked(String),
 }
@@ -69,10 +69,10 @@ pub fn all() -> Vec<Job> {
             run: |s| Box::pin(async move { Ok(crate::services::logs::run_jobs(&s).await?) }),
         },
         Job {
-            name: "models_dev_sync",
+            name: "kpmr_sync",
             every: Duration::from_secs(300),
             lock: 4,
-            run: |s| Box::pin(models_dev::run(s)),
+            run: |s| Box::pin(kpmr::run(s)),
         },
         Job {
             name: "update_check",

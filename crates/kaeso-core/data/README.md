@@ -2,36 +2,21 @@
 
 Data shipped with every gateway release, and where it comes from. [Model data](https://docs.kaeso.app/development/architecture/gateway#model-data) explains what each file holds and how the gateway uses it.
 
-## `models-dev.json`
+## `kpmr.json`
 
-A snapshot of [models.dev](https://models.dev), the open (MIT-licensed) model database, filtered to the providers Kaeso calls.
+A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provider & Model Registry, in format 1, for the providers Kaeso calls; its `provider_ids` list every provider KPMR knows. KPMR builds the catalogue from [models.dev](https://models.dev), the open (MIT-licensed) model database, and applies its reviewed registry: corrections, added and removed models, and what only Kaeso needs, such as adaptive thinking, forced tool choice, effort levels, the one-hour cache write price and the dialect Kaeso sends. Every registry entry cites its sources on the model's page at [kpmr.kaeso.app](https://kpmr.kaeso.app).
 
 | | |
 |---|---|
-| Source | `https://models.dev/api.json` |
-| Fetched | 2026-10-30T18:16:51Z |
-| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cohere`, `deepseek`, `groq`, `mistral`, `moonshotai`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`), unchanged otherwise; 1065 models |
-| SHA-256 | `b97ad8b4d619f186740efded3a9b01bd1717ddb003e237579257d55d46476e22` |
+| Source | `https://kpmr.kaeso.app/v1/catalogue` |
+| Revision | `2026-10-31T20:36:31Z-5b06710083a3` |
+| Generated | 2026-10-31T20:36:31Z |
+| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `cohere`, `deepseek`, `groq`, `mistral`, `moonshotai`, `ollama-cloud`, `openai`, `openrouter`, `togetherai`, `vercel`, `xai`); 1060 models |
+| SHA-256 | `3d44512bccf2ee3af76c606ae9c3567f38e193cfa24df57c833ad62164e7fd57` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
-`models-dev-providers.txt` lists every provider id in the same `api.json`. To refresh both for a release:
+To refresh it for a release, download the catalogue and check its signature against the built-in key:
 
 ```sh
-cargo xtask models-dev
+cargo xtask kpmr
 ```
-
-## `supplement.toml`
-
-Every entry comes from one of these sources, checked on 2026-10-11:
-
-| Entries | Values | Source |
-|---|---|---|
-| Claude 4.5 models | budget thinking only; no effort except on Claude Opus 4.5 | Anthropic, [Thinking](https://platform.claude.com/docs/en/build-with-claude/thinking) and [Effort](https://platform.claude.com/docs/en/build-with-claude/effort); live check: `claude-haiku-4-5` answers `thinking: {type: adaptive}` with 400 |
-| Claude 4.6 and later | adaptive thinking and their effort levels | the same pages; live check: `claude-sonnet-4-6` accepts adaptive thinking |
-| `claude-fable-5-1`, `claude-opus-5-5`, `claude-sonnet-5-5` | no forced tool choice | Anthropic, [migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide) (forced tool use returns 400 `tool_choice: type "tool" and "any" are not supported for this model.`, token counting included; Claude Fable 5 and Opus 5 accept it); a live run on 2026-10-17 got that 400 from all three for `any` and `tool`, while `auto` worked |
-| `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002` | the Embeddings endpoint only | OpenAI model pages (`https://developers.openai.com/api/docs/models/<id>`) |
-| `gpt-5.4-mini`, `gpt-6-astra`, `gpt-5.6-terra` | Responses, the default for every OpenAI generation model, listed explicitly | live check: these models reject function tools together with `reasoning_effort` on Chat Completions; Responses accepts them |
-| `mistral-embed` | the Embeddings endpoint only | Mistral, [API reference](https://docs.mistral.ai/api/) (`EmbeddingRequest`); live check on 2026-10-19: `POST /v1/embeddings` answers with 1024 floats, and `GET /v1/models` lists it with `completion_chat: false` |
-| Cohere's `command-a-plus-05-2026`, `command-a-reasoning-08-2025`, `north-mini-code-1-0` | effort `none` or `high` only | Cohere, [Compatibility API](https://docs.cohere.com/docs/compatibility-api) (`reasoning_effort`: only `none` and `high`); live check on 2026-10-30: each model answers `high` with `reasoning_content` and `medium` with 422 `reasoning_effort 'medium' and 'low' are not supported` |
-
-The one-hour cache write price, which models.dev doesn't list, is Anthropic's: twice the input price ([pricing](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-19).

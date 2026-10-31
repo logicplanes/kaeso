@@ -195,7 +195,7 @@ impl InstancePreset {
                 "Reads the system, users, organizations and the instance audit log."
             }
             InstancePreset::Configure => {
-                "Reads the instance and changes its settings, model sources and update settings."
+                "Reads the instance and changes its settings and update settings."
             }
             InstancePreset::Admin => "Everything instance admins do that an agent may be given.",
         }
@@ -216,7 +216,6 @@ impl InstancePreset {
             InstancePreset::Read => read,
             InstancePreset::Configure => read
                 .with(R::InstanceSettingsManage)
-                .with(R::InstanceModelSourcesManage)
                 .with(R::InstanceUpdatesManage),
             InstancePreset::Admin => InstanceRights::all(),
         }

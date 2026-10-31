@@ -200,7 +200,7 @@ fn view(row: &CustomProviderRow, in_use: InUse) -> ApiResult<CustomProviderView>
 pub struct CustomProviderCreate {
     #[doc = "The id: lowercase letters and digits with single hyphens between them, at\n\
         most 40 characters. It can't be the id of a built-in provider or of a\n\
-        provider listed on models.dev."]
+        provider listed in KPMR."]
     #[schema(value_type = ProviderId, example = "my-vllm")]
     pub id: String,
     #[doc = "The name people see, 1 to 100 characters."]
@@ -283,9 +283,7 @@ fn parse_id(id: &str) -> ApiResult<ProviderId> {
     if custom::is_reserved(id.as_str()) {
         return Err(ApiError::invalid(
             "id",
-            format!(
-                "`{id}` is a provider listed on models.dev that Kaeso may add; choose another id."
-            ),
+            format!("`{id}` is a provider listed in KPMR that Kaeso may add; choose another id."),
         ));
     }
     Ok(id)

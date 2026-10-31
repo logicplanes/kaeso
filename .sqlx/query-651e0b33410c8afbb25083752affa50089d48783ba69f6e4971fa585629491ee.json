@@ -1,48 +1,70 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT content_hash, format, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1",
+  "query": "SELECT source_url, content_hash, etag, format, last_attempt_at, last_error FROM kpmr_snapshot WHERE id = 1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "content_hash",
-        "type_info": "Bytea",
+        "name": "source_url",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "models_dev_snapshot",
-            "name": "content_hash"
+            "table": "kpmr_snapshot",
+            "name": "source_url"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "format",
+        "name": "content_hash",
         "type_info": "Bytea",
         "origin": {
           "Table": {
-            "table": "models_dev_snapshot",
-            "name": "format"
+            "table": "kpmr_snapshot",
+            "name": "content_hash"
           }
         }
       },
       {
         "ordinal": 2,
-        "name": "last_attempt_at",
-        "type_info": "Timestamptz",
+        "name": "etag",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "models_dev_snapshot",
-            "name": "last_attempt_at"
+            "table": "kpmr_snapshot",
+            "name": "etag"
           }
         }
       },
       {
         "ordinal": 3,
+        "name": "format",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "kpmr_snapshot",
+            "name": "format"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "last_attempt_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "kpmr_snapshot",
+            "name": "last_attempt_at"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "last_error",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "models_dev_snapshot",
+            "table": "kpmr_snapshot",
             "name": "last_error"
           }
         }
@@ -53,10 +75,12 @@
     },
     "nullable": [
       false,
+      false,
+      true,
       true,
       true,
       true
     ]
   },
-  "hash": "1aedfc7aad50bfe3127ebc2af63244e22b3628b3c22e6b1c5dc2f383fee7a041"
+  "hash": "651e0b33410c8afbb25083752affa50089d48783ba69f6e4971fa585629491ee"
 }
