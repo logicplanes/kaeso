@@ -17,6 +17,7 @@ pub mod params;
 pub mod precondition;
 pub mod projects;
 pub mod providers;
+pub mod response_cache;
 pub mod rights;
 pub mod usage;
 pub mod validate;
@@ -54,6 +55,7 @@ pub const PREFIX: &str = "/platform/v1";
         (name = "projects", description = "Projects"),
         (name = "models", description = "Model catalogues and aliases"),
         (name = "logs", description = "Request logs, retention and storage"),
+        (name = "response-cache", description = "The exact-match response cache: who may use it, how long replies are kept, clearing"),
     )
 )]
 struct ApiDoc;

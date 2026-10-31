@@ -174,6 +174,10 @@ Ask for a stream as the format does, with `"stream": true`. The reply is a serve
 
 Chat Completions has no field for a model's reasoning. When a Chat Completions app calls a model served through another format, Kaeso keeps the model's reasoning before each tool call. It adds the reasoning back on the app's next turn ([format translation](../concepts/format-translation.md#chat-completions)).
 
+## Response cache
+
+A project can answer a repeated identical request from a stored reply ([response cache](../console/response-cache.md)). Send `Cache-Control: no-cache` to ask the provider again and store the new reply, or `Cache-Control: no-store` to skip the cache for that request.
+
 ## Response headers
 
 | Header | Value |
@@ -183,6 +187,8 @@ Chat Completions has no field for a model's reasoning. When a Chat Completions a
 | `kaeso-model` | The provider's model id, once the model is known, errors included |
 | `kaeso-left-out` | What Kaeso left out because the model has no equivalent, as the request names it, such as `tools[1], text.verbosity`; an item of the conversation by its type and id, such as `web_search_call ws_67c9…`. Only on answers that left something out ([tools left out](../development/kpp/cross-format.md#tools-left-out)) |
 | `kaeso-adapted` | The tools whose parameter schema Kaeso merged into one object because the model takes no union at its root, by their path in the request, such as `tools[0].tools[3]`. The model sees the variants in the tool's description, and its calls reach the app unchanged. Also the tool calls in the conversation whose arguments Kaeso turned into an object for a model that takes only objects, as `tool call` and the call's id, such as `tool call call_abc`. Only on answers that adapted a tool or a call ([union tool schemas](../development/kpp/cross-format.md#union-tool-schemas), [tool call arguments](../development/kpp/cross-format.md#tool-call-arguments)) |
+| `kaeso-cache` | `hit` when the [response cache](../console/response-cache.md) answered, `miss` when the request went to the provider, `bypass` when it couldn't be cached or the app sent `Cache-Control: no-store`. Only in projects with the cache on |
+| `age` | The seconds since the cached reply was stored. Only on `kaeso-cache: hit` |
 | `server-timing` | `upload;dur=…`, the time in milliseconds the app took to send the request body. Then `kaeso;dur=…`, Kaeso's own time in milliseconds before it called the provider, or until it answered when the request didn't reach one, without the upload. Then `upstream;dur=…`, the provider's time to its first byte, once known. A stream sends it with its headers, so the time Kaeso spends translating the stream is only in the [request log](../console/request-logs.md#read-a-request) |
 
 ## Calling from a browser
@@ -191,7 +197,7 @@ A browser lets a web page call another origin only when that origin answers with
 
 - **Exact origins.** Scheme, host and port must match: `https://app.example.com` admits neither `http://app.example.com` nor `https://www.app.example.com`. Kaeso refuses `*` at startup, because it would let every website send requests with the keys its visitors hold.
 - **Preflights.** An `OPTIONS` request with `Origin` and `Access-Control-Request-Method` from a listed origin gets 204 without a key. The answer carries `Access-Control-Allow-Origin` with that origin, `Access-Control-Allow-Methods: GET, POST` and `Access-Control-Max-Age: 7200`. `Access-Control-Allow-Headers` lists those of the requested headers that the official SDKs send: `authorization`, `x-api-key`, `content-type`, `accept`, `user-agent`, `anthropic-version`, `anthropic-beta`, `anthropic-dangerous-direct-browser-access`, `openai-organization`, `openai-project`, `openai-beta`, `idempotency-key` and `x-stainless-…`. A preflight isn't a model request: it isn't logged, charged or counted against limits.
-- **Answers.** Every answer to a listed origin, errors included, carries `Access-Control-Allow-Origin` with that origin and `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, retry-after, retry-after-ms`, so the app can read those headers.
+- **Answers.** Every answer to a listed origin, errors included, carries `Access-Control-Allow-Origin` with that origin and `Access-Control-Expose-Headers: kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-cache, age, retry-after, retry-after-ms`, so the app can read those headers.
 - **Other origins** get no CORS headers, so the browser blocks the call, and their preflights get an empty 204. Every answer on `/v1` carries `Vary: Origin`, so caches keep the answers apart.
 - **No cookies.** Kaeso never sends `Access-Control-Allow-Credentials`, since keys travel in headers. The Platform API, the health checks and the metrics never answer cross-origin requests.
 

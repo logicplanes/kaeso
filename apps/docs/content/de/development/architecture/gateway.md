@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: Verbuchen, protokollieren
 ```
 
+In einem Projekt mit eingeschaltetem [Antwort-Cache](../../console/response-cache.md) schlägt das Gateway die kodierte Anfrage in Valkey nach, bevor es sie sendet. Ein Treffer wird aus seinem versiegelten Eintrag dekodiert und für die App kodiert, ohne den Anbieter (`crates/kaeso-server/src/services/response_cache.rs`).
+
 Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff, einem Plattform-Schlüssel oder dem Access-Token eines Agenten. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.
 
 | Code | Wo |
@@ -132,7 +134,7 @@ Die Aufgabe lädt `https://models.dev/api.json` herunter, filtert die Daten und 
 
 Die Modell-API übergibt jede beendete Anfrage an eine Senke. Sie addiert die Nutzung der Anfrage zu einem Stapel im Speicher, geordnet nach Tag, Projekt, Schlüssel, Mitglied, Modell und Route, und schreibt den Stapel alle 10 Sekunden in `usage_daily` in PostgreSQL. Dieselbe Senke bucht die Limit-Zähler in Valkey, die aus `usage_daily` neu aufgebaut werden. Die Nutzungsseiten, die `usage`-Endpunkte der Platform API und die Summen der Organisationen für die Instanz lesen nur `usage_daily`.
 
-Anfrageprotokolle gehen über einen eigenen Puffer an `request_log` und `request_content` in ClickHouse. Ohne `clickhouse.url` ist `AppState::clickhouse` `None`: Das Gateway führt keine ClickHouse-Migrationen aus, startet keinen Protokollschreiber, behält keine Inhalte zum Protokollieren, und die Protokoll-Endpunkte antworten mit `404`. Die ClickHouse-Migration 0006 hat das eigene `usage_daily` von ClickHouse entfernt, als die Nutzung nach PostgreSQL wechselte.
+Anfrageprotokolle gehen über einen eigenen Puffer an `request_log` und `request_content` in ClickHouse. Ohne `clickhouse.url` ist `AppState::clickhouse` `None`: Das Gateway führt keine ClickHouse-Migrationen aus, startet keinen Protokollschreiber, behält keine Inhalte zum Protokollieren, und die Protokoll-Endpunkte antworten mit `404`. Die ClickHouse-Migration 0007 hat das eigene `usage_daily` von ClickHouse entfernt, als die Nutzung nach PostgreSQL wechselte.
 
 ## Protokollierte Antworten
 

@@ -26,6 +26,7 @@ import { projectListKey, projectQuery, projectViewKey } from "~/api/queries/proj
 import { useApiMutation } from "~/auth/mutation";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { ProjectHeader } from "~/shell/project-header";
+import { ResponseCacheSection } from "./response-cache-section";
 import { useProjectRights } from "~/auth/rights";
 import { useRequestLogs } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -67,6 +68,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
                 <KeyLifetime org={org} project={project} days={p.max_key_lifetime_days ?? null} archived={!!p.archived_at} />
               )}
               {requestLogs && <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />}
+              <ResponseCacheSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
               {p.archived_at ? (
                 <ArchivedOn date={p.archived_at} />
               ) : (

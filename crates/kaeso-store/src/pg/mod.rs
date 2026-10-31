@@ -23,6 +23,7 @@ pub mod members;
 pub mod oidc;
 pub mod orgs;
 pub mod projects;
+pub mod response_cache;
 pub mod roles;
 pub mod service_accounts;
 pub mod sessions;

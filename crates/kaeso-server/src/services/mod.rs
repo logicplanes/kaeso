@@ -18,6 +18,7 @@ pub mod models_dev;
 pub mod orgs;
 pub mod provider_accounts;
 pub mod provider_detection;
+pub mod response_cache;
 pub mod sso;
 pub mod updater;
 pub mod updates;

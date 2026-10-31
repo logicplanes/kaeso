@@ -45,6 +45,7 @@ services:
 | `kaeso_usage_estimates_total{reason, provider}` | Nutzung, die Kaeso schätzen musste. `unreported`: ein Anbieter hat eine Antwort ohne Nutzung beendet. `cancelled` und `failed`: Apps, die die Verbindung getrennt haben, und abgebrochene Streams |
 | `kaeso_limit_refusals_total{kind, level}` | Budgets, die zur Neige gehen |
 | `kaeso_reasoning_continuity_total{outcome}` | `unavailable`: Probleme mit Valkey. Viele `missing`: Unterhaltungen dauern länger als `KAESO_CONTINUITY_REASONING_TTL` |
+| `kaeso_response_cache_lookups_total{result}`, `kaeso_response_cache_writes_total{outcome}` | Die Trefferquote des [Antwort-Caches](../console/response-cache.md), `hit` gegenüber `miss`. Schreibvorgänge mit `outcome="full"`: Valkey hat `KAESO_RESPONSE_CACHE_MEMORY_SHARE` überschritten. `failed`: Probleme mit Valkey |
 | `kaeso_tokens_total{provider, kind}`, `kaeso_cost_microusd_total{provider}` | Entwicklung der Ausgaben |
 | `kaeso_log_buffer_rows`, `kaeso_log_buffer_bytes` | Ein wachsender Puffer: ClickHouse nimmt keine Schreibvorgänge an |
 | `kaeso_log_rows_dropped_total`, `kaeso_clickhouse_write_failures_total` | Jeder Anstieg: Protokollzeilen gingen verloren oder sind gefährdet |

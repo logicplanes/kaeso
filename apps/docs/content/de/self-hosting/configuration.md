@@ -221,6 +221,16 @@ Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und r
 
 [Formatübersetzung](../concepts/format-translation.md#chat-completions) erklärt, wie das Gateway es aufbewahrt.
 
+### Antwort-Cache
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_RESPONSE_CACHE_ENABLED`<br>`response_cache.enabled` | bool | `true` | Projekte dürfen den [Antwort-Cache](../console/response-cache.md) einschalten. `false` hält ihn in jedem Projekt aus und speichert nichts. |
+| `KAESO_RESPONSE_CACHE_MAX_ENTRY_SIZE`<br>`response_cache.max_entry_size` | Text | `1MiB` | Größte Antwort, die der Cache behält. Eine größere wird trotzdem geliefert, aber nicht gecacht. |
+| `KAESO_RESPONSE_CACHE_MEMORY_SHARE`<br>`response_cache.memory_share` | Ganzzahl | `50` | Prozent von `maxmemory` in Valkey, ab dem der Cache keine neuen Antworten mehr speichert, damit Zähler der Limits immer Platz haben; 1 bis 90. Wird ignoriert, wenn Valkey kein `maxmemory` setzt. |
+
+Gecachte Antworten bleiben in Valkey, bis die Dauer ihres Projekts abläuft. Das mitgelieferte Valkey lehnt Schreibvorgänge ab, wenn es voll ist. Geben Sie ihm also mit `VALKEY_MAXMEMORY` mehr Speicher, bevor Sie den Anteil erhöhen.
+
 ### Anfrage- und Antwortkörper
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |

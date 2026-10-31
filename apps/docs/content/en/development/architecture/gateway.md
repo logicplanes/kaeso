@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: Charge, log
 ```
 
+In a project with the [response cache](../../console/response-cache.md) on, the gateway looks the encoded request up in Valkey before it sends it. A hit is decoded from its sealed entry and encoded for the app, without the provider (`crates/kaeso-server/src/services/response_cache.rs`).
+
 A Platform API request authenticates with a session cookie, an API key with platform access, a platform key or an agent's access token. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
 
 | Code | Where |
@@ -132,7 +134,7 @@ The task downloads `https://models.dev/api.json`, filters it and checks that the
 
 The model API hands every finished request to one sink. It adds the request's usage to a batch in memory, keyed by day, project, key, member, model and route, and writes the batch to PostgreSQL's `usage_daily` every 10 seconds. The same sink charges the limit counters in Valkey, which are rebuilt from `usage_daily`. The Usage pages, the Platform API's `usage` endpoints and the instance's organization totals read only `usage_daily`.
 
-Request logs go to ClickHouse's `request_log` and `request_content` through their own buffer. Without `clickhouse.url`, `AppState::clickhouse` is `None`: the gateway runs no ClickHouse migrations, starts no log writer, keeps no bodies for logging, and the logs endpoints answer `404`. ClickHouse migration 0006 dropped ClickHouse's own `usage_daily` once usage moved to PostgreSQL.
+Request logs go to ClickHouse's `request_log` and `request_content` through their own buffer. Without `clickhouse.url`, `AppState::clickhouse` is `None`: the gateway runs no ClickHouse migrations, starts no log writer, keeps no bodies for logging, and the logs endpoints answer `404`. ClickHouse migration 0007 dropped ClickHouse's own `usage_daily` once usage moved to PostgreSQL.
 
 ## Logged replies
 

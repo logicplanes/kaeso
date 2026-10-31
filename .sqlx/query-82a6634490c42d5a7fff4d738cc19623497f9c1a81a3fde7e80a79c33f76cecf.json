@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT response_cache AS enabled, response_cache_ttl_seconds AS ttl_seconds, response_cache_generation AS generation FROM projects WHERE org_id = $1 AND id = $2 FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "enabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ttl_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache_ttl_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "generation",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache_generation"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "82a6634490c42d5a7fff4d738cc19623497f9c1a81a3fde7e80a79c33f76cecf"
+}

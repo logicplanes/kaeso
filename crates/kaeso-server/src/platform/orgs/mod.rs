@@ -115,6 +115,8 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credential_accounts::finish_again)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::logs::get_org_settings)))
         .routes(s.route(Access::Org(R::LogsSettingsManage), routes!(crate::platform::logs::update_org_settings)))
+        .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::response_cache::get_org)))
+        .routes(s.route(Access::Org(R::OrgUpdate), routes!(crate::platform::response_cache::update_org)))
         .routes(s.route(Access::Org(R::LogsStorageView), routes!(crate::platform::logs::storage)))
         .routes(s.route(Access::Org(R::LogsDelete), routes!(crate::platform::logs::delete)))
         .routes(s.route(Access::Org(R::LogsStorageView), routes!(crate::platform::logs::deletions)))

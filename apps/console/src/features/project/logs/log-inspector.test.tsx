@@ -188,6 +188,26 @@ describe("LogInspector", () => {
     expect(usageSection).not.toHaveTextContent("nothing was read");
   });
 
+  it.each([
+    ["hit", "Response cacheAnswered from the cache, at no provider cost"],
+    ["miss", "Response cacheNot in the cache; sent to the provider"],
+    ["bypass", "Response cacheNot cacheable, or skipped by the app"],
+  ] as const)("says what the response cache did with the request: %s", async (result, text) => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ response_cache: result })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Usage")).toHaveTextContent(text);
+  });
+
+  it("leaves the response cache out when the project had it off", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ response_cache: null })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Usage")).not.toHaveTextContent("Response cache");
+  });
+
   it("leaves the breakpoint mark out for a provider that caches by itself", async () => {
     signedIn();
     projectData();

@@ -24,6 +24,7 @@ order: 3
 - [API 密钥](api-keys.md)：为应用和脚本创建密钥，加以限制，并在需要时停用。
 - [限额和预算](limits-and-budgets.md)：限制项目、成员或密钥的请求数、Token 和支出。
 - [请求日志](request-logs.md)：查找任意请求，导出日志，并选择保留哪些内容。
+- [响应缓存](response-cache.md)：用已存储的回复应答重复的相同请求。
 - [试验场](playground.md)：并排比较最多四个模型。
 - [账户和语言](account.md)：保护账户安全，并选择主题和语言。
 - [实例管理](instance-administration.md)：管理实例的用户、组织、设置和更新。

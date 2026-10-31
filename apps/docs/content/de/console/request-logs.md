@@ -46,6 +46,8 @@ Anthropic speichert nur die Teile eines Prompts zwischen, die eine Anfrage mit `
 
 Die **Nutzung** einer Anfrage listet außerdem **Aus dem Cache** und, für das Format von Anthropic, wie viele **Cache-Breakpoints** Kaeso gesendet hat. Der CSV-Export enthält diese Zahl als `cache_breakpoints`.
 
+In einem Projekt mit eingeschaltetem [Antwort-Cache](response-cache.md) nennt die **Nutzung** außerdem, was der **Antwort-Cache** getan hat: die Anfrage beantwortet, sie an den Anbieter gesendet oder sie übergangen. Der CSV-Export enthält das als `response_cache`.
+
 ## Protokolle exportieren
 
 **Exportieren** lädt die Anfragen herunter, die zu den aktuellen Filtern passen:

@@ -204,6 +204,9 @@ async fn flush_rows(state: &AppState, rows: Vec<UsageRow>) -> Result<usize, Stor
 
 pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     let usage = outcome.usage.clone().unwrap_or_default();
+    if outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit) {
+        return (usage, Decimal::ZERO);
+    }
     let c = outcome
         .prices
         .as_ref()

@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT o.response_cache AS org_allows, p.response_cache AS enabled, p.response_cache_ttl_seconds AS ttl_seconds, p.response_cache_generation AS generation FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "org_allows",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "response_cache"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "enabled",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ttl_seconds",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache_ttl_seconds"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "generation",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "projects",
+            "name": "response_cache_generation"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cb24291a41b93261dda280c59c555402000cf039ac64ef29f5474b240bde6e17"
+}

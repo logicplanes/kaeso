@@ -221,6 +221,16 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 [格式转换](../concepts/format-translation.md#chat-completions)说明了网关如何保存这段推理。
 
+### 响应缓存
+
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_RESPONSE_CACHE_ENABLED`<br>`response_cache.enabled` | bool | `true` | 允许项目开启[响应缓存](../console/response-cache.md)。设为 `false` 时，所有项目都无法开启，也不存储任何内容。 |
+| `KAESO_RESPONSE_CACHE_MAX_ENTRY_SIZE`<br>`response_cache.max_entry_size` | 文本 | `1MiB` | 缓存保留的回复的上限。更大的回复仍会返回，但不会缓存。 |
+| `KAESO_RESPONSE_CACHE_MEMORY_SHARE`<br>`response_cache.memory_share` | 整数 | `50` | 占 Valkey `maxmemory` 的百分比，超过后缓存不再存储新回复，以便限额计数器始终有空间；1 到 90。Valkey 未设置 `maxmemory` 时忽略。 |
+
+缓存的回复保存在 Valkey 中，直到其项目设置的时长用完。随附的 Valkey 在写满时会拒绝写入，因此在调高该比例之前，请先用 `VALKEY_MAXMEMORY` 为它分配更多内存。
+
 ### 请求体与响应体
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |

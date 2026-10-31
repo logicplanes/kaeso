@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: 计费、记录日志
 ```
 
+在开启了[响应缓存](../../console/response-cache.md)的项目中，网关在发送编码后的请求之前，会先在 Valkey 中查找它。命中时，网关从其密封的条目中解码，再为应用编码，无需经过服务商（`crates/kaeso-server/src/services/response_cache.rs`）。
+
 Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥、平台密钥或智能体的访问令牌进行认证。随后每个端点恰好检查一项权限，由服务修改 PostgreSQL 并写入审计事件。
 
 | 代码 | 位置 |
@@ -132,7 +134,7 @@ cargo xtask models-dev
 
 模型 API 把每个结束的请求交给一个接收器。它把请求的用量加到内存中的一个批次里，按天、项目、密钥、成员、模型和路由归类，并每 10 秒把该批次写入 PostgreSQL 的 `usage_daily`。同一个接收器还会在 Valkey 中计入限额计数器，这些计数器从 `usage_daily` 重建。用量页面、Platform API 的 `usage` 端点以及实例中各组织的合计只读取 `usage_daily`。
 
-请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0006 删除了 ClickHouse 自己的 `usage_daily`。
+请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。
 
 ## 记录的回复
 

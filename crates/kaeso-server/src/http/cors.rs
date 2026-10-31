@@ -12,7 +12,7 @@ pub const ALLOW_METHODS: &str = "GET, POST";
 
 pub const MAX_AGE_SECONDS: &str = "7200";
 
-pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, retry-after, retry-after-ms";
+pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-cache, age, retry-after, retry-after-ms";
 
 pub const ALLOWED_HEADERS: &[&str] = &[
     "accept",

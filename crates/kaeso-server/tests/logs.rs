@@ -90,6 +90,10 @@ async fn requests_are_logged_with_metadata_and_content() {
     assert!(ok["overhead_ms"].is_u64(), "{ok}");
     assert!(ok["request_upload_ms"].is_u64(), "{ok}");
     assert!(
+        ok["response_cache"].is_null(),
+        "the cache is off by default: {ok}"
+    );
+    assert!(
         data[0]["overhead_ms"].is_u64(),
         "failures after the provider call keep it"
     );
@@ -672,6 +676,7 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             stream_processing_ms: None,
             cache_breakpoints: Some(2),
             request_upload_ms: Some(40),
+            response_cache: "hit".into(),
         },
         ContentRow {
             request_id: id,
@@ -770,7 +775,7 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms"
+            ",source,overhead_ms,stream_processing_ms,cache_breakpoints,request_upload_ms,response_cache"
         ),
         "{text}"
     );
@@ -778,8 +783,8 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(
         text.lines()
             .skip(1)
-            .all(|l| l.ends_with(",\"api\",1,,2,40")),
-        "the overhead, the breakpoints and the upload are exported, and a stream's processing time is empty for other requests"
+            .all(|l| l.ends_with(",\"api\",1,,2,40,\"hit\"")),
+        "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
 

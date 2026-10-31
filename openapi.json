@@ -13511,6 +13511,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "response_cache",
+            "in": "query",
+            "description": "Only requests the response cache answered (`hit`), sent on (`miss`)\nor passed by (`bypass`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ResponseCacheResult"
+            }
           }
         ],
         "responses": {
@@ -13731,6 +13740,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "response_cache",
+            "in": "query",
+            "description": "Only requests the response cache answered (`hit`), sent on (`miss`)\nor passed by (`bypass`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ResponseCacheResult"
             }
           }
         ],
@@ -15912,6 +15930,234 @@
         "x-kaeso-access": "right:playground.use"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/response-cache": {
+      "get": {
+        "tags": [
+          "response-cache"
+        ],
+        "summary": "The project's response cache: its switch and how long replies are kept.",
+        "description": "**Right:** `project.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectResponseCache",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseCache"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.view"
+      },
+      "patch": {
+        "tags": [
+          "response-cache"
+        ],
+        "summary": "Turns the project's response cache on or off, or changes how long replies\nare kept.",
+        "description": "Turning it off clears the project's entries. It cannot be turned on while the\norganization forbids it or the install does not offer it.\n\n**Right:** `project.update` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectResponseCache",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectResponseCacheUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponseCache"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.update"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/response-cache/clear": {
+      "post": {
+        "tags": [
+          "response-cache"
+        ],
+        "summary": "Clears the project's response cache.",
+        "description": "Every stored reply stops being served at once, on every gateway instance; the\nmemory they take is freed in the background.\n\n**Right:** `project.update` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectResponseCacheClear",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.update"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/rights/{right}/grantors": {
       "get": {
         "tags": [
@@ -17067,6 +17313,151 @@
           }
         ],
         "x-kaeso-access": "right:org.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/response-cache": {
+      "get": {
+        "tags": [
+          "response-cache"
+        ],
+        "summary": "Whether the organization's projects may use the response cache.",
+        "description": "**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgResponseCache",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgResponseCache"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      },
+      "patch": {
+        "tags": [
+          "response-cache"
+        ],
+        "summary": "Allows or forbids the response cache in the organization's projects.",
+        "description": "Forbidding it stops every project's cache at once and clears their entries;\nallowing it again leaves each project's own switch as it was.\n\n**Right:** `org.update` on the organization in the path.",
+        "operationId": "patchOrgsOrgResponseCache",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgResponseCacheUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgResponseCache"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.update"
       }
     },
     "/platform/v1/orgs/{org}/restore": {
@@ -24264,6 +24655,17 @@
                   "type": "string",
                   "description": "The model the app named."
                 },
+                "response_cache": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseCacheResult",
+                      "description": "What the project's response cache did: `hit` (answered from the\ncache, at no provider cost), `miss` (sent to the provider) or `bypass`\n(not cacheable, such as a stream, or skipped by `Cache-Control`);\n`null` when the cache was off."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "source": {
                   "type": "string",
                   "description": "Where the request came from: `api` (the model API, with a key) or\n`playground` (the console's Playground, as the member).",
@@ -25611,6 +26013,17 @@
             "type": "string",
             "description": "The model the app named."
           },
+          "response_cache": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResponseCacheResult",
+                "description": "What the project's response cache did: `hit` (answered from the\ncache, at no provider cost), `miss` (sent to the provider) or `bypass`\n(not cacheable, such as a stream, or skipped by `Cache-Control`);\n`null` when the cache was off."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "source": {
             "type": "string",
             "description": "Where the request came from: `api` (the model API, with a key) or\n`playground` (the console's Playground, as the member).",
@@ -26723,6 +27136,38 @@
           }
         }
       },
+      "OrgResponseCache": {
+        "type": "object",
+        "description": "An organization's response cache policy.",
+        "required": [
+          "allowed",
+          "available"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether the organization's projects may turn the response cache on."
+          },
+          "available": {
+            "type": "boolean",
+            "description": "Whether the install offers the response cache at all."
+          }
+        }
+      },
+      "OrgResponseCacheUpdate": {
+        "type": "object",
+        "description": "A change to the organization's response cache policy.",
+        "required": [
+          "allowed"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Let projects turn the response cache on. Off turns it off in every\nproject and clears their entries."
+          }
+        },
+        "additionalProperties": false
+      },
       "OrgRightsDetail": {
         "type": "object",
         "description": "A member's org rights.",
@@ -27355,6 +27800,62 @@
           }
         }
       },
+      "ProjectResponseCache": {
+        "type": "object",
+        "description": "A project's response cache.",
+        "required": [
+          "enabled",
+          "ttl_seconds",
+          "org_allowed",
+          "available",
+          "effective"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Whether the install offers the response cache at all."
+          },
+          "effective": {
+            "type": "boolean",
+            "description": "Whether requests are answered from the cache: the install offers it,\nthe organization allows it and the project's switch is on."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "The project's own switch."
+          },
+          "org_allowed": {
+            "type": "boolean",
+            "description": "Whether the organization allows the response cache."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long a reply stays in the cache, in seconds."
+          }
+        }
+      },
+      "ProjectResponseCacheUpdate": {
+        "type": "object",
+        "description": "A change to a project's response cache.",
+        "properties": {
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Answer repeated identical requests from the cache. Off clears the\nproject's entries."
+          },
+          "ttl_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "How long a reply stays in the cache, in seconds: 60 to 604800\n(7 days). Applies to replies stored from now on."
+          }
+        },
+        "additionalProperties": false
+      },
       "ProjectRightsDetail": {
         "type": "object",
         "description": "Rights in one project.",
@@ -27883,6 +28384,15 @@
           }
         },
         "additionalProperties": false
+      },
+      "ResponseCacheResult": {
+        "type": "string",
+        "description": "What the response cache did with a request.",
+        "enum": [
+          "hit",
+          "miss",
+          "bypass"
+        ]
       },
       "Revoked": {
         "type": "object",
@@ -30534,6 +31044,10 @@
     {
       "name": "logs",
       "description": "Request logs, retention and storage"
+    },
+    {
+      "name": "response-cache",
+      "description": "The exact-match response cache: who may use it, how long replies are kept, clearing"
     }
   ]
 }

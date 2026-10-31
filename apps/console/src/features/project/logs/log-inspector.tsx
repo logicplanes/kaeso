@@ -258,6 +258,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   const caching = [
     ...(share !== null ? [{ label: t("logs.inspector.cachedShare", "Read from the cache"), value: formatPercent(share) }] : []),
     ...(known(e.cache_breakpoints) ? [{ label: t("logs.inspector.cacheBreakpoints", "Cache breakpoints"), value: formatNumber(e.cache_breakpoints) }] : []),
+    ...(e.response_cache ? [{ label: t("logs.inspector.responseCache", "Response cache"), value: responseCacheLabel(e.response_cache) }] : []),
   ];
   const answer = Math.max(0, u.output_tokens - u.reasoning_tokens);
   const timing = [
@@ -634,4 +635,15 @@ function RawTab({ e, canContent }: { e: LogEntryView; canContent: boolean }) {
       )}
     </div>
   );
+}
+
+function responseCacheLabel(result: NonNullable<LogEntryView["response_cache"]>): string {
+  switch (result) {
+    case "hit":
+      return t("logs.inspector.responseCacheHit", "Answered from the cache, at no provider cost");
+    case "miss":
+      return t("logs.inspector.responseCacheMiss", "Not in the cache; sent to the provider");
+    case "bypass":
+      return t("logs.inspector.responseCacheBypass", "Not cacheable, or skipped by the app");
+  }
 }

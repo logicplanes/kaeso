@@ -221,6 +221,16 @@ The gateway also follows no redirects from a custom provider, and calls it witho
 
 [Format translation](../concepts/format-translation.md#chat-completions) explains how the gateway keeps it.
 
+### Response cache
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_RESPONSE_CACHE_ENABLED`<br>`response_cache.enabled` | bool | `true` | Let projects turn on the [response cache](../console/response-cache.md). `false` keeps it off in every project and stores nothing. |
+| `KAESO_RESPONSE_CACHE_MAX_ENTRY_SIZE`<br>`response_cache.max_entry_size` | text | `1MiB` | Largest reply the cache keeps. A larger one is still served, but not cached. |
+| `KAESO_RESPONSE_CACHE_MEMORY_SHARE`<br>`response_cache.memory_share` | integer | `50` | Percent of Valkey's `maxmemory` above which the cache stores no new replies, so limit counters always have room; 1 to 90. Ignored when Valkey sets no `maxmemory`. |
+
+Cached replies live in Valkey until their project's time runs out. The packaged Valkey refuses writes when it is full, so give it more memory with `VALKEY_MAXMEMORY` before you raise the share.
+
 ### Request and response bodies
 
 | Variable<br>TOML key | Type | Default | What it does |
