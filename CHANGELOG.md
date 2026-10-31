@@ -4,6 +4,26 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-31
+
+- **Breaking:** Kaeso reads its model data from KPMR, the Kaeso Provider & Model Registry, as signed catalogues instead of fetching models.dev ([#571](https://github.com/logicplanes/kaeso/pull/571))
+
+### Added
+
+- ClickHouse is optional: an install can turn request logs off or use its own ClickHouse ([#569](https://github.com/logicplanes/kaeso/pull/569))
+- Projects can answer repeated identical requests from an opt-in response cache ([#570](https://github.com/logicplanes/kaeso/pull/570))
+
+### Changed
+
+- Kaeso reads its model data from KPMR, the Kaeso Provider & Model Registry, as signed catalogues instead of fetching models.dev ([#571](https://github.com/logicplanes/kaeso/pull/571))
+- Dependencies updated ([#564](https://github.com/logicplanes/kaeso/pull/564))
+
+### Fixed
+
+#### UI library
+
+- Disclosure rows line up their chevron and hint with the title ([#563](https://github.com/logicplanes/kaeso/pull/563))
+
 ## [0.4.8] - 2026-10-30
 
 ### Added
@@ -1017,7 +1037,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.4.8...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.0
 [0.4.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.8
 [0.4.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.7
 [0.4.6]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.6

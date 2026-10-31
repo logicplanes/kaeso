@@ -8,7 +8,7 @@ x-logging: &logging
 
 services:
   caddy-init:
-    image: ghcr.io/logicplanes/kaeso-console:0.4.8
+    image: ghcr.io/logicplanes/kaeso-console:0.5.0
     restart: "no"
     user: "0:0"
     security_opt: [no-new-privileges:true]
@@ -30,7 +30,7 @@ services:
       - caddy_site:/site
 
   caddy:
-    image: ghcr.io/logicplanes/kaeso-console:0.4.8
+    image: ghcr.io/logicplanes/kaeso-console:0.5.0
     restart: unless-stopped
     user: "65532:65532"
     security_opt: [no-new-privileges:true]
@@ -72,7 +72,7 @@ services:
         condition: service_healthy
 
   gateway:
-    image: ghcr.io/logicplanes/kaeso-gateway:0.4.8
+    image: ghcr.io/logicplanes/kaeso-gateway:0.5.0
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -108,7 +108,7 @@ services:
         required: false
 
   console:
-    image: ghcr.io/logicplanes/kaeso-console:0.4.8
+    image: ghcr.io/logicplanes/kaeso-console:0.5.0
     restart: unless-stopped
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
@@ -120,7 +120,7 @@ services:
     networks: [edge]
 
   updater-init:
-    image: ghcr.io/logicplanes/kaeso-console:0.4.8
+    image: ghcr.io/logicplanes/kaeso-console:0.5.0
     profiles: [updater]
     restart: "no"
     user: "0:0"
@@ -138,7 +138,7 @@ services:
       - updater:/state
 
   updater:
-    image: ghcr.io/logicplanes/kaeso-updater:0.4.8
+    image: ghcr.io/logicplanes/kaeso-updater:0.5.0
     profiles: [updater]
     restart: unless-stopped
     user: "65532:65532"
