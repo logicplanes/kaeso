@@ -8,11 +8,12 @@ import { catalogueQuery } from "~/api/queries/models";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgMembersQuery, platformKeysQuery } from "~/api/queries/orgs";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
-import { useMemberships, useOrgRights, useRequestLogs, useSession } from "~/auth/session";
+import { useMemberships, useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { useCreateAction } from "./create-action";
 import { readLast } from "./last";
-import { ORG_AREA_PAGES, orgPath, projectPages, projectPath } from "./pages";
+import { ORG_AREA_PAGES, orgPath, projectPath } from "./pages";
+import { useProjectPages } from "./project-pages";
 import { defaultProjectOf } from "./place";
 import { readRecent, recentHint, type RecentIcons } from "./recent";
 import { ACCOUNT_PAGES, INSTANCE_PAGES, ORG_SETTINGS_PAGES } from "./settings-pages";
@@ -205,7 +206,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
   const project = params.project ?? (org === last?.org ? last?.project : undefined) ?? defaultProjectOf(memberships, org) ?? "";
   const projectRights = useProjectRights(org, project);
   const orgRights = useOrgRights(org);
-  const requestLogs = useRequestLogs();
+  const projectPages = useProjectPages(org, project);
   const projects = useQuery({ ...orgProjectsQuery(org), enabled: !!org });
   const create = useCreateAction();
   const { setTheme } = useTheme();
@@ -224,8 +225,8 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
       void navigate({ to });
     };
     const goto: CommandItem[] = [
-      ...projectPages(requestLogs)
-        .filter((p) => project && !orgContext && projectRights.has(p.right))
+      ...projectPages
+        .filter(() => project && !orgContext)
         .map((p) => ({
           id: `page:${p.id}`,
           label: p.label(),
@@ -395,9 +396,9 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
     orgContext,
     orgRights,
     project,
+    projectPages,
     projectRights,
     projects.data,
-    requestLogs,
     session.user.is_instance_admin,
     setTheme,
   ]);
