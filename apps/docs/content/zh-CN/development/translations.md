@@ -34,7 +34,7 @@ Kaeso 向用户展示的每个词都有英语、德语和简体中文版本（`e
 
 以下内容从不翻译：
 
-- 产品和服务商名称（Kaeso、OpenAI、Anthropic、models.dev）
+- 产品和服务商名称（Kaeso、KPMR、OpenAI、Anthropic、models.dev）
 - 模型 ID、各类 ID 和密钥前缀
 - 代码、设置（`KAESO_*`）、路径和字段名
 - 权限（`keys.all.view`）

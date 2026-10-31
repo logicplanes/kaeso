@@ -133,7 +133,7 @@ Any other path under `/v1` gets 404, and a known path called with the wrong meth
 | | OpenAI format | Anthropic format |
 | --- | --- | --- |
 | Paging | None; one answer holds every model | `limit` (1 to 1000, default 20), `after_id` or `before_id` |
-| Deprecated models | Not marked | `lifecycle: "deprecated"`, as models.dev marks them |
+| Deprecated models | Not marked | `lifecycle: "deprecated"`, as KPMR marks them |
 
 `GET /v1/models/{model}` takes any [model name](#model-names). It answers 404 when the model isn't in the catalogue, the key may not use it, or the provider doesn't serve it.
 

@@ -22,7 +22,8 @@ order: 2
 | 服务商 | Kaeso 调用其模型的公司，例如 OpenAI、Anthropic 或 Groq。它的 ID（如 `groq`）在模型名称和设置中指代该服务商（[服务商](providers.md)） |
 | 服务商密钥 | 组织用于某个模型服务商（如 OpenAI 或 Anthropic）的密钥，Kaeso 用它调用服务商。应用永远看不到它（[服务商密钥](../console/provider-keys.md)） |
 | 主密钥 | 实例自己的密钥，用于加密它存储的机密信息，例如服务商密钥（[备份和主密钥](../self-hosting/backups.md)） |
-| 目录 | 项目可以调用的模型及其价格、限制和能力。它们来自 models.dev，项目也可以添加自定义模型或覆盖字段（[模型和别名](../console/models-and-aliases.md)） |
+| 目录 | 项目可以调用的模型及其价格、限制和能力。它们来自 [KPMR](kpmr.md)，项目也可以添加自定义模型或覆盖字段（[模型和别名](../console/models-and-aliases.md)） |
+| KPMR | Kaeso Provider & Model Registry，为每个实例提供模型数据，这些数据基于 models.dev 构建并由 Logicplanes 审核（[KPMR](kpmr.md)） |
 | 别名 | 项目为其目录中的模型起的名称，例如 `fast` |
 | 限额 | 针对项目、成员或密钥的请求速率或 Token 速率，或 Token 预算或支出预算。硬性预算会拒绝请求，软性预算只发出提醒（[限额和预算](../console/limits-and-budgets.md)） |
 | 请求日志 | 一个模型请求的记录：状态、Token、费用、耗时，以及在保留时的内容（[请求日志](../console/request-logs.md)） |
@@ -37,3 +38,4 @@ order: 2
 - [请求流程](request-flow.md)：跟随一个模型请求走过网关，了解它会得到哪种错误以及如何计费。
 - [格式转换](format-translation.md)：了解应用调用其他服务商的模型时，哪些内容能够保留。
 - [权限](rights.md)：查阅每项权限、哪些角色拥有它，以及授予它的规则。
+- [KPMR](kpmr.md)：了解模型数据从何而来，以及实例如何保持其最新。

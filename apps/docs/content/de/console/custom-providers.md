@@ -16,7 +16,7 @@ Ein eigener Anbieter ist ein Server, den Ihre Organisation selbst hinzufügt, et
 
 Ohne das Recht **Anbieter-Schlüssel hinzufügen** nutzt Kaeso den Schlüssel nur, um die Einstellungen zu erkennen; jemand mit dem Recht fügt ihn unter **Anbieter-Schlüssel** hinzu ([Anbieter-Schlüssel](provider-keys.md)). Zuletzt fügen Sie die Modelle des Anbieters einem Projekt hinzu ([seine Modelle hinzufügen](#seine-modelle-hinzufügen)).
 
-Die **ID** beginnt mit dem Host des Servers und folgt dem Namen, bis Sie sie ändern. Modellnamen beginnen mit ihr, etwa `research-vllm/llama-3.3-70b`, und sie ändert sich nie. Eine ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, höchstens 40 Zeichen. Sie darf nicht die ID eines eingebauten Anbieters sein und auch nicht die eines Anbieters auf [models.dev](https://models.dev), denn Kaeso könnte diesen Anbieter später aufnehmen. Jede Organisation hat ihre eigenen IDs, zwei Organisationen können also beide ein `research-vllm` haben.
+Die **ID** beginnt mit dem Host des Servers und folgt dem Namen, bis Sie sie ändern. Modellnamen beginnen mit ihr, etwa `research-vllm/llama-3.3-70b`, und sie ändert sich nie. Eine ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, höchstens 40 Zeichen. Sie darf nicht die ID eines eingebauten Anbieters sein und auch nicht die eines Anbieters in [KPMR](../concepts/kpmr.md), denn Kaeso könnte diesen Anbieter später aufnehmen. Jede Organisation hat ihre eigenen IDs, zwei Organisationen können also beide ein `research-vllm` haben.
 
 Kaeso hängt den Pfad des Formats an die Basis-URL an, etwa `/v1/chat/completions`, wie bei jedem Anbieter. Deshalb entfernt es ein abschließendes `/v1` oder einen eingefügten Endpunkt, etwa `/v1/chat/completions`, und ergänzt `https://` bei einer Adresse ohne Schema. Ein Pfad vor `/v1` bleibt: `https://proxy.example.com/llm/v1` erhält Anfragen unter `https://proxy.example.com/llm/v1/chat/completions`. Ein Server, dessen API nicht unter `/v1` liegt, lässt sich noch nicht hinzufügen.
 
@@ -51,11 +51,11 @@ Kaeso spricht mit einem eigenen Anbieter das reine Format. Es weiß, wie jeder e
 
 ## Was Kaeso nicht wissen kann
 
-models.dev kennt Ihren Server nicht, und eine Modellliste nennt nur wenige Werte eines Modells. Wenn Sie ein Modell hinzufügen, trägt Kaeso ein, was es findet, und Sie geben den Rest an:
+KPMR kennt Ihren Server nicht, und eine Modellliste nennt nur wenige Werte eines Modells. Wenn Sie ein Modell hinzufügen, trägt Kaeso ein, was es findet, und Sie geben den Rest an:
 
-- **Preise.** Ein- und Ausgabepreis, und Cache-Preise, wenn der Server zwischengespeicherte Tokens meldet. Kaeso trägt sie nie ein, denn ein Preis auf models.dev ist der eines anderen Anbieters. Es berechnet jede Anfrage zu diesen Preisen und hält Budgets an ihnen fest ([Limits und Budgets](limits-and-budgets.md)). Setzen Sie `0` für einen Server, den Sie nicht pro Token bezahlen.
-- **Limits.** Das Kontextfenster und das Ausgabelimit, aus der Modellliste oder sonst vom gleichnamigen Modell auf models.dev. Kaeso nutzt sie für Budgets und um das Ausgabelimit zu ergänzen, das Messages verlangt.
-- **Fähigkeiten.** Eingaben, Ausgaben, Tool-Aufrufe, Reasoning, strukturierte Ausgabe, Temperatur und Aufwandsstufen, vom gleichnamigen Modell auf models.dev. Eine Anfrage, die eine Fähigkeit braucht, die das Modell nicht hat, lehnt Kaeso ab, bevor es Ihren Server aufruft.
+- **Preise.** Ein- und Ausgabepreis, und Cache-Preise, wenn der Server zwischengespeicherte Tokens meldet. Kaeso trägt sie nie ein, denn ein Preis in KPMR ist der eines anderen Anbieters. Es berechnet jede Anfrage zu diesen Preisen und hält Budgets an ihnen fest ([Limits und Budgets](limits-and-budgets.md)). Setzen Sie `0` für einen Server, den Sie nicht pro Token bezahlen.
+- **Limits.** Das Kontextfenster und das Ausgabelimit, aus der Modellliste oder sonst vom gleichnamigen Modell in KPMR. Kaeso nutzt sie für Budgets und um das Ausgabelimit zu ergänzen, das Messages verlangt.
+- **Fähigkeiten.** Eingaben, Ausgaben, Tool-Aufrufe, Reasoning, strukturierte Ausgabe, Temperatur und Aufwandsstufen, vom gleichnamigen Modell in KPMR. Eine Anfrage, die eine Fähigkeit braucht, die das Modell nicht hat, lehnt Kaeso ab, bevor es Ihren Server aufruft.
 
 Diese Werte bleiben, wie Sie sie setzen. Nichts aktualisiert sie später.
 
@@ -63,7 +63,7 @@ Diese Werte bleiben, wie Sie sie setzen. Nichts aktualisiert sie später.
 
 Wählen Sie auf der Seite **Modelle** eines Projekts **Modelle hinzufügen**. Eigene Anbieter stehen in der Anbieterliste neben den eingebauten. Wählen Sie Ihren, und der Dialog fragt die Modellliste des Servers ab, `GET /v1/models`, mit dem Schlüssel des Projekts. Er listet die IDs, die der Server nennt und die der Katalog noch nicht hat.
 
-Wählen Sie eine ID oder **Modell-ID eingeben** und prüfen Sie dann die Werte des Modells. Kaeso trägt die Limits ein, die die Liste angibt, und die Werte des Modells, das models.dev unter demselben Namen führt, ohne Groß- und Kleinschreibung und einen Besitzer vor dem `/`: `meta-llama/Llama-3.3-70B-Instruct` übernimmt die von `meta-llama/llama-3.3-70b-instruct`. Die Preise geben Sie immer selbst ein. Schlägt die Liste fehl, sagt der Dialog warum, und Sie geben die ID ein. Modelle hinzuzufügen erfordert im Projekt das Recht **Modelle verwalten** ([Modelle und Aliasse](models-and-aliases.md)).
+Wählen Sie eine ID oder **Modell-ID eingeben** und prüfen Sie dann die Werte des Modells. Kaeso trägt die Limits ein, die die Liste angibt, und die Werte des Modells, das KPMR unter demselben Namen führt, ohne Groß- und Kleinschreibung und einen Besitzer vor dem `/`: `meta-llama/Llama-3.3-70B-Instruct` übernimmt die von `meta-llama/llama-3.3-70b-instruct`. Die Preise geben Sie immer selbst ein. Schlägt die Liste fehl, sagt der Dialog warum, und Sie geben die ID ein. Modelle hinzuzufügen erfordert im Projekt das Recht **Modelle verwalten** ([Modelle und Aliasse](models-and-aliases.md)).
 
 Apps rufen das Modell dann bei seinem Namen auf, mit der ID des Anbieters davor:
 

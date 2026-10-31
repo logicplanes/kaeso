@@ -133,7 +133,7 @@ Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen M
 | | OpenAI-Format | Anthropic-Format |
 | --- | --- | --- |
 | Paginierung | Keine; eine Antwort enthält alle Modelle | `limit` (1 bis 1000, Standard 20), `after_id` oder `before_id` |
-| Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie models.dev sie kennzeichnet |
+| Veraltete Modelle | Nicht gekennzeichnet | `lifecycle: "deprecated"`, wie KPMR sie kennzeichnet |
 
 `GET /v1/models/{model}` nimmt jeden [Modellnamen](#modellnamen). Die Antwort ist 404, wenn das Modell nicht im Katalog ist, der Schlüssel es nicht verwenden darf oder der Anbieter es nicht bereitstellt.
 

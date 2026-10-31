@@ -22,7 +22,8 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Anbieter | Ein Unternehmen, dessen Modelle Kaeso aufruft, etwa OpenAI, Anthropic oder Groq. Seine ID, etwa `groq`, bezeichnet es in Modellnamen und Einstellungen ([Anbieter](providers.md)) |
 | Anbieter-Schlüssel | Der Schlüssel der Organisation für einen Modellanbieter wie OpenAI oder Anthropic, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Secrets verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
-| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus models.dev, und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
+| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus [KPMR](kpmr.md), und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
+| KPMR | Die Kaeso Provider & Model Registry, die jede Installation mit Modelldaten versorgt, gebaut aus models.dev und von Logicplanes geprüft ([KPMR](kpmr.md)) |
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast` |
 | Limit | Eine Anfrage- oder Token-Rate oder ein Token- oder Ausgabenbudget, für ein Projekt, ein Mitglied oder einen Schlüssel. Ein hartes Budget lehnt Anfragen ab, ein weiches warnt nur ([Limits und Budgets](../console/limits-and-budgets.md)) |
 | Anfrageprotokoll | Der Eintrag zu einer Modellanfrage: Status, Token, Kosten, Zeiten und, wo aufbewahrt, ihr Inhalt ([Anfrageprotokolle](../console/request-logs.md)) |
@@ -37,3 +38,4 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 - [Ablauf einer Anfrage](request-flow.md): Verfolgen Sie eine Modellanfrage durch das Gateway, und erfahren Sie, welchen Fehler sie erhält und was sie kostet.
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
 - [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.
+- [KPMR](kpmr.md): Erfahren Sie, woher die Modelldaten kommen und wie eine Installation sie aktuell hält.

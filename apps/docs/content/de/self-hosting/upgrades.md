@@ -68,10 +68,10 @@ services:
   gateway:
     environment:
       KAESO_UPDATES_CHECK: "false"
-      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_KPMR_SYNC: "false"
 ```
 
-Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die Seite **Updates** zeigt die laufende Version, und Sie aktualisieren von Hand. Betreiben Sie einen Spiegel, der wie `update.kaeso.app` oder die Releases-API von GitHub antwortet, richten Sie stattdessen `KAESO_UPDATES_RELEASES_URL` darauf.
+Das Gateway verwendet dann die Modelldaten, die im Release enthalten sind, die Seite **Updates** zeigt die laufende Version, und Sie aktualisieren von Hand. Betreiben Sie einen Spiegel, der wie `update.kaeso.app` oder die Releases-API von GitHub antwortet, richten Sie stattdessen `KAESO_UPDATES_RELEASES_URL` darauf, und einen Spiegel des KPMR-Katalogs tragen Sie in `KAESO_KPMR_URL` ein ([KPMR](../concepts/kpmr.md#ohne-internetzugang)).
 
 ## Der Updater
 

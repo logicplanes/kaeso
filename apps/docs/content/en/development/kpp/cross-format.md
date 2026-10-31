@@ -252,7 +252,7 @@ A tool call's arguments are a JSON object in every format. Chat Completions and 
 
 ## Usage
 
-`Usage::input_tokens` excludes cache reads and cache writes, which are fields of their own. This matches the price columns of models.dev, so a cost is the sum of each count times its price. The provider's raw usage object is always kept.
+`Usage::input_tokens` excludes cache reads and cache writes, which are fields of their own. This matches the prices in the KPMR catalogue, so a cost is the sum of each count times its price. The provider's raw usage object is always kept.
 
 ## System messages
 

@@ -88,7 +88,7 @@ GitHub 发布页先给出一句话、最多五个亮点和破坏性变更。然�
 2. 刷新模型数据，让全新实例以最新的模型和价格启动，并通过拉取请求把结果合并到 `dev`：
 
    ```bash
-   cargo xtask models-dev
+   cargo xtask kpmr
    ```
 
 3. 以快进方式把 `dev` 推送到 `prod`：

@@ -12,14 +12,14 @@ Wählen Sie **Modelle hinzufügen**, wählen Sie dann in der durchsuchbaren List
 
 Der Dialog listet die Modelle, die neuesten zuerst, jedes mit seinem Kontextfenster sowie seinen Eingabe- und Ausgabepreisen. Passen mehr als 50 Modelle, zeigt er die ersten 50 und sagt, wie viele passen, sodass Sie sie mit der Suche eingrenzen. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
 
-Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [models.dev](https://models.dev) mit, einer offenen Datenbank von Modellen. Zwei Abkürzungen decken den Rest ab:
+Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [KPMR](../concepts/kpmr.md) mit, der Kaeso Provider & Model Registry. Zwei Abkürzungen decken den Rest ab:
 
 - **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für jeden anderen Anbieter, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu. Der Dialog sagt, wie viele Modelle er hinzufügt, und warnt vor 50 oder mehr.
-- **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt models.dev es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft. Eine ID darf nicht `.` oder `..` sein und keines davon zwischen Schrägstrichen enthalten, weil eine URL diesen Teil verwirft.
+- **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt KPMR es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft. Eine ID darf nicht `.` oder `..` sein und keines davon zwischen Schrägstrichen enthalten, weil eine URL diesen Teil verwirft.
 
 Für einen [eigenen Anbieter](custom-providers.md#seine-modelle-hinzufügen) Ihrer Organisation listet der Dialog stattdessen die Modell-IDs, die die Modellliste des Anbieters nennt. Er trägt die Limits und Fähigkeiten ein, die er findet, und Sie geben die Preise ein.
 
-Die Installation aktualisiert die Daten von models.dev standardmäßig alle 24 Stunden, und Instanz-Admins sehen ihren Stand unter [Modellquellen](instance-administration.md#modelldaten-synchronisieren). Ein Modell, das models.dev nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das models.dev als veraltet kennzeichnet, ist als **Veraltet** markiert.
+Die Installation hält die Daten von KPMR selbst aktuell, standardmäßig etwa stündlich, und Instanz-Admins sehen ihren Stand unter [System](instance-administration.md#system-prüfen). Ein Modell, das KPMR nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das KPMR als veraltet kennzeichnet, ist als **Veraltet** markiert.
 
 ## Ein Modell finden
 
@@ -45,14 +45,14 @@ Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, ode
 
 ## Werte eines Modells ändern
 
-Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner Herkunft: von models.dev, aus Kaesos eigenen Ergänzungen oder aus einem eigenen Wert dieses Projekts. **Werte anpassen** ändert sie nur für dieses Projekt, und **Auf models.dev zurücksetzen** stellt einen Wert der Quelle wieder her. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern dies und lädt die aktuellen Werte, sodass Sie Ihre Änderung erneut vornehmen können.
+Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner Herkunft: von KPMR oder aus einem eigenen Wert dieses Projekts. **Werte anpassen** ändert sie nur für dieses Projekt, und **Auf KPMR zurücksetzen** stellt einen Wert der Quelle wieder her. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern dies und lädt die aktuellen Werte, sodass Sie Ihre Änderung erneut vornehmen können.
 
 | Wert | Bedeutung |
 | --- | --- |
 | Anzeigename | Der Name, den die Konsole zeigt |
 | Eingaben, Ausgaben | Eingaben: Text, Bilder, PDF, Audio und Video. Ausgaben: Text, Bilder, Audio und Embeddings |
 | Kontext, Ausgabelimit | Die Token-Limits des Modells |
-| Eingabe-, Ausgabe-, Cache-Lese- und Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten, wie models.dev ihn führt. Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten das Doppelte des Eingabepreises, [Anthropics Regel](https://platform.claude.com/docs/en/about-claude/pricing), oder den Cache-Schreibpreis, wenn das Modell keinen Eingabepreis hat |
+| Eingabe-, Ausgabe-, Cache-Lese-, Cache-Schreib- und Ein-Stunden-Cache-Schreibpreis | US-Dollar je Million Token. Nutzung und Budgets rechnen mit den Preisen, die zum Zeitpunkt der Anfrage gelten. Der Cache-Schreibpreis ist der für fünf Minuten. Schreibzugriffe in Anthropics Ein-Stunden-Cache kosten den Ein-Stunden-Cache-Schreibpreis, den KPMR setzt, wo der Anbieter einen dokumentiert, etwa das Doppelte des Eingabepreises bei Anthropics Modellen; ohne ihn kosten sie den Cache-Schreibpreis |
 | Sendet als | Das API-Format, mit dem Kaeso das Modell aufruft: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder OpenAI Embeddings |
 | Tool-Aufrufe, Reasoning, strukturierte Ausgabe | Was das Modell unterstützt |
 | Temperatur | Ob das Modell `temperature` annimmt |
