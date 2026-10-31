@@ -4,7 +4,7 @@ import { meQuery } from "./me";
 import { logDeletionsQuery, logSettingsQuery, logStorageQuery, orgMembersQuery, orgQuery, platformKeysQuery, securityQuery } from "./orgs";
 import { orgProjectsQuery } from "./projects";
 import { rightsCatalogueQuery, rolesQuery } from "./rights";
-import { instanceOrgsQuery, instanceSettingsQuery, instanceUsersQuery, modelsDevQuery, systemQuery, updatesQuery } from "./instance";
+import { instanceOrgsQuery, instanceSettingsQuery, instanceUsersQuery, systemQuery, updatesQuery } from "./instance";
 
 export type LoggingTab = "settings" | "storage" | "deletions";
 
@@ -24,7 +24,7 @@ export function prefetchSettingsPath(client: QueryClient, path: string): void {
 
 const ORG_PAGES = ["general", "members", "security", "platform-keys", "logging"] as const;
 const isOrgPage = (p: string | undefined): p is (typeof ORG_PAGES)[number] => (ORG_PAGES as readonly (string | undefined)[]).includes(p);
-const INSTANCE_PAGES = ["general", "logging", "model-sources", "system", "updates"] as const;
+const INSTANCE_PAGES = ["general", "logging", "system", "updates"] as const;
 const isInstancePage = (p: string): p is (typeof INSTANCE_PAGES)[number] => (INSTANCE_PAGES as readonly string[]).includes(p);
 
 export type OrgSettingsData = "general" | "members" | "security" | "platform-keys" | LoggingTab;
@@ -66,9 +66,7 @@ function prefetchAccountSettings(client: QueryClient): void {
 }
 
 export type InstanceSettingsData =
-  | { page: "users"; search: string; state: string | undefined }
-  | { page: "orgs"; search: string }
-  | { page: "general" | "logging" | "model-sources" | "system" | "updates" };
+  { page: "users"; search: string; state: string | undefined } | { page: "orgs"; search: string } | { page: "general" | "logging" | "system" | "updates" };
 
 export function prefetchInstanceSettings(client: QueryClient, data: InstanceSettingsData | null): void {
   if (!data || !client.getQueryData(sessionQuery.queryKey)?.can_administer_instance) return;
@@ -82,9 +80,6 @@ export function prefetchInstanceSettings(client: QueryClient, data: InstanceSett
     case "general":
     case "logging":
       void client.prefetchQuery(instanceSettingsQuery);
-      return;
-    case "model-sources":
-      void client.prefetchQuery(modelsDevQuery);
       return;
     case "system":
       void client.prefetchQuery(systemQuery);

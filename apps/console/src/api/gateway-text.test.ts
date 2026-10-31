@@ -243,6 +243,6 @@ describe("the gateway's words in its answers", () => {
     }
     expect(knownRights()).toHaveLength(66);
     for (const id of agentRightIds()) expect(rightEnglish(id)[0], id).toBeTruthy();
-    expect(agentRightIds()).toHaveLength(16);
+    expect(agentRightIds()).toHaveLength(15);
   });
 });

@@ -23,7 +23,7 @@ export function Tones() {
   return (
     <div className="flex w-560 max-w-full flex-col gap-12">
       <Banner tone="info" title="New models are available" actions={<Button size="sm">Review</Button>} onDismiss={() => undefined}>
-        models.dev added 4 models since the last sync.
+        KPMR added 4 models since the last sync.
       </Banner>
       <Banner tone="warning">This key expires in 5 days.</Banner>
       <Banner tone="danger" title="This organization is scheduled for deletion" actions={<Button size="sm">Restore organization</Button>}>
@@ -128,7 +128,7 @@ export function States() {
           </div>
           <div className="w-360">
             <Banner tone="info" title="New models are available" actions={<Button size="sm">Review</Button>} onDismiss={() => undefined}>
-              models.dev added 4 models since the last sync.
+              KPMR added 4 models since the last sync.
             </Banner>
           </div>
         </div>

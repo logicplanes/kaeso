@@ -32,7 +32,6 @@ export const INSTANCE_PAGES: SettingsPage[] = [
   { id: "users", label: () => t("shell.settings.users", "Users"), icon: icons.members, path: "users" },
   { id: "orgs", label: () => t("shell.organizations", "Organizations"), icon: icons.organization, path: "orgs" },
   { id: "logging", label: () => t("shell.settings.logging", "Logging"), icon: icons.requestLog, path: "logging" },
-  { id: "model-sources", label: () => t("shell.settings.modelSources", "Model sources"), icon: icons.model, path: "model-sources" },
   { id: "updates", label: () => t("shell.settings.updates", "Updates"), icon: icons.update, path: "updates" },
   { id: "system", label: () => t("shell.settings.system", "System"), icon: icons.gateway, path: "system" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log" },

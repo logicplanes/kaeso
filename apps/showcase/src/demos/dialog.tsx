@@ -447,7 +447,7 @@ export function States() {
           <Dialog
             inline
             title="Add model"
-            description="Pick a model from the models.dev catalogue."
+            description="Pick a model from the KPMR catalogue."
             toolbar={<Input aria-label="Search models" placeholder="Search" />}
             footerStart={<Button variant="ghost">Add a custom model</Button>}
             footer={<Button variant="primary">Add model</Button>}

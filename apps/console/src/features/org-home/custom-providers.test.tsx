@@ -251,7 +251,7 @@ describe("custom providers", () => {
         models: [],
       }),
     );
-    on("POST", LIST, apiError(400, "invalid_request", "`lmstudio` is a provider listed on models.dev that Kaeso may add; choose another id.", { param: "id" }));
+    on("POST", LIST, apiError(400, "invalid_request", "`lmstudio` is a provider listed in KPMR that Kaeso may add; choose another id.", { param: "id" }));
     const { user } = await renderApp(PATH);
 
     await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
@@ -281,9 +281,9 @@ describe("custom providers", () => {
     await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
     await user.click(await screen.findByRole("option", { name: "No key" }));
     await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
-    await waitFor(() => expect(id).toHaveAccessibleDescription(/listed on models.dev/));
+    await waitFor(() => expect(id).toHaveAccessibleDescription(/listed in KPMR/));
     await user.type(id, "-local");
-    await waitFor(() => expect(id).not.toHaveAccessibleDescription(/listed on models.dev/));
+    await waitFor(() => expect(id).not.toHaveAccessibleDescription(/listed in KPMR/));
     expect(requests("POST", DETECT)).toHaveLength(1);
     expect(requests("POST", LIST)[0]?.body).toMatchObject({ id: "lmstudio", name: "LM Studio", auth: "none", base_url: "http://10.0.0.8:1234/" });
     expect(requests("POST", KEYS)).toEqual([]);
@@ -543,7 +543,7 @@ describe("a custom provider's models", () => {
 
     const custom = await screen.findByRole("dialog", { name: /Add a Research vLLM model/ });
     expect(within(custom).getByText(/Kaeso can't know these values for Research vLLM/)).toBeInTheDocument();
-    expect(within(custom).queryByText("Saved values override models.dev for this project only.")).not.toBeInTheDocument();
+    expect(within(custom).queryByText("Saved values override KPMR for this project only.")).not.toBeInTheDocument();
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[0] as HTMLElement);
     await user.click(within(custom).getAllByRole("checkbox", { name: "Text" })[1] as HTMLElement);
     await fill(user, within(custom).getByRole("spinbutton", { name: "Context" }), "131072");
@@ -615,7 +615,7 @@ describe("a custom provider's models", () => {
 
     const custom = await screen.findByRole("dialog", { name: /Add a Research vLLM model/ });
     expect(
-      within(custom).getByText("Kaeso filled in what Research vLLM and models.dev say about meta-llama/Llama-3.3-70B-Instruct; check it and set its prices."),
+      within(custom).getByText("Kaeso filled in what Research vLLM and KPMR say about meta-llama/Llama-3.3-70B-Instruct; check it and set its prices."),
     ).toBeInTheDocument();
     expect(within(custom).getByRole("spinbutton", { name: "Context" })).toHaveValue("131,072");
     expect(within(custom).getByRole("spinbutton", { name: "Output limit" })).toHaveValue("16,384");

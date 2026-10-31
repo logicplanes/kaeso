@@ -117,7 +117,7 @@ export function placeholders(message) {
 }
 
 export const SAME_AS_ENGLISH = new Set([
-  "format.audit.kind.modelsDev",
+  "format.audit.kind.kpmr",
   "kaeso.audit.jsonLines",
   "kaeso.createKey.limit",
   "kaeso.createKey.limitNumber",

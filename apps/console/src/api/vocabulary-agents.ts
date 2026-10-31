@@ -4,15 +4,11 @@ import { rightEnglish, type NodeTranslator } from "./vocabulary";
 const rights: Readonly<Record<string, () => [string, string]>> = {
   "instance.system.view": () => [
     t("rights.instanceSystemView.name", "View the system"),
-    t("rights.instanceSystemView.description", "See the system, the instance settings, model sources and the update status."),
+    t("rights.instanceSystemView.description", "See the system and its model data, the instance settings and the update status."),
   ],
   "instance.settings.manage": () => [
     t("rights.instanceSettingsManage.name", "Change instance settings"),
     t("rights.instanceSettingsManage.description", "Change general, mail, logging, time zone and account settings, and send a test email."),
-  ],
-  "instance.model_sources.manage": () => [
-    t("rights.instanceModelSourcesManage.name", "Manage model sources"),
-    t("rights.instanceModelSourcesManage.description", "Sync the model data from models.dev."),
   ],
   "instance.updates.manage": () => [
     t("rights.instanceUpdatesManage.name", "Manage updates"),
@@ -116,8 +112,8 @@ const instancePresets: Readonly<Record<string, [string, () => string, string, ()
   configure: [
     "Configure",
     () => t("rights.instancePreset.configure.name", "Configure"),
-    "Reads the instance and changes its settings, model sources and update settings.",
-    () => t("rights.instancePreset.configure.description", "Reads the instance and changes its settings, model sources and update settings."),
+    "Reads the instance and changes its settings and update settings.",
+    () => t("rights.instancePreset.configure.description", "Reads the instance and changes its settings and update settings."),
   ],
   admin: [
     "Admin",

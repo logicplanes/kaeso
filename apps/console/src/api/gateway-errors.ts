@@ -266,7 +266,6 @@ const messages = (): Rule[] => [
   rule("errors.onlyDeactivatedReactivated", () => t("errors.onlyDeactivatedReactivated", "Only deactivated users can be reactivated.")),
   rule("errors.onlyActiveInstanceAdmins", () => t("errors.onlyActiveInstanceAdmins", "Only active users can be instance admins.")),
   rule("errors.lastInstanceAdmin", () => t("errors.lastInstanceAdmin", "This is the last instance admin; make someone else an instance admin first.")),
-  rule("errors.modelsDevUnavailable", () => t("errors.modelsDevUnavailable", "The models.dev data could not be fetched; the gateway log says why.")),
   rule("errors.allowedDomainNeeded", () => t("errors.allowedDomainNeeded", "Add at least one allowed domain to use it.")),
   rule("errors.retentionRange", () => t("errors.retentionRange", "Retention must be 1 to 36,500 days.")),
   rule("errors.gracePeriodRange", () => t("errors.gracePeriodRange", "The grace period must be 1 to 90 days.")),
@@ -360,8 +359,8 @@ const messages = (): Rule[] => [
   rule("errors.customProvider.idForm", () => t("errors.customProvider.idForm", "`id` must be lowercase letters and digits with single hyphens between them.")),
   rule("errors.customProvider.idLength", () => t("errors.customProvider.idLength", "`id` can have at most 40 characters.")),
   rule("errors.customProvider.idBuiltIn", (v) => t("errors.customProvider.idBuiltIn", "`{id}` is a built-in provider; choose another id.", v)),
-  rule("errors.customProvider.idModelsDev", (v) =>
-    t("errors.customProvider.idModelsDev", "`{id}` is a provider listed on models.dev that Kaeso may add; choose another id.", v),
+  rule("errors.customProvider.idKpmr", (v) =>
+    t("errors.customProvider.idKpmr", "`{id}` is a provider listed in KPMR that Kaeso may add; choose another id.", v),
   ),
   rule("errors.customProvider.idTaken", (v) => t("errors.customProvider.idTaken", "This organization already has a custom provider `{id}`.", v)),
   rule("errors.customProvider.name", () => t("errors.customProvider.name", "The name must be 1 to 100 characters, without control characters.")),
@@ -399,7 +398,7 @@ const messages = (): Rule[] => [
     t("errors.customProvider.oneModelAtATime", "Add a custom provider's models one at a time, with their values."),
   ),
   rule("errors.customProvider.listingOnlyCustom", () =>
-    t("errors.customProvider.listingOnlyCustom", "Only custom providers list their models here; search models.dev for the others."),
+    t("errors.customProvider.listingOnlyCustom", "Only custom providers list their models here; search KPMR for the others."),
   ),
   rule("errors.customProvider.listingKeyRefused", (v) =>
     t("errors.customProvider.listingKeyRefused", "The custom provider `{provider}` refused this project's key; check it under Providers.", v),
@@ -454,16 +453,12 @@ const messages = (): Rule[] => [
   rule("errors.modelIdDots", () => t("errors.modelIdDots", "`model_id` can't be `.` or `..`, or have either between slashes.")),
   rule("errors.listModelIds", () => t("errors.listModelIds", "List 1 to 200 model ids.")),
   rule("errors.modelIdsOrAllCurrent", () => t("errors.modelIdsOrAllCurrent", "Send either `model_ids` or `all_current: true`.")),
-  rule("errors.notOnModelsDevAddCustom", (v) =>
-    t("errors.notOnModelsDevAddCustom", "The model `{model}` is not on models.dev for `{provider}`; add it as a custom model.", v),
+  rule("errors.notInKpmrAddCustom", (v) => t("errors.notInKpmrAddCustom", "The model `{model}` is not in KPMR for `{provider}`; add it as a custom model.", v)),
+  rule("errors.notInKpmrSendCustom", (v) =>
+    t("errors.notInKpmrSendCustom", "The model `{model}` is not in KPMR for `{provider}`; send `custom: true` to add it anyway.", v),
   ),
-  rule("errors.notOnModelsDevSendCustom", (v) =>
-    t("errors.notOnModelsDevSendCustom", "The model `{model}` is not on models.dev for `{provider}`; send `custom: true` to add it anyway.", v),
-  ),
-  rule("errors.notOnModelsDevAlone", (v) =>
-    t("errors.notOnModelsDevAlone", "The model `{model}` is not on models.dev for `{provider}`; add it alone as a custom model.", v),
-  ),
-  rule("errors.onModelsDev", (v) => t("errors.onModelsDev", "The model `{model}` is on models.dev; add it without `custom`.", v)),
+  rule("errors.notInKpmrAlone", (v) => t("errors.notInKpmrAlone", "The model `{model}` is not in KPMR for `{provider}`; add it alone as a custom model.", v)),
+  rule("errors.inKpmr", (v) => t("errors.inKpmr", "The model `{model}` is in KPMR; add it without `custom`.", v)),
   rule("errors.catalogueHasModel", (v) => t("errors.catalogueHasModel", "The catalogue already has `{provider}/{model}`.", v)),
   rule("errors.notCatalogueField", (v) => t("errors.notCatalogueField", "`{name}` is not a catalogue field.", v)),
   rule("errors.overrideWrongType", () => t("errors.overrideWrongType", "An override has a value of the wrong type.")),

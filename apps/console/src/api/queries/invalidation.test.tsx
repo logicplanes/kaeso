@@ -3,7 +3,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 import { queryClient } from "~/query";
 import { ORG, OTHER_PROJECT, PROJECT, org, project, signedIn } from "~/test/fixtures";
-import { key, me, modelsDev } from "~/test/fixtures/instance-account";
+import { key, me } from "~/test/fixtures/instance-account";
 import { logSettings, notifications, paged } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -16,9 +16,6 @@ const PROJECT_VIEW: QueryKey = ["orgs", ORG, "projects", PROJECT, "view"];
 const PROJECT_LOG_SETTINGS: QueryKey = ["orgs", ORG, "projects", PROJECT, "logs", "settings"];
 const KEYS: QueryKey = ["orgs", ORG, "projects", PROJECT, "keys", "all", {}];
 const OTHER_KEYS: QueryKey = ["orgs", ORG, "projects", OTHER_PROJECT, "keys", "all", {}];
-const MODELS: QueryKey = ["orgs", ORG, "projects", PROJECT, "models"];
-const PLAYGROUND_MODELS: QueryKey = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
-const ALIASES: QueryKey = ["orgs", ORG, "projects", PROJECT, "aliases"];
 
 const seed = (...keys: QueryKey[]) => {
   for (const k of keys) queryClient.setQueryData(k, { seeded: true });
@@ -92,21 +89,6 @@ describe("what a change reloads", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
     expect(await notifications().findByText("support-bot disabled")).toBeInTheDocument();
     expect(invalidated(KEYS)).toBe(false);
-  });
-
-  it("reloads the model catalogues after a models.dev sync", async () => {
-    signedIn();
-    on("GET", "instance/models-dev", modelsDev());
-    on("POST", "instance/models-dev/sync", modelsDev({ model_count: 420 }));
-    seed(MODELS, PLAYGROUND_MODELS, ALIASES, PROJECT_MEMBERS);
-    const { user } = await renderApp("/settings/instance/model-sources");
-    await screen.findByText("412 models");
-    await user.click(screen.getByRole("button", { name: "Sync now" }));
-    expect(await notifications().findByText("Synced: 420 models")).toBeInTheDocument();
-    expect(invalidated(MODELS)).toBe(true);
-    expect(invalidated(PLAYGROUND_MODELS)).toBe(true);
-    expect(invalidated(ALIASES)).toBe(true);
-    expect(invalidated(PROJECT_MEMBERS)).toBe(false);
   });
 
   it("asks again only for what failed when a page that couldn't load is tried again", async () => {

@@ -317,7 +317,6 @@ export function modelsApi({ models = [], hits = [], previews = [] }: ModelsApi =
     "GET",
     "orgs/:org/projects/:project/models/preview",
     ({ query }: { query: URLSearchParams }) =>
-      previews.find((p) => p.provider === query.get("provider") && p.model_id === query.get("model")) ??
-      apiError(404, "not_found", "models.dev doesn't list it."),
+      previews.find((p) => p.provider === query.get("provider") && p.model_id === query.get("model")) ?? apiError(404, "not_found", "KPMR doesn't list it."),
   );
 }

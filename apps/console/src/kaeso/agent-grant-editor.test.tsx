@@ -60,7 +60,6 @@ const checkbox = (scope: HTMLElement, name: RegExp) =>
 const ADMIN = [
   "instance.system.view",
   "instance.settings.manage",
-  "instance.model_sources.manage",
   "instance.updates.manage",
   "instance.users.view",
   "instance.orgs.view",

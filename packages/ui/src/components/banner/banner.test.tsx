@@ -67,7 +67,7 @@ describe("Banner", () => {
     const onDismiss = vi.fn();
     const { rerender } = render(
       <Banner tone="info" title="New models are available" actions={<Button size="sm">Review</Button>} onDismiss={onDismiss}>
-        models.dev added 4 models since the last sync.
+        KPMR added 4 models since the last sync.
       </Banner>,
     );
     await userEvent.click(screen.getByRole("button", { name: "Dismiss" }));

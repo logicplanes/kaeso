@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Code, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Text } from "@logicplanes/kaeso-ui";
-import { formatBytes, formatNumber } from "@logicplanes/kaeso-ui/format";
+import { Code, SettingsGroup, SettingsRow, SettingsSection, StatusDot, Text, Tooltip } from "@logicplanes/kaeso-ui";
+import { formatBytes, formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
+import type { ModelDataView } from "~/api/generated/types";
 import { instanceSettingsQuery, systemQuery } from "~/api/queries/instance";
 import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -15,6 +16,51 @@ const statuses = (): Record<string, { tone: "success" | "warning" | "danger"; la
 });
 
 const SERVICE = { postgres: "PostgreSQL", clickhouse: "ClickHouse", valkey: "Valkey" };
+
+function ModelData({ data }: { data: ModelDataView }) {
+  const lastSync = data.last_attempt_at ? (
+    data.last_error ? (
+      <Tooltip content={data.last_error}>
+        <span className="inline-flex">
+          <StatusDot tone="danger">{t("instance.failed", "Failed")}</StatusDot>
+        </span>
+      </Tooltip>
+    ) : (
+      <StatusDot tone="success">{t("instance.succeeded", "Succeeded")}</StatusDot>
+    )
+  ) : (
+    <Text tone="secondary">{t("instance.noneYet", "None yet")}</Text>
+  );
+  return (
+    <SettingsSection
+      title={t("instance.modelData", "Model data")}
+      description={t("instance.modelDataHint", "Model names, limits and prices from KPMR, the Kaeso Provider & Model Registry.")}
+    >
+      <SettingsGroup>
+        <SettingsRow
+          title={t("instance.dataInUse", "Data in use")}
+          description={
+            data.built_in
+              ? t("instance.snapshot", "Snapshot, {when}", { when: formatRelative(data.fetched_at) })
+              : t("instance.fetched", "Fetched {when}", { when: formatRelative(data.fetched_at) })
+          }
+          control={<Text tabular>{t("instance.modelCount", "{count, plural, one {# model} other {# models}}", { count: data.model_count })}</Text>}
+        />
+        <SettingsRow title={t("instance.source", "Source")} description={data.url} control={<Text>KPMR</Text>} />
+        <SettingsRow
+          title={t("instance.autoSync", "Automatic sync")}
+          description={t("instance.gatewaySetting", "Gateway setting")}
+          control={<StatusDot tone={data.sync_enabled ? "success" : "neutral"}>{data.sync_enabled ? t("common.on", "On") : t("common.off", "Off")}</StatusDot>}
+        />
+        <SettingsRow
+          title={t("instance.lastSync", "Last sync")}
+          description={data.last_attempt_at ? formatRelative(data.last_attempt_at) : undefined}
+          control={lastSync}
+        />
+      </SettingsGroup>
+    </SettingsSection>
+  );
+}
 
 export function InstanceSystemPage() {
   const system = useQuery({ ...systemQuery, refetchInterval: 10_000 });
@@ -105,6 +151,7 @@ export function InstanceSystemPage() {
               )}
             </SettingsGroup>
           </SettingsSection>
+          <ModelData data={s.model_data} />
           {settings.data && <Mail settings={settings.data} />}
         </>
       )}

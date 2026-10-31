@@ -272,7 +272,7 @@ function AddModels({ onSubmit, onOpenChange }: { onSubmit: (view: View) => void;
       <>
         <input aria-label="Search models" data-autofocus />
         <List
-          aria-label="Models on models.dev"
+          aria-label="Models in KPMR"
           items={[
             { id: "gpt-5-mini", title: "gpt-5-mini" },
             { id: "claude-haiku-4-5", title: "claude-haiku-4-5" },
@@ -583,7 +583,7 @@ describe("LayerDialog", () => {
           onSubmit={() => onSubmit(layer)}
           layers={[
             { title: "Add models", content: <input aria-label="Search models" />, footer: <Button onClick={() => setLayer(1)}>Review values</Button> },
-            { title: "Review values", content: <p>Prices come from models.dev.</p>, footer: <Button variant="primary">Add model</Button> },
+            { title: "Review values", content: <p>Prices come from KPMR.</p>, footer: <Button variant="primary">Add model</Button> },
           ]}
         />
       );

@@ -43,7 +43,7 @@ const rowOf = (dialog: HTMLElement, model: string) =>
     .closest("[role=row]") as HTMLElement;
 
 describe("AddModelsDialog", () => {
-  it("adds the chosen models from models.dev and says which were already there", async () => {
+  it("adds the chosen models from KPMR and says which were already there", async () => {
     setUp();
     on("POST", BATCH, { added: [catalogueModel({ id: "cm_gpt5", model_id: "gpt-5" })], skipped: ["gpt-5-mini"] });
     const { user, dialog } = await open();
@@ -145,7 +145,7 @@ describe("AddModelsDialog", () => {
     expect(await screen.findByRole("dialog", { name: /Add a custom model/ })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back" }));
     await user.click(await screen.findByRole("button", { name: "Add every current OpenAI model" }));
-    expect(await screen.findByText("Models that models.dev adds later aren't added here on their own.")).toBeInTheDocument();
+    expect(await screen.findByText("Models that KPMR adds later aren't added here on their own.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("dialog", { name: /Add models/ })).toBeInTheDocument();
     expect(screen.getByRole("searchbox", { name: "Search models" })).toBeInTheDocument();
@@ -199,14 +199,14 @@ describe("AddModelsDialog", () => {
     expect(within(again).getByRole("button", { description: "Provider" })).toHaveTextContent("Anthropic");
   });
 
-  it("says when models.dev lists no models for the provider", async () => {
+  it("says when KPMR lists no models for the provider", async () => {
     signedIn();
     projectData();
     modelsApi();
     const { dialog } = await open();
 
     expect(await within(dialog).findByText("No models found")).toBeInTheDocument();
-    expect(within(dialog).getByText("models.dev lists no OpenAI models.")).toBeInTheDocument();
+    expect(within(dialog).getByText("KPMR lists no OpenAI models.")).toBeInTheDocument();
   });
 
   it("reviews one model's values and saves the changes as overrides", async () => {
@@ -237,13 +237,13 @@ describe("AddModelsDialog", () => {
     ]);
   });
 
-  it("says when models.dev no longer lists the model under review", async () => {
+  it("says when KPMR no longer lists the model under review", async () => {
     setUp([]);
     const { user, dialog } = await open();
 
     await user.click(await within(dialog).findByRole("checkbox", { name: "Select gpt-5" }));
     await user.click(within(dialog).getByRole("button", { name: "Review values" }));
-    expect((await notifications().findAllByText("models.dev doesn't list gpt-5 any more.")).length).toBeGreaterThan(0);
+    expect((await notifications().findAllByText("KPMR doesn't list gpt-5 any more.")).length).toBeGreaterThan(0);
     expect(within(dialog).getByRole("button", { name: "Add 1 model" })).toBeInTheDocument();
   });
 
@@ -257,7 +257,7 @@ describe("AddModelsDialog", () => {
     expect((await notifications().findAllByText("That provider is unknown.")).length).toBeGreaterThan(0);
   });
 
-  it("adds a custom model models.dev doesn't list once its required values are in", async () => {
+  it("adds a custom model KPMR doesn't list once its required values are in", async () => {
     setUp();
     on("POST", MODELS, catalogueModel({ id: "cm_mine", provider: "openai", model_id: "my-model", custom: true }));
     const { user, dialog } = await open();
@@ -270,7 +270,7 @@ describe("AddModelsDialog", () => {
     await fill(user, within(custom).getByRole("textbox", { name: "Model id" }), " my-model ");
     await user.click(within(custom).getByRole("button", { name: "Continue" }));
     expect(
-      await within(custom).findByText("models.dev doesn't list it. Inputs, outputs, limits, input and output prices and the format are required."),
+      await within(custom).findByText("KPMR doesn't list it. Inputs, outputs, limits, input and output prices and the format are required."),
     ).toBeInTheDocument();
 
     const add = () => within(custom).getByRole("button", { name: "Add model" });
@@ -333,7 +333,7 @@ describe("AddModelsDialog", () => {
     expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["OpenAI Chat Completions", "OpenAI Embeddings"]);
   });
 
-  it("treats a custom model as unlisted when models.dev can't be asked", async () => {
+  it("treats a custom model as unlisted when KPMR can't be asked", async () => {
     setUp();
     on("GET", "orgs/:org/projects/:project/models/preview", apiError(400, "invalid_request", "That provider is unknown."));
     const { user, dialog } = await open();
@@ -342,11 +342,11 @@ describe("AddModelsDialog", () => {
     const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
     await user.type(within(custom).getByRole("textbox", { name: "Model id" }), "my-model{Enter}");
     expect(
-      await within(custom).findByText("models.dev doesn't list it. Inputs, outputs, limits, input and output prices and the format are required."),
+      await within(custom).findByText("KPMR doesn't list it. Inputs, outputs, limits, input and output prices and the format are required."),
     ).toBeInTheDocument();
   });
 
-  it("fills a custom model's values in when models.dev lists it", async () => {
+  it("fills a custom model's values in when KPMR lists it", async () => {
     setUp([
       preview({
         provider: "anthropic",
@@ -363,7 +363,7 @@ describe("AddModelsDialog", () => {
     const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
     expect(within(custom).getByText("The id Anthropic uses, sent as `model`.")).toBeInTheDocument();
     await user.type(within(custom).getByRole("textbox", { name: "Model id" }), "claude-opus-4-1{Enter}");
-    expect(await within(custom).findByText("models.dev lists claude-opus-4-1: its values are filled in.")).toBeInTheDocument();
+    expect(await within(custom).findByText("KPMR lists claude-opus-4-1: its values are filled in.")).toBeInTheDocument();
     expect(within(custom).getByRole("textbox", { name: "Display name" })).toHaveValue("Claude Opus 4.1");
     await user.click(within(custom).getByRole("switch", { name: "Adaptive thinking" }));
     await user.click(within(custom).getByRole("button", { name: "Add model" }));
@@ -381,8 +381,8 @@ describe("AddModelsDialog", () => {
 
     await user.click(await within(dialog).findByRole("button", { name: "Add every current OpenAI model" }));
     const all = await screen.findByRole("dialog", { name: /Add every current OpenAI model/ });
-    expect(within(all).getByText("Adds each current OpenAI text or embedding model from models.dev and skips ones already here.")).toBeInTheDocument();
-    expect(within(all).getByText("Models that models.dev adds later aren't added here on their own.")).toBeInTheDocument();
+    expect(within(all).getByText("Adds each current OpenAI text or embedding model from KPMR and skips ones already here.")).toBeInTheDocument();
+    expect(within(all).getByText("Models that KPMR adds later aren't added here on their own.")).toBeInTheDocument();
     expect(within(all).queryByText(/models at once/)).not.toBeInTheDocument();
     await user.click(within(all).getByRole("button", { name: "Add every current OpenAI model" }));
 
