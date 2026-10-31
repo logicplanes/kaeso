@@ -14,6 +14,15 @@ export const KAESO_COLLAPSIBLE_DEFAULT_VARIANTS = { state: "closed" } as const;
 
 const TRIGGER = `${DISCLOSURE_TRIGGER} min-h-40 py-8 text-body font-medium text-fg hover:bg-fill-1 active:bg-fill-2 coarse:min-h-44`;
 
+function DisclosureText({ title, hint }: { title: ReactNode; hint: ReactNode | undefined }) {
+  return (
+    <span className="flex min-w-0 flex-1 items-baseline gap-8">
+      <span className="min-w-0 flex-1">{title}</span>
+      {hint && <span className="shrink-0 text-small font-regular whitespace-nowrap text-fg-secondary tabular-nums">{hint}</span>}
+    </span>
+  );
+}
+
 export interface CollapsibleProps {
   title: ReactNode;
   children: ReactNode;
@@ -37,8 +46,7 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
       className={cn("flex flex-col", className)}
     >
       <BaseCollapsible.Trigger className={TRIGGER}>
-        <span className="min-w-0 flex-1">{title}</span>
-        {hint && <span className="text-small font-regular text-fg-secondary">{hint}</span>}
+        <DisclosureText title={title} hint={hint} />
         <DisclosureChevron />
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
@@ -75,8 +83,7 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Acc
         <BaseAccordion.Item key={it.value} value={it.value} className="py-4 hairline-b">
           <BaseAccordion.Header>
             <BaseAccordion.Trigger className={TRIGGER}>
-              <span className="min-w-0 flex-1">{it.title}</span>
-              {it.hint && <span className="text-small font-regular text-fg-secondary">{it.hint}</span>}
+              <DisclosureText title={it.title} hint={it.hint} />
               <DisclosureChevron />
             </BaseAccordion.Trigger>
           </BaseAccordion.Header>

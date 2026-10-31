@@ -7,7 +7,8 @@ export const DISCLOSURE_TRIGGER =
 
 export const DisclosureChevron = forwardRef<HTMLSpanElement>(function DisclosureChevron(_props, ref) {
   return (
-    <span ref={ref} className="flex shrink-0 text-fg-tertiary transition-control group-hover/dt:text-fg-secondary">
+    // The glyph sits 6px inside its 16px box: pulling the box out by 6px puts the glyph itself 12px from the row's end, as the title is from its start.
+    <span ref={ref} className="-mx-6 flex shrink-0 text-fg-tertiary transition-control group-hover/dt:text-fg-secondary">
       <Icon icon={icons.chevronRight} size="sm" className="transition-transform duration-200 ease-overlay group-data-panel-open/dt:rotate-90" />
     </span>
   );
