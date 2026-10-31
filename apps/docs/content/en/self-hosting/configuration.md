@@ -24,7 +24,7 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_DOMAIN` | yes | The domain Caddy serves and gets a certificate for. The public URL is `https://` and the domain. |
 | `POSTGRES_PASSWORD` | yes | The password of PostgreSQL's `kaeso` user, which the gateway signs in as. |
 | `POSTGRES_SUPERUSER_PASSWORD` | yes | The password of PostgreSQL's superuser `postgres`. Kaeso never uses it. |
-| `CLICKHOUSE_PASSWORD` | with the bundled ClickHouse | The password of ClickHouse's `kaeso` user. |
+| `CLICKHOUSE_PASSWORD` | yes | The password of ClickHouse's `kaeso` user. Compose checks it even while the bundled ClickHouse is off. |
 | `KAESO_CLICKHOUSE_URL` | no | Your own ClickHouse's URL, or empty to turn request logs off ([choose how to keep request logs](installation.md#choose-how-to-keep-request-logs)). |
 | `VALKEY_PASSWORD` | yes | The password Valkey requires on every connection. |
 | `KAESO_PUBLIC_URL` | no | The public URL, when it isn't `https://` and the domain, such as behind your own proxy. |

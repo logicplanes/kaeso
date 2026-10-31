@@ -70,7 +70,7 @@ Das Gateway liest die Einstellung beim Start. Um zur Voreinstellung zurückzukeh
 
 ### Anfrageprotokolle ausschalten
 
-1. Fügen Sie `KAESO_CLICKHOUSE_URL=` mit leerem Wert in die `.env` ein. `CLICKHOUSE_PASSWORD` wird dann nicht mehr gebraucht.
+1. Fügen Sie `KAESO_CLICKHOUSE_URL=` mit leerem Wert in die `.env` ein. Lassen Sie `CLICKHOUSE_PASSWORD` dort stehen: Compose prüft es auch, wenn das mitgelieferte ClickHouse aus ist.
 2. Verhindern Sie, dass Compose das mitgelieferte ClickHouse startet, indem Sie es in ein Profil legen, das Sie nie einschalten:
 
    ```yaml title="compose.override.yaml"

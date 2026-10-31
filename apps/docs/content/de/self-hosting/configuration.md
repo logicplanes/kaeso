@@ -24,7 +24,7 @@ services:
 | `KAESO_DOMAIN` | ja | Die Domain, die Caddy bereitstellt und für die er ein Zertifikat bezieht. Die öffentliche URL ist `https://` und die Domain. |
 | `POSTGRES_PASSWORD` | ja | Das Passwort des PostgreSQL-Benutzers `kaeso`, als der sich das Gateway anmeldet. |
 | `POSTGRES_SUPERUSER_PASSWORD` | ja | Das Passwort des PostgreSQL-Superusers `postgres`. Kaeso verwendet es nie. |
-| `CLICKHOUSE_PASSWORD` | mit dem mitgelieferten ClickHouse | Das Passwort des ClickHouse-Benutzers `kaeso`. |
+| `CLICKHOUSE_PASSWORD` | ja | Das Passwort des ClickHouse-Benutzers `kaeso`. Compose prüft es auch, wenn das mitgelieferte ClickHouse aus ist. |
 | `KAESO_CLICKHOUSE_URL` | nein | Die URL Ihres eigenen ClickHouse, oder leer, um Anfrageprotokolle auszuschalten ([festlegen, wie Anfrageprotokolle gespeichert werden](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)). |
 | `VALKEY_PASSWORD` | ja | Das Passwort, das Valkey von jeder Verbindung verlangt. |
 | `KAESO_PUBLIC_URL` | nein | Die öffentliche URL, wenn sie nicht `https://` und die Domain ist, etwa hinter Ihrem eigenen Proxy. |

@@ -70,7 +70,7 @@ services:
 
 ### 关闭请求日志
 
-1. 在 `.env` 中添加值为空的 `KAESO_CLICKHOUSE_URL=`。此后不再需要 `CLICKHOUSE_PASSWORD`。
+1. 在 `.env` 中添加值为空的 `KAESO_CLICKHOUSE_URL=`。请保留其中的 `CLICKHOUSE_PASSWORD`：即使自带的 ClickHouse 已关闭，Compose 仍会检查它。
 2. 把自带的 ClickHouse 放进一个您从不启用的配置文件（profile），让 Compose 不再启动它：
 
    ```yaml title="compose.override.yaml"

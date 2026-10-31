@@ -70,7 +70,7 @@ The gateway reads the setting when it starts. To go back to the default, remove 
 
 ### Turn request logs off
 
-1. Add `KAESO_CLICKHOUSE_URL=` with an empty value to `.env`. `CLICKHOUSE_PASSWORD` is then no longer needed.
+1. Add `KAESO_CLICKHOUSE_URL=` with an empty value to `.env`. Keep `CLICKHOUSE_PASSWORD` there: Compose checks it even while the bundled ClickHouse is off.
 2. Keep Compose from starting the bundled ClickHouse by putting it in a profile you never turn on:
 
    ```yaml title="compose.override.yaml"

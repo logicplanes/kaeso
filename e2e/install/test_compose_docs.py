@@ -103,9 +103,9 @@ def test_the_gateway_logs_to_the_bundled_clickhouse_by_default():
     assert services["gateway"]["depends_on"]["clickhouse"]["required"] is False
 
 
-def test_an_external_clickhouse_needs_no_bundled_password():
+def test_an_external_clickhouse_url_replaces_the_bundled_one():
     url = "https://kaeso:secret@clickhouse.example.com:8443"
-    services = config(values={"KAESO_CLICKHOUSE_URL": url, "CLICKHOUSE_PASSWORD": None})["services"]
+    services = config(values={"KAESO_CLICKHOUSE_URL": url})["services"]
     assert services["gateway"]["environment"]["KAESO_CLICKHOUSE_URL"] == url
 
 
@@ -117,6 +117,6 @@ def test_the_logs_off_override_in_the_docs_leaves_out_clickhouse(language, tmp_p
     assert overrides, f"no page in {language} turns the bundled ClickHouse off"
     for i, block in enumerate(sorted(overrides)):
         (tmp_path / f"{i}.yaml").write_text(block)
-        merged = config(tmp_path / f"{i}.yaml", values={"KAESO_CLICKHOUSE_URL": "", "CLICKHOUSE_PASSWORD": None})
+        merged = config(tmp_path / f"{i}.yaml", values={"KAESO_CLICKHOUSE_URL": ""})
         assert "clickhouse" not in merged["services"]
         assert merged["services"]["gateway"]["environment"]["KAESO_CLICKHOUSE_URL"] == ""

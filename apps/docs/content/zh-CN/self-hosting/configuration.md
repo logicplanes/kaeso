@@ -24,7 +24,7 @@ services:
 | `KAESO_DOMAIN` | 是 | Caddy 提供服务并为其申请证书的域名。公开 URL 为 `https://` 加该域名。 |
 | `POSTGRES_PASSWORD` | 是 | PostgreSQL 用户 `kaeso` 的密码，网关以该用户登录。 |
 | `POSTGRES_SUPERUSER_PASSWORD` | 是 | PostgreSQL 超级用户 `postgres` 的密码。Kaeso 从不使用它。 |
-| `CLICKHOUSE_PASSWORD` | 使用自带的 ClickHouse 时 | ClickHouse 用户 `kaeso` 的密码。 |
+| `CLICKHOUSE_PASSWORD` | 是 | ClickHouse 用户 `kaeso` 的密码。即使自带的 ClickHouse 已关闭，Compose 仍会检查它。 |
 | `KAESO_CLICKHOUSE_URL` | 否 | 您自己的 ClickHouse 的 URL，或留空以关闭请求日志（[选择请求日志的保存方式](installation.md#选择请求日志的保存方式)）。 |
 | `VALKEY_PASSWORD` | 是 | Valkey 要求每个连接提供的密码。 |
 | `KAESO_PUBLIC_URL` | 否 | 公开 URL 不是 `https://` 加域名时使用，例如在您自己的代理后面。 |
