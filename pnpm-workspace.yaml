@@ -6,3 +6,5 @@ allowBuilds:
   sharp: true
 overrides:
   katex: 0.18.2
+  # GHSA-g3hv-75wg-m249 is fixed only in 11.0.1; eslint and typescript-eslint still ask for ^10 and use only Minimatch#match, which 11 keeps.
+  minimatch@>=10 <11.0.1: 11.0.3
