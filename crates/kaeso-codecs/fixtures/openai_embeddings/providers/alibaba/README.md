@@ -16,4 +16,4 @@ Every file under `responses/` and `errors/` was recorded live with `cargo xtask 
 | `requests/embed-generation-model.json`, `errors/recorded-embed-generation-model.json` | 404 `model_not_supported` for a generation model |
 | `requests/embed-unknown-model.json`, `errors/recorded-embed-unknown-model.json` | 404 `model_not_found` |
 
-The error bodies are OpenAI's `error` object beside a top-level `request_id`, so they take the usual error round trip. models.dev lists no Model Studio embeddings model; people add them as custom models that send as Embeddings.
+The error bodies are OpenAI's `error` object beside a top-level `request_id`, so they take the usual error round trip. KPMR lists no Model Studio embeddings model; people add them as custom models that send as Embeddings.
