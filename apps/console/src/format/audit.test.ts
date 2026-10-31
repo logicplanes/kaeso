@@ -87,9 +87,15 @@ describe("audit actions", () => {
       { value: "alias.update", label: "Alias changed", description: "alias.update" },
       { value: "alias.delete", label: "Alias deleted", description: "alias.delete" },
     ]);
-    const kinds = Object.keys(AUDIT_ACTIONS);
+    const kinds = [...Object.keys(AUDIT_ACTIONS), "models_dev"];
     const actions = Object.values(AUDIT_ACTIONS).flat();
-    expect(options).toHaveLength(kinds.length + actions.length);
+    expect(options).toHaveLength(kinds.length + actions.length + 3);
+    expect(options.slice(-4)).toEqual([
+      { value: "models_dev.", label: "models.dev: every action", description: "models_dev.*" },
+      { value: "models_dev.sync", label: "models.dev synced", description: "models_dev.sync" },
+      { value: "models_dev.price_change", label: "Price changed on models.dev", description: "models_dev.price_change" },
+      { value: "models_dev.model_delisted", label: "Model taken off models.dev", description: "models_dev.model_delisted" },
+    ]);
     expect(options.filter((o) => o.value.endsWith(".")).map((o) => o.value)).toEqual(kinds.map((k) => `${k}.`));
     for (const kind of options.filter((o) => o.value.endsWith("."))) expect(kind.label, kind.value).not.toMatch(/^[a-z_]+: /);
   });

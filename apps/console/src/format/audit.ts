@@ -161,8 +161,10 @@ const RETIRED_ACTION_LABELS: Record<string, () => string> = {
 
 export const auditActionLabel = (action: string): string => (ACTION_LABELS[action] ?? RETIRED_ACTION_LABELS[action])?.() ?? action;
 
+const RETIRED_ACTIONS: Record<string, string[]> = { models_dev: Object.keys(RETIRED_ACTION_LABELS) };
+
 export function auditActionOptions(): { value: string; label: string; description: string }[] {
-  return Object.entries(AUDIT_ACTIONS).flatMap(([kind, actions]) => [
+  return [...Object.entries(AUDIT_ACTIONS), ...Object.entries(RETIRED_ACTIONS)].flatMap(([kind, actions]) => [
     {
       value: `${kind}.`,
       label: t("format.audit.everyActionOf", "{kind}: every action", { kind: (KIND_LABELS[kind] as () => string)() }),
