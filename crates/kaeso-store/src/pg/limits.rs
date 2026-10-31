@@ -216,6 +216,8 @@ pub struct UsageRow {
     pub catalogue_model_id: Option<Uuid>,
     pub model_id: String,
     pub provider: String,
+    pub ingress_dialect: String,
+    pub egress_dialect: String,
     pub requests: i64,
     pub errors: i64,
     pub input_tokens: i64,
@@ -237,12 +239,13 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
     }
     sqlx::query!(
         "INSERT INTO usage_daily AS u (day, org_id, project_id, user_id, service_account_id, api_key_id, \
-           catalogue_model_id, model_id, provider, requests, errors, input_tokens, output_tokens, cache_read_tokens, \
-           cache_write_tokens, reasoning_tokens, cost) \
+           catalogue_model_id, model_id, provider, ingress_dialect, egress_dialect, requests, errors, input_tokens, \
+           output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost) \
          SELECT * FROM unnest($1::date[], $2::uuid[], $3::uuid[], $4::uuid[], $5::uuid[], $6::uuid[], $7::uuid[], \
-           $8::text[], $9::text[], $10::bigint[], $11::bigint[], $12::bigint[], $13::bigint[], $14::bigint[], \
-           $15::bigint[], $16::bigint[], $17::numeric[]) \
-         ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id) DO UPDATE SET \
+           $8::text[], $9::text[], $10::text[], $11::text[], $12::bigint[], $13::bigint[], $14::bigint[], $15::bigint[], \
+           $16::bigint[], $17::bigint[], $18::bigint[], $19::numeric[]) \
+         ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, \
+           egress_dialect) DO UPDATE SET \
            requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, \
            input_tokens = u.input_tokens + excluded.input_tokens, \
            output_tokens = u.output_tokens + excluded.output_tokens, \
@@ -259,6 +262,8 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
         &col!(catalogue_model_id) as &[Option<Uuid>],
         &col!(model_id),
         &col!(provider),
+        &col!(ingress_dialect),
+        &col!(egress_dialect),
         &col!(requests),
         &col!(errors),
         &col!(input_tokens),

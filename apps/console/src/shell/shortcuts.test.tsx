@@ -57,6 +57,18 @@ describe("keyboard shortcuts", () => {
     expect(seen).toEqual([`${PROJECT_BASE}/logs`]);
   });
 
+  it("has no shortcut to request logs on an install without them", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData();
+    const { user, router } = await renderApp(`${PROJECT_BASE}/limits`);
+    await ready();
+    const seen = visits(router);
+    await user.keyboard("gl");
+    await user.keyboard("gk");
+    await waitFor(() => expect(router.state.location.pathname).toBe(`${PROJECT_BASE}/keys`));
+    expect(seen).toEqual([`${PROJECT_BASE}/keys`]);
+  });
+
   it("goes to the organization overview and its settings", async () => {
     signedIn();
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);

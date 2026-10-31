@@ -24,7 +24,8 @@ Apply a change with `docker compose up -d --wait`. A gateway setting written onl
 | `KAESO_DOMAIN` | yes | The domain Caddy serves and gets a certificate for. The public URL is `https://` and the domain. |
 | `POSTGRES_PASSWORD` | yes | The password of PostgreSQL's `kaeso` user, which the gateway signs in as. |
 | `POSTGRES_SUPERUSER_PASSWORD` | yes | The password of PostgreSQL's superuser `postgres`. Kaeso never uses it. |
-| `CLICKHOUSE_PASSWORD` | yes | The password of ClickHouse's `kaeso` user. |
+| `CLICKHOUSE_PASSWORD` | with the bundled ClickHouse | The password of ClickHouse's `kaeso` user. |
+| `KAESO_CLICKHOUSE_URL` | no | Your own ClickHouse's URL, or empty to turn request logs off ([choose how to keep request logs](installation.md#choose-how-to-keep-request-logs)). |
 | `VALKEY_PASSWORD` | yes | The password Valkey requires on every connection. |
 | `KAESO_PUBLIC_URL` | no | The public URL, when it isn't `https://` and the domain, such as behind your own proxy. |
 | `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS`, `KAESO_SMTP_USER`, `KAESO_SMTP_PASSWORD`, `KAESO_SMTP_FROM` | `KAESO_SMTP_HOST`, unless emails are only logged | How the gateway sends email ([email](#email)). |
@@ -106,7 +107,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | text, secret | required | PostgreSQL connection URL. |
 | `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
-| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | required | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. |
+| `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | — | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
 | `KAESO_VALKEY_KEY_PREFIX`<br>`valkey.key_prefix` | text | `kaeso:` | Prefix of every Valkey key and channel, to share one Valkey between installs that trust each other. |

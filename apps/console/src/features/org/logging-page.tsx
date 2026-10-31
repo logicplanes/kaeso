@@ -47,8 +47,8 @@ import { useNeedsRight } from "~/auth/needs-right";
 const ALL_PROJECTS = "all";
 
 export function OrgLoggingPage({ org, tab }: { org: string; tab: LoggingTab }) {
-  const navigate = useNavigate();
   const rights = useOrgRights(org);
+  const requestLogs = useSession().request_logs;
   const canStorage = rights.has("logs.storage.view");
   const shown = canStorage ? tab : "settings";
   return (
@@ -59,37 +59,54 @@ export function OrgLoggingPage({ org, tab }: { org: string; tab: LoggingTab }) {
       right="org.view"
       description={t("org.logging.description", "What the gateway keeps of each request, for how long, and what it takes up.")}
     >
-      <Tabs
-        value={shown}
-        onValueChange={(next) =>
-          void navigate({
-            to: "/settings/orgs/$org/logging",
-            params: { org },
-            search: next === "settings" ? {} : { tab: next as LoggingTab },
-            replace: true,
-          })
-        }
-      >
-        <Tabs.List aria-label={t("org.logging.title", "Logging")}>
-          <Tabs.Tab value="settings">{common.settings()}</Tabs.Tab>
-          <Tabs.Tab value="storage" disabled={!canStorage}>
-            {t("org.logging.storage", "Storage")}
-          </Tabs.Tab>
-          <Tabs.Tab value="deletions" disabled={!canStorage}>
-            {t("org.logging.deletions", "Deletions")}
-          </Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="settings">
-          <LogSettings org={org} />
-        </Tabs.Panel>
-        <Tabs.Panel value="storage">
-          <Storage org={org} />
-        </Tabs.Panel>
-        <Tabs.Panel value="deletions">
-          <Deletions org={org} />
-        </Tabs.Panel>
-      </Tabs>
+      {requestLogs ? <LoggingTabs org={org} shown={shown} canStorage={canStorage} /> : <LogsOff />}
     </OrgPage>
+  );
+}
+
+function LogsOff() {
+  return (
+    <Empty
+      size="lg"
+      title={t("org.logging.off", "Request logs are off on this install")}
+      description={t("org.logging.offHint", "Usage, limits and budgets still count every request; instance admins can turn logs on.")}
+    />
+  );
+}
+
+function LoggingTabs({ org, shown, canStorage }: { org: string; shown: LoggingTab; canStorage: boolean }) {
+  const navigate = useNavigate();
+  return (
+    <Tabs
+      value={shown}
+      onValueChange={(next) =>
+        void navigate({
+          to: "/settings/orgs/$org/logging",
+          params: { org },
+          search: next === "settings" ? {} : { tab: next as LoggingTab },
+          replace: true,
+        })
+      }
+    >
+      <Tabs.List aria-label={t("org.logging.title", "Logging")}>
+        <Tabs.Tab value="settings">{common.settings()}</Tabs.Tab>
+        <Tabs.Tab value="storage" disabled={!canStorage}>
+          {t("org.logging.storage", "Storage")}
+        </Tabs.Tab>
+        <Tabs.Tab value="deletions" disabled={!canStorage}>
+          {t("org.logging.deletions", "Deletions")}
+        </Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="settings">
+        <LogSettings org={org} />
+      </Tabs.Panel>
+      <Tabs.Panel value="storage">
+        <Storage org={org} />
+      </Tabs.Panel>
+      <Tabs.Panel value="deletions">
+        <Deletions org={org} />
+      </Tabs.Panel>
+    </Tabs>
   );
 }
 

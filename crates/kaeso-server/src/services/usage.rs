@@ -27,6 +27,8 @@ type BatchKey = (
     Option<Uuid>,
     String,
     String,
+    String,
+    String,
 );
 
 #[derive(Debug, Default)]
@@ -44,6 +46,8 @@ impl Batch {
             row.service_account_id,
             row.provider.clone(),
             row.model_id.clone(),
+            row.ingress_dialect.clone(),
+            row.egress_dialect.clone(),
         );
         let mut rows = self.rows.lock().unwrap_or_else(PoisonError::into_inner);
         match rows.get_mut(&key) {
@@ -103,17 +107,19 @@ impl Batch {
     }
 }
 
-fn unique_key(
-    r: &UsageRow,
-) -> (
+type UniqueKey<'a> = (
     Uuid,
     Date,
     Option<Uuid>,
     Option<Uuid>,
     Option<Uuid>,
-    &str,
-    &str,
-) {
+    &'a str,
+    &'a str,
+    &'a str,
+    &'a str,
+);
+
+fn unique_key(r: &UsageRow) -> UniqueKey<'_> {
     (
         r.project_id,
         r.day,
@@ -122,6 +128,8 @@ fn unique_key(
         r.service_account_id,
         &r.provider,
         &r.model_id,
+        &r.ingress_dialect,
+        &r.egress_dialect,
     )
 }
 
@@ -230,6 +238,11 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             .custom_provider
             .clone()
             .unwrap_or_else(|| outcome.provider.unwrap_or_default().to_owned()),
+        ingress_dialect: outcome.ingress.as_str().to_owned(),
+        egress_dialect: outcome
+            .egress
+            .map(|d| d.as_str().to_owned())
+            .unwrap_or_default(),
         requests: 1,
         errors: i64::from(outcome.is_error()),
         input_tokens: i(usage.input_tokens),
@@ -444,6 +457,8 @@ mod tests {
             catalogue_model_id: None,
             model_id: model.into(),
             provider: "anthropic".into(),
+            ingress_dialect: "anthropic_messages".into(),
+            egress_dialect: "anthropic_messages".into(),
             requests: 1,
             errors: 0,
             input_tokens: 1,
@@ -480,6 +495,26 @@ mod tests {
                 (2, 1, "a".into(), 1),
                 (2, 1, "b".into(), 1)
             ]
+        );
+    }
+
+    #[test]
+    fn requests_on_different_routes_stay_apart() {
+        let batch = Batch::default();
+        batch.add(row(1, 1, "a"));
+        batch.add(row(1, 1, "a"));
+        batch.add(UsageRow {
+            ingress_dialect: "openai_chat".into(),
+            ..row(1, 1, "a")
+        });
+        let taken: Vec<(String, i64)> = batch
+            .take()
+            .into_iter()
+            .map(|r| (r.ingress_dialect, r.requests))
+            .collect();
+        assert_eq!(
+            taken,
+            [("anthropic_messages".into(), 2), ("openai_chat".into(), 1)]
         );
     }
 

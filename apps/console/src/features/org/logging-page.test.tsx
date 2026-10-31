@@ -307,3 +307,16 @@ describe("log deletions", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Delete request logs" })).not.toBeInTheDocument());
   });
 });
+
+describe("logging on an install without request logs", () => {
+  it("says logs are off instead of showing settings and storage", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    await renderApp(PATH);
+    expect(await screen.findByText("Request logs are off on this install")).toBeInTheDocument();
+    expect(screen.getByText("Usage, limits and budgets still count every request; instance admins can turn logs on.")).toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Log request content" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Storage" })).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/logs/settings")).toHaveLength(0);
+    expect(requests("GET", "orgs/:org/logs/storage")).toHaveLength(0);
+  });
+});

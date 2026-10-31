@@ -68,7 +68,7 @@ Claude Code 或 Codex 等智能体通过 [MCP 服务器](../api/mcp.md)代表其
 
 ## 检查系统
 
-**系统**显示网关的版本和状态，以及 PostgreSQL、ClickHouse 和 Valkey 是否正常运行。它还显示请求日志缓冲区、存储情况以及网关发送邮件的方式。页面每 10 秒刷新一次。
+**系统**显示网关的版本和状态，以及 PostgreSQL、ClickHouse 和 Valkey 是否正常运行。实例不保存请求日志时，ClickHouse 显示为已关闭。它还显示请求日志缓冲区、存储情况以及网关发送邮件的方式。页面每 10 秒刷新一次。
 
 ## 更新 Kaeso
 

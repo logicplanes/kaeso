@@ -5,12 +5,12 @@ nav: Backups
 order: 9
 ---
 
-Sichern Sie drei Dinge, und bewahren Sie die Hauptschlüssel getrennt von den Datenbank-Backups auf:
+Sichern Sie drei Dinge, bei ausgeschalteten Anfrageprotokollen zwei, und bewahren Sie die Hauptschlüssel getrennt von den Datenbank-Backups auf:
 
 | Was | Enthält | Ohne Backup |
 | --- | --- | --- |
 | PostgreSQL | Benutzer, Organisationen, Projekte, Schlüssel, verschlüsselte Anbieter-Schlüssel, Kataloge, Limits, Nutzung und Audit-Logs | Die Installation ist verloren |
-| ClickHouse | Anfrageprotokolle und Nutzungsaggregate | Der Protokollverlauf ist verloren; Limits und Budgets hängen nicht davon ab |
+| ClickHouse | Anfrageprotokolle | Der Protokollverlauf ist verloren; Nutzung, Limits und Budgets hängen nicht davon ab |
 | Hauptschlüssel | Die Schlüssel, die gespeicherte Anbieter-Schlüssel verschlüsseln | Jeder Anbieter-Schlüssel muss neu eingegeben werden |
 
 Valkey enthält nur Zähler, Caches und kurzlebige Daten und braucht kein Backup. Das Gateway baut fehlende Budgetzähler aus PostgreSQL neu auf, und Ratenfenster beginnen von vorn.
@@ -44,7 +44,9 @@ So stellen Sie auf einem neuen Server wieder her:
 
 ## ClickHouse sichern
 
-Verwenden Sie den `BACKUP`-Befehl von ClickHouse mit einem für Backups eingerichteten Datenträger oder ein Werkzeug wie `clickhouse-backup`. Auf einer kleinen Installation können Sie ClickHouse auch anhalten und sein Volume kopieren:
+Eine Installation mit ausgeschalteten Anfrageprotokollen hat kein ClickHouse zu sichern, und eine mit Ihrem eigenen ClickHouse sichert es mit dem Rest davon ([festlegen, wie Anfrageprotokolle gespeichert werden](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)).
+
+Für das mitgelieferte ClickHouse verwenden Sie den `BACKUP`-Befehl von ClickHouse mit einem für Backups eingerichteten Datenträger oder ein Werkzeug wie `clickhouse-backup`. Auf einer kleinen Installation können Sie ClickHouse auch anhalten und sein Volume kopieren:
 
 ```bash
 docker compose stop clickhouse

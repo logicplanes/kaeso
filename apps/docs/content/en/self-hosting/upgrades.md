@@ -9,7 +9,7 @@ Every release gives all parts of Kaeso one version number and follows semantic v
 ## Update by hand
 
 1. Read the release notes for anything that needs action. They are on the [releases page](https://github.com/logicplanes/kaeso/releases) and under **Instance** › **Updates**.
-2. [Back up](backups.md) PostgreSQL and ClickHouse, so you can [go back](#downgrade) if you need to.
+2. [Back up](backups.md) PostgreSQL, and ClickHouse while it keeps request logs, so you can [go back](#downgrade) if you need to.
 3. In the install's folder, set `version` to the release you update to, then download, check and start it. The commands download `compose.yaml` and `release.json` into a temporary folder and check them, with the [GitHub CLI](https://cli.github.com) signed in and `jq`:
    - the signature of Kaeso's Release workflow on `release.json`;
    - the hash of `compose.yaml` that `release.json` names, and with it the digest of each Kaeso image;

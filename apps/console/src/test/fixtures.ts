@@ -70,6 +70,7 @@ export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
     org_deletion: { allowed: true, grace_days: 7 },
     locale: "auto",
     timezone: "UTC",
+    request_logs: true,
     ...overrides,
   } as WhoAmI;
 }

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, NumberInput, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
+import { Button, Empty, NumberInput, SettingsGroup, SettingsRow, SettingsSection } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SettingsView } from "~/api/generated/types";
 import { instanceSettingsQuery } from "~/api/queries/instance";
 import { useApiMutation } from "~/auth/mutation";
+import { useRequestLogs } from "~/auth/session";
 import { toast } from "~/shell/toast";
 import { SettingsLoading } from "~/shell/settings-page";
 import { LoadFailed } from "~/features/org/load-failed";
@@ -12,14 +13,21 @@ import { InstancePage } from "./instance-page";
 import { t } from "~/i18n";
 
 export function InstanceLoggingPage() {
-  const settings = useQuery(instanceSettingsQuery);
+  const requestLogs = useRequestLogs();
+  const settings = useQuery({ ...instanceSettingsQuery, enabled: requestLogs });
   const s = settings.data;
   return (
     <InstancePage
       title={t("shell.settings.logging", "Logging")}
       description={t("instance.loggingHint", "How long request logs are kept, for new organizations and at most.")}
     >
-      {settings.isError ? (
+      {!requestLogs ? (
+        <Empty
+          size="lg"
+          title={t("instance.logsOff", "Request logs are off on this install")}
+          description={t("instance.logsOffHint", "Set KAESO_CLICKHOUSE_URL and restart the gateway to keep request logs.")}
+        />
+      ) : settings.isError ? (
         <LoadFailed title={t("instance.settingsFailed", "The instance settings couldn't load")} />
       ) : !s ? (
         <SettingsLoading rows={4} />

@@ -5,12 +5,12 @@ nav: 备份
 order: 9
 ---
 
-需要备份三样东西，并把主密钥与数据库备份分开存放：
+需要备份三样东西（关闭请求日志时为两样），并把主密钥与数据库备份分开存放：
 
 | 内容 | 保存的数据 | 没有备份时 |
 | --- | --- | --- |
 | PostgreSQL | 用户、组织、项目、密钥、加密的服务商密钥、目录、限额、用量和审计日志 | 整个实例都将丢失 |
-| ClickHouse | 请求日志和用量汇总 | 日志历史丢失；限额和预算不依赖它 |
+| ClickHouse | 请求日志 | 日志历史丢失；用量、限额和预算不依赖它 |
 | 主密钥 | 用于加密已保存服务商密钥的密钥 | 必须重新输入每个服务商密钥 |
 
 Valkey 只保存计数器、缓存和短期数据，无需备份。网关会从 PostgreSQL 重建缺失的预算计数器，速率窗口则重新开始。
@@ -44,7 +44,9 @@ docker compose start gateway
 
 ## 备份 ClickHouse
 
-使用 ClickHouse 的 `BACKUP` 命令备份到为备份配置的磁盘，或使用 `clickhouse-backup` 之类的工具。小型实例也可以停止 ClickHouse 并复制它的卷：
+关闭请求日志的实例没有需要备份的 ClickHouse；使用您自己的 ClickHouse 的实例，把它与其他数据一起备份（[选择请求日志的保存方式](installation.md#选择请求日志的保存方式)）。
+
+对于自带的 ClickHouse，使用 ClickHouse 的 `BACKUP` 命令备份到为备份配置的磁盘，或使用 `clickhouse-backup` 之类的工具。小型实例也可以停止 ClickHouse 并复制它的卷：
 
 ```bash
 docker compose stop clickhouse

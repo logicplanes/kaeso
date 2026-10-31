@@ -1,11 +1,11 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import { useOrgRights } from "~/auth/session";
+import { useOrgRights, useRequestLogs } from "~/auth/session";
 import { useCreateAction } from "./create-action";
 import { takeEarlyKeys } from "./early-keys";
 import { readLast } from "./last";
 import { isPaletteOpen } from "./palette-store";
-import { PROJECT_PAGES, orgPath, projectPath } from "./pages";
+import { orgPath, projectPages, projectPath } from "./pages";
 import { ORG_SETTINGS_PAGES } from "./settings-pages";
 import { onShortcutSheet, openShortcutSheet } from "./shortcuts-store";
 import { useProjectRights } from "~/auth/rights";
@@ -26,6 +26,7 @@ export function ShortcutsHost() {
   const project = params.project;
   const rights = useProjectRights(org ?? "", project ?? "");
   const orgRights = useOrgRights(org ?? "");
+  const requestLogs = useRequestLogs();
   const pendingG = useRef<number>(0);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ShortcutsHost() {
       if (Date.now() - pendingG.current < 1200) {
         pendingG.current = 0;
         const key = e.key;
-        const page = PROJECT_PAGES.find((p) => p.key === key);
+        const page = projectPages(requestLogs).find((p) => p.key === key);
         if (page && org && project && rights.has(page.right)) {
           e.preventDefault();
           void navigate({ to: page.path ? `${projectPath(org, project)}/${page.path}` : projectPath(org, project) });
@@ -78,7 +79,7 @@ export function ShortcutsHost() {
     window.addEventListener("keydown", onKey);
     for (const e of takeEarlyKeys()) onKey(e);
     return () => window.removeEventListener("keydown", onKey);
-  }, [create, navigate, org, orgRights, project, rights]);
+  }, [create, navigate, org, orgRights, project, requestLogs, rights]);
 
   return <ShortcutSheetHost />;
 }

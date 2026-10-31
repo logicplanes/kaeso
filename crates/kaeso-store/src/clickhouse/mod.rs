@@ -40,6 +40,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "request_upload",
         sql: include_str!("../../migrations/clickhouse/0005_request_upload.sql"),
     },
+    Migration {
+        version: 6,
+        name: "usage_in_postgres",
+        sql: include_str!("../../migrations/clickhouse/0006_usage_in_postgres.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -192,15 +197,15 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 10);
-        assert!(
-            all.iter()
-                .all(|s| s.starts_with("CREATE ") || s.starts_with("ALTER TABLE "))
-        );
+        assert_eq!(all.len(), 12);
+        assert!(all.iter().all(|s| s.starts_with("CREATE ")
+            || s.starts_with("ALTER TABLE ")
+            || s.starts_with("DROP ")));
         assert!(all.iter().all(|s| !s.contains("--")));
         assert!(
-            all.iter()
-                .all(|s| s.contains(" IF NOT EXISTS ") || s.contains(" MODIFY QUERY")),
+            all.iter().all(|s| s.contains(" IF NOT EXISTS ")
+                || s.contains(" IF EXISTS ")
+                || s.contains(" MODIFY QUERY")),
             "every statement can run again after a migration stopped halfway"
         );
     }

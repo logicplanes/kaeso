@@ -110,7 +110,7 @@ A proxy or load balancer between the app and Kaeso closes connections that stay 
 
 ## Request logs are missing or late
 
-Entries appear a few seconds after the request. When none appear, ClickHouse isn't accepting writes: `/readyz` reports `degraded`, and `kaeso_log_buffer_rows` grows.
+Entries appear a few seconds after the request. When none appear, ClickHouse isn't accepting writes: `/readyz` reports `degraded`, and `kaeso_log_buffer_rows` grows. When the console shows no **Request logs** at all and `/readyz` reports `clickhouse` as `off`, the install keeps no request logs ([choose how to keep request logs](installation.md#choose-how-to-keep-request-logs)).
 
 1. Run `docker compose logs clickhouse` and fix what it reports.
 2. Search the gateway's log for `ClickHouse migrations failed`.

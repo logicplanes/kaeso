@@ -56,6 +56,48 @@ services:
 
 用 `docker compose up -d --wait` 应用修改。Compose 只会重建设置有变化的服务。[配置](configuration.md)列出了网关的每项设置。
 
+## 选择请求日志的保存方式
+
+请求日志保存在 ClickHouse 中。`compose.yaml` 自带的 ClickHouse 是推荐的方式：它不需要您做任何事，并把日志保存在同一台服务器上。用量、限额、预算和预算提醒都不依赖它，因为 Kaeso 把用量保存在 PostgreSQL 中。ClickHouse 是所有服务中占用内存最多的（[系统要求](requirements.md#内存和镜像)），因此实例也可以使用您已有的 ClickHouse，或者完全不保存请求日志。
+
+| 请求日志 | `.env` 中的 `KAESO_CLICKHOUSE_URL` | 自带的 `clickhouse` 服务 |
+| --- | --- | --- |
+| 保存在自带的 ClickHouse 中（默认） | 不设置 | 运行 |
+| 保存在您自己的 ClickHouse 中 | 您的 ClickHouse 的 URL | 关闭 |
+| 关闭 | 设置为空 | 关闭 |
+
+网关在启动时读取该设置。要恢复默认方式，删除下面的两处修改，然后运行 `docker compose up -d --wait`。
+
+### 关闭请求日志
+
+1. 在 `.env` 中添加值为空的 `KAESO_CLICKHOUSE_URL=`。此后不再需要 `CLICKHOUSE_PASSWORD`。
+2. 把自带的 ClickHouse 放进一个您从不启用的配置文件（profile），让 Compose 不再启动它：
+
+   ```yaml title="compose.override.yaml"
+   services:
+     clickhouse:
+       profiles: [logs]
+   ```
+
+3. 用新设置启动网关，然后删除仍在运行的 ClickHouse 容器。它的卷 `kaeso_clickhouse` 会保留之前的日志，直到您删除它。
+
+   ```bash
+   docker compose up -d --wait
+   docker compose rm -sf clickhouse
+   ```
+
+之后控制台不再显示**请求日志**，组织的**日志记录**页面会说明请求日志已关闭。Platform API 对日志端点返回 `404`，`/readyz` 把 `clickhouse` 报告为 `off`。日志关闭期间处理的请求永远不会被记录，即使之后重新开启日志也是如此。
+
+### 使用您自己的 ClickHouse
+
+网关只需要 ClickHouse 的 HTTP 接口（明文或 TLS），以及一个可以创建数据库及其表的用户。把带有该用户和密码的 URL 写进 `.env`。其中除字母和数字以外的字符都要进行百分号编码：
+
+```bash
+KAESO_CLICKHOUSE_URL=https://kaeso:secret@clickhouse.example.com:8443
+```
+
+然后用与[上面](#关闭请求日志)相同的 `compose.override.yaml` 和命令关闭自带的 ClickHouse。网关会创建数据库 `KAESO_CLICKHOUSE_DATABASE`（默认为 `kaeso`），并在其中运行迁移。请像备份您的其他数据一样备份这个 ClickHouse。
+
 ## 运行 Kaeso 的命令
 
 网关镜像同时也是 Kaeso 的命令行。在运行中的网关容器里执行命令，命令会使用网关的设置：
@@ -73,7 +115,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso instance admin-sso <org\|none>` | 按 `org_…` 这样的 ID 选择其单点登录可管理实例的组织，或用 `none` 不选，适用于没有实例管理员能在控制台中更改它的情况（见[实例管理员](sign-in.md#实例管理员)）。该组织需要已连接单点登录。实例审计日志会记录此操作 |
 | `kaeso master-key generate` | 以 `id:base64` 格式打印一个新主密钥 |
 | `kaeso master-key rewrap` | 用第一个主密钥重新加密已保存的机密，并报告哪些密钥 ID 仍在使用（[轮换主密钥](backups.md#轮换主密钥)） |
-| `kaeso migrate` | 运行 PostgreSQL 和 ClickHouse 迁移，然后退出 |
+| `kaeso migrate` | 运行 PostgreSQL 迁移，请求日志开启时也运行 ClickHouse 迁移，然后退出 |
 | `kaeso serve` | 运行网关。这是镜像的默认命令 |
 
 ## 下一步

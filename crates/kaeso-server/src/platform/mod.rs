@@ -127,7 +127,7 @@ impl Modify for Components {
             ),
             (
                 "Unavailable",
-                "A dependency is unreachable, for example ClickHouse for logs and usage (`unavailable`).",
+                "A dependency is unreachable, for example ClickHouse for request logs (`unavailable`).",
             ),
             (
                 "Internal",

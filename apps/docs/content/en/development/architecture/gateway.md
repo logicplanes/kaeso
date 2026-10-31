@@ -128,6 +128,12 @@ cargo xtask models-dev
 
 The task downloads `https://models.dev/api.json`, filters it and checks that the gateway can read the result. `--url` or `MODELS_DEV_URL` changes the address. It then writes the snapshot, the table in `crates/kaeso-core/data/README.md` and the fetch time in `crates/kaeso-core/src/models_dev.rs`, and tests check that the three agree.
 
+## Usage and request logs
+
+The model API hands every finished request to one sink. It adds the request's usage to a batch in memory, keyed by day, project, key, member, model and route, and writes the batch to PostgreSQL's `usage_daily` every 10 seconds. The same sink charges the limit counters in Valkey, which are rebuilt from `usage_daily`. The Usage pages, the Platform API's `usage` endpoints and the instance's organization totals read only `usage_daily`.
+
+Request logs go to ClickHouse's `request_log` and `request_content` through their own buffer. Without `clickhouse.url`, `AppState::clickhouse` is `None`: the gateway runs no ClickHouse migrations, starts no log writer, keeps no bodies for logging, and the logs endpoints answer `404`. ClickHouse migration 0006 dropped ClickHouse's own `usage_daily` once usage moved to PostgreSQL.
+
 ## Logged replies
 
 With content logging on, the gateway stores each reply as the serde JSON of `kaeso_kpp::Response`, in the `reply` column of ClickHouse's `request_content`. The console's log inspector draws it as stored. An organization may keep content for up to 36,500 days, so every later console must still read a reply logged today.

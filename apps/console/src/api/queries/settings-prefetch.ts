@@ -49,11 +49,11 @@ export function prefetchOrgSettings(client: QueryClient, org: string, page: OrgS
       if (rights.has("platform_keys.view")) void client.prefetchQuery(platformKeysQuery(org, false));
       return;
     case "settings":
-      if (rights.has("org.view")) void client.prefetchQuery(logSettingsQuery(org));
+      if (rights.has("org.view") && session.request_logs !== false) void client.prefetchQuery(logSettingsQuery(org));
       return;
     case "storage":
     case "deletions":
-      if (!rights.has("logs.storage.view")) return;
+      if (!rights.has("logs.storage.view") || session.request_logs === false) return;
       if (page === "storage") void client.prefetchQuery(logStorageQuery(org));
       else void client.prefetchQuery(logDeletionsQuery(org));
       void client.prefetchQuery(orgProjectsQuery(org, true));

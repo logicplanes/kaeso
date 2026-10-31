@@ -21738,9 +21738,7 @@
         "required": [
           "requests_30d",
           "tokens_30d",
-          "cost_30d",
-          "log_entries",
-          "log_logical_bytes"
+          "cost_30d"
         ],
         "properties": {
           "cost_30d": {
@@ -21748,15 +21746,21 @@
             "description": "Cost in USD in the last 30 days."
           },
           "log_entries": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
-            "description": "Log entries.",
+            "description": "Log entries; `null` when the install keeps no request logs.",
             "minimum": 0
           },
           "log_logical_bytes": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64",
-            "description": "Logged content as received, in bytes.",
+            "description": "Logged content as received, in bytes; `null` when the install keeps\nno request logs.",
             "minimum": 0
           },
           "requests_30d": {
@@ -21850,7 +21854,7 @@
               "null"
             ],
             "format": "int64",
-            "description": "ClickHouse bytes on disk, all tables of the logs database.",
+            "description": "ClickHouse bytes on disk, all tables of the logs database; `null`\nwhen request logs are off or ClickHouse doesn't answer.",
             "minimum": 0
           },
           "postgres_bytes": {
@@ -21867,7 +21871,7 @@
               "null"
             ],
             "format": "int64",
-            "description": "ClickHouse rows in the request log.",
+            "description": "ClickHouse rows in the request log; `null` when request logs are off\nor ClickHouse doesn't answer.",
             "minimum": 0
           }
         }
@@ -29373,7 +29377,7 @@
         "properties": {
           "clickhouse": {
             "type": "string",
-            "description": "`ok` or `down`."
+            "description": "`ok`, `down`, or `off` when the install keeps no request logs."
           },
           "log_buffer": {
             "$ref": "#/components/schemas/LogBufferView",
@@ -30315,7 +30319,8 @@
           "can_administer_instance",
           "org_deletion",
           "locale",
-          "timezone"
+          "timezone",
+          "request_logs"
         ],
         "properties": {
           "can_administer_instance": {
@@ -30351,6 +30356,10 @@
           "org_deletion": {
             "$ref": "#/components/schemas/OrgDeletionPolicy",
             "description": "Whether orgs can be deleted on this instance, and how long a deletion\nwaits."
+          },
+          "request_logs": {
+            "type": "boolean",
+            "description": "Whether the install keeps request logs. When `false`, the logs\nendpoints answer `404` and usage is still counted."
           },
           "session": {
             "$ref": "#/components/schemas/SessionView",
@@ -30464,7 +30473,7 @@
         }
       },
       "Unavailable": {
-        "description": "A dependency is unreachable, for example ClickHouse for logs and usage (`unavailable`).",
+        "description": "A dependency is unreachable, for example ClickHouse for request logs (`unavailable`).",
         "content": {
           "application/json": {
             "schema": {

@@ -17,6 +17,19 @@ Kaeso läuft auf einem Linux-Server mit Docker. Bemessen Sie den Speicherplatz d
 
 [Der Updater](upgrades.md#der-updater) braucht außerdem Docker Engine 25 oder neuer.
 
+## Arbeitsspeicher und Images
+
+ClickHouse, das die Anfrageprotokolle speichert, braucht mehr Arbeitsspeicher als alle anderen Datenbanken zusammen. Gemessen am 31.10.2026 mit Docker 29.5.2, vor und nach einem Lauf des [Gateway-Benchmarks](../development/benchmark.md):
+
+| Dienst | Arbeitsspeicher im Leerlauf | Arbeitsspeicher nach dem Benchmark | Image |
+| --- | --- | --- | --- |
+| ClickHouse | 647 MiB | 1,81 GiB | 981 MB |
+| PostgreSQL | 75 MiB | 75 MiB | 672 MB |
+| Valkey | 15 MiB | 15 MiB | — |
+| Gateway | — | — | 117 bis 141 MB |
+
+Mit [ausgeschalteten Anfrageprotokollen](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden) betreibt die Installation kein ClickHouse. Das spart im Leerlauf etwa 0,65 GB Arbeitsspeicher, unter Last 1,8 GB, und das Image mit 981 MB. Nutzung, Limits und Budgets funktionieren in beiden Fällen gleich.
+
 ## Netzwerk
 
 Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, und diese Verbindungen:
@@ -40,7 +53,7 @@ Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten
 
 ## Speicherplatz für Anfrageprotokolle
 
-Anfrageprotokolle liegen in ClickHouse. Planen Sie je Million Anfragen so viel Speicherplatz ein:
+Anfrageprotokolle liegen in ClickHouse und belegen keinen Speicherplatz, wenn sie ausgeschaltet sind. Planen Sie je Million Anfragen so viel Speicherplatz ein:
 
 | Protokollierung | Je Million Anfragen |
 | --- | --- |

@@ -129,6 +129,8 @@
   "logs.loadFailed": "Anfragen konnten nicht geladen werden",
   "logs.noMatch": "Keine Anfragen passen zu diesen Filtern",
   "logs.noMatchHint": "Einen Filter entfernen oder den Zeitraum erweitern.",
+  "logs.off": "Anfrageprotokolle sind in dieser Installation ausgeschaltet",
+  "logs.offHint": "Nutzung, Limits und Budgets zählen weiterhin jede Anfrage.",
   "logs.openById": "Anfrage per ID öffnen",
   "logs.param.choices": "Antwortvarianten",
   "logs.param.maxCompletionTokens": "Max. Completion-Token",

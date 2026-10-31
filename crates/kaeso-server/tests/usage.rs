@@ -7,7 +7,6 @@ use std::time::Duration;
 
 use axum::http::StatusCode;
 use common::v1::{Env, call, chat, messages};
-use kaeso_store::clickhouse::logs::{self as ch, GroupBy};
 use serde_json::{Value, json};
 use uuid::Uuid;
 
@@ -50,21 +49,61 @@ async fn postgres(env: &Env) -> Counts {
         .collect()
 }
 
-async fn clickhouse(env: &Env, group: GroupBy) -> BTreeMap<String, (u64, u64, u64)> {
+async fn usage_api(env: &Env, group: &str) -> Counts {
     let today = env.app.clock.now().date();
-    ch::usage(
-        &env.app.state.clickhouse,
-        uuid(&env.owner.org_id),
-        Some(uuid(&env.project)),
-        today - time::Duration::days(1),
-        today + time::Duration::days(1),
-        group,
-    )
-    .await
-    .unwrap()
-    .into_iter()
-    .map(|g| (g.key, (g.requests, g.errors, g.input_tokens)))
-    .collect()
+    let r = env
+        .app
+        .get(
+            &format!(
+                "{}/usage?group_by={group}&from={}&to={}",
+                base(env),
+                today - time::Duration::days(1),
+                today + time::Duration::days(1)
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body
+        .get("data")
+        .and_then(Value::as_array)
+        .unwrap()
+        .iter()
+        .map(|g| {
+            let n = |f: &str| g.get(f).and_then(Value::as_u64).unwrap();
+            (
+                g.get("key").and_then(Value::as_str).unwrap().to_owned(),
+                (n("requests"), n("errors"), n("input_tokens")),
+            )
+        })
+        .collect()
+}
+
+async fn request_log(env: &Env, key: &str) -> Counts {
+    #[derive(clickhouse::Row, serde::Deserialize)]
+    struct Group {
+        key: String,
+        requests: u64,
+        errors: u64,
+        input_tokens: u64,
+    }
+    env.app
+        .state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .client()
+        .query(&format!(
+            "SELECT {key} AS key, count() AS requests, countIf(status >= 400) AS errors, \
+             sum(input_tokens) AS input_tokens FROM request_log WHERE project_id = ? GROUP BY key"
+        ))
+        .bind(uuid(&env.project))
+        .fetch_all::<Group>()
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|g| (g.key, (g.requests, g.errors, g.input_tokens)))
+        .collect()
 }
 
 async fn ask(env: &Env, key: &str, body: Value) -> common::v1::Answer {
@@ -72,10 +111,16 @@ async fn ask(env: &Env, key: &str, body: Value) -> common::v1::Answer {
 }
 
 #[tokio::test]
-async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
+async fn usage_counts_the_requests_and_errors_the_request_log_holds() {
     let env = common::v1::env(None, None).await;
     let state = &env.app.state;
-    state.clickhouse.migrate(&state.pg).await.unwrap();
+    state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&state.pg)
+        .await
+        .unwrap();
     assert_eq!(
         ask(&env, &env.key, messages("claude-haiku-4-5", "Hi"))
             .await
@@ -136,14 +181,24 @@ async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
     kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
     assert_eq!(env.app.state.logs.len(), 0, "the log buffer drained");
     let pg = postgres(&env).await;
-    let rollups = clickhouse(&env, GroupBy::Model).await;
-    assert_eq!(pg, rollups, "PostgreSQL and ClickHouse disagree");
+    assert_eq!(
+        pg,
+        usage_api(&env, "model").await,
+        "the API and PostgreSQL disagree"
+    );
+    assert_eq!(
+        pg,
+        request_log(&env, "concat(provider, '/', resolved_model)").await,
+        "usage and the request log disagree"
+    );
     let haiku = pg["anthropic/claude-haiku-4-5"];
     assert_eq!((haiku.0, haiku.1), (6, 3), "{pg:?}");
     assert!(haiku.2 > 0);
     assert_eq!(pg["/"], (2, 2, 0), "{pg:?}");
 
-    let by_key = clickhouse(&env, GroupBy::Key).await;
+    let by_key: Counts = request_log(&env, "toString(key_id)").await;
+    let api_keys = usage_api(&env, "key").await;
+    assert_eq!(api_keys.len(), by_key.len(), "{api_keys:?}");
     let pg_keys: Vec<(Uuid, i64, i64)> = sqlx::query_as(
         "SELECT api_key_id, sum(requests)::bigint, sum(errors)::bigint FROM usage_daily \
          WHERE project_id = $1 GROUP BY api_key_id",
@@ -166,13 +221,13 @@ async fn postgres_and_clickhouse_count_the_same_requests_and_errors() {
     }
     let limited_counts = by_key[&uuid(limited["id"].as_str().unwrap()).to_string()];
     assert_eq!((limited_counts.0, limited_counts.1), (2, 1));
+    let limited_api = api_keys[limited["id"].as_str().unwrap()];
+    assert_eq!((limited_api.0, limited_api.1), (2, 1));
 }
 
 #[tokio::test]
 async fn usage_by_route_shows_how_much_of_the_input_each_route_read_from_the_cache() {
     let env = common::v1::env(None, None).await;
-    let state = &env.app.state;
-    state.clickhouse.migrate(&state.pg).await.unwrap();
     let cached = "Hi [mock:gen=5] [mock:in=100] [mock:cached=80]";
     let uncached = "Hi [mock:gen=5] [mock:in=100] [mock:cached=0]";
     for text in [cached, cached] {
@@ -189,7 +244,9 @@ async fn usage_by_route_shows_how_much_of_the_input_each_route_read_from_the_cac
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     env.app.state.in_flight.settled().await;
-    kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
 
     let rate = |body: &Value| -> Vec<(String, u64, Option<f64>)> {
         body["data"]
@@ -244,8 +301,6 @@ async fn usage_by_route_shows_how_much_of_the_input_each_route_read_from_the_cac
 #[tokio::test]
 async fn embedding_routes_have_no_cache_hit_rate() {
     let env = common::v1::env(None, None).await;
-    let state = &env.app.state;
-    state.clickhouse.migrate(&state.pg).await.unwrap();
     let r = call(
         &env,
         "/v1/embeddings",
@@ -256,7 +311,9 @@ async fn embedding_routes_have_no_cache_hit_rate() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     env.app.state.in_flight.settled().await;
-    kaeso_server::services::logs::flush_all(&env.app.state, Duration::from_secs(10)).await;
+    kaeso_server::services::usage::flush(&env.app.state)
+        .await
+        .unwrap();
 
     let r = env
         .app
@@ -272,25 +329,22 @@ async fn embedding_routes_have_no_cache_hit_rate() {
     assert_eq!(row["cache_hit_rate"], Value::Null, "{row}");
 }
 
-async fn rollup_day(env: &Env, day: &str, requests: u64) {
-    env.app
-        .state
-        .clickhouse
-        .client()
-        .query(
-            "INSERT INTO usage_daily (org_id, project_id, day, principal_kind, principal_id, key_id, provider, model, \
-             requests, errors, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost) \
-             VALUES (?, ?, ?, 'user', ?, ?, 'anthropic', 'claude-haiku-4-5', ?, 0, 1, 1, 0, 0, 0, 0)",
-        )
-        .bind(uuid(&env.owner.org_id))
-        .bind(uuid(&env.project))
-        .bind(day)
-        .bind(Uuid::from_u128(1))
-        .bind(Uuid::from_u128(2))
-        .bind(requests)
-        .execute()
-        .await
-        .unwrap();
+async fn rollup_day(env: &Env, day: &str, requests: i64) {
+    let format = time::macros::format_description!("[year]-[month]-[day]");
+    kaeso_store::pg::limits::add_usage(
+        &env.app.state.pg,
+        &[kaeso_store::pg::limits::UsageRow {
+            requests,
+            ..usage_row(
+                time::Date::parse(day, &format).unwrap(),
+                uuid(&env.owner.org_id),
+                uuid(&env.project),
+                1,
+            )
+        }],
+    )
+    .await
+    .unwrap();
 }
 
 fn keyed(body: &Value) -> Vec<(String, u64)> {
@@ -310,8 +364,6 @@ fn keyed(body: &Value) -> Vec<(String, u64)> {
 #[tokio::test]
 async fn long_periods_go_by_week_or_month_from_the_first_day_with_usage() {
     let env = common::v1::env(None, None).await;
-    let state = &env.app.state;
-    state.clickhouse.migrate(&state.pg).await.unwrap();
     let org = format!("/orgs/{}", env.owner.org_id);
     let get = async |path: String| env.app.get(&path, &env.owner.cookie).await;
 
@@ -407,6 +459,8 @@ fn usage_row(
         catalogue_model_id: None,
         model_id: "claude-haiku-4-5".into(),
         provider: "anthropic".into(),
+        ingress_dialect: "anthropic_messages".into(),
+        egress_dialect: "anthropic_messages".into(),
         requests: 1,
         errors: 0,
         input_tokens,
@@ -471,4 +525,63 @@ fn pending_usage_saturates_instead_of_overflowing() {
     let rows = batch.take();
     assert_eq!(rows.len(), 1);
     assert_eq!(rows.first().unwrap().input_tokens, i64::MAX);
+}
+
+#[tokio::test]
+async fn usage_by_member_and_key_names_people_service_accounts_and_the_playground() {
+    let env = common::v1::env(None, None).await;
+    let (org, project) = (uuid(&env.owner.org_id), uuid(&env.project));
+    let today = env.app.clock.now().date();
+    let (user, account, key) = (Uuid::now_v7(), Uuid::now_v7(), Uuid::now_v7());
+    kaeso_store::pg::limits::add_usage(
+        &env.app.state.pg,
+        &[
+            kaeso_store::pg::limits::UsageRow {
+                user_id: Some(user),
+                ..usage_row(today, org, project, 1)
+            },
+            kaeso_store::pg::limits::UsageRow {
+                service_account_id: Some(account),
+                api_key_id: Some(key),
+                requests: 2,
+                ..usage_row(today, org, project, 1)
+            },
+        ],
+    )
+    .await
+    .unwrap();
+    let get = async |group: &str| {
+        let r = env
+            .app
+            .get(
+                &format!("{}/usage?group_by={group}", base(&env)),
+                &env.owner.cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        keyed(&r.body)
+    };
+    let mut members = vec![
+        (
+            format!(
+                "service_account:{}",
+                kaeso_core::id::ServiceAccountId::from_uuid(account)
+            ),
+            2,
+        ),
+        (
+            format!("user:{}", kaeso_core::id::UserId::from_uuid(user)),
+            1,
+        ),
+    ];
+    members.sort();
+    assert_eq!(get("member").await, members);
+    let mut keys = vec![
+        ("playground".to_owned(), 1),
+        (kaeso_core::id::ApiKeyId::from_uuid(key).to_string(), 2),
+    ];
+    keys.sort();
+    let mut got = get("key").await;
+    got.sort();
+    assert_eq!(got, keys);
 }

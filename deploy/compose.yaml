@@ -83,7 +83,7 @@ services:
     environment:
       KAESO_PUBLIC_URL: ${KAESO_PUBLIC_URL:-https://${KAESO_DOMAIN:?set KAESO_DOMAIN in .env}}
       KAESO_POSTGRES_URL: postgres://kaeso:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/kaeso
-      KAESO_CLICKHOUSE_URL: http://kaeso:${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD in .env}@clickhouse:8123
+      KAESO_CLICKHOUSE_URL: ${KAESO_CLICKHOUSE_URL-http://kaeso:${CLICKHOUSE_PASSWORD:?set CLICKHOUSE_PASSWORD in .env}@clickhouse:8123}
       KAESO_VALKEY_URL: redis://:${VALKEY_PASSWORD:?set VALKEY_PASSWORD in .env}@valkey:6379
       KAESO_MASTER_KEYS_FILE: /run/secrets/master_keys
       KAESO_MAIL_TRANSPORT: ${KAESO_MAIL_TRANSPORT:-smtp}
@@ -105,6 +105,7 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_started
+        required: false
 
   console:
     image: ghcr.io/logicplanes/kaeso-console:0.4.8

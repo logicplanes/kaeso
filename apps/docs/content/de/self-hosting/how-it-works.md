@@ -40,7 +40,7 @@ flowchart TD
 | `gateway` | Stellt die Modell-API, die Platform API und die Health-Checks auf Port 8080 bereit und die Metriken auf Port 9100. Ruft die Anbieter auf und sendet E-Mails | Keine |
 | `console` | Stellt die Weboberfläche bereit | Keine |
 | `postgres` | Speichert Benutzer, Organisationen, Projekte, Schlüssel, verschlüsselte Anbieter-Schlüssel, Kataloge, Limits, Nutzung und Audit-Logs | Das Volume `postgres` |
-| `clickhouse` | Speichert Anfrageprotokolle und Nutzungsaggregate | Das Volume `clickhouse` |
+| `clickhouse` | Speichert Anfrageprotokolle. Eine Installation kann stattdessen ihr eigenes ClickHouse nutzen oder keine Anfrageprotokolle speichern ([festlegen, wie Anfrageprotokolle gespeichert werden](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)) | Das Volume `clickhouse` |
 | `valkey` | Hält Raten- und Budgetzähler und gemeinsame Caches | Das Volume `valkey` |
 
 Der optionale Updater fügt zwei Dienste hinzu, `updater` und `docker-proxy`, die Releases aus der Konsole installieren ([Der Updater](upgrades.md#der-updater)).
@@ -66,7 +66,7 @@ Bewahren Sie Kopien von `.env` und `master-keys` getrennt von den Datenbank-Back
 
 1. PostgreSQL, ClickHouse und Valkey starten. Das Gateway wartet, bis PostgreSQL und Valkey gesund sind.
 2. Das Gateway prüft seine Einstellungen. Eine fehlende oder ungültige Einstellung hält es an, mit einer Meldung, die die Einstellung nennt, nie ihren Wert.
-3. Das Gateway migriert PostgreSQL, bevor es irgendetwas bereitstellt. ClickHouse migriert es im Hintergrund und versucht es erneut, bis ClickHouse antwortet.
+3. Das Gateway migriert PostgreSQL, bevor es irgendetwas bereitstellt. ClickHouse migriert es im Hintergrund und versucht es erneut, bis ClickHouse antwortet. Bei ausgeschalteten Anfrageprotokollen protokolliert es das und überspringt ClickHouse.
 4. Solange die Installation keine Benutzer hat, protokolliert das Gateway, dass sie noch nicht eingerichtet ist. Den Einrichtungslink protokolliert es nie, denn wer das Protokoll liest, könnte damit die Installation übernehmen.
 5. Sobald Gateway und Konsole gesund sind, startet Caddy und bezieht das Zertifikat im Hintergrund.
 

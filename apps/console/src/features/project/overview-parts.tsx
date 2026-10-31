@@ -16,6 +16,7 @@ import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from
 import { projectPath } from "~/shell/pages";
 import type { OverviewSearch } from "./overview-page";
 import { useProjectRights } from "~/auth/rights";
+import { useRequestLogs } from "~/auth/session";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -232,14 +233,14 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
   const navigate = useNavigate();
   const base = projectPath(org, project);
   const limits = useQuery({ ...limitsQuery(org, project, { level: "project" }), enabled: rights.has("limits.view") });
-  const errors = useQuery({ ...recentErrorsQuery(org, project), enabled: rights.has("logs.metadata.view") });
+  const showErrors = useRequestLogs() && rights.has("logs.metadata.view");
+  const errors = useQuery({ ...recentErrorsQuery(org, project), enabled: showErrors });
   const recent = errors.data ?? [];
   const keys = useQuery({ ...allKeysQuery(org, project), enabled: rights.has("keys.all.view") });
   const keyCount = keys.data ? formatNumber(keys.data.length) : undefined;
   const go = (href: string) => void navigate({ href });
   const settled = (q: { isPending: boolean }, on: boolean) => !on || !q.isPending;
-  if (!settled(limits, rights.has("limits.view")) || !settled(errors, rights.has("logs.metadata.view")) || !settled(keys, rights.has("keys.all.view")))
-    return null;
+  if (!settled(limits, rights.has("limits.view")) || !settled(errors, showErrors) || !settled(keys, rights.has("keys.all.view"))) return null;
   return (
     <InsetContent>
       {rights.has("limits.view") && (
@@ -259,7 +260,7 @@ export function Aside({ org, project, modelCount }: { org: string; project: stri
           </div>
         </Section>
       )}
-      {rights.has("logs.metadata.view") && (
+      {showErrors && (
         <Section title={t("project.overview.recentErrors", "Recent errors")} spacing="none">
           {errors.isError ? (
             <Text tone="secondary">{t("project.overview.errorsFailed", "The recent errors couldn't load; the notification says why.")}</Text>

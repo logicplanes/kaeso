@@ -79,7 +79,7 @@ flowchart TD
 
 | Teil | Was es ist |
 | --- | --- |
-| Gateway | Der Server, den Ihre Apps aufrufen. Er stellt die Modell-API unter `/v1` und die Platform API unter `/platform/v1` bereit. Seine Daten speichert er in PostgreSQL, Anfrageprotokolle in ClickHouse und Zähler in Valkey. |
+| Gateway | Der Server, den Ihre Apps aufrufen. Er stellt die Modell-API unter `/v1` und die Platform API unter `/platform/v1` bereit. Seine Daten und die Nutzung speichert er in PostgreSQL, Anfrageprotokolle in ClickHouse, das eine Installation ausschalten kann, und Zähler in Valkey. |
 | Konsole | Die Weboberfläche, unter der Domain des Gateways ausgeliefert. Sie nutzt nur die Platform API; ein Skript kann also alles, was die Konsole kann. |
 | KPP | Das Kaeso Provider Protocol: ein kanonisches Format für Modellanfragen, mit einem Codec, der jedes API-Format in beide Richtungen übersetzt. |
 

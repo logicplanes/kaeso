@@ -68,7 +68,7 @@ Only an instance admin's console session changes the policy; no agent can. An ag
 
 ## Check the system
 
-**System** shows the gateway's version and state, and whether PostgreSQL, ClickHouse and Valkey are up. It also shows the request log buffer, the storage and how the gateway sends email. The page refreshes every 10 seconds.
+**System** shows the gateway's version and state, and whether PostgreSQL, ClickHouse and Valkey are up. ClickHouse shows as off when the install keeps no request logs. It also shows the request log buffer, the storage and how the gateway sends email. The page refreshes every 10 seconds.
 
 ## Update Kaeso
 

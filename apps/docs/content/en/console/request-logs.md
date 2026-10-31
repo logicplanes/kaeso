@@ -6,6 +6,9 @@ order: 8
 
 Kaeso logs every model request: the model, the provider, the status, tokens, cost, timing, the key and who sent it. With content logging on, it also keeps what the app sent and what it got back. A request shows up a few seconds after it ends.
 
+> [!NOTE]
+> An install can run with request logs off ([choose how to keep request logs](../self-hosting/installation.md#choose-how-to-keep-request-logs)). Its projects have no **Request logs** page, and **Logging** says that logs are off. Usage and costs are counted the same.
+
 ## Find a request
 
 Open a project's **Request logs** page. It lists requests newest first, from the last hour, 24 hours, 7 days or 30 days, or a range you choose.

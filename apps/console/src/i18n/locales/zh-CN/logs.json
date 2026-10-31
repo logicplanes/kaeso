@@ -129,6 +129,8 @@
   "logs.loadFailed": "无法加载请求",
   "logs.noMatch": "没有符合这些筛选条件的请求",
   "logs.noMatchHint": "移除筛选条件或扩大时间范围。",
+  "logs.off": "此安装已关闭请求日志",
+  "logs.offHint": "用量、限额和预算仍会统计每个请求。",
   "logs.openById": "按 ID 打开请求",
   "logs.param.choices": "候选数",
   "logs.param.maxCompletionTokens": "最大补全 Token 数",

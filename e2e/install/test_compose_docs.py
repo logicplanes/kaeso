@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -12,12 +13,18 @@ PAGES = sorted(
     [ROOT / "README.md", *(ROOT / "apps" / "docs" / "content").rglob("*.md")],
 )
 YAML_BLOCK = re.compile(r"```yaml\n(.*?)```", re.S)
+LISTED_YAML_BLOCK = re.compile(r"^([ \t]*)```yaml[^\n]*\n(.*?)^\1```", re.S | re.M)
 
 
-def config(*overrides: Path) -> dict:
+def config(*overrides: Path, values: dict[str, str | None] | None = None) -> dict:
     env = {k: v for k, v in os.environ.items() if not k.startswith("COMPOSE_")}
     passwords = ("POSTGRES_PASSWORD", "POSTGRES_SUPERUSER_PASSWORD", "CLICKHOUSE_PASSWORD", "VALKEY_PASSWORD")
     env |= {name: "pinned" for name in passwords}
+    for name, value in (values or {}).items():
+        if value is None:
+            env.pop(name, None)
+        else:
+            env[name] = value
     files = ["-f", "deploy/compose.yaml", *(arg for o in overrides for arg in ("-f", str(o)))]
     out = subprocess.run(
         ["docker", "compose", *files, "--env-file", "deploy/.env.example", "config", "--format", "json"],
@@ -87,3 +94,29 @@ def test_the_reverse_proxy_overrides_in_the_docs_merge_with_the_compose_file(lan
         assert networks["kaeso-proxy"]["aliases"] == [alias]
         assert "edge" in networks
     assert set(joined["services"]["gateway"]["networks"]) == {"edge", "data", "updates", "kaeso-proxy"}
+
+
+def test_the_gateway_logs_to_the_bundled_clickhouse_by_default():
+    services = config()["services"]
+    assert "clickhouse" in services
+    assert services["gateway"]["environment"]["KAESO_CLICKHOUSE_URL"] == "http://kaeso:pinned@clickhouse:8123"
+    assert services["gateway"]["depends_on"]["clickhouse"]["required"] is False
+
+
+def test_an_external_clickhouse_needs_no_bundled_password():
+    url = "https://kaeso:secret@clickhouse.example.com:8443"
+    services = config(values={"KAESO_CLICKHOUSE_URL": url, "CLICKHOUSE_PASSWORD": None})["services"]
+    assert services["gateway"]["environment"]["KAESO_CLICKHOUSE_URL"] == url
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_the_logs_off_override_in_the_docs_leaves_out_clickhouse(language, tmp_path):
+    pages = (ROOT / "apps" / "docs" / "content" / language).rglob("*.md")
+    blocks = (textwrap.dedent(b) for page in pages for _, b in LISTED_YAML_BLOCK.findall(page.read_text()))
+    overrides = {block for block in blocks if "profiles: [logs]" in block}
+    assert overrides, f"no page in {language} turns the bundled ClickHouse off"
+    for i, block in enumerate(sorted(overrides)):
+        (tmp_path / f"{i}.yaml").write_text(block)
+        merged = config(tmp_path / f"{i}.yaml", values={"KAESO_CLICKHOUSE_URL": "", "CLICKHOUSE_PASSWORD": None})
+        assert "clickhouse" not in merged["services"]
+        assert merged["services"]["gateway"]["environment"]["KAESO_CLICKHOUSE_URL"] == ""

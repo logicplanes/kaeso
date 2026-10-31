@@ -11,9 +11,9 @@ Das Gateway meldet seinen Zustand an zwei Endpunkten, stellt Prometheus-Metriken
 | Endpunkt | Antwortet |
 | --- | --- |
 | `GET /healthz` | `{"status": "ok"}`, solange der Prozess läuft |
-| `GET /readyz` | `ready`, `degraded` oder `not_ready`, mit dem Zustand von `postgres`, `valkey` und `clickhouse`, jeweils `ok` oder `down` |
+| `GET /readyz` | `ready`, `degraded` oder `not_ready`, mit dem Zustand von `postgres`, `valkey` und `clickhouse`, jeweils `ok` oder `down`, und `clickhouse` als `off`, solange Anfrageprotokolle aus sind |
 
-`/readyz` antwortet 503 mit `not_ready`, wenn PostgreSQL oder Valkey nicht erreichbar sind. Ist ClickHouse nicht erreichbar oder noch nicht migriert, antwortet es 200 mit `degraded`, denn Anfrageprotokolle halten nie Anfragen auf.
+`/readyz` antwortet 503 mit `not_ready`, wenn PostgreSQL oder Valkey nicht erreichbar sind. Ist ClickHouse nicht erreichbar oder noch nicht migriert, antwortet es 200 mit `degraded`, denn Anfrageprotokolle halten nie Anfragen auf. Bei [ausgeschalteten Anfrageprotokollen](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden) ist ClickHouse `off` und die Installation `ready`.
 
 Beide Endpunkte liegen auf Port 8080 des Gateways. Caddy leitet dorthin nur `/v1/`, `/platform/`, `/mcp`, `/oauth/` und `/.well-known/oauth-` weiter, unter Ihrer Domain erreichen diese Pfade also die Konsole. Der Health-Check des Gateway-Containers ruft `/healthz` auf, und `docker compose ps` zeigt das Ergebnis. So lesen Sie `/readyz` auf dem Server:
 

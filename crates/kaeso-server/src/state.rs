@@ -19,7 +19,7 @@ pub struct AppState(Arc<Inner>);
 pub struct Inner {
     pub config: Config,
     pub pg: PgPool,
-    pub clickhouse: ClickHouse,
+    pub clickhouse: Option<ClickHouse>,
     pub valkey: Valkey,
     pub keyring: KeyRing,
     pub clock: SharedClock,
@@ -45,7 +45,7 @@ pub struct Inner {
 pub struct Parts {
     pub config: Config,
     pub pg: PgPool,
-    pub clickhouse: ClickHouse,
+    pub clickhouse: Option<ClickHouse>,
     pub valkey: Valkey,
     pub keyring: KeyRing,
     pub clock: SharedClock,
@@ -99,6 +99,10 @@ impl AppState {
             accounts: p.accounts.unwrap_or_default(),
             clickhouse_migrated: AtomicBool::new(false),
         }))
+    }
+
+    pub fn request_logs(&self) -> bool {
+        self.0.clickhouse.is_some()
     }
 
     pub fn clickhouse_migrated(&self) -> bool {

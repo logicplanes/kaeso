@@ -11,9 +11,9 @@ order: 10
 | 端点 | 响应 |
 | --- | --- |
 | `GET /healthz` | 进程运行时返回 `{"status": "ok"}` |
-| `GET /readyz` | `ready`、`degraded` 或 `not_ready`，并给出 `postgres`、`valkey` 和 `clickhouse` 的状态，每项为 `ok` 或 `down` |
+| `GET /readyz` | `ready`、`degraded` 或 `not_ready`，并给出 `postgres`、`valkey` 和 `clickhouse` 的状态，每项为 `ok` 或 `down`；请求日志关闭时 `clickhouse` 为 `off` |
 
-PostgreSQL 或 Valkey 无法访问时，`/readyz` 返回 503 和 `not_ready`。ClickHouse 停止或尚未迁移时，返回 200 和 `degraded`，因为请求日志从不阻塞请求。
+PostgreSQL 或 Valkey 无法访问时，`/readyz` 返回 503 和 `not_ready`。ClickHouse 停止或尚未迁移时，返回 200 和 `degraded`，因为请求日志从不阻塞请求。[关闭请求日志](installation.md#选择请求日志的保存方式)后，ClickHouse 为 `off`，实例为 `ready`。
 
 两个端点都在网关的端口 8080 上。Caddy 只把 `/v1/`、`/platform/`、`/mcp`、`/oauth/` 和 `/.well-known/oauth-` 转发到这里，所以在您的域名上，这两个路径会到达控制台。网关容器的健康检查调用 `/healthz`，`docker compose ps` 会显示结果。在服务器上读取 `/readyz`：
 

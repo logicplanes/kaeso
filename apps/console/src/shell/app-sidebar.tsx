@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "@tanstack/react-router";
 import { IconButton, Sidebar, icons } from "@logicplanes/kaeso-ui";
 import { orgProjectsQuery } from "~/api/queries/projects";
-import { useMembership, useMemberships, useOrgRights } from "~/auth/session";
+import { useMembership, useMemberships, useOrgRights, useRequestLogs } from "~/auth/session";
 import { t } from "~/i18n";
 import { readLast } from "./last";
 import { openPalette } from "./palette-store";
 import { OrgSwitcher } from "./org-switcher";
 import { Picture, ProjectSwitcher } from "./project-switcher";
-import { ORG_AREA_PAGES, PROJECT_PAGES, orgPath, projectPath } from "./pages";
+import { ORG_AREA_PAGES, orgPath, projectPages, projectPath } from "./pages";
 import { useProjectRights } from "~/auth/rights";
 
 export function AppSidebar() {
@@ -54,6 +54,7 @@ function OrgArea({ org }: { org: string }) {
 
 function ProjectArea({ org, project }: { org: string; project: string }) {
   const rights = useProjectRights(org, project);
+  const requestLogs = useRequestLogs();
   const pathname = useLocation({ select: (l) => l.pathname });
   const membership = useMembership(org);
   const base = projectPath(org, project);
@@ -63,15 +64,17 @@ function ProjectArea({ org, project }: { org: string; project: string }) {
       <div className="flex flex-col gap-4">
         <ProjectSwitcher org={org} project={project} />
         <Sidebar.Group>
-          {PROJECT_PAGES.filter((p) => rights.has(p.right)).map((p) => {
-            const href = p.path ? `${base}/${p.path}` : base;
-            const active = p.path ? pathname === href || pathname.startsWith(`${href}/`) : pathname === base;
-            return (
-              <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} {...(p.shortcut ? { shortcut: p.shortcut } : {})}>
-                {p.label()}
-              </Sidebar.Item>
-            );
-          })}
+          {projectPages(requestLogs)
+            .filter((p) => rights.has(p.right))
+            .map((p) => {
+              const href = p.path ? `${base}/${p.path}` : base;
+              const active = p.path ? pathname === href || pathname.startsWith(`${href}/`) : pathname === base;
+              return (
+                <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} {...(p.shortcut ? { shortcut: p.shortcut } : {})}>
+                  {p.label()}
+                </Sidebar.Item>
+              );
+            })}
         </Sidebar.Group>
       </div>
     </>

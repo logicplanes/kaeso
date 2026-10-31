@@ -111,6 +111,14 @@ describe("an organization seen from the instance", () => {
     expect(await screen.findByText("No projects.")).toBeInTheDocument();
   });
 
+  it("says its logs are off on an install without request logs", async () => {
+    signedIn();
+    orgData({ usage: orgUsage({ log_entries: null, log_logical_bytes: null }) });
+    await renderApp(path());
+    expect(await screen.findByText("Off")).toBeInTheDocument();
+    expect(screen.queryByText(/entries$/)).not.toBeInTheDocument();
+  });
+
   it("says when it shows only the first members and projects", async () => {
     signedIn();
     orgData({ members: [GRACE], projects: [project()], view: instanceOrg({ members: 250, projects: 120 }) });

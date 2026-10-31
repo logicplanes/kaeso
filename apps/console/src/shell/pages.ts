@@ -71,6 +71,8 @@ export const PROJECT_PAGES: ProjectPage[] = [
   },
 ];
 
+export const projectPages = (requestLogs: boolean): ProjectPage[] => PROJECT_PAGES.filter((p) => requestLogs || p.id !== "logs");
+
 export const projectPath = (org: string, project: string) => `/orgs/${org}/projects/${project}`;
 
 export const placePath = (place: LastPlace) => (place.project ? projectPath(place.org, place.project) : orgPath(place.org));

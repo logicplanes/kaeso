@@ -203,7 +203,13 @@ async fn account_tokens_never_reach_the_log_the_audit_trail_or_clickhouse() {
     let s = TestServices::start().await;
     let oauth = MockOAuth::start().await;
     let app = App::start_signing_in(&s, &oauth).await;
-    app.state.clickhouse.migrate(&app.state.pg).await.unwrap();
+    app.state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&app.state.pg)
+        .await
+        .unwrap();
     let owner = app.setup().await;
     let mut secrets = Vec::new();
 
@@ -329,7 +335,13 @@ async fn grok_device_codes_and_tokens_never_reach_the_log_the_audit_trail_or_cli
     let s = TestServices::start().await;
     let grok = MockGrok::start().await;
     let app = App::start_with_grok(&s, &grok).await;
-    app.state.clickhouse.migrate(&app.state.pg).await.unwrap();
+    app.state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&app.state.pg)
+        .await
+        .unwrap();
     let owner = app.setup().await;
 
     let declined = common::begin_grok(&app, &owner, "Declined").await;

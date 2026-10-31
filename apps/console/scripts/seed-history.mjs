@@ -120,7 +120,72 @@ const TEMPLATE_COLUMNS = [
   "expires_at",
 ];
 
-export async function writeHistory({ clickhouseUrl, days, perDay, prices, weights }) {
+const NIL = "00000000-0000-0000-0000-000000000000";
+
+export function usageRows(rows) {
+  const groups = new Map();
+  for (const r of rows) {
+    const day = r.started_at.slice(0, 10);
+    const member =
+      r.principal_id === NIL
+        ? { user_id: null, service_account_id: null }
+        : r.principal_kind === "user"
+          ? { user_id: r.principal_id, service_account_id: null }
+          : { user_id: null, service_account_id: r.principal_id };
+    const row = {
+      day,
+      org_id: r.org_id,
+      project_id: r.project_id,
+      ...member,
+      api_key_id: r.key_id === NIL ? null : r.key_id,
+      model_id: r.resolved_model,
+      provider: r.provider,
+      ingress_dialect: r.ingress_dialect,
+      egress_dialect: r.egress_dialect,
+    };
+    const key = JSON.stringify(row);
+    const sum = groups.get(key) ?? {
+      ...row,
+      requests: 0,
+      errors: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+      reasoning_tokens: 0,
+      cost: 0,
+    };
+    sum.requests += 1;
+    sum.errors += r.status >= 400 ? 1 : 0;
+    sum.input_tokens += r.input_tokens;
+    sum.output_tokens += r.output_tokens;
+    sum.cache_read_tokens += r.cache_read_tokens;
+    sum.cache_write_tokens += r.cache_write_tokens;
+    sum.reasoning_tokens += r.reasoning_tokens;
+    sum.cost += Number(r.cost);
+    groups.set(key, sum);
+  }
+  return [...groups.values()];
+}
+
+export function usageSql(rows) {
+  const json = JSON.stringify(rows.map((r) => ({ ...r, cost: r.cost.toFixed(9) }))).replaceAll("'", "''");
+  return `INSERT INTO usage_daily AS u (day, org_id, project_id, user_id, service_account_id, api_key_id, model_id, provider, ingress_dialect, egress_dialect,
+  requests, errors, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost)
+SELECT day, org_id, project_id, user_id, service_account_id, api_key_id, model_id, provider, ingress_dialect, egress_dialect,
+  requests, errors, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost
+FROM jsonb_to_recordset('${json}'::jsonb) AS r(day date, org_id uuid, project_id uuid, user_id uuid, service_account_id uuid, api_key_id uuid,
+  model_id text, provider text, ingress_dialect text, egress_dialect text, requests bigint, errors bigint, input_tokens bigint, output_tokens bigint,
+  cache_read_tokens bigint, cache_write_tokens bigint, reasoning_tokens bigint, cost numeric)
+ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect) DO UPDATE SET
+  requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, input_tokens = u.input_tokens + excluded.input_tokens,
+  output_tokens = u.output_tokens + excluded.output_tokens, cache_read_tokens = u.cache_read_tokens + excluded.cache_read_tokens,
+  cache_write_tokens = u.cache_write_tokens + excluded.cache_write_tokens, reasoning_tokens = u.reasoning_tokens + excluded.reasoning_tokens,
+  cost = u.cost + excluded.cost;
+`;
+}
+
+export async function writeHistory({ clickhouseUrl, days, perDay, prices, weights, recordUsage }) {
   const templates = (
     await clickhouse(
       clickhouseUrl,
@@ -153,7 +218,10 @@ export async function writeHistory({ clickhouseUrl, days, perDay, prices, weight
       const at = dayStart + Math.floor(hour * 3_600_000);
       rows.push(JSON.stringify(historyRow(next, { ...template, expires_at: timestamp(at + 90 * DAY).slice(0, 19) }, prices(template.resolved_model), at)));
     }
-    if (rows.length) await clickhouse(clickhouseUrl, "INSERT INTO request_log FORMAT JSONEachRow", rows.join("\n"));
+    if (rows.length) {
+      await clickhouse(clickhouseUrl, "INSERT INTO request_log FORMAT JSONEachRow", rows.join("\n"));
+      recordUsage(usageSql(usageRows(rows.map((r) => JSON.parse(r)))));
+    }
     written += rows.length;
   }
   return written;

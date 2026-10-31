@@ -144,4 +144,13 @@ describe("settings prefetch by link", () => {
       ["instance", "settings"],
     ]);
   });
+
+  it("asks for no logging data on an install without request logs", () => {
+    const { c, asked } = client(["org.view", "logs.storage.view"]);
+    c.setQueryData(sessionQuery.queryKey, (session) => ({ ...(session as WhoAmI), request_logs: false }));
+    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging`);
+    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=storage`);
+    prefetchSettingsPath(c, `/settings/orgs/${ORG}/logging?tab=deletions`);
+    expect(asked).toEqual([]);
+  });
 });

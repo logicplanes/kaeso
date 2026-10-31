@@ -154,6 +154,7 @@
   "errors.limitRefused": "此项目的限额拒绝了该请求，请稍后重试。",
   "errors.listModelIds": "请列出 1 到 200 个模型 ID。",
   "errors.logsUnavailable": "请求日志暂时不可用，请稍后重试。",
+  "errors.logsOff": "此安装已关闭请求日志。",
   "errors.lowerLimitsFirst": "请先调低以下比此限额更宽松的限额：{list}。",
   "errors.magicLinkOff": "此实例已关闭登录链接。",
   "errors.maxCustomRoles": "一个组织最多可有 {max} 个自定义角色。",

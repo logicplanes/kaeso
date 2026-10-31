@@ -15,6 +15,10 @@ export function useMemberships(): MyMembership[] {
   return useSuspenseQuery(membershipsQuery).data;
 }
 
+export function useRequestLogs(): boolean {
+  return useSession().request_logs;
+}
+
 export function useMembership(org: string): Membership | undefined {
   return useSession().memberships.find((m) => m.org_id === org);
 }

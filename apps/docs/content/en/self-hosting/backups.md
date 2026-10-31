@@ -5,12 +5,12 @@ nav: Backups
 order: 9
 ---
 
-Back up three things, and keep the master keys apart from the database backups:
+Back up three things, two with request logs off, and keep the master keys apart from the database backups:
 
 | What | Holds | Without a backup |
 | --- | --- | --- |
 | PostgreSQL | Users, organizations, projects, keys, encrypted provider keys, catalogues, limits, usage and audit logs | The install is gone |
-| ClickHouse | Request logs and usage rollups | Log history is gone; limits and budgets don't depend on it |
+| ClickHouse | Request logs | Log history is gone; usage, limits and budgets don't depend on it |
 | Master keys | The keys that encrypt stored provider keys | Every provider key must be entered again |
 
 Valkey holds only counters, caches and short-lived data, and needs no backup. The gateway rebuilds missing budget counters from PostgreSQL, and rate windows start over.
@@ -44,7 +44,9 @@ To restore on a new server:
 
 ## Back up ClickHouse
 
-Use ClickHouse's `BACKUP` command with a disk set up for backups, or a tool such as `clickhouse-backup`. On a small install, you can also stop ClickHouse and copy its volume:
+An install with request logs off has no ClickHouse to back up, and one that uses your own ClickHouse backs it up with the rest of it ([choose how to keep request logs](installation.md#choose-how-to-keep-request-logs)).
+
+For the bundled ClickHouse, use ClickHouse's `BACKUP` command with a disk set up for backups, or a tool such as `clickhouse-backup`. On a small install, you can also stop ClickHouse and copy its volume:
 
 ```bash
 docker compose stop clickhouse

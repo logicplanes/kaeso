@@ -34,27 +34,30 @@ pub struct Readiness {
 
 pub async fn check(state: &AppState) -> Readiness {
     let timeout = Duration::from_secs(2);
+    let clickhouse = async {
+        match &state.clickhouse {
+            Some(ch) => Some(tokio::time::timeout(timeout, ch.ping()).await),
+            None => None,
+        }
+    };
     let (pg, valkey, clickhouse) = tokio::join!(
         tokio::time::timeout(timeout, kaeso_store::pg::ping(&state.pg)),
         tokio::time::timeout(timeout, state.valkey.ping()),
-        tokio::time::timeout(timeout, state.clickhouse.ping()),
+        clickhouse,
     );
     let up = |r: Result<Result<(), kaeso_store::StoreError>, _>| matches!(r, Ok(Ok(())));
-    let (pg, valkey, clickhouse) = (
-        up(pg),
-        up(valkey),
-        up(clickhouse) && state.clickhouse_migrated(),
-    );
+    let (pg, valkey) = (up(pg), up(valkey));
+    let clickhouse = clickhouse.map(|r| up(r) && state.clickhouse_migrated());
     let word = |ok: bool| if ok { "ok" } else { "down" };
     Readiness {
         status: match (pg && valkey, clickhouse) {
             (false, _) => "not_ready",
-            (true, false) => "degraded",
-            (true, true) => "ready",
+            (true, Some(false)) => "degraded",
+            (true, Some(true) | None) => "ready",
         },
         postgres: word(pg),
         valkey: word(valkey),
-        clickhouse: word(clickhouse),
+        clickhouse: clickhouse.map_or("off", word),
     }
 }
 

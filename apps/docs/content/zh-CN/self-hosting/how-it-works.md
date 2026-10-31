@@ -40,7 +40,7 @@ flowchart TD
 | `gateway` | 在端口 8080 上提供模型 API、Platform API 和健康检查，在端口 9100 上提供指标。调用服务商并发送邮件 | 无 |
 | `console` | 提供 Web 界面 | 无 |
 | `postgres` | 保存用户、组织、项目、密钥、加密的服务商密钥、目录、限额、用量和审计日志 | 卷 `postgres` |
-| `clickhouse` | 保存请求日志和用量汇总 | 卷 `clickhouse` |
+| `clickhouse` | 保存请求日志。实例也可以改用自己的 ClickHouse，或不保存请求日志（[选择请求日志的保存方式](installation.md#选择请求日志的保存方式)） | 卷 `clickhouse` |
 | `valkey` | 保存速率和预算计数器以及共享缓存 | 卷 `valkey` |
 
 可选的更新器会再添加两个服务：`updater` 和 `docker-proxy`，用于从控制台安装版本（[更新器](upgrades.md#更新器)）。
@@ -66,7 +66,7 @@ Caddy 启动前，`caddy-init` 会运行一次，把 Caddy 的卷交给 Caddy �
 
 1. PostgreSQL、ClickHouse 和 Valkey 启动。网关等待 PostgreSQL 和 Valkey 变为健康。
 2. 网关检查自己的设置。缺少或无效的设置会让它停止，并给出指明该设置的消息，但从不显示其值。
-3. 网关在提供任何服务之前先迁移 PostgreSQL。ClickHouse 则在后台迁移，并一直重试到 ClickHouse 响应为止。
+3. 网关在提供任何服务之前先迁移 PostgreSQL。ClickHouse 则在后台迁移，并一直重试到 ClickHouse 响应为止。请求日志关闭时，网关会记录这一点并跳过 ClickHouse。
 4. 在实例还没有用户时，网关会在日志中说明尚未完成设置。它从不把设置链接写入日志，因为任何能读日志的人都能借此接管实例。
 5. 网关和控制台健康后，Caddy 启动，并在后台申请证书。
 
