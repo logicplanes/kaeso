@@ -10,7 +10,7 @@ const row = (page: Page, text: string, grid = "Models") =>
     .filter({ has: page.getByText(text, { exact: true }) });
 const hit = (page: Page, model: string) =>
   page
-    .getByRole("table", { name: "Models on models.dev" })
+    .getByRole("table", { name: "Models in KPMR" })
     .getByRole("row")
     .filter({ has: page.getByText(model, { exact: true }) });
 
@@ -28,7 +28,7 @@ async function openModels(page: Page) {
   await expect(page).toHaveTitle(/^Models · /);
 }
 
-test("an empty catalogue explains itself; models are added from models.dev in a batch", async ({ page }) => {
+test("an empty catalogue explains itself; models are added from KPMR in a batch", async ({ page }) => {
   await openModels(page);
   await expect(page.getByText("No models yet")).toBeVisible();
   await page.getByRole("button", { name: "Add models" }).first().click();
@@ -83,7 +83,7 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   const search = dialog.getByRole("searchbox", { name: "Search models" });
   await expect(search).toBeFocused();
   await page.keyboard.type("gpt-4.1");
-  const hits = dialog.getByRole("table", { name: "Models on models.dev" }).getByRole("rowgroup").last().getByRole("row");
+  const hits = dialog.getByRole("table", { name: "Models in KPMR" }).getByRole("rowgroup").last().getByRole("row");
   await expect(hits).toHaveCount(2);
   await expect(dialog.getByText("Requests to these models fail until someone adds a key for OpenAI on the Providers page.")).toBeVisible();
   // A Tab pressed as the dialog's resize animation ends can drop focus to the first field.
@@ -143,14 +143,14 @@ test("models are picked from the keyboard: Space selects, a row's review button 
   await expect(row(page, "gpt-4.1-mini")).toBeVisible();
 });
 
-test("a model models.dev doesn't list is added as a custom model with its required fields", async ({ page }) => {
+test("a model KPMR doesn't list is added as a custom model with its required fields", async ({ page }) => {
   await openModels(page);
   await page.getByRole("button", { name: "Add models" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Add a custom model" }).click();
   await dialog.getByLabel("Model id").fill("acme-internal-1");
   await dialog.getByLabel("Model id").press("Enter");
-  await expect(dialog.getByText("models.dev doesn't list it")).toBeVisible();
+  await expect(dialog.getByText("KPMR doesn't list it")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Add model" })).toBeDisabled();
   await dialog.getByRole("group", { name: "Inputs" }).getByRole("checkbox", { name: "Text" }).click();
   await dialog.getByRole("group", { name: "Outputs" }).getByRole("checkbox", { name: "Text" }).click();
@@ -170,8 +170,8 @@ test("the model sheet shows where values come from, resets an override and edits
   await row(page, "gpt-5.4-nano").click();
   const sheet = page.getByRole("dialog", { name: "GPT-5.4 nano" });
   await expect(sheet.getByText("override", { exact: true })).toHaveCount(1);
-  await sheet.getByRole("button", { name: "Reset to models.dev" }).click();
-  await expect(page.getByText("Input price reset to models.dev")).toBeVisible();
+  await sheet.getByRole("button", { name: "Reset to KPMR" }).click();
+  await expect(page.getByText("Input price reset to KPMR")).toBeVisible();
   await expect(sheet.getByText("override", { exact: true })).toHaveCount(0);
 
   await page.goto(page.url().replace(/\?.*$/, ""));

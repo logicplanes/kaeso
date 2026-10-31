@@ -12,14 +12,14 @@ Choose **Add models**, then pick a provider from the searchable list next to the
 
 The dialog lists models newest first, each with its context window and its input and output prices. When more than 50 models match, it shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
-Each model brings its prices, limits and capabilities from [models.dev](https://models.dev), an open database of models. Two shortcuts cover the rest:
+Each model brings its prices, limits and capabilities from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry. Two shortcuts cover the rest:
 
 - **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. The dialog says how many models it adds, and warns before you add 50 or more.
-- **Add a custom model** adds a model by its id. If models.dev doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it. An id can't be `.` or `..` or have either between slashes, because a URL would drop that part.
+- **Add a custom model** adds a model by its id. If KPMR doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it. An id can't be `.` or `..` or have either between slashes, because a URL would drop that part.
 
 For one of your organization's [custom providers](custom-providers.md#add-its-models), the dialog lists the model ids the provider's own listing names instead. It fills in the limits and capabilities it finds, and you enter the prices.
 
-The install refreshes the models.dev data every 24 hours by default, and instance admins see its state under [Model sources](instance-administration.md#sync-model-data). A model that models.dev stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that models.dev marks deprecated is marked **Deprecated**.
+The install keeps KPMR's data current by itself, about every hour by default, and instance admins see its state under [System](instance-administration.md#check-the-system). A model that KPMR stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that KPMR marks deprecated is marked **Deprecated**.
 
 ## Find a model
 
@@ -45,14 +45,14 @@ To fix it, give the provider key access to the model, or remove the model from t
 
 ## Change a model's values
 
-A model's sheet shows the **Values in use**, each with where it comes from: models.dev, Kaeso's own additions, or an override in this project. **Edit overrides** changes them for this project only, and **Reset to models.dev** returns a value to the source. If someone else changed the model after its sheet loaded, saving says so and loads the current values, so you can make your change again.
+A model's sheet shows the **Values in use**, each with where it comes from: KPMR or an override in this project. **Edit overrides** changes them for this project only, and **Reset to KPMR** returns a value to the source. If someone else changed the model after its sheet loaded, saving says so and loads the current values, so you can make your change again.
 
 | Value | What it is |
 | --- | --- |
 | Display name | The name the console shows |
 | Inputs, outputs | Inputs: text, images, PDF, audio and video. Outputs: text, images, audio and embeddings |
 | Context, output limit | The model's token limits |
-| Input, output, cache read and cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one, as models.dev lists it. Writes to Anthropic's one-hour cache cost twice the input price, [Anthropic's rule](https://platform.claude.com/docs/en/about-claude/pricing), or the cache write price when the model has no input price |
+| Input, output, cache read, cache write and one-hour cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models; without it, they cost the cache write price |
 | Sends as | The API format Kaeso calls the model with: Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or OpenAI Embeddings |
 | Tool calling, reasoning, structured output | What the model supports |
 | Temperature | Whether the model takes `temperature` |

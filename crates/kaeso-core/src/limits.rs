@@ -531,6 +531,7 @@ mod tests {
     fn a_request_that_asks_for_one_hour_caching_reserves_its_write_price() {
         let mut prices = priced("3", "15");
         prices.cache_write_price = Some(dec!(3.75));
+        prices.cache_write_1h_price = Some(dec!(6));
         let plain = WorstCase::of(&generate(Some(0)), 4000, &prices, openai());
         assert_eq!(plain.nano_usd, 1000 * 3750);
         let kaeso_kpp::Request::Generate(mut g) = generate(Some(0)) else {

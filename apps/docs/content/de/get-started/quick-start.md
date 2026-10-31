@@ -112,7 +112,7 @@ Eine Anfrage kann nur ein Modell aus dem Katalog des Projekts nennen.
 2. Wählen Sie den Anbieter, und suchen Sie nach einem Modell, etwa `claude-haiku-4-5` von Anthropic oder `gpt-5-mini` von OpenAI.
 3. Fügen Sie es hinzu.
 
-Preise, Limits und Fähigkeiten des Modells kommen von [models.dev](https://models.dev); siehe [Modelle und Aliasse](../console/models-and-aliases.md).
+Preise, Limits und Fähigkeiten des Modells kommen von [KPMR](../concepts/kpmr.md), der Kaeso Provider & Model Registry; siehe [Modelle und Aliasse](../console/models-and-aliases.md).
 
 ## Einen API-Schlüssel erstellen
 

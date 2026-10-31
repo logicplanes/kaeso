@@ -145,7 +145,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 |---|---|---|
 | `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置中的 `reasoning_fields`，与 DeepSeek 相同。关闭思考时，Moonshot 发送 `reasoning_content: ""`，它保留为 extras。其他格式的应用发回的推理会以助手轮次中的 `reasoning_content` 送达 Moonshot，这正是 Moonshot 对其思考模型的要求。 |
 | `thinking: {type}`（请求） | extras | `kimi-k2.6` 的开关；`kimi-k2.7-code` 只接受 `enabled`（否则返回 400）。Chat 应用发送的按原样发送；请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
-| `reasoning_effort` | `reasoning.effort` | K3 模型的文档列出 `low`、`high` 和 `max`，models.dev 也是如此，因此 Kaeso 在发送前拒绝其他级别。Moonshot 本身也接受 `none`，此时关闭思考（`responses/recorded-reasoning-effort-none`）。`kimi-k2.6` 在 `none` 时关闭思考；`kimi-k2.7-code` 始终思考，对 `none` 返回 400。 |
+| `reasoning_effort` | `reasoning.effort` | K3 模型的文档列出 `low`、`high` 和 `max`，KPMR 也是如此，因此 Kaeso 在发送前拒绝其他级别。Moonshot 本身也接受 `none`，此时关闭思考（`responses/recorded-reasoning-effort-none`）。`kimi-k2.6` 在 `none` 时关闭思考；`kimi-k2.7-code` 始终思考，对 `none` 返回 400。 |
 | `temperature`、`top_p`、`n`、`frequency_penalty`、`presence_penalty` | `sampling` | 每个模型只接受一个值：`temperature` 为 1（关闭思考的 `kimi-k2.6` 为 0.6），`top_p` 为 0.95，`n` 为 1，惩罚参数为 0。其他值会得到 400 `invalid temperature: only 1 is allowed for this model`（`errors/recorded-temperature`、`errors/recorded-top-p`）。目录将这些模型标记为不接受 `temperature`，因此 Kaeso 在发送前拒绝 1 以外的值；它从不修改该值。 |
 | `max_tokens`、`max_completion_tokens` | `max_output_tokens` | 两者都生效（`responses/recorded-max-tokens-honoured`、`responses/recorded-max-completion-tokens-honoured`）；思考内容计入上限。 |
 | 最后一条 assistant 消息中的 `partial: true` | 消息 extras | Partial Mode：回复接着该消息续写，不含预填内容。`partial_prefill()` 为其他格式的应用加上它；没有它时，Moonshot 会重新回答并重复预填内容（`responses/recorded-prefill-without-partial`）。 |

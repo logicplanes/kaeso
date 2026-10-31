@@ -147,13 +147,16 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | 整数 | `100` | 每个客户端地址在每个时间窗口内允许的 API 密钥查找失败次数，两个 API 合计。`0` 关闭限流（[API 密钥限流](#api-密钥限流)）。 |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | 文本 | `1m` | `key_failures.per_address` 的时间窗口，1s 到 1h。被封锁的地址最多等待这么久。 |
 
-### models.dev
+### KPMR
+
+网关通过 [KPMR](../concepts/kpmr.md)（Kaeso Provider & Model Registry）保持模型数据最新。
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
-| `KAESO_MODELS_DEV_SYNC`<br>`models_dev.sync` | 布尔 | `true` | 从 models.dev 获取模型数据。关闭后，网关使用版本内置的数据。 |
-| `KAESO_MODELS_DEV_URL`<br>`models_dev.url` | 文本 | `https://models.dev/api.json` | 模型数据的来源。必须使用 `https`，回环地址上的 `http` 除外。Kaeso 最多跟随 3 次重定向，每次都须在同一主机上并使用 `https`。 |
-| `KAESO_MODELS_DEV_INTERVAL`<br>`models_dev.interval` | 文本 | `24h` | 网关获取数据的间隔。 |
+| `KAESO_KPMR_SYNC`<br>`kpmr.sync` | 布尔 | `true` | 从 KPMR（Kaeso Provider & Model Registry）获取模型数据。没有互联网的实例请关闭，此时使用内置快照。 |
+| `KAESO_KPMR_URL`<br>`kpmr.url` | 文本 | `https://kpmr.kaeso.app/v1/catalogue` | 从哪里获取 KPMR 目录：KPMR 或其镜像。必须使用 `https`，localhost 上可用 `http`；重定向必须留在同一主机并使用 `https`，最多 3 次。 |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为时长，例如 `6h`。 |
+| `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
 
 ### 更新
 

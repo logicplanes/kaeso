@@ -62,13 +62,11 @@ Agenten wie Claude Code oder Codex handeln über den [MCP-Server](../api/mcp.md)
 
 Nur die Konsolensitzung eines Instanz-Admins ändert die Richtlinie; kein Agent kann das. Ein Agent macht nie jemanden zum Instanz-Admin, ändert nie Single Sign-on für Instanz-Admins und löscht nie einen Benutzer oder eine Organisation sofort. [Instanzrechte](../concepts/rights.md#instanzrechte) listet, was jedes Recht erlaubt.
 
-## Modelldaten synchronisieren
-
-**Modellquellen** zeigt die models.dev-Daten der Installation: die verwendeten Daten, die letzte Synchronisierung und die automatische Synchronisierung, standardmäßig alle 24 Stunden. **Synchronisieren** holt die Daten sofort. Ist models.dev nicht erreichbar, bleiben die aktuellen Daten in Gebrauch.
-
 ## System prüfen
 
 **System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. ClickHouse erscheint als aus, wenn die Installation keine Anfrageprotokolle speichert. Es zeigt außerdem den Puffer der Anfrageprotokolle, den Speicher und wie das Gateway E-Mails sendet. Die Seite aktualisiert sich alle 10 Sekunden.
+
+**Modelldaten** zeigt die Daten von [KPMR](../concepts/kpmr.md), die in Gebrauch sind: ihre Quelle, ihre Revision, wann sie abgerufen wurden, wie viele Modelle sie enthalten, die letzte Prüfung und gegebenenfalls ihren Fehler. Das Gateway hält die Daten selbst aktuell; nur die [Konfiguration](../self-hosting/configuration.md#kpmr) ändert, wie. Ist KPMR nicht erreichbar, bleiben die aktuellen Daten in Gebrauch.
 
 ## Kaeso aktualisieren
 

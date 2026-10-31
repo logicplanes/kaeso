@@ -8,8 +8,6 @@ use url::Url;
 
 use crate::provider::{self, AccountSignIn, AuthStyle, Provider, ProviderId};
 
-pub const MODELS_DEV_PROVIDERS: &str = include_str!("../data/models-dev-providers.txt");
-
 pub const GENERATION_DIALECTS: [DialectId; 3] = [
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
@@ -30,7 +28,7 @@ pub const MAX_BASE_URL_LEN: usize = 2048;
 pub const METRIC_LABEL: &str = "custom";
 
 pub fn is_reserved(id: &str) -> bool {
-    provider::provider(id).is_some() || MODELS_DEV_PROVIDERS.lines().any(|line| line == id)
+    provider::provider(id).is_some() || crate::kpmr::embedded_provider_ids().iter().any(|p| p == id)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -500,15 +498,12 @@ mod tests {
     }
 
     #[test]
-    fn built_in_and_models_dev_ids_are_reserved() {
+    fn built_in_and_kpmr_ids_are_reserved() {
         for id in ["openai", "anthropic", "groq", "lmstudio", "302ai", "zai"] {
             assert!(is_reserved(id), "{id}");
         }
         for id in ["my-vllm", "internal-proxy", "ollama-local"] {
             assert!(!is_reserved(id), "{id}");
-        }
-        for p in provider::PROVIDERS {
-            assert!(MODELS_DEV_PROVIDERS.lines().any(|l| l == p.id), "{}", p.id);
         }
     }
 

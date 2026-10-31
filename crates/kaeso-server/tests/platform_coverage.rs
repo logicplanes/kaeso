@@ -81,7 +81,7 @@ fn the_fixture_follows_the_spec() {
             .into_iter()
             .collect()
     );
-    assert_eq!(rows.len(), 38, "{} rows", rows.len());
+    assert_eq!(rows.len(), 37, "{} rows", rows.len());
     for r in &rows {
         for right in &r.rights {
             let name = right.trim_end_matches(".*");

@@ -88,7 +88,7 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
 2. Refresh the model data, so a fresh install starts with current models and prices, and merge the result into `dev` through a pull request:
 
    ```bash
-   cargo xtask models-dev
+   cargo xtask kpmr
    ```
 
 3. Push `dev` to `prod` as a fast-forward:

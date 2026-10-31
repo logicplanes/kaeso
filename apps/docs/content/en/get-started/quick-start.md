@@ -112,7 +112,7 @@ A request can only name a model in the project's catalogue.
 2. Choose the provider and search for a model, such as `claude-haiku-4-5` from Anthropic or `gpt-5-mini` from OpenAI.
 3. Add it.
 
-The model's prices, limits and capabilities come from [models.dev](https://models.dev); see [models and aliases](../console/models-and-aliases.md).
+The model's prices, limits and capabilities come from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry; see [models and aliases](../console/models-and-aliases.md).
 
 ## Create an API key
 

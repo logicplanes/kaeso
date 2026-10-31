@@ -11,9 +11,10 @@ use uuid::Uuid;
 use super::capability::{effort_levels, model_info, prepare};
 use super::resolve::{Access, AccessLevel, Alias, Catalogue, ResolveError, Via};
 use super::*;
+use crate::provider;
 
-fn snapshot() -> models_dev::Snapshot {
-    models_dev::embedded().unwrap()
+fn snapshot() -> kpmr::Catalogue {
+    kpmr::embedded().unwrap()
 }
 
 fn entry(provider: &str, model: &str) -> Entry {
@@ -31,34 +32,29 @@ fn entry(provider: &str, model: &str) -> Entry {
 }
 
 fn eff(e: &Entry) -> Effective {
-    effective(
-        e,
-        &snapshot(),
-        &Supplement::embedded().unwrap(),
-        &OrgProviders::default(),
-    )
-    .unwrap()
+    effective(e, &snapshot(), &OrgProviders::default()).unwrap()
 }
 
-fn feed(cost: &str) -> Vec<u8> {
-    format!(
-        r#"{{"openai":{{"id":"openai","models":{{"gpt-4o":{{"id":"gpt-4o","cost":{cost},"limit":{{"context":1,"output":1}}}}}}}}}}"#
-    )
-    .into_bytes()
+fn catalogue(providers: &str) -> Vec<u8> {
+    format!(r#"{{"format":1,"provider_ids":[],"providers":{providers}}}"#).into_bytes()
+}
+
+fn feed(pricing: &str) -> Vec<u8> {
+    catalogue(&format!(
+        r#"{{"openai":{{"id":"openai","models":{{"gpt-4o":{{"id":"gpt-4o","pricing":{pricing},"limits":{{"context":1,"output":1}}}}}}}}}}"#
+    ))
 }
 
 #[test]
 fn a_price_a_feed_zeroes_leaves_the_model_unpriced_for_a_spend_budget() {
     let ids = crate::provider::known_ids();
-    let parsed = models_dev::parse(&feed(r#"{"input":0,"output":0}"#), &ids).unwrap();
-    let e = entry("openai", "gpt-4o");
-    let zeroed = effective(
-        &e,
-        &parsed.snapshot,
-        &Supplement::default(),
-        &OrgProviders::default(),
+    let parsed = kpmr::parse(
+        &feed(r#"{"unit":"usd_per_million_tokens","input":"0","output":"0"}"#),
+        &ids,
     )
     .unwrap();
+    let e = entry("openai", "gpt-4o");
+    let zeroed = effective(&e, &parsed.catalogue, &OrgProviders::default()).unwrap();
     assert_eq!(zeroed.fields.input_price, Some(dec!(0)));
     let refused = crate::cost::unpriced_model(
         &zeroed.fields,
@@ -68,50 +64,71 @@ fn a_price_a_feed_zeroes_leaves_the_model_unpriced_for_a_spend_budget() {
     );
     assert_eq!(refused.map(|u| u.feature), Some("gpt-4o".to_owned()));
     for bad in [
-        r#"{"input":-1}"#,
-        r#"{"input":1000001}"#,
-        r#"{"input":"x"}"#,
+        r#"{"unit":"usd_per_million_tokens","input":"-1"}"#,
+        r#"{"unit":"usd_per_million_tokens","input":"1000001"}"#,
+        r#"{"unit":"usd_per_million_tokens","input":"x"}"#,
+        r#"{"unit":"usd_per_million_tokens","input":0.5}"#,
     ] {
-        let p = models_dev::parse(&feed(bad), &ids).unwrap();
+        let p = kpmr::parse(&feed(bad), &ids).unwrap();
         assert_eq!(p.skipped, ["openai/gpt-4o"], "{bad}");
     }
 }
 
 #[test]
-fn the_shipped_supplement_is_valid_and_names_known_models() {
-    let supplement = Supplement::embedded().unwrap();
+fn every_anthropic_model_in_the_shipped_catalogue_says_whether_it_takes_adaptive_thinking() {
     let snap = snapshot();
-    for (provider, models) in &supplement.models {
-        for model in models.keys() {
-            assert!(
-                snap.model(provider, model).is_some(),
-                "{provider}/{model} is in the supplement but not in models.dev"
-            );
-            assert!(supplement.get(provider, model).is_some());
-        }
-    }
-    assert!(supplement.get("anthropic", "no-such-model").is_none());
-    assert!(
-        supplement
-            .get("no-such-provider", "claude-sonnet-4-5")
-            .is_none()
-    );
-    for model in snap.providers["anthropic"].models.keys() {
+    for (id, model) in &snap.providers["anthropic"].models {
         assert!(
-            supplement
-                .get("anthropic", model)
-                .is_some_and(|f| f.adaptive_thinking.is_some()),
-            "anthropic/{model} has no adaptive_thinking entry"
+            Fields::from_kpmr(model).adaptive_thinking.is_some(),
+            "anthropic/{id} has no reasoning.adaptive_thinking"
         );
     }
-    assert!(Supplement::parse("[nope.x]\nadaptive_thinking = true").is_err());
-    assert!(Supplement::parse("[openai.x]\nadaptive_thinking = true").is_err());
-    assert!(Supplement::parse("[openai.x]\nthinking_binding = true").is_err());
-    assert!(Supplement::parse("[anthropic.x]\nunknown = 1").is_err());
+    let haiku = Fields::from_kpmr(snap.model("anthropic", "claude-haiku-5-5").unwrap());
+    assert_eq!(
+        (haiku.adaptive_thinking, haiku.thinking_binding),
+        (Some(true), Some(true))
+    );
+    let fable = Fields::from_kpmr(snap.model("anthropic", "claude-fable-5-1").unwrap());
+    assert_eq!(fable.forced_tool_choice, Some(false));
+    let mini = Fields::from_kpmr(snap.model("openai", "gpt-5.4-mini").unwrap());
+    assert_eq!(mini.egress_dialect, Some(DialectId::OpenAiResponses));
+    let cohere = Fields::from_kpmr(snap.model("cohere", "north-mini-code-1-0").unwrap());
+    assert_eq!(
+        cohere.efforts.as_deref(),
+        Some(&["none".to_owned(), "high".to_owned()][..])
+    );
 }
 
 #[test]
-fn overrides_win_then_models_dev_then_the_supplement() {
+fn from_kpmr_keeps_the_effort_levels_this_gateway_knows_and_derives_the_dialect_of_embeddings() {
+    let ids = crate::provider::known_ids();
+    let feed = catalogue(
+        r#"{"openai":{"id":"openai","models":{
+        "a":{"id":"a","reasoning":{"efforts":["low","galactic"],"adaptive_thinking":null,"thinking_binding":null},"capabilities":{"forced_tool_choice":false}},
+        "b":{"id":"b","kind":"embedding","gateway":{"egress_dialect":null}},
+        "c":{"id":"c","kind":"embedding","gateway":{"egress_dialect":"openai_responses"}}
+    }}}"#,
+    );
+    let parsed = kpmr::parse(&feed, &ids).unwrap();
+    assert!(parsed.skipped.is_empty(), "{:?}", parsed.skipped);
+    let fields = |id: &str| Fields::from_kpmr(parsed.catalogue.model("openai", id).unwrap());
+    let a = fields("a");
+    assert_eq!(a.efforts.as_deref(), Some(&["low".to_owned()][..]));
+    assert_eq!(a.forced_tool_choice, Some(false));
+    assert_eq!(a.egress_dialect, None);
+    assert_eq!(
+        fields("b").egress_dialect,
+        Some(DialectId::OpenAiEmbeddings)
+    );
+    assert_eq!(
+        fields("c").egress_dialect,
+        Some(DialectId::OpenAiResponses),
+        "KPMR's dialect wins over the one Kaeso derives"
+    );
+}
+
+#[test]
+fn overrides_win_over_kpmrs_values() {
     let mut e = entry("anthropic", "claude-haiku-4-5");
     let base = eff(&e);
     assert_eq!(base.fields.input_price, Some(dec!(1)));
@@ -148,20 +165,14 @@ fn delisted_models_keep_their_last_known_values() {
     last.id = "gone-model".into();
     e.last_known = Some(last);
     e.delisted = true;
-    let x = effective(&e, &snap, &Supplement::default(), &OrgProviders::default()).unwrap();
+    let x = effective(&e, &snap, &OrgProviders::default()).unwrap();
     assert_eq!(x.fields.input_price, Some(dec!(2.5)));
-    let bare = effective(
-        &entry("openai", "unknown"),
-        &snap,
-        &Supplement::default(),
-        &OrgProviders::default(),
-    )
-    .unwrap();
+    let bare = effective(&entry("openai", "unknown"), &snap, &OrgProviders::default()).unwrap();
     assert_eq!(bare.fields, Fields::default());
 }
 
 #[test]
-fn models_dev_marks_entries_deprecated_also_after_delisting() {
+fn kpmr_marks_entries_deprecated_also_after_delisting() {
     let snap = snapshot();
     assert!(entry("openai", "gpt-4").is_deprecated(&snap));
     assert!(!entry("anthropic", "claude-sonnet-4-5").is_deprecated(&snap));
@@ -733,7 +744,7 @@ fn mistral_models_speak_chat_completions_and_mistral_embed_embeds() {
 }
 
 #[test]
-fn vercel_models_speak_chat_completions_and_the_ones_models_dev_marks_as_embeddings_embed() {
+fn vercel_models_speak_chat_completions_and_the_ones_kpmr_marks_as_embeddings_embed() {
     let free = eff(&entry("vercel", "nvidia/nemotron-3.5-lightning-free"));
     assert_eq!(free.dialect, DialectId::OpenAiChat);
     assert_eq!(free.provider.chat().provider, "Vercel");
@@ -749,14 +760,15 @@ fn vercel_models_speak_chat_completions_and_the_ones_models_dev_marks_as_embeddi
     assert_eq!(eff(&sent_as).dialect, DialectId::AnthropicMessages);
 
     let ids = crate::provider::known_ids();
-    let feed = br#"{"anthropic":{"id":"anthropic","models":{"x-embed":{"id":"x-embed","type":"embedding"}}},
-        "openai":{"id":"openai","models":{"y-embed":{"id":"y-embed","type":"embedding"}}}}"#;
-    let parsed = models_dev::parse(feed, &ids).unwrap();
+    let feed = catalogue(
+        r#"{"anthropic":{"id":"anthropic","models":{"x-embed":{"id":"x-embed","kind":"embedding"}}},
+        "openai":{"id":"openai","models":{"y-embed":{"id":"y-embed","kind":"embedding"}}}}"#,
+    );
+    let parsed = kpmr::parse(&feed, &ids).unwrap();
     let dialect = |provider: &str, model: &str| {
         effective(
             &entry(provider, model),
-            &parsed.snapshot,
-            &Supplement::default(),
+            &parsed.catalogue,
             &OrgProviders::default(),
         )
         .unwrap()
@@ -1094,7 +1106,7 @@ fn linear_resolve<'a>(
     }
 }
 
-fn linear_shadows(name: &str, entries: &[Entry], snapshot: &models_dev::Snapshot) -> bool {
+fn linear_shadows(name: &str, entries: &[Entry], snapshot: &kpmr::Catalogue) -> bool {
     entries
         .iter()
         .any(|e| e.model_id == name || format!("{}/{}", e.provider, e.model_id) == name)
@@ -1168,7 +1180,7 @@ mod indexed {
                 at(catalogue.resolve(&name)),
                 at(linear_resolve(&name, catalogue.entries(), catalogue.aliases()))
             );
-            let empty = models_dev::Snapshot::default();
+            let empty = kpmr::Catalogue::default();
             prop_assert_eq!(
                 catalogue.shadows(&name, &empty),
                 linear_shadows(&name, catalogue.entries(), &empty)
@@ -1262,28 +1274,25 @@ fn a_custom_providers_model_resolves_only_in_its_organization_with_the_values_se
         "anthropic",
         DialectId::AnthropicMessages,
     )]);
-    let own = effective(&e, &snapshot(), &Supplement::embedded().unwrap(), &org).unwrap();
+    let own = effective(&e, &snapshot(), &org).unwrap();
     assert_eq!(own.provider.name(), "Internal proxy");
     assert_eq!(own.dialect, DialectId::AnthropicMessages);
     assert_eq!(own.fields.context_limit, Some(8192));
     assert_eq!(
         own.fields.adaptive_thinking, None,
-        "no supplement or models.dev value reaches a custom provider's model"
+        "no KPMR value reaches a custom provider's model"
     );
     assert_eq!(own.fields.output_limit, None);
 
     let mut vllm = entry("my-vllm", "llama-3.3-70b");
     vllm.custom = true;
     let org = OrgProviders::new(vec![custom_provider("my-vllm", DialectId::OpenAiChat)]);
-    let supplement = Supplement::embedded().unwrap();
     assert_eq!(
-        effective(&vllm, &snapshot(), &supplement, &org)
-            .unwrap()
-            .dialect,
+        effective(&vllm, &snapshot(), &org).unwrap().dialect,
         DialectId::OpenAiChat
     );
     assert!(
-        effective(&vllm, &snapshot(), &supplement, &OrgProviders::default()).is_none(),
+        effective(&vllm, &snapshot(), &OrgProviders::default()).is_none(),
         "another organization cannot resolve the provider"
     );
 }
@@ -1296,7 +1305,7 @@ fn a_custom_provider_counts_tokens_only_when_it_names_its_generation_dialect() {
     )]);
     let mut e = entry("my-proxy", "claude-x");
     e.custom = true;
-    let e = effective(&e, &snapshot(), &Supplement::embedded().unwrap(), &org).unwrap();
+    let e = effective(&e, &snapshot(), &org).unwrap();
     let mut count = Request::CountTokens(user(vec![Block::text("hi")]));
     let u = prepare(&mut count, DialectId::AnthropicMessages, &e).unwrap_err();
     assert_eq!(u.message, "The model `claude-x` cannot count tokens.");

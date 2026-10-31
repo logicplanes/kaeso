@@ -59,7 +59,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | `kaeso-bench` | The [gateway benchmark](../benchmark.md): the whole gateway in a process of its own, between real clients and the mock provider |
 | `kaeso-kpp`, `kaeso-codecs` | KPP's types and codecs ([KPP internals](../kpp/index.md)) |
 | `kpp-conformance` | The server behind the [SDK conformance suite](../testing.md#sdk-conformance) |
-| `xtask` | `cargo xtask models-dev` refreshes the model data, and `cargo xtask record` [records provider responses](../kpp/fixtures.md#recording-live-responses) |
+| `xtask` | `cargo xtask kpmr` refreshes the model data, and `cargo xtask record` [records provider responses](../kpp/fixtures.md#recording-live-responses) |
 
 Every crate takes its version, edition and lints from the root `Cargo.toml`. Only `kaeso-kpp` and `kaeso-codecs` are published to crates.io.
 
@@ -90,9 +90,9 @@ Tests check that every variable follows its key and maps back, and that variable
 
 ## Provider ids
 
-A provider id is lowercase letters and digits with single hyphens between them, `^[a-z0-9]+(-[a-z0-9]+)*$`. The rule lives in `ProviderId` and `ID_PATTERN` in `crates/kaeso-core/src/provider.rs`, and every id that enters the gateway goes through it. That covers configuration keys and variables, provider keys and catalogue models in the Platform API, the supplement and the models.dev import.
+A provider id is lowercase letters and digits with single hyphens between them, `^[a-z0-9]+(-[a-z0-9]+)*$`. The rule lives in `ProviderId` and `ID_PATTERN` in `crates/kaeso-core/src/provider.rs`, and every id that enters the gateway goes through it. That covers configuration keys and variables, provider keys and catalogue models in the Platform API, and the KPMR import.
 
-A compile-time check holds every id in `PROVIDERS` to the rule. The PostgreSQL CHECK constraints on the `provider` columns use the same pattern, which a store test compares. Another test checks every provider in the shipped models.dev snapshot.
+A compile-time check holds every id in `PROVIDERS` to the rule. The PostgreSQL CHECK constraints on the `provider` columns use the same pattern, which a store test compares. Another test checks every provider in the shipped KPMR snapshot.
 
 ## Custom providers
 
@@ -102,33 +102,28 @@ A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Compl
 
 ## Model data
 
-`crates/kaeso-core/data` holds the model data each release ships:
+`crates/kaeso-core/data/kpmr.json` is a snapshot of the [KPMR](../../concepts/kpmr.md) catalogue in format 1, for the providers Kaeso calls, so a fresh install works without network access. Its `provider_ids` list every provider KPMR knows, which a custom provider can't take. The folder's `README.md` records the snapshot's revision, when KPMR generated it and its SHA-256.
 
-| File | Holds |
-| --- | --- |
-| `models-dev.json` | A snapshot of [models.dev](https://models.dev), filtered to the providers Kaeso calls, so a fresh install works without network access. The folder's `README.md` records when it was fetched and its SHA-256 |
-| `supplement.toml` | Fields models.dev doesn't have, each entry with its source in the folder's `README.md` |
-| `models-dev-providers.txt` | Every provider id on models.dev, which a custom provider can't take |
+`kaeso_core::kpmr` reads a catalogue: it checks the format, keeps the providers Kaeso calls, skips a model that doesn't parse or prices in another unit, and verifies the Ed25519 signature against the trusted keys. `Fields::from_kpmr` turns a model into catalogue fields. Besides names, prices, limits and capabilities, KPMR gives these:
 
-The supplement holds these fields:
+| Field | From | Meaning |
+| --- | --- | --- |
+| `adaptive_thinking` | `reasoning.adaptive_thinking` | Anthropic models: whether the model accepts `thinking: {type: "adaptive"}`. With `false`, KPP turns an effort from another format into a thinking budget |
+| `thinking_binding` | `reasoning.thinking_binding` | `true` for an Anthropic model that checks a replayed thinking block against the conversation that produced it (preserved thinking, such as Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5). For such a model, a request from another format that replays Claude's thinking asks Anthropic to drop a block whose conversation changed ([Anthropic Messages](../kpp/anthropic-messages.md)). It takes effect only with adaptive thinking, which `block_binding` needs. Absent means it doesn't check |
+| `forced_tool_choice` | `capabilities.forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
+| `efforts` | `reasoning.efforts` | The effort levels the model supports; levels this version doesn't know are left out |
+| `egress_dialect` | `gateway.egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI). A model of kind `embedding` is sent as Embeddings when its provider has that format |
+| `cache_write_1h_price` | `pricing.cache_write_1h` | The price of a one-hour cache write; absent means the cache write price |
 
-| Field | Meaning |
-| --- | --- |
-| `adaptive_thinking` | Anthropic models: whether the model accepts `thinking: {type: "adaptive"}`. With `false`, KPP turns an effort from another format into a thinking budget |
-| `forced_tool_choice` | `false` for a model that refuses a forced tool choice (Anthropic's `tool_choice` `any` or `tool`), so the gateway refuses `required`, `any` or a named tool before it calls the provider. Absent means the model takes one |
-| `thinking_binding` | `true` for an Anthropic model that checks a replayed thinking block against the conversation that produced it (preserved thinking: Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and Haiku 5.5 in the supplement). For such a model, a request from another format that replays Claude's thinking asks Anthropic to drop a block whose conversation changed ([Anthropic Messages](../kpp/anthropic-messages.md)). It takes effect only with adaptive thinking, which `block_binding` needs. Absent means it doesn't check |
-| `efforts` | The effort levels the model supports, used when models.dev lists none |
-| `egress_dialect` | The format Kaeso sends: one of the provider's dialects, by default its generation dialect (`openai_responses` for OpenAI) |
-
-A catalogue entry's value is its override, else models.dev, else the supplement. A model that models.dev gives `type: "embedding"` is sent as Embeddings when its provider has that format, so Vercel AI Gateway's embedding models need no supplement entry. Unless `KAESO_MODELS_DEV_SYNC` is `false`, the gateway syncs models.dev every 24 hours by default (`KAESO_MODELS_DEV_INTERVAL`). It keeps the same providers as the snapshot and stores the result in PostgreSQL. At startup, the newer of the stored and the built-in snapshot wins. Data stored by a release with fewer providers or model fields gets the missing providers from the built-in snapshot and is synced again right away, even when models.dev hasn't changed.
+A catalogue entry's value is its override, else KPMR's. Unless `KAESO_KPMR_SYNC` is `false`, the `kpmr_sync` job checks every 5 minutes whether the gateway is due to ask KPMR again, by `KAESO_KPMR_INTERVAL` or the catalogue's `refresh_seconds`. It sends the stored ETag, takes `304` as unchanged, refuses a catalogue no trusted key signed, and stores the result with its ETag in PostgreSQL. Other instances reload it through Valkey. At startup, the newer of the stored and the built-in snapshot wins. Data stored by a release with fewer providers or fields gets the missing providers from the built-in snapshot and is fetched again right away, even when KPMR hasn't changed.
 
 Refresh the snapshot before a release:
 
 ```bash
-cargo xtask models-dev
+cargo xtask kpmr
 ```
 
-The task downloads `https://models.dev/api.json`, filters it and checks that the gateway can read the result. `--url` or `MODELS_DEV_URL` changes the address. It then writes the snapshot, the table in `crates/kaeso-core/data/README.md` and the fetch time in `crates/kaeso-core/src/models_dev.rs`, and tests check that the three agree.
+The task downloads `https://kpmr.kaeso.app/v1/catalogue` for the providers Kaeso calls, verifies its signature against the built-in key and checks that the gateway reads every model. `--url` or `KPMR_URL` changes the address, and `--public-keys` or `KPMR_PUBLIC_KEYS` trusts more keys. It then writes the catalogue exactly as KPMR sent it and the table in `crates/kaeso-core/data/README.md`, and a test checks that the two agree.
 
 ## Usage and request logs
 

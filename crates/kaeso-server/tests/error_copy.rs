@@ -347,7 +347,7 @@ fn the_scan_finds_copy_and_skips_the_rest() {
                  Second line {}.",
                 r#"Raw "quoted" text."#
             ));
-            ApiError::invalid("model_id", format!("models.dev lists `{}`.", m));
+            ApiError::invalid("model_id", format!("KPMR lists `{}`.", m));
             ApiError::internal("lowercase cause, never sent")
         }
         #[cfg(test)]
@@ -362,7 +362,7 @@ fn the_scan_finds_copy_and_skips_the_rest() {
             "The code is not valid.",
             "First line. Second line {}.",
             "Raw \"quoted\" text.",
-            "models.dev lists `{}`.",
+            "KPMR lists `{}`.",
         ]
     );
 }

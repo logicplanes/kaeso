@@ -20,7 +20,7 @@ Rules for the Rust workspace: the gateway, the updater and KPP. The root [`AGENT
 | `kaeso-kpp`       | KPP's types, `validate()` and `required_capabilities()`. No codec logic, no I/O. Published on crates.io.                                                                                  |
 | `kaeso-codecs`    | One sans-IO codec per dialect, plus `dispatch`, `cross`, `continuity`, `keepalive`, `sse` and `testing`; the fixtures in `crates/kaeso-codecs/fixtures`. Published on crates.io.          |
 | `kpp-conformance` | The server the SDK conformance suite in `e2e/conformance` runs against. Never published.                                                                                                  |
-| `xtask`           | `cargo xtask models-dev` refreshes the models.dev snapshot; `cargo xtask record` records live responses from any provider in `PROVIDERS` with keys from the environment. Never runs in CI. |
+| `xtask`           | `cargo xtask kpmr` refreshes the KPMR snapshot; `cargo xtask record` records live responses from any provider in `PROVIDERS` with keys from the environment. Never runs in CI. |
 
 The request path, the crates and every design decision are in [gateway architecture](https://docs.kaeso.app/development/architecture/gateway) and [KPP internals](https://docs.kaeso.app/development/kpp).
 
@@ -69,5 +69,5 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 - **No panics in library code.** No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, panicking indexing or `unsafe` outside tests and the binary's startup (workspace lints, `#![forbid(unsafe_code)]`). Fix the code instead of adding `#[allow]`.
 - **Use the property and snapshot tools.** `kaeso_codecs::testing` for JSON and SSE comparisons, `insta` for snapshots, `proptest` for properties; a case a property test finds becomes an explicit regression test.
 - **Review snapshot diffs** and update what depends on them: rights and roles (`crates/kaeso-core/src/rights/snapshots/`) and settings (`crates/kaeso-server/tests/snapshots/`) change their documentation pages; cross-dialect outcomes (`crates/kaeso-codecs/tests/snapshots/`, `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`) change the mapping pages; emails live in `crates/kaeso-mail/src/snapshots/`.
-- **Refresh the model data** with `cargo xtask models-dev`; never edit `crates/kaeso-core/data/models-dev.json` by hand.
+- **Refresh the model data** with `cargo xtask kpmr`; never edit `crates/kaeso-core/data/kpmr.json` by hand.
 - Tests that need databases always fail, never skip, when the development stack is down.

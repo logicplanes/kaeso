@@ -64,7 +64,7 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 
 While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most, at the model's prices. That is its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own). A stream holds it for as long as it runs.
 
-The input counts at the highest of the model's input and cache prices. When a request asks for Anthropic's one-hour cache, that includes the one-hour cache write price, twice the input price.
+The input counts at the highest of the model's input and cache prices. When a request asks for Anthropic's one-hour cache, that includes the one-hour cache write price ([models and aliases](models-and-aliases.md#change-a-models-values)).
 
 SpaceX's limit leaves reasoning out, so a request to a SpaceX reasoning model holds the model's own output limit. A ChatGPT account can't send an output limit, so a request through one holds the model's own too. Under a budget, a request holds at least what an average request cost in the period, or in the 30 days before.
 

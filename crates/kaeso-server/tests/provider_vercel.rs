@@ -384,7 +384,7 @@ async fn token_counts_for_vercel_models_are_refused_before_anything_is_sent() {
 }
 
 #[tokio::test]
-async fn vercels_embedding_models_answer_embeddings_from_their_models_dev_type() {
+async fn vercels_embedding_models_answer_embeddings_from_their_kpmr_kind() {
     let env = env().await;
     let r = call(
         &env,

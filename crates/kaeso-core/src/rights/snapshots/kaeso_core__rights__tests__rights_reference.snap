@@ -213,9 +213,8 @@ expression: rights_reference()
 
 | Right | Category | Name | Allows | Needs (beyond `instance.system.view`) | Recent sign-in | Kaeso Cloud only |
 |---|---|---|---|---|:-:|:-:|
-| `instance.system.view` | Instance | View the system | See the system, the instance settings, model sources and the update status. |  |  |  |
+| `instance.system.view` | Instance | View the system | See the system and its model data, the instance settings and the update status. |  |  |  |
 | `instance.settings.manage` ⚠ | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |  |  |
-| `instance.model_sources.manage` | Instance | Manage model sources | Sync the model data from models.dev. |  |  |  |
 | `instance.updates.manage` ⚠ | Instance | Manage updates | Check for updates and change the update settings. |  |  |  |
 | `instance.updates.apply` ⚠ | Instance | Apply updates | Install a new version of Kaeso. | `instance.updates.manage` |  |  |
 | `instance.users.view` | Instance | View users | See every account of the instance and its organizations. |  |  |  |
@@ -337,7 +336,6 @@ expression: rights_reference()
 |---|:-:|:-:|:-:|:-:|
 | `instance.system.view` |  | ✓ | ✓ | ✓ |
 | `instance.settings.manage` |  |  | ✓ | ✓ |
-| `instance.model_sources.manage` |  |  | ✓ | ✓ |
 | `instance.updates.manage` |  |  | ✓ | ✓ |
 | `instance.updates.apply` |  |  |  | ✓ |
 | `instance.users.view` |  | ✓ | ✓ | ✓ |

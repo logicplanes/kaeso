@@ -5,7 +5,6 @@ import type {
   KeyView,
   Me,
   MemberView,
-  ModelsDevStatus,
   SessionListItem,
   ReleaseView,
   SettingsView,
@@ -60,20 +59,16 @@ export function system(overrides: Partial<SystemView> = {}): SystemView {
     valkey: "ok",
     log_buffer: { rows: 12, dropped: 0 },
     storage: { postgres_bytes: 2_097_152, clickhouse_bytes_on_disk: 10_485_760, request_log_rows: 48_210 },
-    ...overrides,
-  };
-}
-
-export function modelsDev(overrides: Partial<ModelsDevStatus> = {}): ModelsDevStatus {
-  return {
-    fetched_at: NOW,
-    interval_seconds: 3600,
-    last_attempt_at: NOW,
-    last_error: null,
-    model_count: 412,
-    source: "remote",
-    sync_enabled: true,
-    url: "https://models.dev/api.json",
+    model_data: {
+      sync_enabled: true,
+      url: "https://kpmr.kaeso.app/v1/catalogue",
+      built_in: false,
+      revision: "2026-10-31T20:36:31Z-5b06710083a3",
+      fetched_at: NOW,
+      model_count: 1060,
+      last_attempt_at: NOW,
+      last_error: null,
+    },
     ...overrides,
   };
 }

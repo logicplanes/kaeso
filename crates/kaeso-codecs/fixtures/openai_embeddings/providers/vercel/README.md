@@ -1,6 +1,6 @@
 # Fixtures: Vercel (`vercel`) on `openai_embeddings`
 
-Vercel AI Gateway's Embeddings API, `POST https://ai-gateway.vercel.sh/v1/embeddings`, with `Authorization: Bearer`. Vercel models that models.dev gives `type: "embedding"` use it.
+Vercel AI Gateway's Embeddings API, `POST https://ai-gateway.vercel.sh/v1/embeddings`, with `Authorization: Bearer`. Vercel models that KPMR gives `kind: "embedding"` use it.
 
 ## Sources (read 2026-10-29)
 

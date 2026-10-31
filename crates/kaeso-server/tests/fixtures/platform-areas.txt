@@ -8,7 +8,6 @@ me | Account | me | |
 instance | Users | instance/users | |
 instance | Organizations | instance/orgs, instance/orgs/{org}/members, instance/orgs/{org}/projects, instance/orgs/{org}/usage, instance/orgs/{org}/owner, instance/orgs/{org}/restore | |
 instance | Settings | instance/settings, instance/settings/test-email | |
-instance | Models | instance/models-dev, instance/models-dev/sync | |
 instance | System | instance/system | |
 instance | Audit | instance/audit-log | |
 org | Overview | orgs/{org}/usage, orgs/{org}/usage/span | usage.org.view, costs.org.view |

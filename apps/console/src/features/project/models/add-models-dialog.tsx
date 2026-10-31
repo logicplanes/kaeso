@@ -132,7 +132,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     async (modelId: string) => {
       try {
         const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId));
-        if (!preview) return toast.error(t("models.noLongerOnModelsDev", "models.dev doesn't list {model} any more.", { model: modelId }));
+        if (!preview) return toast.error(t("models.noLongerInKpmr", "KPMR doesn't list {model} any more.", { model: modelId }));
         setReview({ preview, draft: draftFrom(previewFields(preview)) });
         setView("review");
       } catch (e) {
@@ -291,9 +291,9 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     ),
   };
 
-  const modelsDevLayer = {
+  const kpmrLayer = {
     title: t("models.addModels", "Add models"),
-    description: t("models.addHint", "Search models.dev; prices, limits and capabilities come along, and you can override them."),
+    description: t("models.addHint", "Search KPMR; prices, limits and capabilities come along, and you can override them."),
     toolbar: (
       <div className="flex w-full flex-wrap items-center gap-8 sm:flex-nowrap">
         {picker}
@@ -311,12 +311,12 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               description={
                 search
                   ? t("models.noneFoundHint", "Try another name, or include deprecated models.")
-                  : t("models.noneListed", "models.dev lists no {provider} models.", { provider: name })
+                  : t("models.noneListed", "KPMR lists no {provider} models.", { provider: name })
               }
             />
           ) : (
             <DataTable
-              aria-label={t("models.onModelsDev", "Models on models.dev")}
+              aria-label={t("models.inKpmr", "Models in KPMR")}
               data={list}
               columns={columns}
               getRowId={(h) => h.model_id}
@@ -372,11 +372,11 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     ),
   };
 
-  const searchLayer = ownProvider ? ownLayer : modelsDevLayer;
+  const searchLayer = ownProvider ? ownLayer : kpmrLayer;
 
   const reviewLayer = {
     title: review ? t("models.reviewModel", "Review {model}", { model: review.preview.model_id }) : t("models.reviewValues", "Review values"),
-    description: t("models.reviewHint", "Values from models.dev, completed by Kaeso; what you change becomes an override for this project."),
+    description: t("models.reviewHint", "Values from KPMR; what you change becomes an override for this project."),
     content: review ? (
       <div className="flex flex-col gap-16">
         <ModelForm value={review.draft} onChange={(draft) => setReview({ ...review, draft })} dialects={dialects} />
@@ -399,7 +399,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     title: ownProvider ? t("models.addOwn", "Add a {provider} model", { provider: name }) : t("models.addCustom", "Add a custom model"),
     description: ownProvider
       ? t("models.addOwnModelHint", "Give the model's id as {provider} knows it, then its inputs, limits, prices and format.", { provider: name })
-      : t("models.addCustomHint", "Give the provider's model id; if models.dev lists it, its values fill in, otherwise enter them."),
+      : t("models.addCustomHint", "Give the provider's model id; if KPMR lists it, its values fill in, otherwise enter them."),
     content: (
       <div className="flex flex-col gap-16">
         {ownProvider ? (
@@ -426,7 +426,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
         {custom.checked &&
           (ownProvider && custom.found ? (
             <Banner tone="info">
-              {t("models.ownFound", "Kaeso filled in what {provider} and models.dev say about {model}; check it and set its prices.", {
+              {t("models.ownFound", "Kaeso filled in what {provider} and KPMR say about {model}; check it and set its prices.", {
                 provider: name,
                 model: custom.modelId,
               })}
@@ -442,10 +442,10 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
               )}
             </Banner>
           ) : custom.preview ? (
-            <Banner tone="info">{t("models.customListed", "models.dev lists {model}: its values are filled in.", { model: custom.preview.model_id })}</Banner>
+            <Banner tone="info">{t("models.customListed", "KPMR lists {model}: its values are filled in.", { model: custom.preview.model_id })}</Banner>
           ) : (
             <Banner tone="neutral">
-              {t("models.customUnlisted", "models.dev doesn't list it. Inputs, outputs, limits, input and output prices and the format are required.")}
+              {t("models.customUnlisted", "KPMR doesn't list it. Inputs, outputs, limits, input and output prices and the format are required.")}
             </Banner>
           ))}
         {custom.checked && (
@@ -472,7 +472,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
 
   const allLayer = {
     title: t("models.addAllCurrent", "Add every current {provider} model", { provider: name }),
-    description: t("models.addAllCurrentHint", "Adds each current {provider} text or embedding model from models.dev and skips ones already here.", {
+    description: t("models.addAllCurrentHint", "Adds each current {provider} text or embedding model from KPMR and skips ones already here.", {
       provider: name,
     }),
     content: (
@@ -498,7 +498,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </Text>
         )}
         <Text variant="small" tone="secondary">
-          {t("models.addAllCurrentLater", "Models that models.dev adds later aren't added here on their own.")}
+          {t("models.addAllCurrentLater", "Models that KPMR adds later aren't added here on their own.")}
         </Text>
       </div>
     ),

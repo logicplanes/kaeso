@@ -58,7 +58,7 @@ curl -s "$ORG_URL/projects/$PROJECT/models" \
   -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}'
 ```
 
-Kaeso übernimmt Preise, Limits und Fähigkeiten des Modells von models.dev, und die Antwort zeigt sie.
+Kaeso übernimmt Preise, Limits und Fähigkeiten des Modells von [KPMR](../concepts/kpmr.md), und die Antwort zeigt sie.
 
 ## Schlüssel der App erstellen
 

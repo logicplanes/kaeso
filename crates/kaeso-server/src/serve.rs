@@ -113,7 +113,7 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
         dns: overrides.dns,
         accounts: overrides.accounts,
     });
-    crate::services::models_dev::init(&state).await?;
+    crate::services::kpmr::init(&state).await?;
     Ok(state)
 }
 
@@ -213,7 +213,7 @@ pub async fn run(
     signal: impl Future<Output = ()> + Send + 'static,
 ) -> Result<(), ServeError> {
     let shutdown = CancellationToken::new();
-    crate::services::models_dev::spawn_reloader(&state);
+    crate::services::kpmr::spawn_reloader(&state);
     spawn_clickhouse_migrations(state.clone(), shutdown.clone());
     crate::jobs::spawn_all(&state, &shutdown);
     spawn_usage_flusher(state.clone(), shutdown.clone());

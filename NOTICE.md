@@ -10,7 +10,7 @@ Some providers' terms don't permit their logos in an interface like Kaeso's with
 
 ## Data
 
-- `crates/kaeso-core/data/models-dev.json`: a snapshot of [models.dev](https://models.dev) (`https://models.dev/api.json`), MIT licensed, © models.dev contributors, source at https://github.com/anomalyco/models.dev. Its provenance and fetch date are in [`crates/kaeso-core/data/README.md`](crates/kaeso-core/data/README.md).
+- `crates/kaeso-core/data/kpmr.json`: a snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provider & Model Registry, which is derived from [models.dev](https://models.dev) (`https://models.dev/api.json`), MIT licensed, © models.dev contributors, source at https://github.com/anomalyco/models.dev. Its provenance and revision are in [`crates/kaeso-core/data/README.md`](crates/kaeso-core/data/README.md).
 
 ## Fonts and icons
 

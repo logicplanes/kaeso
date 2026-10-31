@@ -636,7 +636,7 @@ pub struct Caches {
     pub project_limits: TieredCache<Vec<kaeso_core::limits::Limit>>,
     pub log_settings: TieredCache<crate::services::logs::Cached>,
     pub response_cache: TieredCache<crate::services::response_cache::Cached>,
-    pub models_dev_changed: Arc<tokio::sync::Notify>,
+    pub kpmr_changed: Arc<tokio::sync::Notify>,
     pub touched: Cache<uuid::Uuid, ()>,
     pub unknown_keys: Cache<String, ()>,
     pub key_blocks: Cache<String, time::OffsetDateTime>,
@@ -678,7 +678,7 @@ impl Caches {
                 subscription.clone(),
                 mac.clone(),
             ),
-            models_dev_changed: Arc::new(tokio::sync::Notify::new()),
+            kpmr_changed: Arc::new(tokio::sync::Notify::new()),
             touched: Cache::builder()
                 .max_capacity(1_000_000)
                 .time_to_live(TOUCH_EVERY)
@@ -717,7 +717,7 @@ impl Caches {
             Invalidation::Connected => {
                 self.clear_subscribed();
                 self.subscription.set(true);
-                self.models_dev_changed.notify_one();
+                self.kpmr_changed.notify_one();
             }
             Invalidation::Disconnected => {
                 self.subscription.set(false);
@@ -732,7 +732,7 @@ impl Caches {
                 Some(("plim", key)) => self.project_limits.drop_local(key).await,
                 Some(("lcfg", key)) => self.log_settings.drop_local(key).await,
                 Some(("rcfg", key)) => self.response_cache.drop_local(key).await,
-                Some(("mdev", _)) => self.models_dev_changed.notify_one(),
+                Some(("kpmr", _)) => self.kpmr_changed.notify_one(),
                 _ => self.clear_local(),
             },
         }

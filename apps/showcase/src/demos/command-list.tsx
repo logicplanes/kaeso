@@ -117,7 +117,7 @@ export function States() {
               height="inline"
               aria-label="Models"
               loading
-              groups={[{ id: "more", label: "models.dev", items: [], loading: true }, ...groups.slice(0, 1)]}
+              groups={[{ id: "more", label: "KPMR", items: [], loading: true }, ...groups.slice(0, 1)]}
             />
           </div>
         </div>

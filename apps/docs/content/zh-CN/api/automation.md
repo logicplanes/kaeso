@@ -58,7 +58,7 @@ curl -s "$ORG_URL/projects/$PROJECT/models" \
   -d '{"provider": "anthropic", "model_id": "claude-haiku-4-5"}'
 ```
 
-Kaeso 从 models.dev 获取模型的价格、限制和能力，并在响应中显示。
+Kaeso 从 [KPMR](../concepts/kpmr.md) 获取模型的价格、限制和能力，并在响应中显示。
 
 ## 创建应用的密钥
 

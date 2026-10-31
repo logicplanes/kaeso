@@ -252,9 +252,8 @@ Every route under `instance/*` checks one of these rights. An instance admin's c
 
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
-| `instance.system.view` | View the system | See the system, the instance settings, model sources and the update status. |  |
+| `instance.system.view` | View the system | See the system and its model data, the instance settings and the update status. |  |
 | `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. | sensitive |
-| `instance.model_sources.manage` | Manage model sources | Sync the model data from models.dev. |  |
 | `instance.updates.manage` | Manage updates | Check for updates and change the update settings. | sensitive |
 | `instance.updates.apply` | Apply updates | Install a new version of Kaeso. | sensitive; needs `instance.updates.manage` |
 | `instance.users.view` | View users | See every account of the instance and its organizations. |  |
@@ -297,7 +296,7 @@ Builder is the default. The instance preset applies only to instance admins:
 | --- | --- |
 | None | None |
 | Read | `instance.system.view`, `instance.users.view`, `instance.orgs.view`, `instance.audit_log.view` |
-| Configure | Read's, and `instance.settings.manage`, `instance.model_sources.manage`, `instance.updates.manage` |
+| Configure | Read's, and `instance.settings.manage`, `instance.updates.manage` |
 | Admin | All instance rights |
 
 ### Effective rights

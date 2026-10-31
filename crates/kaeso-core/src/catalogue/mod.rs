@@ -1,21 +1,16 @@
 pub mod capability;
 pub mod resolve;
 
-use std::collections::BTreeMap;
-
 use kaeso_kpp::DialectId;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::models_dev::{self, price};
-use crate::provider;
+use crate::kpmr::{self, price};
 use crate::providers::{OrgProviders, ProviderRef};
 
 pub const MODALITIES: &[&str] = &["text", "image", "pdf", "audio", "video"];
 
 pub const EFFORTS: &[&str] = &["none", "minimal", "low", "medium", "high", "xhigh", "max"];
-
-pub const SUPPLEMENT: &str = include_str!("../../data/supplement.toml");
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -24,8 +19,8 @@ pub const SUPPLEMENT: &str = include_str!("../../data/supplement.toml");
     feature = "openapi",
     schema(
         description = "The fields of a catalogue entry. Every field is optional: an override\n\
-    sets only what it changes, and the effective entry is the merge of the\n\
-    override, models.dev and the supplement, in that order."
+    sets only what it changes, and the effective entry is the override merged\n\
+    over KPMR's values."
     )
 )]
 pub struct Fields {
@@ -88,6 +83,15 @@ pub struct Fields {
     )]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
     pub cache_write_price: Option<Decimal>,
+    #[doc = "USD per million cache-write tokens kept for an hour; absent means the\n\
+        cache-write price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>))]
+    pub cache_write_1h_price: Option<Decimal>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
         `openai_chat` or `openai_embeddings`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -136,6 +140,7 @@ macro_rules! each_field {
             output_price,
             cache_read_price,
             cache_write_price,
+            cache_write_1h_price,
             egress_dialect,
             adaptive_thinking,
             thinking_binding,
@@ -161,6 +166,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "output_price",
     "cache_read_price",
     "cache_write_price",
+    "cache_write_1h_price",
     "egress_dialect",
     "adaptive_thinking",
     "thinking_binding",
@@ -196,29 +202,38 @@ impl Fields {
         names
     }
 
-    pub fn from_models_dev(m: &models_dev::Model) -> Fields {
-        let cost = m.cost.clone().unwrap_or_default();
-        let limit = m.limit.clone().unwrap_or_default();
+    pub fn from_kpmr(m: &kpmr::Model) -> Fields {
+        let pricing = m.pricing.clone().unwrap_or_default();
+        let limits = m.limits.clone().unwrap_or_default();
+        let capabilities = m.capabilities.clone().unwrap_or_default();
+        let reasoning = m.reasoning.clone().unwrap_or_default();
         Fields {
             display_name: m.name.clone(),
             input_modalities: m.modalities.as_ref().map(|x| x.input.clone()),
             output_modalities: m.modalities.as_ref().map(|x| x.output.clone()),
-            context_limit: limit.context,
-            output_limit: limit.output,
-            reasoning: m.reasoning,
-            tool_call: m.tool_call,
-            structured_output: m.structured_output,
-            temperature: m.temperature,
-            input_price: cost.input,
-            output_price: cost.output,
-            cache_read_price: cost.cache_read,
-            cache_write_price: cost.cache_write,
-            egress_dialect: (m.kind.as_deref() == Some("embedding"))
-                .then_some(DialectId::OpenAiEmbeddings),
-            adaptive_thinking: None,
-            thinking_binding: None,
-            forced_tool_choice: None,
-            efforts: m.efforts(),
+            context_limit: limits.context,
+            output_limit: limits.output,
+            reasoning: capabilities.reasoning,
+            tool_call: capabilities.tool_call,
+            structured_output: capabilities.structured_output,
+            temperature: capabilities.temperature,
+            input_price: pricing.input,
+            output_price: pricing.output,
+            cache_read_price: pricing.cache_read,
+            cache_write_price: pricing.cache_write,
+            cache_write_1h_price: pricing.cache_write_1h,
+            egress_dialect:
+                m.egress_dialect()
+                    .or((m.kind.as_deref() == Some("embedding"))
+                        .then_some(DialectId::OpenAiEmbeddings)),
+            adaptive_thinking: reasoning.adaptive_thinking,
+            thinking_binding: reasoning.thinking_binding,
+            forced_tool_choice: capabilities.forced_tool_choice,
+            efforts: reasoning.efforts.map(|e| {
+                e.into_iter()
+                    .filter(|v| EFFORTS.contains(&v.as_str()))
+                    .collect()
+            }),
             timeout_seconds: None,
             release_date: m.release_date.clone(),
         }
@@ -299,6 +314,7 @@ impl Fields {
             ("output_price", self.output_price),
             ("cache_read_price", self.cache_read_price),
             ("cache_write_price", self.cache_write_price),
+            ("cache_write_1h_price", self.cache_write_1h_price),
         ] {
             if v.is_some_and(|p| p.is_sign_negative() || p > max_price || p.scale() > 9) {
                 return Err(FieldError::new(
@@ -417,59 +433,6 @@ impl FieldError {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Supplement {
-    models: BTreeMap<String, BTreeMap<String, Fields>>,
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct SupplementEntry {
-    adaptive_thinking: Option<bool>,
-    thinking_binding: Option<bool>,
-    forced_tool_choice: Option<bool>,
-    efforts: Option<Vec<String>>,
-    egress_dialect: Option<DialectId>,
-}
-
-impl Supplement {
-    pub fn parse(text: &str) -> Result<Supplement, String> {
-        let doc: BTreeMap<String, BTreeMap<String, SupplementEntry>> =
-            toml::from_str(text).map_err(|e| e.to_string())?;
-        let mut models: BTreeMap<String, BTreeMap<String, Fields>> = BTreeMap::new();
-        for (provider_id, entries) in doc {
-            let provider = provider::provider(&provider_id)
-                .ok_or_else(|| format!("unknown provider `{provider_id}`"))?;
-            for (model, e) in entries {
-                let fields = Fields {
-                    adaptive_thinking: e.adaptive_thinking,
-                    thinking_binding: e.thinking_binding,
-                    forced_tool_choice: e.forced_tool_choice,
-                    efforts: e.efforts,
-                    egress_dialect: e.egress_dialect,
-                    ..Fields::default()
-                };
-                fields
-                    .validate(&ProviderRef::BuiltIn(provider))
-                    .map_err(|err| format!("{provider_id}.{model}: {err}"))?;
-                models
-                    .entry(provider_id.clone())
-                    .or_default()
-                    .insert(model, fields);
-            }
-        }
-        Ok(Supplement { models })
-    }
-
-    pub fn embedded() -> Result<Supplement, String> {
-        Supplement::parse(SUPPLEMENT)
-    }
-
-    pub fn get(&self, provider: &str, model: &str) -> Option<&Fields> {
-        self.models.get(provider)?.get(model)
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Availability {
@@ -502,7 +465,7 @@ pub struct Entry {
     pub overrides: Fields,
     pub custom: bool,
     pub delisted: bool,
-    pub last_known: Option<models_dev::Model>,
+    pub last_known: Option<kpmr::Model>,
     #[serde(default)]
     pub availability: Option<Availability>,
     #[serde(default)]
@@ -514,11 +477,11 @@ impl Entry {
         self.availability == Some(Availability::Unavailable)
     }
 
-    pub fn is_deprecated(&self, snapshot: &models_dev::Snapshot) -> bool {
+    pub fn is_deprecated(&self, snapshot: &kpmr::Catalogue) -> bool {
         snapshot
             .model(&self.provider, &self.model_id)
             .or(self.last_known.as_ref())
-            .is_some_and(models_dev::Model::is_deprecated)
+            .is_some_and(kpmr::Model::is_deprecated)
     }
 }
 
@@ -553,8 +516,7 @@ impl Effective {
 
 pub fn effective(
     entry: &Entry,
-    snapshot: &models_dev::Snapshot,
-    supplement: &Supplement,
+    snapshot: &kpmr::Catalogue,
     providers: &OrgProviders,
 ) -> Option<Effective> {
     let provider = providers.get(&entry.provider)?;
@@ -564,16 +526,12 @@ pub fn effective(
         let mut upstream = snapshot
             .model(&entry.provider, &entry.model_id)
             .or(entry.last_known.as_ref())
-            .map(Fields::from_models_dev)
+            .map(Fields::from_kpmr)
             .unwrap_or_default();
         upstream.egress_dialect = upstream
             .egress_dialect
             .filter(|d| provider.dialects().contains(d));
-        let supplemental = supplement
-            .get(&entry.provider, &entry.model_id)
-            .cloned()
-            .unwrap_or_default();
-        entry.overrides.clone().over(&upstream).over(&supplemental)
+        entry.overrides.clone().over(&upstream)
     };
     let dialect = fields.egress_dialect.unwrap_or(provider.generation());
     Some(Effective {
@@ -585,15 +543,8 @@ pub fn effective(
     })
 }
 
-pub fn preview(
-    provider: &str,
-    model: &str,
-    snapshot: &models_dev::Snapshot,
-    supplement: &Supplement,
-) -> Option<Fields> {
-    let m = snapshot.model(provider, model)?;
-    let supplemental = supplement.get(provider, model).cloned().unwrap_or_default();
-    Some(Fields::from_models_dev(m).over(&supplemental))
+pub fn preview(provider: &str, model: &str, snapshot: &kpmr::Catalogue) -> Option<Fields> {
+    snapshot.model(provider, model).map(Fields::from_kpmr)
 }
 
 #[cfg(test)]

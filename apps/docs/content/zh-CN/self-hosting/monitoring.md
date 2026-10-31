@@ -36,7 +36,7 @@ services:
 
 | 指标 | 关注点 |
 | --- | --- |
-| `kaeso_requests_total{surface, route, status, provider, model}` | `surface="model_api"` 上 `status=~"5.."` 的增长。没有 models.dev 数据的模型，`model` 为 `custom` |
+| `kaeso_requests_total{surface, route, status, provider, model}` | `surface="model_api"` 上 `status=~"5.."` 的增长。KPMR 未收录的模型，`model` 为 `custom` |
 | `kaeso_request_duration_seconds{surface, route}`、`kaeso_time_to_first_byte_seconds{provider}` | 各路由和各服务商的 99 分位数变化 |
 | `kaeso_gateway_overhead_seconds{provider}` | Kaeso 调用服务商之前自身花费的时间，不含请求上传：校验密钥、转换格式和检查限额。分桶从 0.1 ms 开始。如果 `kaeso_time_to_first_byte_seconds` 没有同样上升，多出的耗时来自 Kaeso，而不是服务商 |
 | `kaeso_request_upload_seconds{provider}` | 应用发送请求体所用的时间。它随提示词的大小和应用的网络连接增长；这里的上升来自应用或网络，而不是 Kaeso |

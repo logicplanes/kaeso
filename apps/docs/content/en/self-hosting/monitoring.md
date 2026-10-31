@@ -36,7 +36,7 @@ services:
 
 | Metric | Watch for |
 | --- | --- |
-| `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models without models.dev data |
+| `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models KPMR doesn't list |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Changes in the 99th percentile per route and per provider |
 | `kaeso_gateway_overhead_seconds{provider}` | Kaeso's own time before it calls the provider, without the request upload: checking the key, translating and checking limits. Its buckets start at 0.1 ms. A rise that `kaeso_time_to_first_byte_seconds` doesn't show is Kaeso's, not the provider's |
 | `kaeso_request_upload_seconds{provider}` | The time apps take to send their request bodies. It grows with the size of the prompt and the app's connection; a rise here is the apps' or the network's, not Kaeso's |

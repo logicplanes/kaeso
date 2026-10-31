@@ -9,7 +9,7 @@ Cargo.lock linguist-generated
 pnpm-lock.yaml linguist-generated
 openapi.json linguist-generated
 .sqlx/** linguist-generated
-crates/kaeso-core/data/models-dev.json linguist-generated
+crates/kaeso-core/data/kpmr.json linguist-generated
 apps/console/src/test/fixtures/*.json linguist-generated
 
 *.png binary

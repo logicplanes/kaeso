@@ -44,12 +44,12 @@ export function Wizard() {
   const addCustom = () => custom.trim() && add(custom.trim());
   const pick = {
     title: "Add model",
-    description: "Pick a model from the models.dev catalogue.",
+    description: "Pick a model from the KPMR catalogue.",
     toolbar: <SearchInput aria-label="Search models" placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} data-autofocus />,
     content: (
       <div className="flex flex-col gap-12">
         <List
-          aria-label="Models on models.dev"
+          aria-label="Models in KPMR"
           density="compact"
           items={models
             .filter((x) => x.model.includes(query.trim().toLowerCase()))
@@ -74,7 +74,7 @@ export function Wizard() {
   const second = {
     review: {
       title: `Review ${model}`,
-      description: "Prices come from models.dev; you can override them.",
+      description: "Prices come from KPMR; you can override them.",
       content: m && (
         <div className="flex flex-col gap-16">
           <ModelLabel provider={m.provider} providerName={providerNames[m.provider]} model={m.model} name={m.name} capabilities={m.capabilities} />
@@ -125,10 +125,10 @@ export function States() {
   const layers = [
     {
       title: "Add model",
-      description: "Pick a model from the models.dev catalogue.",
+      description: "Pick a model from the KPMR catalogue.",
       content: (
         <List
-          aria-label="Models on models.dev"
+          aria-label="Models in KPMR"
           density="compact"
           items={models.map((x) => ({
             id: x.model,
@@ -140,7 +140,7 @@ export function States() {
     },
     {
       title: `Review ${m.model}`,
-      description: "Prices come from models.dev; you can override them.",
+      description: "Prices come from KPMR; you can override them.",
       content: (
         <div className="flex flex-col gap-16">
           <ModelLabel provider={m.provider} providerName={providerNames[m.provider]} model={m.model} name={m.name} capabilities={m.capabilities} />

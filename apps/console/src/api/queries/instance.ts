@@ -6,7 +6,6 @@ import type {
   InstanceUserOrg,
   InstanceUserView,
   MemberView,
-  ModelsDevStatus,
   ProjectView,
   SettingsView,
   SystemView,
@@ -104,11 +103,6 @@ export const instanceSsoOrgsQuery = queryOptions({
 export const instanceSettingsQuery = queryOptions({
   queryKey: ["instance", "settings"],
   queryFn: async (): Promise<SettingsView> => data(await api.GET("/platform/v1/instance/settings")),
-});
-
-export const modelsDevQuery = queryOptions({
-  queryKey: ["instance", "models-dev"],
-  queryFn: async (): Promise<ModelsDevStatus> => data(await api.GET("/platform/v1/instance/models-dev")),
 });
 
 export const systemQuery = queryOptions({

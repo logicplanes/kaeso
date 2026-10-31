@@ -1124,16 +1124,12 @@ async fn make_free(env: &Env, model: &str) {
 
 #[tokio::test]
 async fn a_spend_budget_refuses_a_model_without_a_price_unless_an_admin_set_one() {
-    let mut feed: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    feed["openai"]["models"]["gpt-4o-mini"]["cost"] = json!({ "input": 0, "output": 0 });
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let url = format!("http://{}/api.json", listener.local_addr().unwrap());
-    let feed = feed.to_string();
-    let router =
-        axum::Router::new().route("/api.json", axum::routing::get(move || async move { feed }));
-    tokio::spawn(async move { axum::serve(listener, router).await });
-    let env = common::v1::env(None, Some(&[("KAESO_MODELS_DEV_URL", url.as_str())])).await;
-    kaeso_server::services::models_dev::sync(&env.app.state)
+    let mut feed = common::kpmr::built_in();
+    common::kpmr::model(&mut feed, "openai", "gpt-4o-mini")["pricing"] =
+        json!({ "unit": "usd_per_million_tokens", "input": "0", "output": "0" });
+    let url = common::kpmr::serve(common::kpmr::Served::new(feed.to_string())).await;
+    let env = common::v1::env(None, Some(&[("KAESO_KPMR_URL", url.as_str())])).await;
+    kaeso_server::services::kpmr::sync(&env.app.state)
         .await
         .unwrap();
     let (secret, id) = key_of(&env, "k", json!({})).await;

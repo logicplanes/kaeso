@@ -15,13 +15,8 @@ const RAW_SCALE: u32 = 12;
 
 pub const COST_RAW_MAX: i128 = 10_i128.pow(38) - 1;
 
-const ONE_HOUR_WRITE_FACTOR: Decimal = Decimal::from_parts(2, 0, 0, false, 0);
-
 pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
-    prices
-        .input_price
-        .and_then(|p| p.checked_mul(ONE_HOUR_WRITE_FACTOR))
-        .or(prices.cache_write_price)
+    prices.cache_write_1h_price.or(prices.cache_write_price)
 }
 
 pub fn unpriced_model(
@@ -200,12 +195,13 @@ mod tests {
     }
 
     #[test]
-    fn one_hour_cache_writes_cost_twice_the_input_price() {
+    fn one_hour_cache_writes_cost_their_own_price() {
         let prices = Fields {
             input_price: Some(dec!(3)),
             output_price: Some(dec!(15)),
             cache_read_price: Some(dec!(0.3)),
             cache_write_price: Some(dec!(3.75)),
+            cache_write_1h_price: Some(dec!(6)),
             ..Fields::default()
         };
         let mut u = Usage::default();

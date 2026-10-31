@@ -57,6 +57,7 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "output_price", label: t("models.field.outputPrice", "Output price"), kind: "price" },
     { key: "cache_read_price", label: t("models.field.cacheReadPrice", "Cache read price"), kind: "price" },
     { key: "cache_write_price", label: t("models.field.cacheWritePrice", "Cache write price"), kind: "price" },
+    { key: "cache_write_1h_price", label: t("models.field.cacheWrite1hPrice", "1-hour cache write price"), kind: "price" },
     { key: "egress_dialect", label: t("models.field.sendsAs", "Sends as"), kind: "dialect" },
     { key: "tool_call", label: t("models.cap.tools", "Tool calling"), kind: "bool" },
     { key: "reasoning", label: t("models.cap.reasoning", "Reasoning"), kind: "bool" },

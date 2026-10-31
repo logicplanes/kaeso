@@ -1,5 +1,4 @@
 pub mod agents;
-pub mod models_dev;
 pub mod orgs;
 pub mod settings;
 pub mod system;
@@ -46,8 +45,6 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(i(InstanceOrgsManage), routes!(orgs::restore)))
         .routes(s.route(a, routes!(orgs::delete_now)))
         .routes(s.route(i(InstanceSystemView), routes!(settings::get)))
-        .routes(s.route(i(InstanceSystemView), routes!(models_dev::status)))
-        .routes(s.route(i(InstanceModelSourcesManage), routes!(models_dev::sync)))
         .routes(s.route(i(InstanceSettingsManage), routes!(settings::update)))
         .routes(s.route(a, routes!(settings::set_admin_sso)))
         .routes(s.route(i(InstanceSystemView), routes!(agents::get)))

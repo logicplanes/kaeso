@@ -2,7 +2,7 @@
 
 mod error;
 mod json;
-mod models_dev;
+mod kpmr;
 mod record;
 mod signed_urls;
 #[cfg(test)]
@@ -24,11 +24,17 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     #[command(
-        about = "Refresh the models.dev snapshot in crates/kaeso-core/data and the fetch time that ships with it"
+        about = "Refresh the KPMR catalogue in crates/kaeso-core/data after checking its signature"
     )]
-    ModelsDev {
-        #[arg(long, env = "MODELS_DEV_URL", default_value = kaeso_core::models_dev::DEFAULT_URL, help = "Where to download models.dev's api.json")]
+    Kpmr {
+        #[arg(long, env = "KPMR_URL", default_value = kaeso_core::kpmr::DEFAULT_URL, help = "Where to download KPMR's catalogue")]
         url: String,
+        #[arg(
+            long,
+            env = "KPMR_PUBLIC_KEYS",
+            help = "More keys to trust besides the built-in one, as <key id>:<base64 Ed25519 public key>, comma-separated"
+        )]
+        public_keys: Option<String>,
     },
     #[command(
         about = "Record real provider responses for the request fixtures of one dialect",
@@ -49,9 +55,12 @@ async fn main() -> ExitCode {
     let root = root();
     let mut out = std::io::stdout();
     let result = match Cli::parse().command {
-        Command::ModelsDev { url } => {
-            models_dev::refresh(&models_dev::Paths::in_repository(&root), &url, &mut out).await
-        }
+        Command::Kpmr { url, public_keys } => match kpmr::trusted_keys(public_keys.as_deref()) {
+            Ok(keys) => {
+                kpmr::refresh(&kpmr::Paths::in_repository(&root), &url, &keys, &mut out).await
+            }
+            Err(e) => Err(e),
+        },
         Command::Record(args) => match args.provider() {
             Ok(provider) => {
                 let endpoint = record::Endpoint::from_env(provider);

@@ -88,7 +88,7 @@ def gateway():
         KAESO_METRICS_LISTEN=f"127.0.0.1:{free_port()}",
         KAESO_MASTER_KEYS=subprocess.check_output([kaeso, "master-key", "generate"], text=True).strip(),
         KAESO_MAIL_TRANSPORT="log",
-        KAESO_MODELS_DEV_SYNC="false",
+        KAESO_KPMR_SYNC="false",
         KAESO_LOG_FORMAT="json",
         KAESO_PROVIDERS_OPENAI_BASE_URL=mock_url,
         KAESO_PROVIDERS_ANTHROPIC_BASE_URL=mock_url,

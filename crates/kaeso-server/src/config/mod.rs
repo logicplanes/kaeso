@@ -45,7 +45,7 @@ pub struct Config {
     pub mail: MailConfig,
     pub auth: AuthConfig,
     pub key_failures: KeyFailuresConfig,
-    pub models_dev: ModelsDevConfig,
+    pub kpmr: KpmrConfig,
     pub updates: UpdatesConfig,
     pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
@@ -152,11 +152,43 @@ pub struct KeyFailuresConfig {
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct ModelsDevConfig {
+pub struct KpmrConfig {
     pub sync: bool,
     pub url: Url,
-    #[serde(with = "humantime_serde")]
-    pub interval: Duration,
+    pub interval: KpmrInterval,
+    #[serde(default, deserialize_with = "kpmr_keys")]
+    pub public_keys: Vec<kaeso_core::kpmr::TrustedKey>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KpmrInterval {
+    Auto,
+    Every(Duration),
+}
+
+impl<'de> Deserialize<'de> for KpmrInterval {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        if s.trim() == "auto" {
+            return Ok(KpmrInterval::Auto);
+        }
+        humantime_serde::re::humantime::parse_duration(s.trim())
+            .map(KpmrInterval::Every)
+            .map_err(|_| {
+                serde::de::Error::custom(format!("`{s}` is not `auto` or a duration such as 1h"))
+            })
+    }
+}
+
+fn kpmr_keys<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> Result<Vec<kaeso_core::kpmr::TrustedKey>, D::Error> {
+    let s = String::deserialize(d)?;
+    s.split(',')
+        .map(str::trim)
+        .filter(|k| !k.is_empty())
+        .map(|k| kaeso_core::kpmr::TrustedKey::parse(k).map_err(serde::de::Error::custom))
+        .collect()
 }
 
 #[derive(Debug, Deserialize)]
@@ -311,12 +343,12 @@ impl Config {
                 );
             }
         }
-        match self.models_dev.url.scheme() {
+        match self.kpmr.url.scheme() {
             "https" => {}
-            "http" if is_loopback_host(&self.models_dev.url) => {}
+            "http" if is_loopback_host(&self.kpmr.url) => {}
             _ => {
                 return invalid(
-                    "models_dev.url",
+                    "kpmr.url",
                     "must be an https URL (http is only allowed for localhost)".into(),
                 );
             }
@@ -425,11 +457,13 @@ impl Config {
                 self.upstream.stream_idle_timeout,
             ),
             ("logs.flush_interval", self.logs.flush_interval),
-            ("models_dev.interval", self.models_dev.interval),
         ] {
             if value.is_zero() {
                 return invalid(key, "must be longer than zero".into());
             }
+        }
+        if self.kpmr.interval == KpmrInterval::Every(Duration::ZERO) {
+            return invalid("kpmr.interval", "must be `auto` or longer than zero".into());
         }
         for (key, value) in [
             ("upstream.connect_timeout", self.upstream.connect_timeout),

@@ -30,7 +30,8 @@ describe("the settings sidebar", () => {
     expect(within(nav).getByRole("link", { name: "Back to the console" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
     expect(within(nav).getByText("Northwind Labs")).toBeInTheDocument();
     expect(within(nav).getByRole("link", { name: "Platform keys" })).toHaveAttribute("href", `/settings/orgs/${ORG}/platform-keys`);
-    expect(within(nav).getByRole("link", { name: "Model sources" })).toHaveAttribute("href", "/settings/instance/model-sources");
+    expect(within(nav).getByRole("link", { name: "System" })).toHaveAttribute("href", "/settings/instance/system");
+    expect(within(nav).queryByRole("link", { name: "Model sources" })).not.toBeInTheDocument();
     expect(within(nav).getAllByRole("link", { name: "Audit log" })).toHaveLength(2);
   });
 

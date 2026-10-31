@@ -112,7 +112,7 @@ docker compose exec gateway kaeso setup-link
 2. 选择服务商，搜索一个模型，例如 Anthropic 的 `claude-haiku-4-5` 或 OpenAI 的 `gpt-5-mini`。
 3. 添加它。
 
-模型的价格、限制和能力来自 [models.dev](https://models.dev)；详见[模型和别名](../console/models-and-aliases.md)。
+模型的价格、限制和能力来自 [KPMR](../concepts/kpmr.md)（Kaeso Provider & Model Registry）；详见[模型和别名](../console/models-and-aliases.md)。
 
 ## 创建 API 密钥
 

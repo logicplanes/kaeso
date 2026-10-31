@@ -13,6 +13,7 @@ export interface FieldDraft {
   output_price: string;
   cache_read_price: string;
   cache_write_price: string;
+  cache_write_1h_price: string;
   egress_dialect: string;
   tool_call: boolean;
   reasoning: boolean;
@@ -44,6 +45,7 @@ export function draftFrom(f: Fields): FieldDraft {
     output_price: f.output_price ?? "",
     cache_read_price: f.cache_read_price ?? "",
     cache_write_price: f.cache_write_price ?? "",
+    cache_write_1h_price: f.cache_write_1h_price ?? "",
     egress_dialect: f.egress_dialect ?? "",
     tool_call: !!f.tool_call,
     reasoning: !!f.reasoning,
@@ -70,6 +72,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
     output_price: text(d.output_price),
     cache_read_price: text(d.cache_read_price),
     cache_write_price: text(d.cache_write_price),
+    cache_write_1h_price: text(d.cache_write_1h_price),
     egress_dialect: text(d.egress_dialect),
     tool_call: d.tool_call,
     reasoning: d.reasoning,
@@ -85,7 +88,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const samePrice = (a: string | null | undefined, b: string | null | undefined) => (a && b ? Number(a) === Number(b) : same(a || null, b || null));
-const PRICES = new Set(["input_price", "output_price", "cache_read_price", "cache_write_price"]);
+const PRICES = new Set(["input_price", "output_price", "cache_read_price", "cache_write_price", "cache_write_1h_price"]);
 const asBool = (v: unknown) => !!v;
 const BOOLS = new Set(["tool_call", "reasoning", "structured_output", "temperature", "adaptive_thinking", "thinking_binding"]);
 const accepts = (v: unknown) => v !== false;
@@ -118,7 +121,7 @@ export function allFields(d: FieldDraft, dialects: readonly string[]): Partial<F
 export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   const price = (v: string) => v.trim() === "" || (/^\d+(\.\d+)?$/.test(v.trim()) && Number.isFinite(Number(v)));
   const whole = (v: string) => v.trim() === "" || /^\d+$/.test(v.trim());
-  if (![d.input_price, d.output_price, d.cache_read_price, d.cache_write_price].every(price))
+  if (![d.input_price, d.output_price, d.cache_read_price, d.cache_write_price, d.cache_write_1h_price].every(price))
     return t("models.problem.price", "Prices are decimal amounts in USD, like 3.00.");
   if (![d.context_limit, d.output_limit, d.timeout_seconds].every(whole)) return t("models.problem.whole", "Limits and the timeout are whole numbers.");
   if (custom) {
@@ -142,7 +145,7 @@ export function ModelForm({
   overrideNote?: boolean;
 }) {
   const set = (patch: Partial<FieldDraft>) => onChange({ ...value, ...patch });
-  const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price", label: string) => (
+  const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price" | "cache_write_1h_price", label: string) => (
     <NumberInput
       label={label}
       value={value[key]}
@@ -200,6 +203,7 @@ export function ModelForm({
         {price("output_price", t("models.field.outputPrice", "Output price"))}
         {price("cache_read_price", t("models.field.cacheReadPrice", "Cache read price"))}
         {price("cache_write_price", t("models.field.cacheWritePrice", "Cache write price"))}
+        {price("cache_write_1h_price", t("models.field.cacheWrite1hPrice", "1-hour cache write price"))}
       </div>
       <Select
         label={t("models.field.sendsAs", "Sends as")}
@@ -265,7 +269,7 @@ export function ModelForm({
       />
       {overrideNote && (
         <Text variant="small" tone="secondary">
-          {t("models.overrideNote", "Saved values override models.dev for this project only.")}
+          {t("models.overrideNote", "Saved values override KPMR for this project only.")}
         </Text>
       )}
     </div>

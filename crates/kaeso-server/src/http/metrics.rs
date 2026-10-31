@@ -32,7 +32,7 @@ fn provider_label(provider: String) -> String {
 
 fn model_label(state: &AppState, provider: &str, model: String) -> String {
     let listed = state
-        .models_dev
+        .kpmr
         .current()
         .snapshot
         .providers

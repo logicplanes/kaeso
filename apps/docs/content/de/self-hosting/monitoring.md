@@ -36,7 +36,7 @@ services:
 
 | Metrik | Worauf achten |
 | --- | --- |
-| `kaeso_requests_total{surface, route, status, provider, model}` | Ein Anstieg von `status=~"5.."` bei `surface="model_api"`. `model` ist `custom` für Modelle ohne Daten von models.dev |
+| `kaeso_requests_total{surface, route, status, provider, model}` | Ein Anstieg von `status=~"5.."` bei `surface="model_api"`. `model` ist `custom` für Modelle, die KPMR nicht führt |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Veränderungen im 99. Perzentil je Route und je Anbieter |
 | `kaeso_gateway_overhead_seconds{provider}` | Die eigene Zeit von Kaeso, bevor es den Anbieter aufruft, ohne den Upload der Anfrage: Schlüssel prüfen, übersetzen und Limits prüfen. Die Buckets beginnen bei 0,1 ms. Ein Anstieg, den `kaeso_time_to_first_byte_seconds` nicht zeigt, liegt bei Kaeso, nicht beim Anbieter |
 | `kaeso_request_upload_seconds{provider}` | Die Zeit, die Apps zum Senden des Bodys ihrer Anfragen brauchen. Sie wächst mit der Größe des Prompts und der Verbindung der App; ein Anstieg liegt bei den Apps oder im Netz, nicht bei Kaeso |

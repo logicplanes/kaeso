@@ -5,7 +5,7 @@ import { preview, searchHit } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { modelPreviewQuery, modelSearchQuery } from "./models";
 
-describe("searching models.dev", () => {
+describe("searching KPMR", () => {
   it("sends the words, provider and deprecated choice, and leaves out empty words", async () => {
     on("GET", "orgs/:org/projects/:project/models/search", { data: [searchHit()], has_more: false, total: 1, not_in_catalogue: 1 });
     expect((await queryClient.fetchQuery(modelSearchQuery(ORG, PROJECT, { q: "sonnet", provider: "anthropic", include_deprecated: true }))).total).toBe(1);
@@ -18,8 +18,8 @@ describe("searching models.dev", () => {
 });
 
 describe("previewing a model", () => {
-  it("has no preview for a model models.dev doesn't list", async () => {
-    on("GET", "orgs/:org/projects/:project/models/preview", apiError(404, "not_found", "models.dev doesn't list it."));
+  it("has no preview for a model KPMR doesn't list", async () => {
+    on("GET", "orgs/:org/projects/:project/models/preview", apiError(404, "not_found", "KPMR doesn't list it."));
     expect(await queryClient.fetchQuery(modelPreviewQuery(ORG, PROJECT, "openai", "gpt-unknown"))).toBeNull();
   });
 

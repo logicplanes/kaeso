@@ -66,7 +66,7 @@ async fn visible(
 
 fn info(state: &AppState, name: &str, entry: &Entry, eff: &Effective) -> ModelInfo {
     let mut info = model_info(name, eff);
-    if entry.is_deprecated(&state.models_dev.current().snapshot) {
+    if entry.is_deprecated(&state.kpmr.current().snapshot) {
         info.lifecycle = Some(ModelLifecycle::Deprecated);
     }
     info

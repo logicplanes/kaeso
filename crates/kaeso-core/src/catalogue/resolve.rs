@@ -125,7 +125,7 @@ impl Catalogue {
         }
     }
 
-    pub fn shadows(&self, name: &str, snapshot: &crate::models_dev::Snapshot) -> bool {
+    pub fn shadows(&self, name: &str, snapshot: &crate::kpmr::Catalogue) -> bool {
         self.by_model.contains_key(name)
             || self.prefixed(name).is_some()
             || snapshot

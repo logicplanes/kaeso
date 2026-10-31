@@ -79,7 +79,7 @@ services:
       KAESO_SMTP_PORT: "1025"
       KAESO_SMTP_TLS: none
       KAESO_SMTP_FROM: Kaeso <kaeso@localhost>
-      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_KPMR_SYNC: "false"
       KAESO_PROVIDERS_OPENAI_BASE_URL: http://provider:8080
       KAESO_PROVIDERS_ANTHROPIC_BASE_URL: http://provider:8080
       KAESO_PROVIDERS_XAI_BASE_URL: http://provider:8080

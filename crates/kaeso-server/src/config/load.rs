@@ -384,7 +384,8 @@ mod tests {
         assert_eq!(c.body_limits.provider_response.0, 128 << 20);
         assert_eq!(c.logs.buffer_size.0, 256 << 20);
         assert_eq!(c.logs.flush_rows, 5000);
-        assert_eq!(c.models_dev.interval.as_secs(), 24 * 3600);
+        assert_eq!(c.kpmr.interval, crate::config::KpmrInterval::Auto);
+        assert!(c.kpmr.public_keys.is_empty());
         assert_eq!(c.instance.org_creation, OrgCreation::InstanceAdmins);
         assert_eq!(c.instance.account_creation, AccountCreation::InvitationOnly);
         assert_eq!(c.instance.metadata_retention_days, 90);
@@ -639,7 +640,9 @@ mod tests {
                 "5",
                 "streams.keepalive_interval",
             ),
-            ("KAESO_MODELS_DEV_URL", "not a url", "models_dev.url"),
+            ("KAESO_KPMR_URL", "not a url", "kpmr.url"),
+            ("KAESO_KPMR_INTERVAL", "soon", "kpmr.interval"),
+            ("KAESO_KPMR_PUBLIC_KEYS", "mirror:short", "kpmr.public_keys"),
             (
                 "KAESO_BODY_LIMITS_MODEL_API",
                 "lots",
@@ -804,26 +807,39 @@ mod tests {
     }
 
     #[test]
-    fn models_dev_is_fetched_over_https_or_from_localhost() {
+    fn kpmr_is_asked_at_its_own_interval_or_a_positive_one() {
+        let every = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "6h")).unwrap();
+        assert_eq!(
+            every.kpmr.interval,
+            crate::config::KpmrInterval::Every(std::time::Duration::from_secs(6 * 3600))
+        );
+        let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "0s"))
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            err,
+            "KAESO_KPMR_INTERVAL (kpmr.interval) must be `auto` or longer than zero"
+        );
+    }
+
+    #[test]
+    fn kpmr_is_fetched_over_https_or_from_localhost() {
         for ok in [
             "https://models.example.com/api.json",
             "http://127.0.0.1:9/api.json",
             "http://localhost/api.json",
         ] {
-            let c = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", ok)).unwrap();
-            assert_eq!(c.models_dev.url.as_str(), ok);
+            let c = load(&Map::minimal().set("KAESO_KPMR_URL", ok)).unwrap();
+            assert_eq!(c.kpmr.url.as_str(), ok);
         }
         for bad in [
             "http://models.example.com/api.json",
             "ftp://models.example.com/api.json",
         ] {
-            let err = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", bad))
+            let err = load(&Map::minimal().set("KAESO_KPMR_URL", bad))
                 .unwrap_err()
                 .to_string();
-            assert!(
-                err.starts_with("KAESO_MODELS_DEV_URL (models_dev.url)"),
-                "{err}"
-            );
+            assert!(err.starts_with("KAESO_KPMR_URL (kpmr.url)"), "{err}");
         }
     }
 

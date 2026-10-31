@@ -64,7 +64,7 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 
 Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann, zu den Preisen des Modells. Das sind ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells). Ein Stream hält es, solange er läuft.
 
-Die Eingabe zählt zum höchsten der Eingabe- und Cache-Preise des Modells. Verlangt eine Anfrage Anthropics Ein-Stunden-Cache, gehört dazu der Schreibpreis dieses Caches, das Doppelte des Eingabepreises.
+Die Eingabe zählt zum höchsten der Eingabe- und Cache-Preise des Modells. Verlangt eine Anfrage Anthropics Ein-Stunden-Cache, gehört dazu der Schreibpreis dieses Caches ([Modelle und Aliasse](models-and-aliases.md#werte-eines-modells-ändern)).
 
 Das Limit von SpaceX lässt das Reasoning aus, daher hält eine Anfrage an ein Reasoning-Modell von SpaceX das Ausgabelimit des Modells. Ein ChatGPT-Konto kann kein Ausgabelimit senden, daher hält auch eine Anfrage darüber das Ausgabelimit des Modells. Unter einem Budget hält eine Anfrage mindestens, was eine durchschnittliche Anfrage im Zeitraum oder in den 30 Tagen davor gekostet hat.
 
