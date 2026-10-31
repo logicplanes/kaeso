@@ -44,6 +44,39 @@ describe("instance system page", () => {
     expect(screen.getAllByText("Unknown")).toHaveLength(2);
   });
 
+  it("shows the model data from KPMR and how it stays current", async () => {
+    signedIn();
+    on("GET", "instance/system", system());
+    await renderApp(PATH);
+    expect(await screen.findByRole("heading", { name: "Model data", level: 2 })).toBeInTheDocument();
+    expect(screen.getByText("Model names, limits and prices from KPMR, the Kaeso Provider & Model Registry.")).toBeInTheDocument();
+    expect(screen.getByText("1,060 models")).toBeInTheDocument();
+    expect(screen.getByText(/^Fetched /)).toBeInTheDocument();
+    expect(screen.getByText("https://kpmr.kaeso.app/v1/catalogue")).toBeInTheDocument();
+    expect(screen.getByText("KPMR")).toBeInTheDocument();
+    expect(screen.getByText("On")).toBeInTheDocument();
+    expect(screen.getByText("Succeeded")).toBeInTheDocument();
+  });
+
+  it("says when the built-in snapshot is in use, sync is off or the last sync failed", async () => {
+    signedIn();
+    const base = system().model_data;
+    on("GET", "instance/system", system({ model_data: { ...base, built_in: true, sync_enabled: false, last_error: "the catalogue is not signed" } }));
+    const { user } = await renderApp(PATH);
+    expect(await screen.findByText(/^Snapshot, /)).toBeInTheDocument();
+    expect(screen.getByText("Off")).toBeInTheDocument();
+    await user.hover(screen.getByText("Failed"));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("the catalogue is not signed");
+  });
+
+  it("says when the gateway hasn't asked KPMR yet", async () => {
+    signedIn();
+    const base = system().model_data;
+    on("GET", "instance/system", system({ model_data: { ...base, last_attempt_at: null } }));
+    await renderApp(PATH);
+    expect(await screen.findByText("None yet")).toBeInTheDocument();
+  });
+
   it("says when the gateway isn't ready", async () => {
     signedIn();
     on("GET", "instance/system", system({ status: "not_ready" }));

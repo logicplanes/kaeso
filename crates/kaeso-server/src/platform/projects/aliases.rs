@@ -55,7 +55,7 @@ async fn views(
             .collect::<Result<_, _>>()?,
         Vec::new(),
     );
-    let loaded = state.models_dev.current();
+    let loaded = state.kpmr.current();
     Ok(rows
         .iter()
         .map(|a| AliasView {

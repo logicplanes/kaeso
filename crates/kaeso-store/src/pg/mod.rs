@@ -39,7 +39,7 @@ pub static MIGRATOR: Migrator = sqlx::migrate!("migrations/postgres");
 pub mod locks {
     pub const CLICKHOUSE_MIGRATIONS: i64 = 0x6b61_6573_6f00_0001;
     pub const SETUP: i64 = 0x6b61_6573_6f00_0002;
-    pub const MODELS_DEV: i64 = 0x6b61_6573_6f00_0003;
+    pub const KPMR: i64 = 0x6b61_6573_6f00_0003;
     pub const UPDATE_CHECK: i64 = 0x6b61_6573_6f00_0004;
     pub const JOBS_BASE: i64 = 0x6b61_6573_6f00_1000;
 }

@@ -14,6 +14,7 @@ const KIND_LABELS: Record<string, () => string> = {
   limit: () => t("format.audit.kind.limit", "Limits"),
   logs: () => t("format.audit.kind.logs", "Request logs"),
   member: () => t("format.audit.kind.member", "Members"),
+  kpmr: () => t("format.audit.kind.kpmr", "KPMR"),
   model_access: () => t("format.audit.kind.modelAccess", "Model access"),
   models_dev: () => t("format.audit.kind.modelsDev", "models.dev"),
   org: () => t("format.audit.kind.org", "Organization"),
@@ -80,9 +81,8 @@ const ACTION_LABELS: Record<string, () => string> = {
   "member.remove": () => t("format.audit.action.memberRemove", "Member removed"),
   "member.join_by_sso": () => t("format.audit.action.memberJoinBySso", "Member joined through single sign-on"),
   "model_access.update": () => t("format.audit.action.modelAccessUpdate", "Model access changed"),
-  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
-  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
-  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+  "kpmr.price_change": () => t("format.audit.action.kpmrPriceChange", "Price changed in KPMR"),
+  "kpmr.model_delisted": () => t("format.audit.action.kpmrModelDelisted", "Model taken off KPMR"),
   "org.create": () => t("format.audit.action.orgCreate", "Organization created"),
   "org.update": () => t("format.audit.action.orgUpdate", "Organization changed"),
   "org.ownership_transfer": () => t("format.audit.action.orgOwnershipTransfer", "Ownership transferred"),
@@ -152,10 +152,19 @@ export const AUDIT_ACTIONS: Record<string, string[]> = Object.keys(ACTION_LABELS
   return kinds;
 }, {});
 
-export const auditActionLabel = (action: string): string => ACTION_LABELS[action]?.() ?? action;
+// Events an older gateway wrote, before KPMR replaced models.dev; the audit log keeps them as they are.
+const RETIRED_ACTION_LABELS: Record<string, () => string> = {
+  "models_dev.sync": () => t("format.audit.action.modelsDevSync", "models.dev synced"),
+  "models_dev.price_change": () => t("format.audit.action.modelsDevPriceChange", "Price changed on models.dev"),
+  "models_dev.model_delisted": () => t("format.audit.action.modelsDevModelDelisted", "Model taken off models.dev"),
+};
+
+export const auditActionLabel = (action: string): string => (ACTION_LABELS[action] ?? RETIRED_ACTION_LABELS[action])?.() ?? action;
+
+const RETIRED_ACTIONS: Record<string, string[]> = { models_dev: Object.keys(RETIRED_ACTION_LABELS) };
 
 export function auditActionOptions(): { value: string; label: string; description: string }[] {
-  return Object.entries(AUDIT_ACTIONS).flatMap(([kind, actions]) => [
+  return [...Object.entries(AUDIT_ACTIONS), ...Object.entries(RETIRED_ACTIONS)].flatMap(([kind, actions]) => [
     {
       value: `${kind}.`,
       label: t("format.audit.everyActionOf", "{kind}: every action", { kind: (KIND_LABELS[kind] as () => string)() }),

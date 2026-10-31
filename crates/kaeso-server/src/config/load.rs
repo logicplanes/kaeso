@@ -131,7 +131,14 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
         })?;
         let mut keys = Vec::new();
         flatten("", &file, &mut keys);
+        let kpmr_sync_set = keys.iter().any(|(key, _)| key == "kpmr.sync");
         for (key, value) in keys {
+            if let Some(old) = key.strip_prefix(DEPRECATED_PREFIX) {
+                if old == "sync" && !kpmr_sync_set {
+                    insert(&mut table, "kpmr.sync", value);
+                }
+                continue;
+            }
             if setting(&key).is_none() {
                 return Err(unknown_file_key(key, path));
             }
@@ -139,6 +146,12 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
         }
     }
     check_provider_vars(source)?;
+    if source.var("KAESO_KPMR_SYNC").is_none_or(|v| v.is_empty())
+        && let Some(old) = source.var(DEPRECATED_SYNC_ENV).filter(|v| !v.is_empty())
+        && let Some(s) = setting("kpmr.sync")
+    {
+        insert(&mut table, "kpmr.sync", typed(s, &old)?);
+    }
     for s in settings() {
         if let Some(value) = env_value(source, s)? {
             insert(&mut table, &s.key, typed(s, &value)?);
@@ -179,6 +192,7 @@ pub fn unknown_variables(source: &dyn Source) -> Vec<String> {
         .into_iter()
         .filter(|n| n.starts_with("KAESO_") && n != "KAESO_CONFIG")
         .filter(|n| !n.starts_with(PROVIDER_ENV_PREFIX))
+        .filter(|n| !n.starts_with(DEPRECATED_ENV_PREFIX))
         .filter(|n| {
             !settings().iter().any(|s| {
                 s.env == n.as_str() || (s.secret && n.strip_suffix("_FILE") == Some(&s.env))
@@ -187,6 +201,44 @@ pub fn unknown_variables(source: &dyn Source) -> Vec<String> {
         .collect();
     names.sort();
     names
+}
+
+const DEPRECATED_PREFIX: &str = "models_dev.";
+
+const DEPRECATED_ENV_PREFIX: &str = "KAESO_MODELS_DEV_";
+
+const DEPRECATED_SYNC_ENV: &str = "KAESO_MODELS_DEV_SYNC";
+
+pub fn deprecations(source: &dyn Source) -> Vec<String> {
+    let mut found: Vec<String> = source
+        .var_names()
+        .into_iter()
+        .filter(|n| n.starts_with(DEPRECATED_ENV_PREFIX))
+        .collect();
+    if let Some(path) = source.var("KAESO_CONFIG")
+        && let Ok(text) = source.read_file(Path::new(&path))
+        && let Ok(file) = toml::from_str::<Table>(&text)
+    {
+        let mut keys = Vec::new();
+        flatten("", &file, &mut keys);
+        found.extend(
+            keys.into_iter()
+                .map(|(key, _)| key)
+                .filter(|key| key.starts_with(DEPRECATED_PREFIX)),
+        );
+    }
+    found.sort();
+    found
+        .into_iter()
+        .map(|name| {
+            let replacement = if name == DEPRECATED_SYNC_ENV || name == "models_dev.sync" {
+                "it is read as `kpmr.sync` (KAESO_KPMR_SYNC) for now; rename it"
+            } else {
+                "it is ignored; use `kpmr.url` and `kpmr.interval` instead"
+            };
+            format!("`{name}` is deprecated and removed in 0.6: KPMR replaced models.dev, and {replacement}")
+        })
+        .collect()
 }
 
 fn unknown_file_key(key: String, path: PathBuf) -> ConfigError {
@@ -384,7 +436,8 @@ mod tests {
         assert_eq!(c.body_limits.provider_response.0, 128 << 20);
         assert_eq!(c.logs.buffer_size.0, 256 << 20);
         assert_eq!(c.logs.flush_rows, 5000);
-        assert_eq!(c.models_dev.interval.as_secs(), 24 * 3600);
+        assert_eq!(c.kpmr.interval, crate::config::KpmrInterval::Auto);
+        assert!(c.kpmr.public_keys.is_empty());
         assert_eq!(c.instance.org_creation, OrgCreation::InstanceAdmins);
         assert_eq!(c.instance.account_creation, AccountCreation::InvitationOnly);
         assert_eq!(c.instance.metadata_retention_days, 90);
@@ -639,7 +692,9 @@ mod tests {
                 "5",
                 "streams.keepalive_interval",
             ),
-            ("KAESO_MODELS_DEV_URL", "not a url", "models_dev.url"),
+            ("KAESO_KPMR_URL", "not a url", "kpmr.url"),
+            ("KAESO_KPMR_INTERVAL", "soon", "kpmr.interval"),
+            ("KAESO_KPMR_PUBLIC_KEYS", "mirror:short", "kpmr.public_keys"),
             (
                 "KAESO_BODY_LIMITS_MODEL_API",
                 "lots",
@@ -804,26 +859,73 @@ mod tests {
     }
 
     #[test]
-    fn models_dev_is_fetched_over_https_or_from_localhost() {
+    fn the_deprecated_models_dev_settings_still_turn_sync_off_and_warn() {
+        let file = Map::minimal().set("KAESO_CONFIG", "/etc/kaeso.toml").file(
+            "/etc/kaeso.toml",
+            "[models_dev]\nsync = false\nurl = \"https://models.dev/api.json\"\ninterval = \"24h\"\n",
+        );
+        let c = load(&file).unwrap();
+        assert!(!c.kpmr.sync);
+        assert_eq!(c.kpmr.url.as_str(), kaeso_core::kpmr::DEFAULT_URL);
+        assert_eq!(
+            deprecations(&file),
+            [
+                "`models_dev.interval` is deprecated and removed in 0.6: KPMR replaced models.dev, and it is ignored; use `kpmr.url` and `kpmr.interval` instead",
+                "`models_dev.sync` is deprecated and removed in 0.6: KPMR replaced models.dev, and it is read as `kpmr.sync` (KAESO_KPMR_SYNC) for now; rename it",
+                "`models_dev.url` is deprecated and removed in 0.6: KPMR replaced models.dev, and it is ignored; use `kpmr.url` and `kpmr.interval` instead",
+            ]
+        );
+        let both = Map::minimal().set("KAESO_CONFIG", "/etc/kaeso.toml").file(
+            "/etc/kaeso.toml",
+            "[models_dev]\nsync = false\n\n[kpmr]\nsync = true\n",
+        );
+        assert!(load(&both).unwrap().kpmr.sync, "the new name wins");
+
+        let env = Map::minimal()
+            .set("KAESO_MODELS_DEV_SYNC", "false")
+            .set("KAESO_MODELS_DEV_INTERVAL", "1h");
+        assert!(!load(&env).unwrap().kpmr.sync);
+        assert!(unknown_variables(&env).is_empty());
+        assert_eq!(deprecations(&env).len(), 2);
+        let env_both = env.set("KAESO_KPMR_SYNC", "true");
+        assert!(load(&env_both).unwrap().kpmr.sync, "the new name wins");
+        assert!(deprecations(&Map::minimal()).is_empty());
+    }
+
+    #[test]
+    fn kpmr_is_asked_at_its_own_interval_or_a_positive_one() {
+        let every = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "6h")).unwrap();
+        assert_eq!(
+            every.kpmr.interval,
+            crate::config::KpmrInterval::Every(std::time::Duration::from_secs(6 * 3600))
+        );
+        let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "0s"))
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            err,
+            "KAESO_KPMR_INTERVAL (kpmr.interval) must be `auto` or longer than zero"
+        );
+    }
+
+    #[test]
+    fn kpmr_is_fetched_over_https_or_from_localhost() {
         for ok in [
             "https://models.example.com/api.json",
             "http://127.0.0.1:9/api.json",
             "http://localhost/api.json",
         ] {
-            let c = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", ok)).unwrap();
-            assert_eq!(c.models_dev.url.as_str(), ok);
+            let c = load(&Map::minimal().set("KAESO_KPMR_URL", ok)).unwrap();
+            assert_eq!(c.kpmr.url.as_str(), ok);
         }
         for bad in [
             "http://models.example.com/api.json",
             "ftp://models.example.com/api.json",
         ] {
-            let err = load(&Map::minimal().set("KAESO_MODELS_DEV_URL", bad))
+            let err = load(&Map::minimal().set("KAESO_KPMR_URL", bad))
                 .unwrap_err()
                 .to_string();
-            assert!(
-                err.starts_with("KAESO_MODELS_DEV_URL (models_dev.url)"),
-                "{err}"
-            );
+            assert!(err.starts_with("KAESO_KPMR_URL (kpmr.url)"), "{err}");
         }
     }
 

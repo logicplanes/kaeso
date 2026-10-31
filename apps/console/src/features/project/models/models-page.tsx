@@ -271,7 +271,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
                 description={
                   filtering
                     ? t("models.noMatchesHint", "Clear the filters to see the whole catalogue.")
-                    : t("models.emptyHint", "Requests may only name catalogue models; add them from models.dev with their prices.")
+                    : t("models.emptyHint", "Requests may only name catalogue models; add them from KPMR with their prices.")
                 }
                 actions={
                   filtering ? (

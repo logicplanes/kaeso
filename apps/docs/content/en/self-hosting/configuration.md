@@ -147,13 +147,18 @@ These settings turn passwords and sign-in links on or off for the whole install.
 | `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed API key lookups allowed per client address and window, on both APIs together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | text | `1m` | The window of `key_failures.per_address`, 1s to 1h. A blocked address waits at most this long. |
 
-### models.dev
+### KPMR
+
+The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry.
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_MODELS_DEV_SYNC`<br>`models_dev.sync` | bool | `true` | Fetch model data from models.dev. Without it, the gateway uses the data built into the release. |
-| `KAESO_MODELS_DEV_URL`<br>`models_dev.url` | text | `https://models.dev/api.json` | Where the model data comes from. It must be `https`, except `http` on a loopback address. Kaeso follows at most 3 redirects, each on the same host and over `https`. |
-| `KAESO_MODELS_DEV_INTERVAL`<br>`models_dev.interval` | text | `24h` | How often the gateway fetches it. |
+| `KAESO_KPMR_SYNC`<br>`kpmr.sync` | bool | `true` | Fetch the model data from KPMR, the Kaeso Provider & Model Registry. Off for installs without internet; the built-in snapshot is used. |
+| `KAESO_KPMR_URL`<br>`kpmr.url` | text | `https://kpmr.kaeso.app/v1/catalogue` | Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3. |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration such as `6h`. |
+| `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
+
+The `models_dev.*` settings of earlier versions (`KAESO_MODELS_DEV_*`) are deprecated: they still work in 0.5 and are removed in 0.6. Until then, `models_dev.sync` counts as `kpmr.sync` when `kpmr.sync` isn't set, and `models_dev.url` and `models_dev.interval` are ignored; the gateway logs a warning for each at startup. Rename them to the `kpmr.*` settings above.
 
 ### Updates
 

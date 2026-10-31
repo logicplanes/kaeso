@@ -9,6 +9,7 @@
 
 pub mod copy;
 pub mod flaky_valkey;
+pub mod kpmr;
 pub mod v1;
 
 use std::sync::Arc;
@@ -43,7 +44,8 @@ pub fn config(s: &TestServices, extra: &[(&str, &str)]) -> Config {
             "k1:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
         )
         .set("KAESO_MAIL_TRANSPORT", "log")
-        .set("KAESO_MODELS_DEV_SYNC", "false")
+        .set("KAESO_KPMR_SYNC", "false")
+        .set("KAESO_KPMR_PUBLIC_KEYS", kpmr::PUBLIC_KEYS.as_str())
         .set("KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", "true")
         .set("KAESO_UPDATES_CHECK", "false")
         .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases");
@@ -225,7 +227,7 @@ impl App {
         accounts: Option<kaeso_server::services::provider_accounts::Endpoints>,
         valkey_reachable: bool,
     ) -> App {
-        kaeso_server::services::models_dev::spawn_reloader(&state);
+        kaeso_server::services::kpmr::spawn_reloader(&state);
         let router = kaeso_server::app::router(state.clone());
         if valkey_reachable {
             eventually("the cache invalidation subscription", || {

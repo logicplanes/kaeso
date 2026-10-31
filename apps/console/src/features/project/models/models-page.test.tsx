@@ -241,7 +241,7 @@ describe("ModelsPage", () => {
     const { user } = await renderApp(projectPath("models"));
 
     expect(await screen.findByText("No models yet")).toBeInTheDocument();
-    expect(screen.getByText("Requests may only name catalogue models; add them from models.dev with their prices.")).toBeInTheDocument();
+    expect(screen.getByText("Requests may only name catalogue models; add them from KPMR with their prices.")).toBeInTheDocument();
     const add = screen.getAllByRole("button", { name: "Add models" });
     expect(add).toHaveLength(2);
     await user.click(add[1] as HTMLElement);
@@ -282,7 +282,7 @@ describe("ModelsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ provider: "openai" }));
   });
 
-  it("marks models the provider doesn't serve and models.dev deprecates", async () => {
+  it("marks models the provider doesn't serve and KPMR deprecates", async () => {
     signedIn();
     projectData();
     modelsApi({

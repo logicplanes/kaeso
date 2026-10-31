@@ -54,11 +54,10 @@ pub fn effective(
     entry: &core::Entry,
     providers: &OrgProviders,
 ) -> Option<Effective> {
-    let loaded = state.models_dev.current();
+    let loaded = state.kpmr.current();
     core::effective(
         entry,
         &loaded.snapshot,
-        state.models_dev.supplement(),
         crate::services::custom_providers::in_effect(state, providers),
     )
 }

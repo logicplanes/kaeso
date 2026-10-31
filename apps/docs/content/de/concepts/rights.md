@@ -252,9 +252,8 @@ Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung ei
 
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
-| `instance.system.view` | System ansehen | Das System, die Instanzeinstellungen, die Modellquellen und den Update-Status sehen. |  |
+| `instance.system.view` | System ansehen | Das System und seine Modelldaten, die Instanzeinstellungen und den Update-Status sehen. |  |
 | `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden. | sensibel |
-| `instance.model_sources.manage` | Modellquellen verwalten | Die Modelldaten von models.dev synchronisieren. |  |
 | `instance.updates.manage` | Updates verwalten | Nach Updates suchen und die Update-Einstellungen ändern. | sensibel |
 | `instance.updates.apply` | Updates installieren | Eine neue Version von Kaeso installieren. | sensibel; erfordert `instance.updates.manage` |
 | `instance.users.view` | Benutzer ansehen | Jedes Konto der Instanz und seine Organisationen sehen. |  |
@@ -297,7 +296,7 @@ Builder ist der Standard. Die Instanz-Vorlage gilt nur für Instanz-Admins:
 | --- | --- |
 | Keine | Keine |
 | Lesen | `instance.system.view`, `instance.users.view`, `instance.orgs.view`, `instance.audit_log.view` |
-| Konfigurieren | Die von Lesen und `instance.settings.manage`, `instance.model_sources.manage`, `instance.updates.manage` |
+| Konfigurieren | Die von Lesen und `instance.settings.manage`, `instance.updates.manage` |
 | Admin | Alle Instanzrechte |
 
 ### Wirksame Rechte

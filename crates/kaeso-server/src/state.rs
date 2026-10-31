@@ -26,7 +26,7 @@ pub struct Inner {
     pub mailer: Mailer,
     pub caches: Caches,
     pub response_cache: crate::services::response_cache::Shared,
-    pub models_dev: crate::services::models_dev::ModelsDev,
+    pub kpmr: crate::services::kpmr::Kpmr,
     pub upstream: kaeso_upstream::Upstream,
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
     pub sink: Arc<dyn crate::model_api::hooks::Sink>,
@@ -77,7 +77,7 @@ impl AppState {
             mailer: p.mailer,
             caches,
             response_cache,
-            models_dev: crate::services::models_dev::ModelsDev::embedded(),
+            kpmr: crate::services::kpmr::Kpmr::embedded(),
             upstream: kaeso_upstream::Upstream::new(
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),

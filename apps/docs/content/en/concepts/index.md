@@ -22,7 +22,8 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 | Provider | A company whose models Kaeso calls, such as OpenAI, Anthropic or Groq. Its id, such as `groq`, names it in model names and settings ([providers](providers.md)) |
 | Provider key | The organization's key for a model provider, such as OpenAI or Anthropic, which Kaeso uses to call the provider. Apps never see it ([provider keys](../console/provider-keys.md)) |
 | Master key | The install's own key, which encrypts the secrets it stores, such as provider keys ([backups and master keys](../self-hosting/backups.md)) |
-| Catalogue | The models a project may call, with their prices, limits and capabilities. They come from models.dev, and a project can add custom models or override fields ([models and aliases](../console/models-and-aliases.md)) |
+| Catalogue | The models a project may call, with their prices, limits and capabilities. They come from [KPMR](kpmr.md), and a project can add custom models or override fields ([models and aliases](../console/models-and-aliases.md)) |
+| KPMR | The Kaeso Provider & Model Registry, which supplies every install with model data built from models.dev and checked by Logicplanes ([KPMR](kpmr.md)) |
 | Alias | A project's own name for a model in its catalogue, such as `fast` |
 | Limit | A request or token rate, or a token or spend budget, for a project, a member or a key. A hard budget refuses requests, and a soft one only alerts ([limits and budgets](../console/limits-and-budgets.md)) |
 | Request log | The record of one model request: status, tokens, cost, timing and, where kept, its content ([request logs](../console/request-logs.md)) |
@@ -37,3 +38,4 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 - [Request flow](request-flow.md): Follow a model request through the gateway, and learn which error it gets and what it is charged.
 - [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
 - [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.
+- [KPMR](kpmr.md): Learn where the model data comes from and how an install keeps it current.

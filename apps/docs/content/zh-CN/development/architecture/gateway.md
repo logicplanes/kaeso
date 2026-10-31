@@ -59,7 +59,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `kaeso-bench` | [网关基准测试](../benchmark.md)：在独立进程中运行完整网关，置于真实客户端和模拟服务商之间 |
 | `kaeso-kpp`、`kaeso-codecs` | KPP 的类型和编解码器（[KPP 内部实现](../kpp/index.md)） |
 | `kpp-conformance` | [SDK 一致性](../testing.md#sdk-一致性)套件背后的服务器 |
-| `xtask` | `cargo xtask models-dev` 刷新模型数据，`cargo xtask record` [录制服务商的响应](../kpp/fixtures.md#录制真实响应) |
+| `xtask` | `cargo xtask kpmr` 刷新模型数据，`cargo xtask record` [录制服务商的响应](../kpp/fixtures.md#录制真实响应) |
 
 每个 crate 都从根目录的 `Cargo.toml` 继承版本、edition 和 lint。只有 `kaeso-kpp` 和 `kaeso-codecs` 发布到 crates.io。
 
@@ -90,9 +90,9 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 ## 服务商 ID
 
-服务商 ID 由小写字母和数字组成，中间用单个连字符分隔：`^[a-z0-9]+(-[a-z0-9]+)*$`。这条规则位于 `crates/kaeso-core/src/provider.rs` 的 `ProviderId` 和 `ID_PATTERN` 中，进入网关的每个 ID 都要经过它。这包括配置键和变量、Platform API 中的服务商密钥和目录模型、补充数据以及 models.dev 的导入。
+服务商 ID 由小写字母和数字组成，中间用单个连字符分隔：`^[a-z0-9]+(-[a-z0-9]+)*$`。这条规则位于 `crates/kaeso-core/src/provider.rs` 的 `ProviderId` 和 `ID_PATTERN` 中，进入网关的每个 ID 都要经过它。这包括配置键和变量、Platform API 中的服务商密钥和目录模型、以及 KPMR 的导入。
 
-编译期检查确保 `PROVIDERS` 中的每个 ID 都符合这条规则。PostgreSQL 中 `provider` 列的 CHECK 约束使用同一模式，由一个存储测试进行比对。另一个测试检查随附的 models.dev 快照中的每个服务商。
+编译期检查确保 `PROVIDERS` 中的每个 ID 都符合这条规则。PostgreSQL 中 `provider` 列的 CHECK 约束使用同一模式，由一个存储测试进行比对。另一个测试检查随附的 KPMR 快照中的每个服务商。
 
 ## 自定义服务商
 
@@ -102,33 +102,28 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 ## 模型数据
 
-`crates/kaeso-core/data` 保存每个版本附带的模型数据：
+`crates/kaeso-core/data/kpmr.json` 是 [KPMR](../../concepts/kpmr.md) 目录（格式 1）的快照，包含 Kaeso 调用的服务商，使全新实例无需联网即可工作。其中的 `provider_ids` 列出 KPMR 知道的每个服务商，自定义服务商不能使用这些 ID。该目录的 `README.md` 记录快照的修订版本、KPMR 生成它的时间及其 SHA-256。
 
-| 文件 | 内容 |
-| --- | --- |
-| `models-dev.json` | [models.dev](https://models.dev) 的快照，筛选为 Kaeso 调用的服务商，使全新实例无需联网即可工作。该目录的 `README.md` 记录了获取时间和 SHA-256 |
-| `supplement.toml` | models.dev 中没有的字段，每个条目的来源都写在该目录的 `README.md` 中 |
-| `models-dev-providers.txt` | models.dev 上的每个服务商 ID，自定义服务商不能使用这些 ID |
+`kaeso_core::kpmr` 读取目录：检查格式，保留 Kaeso 调用的服务商，跳过无法解析或以其他单位计价的模型，并用受信任的密钥验证 Ed25519 签名。`Fields::from_kpmr` 把模型转换为目录字段。除名称、价格、限制和能力外，KPMR 还提供以下字段：
 
-补充数据包含以下字段：
+| 字段 | 来源 | 含义 |
+| --- | --- | --- |
+| `adaptive_thinking` | `reasoning.adaptive_thinking` | Anthropic 模型：是否接受 `thinking: {type: "adaptive"}`。为 `false` 时，KPP 会把其他格式的推理强度转换为思考预算 |
+| `thinking_binding` | `reasoning.thinking_binding` | 对会把重放的思考块与产生它的对话进行核对的 Anthropic 模型（preserved thinking，例如 Claude Fable 5.1、Opus 5.5、Sonnet 5.5 和 Haiku 5.5）为 `true`。对这类模型，来自其他格式、重放 Claude 思考内容的请求会要求 Anthropic 丢弃对话已改变的思考块（[Anthropic Messages](../kpp/anthropic-messages.md)）。它只在自适应思考下生效，因为 `block_binding` 需要自适应思考。缺省表示不核对 |
+| `forced_tool_choice` | `capabilities.forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定工具。缺省表示模型接受 |
+| `efforts` | `reasoning.efforts` | 模型支持的推理强度级别；本版本不认识的级别会被略去 |
+| `egress_dialect` | `gateway.egress_dialect` | Kaeso 发送的格式：服务商的某个方言，默认为其生成方言（OpenAI 为 `openai_responses`）。类型为 `embedding` 的模型，若其服务商支持 Embeddings 格式，则以 Embeddings 发送 |
+| `cache_write_1h_price` | `pricing.cache_write_1h` | 保留一小时的缓存写入价格；缺省时，或覆盖值设置了输入价格时，为输入价格的两倍 |
 
-| 字段 | 含义 |
-| --- | --- |
-| `adaptive_thinking` | Anthropic 模型：是否接受 `thinking: {type: "adaptive"}`。为 `false` 时，KPP 会把来自其他格式的推理强度转换为思考预算 |
-| `forced_tool_choice` | 对拒绝强制工具选择（Anthropic 的 `tool_choice` `any` 或 `tool`）的模型为 `false`，网关会在调用服务商之前拒绝 `required`、`any` 或指定的工具。缺省表示模型接受强制选择 |
-| `thinking_binding` | 对会把重放的思考块与产生它的对话进行核对的 Anthropic 模型（preserved thinking：supplement 中的 Claude Fable 5.1、Opus 5.5、Sonnet 5.5 和 Haiku 5.5）设为 `true`。对这类模型，来自其他格式且重放 Claude 思考的请求会让 Anthropic 丢弃对话已改变的块（[Anthropic Messages](../kpp/anthropic-messages.md)）。它只在自适应思考下生效，因为 `block_binding` 需要自适应思考。缺省表示不核对 |
-| `efforts` | 模型支持的推理强度级别，在 models.dev 未列出时使用 |
-| `egress_dialect` | Kaeso 发送的格式：服务商的方言之一，默认是其生成方言（OpenAI 为 `openai_responses`） |
-
-目录条目的值依次取自其覆盖值、models.dev 和补充数据。models.dev 给出 `type: "embedding"` 的模型，若其服务商支持 Embeddings 格式，就以 Embeddings 发送，因此 Vercel AI Gateway 的嵌入模型不需要补充数据条目。除非 `KAESO_MODELS_DEV_SYNC` 为 `false`，网关默认每 24 小时同步一次 models.dev（`KAESO_MODELS_DEV_INTERVAL`）。它保留与快照相同的服务商，并把结果存入 PostgreSQL。启动时，存储的快照和内置快照中较新的那个生效。如果存储的数据来自服务商或模型字段更少的版本，缺少的服务商会从内置快照补齐，并立即重新同步，即使 models.dev 没有变化。
+目录条目的值取自其覆盖值，否则取自 KPMR。除非 `KAESO_KPMR_SYNC` 为 `false`，`kpmr_sync` 任务每 5 分钟检查一次网关是否该再次询问 KPMR，依据是 `KAESO_KPMR_INTERVAL` 或目录的 `refresh_seconds`。它发送保存的 ETag，把 `304` 视为未变更，拒绝没有受信任密钥签名的目录，并把结果连同 ETag 存入 PostgreSQL。其他实例通过 Valkey 重新加载。启动时，存储的快照和内置快照中较新的一个生效。由服务商或字段较少的版本存储的数据，会从内置快照补齐缺少的服务商，并立即重新获取，即使 KPMR 没有变化。
 
 发布前刷新快照：
 
 ```bash
-cargo xtask models-dev
+cargo xtask kpmr
 ```
 
-该任务下载 `https://models.dev/api.json`，进行筛选，并检查网关能否读取结果。`--url` 或 `MODELS_DEV_URL` 可以更改地址。随后它写出快照、`crates/kaeso-core/data/README.md` 中的表格以及 `crates/kaeso-core/src/models_dev.rs` 中的获取时间，并由测试检查三者一致。
+该任务为 Kaeso 调用的服务商下载 `https://kpmr.kaeso.app/v1/catalogue`，用内置密钥验证签名，并检查网关能读取每个模型。`--url` 或 `KPMR_URL` 更改地址，`--public-keys` 或 `KPMR_PUBLIC_KEYS` 信任更多密钥。随后它按 KPMR 发送的原样写入目录，并写入 `crates/kaeso-core/data/README.md` 中的表格，测试会检查两者一致。
 
 ## 用量和请求日志
 

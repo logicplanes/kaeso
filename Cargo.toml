@@ -79,6 +79,7 @@ time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"
 rust_decimal = { version = "1.43", features = ["serde-str"] }
 rust_decimal_macros = "1.40"
 base64 = "0.23"
+ed25519-dalek = "2.2"
 url = { version = "2.5", features = ["serde"] }
 idna = "1.1"
 unicode-normalization = "0.1"

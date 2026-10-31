@@ -147,13 +147,18 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 | `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | Ganzzahl | `100` | Erlaubte fehlgeschlagene Schlüssel-Abfragen je Client-Adresse und Zeitfenster, über beide APIs zusammen. `0` schaltet die Drosselung ab ([Drosselung von API-Schlüsseln](#drosselung-von-api-schlüsseln)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | Text | `1m` | Das Zeitfenster von `key_failures.per_address`, 1s bis 1h. Eine gesperrte Adresse wartet höchstens so lange. |
 
-### models.dev
+### KPMR
+
+Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, die Kaeso Provider & Model Registry.
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_MODELS_DEV_SYNC`<br>`models_dev.sync` | Bool | `true` | Modelldaten von models.dev abrufen. Ohne sie verwendet das Gateway die Daten, die im Release enthalten sind. |
-| `KAESO_MODELS_DEV_URL`<br>`models_dev.url` | Text | `https://models.dev/api.json` | Woher die Modelldaten kommen. Die Adresse muss `https` sein, außer `http` auf einer Loopback-Adresse. Kaeso folgt höchstens 3 Weiterleitungen, jede auf demselben Host und über `https`. |
-| `KAESO_MODELS_DEV_INTERVAL`<br>`models_dev.interval` | Text | `24h` | Wie oft das Gateway sie abruft. |
+| `KAESO_KPMR_SYNC`<br>`kpmr.sync` | Bool | `true` | Die Modelldaten von KPMR abrufen, der Kaeso Provider & Model Registry. Aus für Installationen ohne Internet; dann gilt der eingebaute Snapshot. |
+| `KAESO_KPMR_URL`<br>`kpmr.url` | Text | `https://kpmr.kaeso.app/v1/catalogue` | Woher der KPMR-Katalog kommt, von KPMR oder einem Spiegel: `https`, oder `http` auf localhost; Weiterleitungen müssen auf seinem Host und bei `https` bleiben, höchstens 3. |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer wie `6h`. |
+| `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | Text | — | Kommagetrennte Schlüssel, denen das Gateway neben dem eingebauten Schlüssel von KPMR vertraut, je `<key id>:<base64 Ed25519 public key>`, für eine eigene Registry; ein Katalog, dessen Signatur kein vertrauenswürdiger Schlüssel bestätigt, wird abgelehnt. |
+
+Die Einstellungen `models_dev.*` früherer Versionen (`KAESO_MODELS_DEV_*`) sind veraltet: Sie funktionieren in 0.5 noch und werden in 0.6 entfernt. Bis dahin gilt `models_dev.sync` als `kpmr.sync`, wenn `kpmr.sync` nicht gesetzt ist, und `models_dev.url` und `models_dev.interval` werden ignoriert; das Gateway schreibt beim Start für jede eine Warnung ins Log. Benennen Sie sie in die obigen Einstellungen `kpmr.*` um.
 
 ### Updates
 

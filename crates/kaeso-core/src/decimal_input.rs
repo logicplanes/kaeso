@@ -117,7 +117,7 @@ mod tests {
 
     #[derive(Deserialize)]
     struct Price {
-        #[serde(deserialize_with = "crate::models_dev::price")]
+        #[serde(deserialize_with = "crate::kpmr::price")]
         value: Option<rust_decimal::Decimal>,
     }
 

@@ -83,16 +83,12 @@ test("general: the deletion grace period changes, and with deletion off no organ
   await expect(toastText(page, "Deletions wait 7 days")).toBeVisible();
 });
 
-test("model sources, system and the instance audit log", async ({ page }) => {
-  await openInstance(page, "Model sources");
-  const source = page.getByRole("table", { name: "Model sources" }).getByRole("row", { name: /models\.dev/ });
-  await expect(source.getByText("In use")).toBeVisible();
-  await expect(source.getByText(/\d[\d,]* models/)).toBeVisible();
-  await page.getByRole("button", { name: "Sync now" }).click();
-  await expect(toastText(page, /Synced: \d[\d,]* models|models\.dev couldn't be fetched/)).toBeVisible({ timeout: 30_000 });
-
-  await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/system"]`).click();
+test("system with its model data and the instance audit log", async ({ page }) => {
+  await openInstance(page, "System");
   await expect(page.getByText("Ready")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Model data" })).toBeVisible();
+  await expect(page.getByText(/\d[\d,]* models/)).toBeVisible();
+  await expect(page.getByText(/^Snapshot, /)).toBeVisible();
   await expect(page.getByText("PostgreSQL").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Check now" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Send test email" })).toBeVisible();

@@ -68,10 +68,12 @@ services:
   gateway:
     environment:
       KAESO_UPDATES_CHECK: "false"
-      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_KPMR_SYNC: "false"
 ```
 
-之后网关使用版本内置的模型数据，**更新**页面显示正在运行的版本，您需要手动更新。如果您维护一个与 `update.kaeso.app` 或 GitHub Releases API 响应方式相同的镜像站点，也可以把 `KAESO_UPDATES_RELEASES_URL` 指向它。
+之后网关使用版本内置的模型数据，**更新**页面显示正在运行的版本，您需要手动更新。如果您维护一个与 `update.kaeso.app` 或 GitHub Releases API 响应方式相同的镜像站点，也可以把 `KAESO_UPDATES_RELEASES_URL` 指向它；KPMR 目录的镜像则填入 `KAESO_KPMR_URL`（[KPMR](../concepts/kpmr.md#无法访问互联网时)）。
+
+设置了 `KAESO_MODELS_DEV_SYNC: "false"` 或在 `kaeso.toml` 中设置了 `[models_dev]` 的实例在 0.5 中会继续运行并保持离线，启动时会记录一条警告；0.6 不再读取它们，因此请把它们改为 `KAESO_KPMR_SYNC` 和 `[kpmr]`（[配置](configuration.md#kpmr)）。
 
 ## 更新器
 

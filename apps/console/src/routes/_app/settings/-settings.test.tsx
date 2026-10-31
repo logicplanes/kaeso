@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, project, signedIn, user, whoAmI } from "~/test/fixtures";
-import { instanceOrg, instanceSettings, instanceUser, me, member, modelsDev, orgUsage, system } from "~/test/fixtures/instance-account";
+import { instanceOrg, instanceSettings, instanceUser, me, member, orgUsage, system } from "~/test/fixtures/instance-account";
 import { logJob, logSettings, paged, platformKey, security, storage } from "~/test/fixtures/org";
 import { auditEvent } from "~/test/fixtures/shell";
 import { on, page, requests } from "~/test/network";
@@ -13,7 +13,6 @@ describe("settings addresses that moved", () => {
   it.each([
     ["/settings", "/settings/account/profile", {}],
     ["/settings/instance", "/settings/instance/general", {}],
-    ["/settings/instance/models", "/settings/instance/model-sources", {}],
     [`/settings/orgs/${ORG}`, `/settings/orgs/${ORG}/general`, {}],
     [`/settings/orgs/${ORG}/invites?invite=true`, `/settings/orgs/${ORG}/members`, { tab: "invites", invite: true }],
     [`/settings/orgs/${ORG}/logs?tab=storage`, `/settings/orgs/${ORG}/logging`, { tab: "storage" }],
@@ -24,7 +23,6 @@ describe("settings addresses that moved", () => {
     signedIn();
     on("GET", "me", me());
     on("GET", "instance/users", paged([]));
-    on("GET", "instance/models-dev", modelsDev());
     on("GET", "orgs/:org/members", paged([]));
     on("GET", "orgs/:org/invites", paged([]));
     on("GET", "orgs/:org/logs/storage", storage());
@@ -124,7 +122,6 @@ describe("instance settings", () => {
   it.each([
     ["general", "General", "instance/settings", instanceSettings()],
     ["logging", "Logging", "instance/settings", instanceSettings()],
-    ["model-sources", "Model sources", "instance/models-dev", modelsDev()],
     ["system", "System", "instance/system", system()],
   ])("opens %s with its data", async (path, title, api, reply) => {
     signedIn();

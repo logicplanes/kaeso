@@ -46,9 +46,8 @@
   "format.audit.action.memberRemove": "Mitglied entfernt",
   "format.audit.action.memberRightsUpdate": "Rolle oder Rechte eines Mitglieds geändert",
   "format.audit.action.modelAccessUpdate": "Modellzugriff geändert",
-  "format.audit.action.modelsDevModelDelisted": "Modell von models.dev entfernt",
-  "format.audit.action.modelsDevPriceChange": "Preis auf models.dev geändert",
-  "format.audit.action.modelsDevSync": "models.dev synchronisiert",
+  "format.audit.action.kpmrModelDelisted": "Modell aus KPMR entfernt",
+  "format.audit.action.kpmrPriceChange": "Preis in KPMR geändert",
   "format.audit.action.orgCreate": "Organisation erstellt",
   "format.audit.action.orgDeleteFinal": "Organisation gelöscht",
   "format.audit.action.orgDeleteNow": "Organisation sofort gelöscht",
@@ -122,7 +121,7 @@
   "format.audit.kind.logs": "Anfrage-Logs",
   "format.audit.kind.member": "Mitglieder",
   "format.audit.kind.modelAccess": "Modellzugriff",
-  "format.audit.kind.modelsDev": "models.dev",
+  "format.audit.kind.kpmr": "KPMR",
   "format.audit.kind.org": "Organisation",
   "format.audit.kind.platformKey": "Plattform-Schlüssel",
   "format.audit.kind.project": "Projekte",
@@ -214,5 +213,9 @@
   "format.audit.action.instanceAgentsPolicy": "Agenten-Richtlinie der Instanz geändert",
   "format.audit.action.securityAgentsPolicy": "Agenten-Richtlinie der Organisation geändert",
   "format.audit.kind.agent": "Agenten",
-  "format.targetKind.agent": "Agent"
+  "format.targetKind.agent": "Agent",
+  "format.audit.action.modelsDevSync": "models.dev synchronisiert",
+  "format.audit.action.modelsDevPriceChange": "Preis auf models.dev geändert",
+  "format.audit.action.modelsDevModelDelisted": "Modell von models.dev entfernt",
+  "format.audit.kind.modelsDev": "models.dev"
 }

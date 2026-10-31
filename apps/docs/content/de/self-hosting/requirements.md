@@ -38,7 +38,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | --- | --- | --- |
 | Eingehend | TCP-Ports 80 und 443, dazu UDP-Port 443 für HTTP/3 | Das Zertifikat und HTTPS |
 | Ausgehend | Der Host jedes Anbieters, den Sie nutzen ([Unterstützte Anbieter](../concepts/supported-providers.md)), oder die Basis-URL, die Sie für ihn festlegen ([Anbietereinstellungen](configuration.md#anbietereinstellungen)) | Die Anbieter, die Sie nutzen |
-| Ausgehend | `models.dev` | Modelldaten, einmal am Tag aktualisiert |
+| Ausgehend | `kpmr.kaeso.app` | Modelldaten von [KPMR](../concepts/kpmr.md), etwa stündlich geprüft |
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, alle 5 Minuten |
 | Ausgehend | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy, um das Zertifikat zu holen und zu erneuern |
 | Ausgehend | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker, um die Images von Kaeso zu laden, wenn Sie installieren oder aktualisieren |

@@ -143,6 +143,9 @@ fn load_config(source: &dyn Source) -> Result<Config> {
 async fn run(command: Command) -> Result<()> {
     let config = load_config(&ProcessSource)?;
     kaeso_server::telemetry::init_logging(&config.log)?;
+    for deprecated in config::deprecations(&ProcessSource) {
+        tracing::warn!("{deprecated}; see https://docs.kaeso.app/self-hosting/configuration#kpmr");
+    }
     for variable in config::unknown_variables(&ProcessSource) {
         tracing::warn!(
             %variable,

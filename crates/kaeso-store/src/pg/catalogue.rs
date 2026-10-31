@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use kaeso_core::catalogue::resolve::{Access, Alias, Catalogue};
 use kaeso_core::catalogue::{Availability, Entry, Fields};
-use kaeso_core::models_dev;
+use kaeso_core::kpmr;
 use kaeso_core::providers::OrgProviders;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
@@ -29,7 +29,7 @@ pub async fn snapshot(db: impl PgExecutor<'_>) -> Result<Option<SnapshotRow>, St
     Ok(sqlx::query_as!(
         SnapshotRow,
         "SELECT fetched_at, source_url, content_hash, format, data, model_count, last_attempt_at, last_error \
-         FROM models_dev_snapshot WHERE id = 1"
+         FROM kpmr_snapshot WHERE id = 1"
     )
     .fetch_optional(db)
     .await?)
@@ -37,7 +37,9 @@ pub async fn snapshot(db: impl PgExecutor<'_>) -> Result<Option<SnapshotRow>, St
 
 #[derive(Clone, Debug)]
 pub struct SyncState {
+    pub source_url: String,
     pub content_hash: Vec<u8>,
+    pub etag: Option<String>,
     pub format: Option<Vec<u8>>,
     pub last_attempt_at: Option<OffsetDateTime>,
     pub last_error: Option<String>,
@@ -46,32 +48,50 @@ pub struct SyncState {
 pub async fn sync_state(db: impl PgExecutor<'_>) -> Result<Option<SyncState>, StoreError> {
     Ok(sqlx::query_as!(
         SyncState,
-        "SELECT content_hash, format, last_attempt_at, last_error FROM models_dev_snapshot WHERE id = 1"
+        "SELECT source_url, content_hash, etag, format, last_attempt_at, last_error FROM kpmr_snapshot WHERE id = 1"
     )
     .fetch_optional(db)
     .await?)
 }
 
-pub async fn put_snapshot(
+pub struct NewSnapshot<'a> {
+    pub fetched_at: OffsetDateTime,
+    pub source_url: &'a str,
+    pub content_hash: &'a [u8],
+    pub etag: Option<&'a str>,
+    pub format: &'a [u8],
+    pub data: &'a serde_json::Value,
+    pub model_count: i32,
+}
+
+pub async fn put_snapshot(db: impl PgExecutor<'_>, s: NewSnapshot<'_>) -> Result<(), StoreError> {
+    sqlx::query!(
+        "INSERT INTO kpmr_snapshot (id, fetched_at, source_url, content_hash, etag, format, data, model_count, last_attempt_at) \
+         VALUES (1, $1, $2, $3, $4, $5, $6, $7, $1) \
+         ON CONFLICT (id) DO UPDATE SET fetched_at = $1, source_url = $2, content_hash = $3, etag = $4, format = $5, data = $6, \
+         model_count = $7, last_attempt_at = $1, last_error = NULL, updated_at = now()",
+        s.fetched_at,
+        s.source_url,
+        s.content_hash,
+        s.etag,
+        s.format,
+        s.data,
+        s.model_count
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn put_source(
     db: impl PgExecutor<'_>,
-    fetched_at: OffsetDateTime,
     source_url: &str,
-    content_hash: &[u8],
-    format: &[u8],
-    data: &serde_json::Value,
-    model_count: i32,
+    etag: Option<&str>,
 ) -> Result<(), StoreError> {
     sqlx::query!(
-        "INSERT INTO models_dev_snapshot (id, fetched_at, source_url, content_hash, format, data, model_count, last_attempt_at) \
-         VALUES (1, $1, $2, $3, $4, $5, $6, $1) \
-         ON CONFLICT (id) DO UPDATE SET fetched_at = $1, source_url = $2, content_hash = $3, format = $4, data = $5, \
-         model_count = $6, last_attempt_at = $1, last_error = NULL, updated_at = now()",
-        fetched_at,
+        "UPDATE kpmr_snapshot SET source_url = $1, etag = $2, updated_at = now() WHERE id = 1",
         source_url,
-        content_hash,
-        format,
-        data,
-        model_count
+        etag
     )
     .execute(db)
     .await?;
@@ -84,7 +104,7 @@ pub async fn record_attempt(
     error: Option<&str>,
 ) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE models_dev_snapshot SET last_attempt_at = $1, last_error = $2, updated_at = now() WHERE id = 1",
+        "UPDATE kpmr_snapshot SET last_attempt_at = $1, last_error = $2, updated_at = now() WHERE id = 1",
         at,
         error
     )
@@ -120,7 +140,7 @@ impl EntryRow {
         })?;
         let last_known = match &self.last_known {
             Some(v) => Some(
-                serde_json::from_value::<models_dev::Model>(v.clone()).map_err(|e| {
+                serde_json::from_value::<kpmr::Model>(v.clone()).map_err(|e| {
                     StoreError::Corrupt(format!("catalogue model {}: {e}", self.id))
                 })?,
             ),

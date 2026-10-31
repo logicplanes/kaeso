@@ -1504,114 +1504,6 @@
         "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
-    "/platform/v1/instance/models-dev": {
-      "get": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "The models.dev data in use and the last sync.",
-        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "getInstanceModelsDev",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModelsDevStatus"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.system.view"
-      }
-    },
-    "/platform/v1/instance/models-dev/sync": {
-      "post": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "Fetches models.dev now (even when periodic sync is off).",
-        "description": "**Right:** `instance.model_sources.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "postInstanceModelsDevSync",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModelsDevStatus"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.model_sources.manage"
-      }
-    },
     "/platform/v1/instance/orgs": {
       "get": {
         "tags": [
@@ -2794,7 +2686,7 @@
         "tags": [
           "instance"
         ],
-        "summary": "Version, component health and storage.",
+        "summary": "Version, component health, storage and model data.",
         "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "getInstanceSystem",
         "responses": {
@@ -15158,7 +15050,7 @@
         "tags": [
           "models"
         ],
-        "summary": "The models.dev values of a model, as a form to start an entry from.",
+        "summary": "The KPMR values of a model, as a form to start an entry from.",
         "description": "**Right:** `models.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectModelsPreview",
         "parameters": [
@@ -15251,7 +15143,7 @@
         "tags": [
           "models"
         ],
-        "summary": "Searches models.dev for models to add, newest first per provider.",
+        "summary": "Searches KPMR for models to add, newest first per provider.",
         "description": "**Right:** `models.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectModelsSearch",
         "parameters": [
@@ -15292,7 +15184,7 @@
           {
             "name": "include_deprecated",
             "in": "query",
-            "description": "Include models models.dev marks deprecated (default false).",
+            "description": "Include models KPMR marks deprecated (default false).",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -20011,7 +19903,7 @@
           },
           "custom": {
             "type": "boolean",
-            "description": "Not in models.dev: every required field is an override."
+            "description": "Not in KPMR: every required field is an override."
           },
           "delisted_at": {
             "type": [
@@ -20019,15 +19911,15 @@
               "null"
             ],
             "format": "date-time",
-            "description": "When models.dev stopped listing it."
+            "description": "When KPMR stopped listing it."
           },
           "deprecated": {
             "type": "boolean",
-            "description": "Whether models.dev marks it deprecated."
+            "description": "Whether KPMR marks it deprecated."
           },
           "effective": {
             "$ref": "#/components/schemas/Fields",
-            "description": "The values in use: override, else models.dev, else Kaeso's supplement."
+            "description": "The values in use: override, else KPMR's."
           },
           "egress_dialect": {
             "type": "string",
@@ -20040,7 +19932,7 @@
           },
           "listed": {
             "type": "boolean",
-            "description": "Whether models.dev lists it. An unlisted entry keeps its last known values."
+            "description": "Whether KPMR lists it. An unlisted entry keeps its last known values."
           },
           "model_id": {
             "type": "string",
@@ -20059,7 +19951,7 @@
           "revision": {
             "type": "integer",
             "format": "int64",
-            "description": "Goes up with every change, also when models.dev stops or starts listing\nit. Send it as `If-Match: \"<revision>\"` to change or remove the entry only\nif nothing changed it since.",
+            "description": "Goes up with every change, also when KPMR stops or starts listing\nit. Send it as `If-Match: \"<revision>\"` to change or remove the entry only\nif nothing changed it since.",
             "example": 1
           },
           "updated_at": {
@@ -20746,7 +20638,7 @@
           },
           "id": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id: lowercase letters and digits with single hyphens between them, at\nmost 40 characters. It can't be the id of a built-in provider or of a\nprovider listed on models.dev."
+            "description": "The id: lowercase letters and digits with single hyphens between them, at\nmost 40 characters. It can't be the id of a built-in provider or of a\nprovider listed in KPMR."
           },
           "name": {
             "type": "string",
@@ -21342,7 +21234,7 @@
       },
       "Fields": {
         "type": "object",
-        "description": "The fields of a catalogue entry. Every field is optional: an override\nsets only what it changes, and the effective entry is the merge of the\noverride, models.dev and the supplement, in that order.",
+        "description": "The fields of a catalogue entry. Every field is optional: an override\nsets only what it changes, and the effective entry is the override merged\nover KPMR's values.",
         "properties": {
           "adaptive_thinking": {
             "type": [
@@ -21357,6 +21249,13 @@
               "null"
             ],
             "description": "USD per million cache-read tokens."
+          },
+          "cache_write_1h_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cache-write tokens kept for an hour; absent means twice\nthe input price."
           },
           "cache_write_price": {
             "type": [
@@ -21526,6 +21425,13 @@
               }
             ],
             "description": "USD per million cache-read tokens."
+          },
+          "cache_write_1h_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million cache-write tokens kept for an hour; absent means twice\nthe input price."
           },
           "cache_write_price": {
             "oneOf": [
@@ -23584,7 +23490,7 @@
                 },
                 "custom": {
                   "type": "boolean",
-                  "description": "Not in models.dev: every required field is an override."
+                  "description": "Not in KPMR: every required field is an override."
                 },
                 "delisted_at": {
                   "type": [
@@ -23592,15 +23498,15 @@
                     "null"
                   ],
                   "format": "date-time",
-                  "description": "When models.dev stopped listing it."
+                  "description": "When KPMR stopped listing it."
                 },
                 "deprecated": {
                   "type": "boolean",
-                  "description": "Whether models.dev marks it deprecated."
+                  "description": "Whether KPMR marks it deprecated."
                 },
                 "effective": {
                   "$ref": "#/components/schemas/Fields",
-                  "description": "The values in use: override, else models.dev, else Kaeso's supplement."
+                  "description": "The values in use: override, else KPMR's."
                 },
                 "egress_dialect": {
                   "type": "string",
@@ -23613,7 +23519,7 @@
                 },
                 "listed": {
                   "type": "boolean",
-                  "description": "Whether models.dev lists it. An unlisted entry keeps its last known values."
+                  "description": "Whether KPMR lists it. An unlisted entry keeps its last known values."
                 },
                 "model_id": {
                   "type": "string",
@@ -23632,7 +23538,7 @@
                 "revision": {
                   "type": "integer",
                   "format": "int64",
-                  "description": "Goes up with every change, also when models.dev stops or starts listing\nit. Send it as `If-Match: \"<revision>\"` to change or remove the entry only\nif nothing changed it since.",
+                  "description": "Goes up with every change, also when KPMR stops or starts listing\nit. Send it as `If-Match: \"<revision>\"` to change or remove the entry only\nif nothing changed it since.",
                   "example": 1
                 },
                 "updated_at": {
@@ -26467,7 +26373,7 @@
         "properties": {
           "all_current": {
             "type": "boolean",
-            "description": "Add every current model of the provider instead: listed by models.dev,\nnot deprecated, producing text or embeddings."
+            "description": "Add every current model of the provider instead: listed by KPMR,\nnot deprecated, producing text or embeddings."
           },
           "model_ids": {
             "type": [
@@ -26477,7 +26383,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The model ids to add (models.dev models only)."
+            "description": "The model ids to add (KPMR models only)."
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
@@ -26496,7 +26402,7 @@
         "properties": {
           "custom": {
             "type": "boolean",
-            "description": "`true` for a model models.dev does not list; its required fields\n(modalities, limits, input and output prices, egress dialect) must\nthen be overrides."
+            "description": "`true` for a model KPMR does not list; its required fields\n(modalities, limits, input and output prices, egress dialect) must\nthen be overrides."
           },
           "model_id": {
             "type": "string",
@@ -26521,9 +26427,66 @@
         },
         "additionalProperties": false
       },
+      "ModelDataView": {
+        "type": "object",
+        "description": "The model data in use and how the gateway keeps it current.",
+        "required": [
+          "sync_enabled",
+          "url",
+          "built_in",
+          "fetched_at",
+          "model_count"
+        ],
+        "properties": {
+          "built_in": {
+            "type": "boolean",
+            "description": "Whether the data in use is the snapshot built into this version."
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the data in use was fetched, or generated for the built-in snapshot."
+          },
+          "last_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "The last time the gateway asked KPMR for changes."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last attempt failed, if it did."
+          },
+          "model_count": {
+            "type": "integer",
+            "description": "How many models it holds for the providers Kaeso calls.",
+            "minimum": 0
+          },
+          "revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The KPMR revision of the data in use."
+          },
+          "sync_enabled": {
+            "type": "boolean",
+            "description": "Whether the gateway fetches the KPMR catalogue by itself."
+          },
+          "url": {
+            "type": "string",
+            "description": "Where it fetches the catalogue from."
+          }
+        }
+      },
       "ModelSearch": {
         "type": "object",
-        "description": "The models.dev models matching a search, newest first per provider.",
+        "description": "The KPMR models matching a search, newest first per provider.",
         "required": [
           "data",
           "has_more",
@@ -26565,67 +26528,10 @@
         "properties": {
           "overrides": {
             "$ref": "#/components/schemas/FieldsInput",
-            "description": "Fields to set; a field set to `null` returns to models.dev's value."
+            "description": "Fields to set; a field set to `null` returns to KPMR's value."
           }
         },
         "additionalProperties": false
-      },
-      "ModelsDevStatus": {
-        "type": "object",
-        "description": "models.dev status.",
-        "required": [
-          "sync_enabled",
-          "url",
-          "interval_seconds",
-          "source",
-          "fetched_at",
-          "model_count"
-        ],
-        "properties": {
-          "fetched_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "When the data in use was fetched."
-          },
-          "interval_seconds": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The fetch interval in seconds.",
-            "minimum": 0
-          },
-          "last_attempt_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "The last sync attempt."
-          },
-          "last_error": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Why the last attempt failed, if it did."
-          },
-          "model_count": {
-            "type": "integer",
-            "description": "How many models it holds (for the providers Kaeso calls).",
-            "minimum": 0
-          },
-          "source": {
-            "type": "string",
-            "description": "Where the data in use came from (`embedded` for the built-in snapshot)."
-          },
-          "sync_enabled": {
-            "type": "boolean",
-            "description": "Whether the gateway fetches models.dev periodically."
-          },
-          "url": {
-            "type": "string",
-            "description": "Where it fetches from."
-          }
-        }
       },
       "MyMembership": {
         "type": "object",
@@ -26770,7 +26676,7 @@
           },
           "detected": {
             "$ref": "#/components/schemas/Fields",
-            "description": "Values to start its entry from: the limits the listing gives, and the\ninputs, outputs, limits and capabilities of the model models.dev lists\nunder the same name. Never prices."
+            "description": "Values to start its entry from: the limits the listing gives, and the\ninputs, outputs, limits and capabilities of the model KPMR lists\nunder the same name. Never prices."
           },
           "model_id": {
             "type": "string",
@@ -27611,7 +27517,7 @@
           },
           "fields": {
             "$ref": "#/components/schemas/Fields",
-            "description": "models.dev's values, completed by Kaeso's supplement."
+            "description": "KPMR's values."
           },
           "model_id": {
             "type": "string",
@@ -28696,7 +28602,7 @@
       },
       "SearchHit": {
         "type": "object",
-        "description": "A models.dev model.",
+        "description": "A model in KPMR.",
         "required": [
           "provider",
           "model_id",
@@ -28725,7 +28631,7 @@
           },
           "deprecated": {
             "type": "boolean",
-            "description": "Whether models.dev marks it deprecated."
+            "description": "Whether KPMR marks it deprecated."
           },
           "family": {
             "type": [
@@ -29882,7 +29788,8 @@
           "valkey",
           "clickhouse",
           "storage",
-          "log_buffer"
+          "log_buffer",
+          "model_data"
         ],
         "properties": {
           "clickhouse": {
@@ -29892,6 +29799,10 @@
           "log_buffer": {
             "$ref": "#/components/schemas/LogBufferView",
             "description": "Request log rows waiting for ClickHouse on this instance."
+          },
+          "model_data": {
+            "$ref": "#/components/schemas/ModelDataView",
+            "description": "The model data from KPMR, the Kaeso Provider & Model Registry."
           },
           "postgres": {
             "type": "string",

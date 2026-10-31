@@ -113,6 +113,7 @@ const SAME_IN_EVERY_LANGUAGE = new Set([
   "Google",
   "Gemini",
   "Mistral",
+  "KPMR",
   "models.dev",
   "GitHub",
   "Terraform",

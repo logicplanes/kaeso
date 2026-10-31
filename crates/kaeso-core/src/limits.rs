@@ -541,8 +541,16 @@ mod tests {
             kaeso_kpp::CacheTtl::OneHour,
         )));
         g.system.push(kaeso_kpp::Block::Text(system));
-        let one_hour = WorstCase::of(&kaeso_kpp::Request::Generate(g), 4000, &prices, openai());
-        assert_eq!(one_hour.nano_usd, 1000 * 6000);
+        let request = kaeso_kpp::Request::Generate(g);
+        let one_hour = WorstCase::of(&request, 4000, &prices, openai());
+        assert_eq!(one_hour.nano_usd, 1000 * 6000, "twice the input price");
+        prices.cache_write_1h_price = Some(dec!(7));
+        let listed = WorstCase::of(&request, 4000, &prices, openai());
+        assert_eq!(
+            listed.nano_usd,
+            1000 * 7000,
+            "the catalogue's one-hour price"
+        );
     }
 
     #[test]

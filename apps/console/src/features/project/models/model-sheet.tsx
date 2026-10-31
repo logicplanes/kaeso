@@ -198,13 +198,10 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
                       size="xs"
                       loading={patch.isPending && patch.variables?.[row.key] === null}
                       onClick={() =>
-                        patch.mutate(
-                          { [row.key]: null },
-                          { onSuccess: () => toast(t("models.fieldReset", "{field} reset to models.dev", { field: row.label })) },
-                        )
+                        patch.mutate({ [row.key]: null }, { onSuccess: () => toast(t("models.fieldReset", "{field} reset to KPMR", { field: row.label })) })
                       }
                     >
-                      {t("models.resetToModelsDev", "Reset to models.dev")}
+                      {t("models.resetToKpmr", "Reset to KPMR")}
                     </Button>
                   )}
                 </span>
@@ -282,7 +279,7 @@ function Flags({ m, provider }: { m: CatalogueModelView; provider: string }) {
         {t("models.deprecated", "Deprecated")}
       </Badge>,
     );
-    hints.push(t("models.deprecatedHint", "models.dev marks it deprecated; plan a move to a newer model."));
+    hints.push(t("models.deprecatedHint", "KPMR marks it deprecated; plan a move to a newer model."));
   }
   if (m.custom) flags.push(<Badge key="custom">{t("models.custom", "Custom")}</Badge>);
   else if (count) flags.push(<Badge key="over">{t("models.overriddenCount", "Overridden {count}", { count })}</Badge>);
@@ -294,7 +291,7 @@ function Flags({ m, provider }: { m: CatalogueModelView; provider: string }) {
           : t("models.delisted", "No longer listed")}
       </Badge>,
     );
-  if (!m.listed && !m.custom) hints.push(t("models.delistedHint", "models.dev stopped listing it; it keeps its last known values."));
+  if (!m.listed && !m.custom) hints.push(t("models.delistedHint", "KPMR stopped listing it; it keeps its last known values."));
   if (!flags.length) return null;
   return (
     <div className="flex flex-col gap-8">
@@ -312,7 +309,7 @@ function sourceOf(m: CatalogueModelView, overridden: boolean, key: keyof Fields,
   if (overridden) return m.custom ? t("models.source.setHere", "set here") : t("models.source.override", "override");
   if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) return "";
   if (key === "egress_dialect" && !m.effective.egress_dialect) return "Kaeso";
-  return "models.dev";
+  return "KPMR";
 }
 
 function inUse(m: Pick<CatalogueModelView, "effective" | "egress_dialect">): Fields {

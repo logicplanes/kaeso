@@ -34,7 +34,7 @@ Deutsch ist etwa ein Drittel länger als Englisch. Layouts müssen das aushalten
 
 Nie übersetzt werden:
 
-- Produkt- und Anbieternamen (Kaeso, OpenAI, Anthropic, models.dev)
+- Produkt- und Anbieternamen (Kaeso, KPMR, OpenAI, Anthropic, models.dev)
 - Modell-IDs, IDs und Schlüsselpräfixe
 - Code, Einstellungen (`KAESO_*`), Pfade und Feldnamen
 - Rechte (`keys.all.view`)

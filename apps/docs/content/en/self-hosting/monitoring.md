@@ -36,7 +36,7 @@ services:
 
 | Metric | Watch for |
 | --- | --- |
-| `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models without models.dev data |
+| `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models KPMR doesn't list |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Changes in the 99th percentile per route and per provider |
 | `kaeso_gateway_overhead_seconds{provider}` | Kaeso's own time before it calls the provider, without the request upload: checking the key, translating and checking limits. Its buckets start at 0.1 ms. A rise that `kaeso_time_to_first_byte_seconds` doesn't show is Kaeso's, not the provider's |
 | `kaeso_request_upload_seconds{provider}` | The time apps take to send their request bodies. It grows with the size of the prompt and the app's connection; a rise here is the apps' or the network's, not Kaeso's |
@@ -51,7 +51,7 @@ services:
 | `kaeso_log_rows_dropped_total`, `kaeso_clickhouse_write_failures_total` | Any increase: log rows were lost or are at risk |
 | `kaeso_usage_rows_dropped_total` | Any increase: PostgreSQL refused usage for good, and the log line `a usage row cannot be recorded` says why |
 | `kaeso_valkey_failures_total{operation}`, `kaeso_limits_fail_open_total{reason}` | Valkey trouble. Meanwhile, hard budgets refuse requests with 503, and other limits let them through unchecked |
-| `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` for background jobs |
+| `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` for background jobs. `job="kpmr_sync"` is the [KPMR](../concepts/kpmr.md) sync, `models_dev_sync` in earlier versions |
 | `kaeso_auth_failures_total{method, reason}` | Bursts of failed sign-ins or keys. `reason="throttled"` counts requests refused by [API key throttling](configuration.md#api-key-throttling) |
 | `kaeso_key_failure_blocks_total` | Any increase: an address is guessing API keys |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` or `dropped`: check the [email](email.md) settings |

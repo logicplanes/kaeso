@@ -284,7 +284,7 @@ test("custom providers: one is detected from its base URL and key, added with th
   const model = ((await listed.textContent()) ?? "").trim();
   await listed.click();
   const values = page.getByRole("dialog", { name: "Add a Research vLLM model" });
-  await expect(values.getByText(`Kaeso filled in what Research vLLM and models.dev say about ${model}; check it and set its prices.`)).toBeVisible();
+  await expect(values.getByText(`Kaeso filled in what Research vLLM and KPMR say about ${model}; check it and set its prices.`)).toBeVisible();
   await expect(values.getByRole("spinbutton", { name: "Context" })).not.toHaveValue("");
   await expect(values.getByRole("spinbutton", { name: "Input price" })).toHaveValue("");
   await values.getByRole("spinbutton", { name: "Input price" }).fill("0.1");

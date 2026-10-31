@@ -34,7 +34,7 @@ German runs about a third longer than English. Layouts must hold it: labels aren
 
 These are never translated:
 
-- Product and provider names (Kaeso, OpenAI, Anthropic, models.dev)
+- Product and provider names (Kaeso, KPMR, OpenAI, Anthropic, models.dev)
 - Model ids, ids and key prefixes
 - Code, settings (`KAESO_*`), paths and field names
 - Rights (`keys.all.view`)

@@ -133,7 +133,7 @@ for (const block of message.content) {
 | | OpenAI 格式 | Anthropic 格式 |
 | --- | --- | --- |
 | 分页 | 无，一次响应包含所有模型 | `limit`（1 到 1000，默认 20）、`after_id` 或 `before_id` |
-| 已弃用的模型 | 不标注 | 按 models.dev 的标注带有 `lifecycle: "deprecated"` |
+| 已弃用的模型 | 不标注 | 按 KPMR 的标注带有 `lifecycle: "deprecated"` |
 
 `GET /v1/models/{model}` 接受任何[模型名称](#模型名称)。模型不在目录中、密钥无权使用或服务商不提供该模型时，返回 404。
 

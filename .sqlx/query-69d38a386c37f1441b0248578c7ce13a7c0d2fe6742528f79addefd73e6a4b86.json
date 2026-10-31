@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE kpmr_snapshot SET source_url = $1, etag = $2, updated_at = now() WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "69d38a386c37f1441b0248578c7ce13a7c0d2fe6742528f79addefd73e6a4b86"
+}

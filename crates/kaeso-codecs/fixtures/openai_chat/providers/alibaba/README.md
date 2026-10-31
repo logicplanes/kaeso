@@ -1,6 +1,6 @@
 # Fixtures: Alibaba Cloud (`alibaba`) on `openai_chat`
 
-Alibaba Cloud Model Studio's OpenAI-compatible API in the international (Singapore) region, `POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions` and `GET /v1/models`, with `Authorization: Bearer`. Kaeso's base URL is `https://dashscope-intl.aliyuncs.com/compatible-mode`. Chat Completions is Model Studio's `generation` dialect. The China (Beijing) region, models.dev's `alibaba-cn`, has its own base URL and keys and is not recorded here.
+Alibaba Cloud Model Studio's OpenAI-compatible API in the international (Singapore) region, `POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions` and `GET /v1/models`, with `Authorization: Bearer`. Kaeso's base URL is `https://dashscope-intl.aliyuncs.com/compatible-mode`. Chat Completions is Model Studio's `generation` dialect. The China (Beijing) region, KPMR's `alibaba-cn`, has its own base URL and keys and is not recorded here.
 
 ## Sources (read 2026-10-30)
 

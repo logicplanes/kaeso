@@ -16,7 +16,7 @@ A custom provider is a server your organization adds itself, such as a self-host
 
 Without the right **Add provider keys**, Kaeso uses the key only to detect the settings; someone with the right adds it under **Provider keys** ([provider keys](provider-keys.md)). Last, add the provider's models to a project ([add its models](#add-its-models)).
 
-The **Id** starts from the server's host and follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes. An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed on [models.dev](https://models.dev), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
+The **Id** starts from the server's host and follows the name until you change it. Model names start with it, such as `research-vllm/llama-3.3-70b`, and it never changes. An id is lowercase letters and digits with single hyphens between them, at most 40 characters. It can't be the id of a built-in provider, or of a provider listed in [KPMR](../concepts/kpmr.md), because Kaeso may add that provider later. Each organization has its own ids, so two organizations can both have a `research-vllm`.
 
 Kaeso appends the format's path to the base URL, such as `/v1/chat/completions`, as it does for every provider. So it drops a trailing `/v1` or a pasted endpoint, such as `/v1/chat/completions`, and adds `https://` to an address without a scheme. A path before `/v1` stays: `https://proxy.example.com/llm/v1` gets requests at `https://proxy.example.com/llm/v1/chat/completions`. A server whose API doesn't live under `/v1` can't be added yet.
 
@@ -51,11 +51,11 @@ Kaeso speaks the plain format to a custom provider. It knows how each built-in p
 
 ## What Kaeso can't know
 
-models.dev knows nothing about your server, and a model listing names few of a model's values. When you add a model, Kaeso fills in what it can find, and you give the rest:
+KPMR knows nothing about your server, and a model listing names few of a model's values. When you add a model, Kaeso fills in what it can find, and you give the rest:
 
-- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. Kaeso never fills them in, because a price on models.dev is another provider's. It charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
-- **Limits.** The context window and the output limit, from the model listing or else from the model of the same name on models.dev. Kaeso uses them for budgets and to fill in the output limit that Messages requires.
-- **Capabilities.** Inputs, outputs, tool calling, reasoning, structured output, temperature and effort levels, from the model of the same name on models.dev. Kaeso refuses a request that needs a capability the model doesn't have before it calls your server.
+- **Prices.** Input and output prices, and cache prices if the server reports cached tokens. Kaeso never fills them in, because a price in KPMR is another provider's. It charges every request at these prices and holds budgets to them ([limits and budgets](limits-and-budgets.md)). Set `0` for a server you don't pay per token.
+- **Limits.** The context window and the output limit, from the model listing or else from the model of the same name in KPMR. Kaeso uses them for budgets and to fill in the output limit that Messages requires.
+- **Capabilities.** Inputs, outputs, tool calling, reasoning, structured output, temperature and effort levels, from the model of the same name in KPMR. Kaeso refuses a request that needs a capability the model doesn't have before it calls your server.
 
 These values stay as you set them. Nothing updates them later.
 
@@ -63,7 +63,7 @@ These values stay as you set them. Nothing updates them later.
 
 On a project's **Models** page, choose **Add models**. Custom providers are in the provider list next to the built-in ones. Choose yours, and the dialog asks the server's model listing, `GET /v1/models`, with the project's key. It lists the ids the server names that the catalogue doesn't have yet.
 
-Choose an id, or **Type a model id**, then check the model's values. Kaeso fills in the limits the listing gives, and the values of the model models.dev lists under the same name, ignoring case and an owner before the `/`: `meta-llama/Llama-3.3-70B-Instruct` takes those of `meta-llama/llama-3.3-70b-instruct`. You always enter the prices. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
+Choose an id, or **Type a model id**, then check the model's values. Kaeso fills in the limits the listing gives, and the values of the model KPMR lists under the same name, ignoring case and an owner before the `/`: `meta-llama/Llama-3.3-70B-Instruct` takes those of `meta-llama/llama-3.3-70b-instruct`. You always enter the prices. When the listing fails, the dialog says why and you type the id. Adding models needs the right **Manage models** in the project ([models and aliases](models-and-aliases.md)).
 
 Apps then call the model by its name, with the provider's id in front:
 

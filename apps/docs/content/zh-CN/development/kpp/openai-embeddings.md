@@ -88,12 +88,12 @@ order: 8
 
 ### Vercel
 
-来源：Vercel 的 [嵌入](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/embeddings) 页面（2026-10-29 阅读），以及 `fixtures/openai_embeddings/providers/vercel/` 中使用 `google/gemini-embedding-001` 和 `dimensions: 8` 的实时录制。当 models.dev 给某个 Vercel 模型 `type: "embedding"`（Vercel 的模型列表也是如此）时，它就是嵌入模型。回复中的 `providerMetadata`（路由和费用）保留在 extras 中，原样往返。免费套餐账户无权调用某些嵌入模型，例如 `openai/text-embedding-3-small`，它们返回 403。
+来源：Vercel 的 [嵌入](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/embeddings) 页面（2026-10-29 阅读），以及 `fixtures/openai_embeddings/providers/vercel/` 中使用 `google/gemini-embedding-001` 和 `dimensions: 8` 的实时录制。当 KPMR 给某个 Vercel 模型的类型为 `embedding`（Vercel 的模型列表也是如此）时，它就是嵌入模型。回复中的 `providerMetadata`（路由和费用）保留在 extras 中，原样往返。免费套餐账户无权调用某些嵌入模型，例如 `openai/text-embedding-3-small`，它们返回 403。
 
 ### Cohere
 
-来源：Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/cohere/` 中使用 `embed-english-light-v3.0` 和 `embed-v4.0` 的实时录制。Cohere 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答。其页面称不支持 `dimensions`，但 `embed-v4.0` 会遵循它（`responses/recorded-embed-dimensions`，256 个浮点数）；v3 模型以 400 拒绝。以 token ID 作为输入会被 422 拒绝。Cohere 的错误响应体为 `{"id", "message"}`，因此应用会收到带有 Cohere 消息的 OpenAI 错误。models.dev 未列出 Cohere 的 Embed 模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。
+来源：Cohere 的 [Compatibility API](https://docs.cohere.com/docs/compatibility-api) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/cohere/` 中使用 `embed-english-light-v3.0` 和 `embed-v4.0` 的实时录制。Cohere 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答。其页面称不支持 `dimensions`，但 `embed-v4.0` 会遵循它（`responses/recorded-embed-dimensions`，256 个浮点数）；v3 模型以 400 拒绝。以 token ID 作为输入会被 422 拒绝。Cohere 的错误响应体为 `{"id", "message"}`，因此应用会收到带有 Cohere 消息的 OpenAI 错误。KPMR 未列出 Cohere 的 Embed 模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。
 
 ### QwenCloud
 
-来源：阿里云百炼（现为 QwenCloud）的 [Embedding](https://www.alibabacloud.com/help/en/model-studio/embedding) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/alibaba/` 中在国际站（新加坡）地域使用 `text-embedding-v4` 和 `text-embedding-v3` 的实时录制。QwenCloud 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答；`dimensions` 可取每个模型列出的尺寸（`responses/recorded-embed-dimensions`，256 个浮点数），其他尺寸返回 400 并列出可用尺寸。一个批次最多 10 条输入；11 条返回 400（`errors/recorded-embed-batch-eleven`）。以 token ID 作为输入返回 400，生成模型返回 404。回答带有顶层 `id`，保留在扩展字段中。models.dev 未列出 QwenCloud 的嵌入模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。
+来源：阿里云百炼（现为 QwenCloud）的 [Embedding](https://www.alibabacloud.com/help/en/model-studio/embedding) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/alibaba/` 中在国际站（新加坡）地域使用 `text-embedding-v4` 和 `text-embedding-v3` 的实时录制。QwenCloud 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答；`dimensions` 可取每个模型列出的尺寸（`responses/recorded-embed-dimensions`，256 个浮点数），其他尺寸返回 400 并列出可用尺寸。一个批次最多 10 条输入；11 条返回 400（`errors/recorded-embed-batch-eleven`）。以 token ID 作为输入返回 400，生成模型返回 404。回答带有顶层 `id`，保留在扩展字段中。KPMR 未列出 QwenCloud 的嵌入模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。

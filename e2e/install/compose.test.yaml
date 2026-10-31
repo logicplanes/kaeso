@@ -13,7 +13,7 @@ services:
       KAESO_PUBLIC_URL: http://localhost:${KAESO_TEST_PORT}
       KAESO_MAIL_TRANSPORT: log
       KAESO_SMTP_FROM: Kaeso <kaeso@example.com>
-      KAESO_MODELS_DEV_SYNC: "false"
+      KAESO_KPMR_SYNC: "false"
       KAESO_UPDATES_CHECK: "false"
       KAESO_PROVIDERS_OPENAI_BASE_URL: http://mock:8080
       KAESO_PROVIDERS_ANTHROPIC_BASE_URL: http://mock:8080

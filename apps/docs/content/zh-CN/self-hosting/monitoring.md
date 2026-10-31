@@ -36,7 +36,7 @@ services:
 
 | 指标 | 关注点 |
 | --- | --- |
-| `kaeso_requests_total{surface, route, status, provider, model}` | `surface="model_api"` 上 `status=~"5.."` 的增长。没有 models.dev 数据的模型，`model` 为 `custom` |
+| `kaeso_requests_total{surface, route, status, provider, model}` | `surface="model_api"` 上 `status=~"5.."` 的增长。KPMR 未收录的模型，`model` 为 `custom` |
 | `kaeso_request_duration_seconds{surface, route}`、`kaeso_time_to_first_byte_seconds{provider}` | 各路由和各服务商的 99 分位数变化 |
 | `kaeso_gateway_overhead_seconds{provider}` | Kaeso 调用服务商之前自身花费的时间，不含请求上传：校验密钥、转换格式和检查限额。分桶从 0.1 ms 开始。如果 `kaeso_time_to_first_byte_seconds` 没有同样上升，多出的耗时来自 Kaeso，而不是服务商 |
 | `kaeso_request_upload_seconds{provider}` | 应用发送请求体所用的时间。它随提示词的大小和应用的网络连接增长；这里的上升来自应用或网络，而不是 Kaeso |
@@ -51,7 +51,7 @@ services:
 | `kaeso_log_rows_dropped_total`、`kaeso_clickhouse_write_failures_total` | 任何增长：日志行已丢失或面临丢失 |
 | `kaeso_usage_rows_dropped_total` | 任何增长：PostgreSQL 永久拒绝了用量记录，日志行 `a usage row cannot be recorded` 会说明原因 |
 | `kaeso_valkey_failures_total{operation}`、`kaeso_limits_fail_open_total{reason}` | Valkey 出现问题。在此期间，硬性预算以 503 拒绝请求，其他限额则不经检查直接放行 |
-| `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"` |
+| `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"`。`job="kpmr_sync"` 是与 [KPMR](../concepts/kpmr.md) 的同步，早期版本中为 `models_dev_sync` |
 | `kaeso_auth_failures_total{method, reason}` | 登录或密钥失败突增。`reason="throttled"` 统计被 [API 密钥限流](configuration.md#api-密钥限流)拒绝的请求 |
 | `kaeso_key_failure_blocks_total` | 任何增长：有地址在猜测 API 密钥 |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` 或 `dropped`：检查[邮件](email.md)设置 |

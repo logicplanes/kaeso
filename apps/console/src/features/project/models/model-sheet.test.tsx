@@ -42,23 +42,23 @@ describe("ModelSheet", () => {
     expect(within(s).getByText("Overridden 2")).toBeInTheDocument();
     expect(s).toHaveTextContent("Aliasesfast, default");
     expect(s).toHaveTextContent("Added15 Oct 2026 by Ada Okafor (you)");
-    expect(s).toHaveTextContent("Display nameSonnetoverrideReset to models.dev");
-    expect(s).toHaveTextContent("Input price$2.50 / M tokensoverrideReset to models.dev");
-    expect(s).toHaveTextContent("Cache write price—Sends as");
+    expect(s).toHaveTextContent("Display nameSonnetoverrideReset to KPMR");
+    expect(s).toHaveTextContent("Input price$2.50 / M tokensoverrideReset to KPMR");
+    expect(s).toHaveTextContent("Cache write price—1-hour cache write price—Sends as");
     expect(s).toHaveTextContent("Sends asAnthropic MessagesKaeso");
-    expect(s).toHaveTextContent("Structured outputNomodels.dev");
-    expect(s).toHaveTextContent("Effortslow, highmodels.dev");
-    expect(s).toHaveTextContent("Timeout120 smodels.dev");
-    expect(s).toHaveTextContent("Released29 Sep 2025models.dev");
+    expect(s).toHaveTextContent("Structured outputNoKPMR");
+    expect(s).toHaveTextContent("Effortslow, highKPMR");
+    expect(s).toHaveTextContent("Timeout120 sKPMR");
+    expect(s).toHaveTextContent("Released29 Sep 2025KPMR");
   });
 
-  it("marks a model models.dev no longer lists", async () => {
+  it("marks a model KPMR no longer lists", async () => {
     setUp([catalogueModel({ listed: false, delisted_at: "2026-09-01T00:00:00Z" }), catalogueModel({ id: "cm_old", model_id: "claude-2", listed: false })]);
     const { router } = await renderApp(projectPath("models?model=cm_sonnet"));
 
     const s = await sheet("Claude Sonnet 4.5");
     expect(await within(s).findByText("No longer listed since 1 Sep 2026")).toBeInTheDocument();
-    expect(within(s).getByText("models.dev stopped listing it; it keeps its last known values.")).toBeInTheDocument();
+    expect(within(s).getByText("KPMR stopped listing it; it keeps its last known values.")).toBeInTheDocument();
     expect(within(s).queryByText(/^Overridden/)).not.toBeInTheDocument();
     await router.navigate({ to: projectPath("models"), search: { model: "cm_old" } });
     expect(await within(await sheet("Claude Sonnet 4.5")).findByText("No longer listed")).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe("ModelSheet", () => {
     expect(await within(s).findByText("Unavailable")).toBeInTheDocument();
     expect(within(s).getByText("Deprecated")).toBeInTheDocument();
     expect(within(s).getByText("Anthropic doesn't serve it to this project's provider key; check the key's access or remove the model.")).toBeInTheDocument();
-    expect(within(s).getByText("models.dev marks it deprecated; plan a move to a newer model.")).toBeInTheDocument();
+    expect(within(s).getByText("KPMR marks it deprecated; plan a move to a newer model.")).toBeInTheDocument();
     expect(s).toHaveTextContent("AvailabilityUnavailable since 16 Oct 2026");
     for (const [id, text] of [
       ["cm_ok", "AvailabilityAvailable, checked 16 Oct 2026"],
@@ -100,7 +100,7 @@ describe("ModelSheet", () => {
     expect(await within(s).findByText("Custom")).toBeInTheDocument();
     expect(s).toHaveTextContent("Display nameClaude Sonnet 4.5set here");
     expect(within(s).queryByText("No longer listed")).not.toBeInTheDocument();
-    expect(within(s).queryByRole("button", { name: "Reset to models.dev" })).not.toBeInTheDocument();
+    expect(within(s).queryByRole("button", { name: "Reset to KPMR" })).not.toBeInTheDocument();
   });
 
   it("says when the model doesn't exist and goes back to the models", async () => {
@@ -155,7 +155,7 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Claude Sonnet 4.5");
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
-    expect(s).toHaveTextContent("Forced tool choiceNomodels.dev");
+    expect(s).toHaveTextContent("Forced tool choiceNoKPMR");
     await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
     const forced = within(s).getByRole("switch", { name: "Accepts a forced tool choice" });
     expect(forced).not.toBeChecked();
@@ -174,7 +174,7 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Claude Sonnet 4.5");
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
-    expect(s).toHaveTextContent("Thinking bindingYesmodels.dev");
+    expect(s).toHaveTextContent("Thinking bindingYesKPMR");
     await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
     const binding = within(s).getByRole("switch", { name: "Thinking binding" });
     expect(binding).toBeChecked();
@@ -205,15 +205,15 @@ describe("ModelSheet", () => {
     expect(requests("PATCH", ONE_MODEL)).toHaveLength(0);
   });
 
-  it("resets one field to models.dev", async () => {
+  it("resets one field to KPMR", async () => {
     setUp();
     on("PATCH", ONE_MODEL, catalogueModel());
     const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
 
     const s = await sheet("Sonnet");
     await within(s).findByText("Values in use");
-    await user.click(within(s).getAllByRole("button", { name: "Reset to models.dev" })[1] as HTMLElement);
-    expect(await notifications().findByText("Input price reset to models.dev")).toBeInTheDocument();
+    await user.click(within(s).getAllByRole("button", { name: "Reset to KPMR" })[1] as HTMLElement);
+    expect(await notifications().findByText("Input price reset to KPMR")).toBeInTheDocument();
     expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { input_price: null } }]);
   });
 
@@ -225,12 +225,12 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Sonnet");
     await within(s).findByText("Values in use");
-    const [name, price] = within(s).getAllByRole("button", { name: "Reset to models.dev" });
+    const [name, price] = within(s).getAllByRole("button", { name: "Reset to KPMR" });
     await user.click(price as HTMLElement);
     await waitFor(() => expect(price).toHaveAttribute("aria-busy", "true"));
     expect(name).not.toHaveAttribute("aria-busy");
     answer(catalogueModel());
-    expect(await notifications().findByText("Input price reset to models.dev")).toBeInTheDocument();
+    expect(await notifications().findByText("Input price reset to KPMR")).toBeInTheDocument();
   });
 
   it("shows a model of another provider by its id, with only the format the gateway sends it as", async () => {
@@ -384,6 +384,6 @@ describe("ModelSheet", () => {
     expect(edit).toHaveAttribute("aria-disabled", "true");
     await hoverReason(user, edit, /You need Manage models/);
     expect(within(s).getByRole("button", { name: "Model actions" })).toHaveAttribute("aria-disabled", "true");
-    expect(within(s).queryByRole("button", { name: "Reset to models.dev" })).not.toBeInTheDocument();
+    expect(within(s).queryByRole("button", { name: "Reset to KPMR" })).not.toBeInTheDocument();
   });
 });

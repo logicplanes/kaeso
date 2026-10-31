@@ -2,7 +2,6 @@
 
 mod common;
 
-use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use axum::http::{Method, StatusCode};
@@ -18,7 +17,7 @@ async fn project(app: &App, owner: &Owner) -> String {
 }
 
 fn embedded_model_count() -> usize {
-    kaeso_core::models_dev::embedded().unwrap().model_count()
+    kaeso_core::kpmr::embedded().unwrap().model_count()
 }
 
 fn base(owner: &Owner, project: &str) -> String {
@@ -43,16 +42,19 @@ async fn patch(app: &App, owner: &Owner, path: &str, body: Value) -> common::Res
 }
 
 #[tokio::test]
-async fn entries_store_only_overrides_and_merge_with_models_dev() {
+async fn entries_store_only_overrides_and_merge_with_kpmr() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
     let owner = app.setup().await;
     let p = project(&app, &owner).await;
     let b = base(&owner, &p);
 
-    let status = app.get("/instance/models-dev", &owner.cookie).await;
-    assert_eq!(status.body["source"], "embedded", "{:?}", status.body);
-    assert_eq!(status.body["model_count"], embedded_model_count());
+    let status = app.get("/instance/system", &owner.cookie).await;
+    let model_data = &status.body["model_data"];
+    assert_eq!(model_data["built_in"], true, "{:?}", status.body);
+    assert_eq!(model_data["model_count"], embedded_model_count());
+    assert_eq!(model_data["url"], kaeso_core::kpmr::DEFAULT_URL);
+    assert_eq!(model_data["last_attempt_at"], model_data["fetched_at"]);
 
     let hits = app
         .get(
@@ -529,30 +531,19 @@ async fn model_access_narrows_from_catalogue_to_member_to_key() {
     assert_eq!(left, 0);
 }
 
-async fn stub_models_dev(body: Arc<Mutex<(u16, String)>>) -> String {
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    let router = axum::Router::new().route(
-        "/api.json",
-        axum::routing::get(move || {
-            let body = body.clone();
-            async move {
-                let (status, text) = body.lock().unwrap().clone();
-                (StatusCode::from_u16(status).unwrap(), text)
-            }
-        }),
-    );
-    tokio::spawn(async move { axum::serve(listener, router).await });
-    format!("http://{addr}/api.json")
+async fn sync(app: &App) -> Result<kaeso_server::services::kpmr::Synced, String> {
+    kaeso_server::services::kpmr::sync(&app.state)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tokio::test]
 async fn syncs_audit_price_changes_and_keep_delisted_models() {
     let s = TestServices::start().await;
-    let mut data: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    let body = Arc::new(Mutex::new((200u16, data.to_string())));
-    let url = stub_models_dev(body.clone()).await;
-    let app = App::start_with(&s, &[("KAESO_MODELS_DEV_URL", url.as_str())]).await;
+    let mut data = common::kpmr::built_in();
+    let served = common::kpmr::Served::new(data.to_string());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(&s, &[("KAESO_KPMR_URL", url.as_str())]).await;
     let other = app.second_instance(&s).await;
     let owner = app.setup().await;
     let p = project(&app, &owner).await;
@@ -573,24 +564,28 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     .await;
     let fixed = add(&app, &owner, &p, json!({ "provider": "anthropic", "model_id": "claude-sonnet-4-5", "overrides": { "input_price": "3", "output_price": "15" } })).await;
 
-    data["anthropic"]["models"]["claude-haiku-4-5"]["cost"]["input"] = json!(1.5);
-    data["anthropic"]["models"]["claude-sonnet-4-5"]["cost"]["input"] = json!(4);
-    data["openai"]["models"]
+    common::kpmr::model(&mut data, "anthropic", "claude-haiku-4-5")["pricing"]["input"] =
+        json!("1.5");
+    common::kpmr::model(&mut data, "anthropic", "claude-sonnet-4-5")["pricing"]["input"] =
+        json!("4");
+    data["providers"]["openai"]["models"]
         .as_object_mut()
         .unwrap()
         .remove("gpt-4o");
-    data["openai"]["models"]["gpt-new"] =
-        json!({ "id": "gpt-new", "name": "GPT New", "cost": { "input": 1, "output": 2 } });
-    data["future_provider"] = json!({ "id": "future_provider", "models": {} });
-    body.lock().unwrap().1 = data.to_string();
+    data["providers"]["openai"]["models"]["gpt-new"] = json!({ "id": "gpt-new", "name": "GPT New", "origin": "kpmr",
+        "pricing": { "unit": "usd_per_million_tokens", "input": "1", "output": "2" } });
+    data["providers"]["future-provider"] = json!({ "id": "future-provider", "models": {} });
+    served.lock().unwrap().body = data.to_string();
 
-    let r = app
-        .post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
-        .await;
-    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["source"], url);
-    assert_eq!(r.body["last_error"], Value::Null);
-    assert_eq!(r.body["model_count"], embedded_model_count());
+    assert!(sync(&app).await.is_ok());
+    let system = app.get("/instance/system", &owner.cookie).await;
+    let model_data = &system.body["model_data"];
+    assert_eq!(model_data["url"], url);
+    assert_eq!(model_data["built_in"], false);
+    assert_eq!(model_data["sync_enabled"], false);
+    assert_eq!(model_data["last_error"], Value::Null);
+    assert_eq!(model_data["model_count"], embedded_model_count());
+    assert_eq!(model_data["revision"], data["revision"]);
 
     let h = app
         .get(
@@ -599,6 +594,7 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         )
         .await;
     assert_eq!(h.body["effective"]["input_price"], "1.5");
+    assert_eq!(h.body["effective"]["cache_write_1h_price"], "2");
     let g = app
         .get(
             &format!("{b}/models/{}", gpt["id"].as_str().unwrap()),
@@ -613,7 +609,7 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
 
     let instance = app
         .get(
-            "/instance/audit-log?action=models_dev.price_change",
+            "/instance/audit-log?action=kpmr.price_change",
             &owner.cookie,
         )
         .await;
@@ -646,12 +642,12 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
         .await;
     assert_eq!(
         f.body["effective"]["input_price"], "3",
-        "overrides win over models.dev"
+        "overrides win over KPMR"
     );
 
     let mut seen = false;
     for _ in 0..100 {
-        if other.state.models_dev.current().source == url {
+        if other.state.kpmr.current().source == url {
             seen = true;
             break;
         }
@@ -661,49 +657,70 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
     assert!(
         other
             .state
-            .models_dev
+            .kpmr
             .current()
             .snapshot
             .model("openai", "gpt-new")
             .is_some()
     );
 
-    let r = app
-        .post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
-        .await;
-    assert_eq!(r.body["last_error"], Value::Null);
-    *body.lock().unwrap() = (500, "down".into());
-    let r = app
-        .post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
-        .await;
-    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{:?}", r.body);
-    let status = app.get("/instance/models-dev", &owner.cookie).await;
+    assert_eq!(
+        sync(&app).await,
+        Ok(kaeso_server::services::kpmr::Synced::Unchanged)
+    );
+    assert_eq!(
+        served.lock().unwrap().not_modified,
+        1,
+        "the gateway asks with the ETag it stored"
+    );
+
+    let refused = |app: &App| {
+        let state = app.state.kpmr.current();
+        assert!(state.snapshot.model("openai", "gpt-new").is_some());
+    };
+    served.lock().unwrap().status = 500;
+    let err = sync(&app).await.unwrap_err();
+    assert!(err.contains("500"), "{err}");
+    let system = app.get("/instance/system", &owner.cookie).await;
     assert!(
-        status.body["last_error"].as_str().unwrap().contains("500"),
+        system.body["model_data"]["last_error"]
+            .as_str()
+            .unwrap()
+            .contains("500"),
         "{:?}",
-        status.body
+        system.body
     );
-    assert_eq!(status.body["source"], url);
-    *body.lock().unwrap() = (200, "{\"not\": \"models\"}".into());
-    let r = app
-        .post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
-        .await;
-    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE);
-    assert!(
-        app.state
-            .models_dev
-            .current()
-            .snapshot
-            .model("openai", "gpt-new")
-            .is_some()
-    );
+    refused(&app);
 
-    let mut back: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    back["openai"]["models"]["extra"] = json!({ "id": "extra" });
-    *body.lock().unwrap() = (200, back.to_string());
-    app.post("/instance/models-dev/sync", json!({}), Some(&owner.cookie))
-        .await
-        .expect_status(StatusCode::OK);
+    let mut tampered = data.clone();
+    common::kpmr::model(&mut tampered, "anthropic", "claude-haiku-4-5")["pricing"]["input"] =
+        json!("0");
+    {
+        let mut s = served.lock().unwrap();
+        s.status = 200;
+        s.body = tampered.to_string();
+        s.signed = false;
+    }
+    assert_eq!(
+        sync(&app).await.unwrap_err(),
+        "refused the KPMR catalogue: the catalogue is not signed"
+    );
+    refused(&app);
+    {
+        let mut s = served.lock().unwrap();
+        s.signed = true;
+        s.body = json!({ "format": 2, "providers": {} }).to_string();
+    }
+    assert_eq!(
+        sync(&app).await.unwrap_err(),
+        "the KPMR catalogue is in format 2; this gateway reads format 1"
+    );
+    refused(&app);
+
+    let mut back = common::kpmr::built_in();
+    back["providers"]["openai"]["models"]["extra"] = json!({ "id": "extra" });
+    served.lock().unwrap().body = back.to_string();
+    assert!(sync(&app).await.is_ok());
     let g = app
         .get(
             &format!("{b}/models/{}", gpt["id"].as_str().unwrap()),
@@ -716,7 +733,7 @@ async fn syncs_audit_price_changes_and_keep_delisted_models() {
 async fn run_sync_job(app: &App) -> String {
     let job = kaeso_server::jobs::all()
         .into_iter()
-        .find(|j| j.name == "models_dev_sync")
+        .find(|j| j.name == "kpmr_sync")
         .unwrap();
     kaeso_server::jobs::run_once(&app.state, job)
         .await
@@ -724,31 +741,34 @@ async fn run_sync_job(app: &App) -> String {
         .unwrap()
 }
 
+fn embedded_generated_at() -> time::OffsetDateTime {
+    kaeso_core::kpmr::embedded().unwrap().generated_at.unwrap()
+}
+
+fn after_the_built_in_snapshot(by: time::Duration) -> time::OffsetDateTime {
+    (embedded_generated_at() + by).max(
+        time::OffsetDateTime::now_utc()
+            .replace_nanosecond(0)
+            .unwrap(),
+    )
+}
+
 #[tokio::test]
 async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     let s = TestServices::start().await;
-    let body = Arc::new(Mutex::new((
-        200u16,
-        kaeso_core::models_dev::EMBEDDED.to_owned(),
-    )));
-    let url = stub_models_dev(body.clone()).await;
+    let served = common::kpmr::Served::new(kaeso_core::kpmr::EMBEDDED.to_owned());
+    let url = common::kpmr::serve(served.clone()).await;
     let app = App::start_with(
         &s,
         &[
-            ("KAESO_MODELS_DEV_URL", url.as_str()),
-            ("KAESO_MODELS_DEV_SYNC", "true"),
-            ("KAESO_MODELS_DEV_INTERVAL", "6h"),
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", "true"),
+            ("KAESO_KPMR_INTERVAL", "6h"),
         ],
     )
     .await;
-    let due = kaeso_core::models_dev::EMBEDDED_FETCHED_AT + time::Duration::hours(6);
-    app.clock.set(
-        due.max(
-            time::OffsetDateTime::now_utc()
-                .replace_nanosecond(0)
-                .unwrap(),
-        ),
-    );
+    app.clock
+        .set(after_the_built_in_snapshot(time::Duration::hours(6)));
 
     assert_eq!(run_sync_job(&app).await, "unchanged");
     assert_eq!(run_sync_job(&app).await, "not due");
@@ -756,17 +776,21 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
         .advance(time::Duration::hours(6) - time::Duration::SECOND);
     assert_eq!(run_sync_job(&app).await, "not due");
     app.clock.advance(time::Duration::SECOND);
+    assert_eq!(run_sync_job(&app).await, "unchanged");
+    assert_eq!(served.lock().unwrap().not_modified, 1);
+    app.clock.advance(time::Duration::hours(6));
 
-    let mut changed: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    changed["openai"]["models"]["gpt-new"] = json!({ "id": "gpt-new", "name": "GPT New" });
-    body.lock().unwrap().1 = changed.to_string();
+    let mut changed = common::kpmr::built_in();
+    changed["providers"]["openai"]["models"]["gpt-new"] =
+        json!({ "id": "gpt-new", "name": "GPT New" });
+    served.lock().unwrap().body = changed.to_string();
     assert_eq!(
         run_sync_job(&app).await,
         "applied: 0 price changes, 0 delisted, 0 listed again"
     );
     assert!(
         app.state
-            .models_dev
+            .kpmr
             .current()
             .snapshot
             .model("openai", "gpt-new")
@@ -775,17 +799,71 @@ async fn the_sync_job_runs_once_per_interval_and_an_hour_after_a_failure() {
     assert_eq!(run_sync_job(&app).await, "not due");
 
     app.clock.advance(time::Duration::hours(6));
-    body.lock().unwrap().0 = 500;
+    served.lock().unwrap().status = 500;
     let job = kaeso_server::jobs::all()
         .into_iter()
-        .find(|j| j.name == "models_dev_sync")
+        .find(|j| j.name == "kpmr_sync")
         .unwrap();
     assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
     app.clock
         .advance(time::Duration::hours(1) - time::Duration::SECOND);
     assert_eq!(run_sync_job(&app).await, "not due");
     app.clock.advance(time::Duration::SECOND);
-    body.lock().unwrap().0 = 200;
+    served.lock().unwrap().status = 200;
+    assert_eq!(run_sync_job(&app).await, "unchanged");
+}
+
+#[tokio::test]
+async fn an_install_that_turned_models_dev_sync_off_never_asks_kpmr() {
+    let s = TestServices::start().await;
+    let served = common::kpmr::Served::new(kaeso_core::kpmr::EMBEDDED.to_owned());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", ""),
+            ("KAESO_MODELS_DEV_SYNC", "false"),
+        ],
+    )
+    .await;
+    assert!(!app.state.config.kpmr.sync);
+    app.clock
+        .set(after_the_built_in_snapshot(time::Duration::DAY));
+    assert_eq!(run_sync_job(&app).await, "not due");
+    let owner = app.setup().await;
+    let system = app.get("/instance/system", &owner.cookie).await;
+    assert_eq!(system.body["model_data"]["sync_enabled"], false);
+    assert_eq!(system.body["model_data"]["built_in"], true);
+}
+
+#[tokio::test]
+async fn by_default_the_sync_job_follows_the_interval_kpmr_suggests() {
+    let s = TestServices::start().await;
+    let mut doc = common::kpmr::built_in();
+    doc["refresh_seconds"] = json!(600);
+    doc["revision"] = json!("next");
+    let served = common::kpmr::Served::new(doc.to_string());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", "true"),
+        ],
+    )
+    .await;
+    app.clock
+        .set(after_the_built_in_snapshot(time::Duration::HOUR));
+    assert_eq!(
+        run_sync_job(&app).await,
+        "applied: 0 price changes, 0 delisted, 0 listed again"
+    );
+    assert_eq!(app.state.kpmr.current().snapshot.refresh_seconds, Some(600));
+    app.clock
+        .advance(time::Duration::minutes(10) - time::Duration::SECOND);
+    assert_eq!(run_sync_job(&app).await, "not due");
+    app.clock.advance(time::Duration::SECOND);
     assert_eq!(run_sync_job(&app).await, "unchanged");
 }
 
@@ -799,13 +877,13 @@ async fn store_as_an_older_build(
         .into_iter()
         .filter(|id| id.as_str() != "mistral")
         .collect();
-    let old = kaeso_core::models_dev::parse(body.as_bytes(), &without_mistral)
+    let old = kaeso_core::kpmr::parse(body.as_bytes(), &without_mistral)
         .unwrap()
-        .snapshot;
+        .catalogue;
     sqlx::query(
-        "UPDATE models_dev_snapshot SET fetched_at = $1, source_url = $2, \
-         content_hash = sha256(convert_to($3, 'UTF8')), format = NULL, data = $4, model_count = $5, \
-         last_attempt_at = $1, last_error = NULL WHERE id = 1",
+        "UPDATE kpmr_snapshot SET fetched_at = $1, source_url = $2, \
+         content_hash = sha256(convert_to($3, 'UTF8')), etag = NULL, format = NULL, data = $4, \
+         model_count = $5, last_attempt_at = $1, last_error = NULL WHERE id = 1",
     )
     .bind(fetched_at)
     .bind(source)
@@ -819,7 +897,7 @@ async fn store_as_an_older_build(
 
 fn mistral_models(app: &App) -> usize {
     app.state
-        .models_dev
+        .kpmr
         .current()
         .snapshot
         .providers
@@ -830,37 +908,34 @@ fn mistral_models(app: &App) -> usize {
 #[tokio::test]
 async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_it_again() {
     let s = TestServices::start().await;
-    let mut doc: Value = serde_json::from_str(kaeso_core::models_dev::EMBEDDED).unwrap();
-    doc["anthropic"]["models"]["claude-haiku-4-5"]["cost"]["input"] = json!(1.5);
-    let served = doc.to_string();
-    let body = Arc::new(Mutex::new((200u16, served.clone())));
-    let url = stub_models_dev(body.clone()).await;
+    let mut doc = common::kpmr::built_in();
+    common::kpmr::model(&mut doc, "anthropic", "claude-haiku-4-5")["pricing"]["input"] =
+        json!("1.5");
+    let body = doc.to_string();
+    let served = common::kpmr::Served::new(body.clone());
+    let url = common::kpmr::serve(served.clone()).await;
     let app = App::start_with(
         &s,
         &[
-            ("KAESO_MODELS_DEV_URL", url.as_str()),
-            ("KAESO_MODELS_DEV_SYNC", "true"),
-            ("KAESO_MODELS_DEV_INTERVAL", "24h"),
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", "true"),
+            ("KAESO_KPMR_INTERVAL", "24h"),
         ],
     )
     .await;
-    let now = (kaeso_core::models_dev::EMBEDDED_FETCHED_AT + time::Duration::DAY).max(
-        time::OffsetDateTime::now_utc()
-            .replace_nanosecond(0)
-            .unwrap(),
-    );
+    let now = after_the_built_in_snapshot(time::Duration::DAY);
     app.clock.set(now);
     let fetched_at = now - time::Duration::HOUR;
-    store_as_an_older_build(&app, &served, &url, fetched_at).await;
-    let built_in = kaeso_core::models_dev::embedded().unwrap().providers["mistral"]
+    store_as_an_older_build(&app, &body, &url, fetched_at).await;
+    let built_in = kaeso_core::kpmr::embedded().unwrap().providers["mistral"]
         .models
         .len();
     assert!(built_in > 0);
 
-    kaeso_server::services::models_dev::init(&app.state)
+    kaeso_server::services::kpmr::init(&app.state)
         .await
         .unwrap();
-    let loaded = app.state.models_dev.current();
+    let loaded = app.state.kpmr.current();
     assert_eq!(loaded.source, url);
     assert_eq!(loaded.fetched_at, fetched_at);
     assert_eq!(mistral_models(&app), built_in);
@@ -869,34 +944,34 @@ async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_i
         .model("anthropic", "claude-haiku-4-5")
         .unwrap();
     assert_eq!(
-        haiku.cost.as_ref().unwrap().input.unwrap().to_string(),
+        haiku.pricing.as_ref().unwrap().input.unwrap().to_string(),
         "1.5",
         "the stored data stays in use for the providers it has"
     );
 
-    body.lock().unwrap().0 = 500;
+    served.lock().unwrap().status = 500;
     let job = kaeso_server::jobs::all()
         .into_iter()
-        .find(|j| j.name == "models_dev_sync")
+        .find(|j| j.name == "kpmr_sync")
         .unwrap();
     assert!(kaeso_server::jobs::run_once(&app.state, job).await.is_err());
     assert_eq!(run_sync_job(&app).await, "not due");
     app.clock.advance(time::Duration::HOUR);
-    body.lock().unwrap().0 = 200;
+    served.lock().unwrap().status = 200;
     assert_eq!(
         run_sync_job(&app).await,
         "applied: 0 price changes, 0 delisted, 0 listed again",
-        "the same models.dev data is applied again for the new provider"
+        "the same catalogue is applied again for the new provider"
     );
     assert_eq!(mistral_models(&app), built_in);
     assert_eq!(run_sync_job(&app).await, "not due");
     app.clock.advance(time::Duration::DAY);
     assert_eq!(run_sync_job(&app).await, "unchanged");
 
-    kaeso_server::services::models_dev::init(&app.state)
+    kaeso_server::services::kpmr::init(&app.state)
         .await
         .unwrap();
-    assert_eq!(app.state.models_dev.current().source, url);
+    assert_eq!(app.state.kpmr.current().source, url);
     assert_eq!(mistral_models(&app), built_in);
 }
 
@@ -906,18 +981,18 @@ async fn an_older_builds_copy_of_the_built_in_snapshot_is_replaced() {
     let app = App::start(&s).await;
     store_as_an_older_build(
         &app,
-        kaeso_core::models_dev::EMBEDDED,
-        kaeso_server::services::models_dev::EMBEDDED_SOURCE,
-        kaeso_core::models_dev::EMBEDDED_FETCHED_AT,
+        kaeso_core::kpmr::EMBEDDED,
+        kaeso_server::services::kpmr::EMBEDDED_SOURCE,
+        embedded_generated_at(),
     )
     .await;
 
-    kaeso_server::services::models_dev::init(&app.state)
+    kaeso_server::services::kpmr::init(&app.state)
         .await
         .unwrap();
     assert!(mistral_models(&app) > 0);
     let (count, formatted): (i32, bool) =
-        sqlx::query_as("SELECT model_count, format IS NOT NULL FROM models_dev_snapshot")
+        sqlx::query_as("SELECT model_count, format IS NOT NULL FROM kpmr_snapshot")
             .fetch_one(&app.state.pg)
             .await
             .unwrap();

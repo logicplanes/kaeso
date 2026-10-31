@@ -9,7 +9,7 @@
             "id": "instance.system.view",
             "scope": "instance",
             "name": "View the system",
-            "description": "See the system, the instance settings, model sources and the update status.",
+            "description": "See the system and its model data, the instance settings and the update status.",
             "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
@@ -22,17 +22,6 @@
             "name": "Change instance settings",
             "description": "Change general, mail, logging, time zone and account settings, and send a test email.",
             "sensitive": true,
-            "recent_sign_in": false,
-            "cloud_only": false,
-            "owner_only": false,
-            "needs": ["instance.system.view"]
-          },
-          {
-            "id": "instance.model_sources.manage",
-            "scope": "instance",
-            "name": "Manage model sources",
-            "description": "Sync the model data from models.dev.",
-            "sensitive": false,
             "recent_sign_in": false,
             "cloud_only": false,
             "owner_only": false,
@@ -1406,11 +1395,10 @@
     {
       "id": "configure",
       "name": "Configure",
-      "description": "Reads the instance and changes its settings, model sources and update settings.",
+      "description": "Reads the instance and changes its settings and update settings.",
       "rights": [
         "instance.system.view",
         "instance.settings.manage",
-        "instance.model_sources.manage",
         "instance.updates.manage",
         "instance.users.view",
         "instance.orgs.view",
@@ -1424,7 +1412,6 @@
       "rights": [
         "instance.system.view",
         "instance.settings.manage",
-        "instance.model_sources.manage",
         "instance.updates.manage",
         "instance.updates.apply",
         "instance.users.view",

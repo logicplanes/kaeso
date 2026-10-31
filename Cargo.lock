@@ -2558,6 +2558,8 @@ dependencies = [
 name = "kaeso-core"
 version = "0.4.8"
 dependencies = [
+ "base64 0.23.1",
+ "ed25519-dalek",
  "idna",
  "insta",
  "kaeso-codecs",
@@ -2573,7 +2575,6 @@ dependencies = [
  "subtle",
  "thiserror 2.0.21",
  "time",
- "toml",
  "unicode-normalization",
  "url",
  "utoipa",
@@ -2633,6 +2634,7 @@ dependencies = [
  "base64 0.23.1",
  "bytes",
  "clickhouse",
+ "ed25519-dalek",
  "futures",
  "hickory-resolver",
  "http-body-util",
@@ -6506,7 +6508,9 @@ dependencies = [
 name = "xtask"
 version = "0.4.8"
 dependencies = [
+ "base64 0.23.1",
  "clap",
+ "ed25519-dalek",
  "kaeso-codecs",
  "kaeso-core",
  "kaeso-kpp",

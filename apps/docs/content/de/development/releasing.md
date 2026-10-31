@@ -88,7 +88,7 @@ Der Workflow **Labels** setzt die Bereichs-Labels und `internal` bei jedem Push 
 2. Aktualisieren Sie die Modelldaten, damit eine frische Installation mit aktuellen Modellen und Preisen startet, und mergen Sie das Ergebnis über einen Pull Request nach `dev`:
 
    ```bash
-   cargo xtask models-dev
+   cargo xtask kpmr
    ```
 
 3. Pushen Sie `dev` als Fast-Forward nach `prod`:

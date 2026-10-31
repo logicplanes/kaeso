@@ -62,13 +62,11 @@ Agents, such as Claude Code or Codex, act for their user through the [MCP server
 
 Only an instance admin's console session changes the policy; no agent can. An agent never makes someone an instance admin, changes single sign-on for instance admins, or deletes a user or an organization at once. [Instance rights](../concepts/rights.md#instance-rights) lists what each right allows.
 
-## Sync model data
-
-**Model sources** shows the install's models.dev data: the data in use, the last sync, and the automatic sync, every 24 hours by default. **Sync now** fetches it at once. If models.dev can't be reached, the current data stays in use.
-
 ## Check the system
 
 **System** shows the gateway's version and state, and whether PostgreSQL, ClickHouse and Valkey are up. ClickHouse shows as off when the install keeps no request logs. It also shows the request log buffer, the storage and how the gateway sends email. The page refreshes every 10 seconds.
+
+**Model data** shows the data from [KPMR](../concepts/kpmr.md) in use: its source, its revision, when it was fetched, how many models it holds, the last check and its error, if any. The gateway keeps the data current by itself; only the [configuration](../self-hosting/configuration.md#kpmr) changes how. If KPMR can't be reached, the current data stays in use.
 
 ## Update Kaeso
 
