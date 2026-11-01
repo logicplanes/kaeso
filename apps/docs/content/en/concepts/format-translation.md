@@ -34,7 +34,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 ## What carries across
 
 - **Conversations.** System instructions, user and assistant turns, text, images and documents. A system message in the middle of an Anthropic conversation reaches OpenAI as a later system message, and one in the middle of an OpenAI conversation reaches Anthropic as text of the next user turn.
-- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results.
+- **Tools.** Function tools, tool choice, parallel tool calls, tool calls and tool results. Images and files a tool returned reach a Chat Completions model in the user message after the results, because its tool messages hold only text ([media in tool results](../development/kpp/cross-format.md#media-in-tool-results)).
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
 - **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`.

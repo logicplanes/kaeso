@@ -128,6 +128,7 @@ pub(crate) fn for_target<'a>(
             history::agent_messages(&mut draft, ctx.chat_profile.provider)?;
             history::as_function_calls(&mut draft)?;
             place_system_for_chat(&mut draft, target);
+            media_after_tool_results(&mut draft);
         }
         DialectId::OpenAiResponses => {
             web_search::for_responses(&mut draft, profile)?;
@@ -353,6 +354,62 @@ fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
     }
     out.append(&mut deferred);
     r.messages = out;
+}
+
+const MEDIA_MOVED: &str = "The rest of this result is in the next message.";
+
+fn is_media(block: &Block) -> bool {
+    matches!(block, Block::Image(_) | Block::Document(_))
+}
+
+fn returns_media(block: &Block) -> bool {
+    matches!(block, Block::ToolResult(r) if r.content.iter().any(is_media))
+}
+
+// Chat Completions takes images and files only in user messages: a `tool` message's content
+// is text (`ChatCompletionToolMessageParam`), and OpenAI and DeepSeek refuse anything else.
+// The media a tool returned follow its results in the user message instead.
+fn media_after_tool_results(d: &mut Draft<'_>) {
+    if !d
+        .get()
+        .messages
+        .iter()
+        .any(|m| m.role == Role::User && m.blocks.iter().any(returns_media))
+    {
+        return;
+    }
+    let mut moved_from = Vec::new();
+    for m in d.edit().messages.iter_mut() {
+        if m.role != Role::User {
+            continue;
+        }
+        let mut moved: Vec<Block> = Vec::new();
+        let mut after_results = 0;
+        for (i, block) in m.blocks.iter_mut().enumerate() {
+            let Block::ToolResult(result) = block else {
+                continue;
+            };
+            after_results = i + 1;
+            if !result.content.iter().any(is_media) {
+                continue;
+            }
+            let (media, kept): (Vec<Block>, Vec<Block>) = std::mem::take(&mut result.content)
+                .into_iter()
+                .partition(is_media);
+            result.content = kept;
+            result.content.push(Block::text(MEDIA_MOVED));
+            moved.push(Block::text(format!(
+                "The rest of the result of tool call `{}`:",
+                result.call_id
+            )));
+            moved.extend(media);
+            moved_from.push(result.call_id.clone());
+        }
+        m.blocks.splice(after_results..after_results, moved);
+    }
+    for id in moved_from {
+        d.adapt(format!("tool result {id}"));
+    }
 }
 
 fn null_bookkeeping(message: &Message) -> bool {

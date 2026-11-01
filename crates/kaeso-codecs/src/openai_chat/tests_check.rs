@@ -252,7 +252,7 @@ fn file_ids_of_another_provider_are_refused_on_egress() {
 }
 
 #[test]
-fn content_in_roles_that_cannot_carry_it_is_refused() {
+fn content_in_roles_that_cannot_carry_it_is_refused_or_moved() {
     let img = || Block::image(Source::Url("https://example.com/a.png".into()));
     let r = base().with_message(Message::new(Role::Assistant, vec![img()]));
     assert_eq!(feature(r), "image in assistant messages");
@@ -273,10 +273,22 @@ fn content_in_roles_that_cannot_carry_it_is_refused() {
             Role::User,
             vec![Block::tool_result("c1", vec![doc], false)],
         ));
+    let (body, ctx) = encode_body(r);
+    assert_eq!(body["messages"][2]["role"], "tool", "{body}");
+    assert_eq!(body["messages"][3]["content"][1]["type"], "file", "{body}");
+    assert_eq!(ctx.adapted, ["tool result c1"]);
+    let r = base().with_message(Message::new(Role::System, vec![doc_in_system()]));
     assert_eq!(
         feature(r),
         "document in system, developer and tool messages"
     );
+}
+
+fn doc_in_system() -> Block {
+    Block::Document(DocumentBlock::new(Source::base64(
+        "application/pdf",
+        "JVBE",
+    )))
 }
 
 #[test]

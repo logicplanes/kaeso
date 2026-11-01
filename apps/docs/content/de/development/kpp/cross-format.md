@@ -250,6 +250,16 @@ Die Argumente eines Tool-Aufrufs sind in jedem Format ein JSON-Objekt. Chat Comp
 - **Andere Werte im Gespräch, für Anthropic.** `tool_use.input` muss ein Objekt sein, und Anthropic lehnt die ganze Anfrage ab, wenn eines im Verlauf keines ist. Ein Aufruf aus einem anderen Format, dessen Argumente etwas anderes sind, wird deshalb zu einem Objekt: Text, der kein JSON ist, etwa von einem Ausgabelimit abgeschnittene Argumente, wird zu `{"input": "<der Text>"}`, wie die [Eingabe eines Freiform-Tools](#tool-verlauf-von-codex); ein Array, eine Zahl oder ein Wahrheitswert wird zu `{"input": <der Wert>}`; und `null` wird zu `{}`. Das Modell sieht, was es geschrieben hat, und das Tool-Ergebnis danach. Jeder solche Aufruf wird in `kaeso-adapted` als `tool call` mit seiner ID genannt, etwa `tool call call_abc`. Anbieter von Chat Completions und Responses bekommen die Argumente wie gesendet. Ein eigenes `tool_use` einer Anthropic-App mit einem `input`, das kein Objekt ist, bleibt `Unsupported`.
 - **Antworten.** Eine Antwort an eine Anthropic-App mit einem Tool-Aufruf, dessen Argumente kein Objekt sind, wird abgelehnt, weil die App das Tool mit Argumenten ausführen würde, die das Modell nie geschrieben hat ([Antworten bei Anthropic](anthropic-messages.md#antworten)).
 
+## Medien in Tool-Ergebnissen
+
+Claudes `tool_result` und das `function_call_output` von Responses können Bilder und Dateien enthalten, etwa den Screenshot eines Tools oder das Bild, das `Read` von Claude Code oder `view_image` von Codex öffnet. Eine `tool`-Nachricht von Chat Completions enthält nur Text (`ChatCompletionToolMessageParam`), und OpenAI und DeepSeek lehnen dort ein Bild ab. Für Chat-Completions-Modelle verschiebt Kaeso sie daher:
+
+- **Die Tool-Nachricht** behält den Text des Ergebnisses, gefolgt von `The rest of this result is in the next message.`
+- **Die Benutzernachricht nach den Ergebnissen** beginnt für jedes solche Ergebnis mit `` The rest of the result of tool call `<id>`: `` und den Bildern und Dateien des Ergebnisses in ihrer Reihenfolge. Text, den die App nach den Ergebnissen gesendet hat, folgt danach.
+- **Der Header.** Jedes Ergebnis wird im Header `kaeso-adapted` der Antwort als `tool result` mit der ID des Aufrufs genannt, etwa `tool result call_abc`.
+
+Anthropic- und Responses-Modelle bekommen die Medien unverändert im Tool-Ergebnis. Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
+
 ## Nutzung
 
 `Usage::input_tokens` schließt Cache-Lesevorgänge und Cache-Schreibvorgänge aus, die eigene Felder sind. Das entspricht den Preisen im KPMR-Katalog, sodass sich die Kosten als Summe aus jeder Anzahl mal ihrem Preis ergeben. Das rohe Nutzungsobjekt des Anbieters bleibt immer erhalten.

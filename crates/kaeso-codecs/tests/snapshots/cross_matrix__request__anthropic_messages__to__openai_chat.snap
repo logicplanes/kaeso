@@ -1488,9 +1488,151 @@ expression: outcomes
     "path": "/v1/chat/completions"
   },
   "tool-result-multi-turn": {
-    "message": "`image in system, developer and tool messages` is not supported by OpenAI Chat Completions. It only accepts that content in other roles; move or remove the image.",
-    "param": "messages[2].blocks[1].content[1]",
-    "unsupported": "image in system, developer and tool messages"
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "What's the weather and the local time in Paris and in Tokyo?",
+          "role": "user"
+        },
+        {
+          "content": "I'll look up the weather and local time for both cities.",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\n            \"location\": \"Paris, France\",\n            \"unit\": \"celsius\"\n          }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n            \"location\": \"Tokyo, Japan\",\n            \"unit\": \"celsius\"\n          }",
+                "name": "get_weather"
+              },
+              "id": "toolu_01i9erRrqtgtQAjVyyvcAdnH",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n            \"timezone\": \"Europe/Paris\"\n          }",
+                "name": "get_time"
+              },
+              "id": "toolu_01krb5XZirSQZiYWNMB6VT9o",
+              "type": "function"
+            },
+            {
+              "function": {
+                "arguments": "{\n            \"timezone\": \"Asia/Tokyo\"\n          }",
+                "name": "get_time"
+              },
+              "id": "toolu_01tbdagxGypaxguXw1B6gfCo",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "18°C, light rain",
+          "role": "tool",
+          "tool_call_id": "toolu_01Ej1YyQ2oLMuN4cPxedXTyn"
+        },
+        {
+          "content": [
+            {
+              "text": "24°C, clear skies. Radar image attached.",
+              "type": "text"
+            },
+            {
+              "text": "The rest of this result is in the next message.",
+              "type": "text"
+            }
+          ],
+          "role": "tool",
+          "tool_call_id": "toolu_01i9erRrqtgtQAjVyyvcAdnH"
+        },
+        {
+          "content": "ConnectionError: the time service is not available (HTTP 503)",
+          "role": "tool",
+          "tool_call_id": "toolu_01krb5XZirSQZiYWNMB6VT9o"
+        },
+        {
+          "content": "2026-10-11T22:14:05+09:00",
+          "role": "tool",
+          "tool_call_id": "toolu_01tbdagxGypaxguXw1B6gfCo"
+        },
+        {
+          "content": [
+            {
+              "text": "The rest of the result of tool call `toolu_01i9erRrqtgtQAjVyyvcAdnH`:",
+              "type": "text"
+            },
+            {
+              "image_url": {
+                "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+              },
+              "type": "image_url"
+            },
+            {
+              "text": "Keep the answer short.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-4-6",
+      "tools": [
+        {
+          "function": {
+            "description": "Get the current weather in a given location",
+            "name": "get_weather",
+            "parameters": {
+              "properties": {
+                "location": {
+                  "description": "The city and state, e.g. San Francisco, CA",
+                  "type": "string"
+                },
+                "unit": {
+                  "description": "The unit of temperature, either 'celsius' or 'fahrenheit'",
+                  "enum": [
+                    "celsius",
+                    "fahrenheit"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "location"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        },
+        {
+          "function": {
+            "description": "Get the current time in a given time zone",
+            "name": "get_time",
+            "parameters": {
+              "properties": {
+                "timezone": {
+                  "description": "The IANA time zone name, e.g. America/Los_Angeles",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "timezone"
+              ],
+              "type": "object"
+            }
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
   },
   "tool-search-deferred-tools": {
     "message": "`advisor_20260301 tool` comes from an Anthropic Messages request and has no equivalent in OpenAI Chat Completions. Input tag 'advisor_20260301' found using 'type' is not a function tool, and only function tools can be sent to another API format. Remove the tool, or send the request to a model served through its original format.",

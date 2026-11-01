@@ -250,6 +250,16 @@ Codex 运行子智能体时，智能体之间用 `agent_message` 输入 item 通
 - **对话中的其他值（发往 Anthropic 时）。** `tool_use.input` 必须是对象，只要历史中有一个不是，Anthropic 就会拒绝整个请求。因此，来自其他格式、参数为其他值的调用会变为对象：不是 JSON 的文本（例如被输出上限截断的参数）变为 `{"input": "<该文本>"}`，与[自由格式工具的输入](#codex-工具历史)相同；数组、数字或布尔值变为 `{"input": <该值>}`；`null` 变为 `{}`。模型能看到它写下的内容以及随后的工具结果。每个这样的调用都会在 `kaeso-adapted` 中以 `tool call` 加其 ID 注明，例如 `tool call call_abc`。Chat Completions 和 Responses 的提供商按原样收到参数。Anthropic 应用自己的 `tool_use` 若 `input` 不是对象，仍为 `Unsupported`。
 - **回复。** 发给 Anthropic 应用的回复中，若工具调用的参数不是对象，会被拒绝，因为应用会用模型从未写过的参数运行工具（[Anthropic 回复](anthropic-messages.md#回复)）。
 
+## 工具结果中的媒体
+
+Claude 的 `tool_result` 和 Responses 的 `function_call_output` 可以包含图像和文件，例如工具截取的屏幕截图，或 Claude Code 的 `Read` 与 Codex 的 `view_image` 打开的图像。Chat Completions 的 `tool` 消息只包含文本（`ChatCompletionToolMessageParam`），OpenAI 和 DeepSeek 会拒绝其中的图像。因此对于 Chat Completions 模型，Kaeso 会移动它们：
+
+- **工具消息**保留结果的文本，后接 `The rest of this result is in the next message.`
+- **结果之后的用户消息**对每个这样的结果，以 `` The rest of the result of tool call `<id>`: `` 开头，后接该结果的图像和文件，保持原有顺序。应用在结果之后发送的文本跟在它们后面。
+- **响应头。** 每个结果都会在回复的 `kaeso-adapted` 头中以 `tool result` 加调用 ID 的形式列出，例如 `tool result call_abc`。
+
+Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体。夹具：`anthropic_messages/requests/tool-result-multi-turn.json`、`openai_responses/requests/function-call-output-array.json`。
+
 ## 用量
 
 `Usage::input_tokens` 不含缓存读取和缓存写入，它们是单独的字段。这与 KPMR 目录中的价格一致，因此费用就是每项计数乘以其价格之和。服务商的原始用量对象总会保留。
