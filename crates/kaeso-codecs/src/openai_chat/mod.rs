@@ -44,7 +44,7 @@ use crate::codec::{
 use crate::wire::to_body;
 
 pub use profile::{
-    ChatProfile, OutputLimit, ReplyProfile, ReplyReasoning, RequestProfile, SeedField,
+    ChatProfile, EndUserField, OutputLimit, ReplyProfile, ReplyReasoning, RequestProfile, SeedField,
 };
 
 pub(crate) use convert::{PartContext, part_form};

@@ -345,6 +345,7 @@ pub const PROVIDERS: &[Provider] = &[
         reasoning_beyond_output_limit: false,
         chat: ChatProfile::compatible("Groq")
             .system_role()
+            .end_user_as_user()
             .reasoning_fields(&["reasoning"])
             .refusing(&["logit_bias", "logprobs", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),

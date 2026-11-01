@@ -222,6 +222,36 @@ fn a_profile_without_an_end_user_field_leaves_the_user_hint_out() {
 }
 
 #[test]
+fn a_profile_that_takes_the_end_user_as_user_never_sends_safety_identifier() {
+    let profile = ChatProfile::compatible("Groq").end_user_as_user();
+    for dialect in [DialectId::AnthropicMessages, DialectId::OpenAiResponses] {
+        let mut req = foreign(dialect);
+        req.user = Some("user-42".into());
+        let out = encode_with(&Request::Generate(req), profile).unwrap();
+        assert_eq!(out["user"], "user-42", "{dialect}");
+        assert!(out.get("safety_identifier").is_none(), "{out}");
+    }
+    for body in [
+        json!({"model": "m", "messages": [], "user": "user-42"}),
+        json!({"model": "m", "messages": [], "safety_identifier": "user-42"}),
+        json!({"model": "m", "messages": [], "user": "a", "safety_identifier": "user-42"}),
+    ] {
+        let out = encode_with(&chat(body.clone()), profile).unwrap();
+        assert_eq!(
+            out,
+            json!({"model": "m", "messages": [], "user": "user-42"}),
+            "{body}"
+        );
+    }
+    let out = encode_with(
+        &chat(json!({"model": "m", "messages": [], "safety_identifier": null})),
+        profile,
+    )
+    .unwrap();
+    assert_eq!(out, json!({"model": "m", "messages": [], "user": null}));
+}
+
+#[test]
 fn refused_fields_fail_before_anything_is_sent_and_name_the_field() {
     let err = encode_with(
         &chat(json!({"model": "m", "messages": [], "logit_bias": {"50256": -100}})),
