@@ -207,6 +207,44 @@ fn namespace_tools_flatten_for_every_target_without_namespaces() {
 }
 
 #[test]
+fn a_namespace_description_reaches_the_model_once() {
+    let req = decode(&codex("codex-namespace-tools"));
+    let spawn = "Spawn a sub-agent for a well-scoped task. Returns the spawned agent id plus the user-facing nickname when available.";
+    let wait = "Wait for agents to reach a final status. Completed statuses may include the agent's final message. Returns empty status when timed out. Once the agent reaches a final status, a notification message will be received containing the same completed status.";
+    for (target, mut ctx) in [
+        (A, EgressCtx::new(&req)),
+        (C, EgressCtx::new(&req)),
+        (R, xai(&req)),
+    ] {
+        let sent = send(target, &req, &mut ctx).unwrap_or_else(|e| panic!("{target}: {e}"));
+        let descriptions: Vec<Value> = sent["tools"].as_array().unwrap()[1..3]
+            .iter()
+            .map(|t| match target {
+                C => t["function"]["description"].clone(),
+                _ => t["description"].clone(),
+            })
+            .collect();
+        assert_eq!(
+            descriptions,
+            [
+                json!(format!(
+                    "Tools for spawning and managing sub-agents.\n\n{spawn}"
+                )),
+                json!(wait),
+            ],
+            "{target}"
+        );
+        assert_eq!(
+            sent.to_string()
+                .matches("Tools for spawning and managing sub-agents.")
+                .count(),
+            1,
+            "{target}: {sent}"
+        );
+    }
+}
+
+#[test]
 fn openai_keeps_namespaces_and_client_metadata() {
     let body = codex("codex-namespace-tools");
     let req = decode(&body);

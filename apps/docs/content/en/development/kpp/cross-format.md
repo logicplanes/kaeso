@@ -104,7 +104,7 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 
 An OpenAI Responses `namespace` tool groups function tools under a name. Codex groups its own tools and each MCP server's tools this way, and sends a call to one of them as a `function_call` with `namespace`. OpenAI gets namespaces as they are. Every other target gets plain function tools: Anthropic, Chat Completions, and SpaceX's Responses, which refuses namespaces with a 422.
 
-- **Tools.** Each tool of a namespace becomes a function tool named `<namespace>__<name>`, such as `mcp__docs__search`. The namespace's description leads the tool's own description, separated by a blank line.
+- **Tools.** Each tool of a namespace becomes a function tool named `<namespace>__<name>`, such as `mcp__docs__search`. The namespace's description leads the own description of its first tool only, separated by a blank line; the other tools keep their own. Repeated on every tool, it would multiply the prompt by the size of MCP servers with hundreds of tools.
 - **Calls in the conversation.** A `function_call` with `namespace` gets the same name, and its `namespace` is removed.
 - **Replies.** A Responses reply or stream maps a call named like a flattened tool back to `name` and `namespace`. The names come from the app's request (`EncodeCtx::request`), so a call the app didn't namespace keeps its name.
 - **Name limits.** A flattened name that breaks the target's tool-name rules is then rewritten like any other tool name and mapped back.
