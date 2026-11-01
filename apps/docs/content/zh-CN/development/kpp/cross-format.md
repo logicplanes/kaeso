@@ -104,7 +104,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 
 OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称下。Codex 用这种方式归组自己的工具和每个 MCP 服务器的工具，并把对其中某个工具的调用作为带 `namespace` 的 `function_call` 发送。OpenAI 原样收到命名空间。其他所有目标都收到普通的函数工具：Anthropic、Chat Completions，以及 SpaceX 的 Responses，它会以 422 拒绝命名空间。
 
-- **工具。** 命名空间中的每个工具都变为名为 `<namespace>__<name>` 的函数工具，例如 `mcp__docs__search`。命名空间的描述放在工具自身描述之前，中间隔一个空行。
+- **工具。** 命名空间中的每个工具都变为名为 `<namespace>__<name>` 的函数工具，例如 `mcp__docs__search`。命名空间的描述只放在其第一个工具自身描述之前，中间隔一个空行；其他工具保留自己的描述。若在每个工具上重复，对于拥有数百个工具的 MCP 服务器，提示词会成倍增长。
 - **对话中的调用。** 带 `namespace` 的 `function_call` 得到同样的名称，其 `namespace` 被移除。
 - **回复。** Responses 回复或流会把名称与展开后的工具相同的调用映射回 `name` 和 `namespace`。这些名称取自应用的请求（`EncodeCtx::request`），因此应用未放进命名空间的调用保留其名称。
 - **名称限制。** 展开后的名称如果不符合目标的工具名称规则，会像其他工具名称一样再被改写，并映射回来。

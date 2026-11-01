@@ -104,7 +104,7 @@ Diese Felder wechseln das Format nur mit den Werten unten (`cross::is_droppable_
 
 Ein `namespace`-Tool von OpenAI Responses fasst Funktions-Tools unter einem Namen zusammen. Codex gruppiert so seine eigenen Tools und die Tools jedes MCP-Servers und sendet einen Aufruf eines solchen Tools als `function_call` mit `namespace`. OpenAI bekommt Namespaces unverändert. Jedes andere Ziel bekommt einfache Funktions-Tools: Anthropic, Chat Completions und die Responses-API von SpaceX, die Namespaces mit 422 ablehnt.
 
-- **Tools.** Jedes Tool eines Namespace wird zu einem Funktions-Tool namens `<namespace>__<name>`, etwa `mcp__docs__search`. Die Beschreibung des Namespace steht vor der eigenen Beschreibung des Tools, getrennt durch eine Leerzeile.
+- **Tools.** Jedes Tool eines Namespace wird zu einem Funktions-Tool namens `<namespace>__<name>`, etwa `mcp__docs__search`. Die Beschreibung des Namespace steht nur vor der eigenen Beschreibung seines ersten Tools, getrennt durch eine Leerzeile; die anderen Tools behalten ihre eigene. Bei jedem Tool wiederholt, würde sie den Prompt bei MCP-Servern mit Hunderten Tools vervielfachen.
 - **Aufrufe im Gespräch.** Ein `function_call` mit `namespace` bekommt denselben Namen, und sein `namespace` wird entfernt.
 - **Antworten.** Eine Responses-Antwort oder ein Stream übersetzt einen Aufruf, der wie ein umbenanntes Tool heißt, zurück in `name` und `namespace`. Die Namen stammen aus der Anfrage der App (`EncodeCtx::request`), daher behält ein Aufruf ohne Namespace in der App seinen Namen.
 - **Namensgrenzen.** Verletzt ein umbenanntes Tool die Regeln des Ziels für Tool-Namen, wird es danach wie jeder andere Tool-Name umgeschrieben und zurückübersetzt.

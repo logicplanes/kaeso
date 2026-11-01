@@ -55,6 +55,9 @@ fn flatten_tool(item: &RawItem, path: &str, target: DialectId) -> Result<Vec<Too
         return Err(refuse(format!("{path}.{key}"), &format!("{path}.{key}")));
     }
     let ns = namespace_tool(item).ok_or_else(|| refuse("namespace tool".to_owned(), path))?;
+    // The namespace's description goes on its first tool only: repeated on every tool, it
+    // multiplies the prompt by the size of MCP servers with hundreds of tools.
+    let mut group = ns.description.as_deref();
     let mut out = Vec::with_capacity(ns.tools.len());
     for (j, raw) in ns.tools.iter().enumerate() {
         let at = format!("{path}.tools[{j}]");
@@ -70,7 +73,7 @@ fn flatten_tool(item: &RawItem, path: &str, target: DialectId) -> Result<Vec<Too
             return Err(refuse(format!("{at}.{key}"), &format!("{at}.{key}")));
         }
         f.name = flat_name(&ns.name, &f.name);
-        f.description = match (ns.description.as_deref(), f.description.take()) {
+        f.description = match (group.take(), f.description.take()) {
             (Some(group), Some(own)) => Some(format!("{group}\n\n{own}")),
             (Some(group), None) => Some(group.to_owned()),
             (None, own) => own,
