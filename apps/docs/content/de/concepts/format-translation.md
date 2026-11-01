@@ -34,7 +34,7 @@ KPP, das Kaeso Provider Protocol, hat einen Codec für jedes API-Format: OpenAI 
 ## Was erhalten bleibt
 
 - **Unterhaltungen.** Systemanweisungen, Züge von Benutzer und Assistent, Text, Bilder und Dokumente. Eine Systemnachricht mitten in einer Anthropic-Unterhaltung erreicht OpenAI als spätere Systemnachricht, und eine mitten in einer OpenAI-Unterhaltung erreicht Anthropic als Text des nächsten Benutzerzugs.
-- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse.
+- **Tools.** Funktions-Tools, Tool-Auswahl, parallele Tool-Aufrufe, Tool-Aufrufe und Tool-Ergebnisse. Bilder und Dateien, die ein Tool zurückgegeben hat, erreichen ein Chat-Completions-Modell in der Benutzernachricht nach den Ergebnissen, weil seine Tool-Nachrichten nur Text enthalten ([Medien in Tool-Ergebnissen](../development/kpp/cross-format.md#medien-in-tool-ergebnissen)).
 - **Tool-Namen und Aufruf-IDs.** Nimmt das Ziel einen Namen oder eine ID nicht an, schreibt Kaeso sie auf feste Weise um und übersetzt sie in der Antwort zurück. Andere Zeichen werden zu `_`, der Name wird passend gekürzt, und ein Hash des Originals wird angehängt. OpenAI nimmt bis zu 64 Buchstaben, Ziffern, `_` und `-` an, Anthropic bis zu 128.
 - **Strukturierte Ausgabe.** JSON-Schemas.
 - **Sampling.** Temperatur, Top P, maximale Token und Stoppsequenzen, wo das Ziel sie hat. Ein Wert behält seine Bedeutung, wird aber so geschrieben, wie das Ziel ihn schreibt. `1` kann also als `1.0` ankommen.

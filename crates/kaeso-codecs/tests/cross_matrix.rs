@@ -17,7 +17,8 @@ const GENERATION: [DialectId; 3] = [
 
 const PROVIDERS: &str = "providers";
 
-// Routes whose conversation changes on purpose, each change asserted in tests/codex.rs.
+// Routes whose conversation changes on purpose, each change asserted in tests/codex.rs or
+// tests/tool_result_media.rs.
 const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
     (
         "codex-model-switch",
@@ -58,6 +59,16 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
         "providers/xai/codex-multi-agent-root",
         DialectId::OpenAiChat,
         "agent messages become messages",
+    ),
+    (
+        "tool-result-multi-turn",
+        DialectId::OpenAiChat,
+        "media a tool returned follow its results in a user message",
+    ),
+    (
+        "function-call-output-array",
+        DialectId::OpenAiChat,
+        "media a tool returned follow its results in a user message",
     ),
 ];
 

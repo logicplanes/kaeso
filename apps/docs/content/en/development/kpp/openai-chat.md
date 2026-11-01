@@ -98,7 +98,7 @@ Other dialects refuse all of it with `Unsupported`, naming the parts as follows:
 For KPP from other dialects, `check()` refuses:
 
 - text documents, document URLs, and document `title`, `context` and `citations`;
-- image file ids, and images and documents outside user messages;
+- image file ids, and images and documents in system and assistant messages; those in tool results move to the user message after them ([media in tool results](cross-format.md#media-in-tool-results));
 - refusals and citations outside assistant messages;
 - other dialects' citations, through `check_foreign`;
 - `top_k` ([sampling](cross-format.md#sampling));

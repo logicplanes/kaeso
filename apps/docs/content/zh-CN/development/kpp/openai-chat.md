@@ -98,7 +98,7 @@ nav: OpenAI Chat
 对于来自其他方言的 KPP，`check()` 会拒绝：
 
 - 文本文档、文档 URL，以及文档的 `title`、`context` 和 `citations`；
-- 图像文件 ID，以及用户消息之外的图像和文档；
+- 图像文件 ID，以及系统消息和助手消息中的图像和文档；工具结果中的图像和文档会移到其后的用户消息中（[工具结果中的媒体](cross-format.md#工具结果中的媒体)）；
 - 助手消息之外的拒绝和引用；
 - 其他方言的引用（通过 `check_foreign`）；
 - `top_k`（[采样参数](cross-format.md#采样参数)）；

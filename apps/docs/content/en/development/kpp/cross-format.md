@@ -250,6 +250,16 @@ A tool call's arguments are a JSON object in every format. Chat Completions and 
 - **Other values in the conversation, for Anthropic.** `tool_use.input` must be an object, and Anthropic refuses the whole request when one in its history isn't. A call from another format whose arguments are something else therefore becomes an object: text that is not JSON, such as arguments cut off by an output limit, becomes `{"input": "<the text>"}`, as a [freeform tool's input](#codex-tool-history) does; an array, a number or a boolean becomes `{"input": <the value>}`; and `null` becomes `{}`. The model sees what it wrote and the tool result that followed. Each such call is named in `kaeso-adapted` as `tool call` and its id, such as `tool call call_abc`. Chat Completions and Responses providers get the arguments as sent. An Anthropic app's own `tool_use` with an `input` that is not an object stays `Unsupported`.
 - **Replies.** A reply to an Anthropic app with a tool call whose arguments are not an object is refused, because the app would run the tool with arguments the model never wrote ([Anthropic replies](anthropic-messages.md#replies)).
 
+## Media in tool results
+
+Claude's `tool_result` and Responses' `function_call_output` can hold images and files, such as the screenshot a tool took or the image Claude Code's `Read` and Codex's `view_image` open. A Chat Completions `tool` message holds only text (`ChatCompletionToolMessageParam`), and OpenAI and DeepSeek refuse an image there. So for Chat Completions models, Kaeso moves them:
+
+- **The tool message** keeps the result's text, followed by `The rest of this result is in the next message.`
+- **The user message after the results** starts with `` The rest of the result of tool call `<id>`: `` and the result's images and files, in their order, for each such result. Text the app sent after the results follows them.
+- **The header.** Each result is named in the reply's `kaeso-adapted` header as `tool result` and the call's id, such as `tool result call_abc`.
+
+Anthropic and Responses models get the media in the tool result, as sent. Fixtures: `anthropic_messages/requests/tool-result-multi-turn.json`, `openai_responses/requests/function-call-output-array.json`.
+
 ## Usage
 
 `Usage::input_tokens` excludes cache reads and cache writes, which are fields of their own. This matches the prices in the KPMR catalogue, so a cost is the sum of each count times its price. The provider's raw usage object is always kept.

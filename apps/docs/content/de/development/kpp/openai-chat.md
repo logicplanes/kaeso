@@ -98,7 +98,7 @@ Andere Dialekte lehnen all das mit `Unsupported` ab und nennen die Teile so:
 Für KPP aus anderen Dialekten lehnt `check()` ab:
 
 - Textdokumente, Dokument-URLs sowie `title`, `context` und `citations` von Dokumenten;
-- Bild-Datei-IDs sowie Bilder und Dokumente außerhalb von Benutzernachrichten;
+- Bild-Datei-IDs sowie Bilder und Dokumente in System- und Assistentennachrichten; solche in Tool-Ergebnissen wandern in die Benutzernachricht danach ([Medien in Tool-Ergebnissen](cross-format.md#medien-in-tool-ergebnissen));
 - Verweigerungen und Zitate außerhalb von Assistentennachrichten;
 - über `check_foreign` die Zitate anderer Dialekte;
 - `top_k` ([Sampling](cross-format.md#sampling));

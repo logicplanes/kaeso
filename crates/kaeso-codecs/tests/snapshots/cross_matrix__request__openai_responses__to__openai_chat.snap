@@ -1289,9 +1289,95 @@ expression: outcomes
     "unsupported": "document URL"
   },
   "function-call-output-array": {
-    "message": "`image in system, developer and tool messages` is not supported by OpenAI Chat Completions. It only accepts that content in other roles; move or remove the image.",
-    "param": "messages[2].blocks[0].content[1]",
-    "unsupported": "image in system, developer and tool messages"
+    "body": {
+      "messages": [
+        {
+          "content": "Plot 3, 5, 4, 8 as a chart titled Weekly signups and tell me the trend.",
+          "role": "user"
+        },
+        {
+          "content": null,
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"title\":\"Weekly signups\",\"values\":[3,5,4,8]}",
+                "name": "render_chart"
+              },
+              "id": "call_i4rean9cQaAAMNtPW0tQupGs",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": [
+            {
+              "text": "Chart rendered (1 image).",
+              "type": "text"
+            },
+            {
+              "text": "The rest of this result is in the next message.",
+              "type": "text"
+            }
+          ],
+          "role": "tool",
+          "tool_call_id": "call_i4rean9cQaAAMNtPW0tQupGs"
+        },
+        {
+          "content": [
+            {
+              "text": "The rest of the result of tool call `call_i4rean9cQaAAMNtPW0tQupGs`:",
+              "type": "text"
+            },
+            {
+              "image_url": {
+                "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+              },
+              "type": "image_url"
+            },
+            {
+              "file": {
+                "file_data": "data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFI+PgplbmRvYmoKMiAwIG9iago8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PgplbmRvYmoKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCAyMDAgNTBdL0NvbnRlbnRzIDQgMCBSL1Jlc291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUj4+Pj4+PgplbmRvYmoKNCAwIG9iago8PC9MZW5ndGggMzk+PgpzdHJlYW0KQlQgL0YxIDE4IFRmIDEwIDIwIFRkIChIZWxsbyBQREYpIFRqIEVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTQgMDAwMDAgbiAKMDAwMDAwMDEwNSAwMDAwMCBuIAowMDAwMDAwMjE2IDAwMDAwIG4gCjAwMDAwMDAzMDMgMDAwMDAgbiAKdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgozNjYKJSVFT0YK",
+                "filename": "document.pdf"
+              },
+              "type": "file"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "tools": [
+        {
+          "function": {
+            "description": "Render a line chart of a numeric series and return the image.",
+            "name": "render_chart",
+            "parameters": {
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "values": {
+                  "items": {
+                    "type": "number"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "title",
+                "values"
+              ],
+              "type": "object"
+            },
+            "strict": true
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/chat/completions"
   },
   "function-call-stream": {
     "body": {
