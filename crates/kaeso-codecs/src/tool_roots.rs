@@ -19,11 +19,11 @@ pub enum ToolSchemaRoot {
     /// An object, or a `oneOf` or `anyOf` union whose every branch is an inline object
     /// schema; a root `allOf` only on an object.
     ObjectUnions,
+    /// An object with `type: "object"` and without `oneOf`, `anyOf` or `allOf` at its root.
+    Object,
     /// As [`ToolSchemaRoot::ObjectUnions`], with `type: "object"` at the root; Kaeso adds it
     /// to a root without a `type`.
     TypedObjectUnions,
-    /// An object with `type: "object"` and without `oneOf`, `anyOf` or `allOf` at its root.
-    Object,
 }
 
 const UNIONS: [&str; 2] = ["oneOf", "anyOf"];
