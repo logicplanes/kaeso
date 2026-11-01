@@ -22,6 +22,7 @@ pub struct RequestProfile {
     pub developer_role: bool,
     pub seed: SeedField,
     pub end_user: bool,
+    pub end_user_field: EndUserField,
     pub assistant_prefill: bool,
     pub verbosity: bool,
     pub message_bookkeeping: bool,
@@ -59,6 +60,13 @@ pub enum OutputLimit {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+pub enum EndUserField {
+    SafetyIdentifier,
+    User,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub enum SeedField {
     Seed,
     RandomSeed,
@@ -70,6 +78,7 @@ impl RequestProfile {
         developer_role: true,
         seed: SeedField::Seed,
         end_user: true,
+        end_user_field: EndUserField::SafetyIdentifier,
         assistant_prefill: true,
         verbosity: true,
         message_bookkeeping: false,
@@ -129,6 +138,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn random_seed(mut self) -> Self {
         self.request.seed = SeedField::RandomSeed;
+        self
+    }
+
+    #[must_use]
+    pub const fn end_user_as_user(mut self) -> Self {
+        self.request.end_user_field = EndUserField::User;
         self
     }
 
