@@ -19,7 +19,10 @@ pub enum ToolSchemaRoot {
     /// An object, or a `oneOf` or `anyOf` union whose every branch is an inline object
     /// schema; a root `allOf` only on an object.
     ObjectUnions,
-    /// An object without `oneOf`, `anyOf` or `allOf` at its root.
+    /// As [`ToolSchemaRoot::ObjectUnions`], with `type: "object"` at the root; Kaeso adds it
+    /// to a root without a `type`.
+    TypedObjectUnions,
+    /// An object with `type: "object"` and without `oneOf`, `anyOf` or `allOf` at its root.
     Object,
 }
 
@@ -97,17 +100,27 @@ pub(crate) fn for_target(
         return Ok(());
     }
     let mut merged = Vec::new();
+    let mut untyped = Vec::new();
     for (i, tool) in d.get().tools.iter().enumerate() {
         let ToolDef::Function(f) = tool else {
             continue;
         };
-        let Some(raw) = f.parameters.as_ref().filter(|p| has_combinator(p)) else {
+        let Some(raw) = f.parameters.as_ref() else {
             continue;
         };
+        if !has_combinator(raw) {
+            if typed(wanted) && lacks_type(raw) {
+                untyped.push(i);
+            }
+            continue;
+        }
         let Ok(Value::Object(root)) = raw.to_value() else {
             continue;
         };
         if !needs_merging(&root, wanted) {
+            if typed(wanted) && !root.contains_key("type") {
+                untyped.push(i);
+            }
             continue;
         }
         let path = namespaces::app_path(d.original(), &f.name).unwrap_or(format!("tools[{i}]"));
@@ -116,10 +129,17 @@ pub(crate) fn for_target(
             .map_err(|e| KppError::invalid_request(e.to_string()).with_param(path.clone()))?;
         merged.push((i, path, schema, one.summary));
     }
-    if merged.is_empty() {
+    if merged.is_empty() && untyped.is_empty() {
         return Ok(());
     }
     let r = d.edit();
+    for i in untyped {
+        if let Some(ToolDef::Function(f)) = r.tools.get_mut(i)
+            && let Some(raw) = &f.parameters
+        {
+            f.parameters = Some(typed_object(raw)?);
+        }
+    }
     let mut paths = Vec::with_capacity(merged.len());
     for (i, path, schema, summary) in merged {
         if let Some(ToolDef::Function(f)) = r.tools.get_mut(i) {
@@ -139,6 +159,38 @@ pub(crate) fn for_target(
     Ok(())
 }
 
+#[derive(Deserialize)]
+struct RootType<'a> {
+    #[serde(rename = "type", borrow, default)]
+    ty: Option<&'a RawValue>,
+}
+
+fn typed(wanted: ToolSchemaRoot) -> bool {
+    matches!(
+        wanted,
+        ToolSchemaRoot::Object | ToolSchemaRoot::TypedObjectUnions
+    )
+}
+
+// Anthropic and DeepSeek refuse a root without `type` ("input_schema.type: Field required"),
+// such as `{}` or one with only `properties`. Tool arguments are an object in every format,
+// so `type: "object"` there changes nothing that the tool accepts.
+fn lacks_type(raw: &RawJson) -> bool {
+    raw.is_object()
+        && serde_json::from_str::<RootType<'_>>(raw.get()).is_ok_and(|root| root.ty.is_none())
+}
+
+fn typed_object(raw: &RawJson) -> Result<RawJson, KppError> {
+    let invalid = |e: serde_json::Error| KppError::invalid_request(e.to_string());
+    let Value::Object(root) = raw.to_value().map_err(invalid)? else {
+        return Ok(raw.clone());
+    };
+    let mut typed = Map::with_capacity(root.len() + 1);
+    typed.insert("type".to_owned(), Value::from("object"));
+    typed.extend(root);
+    RawJson::from_serialize(&typed).map_err(invalid)
+}
+
 fn is_inline_object(m: &Map<String, Value>) -> bool {
     !m.contains_key("$ref")
         && match m.get("type") {
@@ -151,7 +203,7 @@ fn needs_merging(root: &Map<String, Value>, wanted: ToolSchemaRoot) -> bool {
     match wanted {
         ToolSchemaRoot::AsSent => false,
         ToolSchemaRoot::Object => COMBINATORS.iter().any(|k| root.contains_key(*k)),
-        ToolSchemaRoot::ObjectUnions => {
+        ToolSchemaRoot::ObjectUnions | ToolSchemaRoot::TypedObjectUnions => {
             let foreign_branch = UNIONS.iter().any(|k| match root.get(*k) {
                 None => false,
                 Some(Value::Array(branches)) => branches

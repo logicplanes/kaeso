@@ -98,7 +98,10 @@ pub(crate) fn encode_generate(
                 let function = FunctionObject {
                     name: names.send(&f.name),
                     description: f.description.clone(),
-                    parameters: f.parameters.clone(),
+                    parameters: f
+                        .parameters
+                        .clone()
+                        .or_else(|| rules.tool_parameters.then(no_parameters)),
                     strict: f.strict,
                 };
                 let wire = FunctionToolWire {
@@ -297,6 +300,13 @@ fn rename_null(verbatim: &mut IndexMap<String, RawJson>, from: &str, to: Option<
     {
         verbatim.entry(to.to_owned()).or_insert(null);
     }
+}
+
+// OpenAI reads a function without `parameters` as one without parameters; Mistral answers it
+// with a 422 and takes the empty object schema that says the same.
+fn no_parameters() -> RawJson {
+    RawJson::from_string(r#"{"type":"object","properties":{}}"#.to_owned())
+        .unwrap_or_else(|_| RawJson::empty_object())
 }
 
 struct Names<'a> {
