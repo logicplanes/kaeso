@@ -976,6 +976,41 @@ async fn an_upgrade_that_adds_a_provider_completes_newer_stored_data_and_syncs_i
 }
 
 #[tokio::test]
+async fn newer_stored_data_wins_over_the_built_in_snapshot_even_when_already_loaded() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let mut doc = common::kpmr::built_in();
+    common::kpmr::model(&mut doc, "anthropic", "claude-haiku-4-5")["pricing"]["input"] =
+        json!("1.5");
+    let fetched_at = embedded_generated_at() + time::Duration::DAY;
+    store_as_an_older_build(
+        &app,
+        &doc.to_string(),
+        "https://kpmr.example.com/v1/catalogue",
+        fetched_at,
+    )
+    .await;
+    kaeso_server::services::kpmr::reload(&app.state)
+        .await
+        .unwrap();
+
+    kaeso_server::services::kpmr::init(&app.state)
+        .await
+        .unwrap();
+    let loaded = app.state.kpmr.current();
+    assert_eq!(loaded.source, "https://kpmr.example.com/v1/catalogue");
+    assert_eq!(loaded.fetched_at, fetched_at);
+    let haiku = loaded
+        .snapshot
+        .model("anthropic", "claude-haiku-4-5")
+        .unwrap();
+    assert_eq!(
+        haiku.pricing.as_ref().unwrap().input.unwrap().to_string(),
+        "1.5"
+    );
+}
+
+#[tokio::test]
 async fn an_older_builds_copy_of_the_built_in_snapshot_is_replaced() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
