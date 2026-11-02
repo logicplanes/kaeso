@@ -40,6 +40,23 @@ fn in_flight_ttl(timeout: Duration) -> i64 {
     i64::try_from(timeout.saturating_add(IN_FLIGHT_MARGIN).as_secs()).unwrap_or(i64::MAX)
 }
 
+// A counter's open reservations live in `<key>:f` (expiry by request) and `<key>:r` (amount by
+// request). `#held` and `#n` in `:r` keep their total and count, so an admission costs the same
+// with 5 or 5,000 streams open; a count that disagrees with `:f`, as while an older release
+// still writes, or a total a minute old is summed again from the reservations themselves.
+const RELEASE: &str = r"
+local function release(key, req)
+  local r = key .. ':r'
+  if redis.call('ZREM', key .. ':f', req) == 1 and redis.call('HEXISTS', r, '#n') == 1 then
+    redis.call('HINCRBY', r, '#held', -tonumber(redis.call('HGET', r, req) or '0'))
+    if redis.call('HINCRBY', r, '#n', -1) <= 0 then
+      redis.call('HDEL', r, '#held', '#n', '#at')
+    end
+  end
+  redis.call('HDEL', r, req)
+end
+";
+
 const ADMIT: &str = r"
 local now = tonumber(ARGV[1])
 local req = ARGV[2]
@@ -49,15 +66,33 @@ local own = {}
 local function flying(key)
   local f = key .. ':f'
   local r = key .. ':r'
+  local held = tonumber(redis.call('HGET', r, '#held') or '0')
+  local counted = tonumber(redis.call('HGET', r, '#n') or '-1')
+  local summed = tonumber(redis.call('HGET', r, '#at') or '0')
   local gone = redis.call('ZRANGEBYSCORE', f, '-inf', now)
-  for _, id in ipairs(gone) do redis.call('HDEL', r, id) end
-  if #gone > 0 then redis.call('ZREMRANGEBYSCORE', f, '-inf', now) end
-  local ids = redis.call('ZRANGE', f, 0, -1)
-  local held = 0
-  for _, id in ipairs(ids) do
-    held = held + tonumber(redis.call('HGET', r, id) or '0')
+  for _, id in ipairs(gone) do
+    held = held - tonumber(redis.call('HGET', r, id) or '0')
+    redis.call('HDEL', r, id)
   end
-  return #ids, held
+  if #gone > 0 then
+    redis.call('ZREMRANGEBYSCORE', f, '-inf', now)
+    counted = counted - #gone
+  end
+  local n = redis.call('ZCARD', f)
+  if n ~= counted or held < 0 or summed + 60 <= now then
+    held = 0
+    for _, id in ipairs(redis.call('ZRANGE', f, 0, -1)) do
+      held = held + tonumber(redis.call('HGET', r, id) or '0')
+    end
+    summed = now
+  end
+  if n > 0 then
+    redis.call('HSET', r, '#held', held, '#n', n, '#at', summed)
+    if redis.call('TTL', r) == -1 then redis.call('EXPIRE', r, ttl) end
+  else
+    redis.call('HDEL', r, '#held', '#n', '#at')
+  end
+  return n, held
 end
 for i = 1, #KEYS do
   local b = 3 + (i - 1) * 5
@@ -126,8 +161,10 @@ for i = 1, #KEYS do
   elseif own[i] ~= nil then
     local f = KEYS[i] .. ':f'
     local r = KEYS[i] .. ':r'
-    redis.call('ZADD', f, now + ttl, req)
+    local before = tonumber(redis.call('HGET', r, req) or '0')
+    if redis.call('ZADD', f, now + ttl, req) == 1 then redis.call('HINCRBY', r, '#n', 1) end
     redis.call('HSET', r, req, own[i])
+    redis.call('HINCRBY', r, '#held', own[i] - before)
     if redis.call('TTL', f) < ttl then redis.call('EXPIRE', f, ttl) end
     if redis.call('TTL', r) < ttl then redis.call('EXPIRE', r, ttl) end
   end
@@ -161,8 +198,7 @@ for i = 1, #KEYS do
   local ttl = tonumber(ARGV[b + 2])
   local key = KEYS[i]
   if t == 2 then
-    redis.call('ZREM', key .. ':f', req)
-    redis.call('HDEL', key .. ':r', req)
+    release(key, req)
     if add > 0 then
       redis.call('HINCRBY', key, tostring(now), add)
       redis.call('EXPIRE', key, 120)
@@ -170,8 +206,7 @@ for i = 1, #KEYS do
     table.insert(out, -1)
     table.insert(out, -1)
   elseif t == 3 then
-    redis.call('ZREM', key .. ':f', req)
-    redis.call('HDEL', key .. ':r', req)
+    release(key, req)
     local v = redis.call('HGET', key, 'v')
     if v then
       local after = tonumber(v)
@@ -208,8 +243,7 @@ for i = 1, #KEYS do
   local n = tonumber(ARGV[at])
   at = at + 1
   for _ = 1, n do
-    redis.call('ZREM', KEYS[i] .. ':f', ARGV[at])
-    redis.call('HDEL', KEYS[i] .. ':r', ARGV[at])
+    release(KEYS[i], ARGV[at])
     at = at + 1
   end
   redis.call('DEL', KEYS[i])
@@ -219,11 +253,11 @@ return 1
 
 static ADMIT_SCRIPT: std::sync::LazyLock<Script> = std::sync::LazyLock::new(|| Script::new(ADMIT));
 static CHARGE_SCRIPT: std::sync::LazyLock<Script> =
-    std::sync::LazyLock::new(|| Script::new(CHARGE));
+    std::sync::LazyLock::new(|| Script::new(&[RELEASE, CHARGE].concat()));
 static REBUILD_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(REBUILD));
 static INVALIDATE_SCRIPT: std::sync::LazyLock<Script> =
-    std::sync::LazyLock::new(|| Script::new(INVALIDATE));
+    std::sync::LazyLock::new(|| Script::new(&[RELEASE, INVALIDATE].concat()));
 static EXTEND_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(EXTEND));
 
