@@ -52,6 +52,17 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密。不透明的
 
 第一个来源是 OpenAPI 规范中 OpenAI 的 `ReasoningEffort` 枚举：`none`、`minimal`、`low`、`medium`、`high`、`xhigh` 和 `max`，但并非每个模型都支持每个值。第二个来源是 Anthropic 的[扩展思考](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)页面。该页面说明 `budget_tokens` 至少为 1,024 且小于 `max_tokens`。该页面还说明 Claude Sonnet 4.5、Opus 4.5、Haiku 4.5 以及更早的 Claude 4 模型不支持自适应思考。
 
+## 没有推理强度等级的模型
+
+Claude Code 会在每个请求中发送 `output_config.effort` 和自适应思考，Codex 会发送 `reasoning.effort`，且无法按模型关闭。如果拒绝这些设置，这些应用就无法使用任何没有推理强度等级的模型。因此，网关会省略以下设置，而不是拒绝请求：
+
+- 发给目录条目未列出推理强度等级或不支持推理的模型的 `none` 以外的推理强度；
+- 发给不支持推理的模型的自适应思考，因为自适应思考允许模型不经思考直接回答。
+
+模型的回答与没有该设置时相同。每个被省略的设置都会以应用中的字段名出现在回复的 `kaeso-left-out` 响应头中，例如 `output_config.effort` 或 `thinking`，也会记录在网关日志中；记录的请求正文保留应用的设置。网关在编码之前执行这一步，因此同一格式内也适用。
+
+对于有推理强度等级的模型，网关仍会拒绝其未列出的推理强度，例如 `kimi-k3` 的 `medium`，因为改发相邻等级只是猜测。对于不支持推理的模型，网关也会拒绝 `enabled` 思考和思考预算。
+
 ## 可读推理与摘要
 
 `reasoning.summary` 和 `reasoning.include_encrypted` 在跨方言时属于提示字段：它们只控制返回哪些推理，因此在目标没有对应项时会被丢弃。Codex 在每个请求中都会发送这两项。

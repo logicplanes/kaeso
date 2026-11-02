@@ -888,13 +888,14 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
 
     let mut ectx = egress_ctx(&app_req, &eff.provider, ModelFlags::of(&plan));
     let dialect = plan.dialect;
-    let (req, ectx, encoded) = off_thread(request_bytes, move || {
+    let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
         (req, ectx, encoded)
     })
     .await
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
+    ectx.left_out.splice(0..0, plan.left_out.iter().cloned());
     rec.outcome().cache_breakpoints = ectx.cache_breakpoints;
     if !ectx.left_out.is_empty() {
         tracing::info!(

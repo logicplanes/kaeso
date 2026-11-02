@@ -129,7 +129,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `tool_choice` | semantisch | `Unknown` nur im Ursprungsdialekt ausdrückbar. |
 | `parallel_tool_calls` | semantisch | |
 | `output` | semantisch | `JsonObject` hat bei Anthropic keine Entsprechung und ist `Unsupported`, ohne Nachbildung ([strukturierte Ausgabe](cross-format.md#strukturierte-ausgabe)). |
-| `reasoning.mode`, `.effort`, `.budget_tokens` | semantisch | Aufwand und Budget werden nach der Tabelle unter [Aufwand und Budget](reasoning.md#aufwand-und-budget) ineinander umgerechnet. |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantisch | Aufwand und Budget werden nach der Tabelle unter [Aufwand und Budget](reasoning.md#aufwand-und-budget) ineinander umgerechnet. Das Gateway lässt eine Aufwandsstufe für ein Modell ohne Aufwandsstufen weg, ebenso adaptives Denken für ein Modell, das kein Reasoning nutzt ([Modelle ohne Aufwandsstufen](reasoning.md#modelle-ohne-aufwandsstufen)). |
 | `reasoning.summary` | Hinweis | Steuert nur, ob Zusammenfassungen zurückkommen. Anthropic: `thinking.display: "summarized"` ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `reasoning.include_encrypted` | Hinweis | Steuert nur, ob verschlüsseltes Reasoning zurückkommt; nur OpenAI Responses ([lesbares Reasoning und Zusammenfassungen](reasoning.md#lesbares-reasoning-und-zusammenfassungen)). |
 | `sampling.max_output_tokens` | semantisch | |

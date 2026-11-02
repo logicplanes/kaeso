@@ -771,16 +771,14 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
         r.json()["error"]["message"],
         "The model `claude-opus-4-5` has no adaptive thinking; send `enabled` thinking with `budget_tokens`."
     );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
     let mut effort = messages("claude-haiku-4-5", "Hi");
     effort["output_config"] = json!({"effort": "low"});
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(effort)).await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(
-        r.text().contains("does not accept an effort level"),
-        "{}",
-        r.text()
-    );
-    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("output_config.effort"));
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(sent["output_config"], json!({}), "{sent}");
     let mut budget = chat("claude-opus-4-5", "Hi");
     budget["reasoning_effort"] = json!("high");
     let r = call(

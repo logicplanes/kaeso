@@ -255,7 +255,6 @@
   "errors.model.forcedTool": "The model `{model}` does not accept {choice}; send `auto` and name the tool in the prompt.",
   "errors.model.generationOnly": "The model `{model}` is a generation model; it cannot create embeddings.",
   "errors.model.noAdaptive": "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`.",
-  "errors.model.noEffort": "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.",
   "errors.model.noImages": "The model `{model}` does not accept images.",
   "errors.model.noPdf": "The model `{model}` does not accept PDF documents.",
   "errors.model.noReasoning": "The model `{model}` does not support reasoning.",
