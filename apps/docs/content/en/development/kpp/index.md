@@ -129,7 +129,7 @@ Every KPP field is either semantic or a hint:
 | `tool_choice` | semantic | `Unknown` only expressible by its origin dialect. |
 | `parallel_tool_calls` | semantic | |
 | `output` | semantic | `JsonObject` has no Anthropic equivalent and is `Unsupported`, with no emulation ([structured output](cross-format.md#structured-output)). |
-| `reasoning.mode`, `.effort`, `.budget_tokens` | semantic | Converted between effort and budget by the [effort and budget](reasoning.md#effort-and-budget) table. |
+| `reasoning.mode`, `.effort`, `.budget_tokens` | semantic | Converted between effort and budget by the [effort and budget](reasoning.md#effort-and-budget) table. The gateway leaves out an effort for a model without effort levels, and adaptive thinking for a model that doesn't reason ([models without effort levels](reasoning.md#models-without-effort-levels)). |
 | `reasoning.summary` | hint | Only controls whether summaries come back. Anthropic: `thinking.display: "summarized"` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `reasoning.include_encrypted` | hint | Only controls whether encrypted reasoning comes back; OpenAI Responses only ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). |
 | `sampling.max_output_tokens` | semantic | |

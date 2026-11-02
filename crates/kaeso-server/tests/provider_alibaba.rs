@@ -229,12 +229,11 @@ async fn a_responses_effort_reaches_only_models_with_effort_levels() {
         Some(json!({ "model": FLASH, "reasoning": { "effort": "low" }, "input": "Hi" })),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert_eq!(
-        r.json()["error"]["message"],
-        format!("The model `{FLASH}` does not accept an effort level; `low` cannot be sent.")
-    );
-    assert!(env.mock.received().is_empty());
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("reasoning.effort"));
+    let sent = env.mock.last().unwrap().json();
+    assert!(sent.get("reasoning_effort").is_none(), "{sent}");
+    assert!(sent.get("enable_thinking").is_none(), "{sent}");
 }
 
 #[tokio::test]

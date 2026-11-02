@@ -129,7 +129,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `tool_choice` | 语义 | `Unknown` 只有其来源方言能够表达。 |
 | `parallel_tool_calls` | 语义 | |
 | `output` | 语义 | `JsonObject` 在 Anthropic 中没有对应项，返回 `Unsupported`，不做模拟（[结构化输出](cross-format.md#结构化输出)）。 |
-| `reasoning.mode`、`.effort`、`.budget_tokens` | 语义 | 推理强度与预算按[推理强度与预算](reasoning.md#推理强度与预算)中的表格相互转换。 |
+| `reasoning.mode`、`.effort`、`.budget_tokens` | 语义 | 推理强度与预算按[推理强度与预算](reasoning.md#推理强度与预算)中的表格相互转换。网关会省略发给没有推理强度等级的模型的推理强度，以及发给不支持推理的模型的自适应思考（[没有推理强度等级的模型](reasoning.md#没有推理强度等级的模型)）。 |
 | `reasoning.summary` | 提示 | 只控制是否返回摘要。Anthropic：`thinking.display: "summarized"`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 |
 | `reasoning.include_encrypted` | 提示 | 只控制是否返回加密的推理；仅限 OpenAI Responses（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 |
 | `sampling.max_output_tokens` | 语义 | |

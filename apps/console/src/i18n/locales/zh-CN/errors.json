@@ -422,7 +422,6 @@
   "errors.model.noReasoning": "模型 `{model}` 不支持推理。",
   "errors.model.noAdaptive": "模型 `{model}` 不支持自适应思考，请改为发送带 `budget_tokens` 的 `thinking` `enabled`。",
   "errors.model.noTemperature": "模型 `{model}` 不接受 `temperature`（仅支持默认值 1）。",
-  "errors.model.noEffort": "模型 `{model}` 不接受推理强度设置，无法发送 `{effort}`。",
   "errors.model.effortLevels": "模型 `{model}` 支持的推理强度为 {levels}，`{effort}` 不在其中。",
   "errors.model.budgetAtLeast": "`budget_tokens` 为 {budget} 即 `{effort}`；`{model}` 需要至少 {min}。",
   "errors.model.budgetBelow": "`budget_tokens` 为 {budget} 即 `{effort}`；`{model}` 需要小于 {max}。",

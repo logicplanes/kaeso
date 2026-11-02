@@ -60,11 +60,13 @@ If the member or the key may not use the model, the request also gets 404. The m
 
 The catalogue entry says what the model can do. Kaeso answers 400 when a request needs something the model lacks:
 
-- images, PDFs, tools, a JSON schema or reasoning;
-- an effort level the model doesn't list, or adaptive thinking for a Claude model without it;
+- images, PDFs, tools, a JSON schema, or `enabled` thinking or a thinking budget;
+- an effort level the model doesn't list among its effort levels, or adaptive thinking for a Claude model without it;
 - a forced tool choice (`required`, `any` or a named tool) for a model that takes none, such as Claude Fable 5.1, Opus 5.5 and Sonnet 5.5;
 - a temperature other than 1 for a model that accepts none, unless Kaeso turns Claude's thinking on and leaves the temperature out;
 - embeddings from a generation model, or text from an embeddings model.
+
+A model without effort levels gets no effort instead, and a model that doesn't reason no adaptive thinking. The reply's `kaeso-left-out` header names what Kaeso left out ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
 
 A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic.
 

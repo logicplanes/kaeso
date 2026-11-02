@@ -636,11 +636,14 @@ fn capabilities_are_checked_before_sending() {
             .unwrap_err()
             .contains("structured output")
     );
-    let reasoning = with_effort("high");
     assert!(
-        check(reasoning, DialectId::OpenAiChat, &gpt4o)
-            .unwrap_err()
-            .contains("reasoning")
+        check(
+            with_budget(2_048, ReasoningMode::Enabled),
+            DialectId::AnthropicMessages,
+            &gpt4o
+        )
+        .unwrap_err()
+        .contains("reasoning")
     );
     let mut temp = user(vec![Block::text("hi")]);
     temp.sampling.temperature = Some(0.2);
@@ -684,6 +687,18 @@ fn kept(effort: &str, ingress: DialectId, e: &Effective) {
     );
 }
 
+fn left_out(g: GenerateRequest, ingress: DialectId, e: &Effective) -> (Request, Vec<String>) {
+    let mut req = Request::Generate(g);
+    let plan = prepare(&mut req, ingress, e).unwrap();
+    (req, plan.left_out)
+}
+
+fn effort_left_out(effort: &str, ingress: DialectId, e: &Effective) -> Vec<String> {
+    let (req, left_out) = left_out(with_effort(effort), ingress, e);
+    assert_eq!(effort_of(&req), None, "{effort}");
+    left_out
+}
+
 fn refused(effort: &str, ingress: DialectId, e: &Effective) -> String {
     let err = check(with_effort(effort), ingress, e).unwrap_err();
     assert!(err.contains(&format!("`{effort}` ")), "{effort}: {err}");
@@ -705,13 +720,66 @@ fn efforts_are_refused_not_replaced() {
     kept("medium", DialectId::OpenAiChat, &haiku);
     kept("max", DialectId::OpenAiChat, &haiku);
     refused("minimal", DialectId::OpenAiChat, &haiku);
-    let err = refused("low", DialectId::AnthropicMessages, &haiku);
-    assert!(err.contains("does not accept an effort"), "{err}");
+    assert_eq!(
+        effort_left_out("low", DialectId::AnthropicMessages, &haiku),
+        ["output_config.effort"]
+    );
     let sonnet46 = eff(&entry("anthropic", "claude-sonnet-4-6"));
     refused("xhigh", DialectId::OpenAiResponses, &sonnet46);
     kept("max", DialectId::OpenAiResponses, &sonnet46);
     kept("none", DialectId::OpenAiResponses, &sonnet46);
     refused("turbo", DialectId::OpenAiResponses, &sonnet46);
+}
+
+#[test]
+fn an_effort_or_adaptive_thinking_a_model_cannot_take_is_left_out() {
+    use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
+    let claude_code = || {
+        let mut g = with_effort("high");
+        let r = g.reasoning.as_mut().unwrap();
+        r.mode = Some(ReasoningMode::Adaptive);
+        r.extras.fields.insert(
+            "display".to_owned(),
+            RawJson::from_serialize("omitted").unwrap(),
+        );
+        g
+    };
+    let command_a = eff(&entry("cohere", "command-a-03-2025"));
+    let (req, names) = left_out(claude_code(), A, &command_a);
+    assert_eq!(names, ["output_config.effort", "thinking"]);
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(g.reasoning, None);
+
+    let flash = eff(&entry("alibaba", "qwen3.7-flash"));
+    let (req, names) = left_out(claude_code(), A, &flash);
+    assert_eq!(names, ["output_config.effort"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let r = g.reasoning.as_ref().unwrap();
+    assert_eq!(
+        (&r.mode, &r.effort),
+        (&Some(ReasoningMode::Adaptive), &None)
+    );
+
+    let mut codex = with_effort("high");
+    let r = codex.reasoning.as_mut().unwrap();
+    r.summary = Some(kaeso_kpp::ReasoningSummary::Auto);
+    r.include_encrypted = true;
+    let gpt4o = eff(&entry("openai", "gpt-4o"));
+    let (req, names) = left_out(codex, R, &gpt4o);
+    assert_eq!(names, ["reasoning.effort"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let r = g.reasoning.as_ref().unwrap();
+    assert_eq!(r.summary, Some(kaeso_kpp::ReasoningSummary::Auto));
+    assert!(r.include_encrypted);
+
+    kept("none", R, &gpt4o);
+    assert!(left_out(with_effort("none"), R, &gpt4o).1.is_empty());
+    let (_, names) = left_out(user(vec![Block::text("hi")]), A, &command_a);
+    assert!(names.is_empty());
+    assert_eq!(
+        check(with_budget(16_384, ReasoningMode::Enabled), A, &command_a).unwrap_err(),
+        "The model `command-a-03-2025` does not support reasoning."
+    );
 }
 
 fn with_budget(budget: u32, mode: ReasoningMode) -> GenerateRequest {
@@ -877,8 +945,10 @@ fn kimi_k3_models_think_at_the_effort_levels_moonshot_documents() {
     }
     let k26 = eff(&entry("moonshotai", "kimi-k2.6"));
     kept("none", DialectId::OpenAiChat, &k26);
-    let err = refused("high", DialectId::OpenAiChat, &k26);
-    assert!(err.contains("does not accept an effort level"), "{err}");
+    assert_eq!(
+        effort_left_out("high", DialectId::OpenAiChat, &k26),
+        ["reasoning_effort"]
+    );
 }
 
 #[test]
@@ -918,6 +988,7 @@ fn duties_fill_what_kpp_cannot_know() {
             adaptive_thinking: None,
             thinking_binding: None,
             reasoning: Some(false),
+            left_out: Vec::new(),
         }
     );
     let Request::Generate(g) = &req else { panic!() };
@@ -1072,12 +1143,10 @@ fn capability_refusals_name_the_apps_own_field() {
         assert_eq!(refusal(image.clone(), ingress, &gpt35).param, Some(param));
     }
     let gpt4o = eff(&entry("openai", "gpt-4o"));
-    for (ingress, param) in [(C, "reasoning_effort"), (R, "reasoning"), (A, "thinking")] {
-        assert_eq!(
-            refusal(with_effort("high"), ingress, &gpt4o).param,
-            Some(param)
-        );
-    }
+    assert_eq!(
+        refusal(with_budget(2_048, ReasoningMode::Enabled), A, &gpt4o).param,
+        Some("thinking")
+    );
 }
 
 #[test]
@@ -1112,11 +1181,9 @@ fn adaptive_thinking_is_refused_before_sending_where_the_model_has_none() {
     assert!(check(with_effort("high"), DialectId::AnthropicMessages, &opus45).is_ok());
     assert!(check(with_effort("high"), DialectId::OpenAiChat, &opus45).is_ok());
     let haiku45 = eff(&entry("anthropic", "claude-haiku-4-5"));
-    let u = refusal(with_effort("low"), DialectId::AnthropicMessages, &haiku45);
-    assert_eq!(u.param, Some("output_config.effort"));
     assert_eq!(
-        u.message,
-        "The model `claude-haiku-4-5` does not accept an effort level; `low` cannot be sent."
+        effort_left_out("low", DialectId::AnthropicMessages, &haiku45),
+        ["output_config.effort"]
     );
     assert!(check(with_effort("low"), DialectId::OpenAiResponses, &haiku45).is_ok());
     let sonnet46 = eff(&entry("anthropic", "claude-sonnet-4-6"));
@@ -1384,8 +1451,10 @@ fn alibaba_models_speak_chat_completions_and_take_effort_levels_only_where_liste
     );
     assert!(effort_levels(&flash, DialectId::OpenAiResponses).is_empty());
     kept("none", DialectId::OpenAiChat, &flash);
-    let err = refused("low", DialectId::OpenAiResponses, &flash);
-    assert!(err.contains("does not accept an effort level"), "{err}");
+    assert_eq!(
+        effort_left_out("low", DialectId::OpenAiResponses, &flash),
+        ["reasoning.effort"]
+    );
     let effort = eff(&entry("alibaba", "qwen3.8-flash"));
     assert_eq!(
         effort_levels(&effort, DialectId::OpenAiChat),

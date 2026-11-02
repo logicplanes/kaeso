@@ -652,7 +652,6 @@ const messages = (): Rule[] => [
     t("errors.model.noAdaptive", "The model `{model}` has no adaptive thinking; send `enabled` thinking with `budget_tokens`.", v),
   ),
   rule("errors.model.noTemperature", (v) => t("errors.model.noTemperature", "The model `{model}` does not accept `temperature` (only the default of 1).", v)),
-  rule("errors.model.noEffort", (v) => t("errors.model.noEffort", "The model `{model}` does not accept an effort level; `{effort}` cannot be sent.", v)),
   rule(
     "errors.model.budgetAtLeast",
     (v) => t("errors.model.budgetAtLeast", "A `budget_tokens` of {budget} means `{effort}`; `{model}` needs at least {min}.", v),

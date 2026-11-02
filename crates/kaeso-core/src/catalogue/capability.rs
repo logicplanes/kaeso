@@ -51,12 +51,13 @@ fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'st
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Plan {
     pub dialect: DialectId,
     pub adaptive_thinking: Option<bool>,
     pub thinking_binding: Option<bool>,
     pub reasoning: Option<bool>,
+    pub left_out: Vec<String>,
 }
 
 pub fn prepare(
@@ -93,9 +94,11 @@ pub fn prepare(
                 adaptive_thinking: None,
                 thinking_binding: None,
                 reasoning: None,
+                left_out: Vec::new(),
             })
         }
         Request::Generate(g) => {
+            let left_out = leave_out_reasoning(g, ingress, eff);
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -109,6 +112,7 @@ pub fn prepare(
                 adaptive_thinking,
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
+                left_out,
             })
         }
         Request::CountTokens(g) => {
@@ -119,12 +123,14 @@ pub fn prepare(
                     format!("The model `{name}` cannot count tokens."),
                 ));
             };
+            let left_out = leave_out_reasoning(g, ingress, eff);
             check_generation(g, ingress, eff)?;
             Ok(Plan {
                 dialect,
                 adaptive_thinking,
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
+                left_out,
             })
         }
         _ => Err(refuse(
@@ -133,6 +139,43 @@ pub fn prepare(
             format!("The model `{name}` cannot serve this endpoint."),
         )),
     }
+}
+
+// Claude Code and Codex send an effort, and Claude Code adaptive thinking, to every model with
+// no switch per model; refusing them would make every model without effort levels unusable.
+fn leave_out_reasoning(
+    g: &mut GenerateRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Vec<String> {
+    let mut left_out = Vec::new();
+    let Some(r) = g.reasoning.as_mut() else {
+        return left_out;
+    };
+    let reasons = eff.fields.reasoning == Some(true);
+    if r.effort
+        .as_ref()
+        .is_some_and(|e| *e != ReasoningEffort::None)
+        && (!reasons || effort_levels(eff, ingress).is_empty())
+    {
+        r.effort = None;
+        left_out.push(app_param(ingress, "effort").to_owned());
+    }
+    if !reasons && r.mode == Some(ReasoningMode::Adaptive) {
+        r.mode = None;
+        r.extras.fields.shift_remove("display");
+        left_out.push(app_param(ingress, "reasoning").to_owned());
+    }
+    let nothing_left = r.mode.is_none()
+        && r.effort.is_none()
+        && r.budget_tokens.is_none()
+        && r.summary.is_none()
+        && !r.include_encrypted
+        && r.extras.fields.is_empty();
+    if !left_out.is_empty() && nothing_left {
+        g.reasoning = None;
+    }
+    left_out
 }
 
 fn check_generation(
@@ -345,18 +388,14 @@ fn check_effort(
     if levels.iter().any(|l| l == wire) {
         return Ok(());
     }
-    let message = if levels.is_empty() {
-        format!("The model `{name}` does not accept an effort level; `{wire}` cannot be sent.")
-    } else {
-        format!(
-            "The model `{name}` supports the effort levels {}; `{wire}` is not one of them.",
-            levels
-                .iter()
-                .map(|l| format!("`{l}`"))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
-    };
+    let message = format!(
+        "The model `{name}` supports the effort levels {}; `{wire}` is not one of them.",
+        levels
+            .iter()
+            .map(|l| format!("`{l}`"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
     Err(refuse(
         "effort",
         Some(app_param(ingress, "effort")),

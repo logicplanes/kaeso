@@ -422,7 +422,6 @@
   "errors.model.noReasoning": "Das Modell `{model}` unterstützt kein Reasoning.",
   "errors.model.noAdaptive": "Das Modell `{model}` hat kein adaptives Denken; senden Sie stattdessen `thinking` `enabled` mit `budget_tokens`.",
   "errors.model.noTemperature": "Das Modell `{model}` nimmt kein `temperature` an (nur den Standardwert 1).",
-  "errors.model.noEffort": "Das Modell `{model}` nimmt keine Aufwandsstufe an; `{effort}` lässt sich nicht senden.",
   "errors.model.effortLevels": "Das Modell `{model}` unterstützt die Aufwandsstufen {levels}; `{effort}` gehört nicht dazu.",
   "errors.model.budgetAtLeast": "`budget_tokens` von {budget} ergibt `{effort}`; `{model}` braucht mindestens {min}.",
   "errors.model.budgetBelow": "`budget_tokens` von {budget} ergibt `{effort}`; `{model}` braucht weniger als {max}.",
