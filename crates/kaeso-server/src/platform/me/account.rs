@@ -127,14 +127,24 @@ pub struct Memberships {
 #[utoipa::path(
     get,
     path = "/me/memberships",
-    summary = "Every org and project the user belongs to.",
+    summary = "Every org and project the user belongs to. An agent sees only the orgs\n\
+    and projects it can open.",
     tag = "me",
     responses((status = 200, body = Memberships))
 )]
 pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Memberships>> {
     let me = ctx.user_id()?;
-    let orgs = members::orgs_of_user(&state.pg, me.uuid()).await?;
-    let projects = members::projects_of_user(&state.pg, me.uuid()).await?;
+    let mut orgs = members::orgs_of_user(&state.pg, me.uuid()).await?;
+    let mut projects = members::projects_of_user(&state.pg, me.uuid()).await?;
+    if let Some(agent) = ctx.agent() {
+        let reach = crate::services::agents::reachable(&state, agent).await?;
+        orgs.retain(|o| reach.contains_key(&o.org_id));
+        projects.retain(|p| {
+            reach
+                .get(&p.org_id)
+                .is_some_and(|r| r.contains(&p.project_id))
+        });
+    }
     let last_owner = members::orgs_where_last_owner(&state.pg, me.uuid()).await?;
     Ok(Json(Memberships {
         data: orgs

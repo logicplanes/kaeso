@@ -210,7 +210,7 @@ Every Platform API operation an agent can use is a tool, named after its operati
 - **Results.** A tool answers with the Platform API's JSON as text and as `structuredContent`. An answer over 200 KB is cut; ask for a smaller page with `limit`.
 - **Model.** Every tool takes `agent_model`, the model family the agent runs on: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` or `unknown`. Kaeso stores it with each call and shows the family's name next to the agent; any other value counts as `unknown`. Until its first call, an agent shows as `unknown`.
 - **Hints.** Tools that read are marked `readOnlyHint`, and tools that delete `destructiveHint`.
-- **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first.
+- **Instructions.** The server tells the agent to list its organizations with `get_me_memberships` first. It lists only the organizations and projects the agent can open, and so does a member's rights in `get_orgs_org_members_user_rights`.
 
 These need a console session, so no agent has a tool for them:
 

@@ -1539,6 +1539,105 @@ async fn personal_keys_and_projects_stay_within_the_agents_grant() {
 }
 
 #[tokio::test]
+async fn an_agent_sees_only_the_orgs_and_projects_it_can_open() {
+    let (_s, app, owner) = setup().await;
+    app.post(
+        &format!("/orgs/{}/projects", owner.org_id),
+        json!({ "name": "Second" }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED);
+    let projects = projects_of(&app, &owner).await;
+    let (first, second) = (&projects[0], &projects[1]);
+    let elsewhere = app
+        .post(
+            "/me/orgs",
+            json!({ "name": "Elsewhere" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut g = grant(&owner.org_id, &["org.view", "members.view"], &[]);
+    g["orgs"][0]["projects"] = json!({
+        "all": false,
+        "rights": [],
+        "selected": [{ "project": first, "rights": ["project.view"] }]
+    });
+    g["orgs"].as_array_mut().unwrap().push(json!({
+        "org": elsewhere,
+        "included": false,
+        "rights": [],
+        "projects": { "all": true, "rights": [], "selected": [] }
+    }));
+    let a = sign_in(&app, &owner.cookie, g).await;
+
+    let memberships = |result: Value| -> Vec<(String, Vec<String>)> {
+        assert_eq!(result["isError"], false, "{result:?}");
+        result["structuredContent"]["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| {
+                let projects = m["projects"].as_array().unwrap().iter();
+                (
+                    m["org_id"].as_str().unwrap().to_owned(),
+                    projects
+                        .map(|p| p["id"].as_str().unwrap().to_owned())
+                        .collect(),
+                )
+            })
+            .collect()
+    };
+    let seen = tool(&app, &a.access, "get_me_memberships", json!({})).await;
+    assert_eq!(
+        memberships(seen),
+        [(owner.org_id.clone(), vec![first.clone()])]
+    );
+    let rights = tool(
+        &app,
+        &a.access,
+        "get_orgs_org_members_user_rights",
+        json!({ "org": owner.org_id, "user": owner.user_id }),
+    )
+    .await;
+    assert_eq!(rights["isError"], false, "{rights:?}");
+    let shown: Vec<&str> = rights["structuredContent"]["projects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p["project"]["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(shown, [first.as_str()]);
+
+    let mine = app
+        .get("/me/memberships", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(mine.body["data"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        mine.body["data"][0]["projects"].as_array().unwrap().len(),
+        2,
+        "the console still sees {second}"
+    );
+
+    app.call(
+        Method::PUT,
+        &format!("/orgs/{}/security/agents", owner.org_id),
+        Some(json!({ "allowed": false, "max": "full" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let seen = tool(&app, &a.access, "get_me_memberships", json!({})).await;
+    assert!(memberships(seen).is_empty(), "the org refuses agents");
+}
+
+#[tokio::test]
 async fn a_closed_org_cant_be_left_by_the_agent() {
     let (_s, app, owner) = setup().await;
     let (member, _) = common::join(
