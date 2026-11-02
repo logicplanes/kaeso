@@ -17,6 +17,7 @@ import {
   type StepDialogResult,
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
+import { fieldError } from "~/api/field-error";
 import type { CreatedKey_KeyView } from "~/api/generated/types";
 import { catalogueQuery } from "~/api/queries/models";
 import { modelAccessQuery, serviceAccountsQuery, type Principal } from "~/api/queries/members";
@@ -151,6 +152,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
         submitLabel={t("kaeso.createKey.title", "Create key")}
         submitting={create.isPending}
         onSubmit={() => ready && create.mutate()}
+        refusedStep={create.error?.param === "name" ? "name" : undefined}
         steps={[
           {
             id: "name",
@@ -165,7 +167,11 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                   label={t("common.name", "Name")}
                   placeholder={EXAMPLE_NAME}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (create.isError) create.reset();
+                  }}
+                  error={fieldError(create.error, "name")}
                   autoFocus
                   maxLength={100}
                 />

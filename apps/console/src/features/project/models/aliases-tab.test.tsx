@@ -114,6 +114,31 @@ describe("AliasesTab", () => {
     expect((await notifications().findAllByText("An alias with that name exists.")).length).toBeGreaterThan(0);
   });
 
+  it("puts a refusal of the name or the target under that field until it is changed", async () => {
+    setUp();
+    on("POST", ALIASES, apiError(400, "invalid_request", "An alias name can't contain spaces.", { param: "name" }));
+    const { user } = await renderApp(projectPath("models?tab=aliases&add=true"));
+
+    const dialog = await screen.findByRole("dialog", { name: "Create alias" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.type(name, "my alias");
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
+    await user.click(await screen.findByRole("option", { name: /Claude Sonnet 4.5/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
+    await waitFor(() => expect(name).toHaveAccessibleDescription("An alias name can't contain spaces."));
+    expect(name).toHaveAttribute("aria-invalid", "true");
+    await user.type(name, "x");
+    expect(name).not.toHaveAccessibleDescription("An alias name can't contain spaces.");
+    expect(within(dialog).queryByText("An alias name can't contain spaces.")).not.toBeInTheDocument();
+
+    on("POST", ALIASES, apiError(400, "invalid_request", "No such model in this project's catalogue.", { param: "catalogue_model_id" }));
+    await user.clear(name);
+    await user.type(name, "smart");
+    await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
+    expect(await within(dialog).findByText("No such model in this project's catalogue.")).toBeInTheDocument();
+    expect(name).not.toHaveAttribute("aria-invalid");
+  });
+
   it("retargets an alias opened from its row, sending only what changed", async () => {
     setUp();
     on("PATCH", ONE_ALIAS, ({ body }: { body: Record<string, string> }) => alias({ ...body }));
