@@ -801,6 +801,97 @@ fn content_that_arrives_only_in_done_events_reaches_kpp() {
     assert_eq!(texts, ["Hi there! How can I assist you today?"]);
 }
 
+fn tool_arguments(events: &[StreamEvent]) -> Vec<String> {
+    events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ToolArguments(a),
+                ..
+            }) => Some(a.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+fn round_trips(name: &str, wire: &[u8]) -> Vec<StreamEvent> {
+    let events = decode_stream_chunked(wire, 13);
+    assert_eq!(events, decode_stream_chunked(wire, usize::MAX), "{name}");
+    let ctx = EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(true));
+    assert_sse_eq(name, wire, &encode_stream(&events, &ctx));
+    events
+}
+
+#[test]
+fn call_arguments_that_arrive_only_in_the_item_reach_kpp_once() {
+    let boston = "{\"city\":\"Boston\",\"unit\":\"fahrenheit\"}";
+    for name in ["function-call-item-only", "function-call-added-arguments"] {
+        let wire = fixture("streams", name, "sse");
+        let events = round_trips(name, &wire);
+        assert_eq!(tool_arguments(&events), [boston], "{name}");
+    }
+    let wire = String::from_utf8(fixture("streams", "function-call-added-arguments", "sse"))
+        .unwrap()
+        .replacen(
+            "\"status\":\"completed\",\"arguments\":\"{\\\"city\\\":\\\"Boston\\\",\\\"unit\\\":\\\"fahrenheit\\\"}\"",
+            "\"status\":\"completed\",\"arguments\":\"\"",
+            1,
+        );
+    let events = round_trips("arguments only in the added item", wire.as_bytes());
+    assert_eq!(tool_arguments(&events), [boston]);
+}
+
+#[test]
+fn a_message_that_arrives_only_as_an_item_keeps_its_citations_and_unknown_parts() {
+    let wire = fixture("streams", "text-item-only-annotations", "sse");
+    let events = round_trips("text-item-only-annotations", &wire);
+    let text: String = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::Text(t),
+                ..
+            }) => Some(t.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        text.starts_with("The Lisbon Oceanarium is open every day"),
+        "{text}"
+    );
+    let citations: Vec<Value> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::Citation(c),
+                ..
+            }) => Some(c.raw.to_value().unwrap()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(citations.len(), 1, "{events:?}");
+    assert_eq!(citations[0]["type"], "url_citation");
+    assert_eq!(citations[0]["start_index"], 87);
+
+    let wire = fixture("streams", "unknown-part-item-only", "sse");
+    let events = round_trips("unknown-part-item-only", &wire);
+    assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockDelta(BlockDelta { delta: Delta::Text(t), .. }) if t == "Hi there! How can I assist you today?")), "{events:?}");
+    let unknown: Vec<Value> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockStart(BlockStart {
+                block: BlockHeader::Unknown(item),
+                ..
+            }) => Some(item.raw.to_value().unwrap()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        unknown,
+        [json!({"type": "x_future_part", "x_future_field": true})]
+    );
+}
+
 #[test]
 fn a_stream_whose_usage_cannot_be_read_ends_with_a_provider_error() {
     let bytes = fixture("streams", "text-basic-stream", "sse");

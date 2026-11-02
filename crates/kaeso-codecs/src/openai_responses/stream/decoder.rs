@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use kaeso_kpp::{
-    BlockDelta, BlockHeader, BlockStart, BlockStop, Citation, Delta, Extras, KppError, Opaque,
-    OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
+    Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Citation, Delta, Extras, KppError,
+    Opaque, OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
     ResponseStop, StreamEvent, SummaryDelta, ToolCallHeader,
 };
 use serde_json::Value;
@@ -15,6 +15,7 @@ use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
 use crate::openai_responses::node::{Node, entries_of};
 use crate::openai_responses::overrides::{Overrides, form_set_insert};
+use crate::openai_responses::parts::{TextKind, decode_part};
 use crate::openai_responses::response::{NATIVE, decode_usage, failed_error, stop_for};
 use crate::openai_responses::wire;
 use crate::sse::{SseEvent, SseItem, SseParser};
@@ -58,6 +59,7 @@ enum Action {
     Pre,
     Main(Vec<Lifecycle>),
     Unstreamed(Vec<Lifecycle>),
+    Late(Vec<Lifecycle>, Lifecycle),
     HoldError(KppError),
     Broken(String),
     Other,
@@ -75,6 +77,7 @@ pub(crate) struct Decoder {
     items: HashMap<i64, (u32, ItemKind)>,
     parts: HashMap<(i64, i64), u32>,
     streamed: std::collections::HashSet<u32>,
+    added_arguments: HashMap<u32, String>,
     with_parts: std::collections::HashSet<i64>,
     held_error: Option<(KppError, Frame)>,
     called: bool,
@@ -95,6 +98,7 @@ impl Decoder {
             items: HashMap::new(),
             parts: HashMap::new(),
             streamed: std::collections::HashSet::new(),
+            added_arguments: HashMap::new(),
             with_parts: std::collections::HashSet::new(),
             held_error: None,
             called: false,
@@ -280,6 +284,12 @@ impl Decoder {
                     self.inert = true;
                 }
             }
+            Action::Late(unstreamed, last) => {
+                for event in unstreamed {
+                    self.run(event, Vec::new(), out);
+                }
+                self.lifecycle(last, f, out);
+            }
             Action::Broken(message) => {
                 self.flush_pending(out);
                 self.fail(out, KppError::provider(message));
@@ -337,30 +347,48 @@ impl Decoder {
     }
 
     fn unstreamed_parts(&mut self, item: &RawValue) -> Vec<Lifecycle> {
-        let Ok(message) = serde_json::from_str::<Value>(item.get()) else {
-            return Vec::new();
-        };
-        let Some(parts) = message.get("content").and_then(Value::as_array) else {
+        let Some(content) = entries_of(item)
+            .and_then(|entries| entries.into_iter().find(|(k, _)| k == "content"))
+            .and_then(|(_, v)| serde_json::from_str::<Vec<&RawValue>>(v.get()).ok())
+        else {
             return Vec::new();
         };
         let mut events = Vec::new();
-        for part in parts {
-            let (header, delta) = match (
-                part.get("type").and_then(Value::as_str),
-                part.get("text")
-                    .or_else(|| part.get("refusal"))
-                    .and_then(Value::as_str),
-            ) {
-                (Some("output_text"), Some(t)) => (BlockHeader::Text, Delta::Text(t.to_owned())),
-                (Some("refusal"), Some(t)) => (BlockHeader::Refusal, Delta::Refusal(t.to_owned())),
-                _ => return Vec::new(),
-            };
+        for part in content {
             let index = self.next_index();
+            let (header, deltas) = match decode_part(part, TextKind::Output, &self.origin) {
+                Block::Text(t) => {
+                    let mut deltas = vec![Delta::Text(t.text)];
+                    deltas.extend(t.citations.into_iter().map(Delta::Citation));
+                    (BlockHeader::Text, deltas)
+                }
+                Block::Refusal(r) => (BlockHeader::Refusal, vec![Delta::Refusal(r.text)]),
+                _ => {
+                    let raw = RawItem::new(self.origin.clone(), RawJson::from(part));
+                    let mut start = BlockStart::new(index, BlockHeader::Unknown(raw));
+                    start.extras = Extras::new(self.origin.clone()).with_form(PART, true.into());
+                    events.push(start.into());
+                    events.push(BlockStop::new(index).into());
+                    continue;
+                }
+            };
             events.push(BlockStart::new(index, header).into());
-            events.push(BlockDelta::new(index, delta).into());
+            events.extend(deltas.into_iter().map(|d| BlockDelta::new(index, d).into()));
             events.push(BlockStop::new(index).into());
         }
         events
+    }
+
+    fn unstreamed_arguments(&mut self, index: u32, item: &RawValue) -> Option<String> {
+        let added = self.added_arguments.remove(&index);
+        if self.streamed.contains(&index) {
+            return None;
+        }
+        let done = serde_json::from_str::<wire::FunctionCallItem>(item.get())
+            .ok()
+            .map(|c| c.arguments)
+            .filter(|a| !a.is_empty());
+        done.or(added)
     }
 
     fn next_index(&mut self) -> u32 {
@@ -380,6 +408,7 @@ impl Decoder {
                 let (Some(oi), Some(item)) = (oi, f.raw("item")) else {
                     return self.broken(f);
                 };
+                let mut arguments = String::new();
                 let header = match type_tag(item).ok().flatten().as_deref() {
                     Some("message") => return Action::Pre,
                     Some("function_call") => {
@@ -387,6 +416,7 @@ impl Decoder {
                         else {
                             return self.broken(f);
                         };
+                        arguments = c.arguments;
                         (
                             BlockHeader::ToolCall(ToolCallHeader::new(c.call_id, c.name)),
                             ItemKind::Call,
@@ -415,6 +445,9 @@ impl Decoder {
                     ),
                 };
                 let index = self.next_index();
+                if !arguments.is_empty() {
+                    self.added_arguments.insert(index, arguments);
+                }
                 self.called |= header.1 == ItemKind::Call;
                 self.items.insert(oi, (index, header.1));
                 let mut start = BlockStart::new(index, header.0);
@@ -602,7 +635,13 @@ impl Decoder {
                         let raw = RawItem::new(self.origin.clone(), RawJson::from(item));
                         events.push(block_delta(index, Delta::Unknown(raw)));
                     }
-                    ItemKind::Call => {}
+                    ItemKind::Call => {
+                        if let Some(arguments) = self.unstreamed_arguments(index, item) {
+                            self.streamed.insert(index);
+                            let late = vec![block_delta(index, Delta::ToolArguments(arguments))];
+                            return Action::Late(late, BlockStop::new(index).into());
+                        }
+                    }
                 }
                 events.push(BlockStop::new(index).into());
                 Action::Main(events)
