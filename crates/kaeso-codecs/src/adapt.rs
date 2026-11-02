@@ -7,7 +7,10 @@ use kaeso_kpp::{
 use serde_json::{Map, Value};
 
 use crate::codec::EgressCtx;
-use crate::cross::{CHAT_ASSISTANT_BOOKKEEPING, check_extras, is_chat_bookkeeping};
+use crate::cross::{
+    CHAT_ASSISTANT_BOOKKEEPING, OPENAI_CACHE_KEY, check_extras, is_chat_bookkeeping,
+};
+use crate::openai_chat::ChatProfile;
 use crate::openai_responses::{InputItems, ReasoningReplay, history, namespaces, replay};
 use crate::wire::VERBATIM_FORM_KEY;
 use crate::{tool_roots, tool_search, verbosity, web_search};
@@ -165,6 +168,7 @@ pub(crate) fn for_target<'a>(
         strip_bookkeeping(draft.edit());
     }
     verbosity::left_out(&mut draft, target, &ctx.chat_profile);
+    cache_key_left_out(&mut draft, target, &ctx.chat_profile);
     let Draft {
         edited,
         left_out,
@@ -445,5 +449,16 @@ fn strip_bookkeeping(r: &mut GenerateRequest) {
                 extras.form.shift_remove(VERBATIM_FORM_KEY);
             }
         }
+    }
+}
+
+fn cache_key_left_out(d: &mut Draft<'_>, target: DialectId, chat: &ChatProfile) {
+    if target != DialectId::OpenAiChat || chat.request.cache_key {
+        return;
+    }
+    let from_responses = d.get().extras.is_from(DialectId::OpenAiResponses);
+    if from_responses && d.get().extras.fields.contains_key(OPENAI_CACHE_KEY) {
+        d.edit().extras.fields.shift_remove(OPENAI_CACHE_KEY);
+        d.leave_out(OPENAI_CACHE_KEY.to_owned());
     }
 }

@@ -347,8 +347,9 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .end_user_as_user()
+            .without_cache_key()
             .reasoning_fields(&["reasoning"])
-            .refusing(&["logit_bias", "logprobs", "top_logprobs"])
+            .refusing(&["logit_bias", "logprobs", "prompt_cache_key", "top_logprobs"])
             .refusing_in_messages(&["name", "refusal"]),
         responses: ResponsesProfile::compatible("Groq"),
         account: None,
@@ -893,6 +894,11 @@ mod tests {
         for (provider_id, request, param) in [
             ("groq", "requests/logit-bias", "logit_bias"),
             ("groq", "requests/logprobs-top-logprobs-doc", "logprobs"),
+            (
+                "groq",
+                "requests/identifiers-metadata-store",
+                "prompt_cache_key",
+            ),
             (
                 "groq",
                 "requests/tools-results-parallel-error",

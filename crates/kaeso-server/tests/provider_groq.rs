@@ -243,6 +243,42 @@ async fn fields_groq_refuses_are_refused_before_anything_is_sent_and_developer_i
 }
 
 #[tokio::test]
+async fn a_codex_cache_key_is_left_out_for_groq_and_a_chat_apps_own_is_refused() {
+    let env = env().await;
+    let r = call(
+        &env,
+        "/v1/responses",
+        Some(&env.key),
+        false,
+        Some(json!({
+            "model": "openai/gpt-oss-20b",
+            "input": "Hi [mock:fixture=providers/groq/recorded-plain-developer-string]",
+            "prompt_cache_key": "codex-session-1",
+        })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("prompt_cache_key"));
+    let (_, _, sent) = sent(&env);
+    assert!(sent.get("prompt_cache_key").is_none(), "{sent}");
+
+    env.mock.clear();
+    let mut body = chat("openai/gpt-oss-20b", "Hi");
+    body["prompt_cache_key"] = json!("chat-session-1");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "prompt_cache_key");
+    assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
 async fn token_counts_for_groq_models_are_refused_before_anything_is_sent() {
     let env = env().await;
     env.mock.clear();
