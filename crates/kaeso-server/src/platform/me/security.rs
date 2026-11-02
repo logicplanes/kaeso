@@ -168,11 +168,9 @@ pub async fn change_password(
             let attempts = Attempts::for_user(&ctx, user_id);
             attempts.begin(&state).await?;
             let stored = stored.clone();
-            let ok = tokio::task::spawn_blocking(move || {
-                kaeso_crypto::password::verify(&current, &stored)
-            })
-            .await
-            .map_err(ApiError::internal)?;
+            let ok = crate::auth::passwords::verify(current, stored)
+                .await
+                .map_err(ApiError::internal)?;
             if !ok {
                 return Err(ApiError::invalid(
                     "current_password",
