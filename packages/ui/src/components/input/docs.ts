@@ -58,7 +58,7 @@ export const docs = {
   },
   OTPInput: {
     description:
-      "Six rounded-14 cells for TOTP codes, over one accessible input: paste fills every cell, Backspace moves back, the browser can offer the code.",
+      "Six rounded-14 cells for TOTP codes, over one accessible input: the cells share the row's width up to the 400px sign-in column, so they line up with the fields and buttons around them; paste fills every cell, Backspace moves back, the browser can offer the code.",
     props: {
       defaultValue: "The code on first render.",
       invalid: "Shows it as invalid; pair it with a message that says what to fix.",
