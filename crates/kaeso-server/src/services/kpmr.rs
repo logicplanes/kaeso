@@ -112,7 +112,7 @@ pub fn embedded_fetched_at(embedded: &Catalogue) -> OffsetDateTime {
 
 pub async fn init(state: &AppState) -> Result<(), StoreError> {
     let stored = catalogue::snapshot(&state.pg).await?;
-    let embedded = state.kpmr.current();
+    let embedded = Kpmr::embedded().current();
     match stored {
         Some(row) if preferred_over_embedded(&row, embedded.fetched_at) => {
             load_row(state, row);
