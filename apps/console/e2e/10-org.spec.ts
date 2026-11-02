@@ -354,6 +354,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
   const content = page.getByRole("spinbutton", { name: "Content retention" });
   await content.fill("7");
   await page.getByRole("button", { name: "Save content retention" }).click();
+  await page.getByRole("alertdialog", { name: "Keep content for 7 days only?" }).getByRole("button", { name: "Shorten and delete" }).click();
   await expect(toastText(page, "Retention saved")).toBeVisible();
 
   await page.getByRole("tab", { name: "Storage" }).click();
