@@ -10,6 +10,7 @@ use utoipa::ToSchema;
 
 use crate::auth::sessions::{self, IDLE_LIFETIME};
 use crate::platform::access::{Area, Ctx, PolicyGap, policy_gap};
+use crate::platform::audit::Action;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{RoleRef, org_from_store};
@@ -301,11 +302,18 @@ pub async fn revoke(
     let id: SessionId = session
         .parse()
         .map_err(|_| ApiError::not_found("session"))?;
-    if sessions::revoke(&state, user, id).await? {
-        Ok(StatusCode::NO_CONTENT)
-    } else {
-        Err(ApiError::not_found("session"))
-    }
+    let mut tx = state.pg.begin().await?;
+    let hash = store::revoke(&mut *tx, user.uuid(), id.uuid(), ctx.now)
+        .await?
+        .ok_or_else(|| ApiError::not_found("session"))?;
+    ctx.audit(None, Action::UserSessionsRevoke)
+        .target("user", user)
+        .after(serde_json::json!({ "ended": 1 }))
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    sessions::forget(&state, &[hash]).await;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -324,11 +332,20 @@ pub struct Revoked {
 )]
 pub async fn revoke_all(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Revoked>> {
     let me = ctx.session()?;
-    let revoked = sessions::revoke_all(
-        &state,
-        UserId::from_uuid(me.user_id),
-        Some(SessionId::from_uuid(me.id)),
-    )
-    .await?;
-    Ok(Json(Revoked { revoked }))
+    let user = UserId::from_uuid(me.user_id);
+    let mut tx = state.pg.begin().await?;
+    let ended =
+        sessions::revoke_all_in(&mut tx, user, Some(SessionId::from_uuid(me.id)), ctx.now).await?;
+    if !ended.is_empty() {
+        ctx.audit(None, Action::UserSessionsRevoke)
+            .target("user", user)
+            .after(serde_json::json!({ "ended": ended.len() }))
+            .write(&mut tx)
+            .await?;
+    }
+    tx.commit().await?;
+    sessions::forget(&state, &ended).await;
+    Ok(Json(Revoked {
+        revoked: ended.len(),
+    }))
 }

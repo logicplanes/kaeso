@@ -56,7 +56,7 @@ An organization's identity provider signs you in only once your account is linke
 
 ## Sign out other browsers
 
-**Sessions** lists every browser where you are signed in, and how you signed in. **End session** signs one out, and **Sign out everywhere** signs out all but this one.
+**Sessions** lists every browser where you are signed in, and how you signed in. **End session** signs one out, and **Sign out everywhere** signs out all but this one. The instance's audit log records both as `user.sessions_revoke`, with how many sessions ended.
 
 A session ends after 7 days without use, and after 30 days at most.
 
