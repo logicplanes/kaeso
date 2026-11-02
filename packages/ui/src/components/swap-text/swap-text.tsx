@@ -13,11 +13,19 @@ export interface SwapTextProps extends Omit<HTMLAttributes<HTMLSpanElement>, "ch
   children: ReactNode;
   reserve: ReactNode[];
   align?: keyof typeof KAESO_SWAP_TEXT_VARIANTS.align | undefined;
+  wrap?: boolean | undefined;
 }
 
-export const SwapText = forwardRef<HTMLSpanElement, SwapTextProps>(function SwapText({ children, reserve, align = "center", className, ...props }, ref) {
+export const SwapText = forwardRef<HTMLSpanElement, SwapTextProps>(function SwapText(
+  { children, reserve, align = "center", wrap = false, className, ...props },
+  ref,
+) {
   return (
-    <span ref={ref} className={cn("inline-grid whitespace-nowrap", KAESO_SWAP_TEXT_VARIANTS.align[align].classes, className)} {...props}>
+    <span
+      ref={ref}
+      className={cn("inline-grid", wrap ? "whitespace-normal" : "whitespace-nowrap", KAESO_SWAP_TEXT_VARIANTS.align[align].classes, className)}
+      {...props}
+    >
       <span className="col-start-1 row-start-1">{children}</span>
       {reserve.map((r, i) => (
         <span key={i} aria-hidden className="invisible col-start-1 row-start-1">

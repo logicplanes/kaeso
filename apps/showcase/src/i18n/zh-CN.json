@@ -1022,6 +1022,7 @@
   "Aligns the shorter labels at the start or in the center of the reserved width.": "将较短的标签对齐到预留宽度的起始处或中间。",
   "What is shown now.": "当前显示的内容。",
   "Every text this place can show (\"Copy page\", \"Copied\"). The width fits the widest, so a state change never resizes the control.": "此位置可能显示的所有文字（“复制页面”“已复制”）。宽度适应最宽的文字，状态变化时控件尺寸绝不改变。",
+  "Lets longer texts, such as a field's hint, wrap within their column; the height then fits the tallest, so nothing below moves.": "让较长的文字（例如字段的提示）在所在列内换行；高度随最高的文字而定，下方内容不会移动。",
   "A circle that opens system, light or dark, stored as `kaeso:theme`; its icon shows the theme in use.": "一个圆形按钮，打开跟随系统、浅色或深色选项，保存为 `kaeso:theme`；其图标显示当前使用的主题。",
   "A filled button (`secondary`) or a quiet one (`ghost`).": "填充按钮（`secondary`）或低调按钮（`ghost`）。",
   "The trigger and the menu's content.": "触发器和菜单的内容。",
