@@ -175,6 +175,27 @@ pub async fn delete_org(
     Ok(())
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Recipient {
+    pub user_id: Uuid,
+    pub email: String,
+}
+
+pub async fn members_and_instance_admins(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+) -> Result<Vec<Recipient>, StoreError> {
+    Ok(sqlx::query_as!(
+        Recipient,
+        "SELECT u.id AS \"user_id!\", u.email AS \"email!\" FROM org_memberships m JOIN users u ON u.id = m.user_id \
+         WHERE m.org_id = $1 AND u.state = 'active' AND u.email IS NOT NULL \
+         UNION SELECT id, email FROM users WHERE is_instance_admin AND state = 'active' AND email IS NOT NULL",
+        org_id
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn lock_owners(db: &mut sqlx::PgConnection, org_id: Uuid) -> Result<(), StoreError> {
     sqlx::query!(
         "SELECT pg_advisory_xact_lock(hashtextextended('org_owners:' || $1::uuid::text, 0))",
