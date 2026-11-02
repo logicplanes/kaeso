@@ -43,8 +43,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
   const [q, setQ] = useState(search.q ?? "");
   const session = useSession();
   const byDeletion = search.sort === "deletion";
-  const [localSorting, setLocalSorting] = useState<SortingState>([]);
-  const sorting: SortingState = byDeletion ? [{ id: "state", desc: false }] : localSorting;
+  const sorting: SortingState = byDeletion ? [{ id: "state", desc: false }] : [];
   const orgs = useInfiniteQuery(instanceOrgsQuery(search.q ?? "", byDeletion ? "deletion" : "created"));
   const [creating, setCreating] = useState(!!search.create);
   const [deleting, setDeleting] = useState<InstanceOrgView | null>(null);
@@ -62,56 +61,56 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
     const state = next.find((s) => s.id === "state");
     const deletion = !!state && !state.desc;
     if (deletion !== byDeletion) show({ q: search.q, sort: deletion ? "deletion" : undefined });
-    setLocalSorting(next.filter((s) => s.id !== "state"));
   };
 
   const deletions = rows.some((o) => o.state === "scheduled_for_deletion");
   const columns = useMemo(
-    () => [
-      col.custom(
-        { id: "name", header: t("common.name", "Name"), size: 192, priority: 1, grow: true },
-        (o: InstanceOrgView) => o.name,
-        (_v, o) => (
-          <span className="flex min-w-0 items-center gap-8">
-            <Avatar name={o.name} {...(o.avatar_url ? { src: o.avatar_url } : {})} kind="org" size={20} decorative />
-            <span className="truncate">{o.name}</span>
-          </span>
-        ),
-      ),
-      col.custom(
-        { id: "state", header: t("instance.state", "State"), size: deletions ? DELETION_STATE_WIDTH : STATE_WIDTH, priority: 1 },
-        (o: InstanceOrgView) => (o.state === "scheduled_for_deletion" ? (o.deletion_due_at ?? "") : "~"),
-        (_v, o) =>
-          o.state === "scheduled_for_deletion" ? (
-            <Badge tone="danger">
-              {o.deletion_due_at
-                ? t("instance.deletionOn", "Deletion on {date}", { date: dayWithinYear(o.deletion_due_at) })
-                : t("instance.scheduledForDeletion", "Scheduled for deletion")}
-            </Badge>
-          ) : o.owners === 0 ? (
-            <Badge tone="warning">{t("instance.noOwner", "No owner")}</Badge>
-          ) : (
-            <Text>{t("common.active", "Active")}</Text>
+    () =>
+      [
+        col.custom(
+          { id: "name", header: t("common.name", "Name"), size: 192, priority: 1, grow: true },
+          (o: InstanceOrgView) => o.name,
+          (_v, o) => (
+            <span className="flex min-w-0 items-center gap-8">
+              <Avatar name={o.name} {...(o.avatar_url ? { src: o.avatar_url } : {})} kind="org" size={20} decorative />
+              <span className="truncate">{o.name}</span>
+            </span>
           ),
-      ),
-      col.custom(
-        { id: "members", header: t("common.members", "Members"), size: 104, priority: 2 },
-        (o: InstanceOrgView) => o.members,
-        (v: number) => formatNumber(v),
-        { align: "end" },
-      ),
-      col.custom(
-        { id: "projects", header: t("common.projects", "Projects"), size: 104, priority: 2 },
-        (o: InstanceOrgView) => o.projects,
-        (v: number) => formatNumber(v),
-        { align: "end" },
-      ),
-      col.custom(
-        { id: "created", header: t("common.created", "Created"), size: 112, priority: 3 },
-        (o: InstanceOrgView) => o.created_at,
-        (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
-      ),
-    ],
+        ),
+        col.custom(
+          { id: "state", header: t("instance.state", "State"), size: deletions ? DELETION_STATE_WIDTH : STATE_WIDTH, priority: 1 },
+          (o: InstanceOrgView) => (o.state === "scheduled_for_deletion" ? (o.deletion_due_at ?? "") : "~"),
+          (_v, o) =>
+            o.state === "scheduled_for_deletion" ? (
+              <Badge tone="danger">
+                {o.deletion_due_at
+                  ? t("instance.deletionOn", "Deletion on {date}", { date: dayWithinYear(o.deletion_due_at) })
+                  : t("instance.scheduledForDeletion", "Scheduled for deletion")}
+              </Badge>
+            ) : o.owners === 0 ? (
+              <Badge tone="warning">{t("instance.noOwner", "No owner")}</Badge>
+            ) : (
+              <Text>{t("common.active", "Active")}</Text>
+            ),
+        ),
+        col.custom(
+          { id: "members", header: t("common.members", "Members"), size: 104, priority: 2 },
+          (o: InstanceOrgView) => o.members,
+          (v: number) => formatNumber(v),
+          { align: "end" },
+        ),
+        col.custom(
+          { id: "projects", header: t("common.projects", "Projects"), size: 104, priority: 2 },
+          (o: InstanceOrgView) => o.projects,
+          (v: number) => formatNumber(v),
+          { align: "end" },
+        ),
+        col.custom(
+          { id: "created", header: t("common.created", "Created"), size: 112, priority: 3 },
+          (o: InstanceOrgView) => o.created_at,
+          (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
+        ),
+      ].map((c) => ({ ...c, enableSorting: c.id === "state" })),
     [deletions],
   );
 
