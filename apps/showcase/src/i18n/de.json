@@ -1022,6 +1022,7 @@
   "Aligns the shorter labels at the start or in the center of the reserved width.": "Richtet die kürzeren Beschriftungen am Anfang oder in der Mitte der reservierten Breite aus.",
   "What is shown now.": "Was jetzt angezeigt wird.",
   "Every text this place can show (\"Copy page\", \"Copied\"). The width fits the widest, so a state change never resizes the control.": "Jeder Text, den diese Stelle zeigen kann („Seite kopieren“, „Kopiert“). Die Breite richtet sich nach dem breitesten, damit ein Zustandswechsel die Größe des Steuerelements nie verändert.",
+  "Lets longer texts, such as a field's hint, wrap within their column; the height then fits the tallest, so nothing below moves.": "Lässt längere Texte, etwa den Hinweis eines Felds, in ihrer Spalte umbrechen; die Höhe richtet sich dann nach dem höchsten, damit sich nichts darunter verschiebt.",
   "A circle that opens system, light or dark, stored as `kaeso:theme`; its icon shows the theme in use.": "Ein Kreis, der System, Hell oder Dunkel zur Wahl stellt, gespeichert als `kaeso:theme`; sein Symbol zeigt das verwendete Theme.",
   "A filled button (`secondary`) or a quiet one (`ghost`).": "Ein gefüllter Button (`secondary`) oder ein leiser (`ghost`).",
   "The trigger and the menu's content.": "Der Auslöser und der Inhalt des Menüs.",

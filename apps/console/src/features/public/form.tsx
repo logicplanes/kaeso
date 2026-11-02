@@ -48,6 +48,7 @@ export function passwordHint(password: string, empty = passwordStatus("")): Reac
   return (
     <SwapText
       align="start"
+      wrap
       reserve={[...new Set([empty, passwordStatus(""), passwordStatus("x".repeat(11)), passwordStatus("x".repeat(129)), passwordStatus("x".repeat(12))])]}
     >
       {password ? passwordStatus(password) : empty}
