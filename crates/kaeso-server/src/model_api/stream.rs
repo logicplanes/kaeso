@@ -11,8 +11,10 @@ use kaeso_core::assembler::Assembler;
 use kaeso_core::estimate::{self, Tally};
 use kaeso_core::provider::AccountSignIn;
 use kaeso_kpp::{DialectId, KppError, Reply, StopReason, StreamEvent};
+use tokio::sync::mpsc::error::TrySendError;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{Instant, sleep_until};
+use tokio_util::sync::CancellationToken;
 
 use kaeso_upstream::UpstreamError;
 
@@ -151,7 +153,7 @@ struct ToApp {
     taken: Taken,
     progress: StreamProgress,
     arrived: std::time::Instant,
-    state: crate::state::AppState,
+    cut: CancellationToken,
     patience: Duration,
     stopping: bool,
     stalled: bool,
@@ -164,6 +166,12 @@ impl ToApp {
         } else {
             self.patience
         };
+        // Most chunks fit in the channel at once; only a full one needs the timer and the cut.
+        let bytes = match self.tx.try_send(bytes) {
+            Ok(()) => return true,
+            Err(TrySendError::Closed(_)) => return false,
+            Err(TrySendError::Full(bytes)) => bytes,
+        };
         tokio::select! {
             sent = self.tx.send(bytes) => sent.is_ok(),
             () = tokio::time::sleep(patience) => {
@@ -171,7 +179,7 @@ impl ToApp {
                 self.stalled = !self.stopping;
                 false
             }
-            () = self.state.in_flight.cut(), if !self.stopping => false,
+            () = self.cut.cancelled(), if !self.stopping => false,
         }
     }
 
@@ -355,7 +363,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         taken,
         progress: StreamProgress::default(),
         arrived: rec.arrived(),
-        state: state.clone(),
+        cut: state.in_flight.cut(),
         patience: state.config.upstream.stream_idle_timeout,
         stopping: false,
         stalled: false,
@@ -373,7 +381,8 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         tokio::pin!(closed);
         let quiet = sleep_until(keepalive.deadline(last_write).unwrap_or(last_write));
         tokio::pin!(quiet);
-        let cut = state.in_flight.cut();
+        let cut = app.cut.clone();
+        let cut = cut.cancelled();
         tokio::pin!(cut);
         let too_long = tokio::time::sleep(limits.max_duration);
         tokio::pin!(too_long);

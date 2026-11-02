@@ -67,7 +67,8 @@ pub(super) struct Recording {
 
 impl Recording {
     pub(super) fn outcome(&mut self) -> &mut Outcome {
-        self.outcome.get_or_insert_with(blank_outcome)
+        self.outcome
+            .get_or_insert_with(|| blank_outcome(RequestId::new()))
     }
 
     pub(super) fn state(&self) -> &AppState {
@@ -178,9 +179,9 @@ fn mark_cancelled(o: &mut Outcome) {
         Some("The app closed the connection before the reply was complete.".to_owned());
 }
 
-fn blank_outcome() -> Outcome {
+fn blank_outcome(request_id: RequestId) -> Outcome {
     Outcome {
-        request_id: RequestId::new(),
+        request_id,
         caller: None,
         source: Source::Api,
         ingress: DialectId::OpenAiChat,
@@ -280,8 +281,7 @@ pub async fn serve_with(
 ) -> Response {
     let _in_flight = state.in_flight.token();
     let now = state.clock.now();
-    let mut outcome = blank_outcome();
-    outcome.request_id = inc.request_id;
+    let mut outcome = blank_outcome(inc.request_id);
     outcome.ingress = inc.ingress;
     outcome.kind = inc.kind;
     outcome.source = inc.source;
@@ -303,9 +303,10 @@ pub async fn serve_with(
         held: None,
         keep_in_cache: None,
     };
+    let cut = state.in_flight.cut();
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
-        () = state.in_flight.cut() => None,
+        () = cut.cancelled() => None,
     };
     let Some(done) = done else {
         let failure = Failure::new(shutting_down(), Stage::Shutdown);
