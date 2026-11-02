@@ -4,6 +4,18 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 2 November 2026, 09:30 UTC: OpenRouter no longer lists `openai/gpt-5.2-chat`, and five of its prices and three of its limits changed. Running installs get the same data from KPMR on their own. ([#587](https://github.com/logicplanes/kaeso/pull/587))
+
+### Fixed
+
+- Codex requests reach Groq models. Groq refuses `prompt_cache_key`, which Codex sends on every request, so Kaeso leaves a Responses app's key out for Groq and names it in the `kaeso-left-out` header; a Chat app's own key is refused before sending, as Groq would refuse it. ([#584](https://github.com/logicplanes/kaeso/pull/584))
+- Claude Code reaches OpenAI models. Its `metadata.user_id` is 150 characters long, and OpenAI takes at most 128 in `safety_identifier`, so an Anthropic app's longer id reaches OpenAI as its SHA-256 hash, the same for the same id, and the `kaeso-adapted` header names it. Ids that fit, and every other provider, are unchanged. ([#585](https://github.com/logicplanes/kaeso/pull/585))
+- Codex requests reach Moonshot and Cohere models. Their profiles refuse `parallel_tool_calls`, which Codex sends as `true` on every request; `true` only allows parallel calls, so Kaeso leaves it out and names it in the `kaeso-left-out` header, while `false` is still refused. ([#586](https://github.com/logicplanes/kaeso/pull/586))
+
 ## [0.5.2] - 2026-11-02
 
 Kaeso 0.5.2 lets Claude Code and Codex work with models that list no effort levels or don't reason, instead of failing those requests. Kaeso now leaves out the unsupported effort or adaptive thinking and reports it in the `kaeso-left-out` header, while an unsupported effort value or enabled thinking still returns an error. Fresh installs start with KPMR's models and prices as of 2 November 2026, and four DeepSeek models now refuse JSON schemas before sending. There are no breaking changes in this release.
