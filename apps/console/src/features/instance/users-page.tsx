@@ -64,31 +64,32 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   const lang = locale();
   const phone = usePhone();
   const columns = useMemo(
-    () => [
-      col.custom(
-        { id: "name", header: t("common.name", "Name"), size: 232, priority: 1, grow: true },
-        (u: InstanceUserView) => u.name,
-        (_v, u) => (
-          <span className="flex min-w-0 items-center gap-8">
-            <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
-            <span className="truncate">{u.name}</span>
-            {u.is_instance_admin && <Badge>{phone ? t("instance.admin", "Admin") : t("instance.instanceAdmin", "Instance admin")}</Badge>}
-          </span>
+    () =>
+      [
+        col.custom(
+          { id: "name", header: t("common.name", "Name"), size: 232, priority: 1, grow: true },
+          (u: InstanceUserView) => u.name,
+          (_v, u) => (
+            <span className="flex min-w-0 items-center gap-8">
+              <Avatar name={u.name} {...(u.avatar_url ? { src: u.avatar_url } : {})} size={20} decorative />
+              <span className="truncate">{u.name}</span>
+              {u.is_instance_admin && <Badge>{phone ? t("instance.admin", "Admin") : t("instance.instanceAdmin", "Instance admin")}</Badge>}
+            </span>
+          ),
         ),
-      ),
-      col.text({ id: "email", header: t("common.email", "Email"), size: 192, priority: 2 }, (u: InstanceUserView) => u.email ?? ""),
-      col.text({ id: "managedBy", header: t("instance.managedBy", "Managed by"), size: 144, priority: 3 }, (u: InstanceUserView) => u.managed_by?.name ?? ""),
-      col.custom(
-        { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
-        (u: InstanceUserView) => u.state,
-        (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
-      ),
-      col.custom(
-        { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
-        (u: InstanceUserView) => u.created_at,
-        (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
-      ),
-    ],
+        col.text({ id: "email", header: t("common.email", "Email"), size: 192, priority: 2 }, (u: InstanceUserView) => u.email ?? ""),
+        col.text({ id: "managedBy", header: t("instance.managedBy", "Managed by"), size: 144, priority: 3 }, (u: InstanceUserView) => u.managed_by?.name ?? ""),
+        col.custom(
+          { id: "state", header: t("instance.state", "State"), size: 104, priority: 1 },
+          (u: InstanceUserView) => u.state,
+          (v: string) => (STATE_DOT[v] ? <StatusDot tone={STATE_DOT[v]}>{userStateLabel(v)}</StatusDot> : <Text>{userStateLabel(v)}</Text>),
+        ),
+        col.custom(
+          { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
+          (u: InstanceUserView) => u.created_at,
+          (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
+        ),
+      ].map((c) => ({ ...c, enableSorting: false })),
     [lang, phone],
   );
 
