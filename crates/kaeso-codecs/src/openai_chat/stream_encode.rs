@@ -1,4 +1,8 @@
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+
+use serde::ser::SerializeMap as _;
+use serde::{Serialize, Serializer};
 
 use kaeso_kpp::{
     BlockHeader, Delta, KppError, RawJson, ResponseStart, StreamEvent, StreamMode, Usage,
@@ -354,11 +358,17 @@ impl ChatStreamEncoder {
         {
             return Ok(out);
         }
-        let mut obj = self.envelope.clone();
+        let mut obj: Tree<'_> = self
+            .envelope
+            .iter()
+            .map(|(k, v)| (Cow::Borrowed(k.as_str()), J::Raw(v.as_raw())))
+            .collect();
         if own {
-            for (key, value) in value_obj(form.get(FORM_ENV)) {
-                if ENVELOPE_KEYS.contains(&key.as_str()) {
-                    obj.insert(key, value);
+            if let Some(Value::Object(env)) = form.get(FORM_ENV) {
+                for (key, value) in env {
+                    if ENVELOPE_KEYS.contains(&key.as_str()) {
+                        obj.insert(Cow::Borrowed(key.as_str()), J::Value(value));
+                    }
                 }
             }
             if let Some(Value::Array(absent)) = form.get(FORM_ENV_ABSENT) {
@@ -379,11 +389,12 @@ impl ChatStreamEncoder {
         match choice_mode {
             "absent" => {}
             "empty" => {
-                obj.insert("choices".to_owned(), to_raw(&Vec::<Value>::new())?);
+                obj.insert(Cow::Borrowed("choices"), J::List(Vec::new()));
             }
             _ => {
-                let choice = self.choice(&chunk)?;
-                obj.insert("choices".to_owned(), to_raw(&vec![choice])?);
+                let role_pending = !own && std::mem::take(&mut self.role_pending);
+                let choice = choice(&chunk, role_pending)?;
+                obj.insert(Cow::Borrowed("choices"), J::List(vec![choice]));
             }
         }
         let running = if own {
@@ -393,108 +404,44 @@ impl ChatStreamEncoder {
         };
         if self.include_usage {
             if let Some(usage) = chunk.usage.as_ref().or(running) {
-                obj.insert("usage".to_owned(), to_raw(usage)?);
+                obj.insert(Cow::Borrowed("usage"), J::Value(usage));
                 self.usage_sent = true;
             } else if !own {
-                obj.insert("usage".to_owned(), RawJson::null());
+                obj.insert(Cow::Borrowed("usage"), J::Null);
             }
         }
         if own {
             if let Some(obf) = form.get("obf") {
-                obj.insert("obfuscation".to_owned(), to_raw(obf)?);
+                obj.insert(Cow::Borrowed("obfuscation"), J::Value(obf));
             }
             for (key, value) in &chunk.fields {
-                obj.entry(key.clone()).or_insert_with(|| value.clone());
+                obj.or_insert(Cow::Borrowed(key.as_str()), J::Raw(value.as_raw()));
             }
-            for (key, value) in value_obj(form.get("kv")) {
-                if key == "usage" && !self.include_usage {
-                    continue;
-                }
-                obj.entry(key).or_insert(value);
-            }
-        }
-        let data = serde_json::to_string(&obj).map_err(internal)?;
-        let mut event = crate::sse::SseEvent::new(None, data);
-        if own && let Some(framing) = form.get(FORM_SSE) {
-            crate::sse::set_framing(&mut event, framing);
-        }
-        crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
-        Ok(out)
-    }
-
-    fn choice(&mut self, chunk: &Chunk) -> Result<RawJson, KppError> {
-        let own = chunk.own;
-        let mut delta = Obj::new();
-        if own {
-            if let Some(role) = chunk.form.get("role") {
-                delta.insert("role".to_owned(), to_raw(role)?);
-            }
-        } else if std::mem::take(&mut self.role_pending) {
-            delta.insert("role".to_owned(), to_raw("assistant")?);
-            if chunk.content.is_none() && chunk.refusal.is_none() && chunk.tool_calls.is_empty() {
-                delta.insert("content".to_owned(), to_raw("")?);
-                delta.insert("refusal".to_owned(), RawJson::null());
-            }
-        }
-        if let Some(parts) = content_parts(chunk)? {
-            delta.insert("content".to_owned(), parts);
-        } else if let Some(content) = &chunk.content {
-            delta.insert("content".to_owned(), to_raw(content)?);
-        } else if own && chunk.form.get(FORM_EMPTY_TEXT) == Some(&Value::Bool(true)) {
-            delta.insert("content".to_owned(), to_raw("")?);
-        }
-        if let Some(refusal) = &chunk.refusal {
-            delta.insert("refusal".to_owned(), to_raw(refusal)?);
-        }
-        if let (true, Some(Value::String(field)), Some(reasoning)) =
-            (own, chunk.form.get(FORM_REASONING_FIELD), &chunk.reasoning)
-        {
-            delta.insert(field.clone(), to_raw(reasoning)?);
-        }
-        if !chunk.tool_calls.is_empty() {
-            let mut entries = Vec::new();
-            for entry in &chunk.tool_calls {
-                entries.push(match &entry.raw {
-                    Some(raw) => raw.clone(),
-                    None => {
-                        let mut obj = entry.obj.clone();
-                        if let Some(function) = &entry.function {
-                            obj.insert("function".to_owned(), to_raw(function)?);
-                        }
-                        to_raw(&obj)?
+            if let Some(Value::Object(kv)) = form.get("kv") {
+                for (key, value) in kv {
+                    if key == "usage" && !self.include_usage {
+                        continue;
                     }
-                });
+                    obj.or_insert(Cow::Borrowed(key.as_str()), J::Value(value));
+                }
             }
-            delta.insert("tool_calls".to_owned(), to_raw(&entries)?);
         }
-        let mut choice = Obj::new();
-        choice.insert("index".to_owned(), to_raw(&0)?);
-        if own {
-            for (key, value) in &chunk.delta_fields {
-                delta.entry(key.clone()).or_insert_with(|| value.clone());
+        match form.get(FORM_SSE).filter(|_| own) {
+            Some(framing) => {
+                let data = serde_json::to_string(&obj).map_err(internal)?;
+                let mut event = crate::sse::SseEvent::new(None, data);
+                crate::sse::set_framing(&mut event, framing);
+                crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
             }
-            for (key, value) in value_obj(chunk.form.get("dv")) {
-                delta.entry(key).or_insert(value);
+            // What `write_item` writes for an event with only data, which compact JSON keeps on
+            // one line: serialized in place instead of through a string.
+            None => {
+                out.extend_from_slice(b"data: ");
+                serde_json::to_writer(&mut out, &obj).map_err(internal)?;
+                out.extend_from_slice(b"\n\n");
             }
-            choice.insert("delta".to_owned(), to_raw(&delta)?);
-            if let Some(finish) = &chunk.finish {
-                choice.insert("finish_reason".to_owned(), to_raw(finish)?);
-            }
-            for (key, value) in &chunk.choice_fields {
-                choice.entry(key.clone()).or_insert_with(|| value.clone());
-            }
-            for (key, value) in value_obj(chunk.form.get("cv")) {
-                choice.entry(key).or_insert(value);
-            }
-        } else {
-            choice.insert("delta".to_owned(), to_raw(&delta)?);
-            choice.insert("logprobs".to_owned(), RawJson::null());
-            match &chunk.finish {
-                Some(finish) => choice.insert("finish_reason".to_owned(), to_raw(finish)?),
-                None => choice.insert("finish_reason".to_owned(), RawJson::null()),
-            };
         }
-        to_raw(&choice)
+        Ok(out)
     }
 
     fn collect_fields(event: &StreamEvent, chunk: &mut Chunk) {
@@ -513,6 +460,174 @@ impl ChatStreamEncoder {
             } else if !key.contains('.') && !is_start {
                 chunk.fields.insert(key.to_owned(), value.clone());
             }
+        }
+    }
+}
+
+fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
+    let own = chunk.own;
+    let mut delta = Tree::new();
+    if own {
+        if let Some(role) = chunk.form.get("role") {
+            delta.insert(Cow::Borrowed("role"), J::Value(role));
+        }
+    } else if role_pending {
+        delta.insert(Cow::Borrowed("role"), J::Str("assistant"));
+        if chunk.content.is_none() && chunk.refusal.is_none() && chunk.tool_calls.is_empty() {
+            delta.insert(Cow::Borrowed("content"), J::Str(""));
+            delta.insert(Cow::Borrowed("refusal"), J::Null);
+        }
+    }
+    if let Some(parts) = content_parts(chunk)? {
+        delta.insert(Cow::Borrowed("content"), J::Owned(parts));
+    } else if let Some(content) = &chunk.content {
+        delta.insert(Cow::Borrowed("content"), J::Str(content));
+    } else if own && chunk.form.get(FORM_EMPTY_TEXT) == Some(&Value::Bool(true)) {
+        delta.insert(Cow::Borrowed("content"), J::Str(""));
+    }
+    if let Some(refusal) = &chunk.refusal {
+        delta.insert(Cow::Borrowed("refusal"), J::Str(refusal));
+    }
+    if let (true, Some(Value::String(field)), Some(reasoning)) =
+        (own, chunk.form.get(FORM_REASONING_FIELD), &chunk.reasoning)
+    {
+        delta.insert(Cow::Borrowed(field.as_str()), J::Str(reasoning));
+    }
+    if !chunk.tool_calls.is_empty() {
+        let entries = chunk
+            .tool_calls
+            .iter()
+            .map(|entry| match &entry.raw {
+                Some(raw) => J::Raw(raw.as_raw()),
+                None => {
+                    let mut obj: Tree<'_> = entry
+                        .obj
+                        .iter()
+                        .map(|(k, v)| (Cow::Borrowed(k.as_str()), J::Raw(v.as_raw())))
+                        .collect();
+                    if let Some(function) = &entry.function {
+                        obj.insert(Cow::Borrowed("function"), J::Obj(function));
+                    }
+                    J::Map(obj)
+                }
+            })
+            .collect();
+        delta.insert(Cow::Borrowed("tool_calls"), J::List(entries));
+    }
+    let mut choice = Tree::new();
+    choice.insert(Cow::Borrowed("index"), J::Zero);
+    if own {
+        for (key, value) in &chunk.delta_fields {
+            delta.or_insert(Cow::Borrowed(key.as_str()), J::Raw(value.as_raw()));
+        }
+        if let Some(Value::Object(dv)) = chunk.form.get("dv") {
+            for (key, value) in dv {
+                delta.or_insert(Cow::Borrowed(key.as_str()), J::Value(value));
+            }
+        }
+        choice.insert(Cow::Borrowed("delta"), J::Map(delta));
+        if let Some(finish) = &chunk.finish {
+            choice.insert(Cow::Borrowed("finish_reason"), J::Str(finish));
+        }
+        for (key, value) in &chunk.choice_fields {
+            choice.or_insert(Cow::Borrowed(key.as_str()), J::Raw(value.as_raw()));
+        }
+        if let Some(Value::Object(cv)) = chunk.form.get("cv") {
+            for (key, value) in cv {
+                choice.or_insert(Cow::Borrowed(key.as_str()), J::Value(value));
+            }
+        }
+    } else {
+        choice.insert(Cow::Borrowed("delta"), J::Map(delta));
+        choice.insert(Cow::Borrowed("logprobs"), J::Null);
+        match &chunk.finish {
+            Some(finish) => choice.insert(Cow::Borrowed("finish_reason"), J::Str(finish)),
+            None => choice.insert(Cow::Borrowed("finish_reason"), J::Null),
+        };
+    }
+    Ok(J::Map(choice))
+}
+
+// The few keys of a chunk object in the order `IndexMap` keeps them: `insert` replaces a value in
+// its place, `or_insert` keeps the first, and `shift_remove` closes the gap.
+#[derive(Default)]
+struct Tree<'a>(Vec<(Cow<'a, str>, J<'a>)>);
+
+impl<'a> Tree<'a> {
+    fn new() -> Self {
+        Tree(Vec::new())
+    }
+
+    fn slot(&mut self, key: &str) -> Option<&mut J<'a>> {
+        self.0.iter_mut().find(|(k, _)| k == key).map(|(_, v)| v)
+    }
+
+    fn insert(&mut self, key: Cow<'a, str>, value: J<'a>) {
+        match self.slot(&key) {
+            Some(slot) => *slot = value,
+            None => self.0.push((key, value)),
+        }
+    }
+
+    fn or_insert(&mut self, key: Cow<'a, str>, value: J<'a>) {
+        if self.slot(&key).is_none() {
+            self.0.push((key, value));
+        }
+    }
+
+    fn shift_remove(&mut self, key: &str) {
+        if let Some(i) = self.0.iter().position(|(k, _)| k == key) {
+            self.0.remove(i);
+        }
+    }
+}
+
+impl<'a> FromIterator<(Cow<'a, str>, J<'a>)> for Tree<'a> {
+    fn from_iter<I: IntoIterator<Item = (Cow<'a, str>, J<'a>)>>(iter: I) -> Self {
+        let mut tree = Tree::new();
+        for (k, v) in iter {
+            tree.insert(k, v);
+        }
+        tree
+    }
+}
+
+impl Serialize for Tree<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(Some(self.0.len()))?;
+        for (k, v) in &self.0 {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
+}
+
+// A chunk as it is built, borrowing from the envelope and the chunk's own fields, serialized
+// once when it is written: each level used to be serialized into a `RawJson` of its own.
+enum J<'a> {
+    Raw(&'a RawValue),
+    Owned(RawJson),
+    Value(&'a Value),
+    Str(&'a str),
+    Null,
+    Zero,
+    Obj(&'a Obj),
+    Map(Tree<'a>),
+    List(Vec<J<'a>>),
+}
+
+impl Serialize for J<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            J::Raw(raw) => raw.serialize(serializer),
+            J::Owned(raw) => raw.serialize(serializer),
+            J::Value(value) => value.serialize(serializer),
+            J::Str(s) => s.serialize(serializer),
+            J::Null => serializer.serialize_unit(),
+            J::Zero => serializer.serialize_i32(0),
+            J::Obj(obj) => obj.serialize(serializer),
+            J::Map(map) => map.serialize(serializer),
+            J::List(list) => list.serialize(serializer),
         }
     }
 }
@@ -757,5 +872,54 @@ impl<'a> Pieces<'a> {
 
     fn done(&self) -> bool {
         self.rest.is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indexmap::IndexMap;
+    use proptest::prelude::*;
+
+    use super::*;
+
+    #[derive(Clone, Debug)]
+    enum Op {
+        Insert(u8, u8),
+        OrInsert(u8, u8),
+        Remove(u8),
+    }
+
+    fn op() -> impl Strategy<Value = Op> {
+        prop_oneof![
+            (0u8..6, any::<u8>()).prop_map(|(k, v)| Op::Insert(k, v)),
+            (0u8..6, any::<u8>()).prop_map(|(k, v)| Op::OrInsert(k, v)),
+            (0u8..6).prop_map(Op::Remove),
+        ]
+    }
+
+    proptest! {
+        #[test]
+        fn a_tree_keeps_keys_and_values_as_an_index_map_does(ops in proptest::collection::vec(op(), 0..40)) {
+            let keys: Vec<String> = (0..6).map(|k| format!("k{k}")).collect();
+            let mut tree = Tree::new();
+            let mut map: IndexMap<String, u8> = IndexMap::new();
+            for op in &ops {
+                match op {
+                    Op::Insert(k, v) => {
+                        tree.insert(Cow::Borrowed(keys[usize::from(*k)].as_str()), J::Value(Box::leak(Box::new(Value::from(*v)))));
+                        map.insert(keys[usize::from(*k)].clone(), *v);
+                    }
+                    Op::OrInsert(k, v) => {
+                        tree.or_insert(Cow::Borrowed(keys[usize::from(*k)].as_str()), J::Value(Box::leak(Box::new(Value::from(*v)))));
+                        map.entry(keys[usize::from(*k)].clone()).or_insert(*v);
+                    }
+                    Op::Remove(k) => {
+                        tree.shift_remove(&keys[usize::from(*k)]);
+                        map.shift_remove(&keys[usize::from(*k)]);
+                    }
+                }
+            }
+            prop_assert_eq!(serde_json::to_string(&tree).unwrap(), serde_json::to_string(&map).unwrap());
+        }
     }
 }

@@ -9,11 +9,11 @@ use serde_json::Value;
 use serde_json::value::RawValue;
 
 use self::lifecycle::Lifecycle;
-use super::{EVENT_KEY, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY};
+use super::{EVENT_KEY, Emitted, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
-use crate::openai_responses::node::{Node, entries_of};
+use crate::openai_responses::node::Node;
 use crate::openai_responses::overrides::{Overrides, form_set_insert};
 use crate::openai_responses::response::{NATIVE, decode_usage, failed_error, stop_for};
 use crate::openai_responses::wire;
@@ -39,10 +39,7 @@ impl Frame {
     }
 
     fn raw(&self, key: &str) -> Option<&RawValue> {
-        entries_of(&self.data)?
-            .into_iter()
-            .find(|(k, _)| k == key)
-            .map(|(_, v)| v)
+        crate::wire::field_of(&self.data, key)
     }
 }
 
@@ -268,7 +265,10 @@ impl Decoder {
                     return;
                 }
                 for ev in events {
-                    if let Err(e) = self.engine.step(ev.event(), &mut |_, _, _| Ok(None)) {
+                    if let Err(e) = self
+                        .engine
+                        .step(ev.event(), &mut |_, n, _| Ok(Emitted::Skipped(n)))
+                    {
                         self.flush_pending(out);
                         self.fail(out, e);
                         return;
@@ -297,7 +297,8 @@ impl Decoder {
             .with_form(NATIVE, true.into())
             .with_form(SKIP, serde_json::json!(["", "@in_progress"]));
         let event = StreamEvent::ResponseStart(start);
-        self.engine.step(&event, &mut |_, _, _| Ok(None))?;
+        self.engine
+            .step(&event, &mut |_, n, _| Ok(Emitted::Skipped(n)))?;
         out.push(event);
         Ok(())
     }
@@ -692,13 +693,15 @@ impl Decoder {
             let mut shadow = self.engine.clone();
             let mut qi = 0;
             let ok = shadow
-                .step(event.event(), &mut |_, canon, _| {
-                    if queue.get(qi).is_some_and(|f| matches(&canon, f)) {
+                .step(event.event(), &mut |_, canon, _| match queue
+                    .get(qi)
+                    .filter(|f| matches(&canon, f))
+                {
+                    Some(f) => {
                         qi += 1;
-                        Ok(queue.get(qi - 1).map(|f| Node::raw_value(&f.data)))
-                    } else {
-                        Ok(None)
+                        Ok(Emitted::Written(Node::raw_value(&f.data)))
                     }
+                    None => Ok(Emitted::Skipped(canon)),
                 })
                 .is_ok()
                 && qi == queue.len();
@@ -742,11 +745,11 @@ impl Decoder {
                             };
                             form_set_insert(&mut rec, key, sse.clone());
                         }
-                        Ok(Some(Node::raw_value(&f.data)))
+                        Ok(Emitted::Written(Node::raw_value(&f.data)))
                     }
                     _ => {
                         skips.push(scope.to_owned());
-                        Ok(None)
+                        Ok(Emitted::Skipped(canon))
                     }
                 },
             );

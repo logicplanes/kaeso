@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -54,62 +55,120 @@ impl<T> std::ops::DerefMut for Ext<T> {
     }
 }
 
-struct Entries<'a>(Vec<(String, &'a RawValue)>);
+// Above this many keys a duplicate is found through a set rather than by comparing each new key
+// with the ones before it.
+const LINEAR_KEYS: usize = 16;
 
-impl<'de: 'a, 'a> Deserialize<'de> for Entries<'a> {
+struct Key<'a>(Cow<'a, str>);
+
+impl<'de: 'a, 'a> Deserialize<'de> for Key<'a> {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         struct V;
         impl<'de> Visitor<'de> for V {
-            type Value = Entries<'de>;
+            type Value = Key<'de>;
+
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("a string")
+            }
+
+            fn visit_borrowed_str<E: serde::de::Error>(
+                self,
+                v: &'de str,
+            ) -> Result<Self::Value, E> {
+                Ok(Key(Cow::Borrowed(v)))
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(Key(Cow::Owned(v.to_owned())))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(Key(Cow::Owned(v)))
+            }
+        }
+        deserializer.deserialize_str(V)
+    }
+}
+
+// The keys of an object as written, borrowed where they need no unescaping; an object with a
+// repeated key is refused.
+struct Fields<'a>(Vec<(Cow<'a, str>, &'a RawValue)>);
+
+impl<'de: 'a, 'a> Deserialize<'de> for Fields<'a> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct V;
+        impl<'de> Visitor<'de> for V {
+            type Value = Fields<'de>;
 
             fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.write_str("a JSON object")
             }
 
             fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                let mut seen = HashSet::new();
-                let mut out = Vec::new();
-                while let Some((key, value)) = map.next_entry::<String, &'de RawValue>()? {
-                    if !seen.insert(key.clone()) {
+                let mut out: Vec<(Cow<'de, str>, &'de RawValue)> = Vec::new();
+                let mut seen: Option<HashSet<String>> = None;
+                while let Some((Key(key), value)) = map.next_entry::<Key<'de>, &'de RawValue>()? {
+                    let repeated = match &mut seen {
+                        Some(seen) => !seen.insert(key.as_ref().to_owned()),
+                        None => out.iter().any(|(k, _)| *k == key),
+                    };
+                    if repeated {
                         return Err(A::Error::custom(format!("duplicate key `{key}`")));
                     }
                     out.push((key, value));
+                    if seen.is_none() && out.len() > LINEAR_KEYS {
+                        seen = Some(out.iter().map(|(k, _)| k.as_ref().to_owned()).collect());
+                    }
                 }
-                Ok(Entries(out))
+                Ok(Fields(out))
             }
         }
         deserializer.deserialize_map(V)
     }
 }
 
+// The value of `key` in an object, `None` where `entries_of` gives none or lacks the key, found
+// without collecting the other keys as strings.
+pub(crate) fn field_of<'a>(raw: &'a RawValue, key: &str) -> Option<&'a RawValue> {
+    if !raw.get().starts_with('{') {
+        return None;
+    }
+    let Fields(fields) = serde_json::from_str(raw.get()).ok()?;
+    fields.into_iter().find(|(k, _)| k == key).map(|(_, v)| v)
+}
+
 pub(crate) fn entries_of(raw: &RawValue) -> Option<Vec<(String, &RawValue)>> {
     if !raw.get().starts_with('{') {
         return None;
     }
-    serde_json::from_str::<Entries<'_>>(raw.get())
-        .ok()
-        .map(|e| e.0)
+    let Fields(fields) = serde_json::from_str(raw.get()).ok()?;
+    Some(
+        fields
+            .into_iter()
+            .map(|(k, v)| (k.into_owned(), v))
+            .collect(),
+    )
 }
 
 impl<T: DeserializeOwned + Serialize> Ext<T> {
     pub(crate) fn from_raw(raw: &RawValue) -> Result<Self, serde_json::Error> {
         let declared = struct_fields::<T>();
-        let Entries(entries) = serde_json::from_str(raw.get())?;
+        let Fields(entries) = serde_json::from_str(raw.get())?;
         let known: T = serde_json::from_str(raw.get())?;
         let written = written_names(&known)?;
         let mut extra = IndexMap::new();
         let mut verbatim = IndexMap::new();
         for (key, value) in entries {
-            if !declared.contains(&key.as_str()) {
+            if !declared.contains(&key.as_ref()) {
                 if !carriable(&key) {
                     return Err(serde::de::Error::custom(format!(
                         "the field `{}` has a name Kaeso cannot carry; remove it",
                         Short(&key, 64)
                     )));
                 }
-                extra.insert(key, RawJson::from(value));
-            } else if !written.contains(&key.as_str()) {
-                verbatim.insert(key, RawJson::from(value));
+                extra.insert(key.into_owned(), RawJson::from(value));
+            } else if !written.contains(&key.as_ref()) {
+                verbatim.insert(key.into_owned(), RawJson::from(value));
             }
         }
         Ok(Ext {
@@ -155,11 +214,30 @@ fn carriable(key: &str) -> bool {
 pub(crate) fn struct_fields<T: DeserializeOwned>() -> &'static [&'static str] {
     struct Grab<'a>(&'a mut Option<&'static [&'static str]>);
 
+    // An error that carries no message: `T::deserialize` always fails here, once per decoded
+    // object, and a message would be built and dropped each time.
+    #[derive(Debug)]
+    struct Stop;
+
+    impl fmt::Display for Stop {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str("stop")
+        }
+    }
+
+    impl std::error::Error for Stop {}
+
+    impl serde::de::Error for Stop {
+        fn custom<M: fmt::Display>(_: M) -> Self {
+            Stop
+        }
+    }
+
     impl<'de> Deserializer<'de> for Grab<'_> {
-        type Error = serde::de::value::Error;
+        type Error = Stop;
 
         fn deserialize_any<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value, Self::Error> {
-            Err(serde::de::Error::custom("not a struct"))
+            Err(Stop)
         }
 
         fn deserialize_struct<V: Visitor<'de>>(
@@ -169,7 +247,7 @@ pub(crate) fn struct_fields<T: DeserializeOwned>() -> &'static [&'static str] {
             _visitor: V,
         ) -> Result<V::Value, Self::Error> {
             *self.0 = Some(fields);
-            Err(serde::de::Error::custom("fields recorded"))
+            Err(Stop)
         }
 
         serde::forward_to_deserialize_any! {
@@ -563,6 +641,36 @@ mod tests {
         let b: Value = serde_json::from_str(&out).unwrap();
         assert_eq!(a, b, "{out}");
         (parsed, out)
+    }
+
+    #[test]
+    fn field_lookup_agrees_with_the_entries_of_an_object() {
+        let wide: String = (0..20).map(|i| format!("\"k{i}\":{i},")).collect();
+        for text in [
+            r#"{"a":1,"b\u0022":"x","c":{"d":2}}"#.to_owned(),
+            r#"{"a":1,"a":2}"#.to_owned(),
+            format!("{{{wide}\"k3\":0}}"),
+            format!("{{{wide}\"last\":true}}"),
+            r#"[{"a":1}]"#.to_owned(),
+        ] {
+            let raw: Box<RawValue> = serde_json::from_str(&text).unwrap();
+            let entries = entries_of(&raw);
+            for key in ["a", "b\"", "c", "k3", "last", "missing"] {
+                let via_entries = entries
+                    .as_ref()
+                    .and_then(|e| e.iter().find(|(k, _)| k == key).map(|(_, v)| v.get()));
+                assert_eq!(
+                    field_of(&raw, key).map(RawValue::get),
+                    via_entries,
+                    "{text} {key}"
+                );
+            }
+        }
+        let repeated: Box<RawValue> = serde_json::from_str(&format!("{{{wide}\"k3\":0}}")).unwrap();
+        assert!(
+            entries_of(&repeated).is_none(),
+            "a repeat past the linear check is found"
+        );
     }
 
     #[test]
