@@ -395,6 +395,7 @@
   "errors.orgCreationInstanceAdminsOnly": "Only instance admins can create organizations on this install.",
   "errors.orgMaxDays": "The organization allows at most {max} days.",
   "errors.orgNotScheduled": "The organization is not scheduled for deletion.",
+  "errors.orgPastRestore": "The organization is being deleted for good and can no longer be restored.",
   "errors.orgReadOnly": "This organization is scheduled for deletion; nothing in it can be changed.",
   "errors.orgRefusesAgents": "This organization doesn't allow agents; ask one of its admins.",
   "errors.orgRequires2fa": "This organization requires two-factor authentication; set it up, then sign in again.",

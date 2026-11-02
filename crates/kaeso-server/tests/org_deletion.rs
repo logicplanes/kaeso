@@ -616,3 +616,121 @@ async fn instance_admins_sort_by_deletion_date_restore_and_delete_now() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn an_org_past_its_date_can_no_longer_be_restored() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    let cookie = sign_in(&app, "owner@example.com").await;
+    schedule(&app, &org, &cookie).await;
+    app.clock
+        .advance(time::Duration::days(7) + time::Duration::minutes(1));
+    let cookie = sign_in(&app, "owner@example.com").await;
+    for path in [
+        format!("/orgs/{org}/restore"),
+        format!("/instance/orgs/{org}/restore"),
+    ] {
+        let r = app.post(&path, json!({}), Some(&cookie)).await;
+        assert_eq!(r.status, StatusCode::CONFLICT, "{path}: {:?}", r.body);
+        assert_eq!(
+            r.body["error"]["message"],
+            "The organization is being deleted for good and can no longer be restored.",
+            "{path}"
+        );
+    }
+    let view = app
+        .get(&format!("/orgs/{org}"), &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(view.body["state"], "scheduled_for_deletion");
+    s.cleanup().await;
+}
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn logged(app: &App, org: uuid::Uuid) -> u64 {
+    kaeso_store::clickhouse::logs::storage(app.state.clickhouse.as_ref().unwrap(), org)
+        .await
+        .unwrap()
+        .iter()
+        .map(|p| p.entries)
+        .sum()
+}
+
+#[tokio::test]
+async fn a_restore_under_way_when_the_date_passes_keeps_the_logs() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = common::uuid(&owner.org_id);
+    let project = common::uuid(&default_project(&app, &owner).await);
+    let cookie = sign_in(&app, "owner@example.com").await;
+    schedule(&app, &owner.org_id, &cookie).await;
+    s.clickhouse.migrate(&s.pg).await.unwrap();
+    app.state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .client()
+        .query(
+            "INSERT INTO request_log (request_id, org_id, project_id, started_at, finished_at, expires_at) \
+             VALUES (generateUUIDv7(), ?, ?, now64(3), now64(3), now() + INTERVAL 30 DAY)",
+        )
+        .bind(org)
+        .bind(project)
+        .execute()
+        .await
+        .unwrap();
+    assert_eq!(logged(&app, org).await, 1);
+
+    let mut restore = app.state.pg.begin().await.unwrap();
+    let mut row = kaeso_store::pg::orgs::get_for_update(&mut *restore, org)
+        .await
+        .unwrap()
+        .unwrap();
+    row.state = "active".into();
+    row.deletion_due_at = None;
+    kaeso_store::pg::orgs::update(&mut *restore, &row)
+        .await
+        .unwrap();
+    app.clock.advance(time::Duration::days(8));
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "org_deletion")
+        .unwrap();
+    let run = kaeso_server::jobs::run_once(&app.state, job);
+    tokio::pin!(run);
+    tokio::select! {
+        r = &mut run => panic!("the deletion didn't wait for the restore: {:?}", r.map(|_| ())),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    restore.commit().await.unwrap();
+    assert_eq!(run.await.unwrap().unwrap(), "deleted 0 organizations");
+    assert_eq!(
+        logged(&app, org).await,
+        1,
+        "the restored org keeps its logs"
+    );
+    let cookie = sign_in(&app, "owner@example.com").await;
+    let view = app
+        .get(&format!("/orgs/{}", owner.org_id), &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(view.body["state"], "active");
+    s.cleanup().await;
+}

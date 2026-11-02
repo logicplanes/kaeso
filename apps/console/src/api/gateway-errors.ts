@@ -207,6 +207,7 @@ const messages = (): Rule[] => [
   ),
   rule("errors.orgAlreadyScheduled", () => t("errors.orgAlreadyScheduled", "The organization is already scheduled for deletion.")),
   rule("errors.orgNotScheduled", () => t("errors.orgNotScheduled", "The organization is not scheduled for deletion.")),
+  rule("errors.orgPastRestore", () => t("errors.orgPastRestore", "The organization is being deleted for good and can no longer be restored.")),
   rule("errors.onlyScheduledDeleteNow", () => t("errors.onlyScheduledDeleteNow", "Only an organization scheduled for deletion can be deleted now.")),
   rule("errors.noOrgDeletion", () => t("errors.noOrgDeletion", "This instance doesn't allow deleting organizations.")),
   rule("errors.restoreBeforeOwner", () => t("errors.restoreBeforeOwner", "Restore the organization before appointing an owner.")),
