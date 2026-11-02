@@ -540,6 +540,19 @@ impl Sink for Recorder {
             record(state, &outcome).await;
         })
     }
+
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a AppState,
+        outcome: Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            crate::services::usage::account(state, &outcome).await;
+            let _ = charged.send(());
+            record(state, &outcome).await;
+        })
+    }
 }
 
 pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {

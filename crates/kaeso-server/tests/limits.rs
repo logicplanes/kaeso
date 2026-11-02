@@ -1799,7 +1799,15 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     let gate = env.mock.gate();
     let mut long = capped(&format!("Long {}", gate.steps_marker()), 500);
     long["stream"] = json!(true);
-    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": worst(&long) + 100 })).await;
+    let budget = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": worst(&long) + 100 })).await;
+    let budget: kaeso_core::id::LimitId = budget["id"].as_str().unwrap().parse().unwrap();
+    let reservations = env
+        .app
+        .state
+        .valkey
+        .key(&format!("lim:{}:total:f", budget.uuid()));
+    use kaeso_core::clock::Clock;
+    let started = env.app.clock.now().unix_timestamp();
     let req = axum::http::Request::builder()
         .uri("/v1/messages")
         .method("POST")
@@ -1816,6 +1824,27 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     env.app.clock.advance(time::Duration::seconds(ttl - 30));
     gate.step();
     assert!(body.frame().await.unwrap().unwrap().is_data());
+    let extended = started + 2 * ttl - 30;
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let mut conn = env.services.valkey.conn();
+        let scores: Vec<(String, i64)> = redis::cmd("ZRANGE")
+            .arg(&reservations)
+            .arg(0)
+            .arg(-1)
+            .arg("WITHSCORES")
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        if scores.iter().any(|(_, at)| *at >= extended) {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the reservation was never extended: {scores:?}"
+        );
+        tokio::task::yield_now().await;
+    }
     env.app.clock.advance(time::Duration::seconds(60));
     let refused = ask_capped(&env, &secret, 256).await;
     assert_eq!(
@@ -1834,6 +1863,50 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     }
     assert!(String::from_utf8(text).unwrap().contains("message_stop"));
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+}
+
+#[derive(Debug, Default)]
+struct ChargesButNeverLogs;
+
+impl kaeso_server::model_api::hooks::Sink for ChargesButNeverLogs {
+    fn finish<'a>(
+        &'a self,
+        _state: &'a kaeso_server::state::AppState,
+        _outcome: kaeso_server::model_api::hooks::Outcome,
+    ) -> futures::future::BoxFuture<'a, ()> {
+        Box::pin(std::future::pending())
+    }
+
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a kaeso_server::state::AppState,
+        outcome: kaeso_server::model_api::hooks::Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> futures::future::BoxFuture<'a, ()> {
+        Box::pin(async move {
+            kaeso_server::services::usage::account(state, &outcome).await;
+            let _ = charged.send(());
+            std::future::pending::<()>().await;
+        })
+    }
+}
+
+#[tokio::test]
+async fn a_reply_under_a_limit_ends_once_charged_without_waiting_for_its_log() {
+    let env = common::v1::env_sunk(std::sync::Arc::new(ChargesButNeverLogs), None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": 100_000 })).await;
+    for stream in [false, true] {
+        let mut body = capped("Hi", 64);
+        body["stream"] = json!(stream);
+        let answered = tokio::time::timeout(
+            Duration::from_secs(10),
+            call(&env, "/v1/messages", Some(&secret), true, Some(body)),
+        )
+        .await
+        .expect("the reply ends once it is charged");
+        assert_eq!(answered.status, StatusCode::OK, "stream: {stream}");
+    }
 }
 
 #[tokio::test]
