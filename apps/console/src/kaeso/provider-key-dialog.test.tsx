@@ -110,13 +110,13 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("offers only the providers the gateway lists, even when the organization still has a key for another", async () => {
-    const { dialog } = await open({ keys: [credential({ id: "cred_cerebras", provider: "cerebras", name: "Cerebras main" })] });
+    const { dialog } = await open({ keys: [credential({ id: "cred_acme", provider: "acme", name: "Acme main" })] });
     expect(
       within(dialog)
         .getAllByRole("radio")
         .map((o) => o.textContent),
     ).toHaveLength(providers.length);
-    expect(within(dialog).queryByRole("radio", { name: /Cerebras/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("radio", { name: /Acme/ })).not.toBeInTheDocument();
   });
 
   it("says when the providers can't load and loads them again", async () => {
@@ -207,6 +207,24 @@ describe("ProviderKeyDialog", () => {
 
     expect(await notifications().findByText("Groq prod is the Groq default")).toBeInTheDocument();
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "groq", name: "Groq prod", secret: "gsk_123", make_default: false }]);
+  });
+
+  it("adds a Cerebras key with Cerebras's cloud console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "cerebras", name: "Cerebras prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Cerebras");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Cerebras API key" })).toBeVisible();
+    expectKeyHint(dialog, "cloud.cerebras.ai", "https://cloud.cerebras.ai", "API Keys", "csk-");
+    const secret = within(dialog).getByLabelText("Cerebras API key");
+    expect(secret).toHaveAttribute("placeholder", "csk-…");
+    await user.type(secret, "csk-123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cerebras prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Cerebras prod is the Cerebras default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "cerebras", name: "Cerebras prod", secret: "csk-123", make_default: false }]);
   });
 
   it("adds an OpenRouter key with OpenRouter's own key hint", async () => {
@@ -334,11 +352,11 @@ describe("ProviderKeyDialog", () => {
   });
 
   it("asks only for the provider's key for a provider it has no hint for", async () => {
-    const cerebras = credential({ id: "cred_cerebras", provider: "cerebras", name: "Cerebras main" });
-    const { dialog } = await open({ keys: [cerebras], replace: cerebras });
-    expect(within(dialog).getByRole("heading", { name: "Paste the new cerebras key" })).toBeInTheDocument();
+    const acme = credential({ id: "cred_acme", provider: "acme", name: "Acme main" });
+    const { dialog } = await open({ keys: [acme], replace: acme });
+    expect(within(dialog).getByRole("heading", { name: "Paste the new acme key" })).toBeInTheDocument();
     expect(within(dialog).getByText("Paste the provider's API key.")).toBeInTheDocument();
-    expect(within(dialog).getByLabelText("cerebras API key")).not.toHaveAttribute("placeholder");
+    expect(within(dialog).getByLabelText("acme API key")).not.toHaveAttribute("placeholder");
   });
 
   it("links a provider's key page without a prefix when its keys have none", async () => {

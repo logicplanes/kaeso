@@ -1,0 +1,12 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello in two words."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 100,
+  "safety_identifier": "8f14e45fceea167a5a36dedd4bea2543"
+}

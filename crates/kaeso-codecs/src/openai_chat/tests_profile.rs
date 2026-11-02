@@ -689,3 +689,115 @@ fn a_function_without_parameters_reaches_mistral_with_an_empty_object_schema() {
     );
     assert!(function(ChatProfile::OPENAI).get("parameters").is_none());
 }
+
+#[test]
+fn a_leading_system_only_profile_moves_another_formats_later_system_text_into_the_next_user_turn() {
+    let leading = ChatProfile::compatible("Example Cloud").leading_system_only();
+    let mut g = foreign(DialectId::AnthropicMessages);
+    g.system = vec![Block::text("Answer in one short sentence.")];
+    g.messages = vec![
+        Message::user("Pick a colour."),
+        Message::new(Role::Assistant, vec![Block::text("Blue.")]),
+        Message::new(
+            Role::System,
+            vec![Block::text("From now on, answer in French.")],
+        ),
+        Message::user("Pick another one."),
+    ];
+    let req = Request::Generate(g);
+    let roles = |sent: &Value| -> Vec<String> {
+        sent["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["role"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let sent = encode_with(&req, leading).unwrap();
+    assert_eq!(roles(&sent), ["system", "user", "assistant", "user"]);
+    assert_eq!(
+        sent["messages"][0]["content"],
+        "Answer in one short sentence."
+    );
+    assert_eq!(
+        sent["messages"][3]["content"],
+        json!([
+            {"type": "text", "text": "From now on, answer in French."},
+            {"type": "text", "text": "Pick another one."}
+        ])
+    );
+    let placed = encode_with(&req, ChatProfile::compatible("Example Cloud")).unwrap();
+    assert_eq!(
+        roles(&placed),
+        ["system", "user", "assistant", "system", "user"]
+    );
+
+    let own = chat(json!({"model": "m", "messages": [
+        {"role": "user", "content": "Pick a colour."},
+        {"role": "assistant", "content": "Blue."},
+        {"role": "system", "content": "From now on, answer in French."},
+        {"role": "user", "content": "Pick another one."}
+    ]}));
+    let sent = encode_with(&own, leading).unwrap();
+    assert_eq!(roles(&sent), ["user", "assistant", "system", "user"]);
+
+    let (_, body) = fixtures("anthropic_messages", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "claude-code-mid-conversation-system")
+        .unwrap();
+    let claude_code = crate::dispatch::decode_request(
+        DialectId::AnthropicMessages,
+        kaeso_kpp::RequestKind::Generate,
+        &body,
+        &crate::codec::HeaderList::new(),
+    )
+    .unwrap();
+    let sent = encode_with(&claude_code, leading.system_role()).unwrap();
+    assert_eq!(roles(&sent), ["system", "user"]);
+    let user = sent["messages"][1]["content"].to_string();
+    assert!(
+        user.contains("say hi") && user.contains("# Environment"),
+        "{user}"
+    );
+}
+
+#[test]
+fn a_profile_that_replays_reasoning_as_read_sends_grok_clis_reasoning_content_in_its_own_key() {
+    let (_, body) = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .find(|(n, _)| n == "grok-cli-reasoning-content")
+        .unwrap();
+    let req = decode(&body).unwrap();
+    let reads = ChatProfile::compatible("Example Cloud").reasoning_fields(&["reasoning"]);
+    let assistants = |profile: ChatProfile| -> Vec<Value> {
+        encode_with(&req, profile).unwrap()["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|m| m["role"] == "assistant")
+            .cloned()
+            .collect()
+    };
+    let renamed = assistants(reads.replay_reasoning_as_read());
+    assert_eq!(renamed[0]["reasoning"], "The user wants echo ok.");
+    assert_eq!(renamed[1]["reasoning"], "Answer briefly.");
+    assert!(renamed.iter().all(|m| m.get("reasoning_content").is_none()));
+    let as_sent = assistants(reads);
+    assert_eq!(as_sent[0]["reasoning_content"], "The user wants echo ok.");
+    let both_read = ChatProfile::compatible("Example Cloud")
+        .reasoning_fields(&["reasoning_content", "reasoning"])
+        .replay_reasoning_as_read();
+    assert_eq!(
+        assistants(both_read)[0]["reasoning_content"],
+        "The user wants echo ok."
+    );
+
+    let both = chat(json!({"model": "m", "messages": [
+        {"role": "user", "content": "Pick a number."},
+        {"role": "assistant", "content": "7", "reasoning_content": "One number.", "reasoning": "Seven."},
+        {"role": "user", "content": "Why?"}
+    ]}));
+    let sent = encode_with(&both, reads.replay_reasoning_as_read()).unwrap();
+    assert_eq!(sent["messages"][1]["reasoning_content"], "One number.");
+    assert_eq!(sent["messages"][1]["reasoning"], "Seven.");
+}

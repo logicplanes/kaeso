@@ -700,7 +700,11 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
         for r in replayed {
             if let Some(Value::Object(fields)) = r.extras.form_value(DIALECT, FORM_REPLAYED) {
                 for (key, value) in fields {
-                    wrapped.extra.entry(key.clone()).or_insert(to_raw(&value)?);
+                    let key = replayed_key(&profile, fields, key, value);
+                    wrapped
+                        .extra
+                        .entry(key.to_owned())
+                        .or_insert(to_raw(value)?);
                 }
             } else if let Some(field) = profile.reply.reasoning_fields.first()
                 && !r.text.concat().is_empty()
@@ -714,6 +718,25 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
     }
     wrapped.known = wire;
     to_raw(&wrapped)
+}
+
+// A Chat app replays the reasoning it got under its own provider's key, such as Grok CLI's
+// `reasoning_content`; a provider that refuses message keys it doesn't read takes only its own.
+fn replayed_key<'a>(
+    profile: &'a ChatProfile,
+    replayed: &serde_json::Map<String, Value>,
+    key: &'a str,
+    value: &Value,
+) -> &'a str {
+    let Some(own) = profile.reply.reasoning_fields.first() else {
+        return key;
+    };
+    let renamed = profile.request.replay_reasoning_as_read
+        && ["reasoning_content", "reasoning"].contains(&key)
+        && value.is_string()
+        && !profile.reply.reasoning_fields.contains(&key)
+        && !replayed.contains_key(*own);
+    if renamed { own } else { key }
 }
 
 fn thoughts_into_content(

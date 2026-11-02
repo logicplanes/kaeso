@@ -1,0 +1,17 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "gpt-oss-120b",
+      "object": "model",
+      "created": 0,
+      "owned_by": "Cerebras"
+    },
+    {
+      "id": "qwen-3.8-27b",
+      "object": "model",
+      "created": 0,
+      "owned_by": "Cerebras"
+    }
+  ]
+}

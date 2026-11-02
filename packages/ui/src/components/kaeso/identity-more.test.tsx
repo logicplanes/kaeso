@@ -30,12 +30,12 @@ describe("identity parts", () => {
     render(
       <>
         <ProviderBadge provider="gemini" withName />
-        <ProviderBadge provider="cerebras" name="" />
+        <ProviderBadge provider="kestrel" name="" />
         <ModelLabel provider="vertex" model="gemini-3-pro" />
       </>,
     );
     expect(screen.getByText("gemini")).toBeVisible();
-    expect(screen.getByRole("img", { name: "cerebras" })).toHaveTextContent(/^C$/);
+    expect(screen.getByRole("img", { name: "kestrel" })).toHaveTextContent(/^K$/);
     expect(screen.getByRole("img", { name: "vertex" })).toHaveTextContent(/^V$/);
     expect(providerName("gemini")).toBe("gemini");
     expect(providerName("gemini", "  ")).toBe("gemini");
@@ -163,6 +163,7 @@ const MARKED_PROVIDERS = {
   "ollama-cloud": "Ollama Cloud",
   moonshotai: "Moonshot",
   alibaba: "QwenCloud",
+  cerebras: "Cerebras",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 

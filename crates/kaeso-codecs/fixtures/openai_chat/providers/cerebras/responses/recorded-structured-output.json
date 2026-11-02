@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-c5fe3464-db59-4659-9b98-95e9684dc488",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "{\"name\":\"science fair\",\"date\":\"2026-10-16\",\"participants\":[\"Alice\",\"Bob\"]}",
+        "reasoning": "We need to output calendar_event JSON. Name? Probably \"science fair\". Participants: Alice, Bob. Date given. So output.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652364,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 302,
+    "completion_tokens": 59,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 27
+    },
+    "prompt_tokens": 243,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652364.1589446,
+    "queue_time": 0.0033266040000000004,
+    "prompt_time": 0.003106202,
+    "completion_time": 0.027432882,
+    "total_time": 0.03708052635192871
+  }
+}

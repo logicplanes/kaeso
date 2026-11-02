@@ -1,0 +1,7 @@
+{
+  "message": "\"tools\" is incompatible with \"response_format\"",
+  "type": "invalid_request_error",
+  "param": "tools",
+  "code": "wrong_api_format",
+  "id": ""
+}

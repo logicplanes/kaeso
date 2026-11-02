@@ -747,6 +747,814 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/cerebras/assistant-refusal": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        },
+        {
+          "content": "Hello!",
+          "role": "assistant"
+        },
+        {
+          "content": "Say bye.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 200,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/basic": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/developer-role-qwen": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 100,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/image": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image? Answer with one word.",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/image-gpt-oss": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What colour is this image? Answer with one word.",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKklEQVR4nGO4IyJCU8QwasGoBaMWjFowasGoBaMWjFowasGoBaMWDBULAJ3LED3QqzauAAAAAElFTkSuQmCC",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/image-url": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What is in this image?",
+              "type": "input_text"
+            },
+            {
+              "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/320px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 50,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/invalid-api-key": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/logit-bias-honoured": {
+    "message": "`logit_bias` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logit_bias"
+  },
+  "providers/cerebras/logprobs": {
+    "message": "`logprobs` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "logprobs"
+  },
+  "providers/cerebras/max-completion-tokens-reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Explain why the sky is blue.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 20,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/metadata-field": {
+    "message": "`metadata` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "metadata"
+  },
+  "providers/cerebras/n-above-one": {
+    "rejected_by_source": "n"
+  },
+  "providers/cerebras/prefill": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Name three colours as a numbered list.",
+          "role": "user"
+        },
+        {
+          "content": "1. Red\n2.",
+          "role": "assistant"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/rate-limited": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1500,
+      "model": "qwen-3.8-27b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning-content-sent-back": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Pick a number from 1 to 10.",
+          "role": "user"
+        },
+        {
+          "content": "7",
+          "role": "assistant"
+        },
+        {
+          "content": "Why that one? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning-effort-minimal": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning-effort-none": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning-effort-none-gpt-oss": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the capital of France?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/reasoning-format-hidden": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-format-raw": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/cerebras/reasoning-sent-back": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Pick a number from 1 to 10.",
+          "role": "user"
+        },
+        {
+          "content": "7",
+          "role": "assistant"
+        },
+        {
+          "content": "Why that one? Answer in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/safety-identifier-field": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "safety_identifier": "8f14e45fceea167a5a36dedd4bea2543",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/sampling": {
+    "message": "`seed` is not supported by OpenAI Responses. The Responses API has no `seed`. Remove it or use the Chat Completions format.",
+    "param": "seed",
+    "unsupported": "seed"
+  },
+  "providers/cerebras/store-field": {
+    "message": "`store` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "store"
+  },
+  "providers/cerebras/stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/stream-json-object": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Give a JSON object with one key, a, set to 1.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true,
+      "text": {
+        "format": {
+          "type": "json_object"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/stream-reasoning": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23? Answer with the number.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1500,
+      "model": "qwen-3.8-27b",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/stream-tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/stream-usage": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": 100,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/structured-output": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Alice and Bob are going to a science fair on 2026-10-16.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Extract the event information.",
+      "max_output_tokens": 600,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "name": "calendar_event",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "participants": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "date",
+              "participants"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/system-mid-conversation": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Pick a colour.",
+          "role": "user"
+        },
+        {
+          "content": "Blue.",
+          "role": "assistant"
+        },
+        {
+          "content": "From now on, answer in French.",
+          "role": "developer"
+        },
+        {
+          "content": "Pick another one.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 200,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/system-mid-conversation-qwen": {
+    "body": {
+      "input": [
+        {
+          "content": "Pick a colour.",
+          "role": "user"
+        },
+        {
+          "content": "Blue.",
+          "role": "assistant"
+        },
+        {
+          "content": "From now on, answer in French.",
+          "role": "developer"
+        },
+        {
+          "content": "Pick another one.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer in one short sentence.",
+      "max_output_tokens": 200,
+      "model": "qwen-3.8-27b",
+      "reasoning": {
+        "effort": "none"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/tool-without-parameters": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What time is it? Use the tool.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current time.",
+          "name": "get_time",
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What's the weather in Paris right now? Use Celsius.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/tools-with-response-format": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What's the weather in Paris right now?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 300,
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "text": {
+        "format": {
+          "type": "json_object"
+        }
+      },
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "description": "City name, such as Paris",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello in two words.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 100,
+      "model": "no-such-model",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/cerebras/user-hints": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/cerebras/verbosity-field": {
+    "message": "`verbosity` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "verbosity"
+  },
   "providers/cohere/assistant-prefill": {
     "body": {
       "input": [

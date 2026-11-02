@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-b90a1860-9b61-4ba1-a5e7-e379a7d1feaa",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Because 7 is often considered lucky, memorable, and it falls right in the middle of the range, making it a balanced choice.",
+        "reasoning": "Need to answer in one sentence.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652493,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 141,
+    "completion_tokens": 44,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 7
+    },
+    "prompt_tokens": 97,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652493.156649,
+    "queue_time": 0.0032131100000000017,
+    "prompt_time": 0.001590143,
+    "completion_time": 0.024043957,
+    "total_time": 0.0315091609954834
+  }
+}
