@@ -319,6 +319,10 @@ fn calls_tools(m: &Message) -> bool {
     m.role == Role::Assistant && m.blocks.iter().any(|b| matches!(b, Block::ToolCall(_)))
 }
 
+fn only_results(m: &Message) -> bool {
+    m.role == Role::User && !m.blocks.is_empty() && leading_results(m) == m.blocks.len()
+}
+
 // Chat Completions wants a call's `tool` messages right after the assistant message that
 // made it: Mistral answers a system message between them with a 400
 // `invalid_request_message_order` ("Unexpected role 'tool' after role 'system'").
@@ -352,7 +356,7 @@ fn place_system_for_chat(d: &mut Draft<'_>, target: DialectId) {
             Role::System => out.push(m),
             _ => {
                 out.append(&mut deferred);
-                awaiting_results = calls_tools(&m);
+                awaiting_results = calls_tools(&m) || (awaiting_results && only_results(&m));
                 out.push(m);
             }
         }
