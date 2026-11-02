@@ -68,7 +68,7 @@ Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine
 
 Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 
-Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic.
+Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic. Eine Anfrage aus einem anderen Format, die mehr Ausgabe verlangt, als das Modell schreiben kann, erhält stattdessen das Maximum des Modells, und der Header `kaeso-adapted` der Antwort nennt das Feld, etwa `max_tokens`. Claude Code etwa verlangt von jedem Modell, das es nicht kennt, 32.000 Token.
 
 ## Limits
 
