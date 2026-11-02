@@ -486,6 +486,29 @@ fn a_stream_cut_while_a_call_is_held_releases_the_call_on_flush() {
 }
 
 #[test]
+fn an_empty_chunk_after_the_finish_opens_no_block() {
+    let events = decode_whole(&fixture("providers/openrouter/recorded-free-stream"));
+    let first_stop = events
+        .iter()
+        .position(|e| matches!(e, StreamEvent::ResponseDelta(d) if d.stop.is_some()))
+        .unwrap();
+    let after: Vec<String> = kinds(&events[first_stop..])
+        .into_iter()
+        .filter(|k| k != "extra")
+        .collect();
+    assert_eq!(
+        after,
+        ["response_delta", "response_delta", "stop"],
+        "{events:?}"
+    );
+    let starts = events
+        .iter()
+        .filter(|e| matches!(e, StreamEvent::BlockStart(_)))
+        .count();
+    assert_eq!(starts, 1);
+}
+
+#[test]
 fn usage_is_hidden_when_the_app_did_not_ask() {
     let bytes = fixture("tools-single");
     let events = decode_whole(&bytes);
