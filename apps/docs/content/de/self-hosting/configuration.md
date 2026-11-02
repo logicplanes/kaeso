@@ -106,7 +106,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | Text, Secret | erforderlich | Verbindungs-URL für PostgreSQL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Höchstzahl der PostgreSQL-Verbindungen je Gateway-Instanz, mindestens 1. Hintergrundjobs halten ihre Sperren zusätzlich über einige weitere Verbindungen. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Größe des PostgreSQL-Verbindungspools jeder Gateway-Instanz, mindestens 1. Hintergrundjobs öffnen außerhalb davon bis zu 8 eigene Verbindungen, solange sie laufen, und jede Release-Prüfung, die ein Instanz-Admin startet, eine weitere. `max_connections` von PostgreSQL muss beides für jede Instanz abdecken. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | Text, Secret | — | HTTP-URL für ClickHouse mit Benutzer und Passwort, etwa `http://kaeso:secret@clickhouse:8123`. Nicht gesetzt oder leer schaltet die Anfrageprotokolle aus. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | Text | `kaeso` | ClickHouse-Datenbank für die Anfrageprotokolle, aus Buchstaben, Ziffern und `_`. Das Gateway legt sie an, wenn sie fehlt. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | Text, Secret | erforderlich | URL für Valkey (oder Redis) mit dem Passwort, etwa `redis://:secret@valkey:6379`. |

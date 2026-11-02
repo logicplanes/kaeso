@@ -106,7 +106,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | text, secret | required | PostgreSQL connection URL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Size of each gateway instance's PostgreSQL connection pool, at least 1. Background jobs open up to 8 connections of their own outside it while they run, and each release check an instance admin starts one more. PostgreSQL's `max_connections` must cover both, for every instance. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | — | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |

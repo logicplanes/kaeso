@@ -106,7 +106,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | 文本，机密 | 必填 | PostgreSQL 连接 URL。 |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 最大连接数，至少为 1。后台任务另用几条连接持有锁。 |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | 整数 | `20` | 每个网关实例的 PostgreSQL 连接池大小，至少为 1。后台任务运行时会在连接池之外另开最多 8 条连接，实例管理员每发起一次版本检查再多开一条。PostgreSQL 的 `max_connections` 须为每个实例同时容纳这两部分。 |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | 文本，机密 | — | 带用户和密码的 ClickHouse HTTP URL，例如 `http://kaeso:secret@clickhouse:8123`。不设置或为空时关闭请求日志。 |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | 文本 | `kaeso` | 存放请求日志的 ClickHouse 数据库，由字母、数字和 `_` 组成。不存在时网关会创建它。 |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | 文本，机密 | 必填 | 带密码的 Valkey（或 Redis）URL，例如 `redis://:secret@valkey:6379`。 |
