@@ -201,7 +201,7 @@ Schema `MessageStreamEvent`。
 | `content_block_start` `thinking` | `BlockStart(Reasoning { origin })` | 初始思考和签名 → 带 `in_start` 的增量。 |
 | `content_block_start` `redacted_thinking` | `BlockStart(Reasoning { opaque: [AnthropicRedactedThinking] })` | |
 | 其他类型的 `content_block_start` | `BlockStart(Unknown)`（原始） | |
-| 与默认值不同的起始块（`{type:text,text:""}`、`{type:tool_use,id,name,input:{}}`、`{type:thinking,thinking:"",signature:""}`、`{type:redacted_thinking,data}`） | 形式标记 `content_block`（原样的块） | |
+| 与默认值不同的起始块（`{type:text,text:""}`、`{type:tool_use,id,name,input:{}}`、`{type:thinking,thinking:"",signature:""}`、`{type:redacted_thinking,data}`） | 形式标记 `content_block`（原样的块） | Claude 的 `tool_use` 起始块带有 `caller: {type: direct}`，因此按这种方式保存；其 `id` 和 `name` 先映射回原值，默认块也由映射后的值构建（`fixtures/anthropic_messages/streams/tools-caller.sse`）。 |
 | 与 KPP 索引不同的 `content_block_start.index` | 形式标记 `index` | Anthropic 按 0、1 等顺序为块编号，所以这只会出现在不寻常的流中。 |
 | `text_delta` | `Delta::Text` | |
 | `input_json_delta`（`partial_json`） | `Delta::ToolArguments(partial_json)` | 一个块的 `partial_json` 片段拼接起来就是参数。在 `Unknown` 块（例如 `server_tool_use`）上：`Delta::Unknown`（原始）。 |

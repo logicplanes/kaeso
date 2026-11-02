@@ -904,6 +904,7 @@ impl ChatStreamDecoder {
                     tc.insert("type".to_owned(), Value::String(ty));
                 }
                 if let Some(name) = name {
+                    let name = self.tool_names.get(&name).cloned().unwrap_or(name);
                     tc.insert("name".to_owned(), Value::String(name));
                 }
                 if arguments.is_none() && !tc.contains_key("no_fn") {

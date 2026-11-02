@@ -201,7 +201,7 @@ Schema `MessageStreamEvent`.
 | `content_block_start` `thinking` | `BlockStart(Reasoning { origin })` | Initial thinking and signature → deltas with `in_start`. |
 | `content_block_start` `redacted_thinking` | `BlockStart(Reasoning { opaque: [AnthropicRedactedThinking] })` | |
 | `content_block_start` of other types | `BlockStart(Unknown)` (raw) | |
-| a start block that differs from the default (`{type:text,text:""}`, `{type:tool_use,id,name,input:{}}`, `{type:thinking,thinking:"",signature:""}`, `{type:redacted_thinking,data}`) | form `content_block` (the exact block) | |
+| a start block that differs from the default (`{type:text,text:""}`, `{type:tool_use,id,name,input:{}}`, `{type:thinking,thinking:"",signature:""}`, `{type:redacted_thinking,data}`) | form `content_block` (the exact block) | Claude's `tool_use` start carries `caller: {type: direct}`, so it is kept this way; its `id` and `name` are mapped back first, and the default is built from the mapped ones (`fixtures/anthropic_messages/streams/tools-caller.sse`). |
 | `content_block_start.index` that differs from the KPP index | form `index` | Anthropic numbers blocks 0, 1, …, so this only happens in unusual streams. |
 | `text_delta` | `Delta::Text` | |
 | `input_json_delta` (`partial_json`) | `Delta::ToolArguments(partial_json)` | The `partial_json` fragments of a block concatenate to the arguments. On `Unknown` blocks (such as `server_tool_use`): `Delta::Unknown` (raw). |
