@@ -103,7 +103,8 @@ pub fn prepare(
         }
         Request::Generate(g) => {
             let left_out = leave_out_reasoning(g, ingress, eff);
-            let adapted = fit_end_user(g, ingress, eff);
+            let mut adapted = fit_end_user(g, ingress, eff);
+            adapted.extend(fit_output_limit(g, ingress, eff));
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -201,6 +202,30 @@ fn fit_end_user(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) ->
             vec![app_param(ingress, "user").to_owned()]
         }
         _ => Vec::new(),
+    }
+}
+
+// An app in another format can't know the model's output limit, and Claude Code asks every
+// model it doesn't know for 32,000 tokens; Cohere and Anthropic refuse more than their maximum.
+fn fit_output_limit(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let limit = eff.fields.output_limit.and_then(|l| u32::try_from(l).ok());
+    match (g.sampling.max_output_tokens, limit) {
+        (Some(asked), Some(limit)) if ingress != eff.dialect && asked > limit => {
+            g.sampling.max_output_tokens = Some(limit);
+            vec![output_param(g, ingress).to_owned()]
+        }
+        _ => Vec::new(),
+    }
+}
+
+fn output_param(g: &GenerateRequest, ingress: DialectId) -> &'static str {
+    match ingress {
+        DialectId::AnthropicMessages => "max_tokens",
+        DialectId::OpenAiResponses => "max_output_tokens",
+        _ if g.extras.form_str(DialectId::OpenAiChat, "max_tokens") == Some("max_tokens") => {
+            "max_tokens"
+        }
+        _ => "max_completion_tokens",
     }
 }
 

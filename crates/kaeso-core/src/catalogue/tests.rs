@@ -811,6 +811,31 @@ fn an_anthropic_end_user_id_longer_than_the_provider_takes_is_hashed() {
     assert_eq!(sent(&long, A, &haiku), (long.clone(), Vec::new()));
 }
 
+#[test]
+fn an_output_limit_above_the_models_is_lowered_when_the_request_crosses_formats() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C, OpenAiResponses as R};
+    let command_a = eff(&entry("cohere", "command-a-03-2025"));
+    assert_eq!(command_a.fields.output_limit, Some(8000));
+    let asked = |n: u32, ingress: DialectId| {
+        let mut g = user_request();
+        g.sampling.max_output_tokens = Some(n);
+        let mut req = Request::Generate(g);
+        let plan = prepare(&mut req, ingress, &command_a).unwrap();
+        let Request::Generate(g) = req else { panic!() };
+        (g.sampling.max_output_tokens, plan.adapted)
+    };
+    assert_eq!(
+        asked(32_000, A),
+        (Some(8000), vec!["max_tokens".to_owned()])
+    );
+    assert_eq!(
+        asked(32_000, R),
+        (Some(8000), vec!["max_output_tokens".to_owned()])
+    );
+    assert_eq!(asked(4_000, A), (Some(4000), Vec::new()));
+    assert_eq!(asked(32_000, C), (Some(32_000), Vec::new()));
+}
+
 fn user_request() -> GenerateRequest {
     user(vec![Block::text("hi")])
 }

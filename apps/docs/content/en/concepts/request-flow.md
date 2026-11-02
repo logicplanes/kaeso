@@ -68,7 +68,7 @@ The catalogue entry says what the model can do. Kaeso answers 400 when a request
 
 A model without effort levels gets no effort instead, and a model that doesn't reason no adaptive thinking. The reply's `kaeso-left-out` header names what Kaeso left out ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
 
-A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic.
+A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic. A request from another format that asks for more output than the model can write gets the model's maximum instead, and the reply's `kaeso-adapted` header names the field, such as `max_tokens`. Claude Code, for one, asks every model it doesn't know for 32,000 tokens.
 
 ## Limits
 
