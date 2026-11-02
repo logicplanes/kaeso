@@ -72,7 +72,7 @@ Each organization chooses what it keeps, and for how long, under **Organization 
 | Metadata retention | 90 days | How long log entries are kept |
 | Content retention | 30 days | How long request and reply bodies are kept. Never longer than the metadata |
 
-Shortening a retention deletes older entries, and lengthening it applies to new ones. The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#change-install-settings)). Changing these settings needs the right **Manage log settings**.
+Shortening a retention deletes older entries, and lengthening it applies to new ones. The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#change-install-settings)). Changing these settings, or content logging for the organization, needs the right **Manage log settings** and a recent sign-in.
 
 A project can turn content logging off for itself in its **Settings**, with the right **Switch content logging**. It can't turn it on while the organization has it off.
 

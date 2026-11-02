@@ -32,7 +32,7 @@ expression: rights_reference()
 | `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |
 | `platform_keys.create` ⚠ | Keys | Create platform keys | Create and rotate organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
 | `platform_keys.revoke` | Keys | Disable platform keys | Disable, enable or archive organization platform keys. | `platform_keys.view` |  |  |
-| `logs.settings.manage` | Logs & data | Manage log settings | Set log retention and switch content logging on or off for the organization. |  |  |  |
+| `logs.settings.manage` ⚠ | Logs & data | Manage log settings | Set log retention and switch content logging on or off for the organization. |  | ✓ |  |
 | `logs.storage.view` | Logs & data | View log storage | See how many log entries exist and how much space they take. |  |  |  |
 | `logs.delete` ⚠ | Logs & data | Delete logs | Delete the organization's logs for a time range. | `logs.storage.view` | ✓ |  |
 | `usage.org.view` | Usage & billing | View org usage | See usage across all projects. |  |  |  |

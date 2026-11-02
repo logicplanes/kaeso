@@ -148,7 +148,7 @@ Every change of roles and rights follows these rules:
 
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
-| `logs.settings.manage` | Manage log settings | Set log retention and switch content logging on or off for the organization. |  |
+| `logs.settings.manage` | Manage log settings | Set log retention and switch content logging on or off for the organization. | sensitive; recent sign-in |
 | `logs.storage.view` | View log storage | See how many log entries exist and how much space they take. |  |
 | `logs.delete` | Delete logs | Delete the organization's logs for a time range. | sensitive; recent sign-in; needs `logs.storage.view` |
 

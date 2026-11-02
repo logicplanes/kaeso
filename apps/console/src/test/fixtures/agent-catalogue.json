@@ -517,8 +517,8 @@
             "scope": "org",
             "name": "Manage log settings",
             "description": "Set log retention and switch content logging on or off for the organization.",
-            "sensitive": false,
-            "recent_sign_in": false,
+            "sensitive": true,
+            "recent_sign_in": true,
             "cloud_only": false,
             "owner_only": false,
             "needs": ["org.view"]

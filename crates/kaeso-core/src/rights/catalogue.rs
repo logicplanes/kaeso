@@ -194,7 +194,7 @@ rights!(
         PlatformKeysView = "platform_keys.view", Keys, "View platform keys", false, false, false, [], "See the organization's platform keys (metadata).";
         PlatformKeysCreate = "platform_keys.create", Keys, "Create platform keys", true, true, false, [PlatformKeysView], "Create and rotate organization platform keys, which manage everything at org level.";
         PlatformKeysRevoke = "platform_keys.revoke", Keys, "Disable platform keys", false, false, false, [PlatformKeysView], "Disable, enable or archive organization platform keys.";
-        LogsSettingsManage = "logs.settings.manage", Logs, "Manage log settings", false, false, false, [], "Set log retention and switch content logging on or off for the organization.";
+        LogsSettingsManage = "logs.settings.manage", Logs, "Manage log settings", true, true, false, [], "Set log retention and switch content logging on or off for the organization.";
         LogsStorageView = "logs.storage.view", Logs, "View log storage", false, false, false, [], "See how many log entries exist and how much space they take.";
         LogsDelete = "logs.delete", Logs, "Delete logs", true, true, false, [LogsStorageView], "Delete the organization's logs for a time range.";
         UsageOrgView = "usage.org.view", UsageBilling, "View org usage", false, false, false, [], "See usage across all projects.";
