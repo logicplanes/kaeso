@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Images and files a tool returns reach Chat Completions models in the user message after the tool results, instead of the whole request being refused, so Claude Code's Read and Codex's view_image work through DeepSeek, Mistral and OpenRouter. The tool message keeps the result's text and says that the rest follows, and the user message names the tool call before its images and files. ([#574](https://github.com/logicplanes/kaeso/pull/574))
+
 ## [0.5.0] - 2026-10-31
 
 - **Breaking:** Kaeso reads its model data from KPMR, the Kaeso Provider & Model Registry, as signed catalogues instead of fetching models.dev ([#571](https://github.com/logicplanes/kaeso/pull/571))
