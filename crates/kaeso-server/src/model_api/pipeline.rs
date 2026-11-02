@@ -896,6 +896,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .map_err(fail(Stage::Capability))?;
     let encoded = encoded.map_err(fail(Stage::Capability))?;
     ectx.left_out.splice(0..0, plan.left_out.iter().cloned());
+    ectx.adapted.splice(0..0, plan.adapted.iter().cloned());
     rec.outcome().cache_breakpoints = ectx.cache_breakpoints;
     if !ectx.left_out.is_empty() {
         tracing::info!(
@@ -906,7 +907,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     if !ectx.adapted.is_empty() {
         tracing::info!(
             adapted = %ectx.adapted.join(", "),
-            "merged root unions of tool schemas into one object for the provider"
+            "sent what the provider takes only in another form, such as a merged tool schema"
         );
     }
     let served = Served {

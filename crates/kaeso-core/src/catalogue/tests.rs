@@ -782,6 +782,39 @@ fn an_effort_or_adaptive_thinking_a_model_cannot_take_is_left_out() {
     );
 }
 
+#[test]
+fn an_anthropic_end_user_id_longer_than_the_provider_takes_is_hashed() {
+    use DialectId::{AnthropicMessages as A, OpenAiChat as C};
+    let long = format!(
+        r#"{{"device_id":"{}","account_uuid":"","session_id":"0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"}}"#,
+        "a".repeat(64)
+    );
+    assert_eq!(long.len(), 150);
+    let sent = |user: &str, ingress: DialectId, e: &Effective| {
+        let mut g = user_request();
+        g.user = Some(user.to_owned());
+        let mut req = Request::Generate(g);
+        let plan = prepare(&mut req, ingress, e).unwrap();
+        let Request::Generate(g) = req else { panic!() };
+        (g.user.unwrap(), plan.adapted)
+    };
+    let gpt = eff(&entry("openai", "gpt-4o"));
+    let (user, adapted) = sent(&long, A, &gpt);
+    assert_eq!(adapted, ["metadata.user_id"]);
+    assert_eq!(user.len(), 64);
+    assert!(user.chars().all(|c| c.is_ascii_hexdigit()), "{user}");
+    assert_eq!(sent(&long, A, &gpt).0, user, "the same id hashes the same");
+    let fits = "u".repeat(128);
+    assert_eq!(sent(&fits, A, &gpt), (fits.clone(), Vec::new()));
+    assert_eq!(sent(&long, C, &gpt), (long.clone(), Vec::new()));
+    let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
+    assert_eq!(sent(&long, A, &haiku), (long.clone(), Vec::new()));
+}
+
+fn user_request() -> GenerateRequest {
+    user(vec![Block::text("hi")])
+}
+
 fn with_budget(budget: u32, mode: ReasoningMode) -> GenerateRequest {
     let mut g = user(vec![Block::text("hi")]);
     let mut r = ReasoningConfig::default();
@@ -989,6 +1022,7 @@ fn duties_fill_what_kpp_cannot_know() {
             thinking_binding: None,
             reasoning: Some(false),
             left_out: Vec::new(),
+            adapted: Vec::new(),
         }
     );
     let Request::Generate(g) = &req else { panic!() };
