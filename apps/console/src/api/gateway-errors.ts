@@ -207,6 +207,7 @@ const messages = (): Rule[] => [
   ),
   rule("errors.orgAlreadyScheduled", () => t("errors.orgAlreadyScheduled", "The organization is already scheduled for deletion.")),
   rule("errors.orgNotScheduled", () => t("errors.orgNotScheduled", "The organization is not scheduled for deletion.")),
+  rule("errors.orgPastRestore", () => t("errors.orgPastRestore", "The organization is being deleted for good and can no longer be restored.")),
   rule("errors.onlyScheduledDeleteNow", () => t("errors.onlyScheduledDeleteNow", "Only an organization scheduled for deletion can be deleted now.")),
   rule("errors.noOrgDeletion", () => t("errors.noOrgDeletion", "This instance doesn't allow deleting organizations.")),
   rule("errors.restoreBeforeOwner", () => t("errors.restoreBeforeOwner", "Restore the organization before appointing an owner.")),
@@ -335,6 +336,7 @@ const messages = (): Rule[] => [
   rule("errors.keyArchived", () => t("errors.keyArchived", "The key is archived and cannot change.")),
   rule("errors.keyChangedMeanwhile", () => t("errors.keyChangedMeanwhile", "The key changed meanwhile; reload and try again.")),
   rule("errors.keyRotatedAlready", () => t("errors.keyRotatedAlready", "This key was rotated already; rotate the key that replaced it.")),
+  rule("errors.keyRotateDisabled", () => t("errors.keyRotateDisabled", "This key is disabled; enable it before you rotate it.")),
   rule("errors.onlyOwnerRotates", () => t("errors.onlyOwnerRotates", "Only a key's owner can rotate it; the new key acts with the owner's rights.")),
   rule("errors.serviceAccountKeyRotatePath", (v) =>
     t("errors.serviceAccountKeyRotatePath", "Rotate a service account's key through service-accounts/{account}/keys/{key}/rotate.", v),

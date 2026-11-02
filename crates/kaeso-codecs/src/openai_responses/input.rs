@@ -71,10 +71,11 @@ fn decode_item(raw: &RawValue, origin: &Origin) -> Item {
             raw_role(ty.as_deref()),
         )
     };
-    let has_role = super::node::entries_of(raw).is_some_and(|e| e.iter().any(|(k, _)| k == "role"));
+    let has_role =
+        || super::node::entries_of(raw).is_some_and(|e| e.iter().any(|(k, _)| k == "role"));
     match ty.as_deref() {
         Some("message") => decode_message(raw, origin).unwrap_or_else(raw_item),
-        None if has_role => decode_message(raw, origin).unwrap_or_else(raw_item),
+        None if has_role() => decode_message(raw, origin).unwrap_or_else(raw_item),
         Some("function_call") => decode_function_call(raw, origin, None)
             .map(|c| Item::Call(Block::ToolCall(c)))
             .unwrap_or_else(raw_item),

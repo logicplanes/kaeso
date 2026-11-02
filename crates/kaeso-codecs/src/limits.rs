@@ -437,6 +437,59 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
         .with_status(400)
 }
 
+/// A request body that passed [`request_shape`]'s checks for one dialect, kept with its
+/// shape. [`crate::dispatch::decode_checked_request`] decodes it without counting it again,
+/// so a caller that needs the shape before decoding, to budget memory, scans the body once.
+///
+/// ```
+/// use kaeso_codecs::{dispatch, limits::Checked, HeaderList};
+/// use kaeso_kpp::{DialectId, RequestKind};
+///
+/// let body = br#"{"model":"gpt-5.5","messages":[{"role":"user","content":"Hi"}]}"#;
+/// let checked = Checked::new(DialectId::OpenAiChat, &body[..]).unwrap();
+/// assert_eq!(checked.shape().items, 1);
+/// let req = dispatch::decode_checked_request(RequestKind::Generate, &checked, &HeaderList::new());
+/// assert!(req.is_ok());
+/// ```
+#[derive(Clone, Debug)]
+pub struct Checked<B> {
+    dialect: DialectId,
+    body: B,
+    shape: RequestShape,
+}
+
+impl<B: AsRef<[u8]>> Checked<B> {
+    /// Checks `body` as a request in `dialect`, as [`request_shape`] does.
+    pub fn new(dialect: DialectId, body: B) -> Result<Checked<B>, KppError> {
+        let shape = request_shape(dialect, body.as_ref())?;
+        Ok(Checked {
+            dialect,
+            body,
+            shape,
+        })
+    }
+
+    /// The dialect the body was checked as.
+    pub fn dialect(&self) -> DialectId {
+        self.dialect
+    }
+
+    /// What the body holds.
+    pub fn shape(&self) -> &RequestShape {
+        &self.shape
+    }
+
+    /// The body.
+    pub fn body(&self) -> &B {
+        &self.body
+    }
+
+    /// The body, giving up the check.
+    pub fn into_body(self) -> B {
+        self.body
+    }
+}
+
 /// Counts the messages, content blocks and tools of a request body without decoding it,
 /// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`] or
 /// [`MAX_EMBEDDING_INPUTS`] with an `InvalidRequest` error that names the field, and one

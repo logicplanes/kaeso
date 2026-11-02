@@ -230,9 +230,12 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
       filteredItems={filtered}
       value={rootValue}
       onValueChange={handleChange}
-      onInputValueChange={(v: string) => {
-        setQuery(v);
-        reportInput(v);
+      onInputValueChange={(v: string, details: { reason: string }) => {
+        // A pick writes the option's label into the field too; filtering by it would hide every other option on the next open.
+        const typed = details.reason === "input-change" ? v : "";
+        if (typed === query) return;
+        setQuery(typed);
+        reportInput(typed);
       }}
       autoHighlight
       itemToStringLabel={(o: ComboboxOption) => o?.label ?? ""}

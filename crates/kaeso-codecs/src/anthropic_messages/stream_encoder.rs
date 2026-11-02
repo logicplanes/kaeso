@@ -506,6 +506,17 @@ fn write_block_delta(d: &BlockDelta, slot: &mut Slot, out: &mut Vec<u8>) -> Resu
     if own && d.extras.form_flag(D, IN_START_FORM) {
         return Ok(());
     }
+    if !own || (d.extras.fields.is_empty() && d.extras.form.is_empty()) {
+        let plain = match &d.delta {
+            Delta::Text(text) | Delta::Refusal(text) => Some(("text_delta", "text", text)),
+            Delta::ToolArguments(json) => Some(("input_json_delta", "partial_json", json)),
+            Delta::ReasoningText(text) => Some(("thinking_delta", "thinking", text)),
+            _ => None,
+        };
+        if let Some((kind, field, text)) = plain {
+            return write_plain_delta(slot.wire, kind, field, text, out);
+        }
+    }
     let delta: Raw = match &d.delta {
         Delta::Text(text) | Delta::Refusal(text) => to_raw(&nested_ext(
             TextDeltaW {
@@ -563,6 +574,31 @@ fn write_block_delta(d: &BlockDelta, slot: &mut Slot, out: &mut Vec<u8>) -> Resu
         &d.extras,
     );
     write(out, "content_block_delta", &ev, &d.extras)
+}
+
+// The frame `write` builds from `BlockDeltaW` around a delta struct of `kind` when the event's
+// extras add nothing, written in one pass with the same serializer: the same bytes, without
+// copying the text into the structs and each layer of the frame.
+fn write_plain_delta(
+    index: u32,
+    kind: &str,
+    field: &str,
+    text: &str,
+    out: &mut Vec<u8>,
+) -> Result<(), KppError> {
+    out.reserve(text.len() + 96);
+    out.extend_from_slice(
+        b"event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":",
+    );
+    serde_json::to_writer(&mut *out, &index).map_err(internal)?;
+    out.extend_from_slice(b",\"delta\":{\"type\":\"");
+    out.extend_from_slice(kind.as_bytes());
+    out.extend_from_slice(b"\",\"");
+    out.extend_from_slice(field.as_bytes());
+    out.extend_from_slice(b"\":");
+    serde_json::to_writer(&mut *out, text).map_err(internal)?;
+    out.extend_from_slice(b"}}\n\n");
+    Ok(())
 }
 
 fn write_block_stop(slot: &mut Slot, extras: &Extras, out: &mut Vec<u8>) -> Result<(), KppError> {

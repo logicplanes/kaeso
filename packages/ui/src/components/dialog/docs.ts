@@ -86,6 +86,8 @@ export const docs = {
       onOpenChange: "Called when it opens or closes.",
       onSubmit: "Called when the last step is submitted.",
       open: "Whether it is open, when you control it.",
+      refusedStep:
+        "The id of the step holding a field the submission was refused for, such as a name the server turned down: the dialog goes back to that step and focuses its first field, where the field shows the error.",
       result:
         "What the last step made, shown in the same dialog once it exists: its title, description, content, footer and size. Pass it after `onSubmit` succeeds, such as the created key with SecretReveal.",
       size: "The dialog's width.",

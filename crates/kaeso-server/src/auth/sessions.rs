@@ -168,16 +168,27 @@ pub async fn revoke_all(
     user: UserId,
     keep: Option<SessionId>,
 ) -> Result<usize, StoreError> {
-    let now = state.clock.now();
-    let hashes = sessions::revoke_all(&state.pg, user.uuid(), keep.map(|k| k.uuid()), now).await?;
-    for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
-        tokens::retire_all(&state.pg, kind, Some(user.uuid()), now).await?;
-    }
-    if keep.is_none() {
-        kaeso_store::pg::agents::revoke_of_user(&state.pg, user.uuid(), now).await?;
-    }
+    let mut tx = state.pg.begin().await?;
+    let hashes = revoke_all_in(&mut tx, user, keep, state.clock.now()).await?;
+    tx.commit().await?;
     forget(state, &hashes).await;
     Ok(hashes.len())
+}
+
+pub async fn revoke_all_in(
+    tx: &mut sqlx::PgConnection,
+    user: UserId,
+    keep: Option<SessionId>,
+    now: OffsetDateTime,
+) -> Result<Vec<Vec<u8>>, StoreError> {
+    let hashes = sessions::revoke_all(&mut *tx, user.uuid(), keep.map(|k| k.uuid()), now).await?;
+    for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
+        tokens::retire_all(&mut *tx, kind, Some(user.uuid()), now).await?;
+    }
+    if keep.is_none() {
+        kaeso_store::pg::agents::revoke_of_user(&mut *tx, user.uuid(), now).await?;
+    }
+    Ok(hashes)
 }
 
 pub async fn refresh_user(state: &AppState, user: UserId) -> Result<(), StoreError> {

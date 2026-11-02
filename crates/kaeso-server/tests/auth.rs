@@ -7,7 +7,7 @@ use std::time::Duration;
 use axum::http::{Method, StatusCode};
 use common::App;
 use kaeso_testkit::services::TestServices;
-use serde_json::json;
+use serde_json::{Value, json};
 
 use common::{PASSWORD, totp_code as code};
 
@@ -707,6 +707,64 @@ async fn password_reset_ends_every_session() {
             .kind
             .as_str(),
         "password_changed"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn ending_your_own_sessions_is_in_the_audit_log() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let second = sign_in(&app, "owner@example.com", PASSWORD).await;
+    let second_id = second.body["session"]["id"].as_str().unwrap().to_owned();
+    let second = format!("/me/sessions/{second_id}");
+    app.call(Method::DELETE, &second, None, Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+    app.call(Method::DELETE, &second, None, Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::NOT_FOUND);
+    for _ in 0..2 {
+        sign_in(&app, "owner@example.com", PASSWORD).await;
+    }
+    let all = app
+        .post("/auth/sessions/revoke-all", json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(all.body["revoked"], 2);
+    let none = app
+        .post("/me/sessions/revoke-all", json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(none.body["revoked"], 0);
+
+    let audit = app
+        .get(
+            "/instance/audit-log?action=user.sessions_revoke",
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let events: Vec<(Value, Value, Value)> = audit.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| {
+            (
+                e["actor"]["id"].clone(),
+                e["target_id"].clone(),
+                e["after"].clone(),
+            )
+        })
+        .collect();
+    let me = json!(owner.user_id);
+    assert_eq!(
+        events,
+        [
+            (me.clone(), me.clone(), json!({ "ended": 2 })),
+            (me.clone(), me, json!({ "ended": 1 })),
+        ]
     );
     s.cleanup().await;
 }

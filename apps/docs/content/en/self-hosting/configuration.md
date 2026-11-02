@@ -106,7 +106,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | text, secret | required | PostgreSQL connection URL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Most PostgreSQL connections per gateway instance, at least 1. Background jobs hold their locks on a few connections besides these. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | integer | `20` | Size of each gateway instance's PostgreSQL connection pool, at least 1. Background jobs open up to 8 connections of their own outside it while they run, and each release check an instance admin starts one more. PostgreSQL's `max_connections` must cover both, for every instance. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | text, secret | — | ClickHouse HTTP URL with user and password, such as `http://kaeso:secret@clickhouse:8123`. Unset or empty turns request logs off. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | text | `kaeso` | ClickHouse database for request logs, of letters, digits and `_`. The gateway creates it when it is missing. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | text, secret | required | Valkey (or Redis) URL with the password, such as `redis://:secret@valkey:6379`. |
@@ -144,7 +144,7 @@ These settings turn passwords and sign-in links on or off for the whole install.
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed API key lookups allowed per client address and window, on both APIs together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | integer | `100` | Failed lookups of API keys and agents' access tokens allowed per client address and window, on both APIs and the MCP server together. `0` turns the throttle off ([API key throttling](#api-key-throttling)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | text | `1m` | The window of `key_failures.per_address`, 1s to 1h. A blocked address waits at most this long. |
 
 ### KPMR
@@ -287,7 +287,7 @@ A provider id is lowercase letters and digits with single hyphens between them. 
 
 ## API key throttling
 
-The gateway counts failed API key lookups per client address in Valkey, so a client that guesses keys can't keep PostgreSQL busy. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures within `KAESO_KEY_FAILURES_WINDOW`, the address is blocked until the window ends. Every key from it that isn't in memory then gets 429 with `Retry-After`, in the API's own format.
+The gateway counts failed lookups of API keys and agents' access tokens per client address in Valkey, on both APIs and the [MCP server](../api/mcp.md), so a client that guesses keys can't keep PostgreSQL busy. After `KAESO_KEY_FAILURES_PER_ADDRESS` failures within `KAESO_KEY_FAILURES_WINDOW`, the address is blocked until the window ends. Every key from it that isn't in memory, and every access token, then gets 429 with `Retry-After`, in the API's own format.
 
 - Only well-formed keys that match no key count. A malformed value, a disabled or expired key, and an unknown key repeated within 30 seconds don't.
 - Valid keys never count. A key the instance used in the last 30 seconds still works from a blocked address; other valid keys wait for the window to end.

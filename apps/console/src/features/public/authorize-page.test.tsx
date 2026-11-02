@@ -121,6 +121,12 @@ describe("connecting an agent", () => {
     expect(await screen.findByText("The agent asked for a sign-in Kaeso doesn't offer; update the agent and connect it again.")).toBeInTheDocument();
   });
 
+  it("asks to wait when too many sign-ins came from the address", async () => {
+    signedIn();
+    await renderApp("/authorize#error=temporarily_unavailable");
+    expect(await screen.findByText("Too many sign-ins came from your address; wait a few minutes, then start again from the agent.")).toBeInTheDocument();
+  });
+
   it("asks to try again when the gateway couldn't start the sign-in", async () => {
     signedIn();
     await renderApp("/authorize#error=server_error");

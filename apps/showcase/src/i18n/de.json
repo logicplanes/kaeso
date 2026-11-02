@@ -185,7 +185,7 @@
   "Called with the selected rows; rows then get checkboxes.": "Wird mit den ausgewählten Zeilen aufgerufen; die Zeilen bekommen dann Kontrollkästchen.",
   "Called with the selected tab.": "Wird mit dem ausgewählten Tab aufgerufen.",
   "Called with the tags whenever one is added or removed.": "Wird mit den Tags aufgerufen, sobald einer hinzugefügt oder entfernt wird.",
-  "Called with the text typed into the input.": "Wird mit dem Text aufgerufen, der ins Eingabefeld getippt wird.",
+  "Called with the text typed into the input, and with an empty string once a pick clears the search, so a server search lists every option again.": "Wird mit dem Text aufgerufen, der ins Eingabefeld getippt wird, und mit einer leeren Zeichenkette, sobald eine Auswahl die Suche leert, damit eine Serversuche wieder alle Optionen listet.",
   "Called with the text whenever it changes.": "Wird bei jeder Änderung mit dem Text aufgerufen.",
   "Called with the value when dragging ends.": "Wird mit dem Wert aufgerufen, wenn das Ziehen endet.",
   "Called with the value while it is dragged.": "Wird mit dem Wert aufgerufen, während er gezogen wird.",

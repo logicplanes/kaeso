@@ -70,6 +70,11 @@ const CHANGED_TURNS: &[(&str, DialectId, &str)] = &[
         DialectId::OpenAiChat,
         "media a tool returned follow its results in a user message",
     ),
+    (
+        "codex-developer-between-results",
+        DialectId::OpenAiChat,
+        "a developer message between tool results follows the last result",
+    ),
 ];
 
 fn fixtures_dir(dialect: DialectId) -> PathBuf {

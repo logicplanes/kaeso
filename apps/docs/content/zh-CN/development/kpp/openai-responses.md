@@ -188,11 +188,11 @@ order: 7
 | `response.refusal.delta` | `BlockDelta` `Refusal` |
 | `response.output_text.done`、`response.refusal.done` | 附加到该部分的 `BlockStop`（`@done`）；该部分没有增量时，其 `text` 或 `refusal` 成为该部分的 `BlockDelta`，使其他方言能看到它；Responses 应用会原样收到该事件。没有增量的 `response.function_call_arguments.done` 同样成为该调用的 `ToolArguments`。 |
 | `response.content_part.done`（消息） | `BlockStop` |
-| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`）；其部分从未以流式发送（没有 `content_part.added`）的消息：该项的每个 `output_text` 或 `refusal` 部分成为 `BlockStart`、`BlockDelta` 和 `BlockStop`，写回 Responses 应用时跳过（形式标记 `skip`）。 |
+| `response.output_item.done`（`message`） | 附加到下一个生命周期事件（`@close`）；其部分从未以流式发送（没有 `content_part.added`）的消息：该项的每个部分都成为一个块，解码方式与[内容部分](#内容部分)相同：`output_text` 部分成为 `BlockStart` `Text`、`BlockDelta` `Text`，并为其 `annotations` 中的每一项生成一个 `BlockDelta` `Citation`；`refusal` 部分成为 `Refusal` 块；其他部分成为带形式标记 `part` 的 `BlockStart` `Unknown`。每个块以其 `BlockStop` 结束，写回 Responses 应用时全部跳过（形式标记 `skip`）。schema 不要求在携带完整项的 `output_item.done` 之前出现部分事件（`ResponseOutputItemDoneEvent`）；fixture 为 `text-item-only.sse`、`text-item-only-annotations.sse` 和 `unknown-part-item-only.sse`。 |
 | `response.output_item.added`（`function_call`） | `BlockStart` `ToolCall`（`call_id`、`name`） |
 | `response.function_call_arguments.delta` | `BlockDelta` `ToolArguments` |
 | `response.function_call_arguments.done` | 附加到 `BlockStop`（`@done`） |
-| `response.output_item.done`（`function_call`） | `BlockStop` |
+| `response.output_item.done`（`function_call`） | `BlockStop`；若没有收到 `function_call_arguments.delta`，也没有带参数的 `.done`，则先发出一个 `BlockDelta` `ToolArguments`，内容为该项的 `arguments`；完成的项没有参数时，使用 `output_item.added` 中的参数。写回 Responses 应用时跳过（形式标记 `skip`）。schema 不要求参数事件（`ResponseOutputItemDoneEvent`、`FunctionToolCall.arguments`）；fixture 为 `function-call-item-only.sse` 和 `function-call-added-arguments.sse`。 |
 | `response.output_item.added`（`reasoning`） | `BlockStart` `Reasoning`（item ID 作为不透明的 `OpenAiReasoningItemId`） |
 | `response.reasoning_summary_part.added` | 文本为空的 `BlockDelta` `ReasoningSummary`（打开摘要 `summary_index`） |
 | `response.reasoning_summary_text.delta` | `BlockDelta` `ReasoningSummary` |

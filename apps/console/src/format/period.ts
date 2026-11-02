@@ -6,8 +6,6 @@ export { parseDay, PERIODS, periodSearch, utcDay, type PeriodId, type PeriodSear
 
 export const shiftDay = (day: string, days: number) => utcDay(new Date(Date.parse(`${day}T00:00:00Z`) + days * 86_400_000));
 
-export const endOfDay = (day: string) => new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString();
-
 export function daysBetween(from: string, to: string): string[] {
   const out: string[] = [];
   for (let t = Date.parse(`${from}T00:00:00Z`); t <= Date.parse(`${to}T00:00:00Z`); t += 86_400_000) out.push(utcDay(new Date(t)));

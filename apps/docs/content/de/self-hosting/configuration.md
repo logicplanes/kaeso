@@ -106,7 +106,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_POSTGRES_URL`<br>`postgres.url` | Text, Secret | erforderlich | Verbindungs-URL für PostgreSQL. |
-| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Höchstzahl der PostgreSQL-Verbindungen je Gateway-Instanz, mindestens 1. Hintergrundjobs halten ihre Sperren zusätzlich über einige weitere Verbindungen. |
+| `KAESO_POSTGRES_POOL_SIZE`<br>`postgres.pool_size` | Ganzzahl | `20` | Größe des PostgreSQL-Verbindungspools jeder Gateway-Instanz, mindestens 1. Hintergrundjobs öffnen außerhalb davon bis zu 8 eigene Verbindungen, solange sie laufen, und jede Release-Prüfung, die ein Instanz-Admin startet, eine weitere. `max_connections` von PostgreSQL muss beides für jede Instanz abdecken. |
 | `KAESO_CLICKHOUSE_URL`<br>`clickhouse.url` | Text, Secret | — | HTTP-URL für ClickHouse mit Benutzer und Passwort, etwa `http://kaeso:secret@clickhouse:8123`. Nicht gesetzt oder leer schaltet die Anfrageprotokolle aus. |
 | `KAESO_CLICKHOUSE_DATABASE`<br>`clickhouse.database` | Text | `kaeso` | ClickHouse-Datenbank für die Anfrageprotokolle, aus Buchstaben, Ziffern und `_`. Das Gateway legt sie an, wenn sie fehlt. |
 | `KAESO_VALKEY_URL`<br>`valkey.url` | Text, Secret | erforderlich | URL für Valkey (oder Redis) mit dem Passwort, etwa `redis://:secret@valkey:6379`. |
@@ -144,7 +144,7 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
-| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | Ganzzahl | `100` | Erlaubte fehlgeschlagene Schlüssel-Abfragen je Client-Adresse und Zeitfenster, über beide APIs zusammen. `0` schaltet die Drosselung ab ([Drosselung von API-Schlüsseln](#drosselung-von-api-schlüsseln)). |
+| `KAESO_KEY_FAILURES_PER_ADDRESS`<br>`key_failures.per_address` | Ganzzahl | `100` | Erlaubte fehlgeschlagene Abfragen von API-Schlüsseln und Access-Tokens von Agenten je Client-Adresse und Zeitfenster, über beide APIs und den MCP-Server zusammen. `0` schaltet die Drosselung ab ([Drosselung von API-Schlüsseln](#drosselung-von-api-schlüsseln)). |
 | `KAESO_KEY_FAILURES_WINDOW`<br>`key_failures.window` | Text | `1m` | Das Zeitfenster von `key_failures.per_address`, 1s bis 1h. Eine gesperrte Adresse wartet höchstens so lange. |
 
 ### KPMR
@@ -287,7 +287,7 @@ Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestri
 
 ## Drosselung von API-Schlüsseln
 
-Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln je Client-Adresse in Valkey, damit ein Client, der Schlüssel errät, PostgreSQL nicht beschäftigt hält. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen innerhalb von `KAESO_KEY_FAILURES_WINDOW` ist die Adresse bis zum Ende des Zeitfensters gesperrt. Jeder Schlüssel von dort, der nicht im Speicher liegt, erhält dann 429 mit `Retry-After`, im Format der jeweiligen API.
+Das Gateway zählt fehlgeschlagene Abfragen von API-Schlüsseln und Access-Tokens von Agenten je Client-Adresse in Valkey, über beide APIs und den [MCP-Server](../api/mcp.md), damit ein Client, der Schlüssel errät, PostgreSQL nicht beschäftigt hält. Nach `KAESO_KEY_FAILURES_PER_ADDRESS` Fehlschlägen innerhalb von `KAESO_KEY_FAILURES_WINDOW` ist die Adresse bis zum Ende des Zeitfensters gesperrt. Jeder Schlüssel von dort, der nicht im Speicher liegt, und jedes Access-Token erhalten dann 429 mit `Retry-After`, im Format der jeweiligen API.
 
 - Es zählen nur wohlgeformte Schlüssel, die zu keinem Schlüssel passen. Ein fehlerhafter Wert, ein deaktivierter oder abgelaufener Schlüssel und ein unbekannter Schlüssel, der binnen 30 Sekunden wiederkommt, zählen nicht.
 - Gültige Schlüssel zählen nie. Ein Schlüssel, den die Instanz in den letzten 30 Sekunden verwendet hat, funktioniert auch von einer gesperrten Adresse; andere gültige Schlüssel warten das Zeitfenster ab.

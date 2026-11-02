@@ -1,20 +1,21 @@
 use std::collections::HashMap;
 
 use kaeso_kpp::{
-    BlockDelta, BlockHeader, BlockStart, BlockStop, Citation, Delta, Extras, KppError, Opaque,
-    OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
+    Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Citation, Delta, Extras, KppError,
+    Opaque, OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
     ResponseStop, StreamEvent, SummaryDelta, ToolCallHeader,
 };
 use serde_json::Value;
 use serde_json::value::RawValue;
 
 use self::lifecycle::Lifecycle;
-use super::{EVENT_KEY, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY};
+use super::{EVENT_KEY, Emitted, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY};
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
 use crate::openai_responses::node::{Node, entries_of};
 use crate::openai_responses::overrides::{Overrides, form_set_insert};
+use crate::openai_responses::parts::{TextKind, decode_part};
 use crate::openai_responses::response::{NATIVE, decode_usage, failed_error, stop_for};
 use crate::openai_responses::wire;
 use crate::sse::{SseEvent, SseItem, SseParser};
@@ -58,6 +59,7 @@ enum Action {
     Pre,
     Main(Vec<Lifecycle>),
     Unstreamed(Vec<Lifecycle>),
+    Late(Vec<Lifecycle>, Lifecycle),
     HoldError(KppError),
     Broken(String),
     Other,
@@ -75,6 +77,7 @@ pub(crate) struct Decoder {
     items: HashMap<i64, (u32, ItemKind)>,
     parts: HashMap<(i64, i64), u32>,
     streamed: std::collections::HashSet<u32>,
+    added_arguments: HashMap<u32, String>,
     with_parts: std::collections::HashSet<i64>,
     held_error: Option<(KppError, Frame)>,
     called: bool,
@@ -95,6 +98,7 @@ impl Decoder {
             items: HashMap::new(),
             parts: HashMap::new(),
             streamed: std::collections::HashSet::new(),
+            added_arguments: HashMap::new(),
             with_parts: std::collections::HashSet::new(),
             held_error: None,
             called: false,
@@ -148,6 +152,16 @@ impl Decoder {
         if let Some(created) = self.held.take() {
             self.finish_start(created, None, out);
         }
+    }
+
+    fn release(&mut self, out: &mut Vec<StreamEvent>) {
+        if let Some((err, frame)) = self.held_error.take() {
+            self.run(err.into(), vec![frame], out);
+            self.inert = true;
+            return;
+        }
+        self.release_held(out);
+        self.flush_pending(out);
     }
 
     fn sse_item(&mut self, item: SseItem, out: &mut Vec<StreamEvent>) {
@@ -268,7 +282,10 @@ impl Decoder {
                     return;
                 }
                 for ev in events {
-                    if let Err(e) = self.engine.step(ev.event(), &mut |_, _, _| Ok(None)) {
+                    if let Err(e) = self
+                        .engine
+                        .step(ev.event(), &mut |_, n, _| Ok(Emitted::Skipped(n)))
+                    {
                         self.flush_pending(out);
                         self.fail(out, e);
                         return;
@@ -279,6 +296,12 @@ impl Decoder {
                 if self.engine.terminated() {
                     self.inert = true;
                 }
+            }
+            Action::Late(unstreamed, last) => {
+                for event in unstreamed {
+                    self.run(event, Vec::new(), out);
+                }
+                self.lifecycle(last, f, out);
             }
             Action::Broken(message) => {
                 self.flush_pending(out);
@@ -297,7 +320,8 @@ impl Decoder {
             .with_form(NATIVE, true.into())
             .with_form(SKIP, serde_json::json!(["", "@in_progress"]));
         let event = StreamEvent::ResponseStart(start);
-        self.engine.step(&event, &mut |_, _, _| Ok(None))?;
+        self.engine
+            .step(&event, &mut |_, n, _| Ok(Emitted::Skipped(n)))?;
         out.push(event);
         Ok(())
     }
@@ -337,30 +361,48 @@ impl Decoder {
     }
 
     fn unstreamed_parts(&mut self, item: &RawValue) -> Vec<Lifecycle> {
-        let Ok(message) = serde_json::from_str::<Value>(item.get()) else {
-            return Vec::new();
-        };
-        let Some(parts) = message.get("content").and_then(Value::as_array) else {
+        let Some(content) = entries_of(item)
+            .and_then(|entries| entries.into_iter().find(|(k, _)| k == "content"))
+            .and_then(|(_, v)| serde_json::from_str::<Vec<&RawValue>>(v.get()).ok())
+        else {
             return Vec::new();
         };
         let mut events = Vec::new();
-        for part in parts {
-            let (header, delta) = match (
-                part.get("type").and_then(Value::as_str),
-                part.get("text")
-                    .or_else(|| part.get("refusal"))
-                    .and_then(Value::as_str),
-            ) {
-                (Some("output_text"), Some(t)) => (BlockHeader::Text, Delta::Text(t.to_owned())),
-                (Some("refusal"), Some(t)) => (BlockHeader::Refusal, Delta::Refusal(t.to_owned())),
-                _ => return Vec::new(),
-            };
+        for part in content {
             let index = self.next_index();
+            let (header, deltas) = match decode_part(part, TextKind::Output, &self.origin) {
+                Block::Text(t) => {
+                    let mut deltas = vec![Delta::Text(t.text)];
+                    deltas.extend(t.citations.into_iter().map(Delta::Citation));
+                    (BlockHeader::Text, deltas)
+                }
+                Block::Refusal(r) => (BlockHeader::Refusal, vec![Delta::Refusal(r.text)]),
+                _ => {
+                    let raw = RawItem::new(self.origin.clone(), RawJson::from(part));
+                    let mut start = BlockStart::new(index, BlockHeader::Unknown(raw));
+                    start.extras = Extras::new(self.origin.clone()).with_form(PART, true.into());
+                    events.push(start.into());
+                    events.push(BlockStop::new(index).into());
+                    continue;
+                }
+            };
             events.push(BlockStart::new(index, header).into());
-            events.push(BlockDelta::new(index, delta).into());
+            events.extend(deltas.into_iter().map(|d| BlockDelta::new(index, d).into()));
             events.push(BlockStop::new(index).into());
         }
         events
+    }
+
+    fn unstreamed_arguments(&mut self, index: u32, item: &RawValue) -> Option<String> {
+        let added = self.added_arguments.remove(&index);
+        if self.streamed.contains(&index) {
+            return None;
+        }
+        let done = serde_json::from_str::<wire::FunctionCallItem>(item.get())
+            .ok()
+            .map(|c| c.arguments)
+            .filter(|a| !a.is_empty());
+        done.or(added)
     }
 
     fn next_index(&mut self) -> u32 {
@@ -380,6 +422,7 @@ impl Decoder {
                 let (Some(oi), Some(item)) = (oi, f.raw("item")) else {
                     return self.broken(f);
                 };
+                let mut arguments = String::new();
                 let header = match type_tag(item).ok().flatten().as_deref() {
                     Some("message") => return Action::Pre,
                     Some("function_call") => {
@@ -387,6 +430,7 @@ impl Decoder {
                         else {
                             return self.broken(f);
                         };
+                        arguments = c.arguments;
                         (
                             BlockHeader::ToolCall(ToolCallHeader::new(c.call_id, c.name)),
                             ItemKind::Call,
@@ -415,6 +459,9 @@ impl Decoder {
                     ),
                 };
                 let index = self.next_index();
+                if !arguments.is_empty() {
+                    self.added_arguments.insert(index, arguments);
+                }
                 self.called |= header.1 == ItemKind::Call;
                 self.items.insert(oi, (index, header.1));
                 let mut start = BlockStart::new(index, header.0);
@@ -602,7 +649,13 @@ impl Decoder {
                         let raw = RawItem::new(self.origin.clone(), RawJson::from(item));
                         events.push(block_delta(index, Delta::Unknown(raw)));
                     }
-                    ItemKind::Call => {}
+                    ItemKind::Call => {
+                        if let Some(arguments) = self.unstreamed_arguments(index, item) {
+                            self.streamed.insert(index);
+                            let late = vec![block_delta(index, Delta::ToolArguments(arguments))];
+                            return Action::Late(late, BlockStop::new(index).into());
+                        }
+                    }
                 }
                 events.push(BlockStop::new(index).into());
                 Action::Main(events)
@@ -692,13 +745,15 @@ impl Decoder {
             let mut shadow = self.engine.clone();
             let mut qi = 0;
             let ok = shadow
-                .step(event.event(), &mut |_, canon, _| {
-                    if queue.get(qi).is_some_and(|f| matches(&canon, f)) {
+                .step(event.event(), &mut |_, canon, _| match queue
+                    .get(qi)
+                    .filter(|f| matches(&canon, f))
+                {
+                    Some(f) => {
                         qi += 1;
-                        Ok(queue.get(qi - 1).map(|f| Node::raw_value(&f.data)))
-                    } else {
-                        Ok(None)
+                        Ok(Emitted::Written(Node::raw_value(&f.data)))
                     }
+                    None => Ok(Emitted::Skipped(canon)),
                 })
                 .is_ok()
                 && qi == queue.len();
@@ -742,11 +797,11 @@ impl Decoder {
                             };
                             form_set_insert(&mut rec, key, sse.clone());
                         }
-                        Ok(Some(Node::raw_value(&f.data)))
+                        Ok(Emitted::Written(Node::raw_value(&f.data)))
                     }
                     _ => {
                         skips.push(scope.to_owned());
-                        Ok(None)
+                        Ok(Emitted::Skipped(canon))
                     }
                 },
             );
@@ -841,23 +896,23 @@ impl StreamDecoder for Decoder {
                 return out;
             }
         }
-        if !self.inert
-            && let Some((err, frame)) = self.held_error.take()
-        {
-            self.run(err.into(), vec![frame], &mut out);
-            self.inert = true;
-        }
         if !self.inert {
-            self.release_held(&mut out);
-            self.flush_pending(&mut out);
-            if self.engine.open() {
-                self.fail(
-                    &mut out,
-                    KppError::provider(
-                        "The provider's stream ended before the response was complete.",
-                    ),
-                );
-            }
+            self.release(&mut out);
+        }
+        if !self.inert && self.engine.open() {
+            self.fail(
+                &mut out,
+                KppError::provider("The provider's stream ended before the response was complete."),
+            );
+        }
+        self.inert = true;
+        out
+    }
+
+    fn flush(&mut self) -> Vec<StreamEvent> {
+        let mut out = Vec::new();
+        if !self.inert {
+            self.release(&mut out);
         }
         self.inert = true;
         out

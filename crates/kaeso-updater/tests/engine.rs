@@ -4,10 +4,13 @@ mod common;
 
 use std::path::{Path, PathBuf};
 
+use std::time::Duration;
+
 use common::*;
 use kaeso_update::Version;
 use kaeso_update::manifest::{Image, Service};
 use kaeso_update::protocol::{Job, JobState, Reason, Step};
+use kaeso_updater::docker::{Docker, Timeouts};
 use kaeso_updater::engine::BeginError;
 use kaeso_updater::files::{Phase, Saved, StateFile, Switched};
 
@@ -890,4 +893,87 @@ async fn the_status_reports_docker_and_the_last_job() {
     assert!(status.docker);
     assert_eq!(status.protocol, kaeso_update::protocol::VERSION);
     assert_eq!(status.job, None);
+}
+
+fn short_timeouts() -> Timeouts {
+    Timeouts {
+        quick: Duration::from_millis(200),
+        slow: Duration::from_secs(600),
+        stop_grace: Duration::from_millis(200),
+        pull_idle: Duration::from_millis(200),
+    }
+}
+
+#[tokio::test]
+async fn a_docker_call_that_hangs_ends_at_its_own_timeout() {
+    let mut daemon = Daemon::install();
+    daemon.hang = vec!["GET version", "GET containers/", "POST containers/"];
+    daemon.stall_pull = true;
+    let world = World::new("hang", daemon, Verifier::default()).await;
+    let docker = Docker::with_timeouts(&world.docker_url, short_timeouts()).unwrap();
+    let image = Image {
+        name: Service::Gateway.image().into(),
+        digest: digest_of(Service::Gateway),
+    };
+    let bound = Duration::from_secs(10);
+    let version = tokio::time::timeout(bound, docker.version()).await;
+    let inspect = tokio::time::timeout(bound, docker.inspect("gatewayold")).await;
+    let stop = tokio::time::timeout(bound, docker.stop("gatewayold", 0)).await;
+    let pull = tokio::time::timeout(bound, docker.pull(&image)).await;
+    for (what, err) in [
+        ("version", version.map(|r| r.map(|_| ()))),
+        ("inspect", inspect.map(|r| r.map(|_| ()))),
+        ("stop", stop),
+        ("pull", pull),
+    ] {
+        let err = err
+            .unwrap_or_else(|_| panic!("{what} waited past its timeout"))
+            .unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Docker cannot be reached (timed out)",
+            "{what}"
+        );
+    }
+    assert_eq!(world.calls("POST images/create").len(), 1);
+}
+
+#[tokio::test]
+async fn a_new_gateway_docker_never_answers_for_is_unhealthy_at_the_deadline() {
+    let mut daemon = Daemon::install();
+    daemon.hang = vec!["GET containers/new"];
+    let world = World::new("inspect-hangs", daemon, Verifier::default()).await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::RolledBack, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::Unhealthy));
+    assert!(
+        job.detail
+            .as_deref()
+            .is_some_and(|d| d.contains("the new console was not healthy within")),
+        "{job:?}"
+    );
+    let c = world.running("kaeso-console-1");
+    assert_eq!(c.image, "sha256:old-console");
+}
+
+#[tokio::test]
+async fn recovery_stops_waiting_for_a_docker_that_hangs() {
+    let mut daemon = Daemon::install();
+    let old_id = previous(&mut daemon, "gateway");
+    daemon.hang = vec!["GET version"];
+    let dir = fresh("docker-hangs");
+    StateFile::new(dir.join("state"))
+        .save(&interrupted(
+            Step::Switching,
+            vec![switched(Service::Gateway, old_id, None, Phase::Stopping)],
+        ))
+        .unwrap();
+    let world = World::with(dir, daemon, Releases::default(), Verifier::default()).await;
+    tokio::time::timeout(Duration::from_secs(10), world.engine.recover())
+        .await
+        .expect("recovery waited past `docker_wait`");
+    let job = world.engine.last().unwrap();
+    assert_eq!(job.state, JobState::NeedsAttention, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::DockerUnavailable));
+    assert_eq!(world.calls("GET version").len(), 1);
 }

@@ -13,6 +13,7 @@ use crate::platform::auth::setup::validate_name;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
+use crate::platform::orgs::members::{Removal, remove_member};
 use crate::platform::orgs::org::OrgView;
 use crate::platform::params::Path;
 use crate::services::accounts;
@@ -127,14 +128,24 @@ pub struct Memberships {
 #[utoipa::path(
     get,
     path = "/me/memberships",
-    summary = "Every org and project the user belongs to.",
+    summary = "Every org and project the user belongs to. An agent sees only the orgs\n\
+    and projects it can open.",
     tag = "me",
     responses((status = 200, body = Memberships))
 )]
 pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<Memberships>> {
     let me = ctx.user_id()?;
-    let orgs = members::orgs_of_user(&state.pg, me.uuid()).await?;
-    let projects = members::projects_of_user(&state.pg, me.uuid()).await?;
+    let mut orgs = members::orgs_of_user(&state.pg, me.uuid()).await?;
+    let mut projects = members::projects_of_user(&state.pg, me.uuid()).await?;
+    if let Some(agent) = ctx.agent() {
+        let reach = crate::services::agents::reachable(&state, agent).await?;
+        orgs.retain(|o| reach.contains_key(&o.org_id));
+        projects.retain(|p| {
+            reach
+                .get(&p.org_id)
+                .is_some_and(|r| r.contains(&p.project_id))
+        });
+    }
     let last_owner = members::orgs_where_last_owner(&state.pg, me.uuid()).await?;
     Ok(Json(Memberships {
         data: orgs
@@ -197,14 +208,11 @@ pub async fn leave(
                 e => e,
             })?;
     }
-    let membership = members::get_org(&state.pg, org.uuid(), me.uuid())
+    members::get_org(&state.pg, org.uuid(), me.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("membership"))?;
     crate::services::orgs::ensure_changeable(&state.pg, org.uuid()).await?;
-    let mut tx = state.pg.begin().await?;
-    lifecycle::ensure_can_leave(&mut tx, org.uuid(), me).await?;
-    tx.commit().await?;
-    crate::platform::orgs::members::remove_member(&state, &ctx, org, &membership).await?;
+    remove_member(&state, &ctx, org, me, Removal::Leaving).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
