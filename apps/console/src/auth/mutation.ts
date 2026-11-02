@@ -7,8 +7,7 @@ import { ApiError, isApiError } from "~/api/errors";
 import { invalidationFilters, type Invalidation } from "~/api/queries/invalidation";
 import { t } from "~/i18n";
 import { requestRecentSignIn } from "./recent-sign-in-store";
-import { forgetUserData } from "~/auth/user-data";
-import { sessionQuery } from "./session";
+import { sessionEnded, signInAgain } from "./session-end";
 
 export interface ApiMutationOptions<TData, TVars> extends Omit<UseMutationOptions<TData, ApiError, TVars>, "mutationFn" | "onError"> {
   mutationFn: (vars: TVars) => Promise<TData>;
@@ -56,11 +55,8 @@ export function useApiMutation<TData, TVars = void>({ mutationFn, invalidates, o
         toast.error(t("auth.unexpectedError", "The change wasn't made; reload the page and try again."), { id });
         return;
       }
-      if (error.type === "authentication") {
-        forgetUserData();
-        await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey });
-        const next = router.state.location.href;
-        await router.navigate({ to: "/sign-in", search: { next } });
+      if (sessionEnded(error)) {
+        await signInAgain(router);
         return;
       }
       if (error.type === "recent_sign_in_required" || error.type === "other_sign_in_required") return;

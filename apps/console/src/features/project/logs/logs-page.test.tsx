@@ -684,6 +684,45 @@ describe("LogsPage", () => {
     expect(listQueries().at(-1)).toMatchObject({ after: "cur_2" });
     vi.unstubAllGlobals();
   });
+
+  it("stops loading on its own after the next page fails, and Load more tries again", async () => {
+    const observers: { live: boolean }[] = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        live = false;
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe() {
+          this.live = true;
+          queueMicrotask(() => this.live && this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver));
+        }
+        disconnect() {
+          this.live = false;
+        }
+      },
+    );
+    signedIn();
+    projectData();
+    let nextPage: Response | ReturnType<typeof listPage> = apiError(500, "internal", "The log store didn't answer.");
+    on("GET", LOGS, ({ query }: { query: URLSearchParams }) => (query.get("after") === "cur_2" ? nextPage : listPage([logRow()], "cur_2")));
+    const { user } = await renderApp(projectPath("logs"));
+    const nextPageAsked = () => listQueries().filter((q) => q.after === "cur_2").length;
+
+    expect(await notifications().findByText("The log store didn't answer.")).toBeInTheDocument();
+    const asked = nextPageAsked();
+    await act(async () => {});
+    expect(nextPageAsked()).toBe(asked);
+    expect(observers.filter((o) => o.live)).toHaveLength(0);
+    expect(screen.getByRole("row", { name: /\/v1\/chat\/completions/ })).toBeInTheDocument();
+
+    nextPage = listPage([logRow({ id: "req_0002", endpoint: "/v1/embeddings" })]);
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    expect(await screen.findByRole("row", { name: /\/v1\/embeddings/ })).toBeInTheDocument();
+    expect(nextPageAsked()).toBe(asked + 1);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("Live updates", () => {
