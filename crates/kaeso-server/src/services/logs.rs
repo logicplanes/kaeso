@@ -295,7 +295,7 @@ async fn settings(state: &AppState, project: Uuid) -> Result<Option<LogSettings>
     let found = state
         .caches
         .log_settings
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             log_jobs::settings(&pg, project)
                 .await
                 .map(|s| s.map(Cached::from))
