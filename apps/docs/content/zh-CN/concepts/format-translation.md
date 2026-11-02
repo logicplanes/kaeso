@@ -38,7 +38,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 - **工具名称和调用 ID。** 目标不接受某个名称或 ID 时，Kaeso 会以固定方式改写它，并在回复中映射回原值。其他字符变为 `_`，名称被截短以符合长度要求，并附加原值的哈希。OpenAI 接受最多 64 个由字母、数字、`_` 和 `-` 组成的字符，Anthropic 最多 128 个。
 - **结构化输出。** JSON schema。
 - **采样。** 温度、Top P、最大 Token 数和停止序列，前提是目标支持。值的含义不变，但会按目标的写法写出，因此 `1` 可能以 `1.0` 到达。
-- **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。
+- **最终用户的 ID。** Anthropic 的 `metadata.user_id` 和 OpenAI 的 `safety_identifier`。OpenAI 最多接受 128 个字符，并要求发送用户 ID 的哈希，因此更长的 Anthropic ID（例如 Claude Code 的 ID）会以 SHA-256 哈希发送给 OpenAI，回复的 `kaeso-adapted` 响应头会注明这一点。
 - **推理。** 推理强度和思考预算会相互转换（[推理](#推理)）。
 - **流。** Kaeso 会把流逐个事件转换为应用的格式。
 

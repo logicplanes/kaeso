@@ -603,6 +603,7 @@ mod tests {
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Example Cloud"),
         responses: ResponsesProfile::compatible("Example Cloud"),
         account: None,

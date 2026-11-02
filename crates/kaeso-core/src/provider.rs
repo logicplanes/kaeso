@@ -189,6 +189,7 @@ pub struct Provider {
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
     pub reasoning_beyond_output_limit: bool,
+    pub end_user_limit: Option<usize>,
     pub chat: ChatProfile,
     pub responses: ResponsesProfile,
     pub account: Option<AccountSignIn>,
@@ -216,6 +217,8 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        // OpenAI's OpenAPI spec caps `safety_identifier` at 128 characters, in both formats.
+        end_user_limit: Some(128),
         chat: ChatProfile::OPENAI,
         responses: ResponsesProfile::OPENAI,
         account: Some(AccountSignIn {
@@ -242,6 +245,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Anthropic"),
         responses: ResponsesProfile::compatible("Anthropic"),
         account: None,
@@ -263,6 +267,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
             .system_role()
@@ -288,6 +293,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
+        end_user_limit: None,
         chat: ChatProfile::compatible("SpaceX")
             .reasoning_fields(&["reasoning_content"])
             .with_message_bookkeeping()
@@ -322,6 +328,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
         responses: ResponsesProfile::compatible("Together AI"),
@@ -344,6 +351,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Groq")
             .system_role()
             .end_user_as_user()
@@ -371,6 +379,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("OpenRouter")
             .reasoning_fields(&["reasoning"])
             .error_detail(&["error", "metadata", "raw"]),
@@ -394,6 +403,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Mistral")
             .max_tokens()
             .system_role()
@@ -441,6 +451,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Vercel").reasoning_fields(&["reasoning"]),
         responses: ResponsesProfile::compatible("Vercel"),
         account: None,
@@ -462,6 +473,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Cohere")
             .stop_list()
             .reasoning_fields(&["reasoning_content"])
@@ -500,6 +512,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Ollama Cloud")
             .max_tokens()
             .reasoning_fields(&["reasoning"])
@@ -524,6 +537,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: false,
+        end_user_limit: None,
         chat: ChatProfile::compatible("Moonshot")
             .system_role()
             .partial_prefill()
@@ -558,6 +572,7 @@ pub const PROVIDERS: &[Provider] = &[
         refused_key_messages: &[],
         context_window_messages: &[],
         reasoning_beyond_output_limit: true,
+        end_user_limit: None,
         chat: ChatProfile::compatible("QwenCloud")
             .system_role()
             .thinking_switch()
