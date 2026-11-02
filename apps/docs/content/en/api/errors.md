@@ -193,7 +193,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 404 | The model isn't in the project's catalogue, the key or its member may not use it, or the provider doesn't serve it to the project's provider key. A model the key may not use answers like one that doesn't exist, so a key can't learn which other models the project has. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |
-| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 8 MiB by default. |
+| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. |
 | 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets. |
 | 429 | Too many requests with unknown keys came from your address. |
 | 500 | Kaeso can't decrypt the provider key, or the model's provider isn't available in this install. |

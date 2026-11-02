@@ -107,22 +107,32 @@ async fn a_small_body_of_many_tiny_items_is_refused_before_it_is_decoded_or_sent
 }
 
 #[tokio::test]
-async fn the_model_api_takes_bodies_up_to_8_mib_by_default() {
+async fn the_model_api_takes_bodies_up_to_32_mib_by_default() {
     let env = common::v1::env(None, None).await;
-    assert_eq!(env.app.state.config.body_limits.model_api.0, 8 << 20);
+    assert_eq!(env.app.state.config.body_limits.model_api.0, 32 << 20);
+    let long = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("claude-haiku-4-5", &"a".repeat(12 << 20))),
+    )
+    .await;
+    assert_eq!(long.status, StatusCode::OK, "{}", long.text());
+    env.mock.clear();
     let r = call(
         &env,
         "/v1/messages",
         Some(&env.key),
         true,
-        Some(messages("claude-haiku-4-5", &"a".repeat(8 << 20))),
+        Some(messages("claude-haiku-4-5", &"a".repeat(32 << 20))),
     )
     .await;
     assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "request_too_large");
     assert_eq!(
         r.json()["error"]["message"],
-        "The request body is larger than 8388608 bytes."
+        "The request body is larger than 33554432 bytes."
     );
     assert!(env.mock.received().is_empty());
 }
