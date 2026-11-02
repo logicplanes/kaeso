@@ -4,6 +4,12 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's models and prices as of 2 November 2026, which add OpenRouter's `openai/gpt-5.2-chat` and update the prices and limits of several OpenRouter models. DeepSeek's `deepseek-flash`, `deepseek-v4-pro`, `deepseek-v4-flash` and `deepseek-v4-flash-vision-exp` no longer list structured output: DeepSeek already answered every JSON schema with an error, so Kaeso now refuses one before sending and names `response_format`, and JSON mode (`json_object`) works as before. Nothing changes for apps, and running installs get the same data from KPMR on their own. ([#581](https://github.com/logicplanes/kaeso/pull/581))
+
 ### Fixed
 
 - Claude Code and Codex reach models that list no effort levels or don't reason, instead of getting an error. Kaeso leaves out the effort (`output_config.effort`, `reasoning.effort` or `reasoning_effort`) for a model without effort levels, and adaptive `thinking` for a model that doesn't reason, and names what it left out in the `kaeso-left-out` header. An effort the model's levels don't include, and enabled thinking or a budget for a model that doesn't reason, are still refused. ([#580](https://github.com/logicplanes/kaeso/pull/580))
