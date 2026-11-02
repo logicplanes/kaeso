@@ -13,7 +13,7 @@ use super::{EVENT_KEY, Emitted, Engine, NEW_ITEM, NEW_PART, PART, SKIP, SSE_KEY}
 use crate::codec::{EgressCtx, StreamDecoder};
 use crate::openai_responses::DIALECT;
 use crate::openai_responses::namespaces::Namespaces;
-use crate::openai_responses::node::Node;
+use crate::openai_responses::node::{Node, entries_of};
 use crate::openai_responses::overrides::{Overrides, form_set_insert};
 use crate::openai_responses::response::{NATIVE, decode_usage, failed_error, stop_for};
 use crate::openai_responses::wire;
@@ -39,7 +39,10 @@ impl Frame {
     }
 
     fn raw(&self, key: &str) -> Option<&RawValue> {
-        crate::wire::field_of(&self.data, key)
+        entries_of(&self.data)?
+            .into_iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v)
     }
 }
 
