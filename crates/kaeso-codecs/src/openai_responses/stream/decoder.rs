@@ -150,6 +150,16 @@ impl Decoder {
         }
     }
 
+    fn release(&mut self, out: &mut Vec<StreamEvent>) {
+        if let Some((err, frame)) = self.held_error.take() {
+            self.run(err.into(), vec![frame], out);
+            self.inert = true;
+            return;
+        }
+        self.release_held(out);
+        self.flush_pending(out);
+    }
+
     fn sse_item(&mut self, item: SseItem, out: &mut Vec<StreamEvent>) {
         match item {
             SseItem::Comment(c) => {
@@ -841,23 +851,23 @@ impl StreamDecoder for Decoder {
                 return out;
             }
         }
-        if !self.inert
-            && let Some((err, frame)) = self.held_error.take()
-        {
-            self.run(err.into(), vec![frame], &mut out);
-            self.inert = true;
-        }
         if !self.inert {
-            self.release_held(&mut out);
-            self.flush_pending(&mut out);
-            if self.engine.open() {
-                self.fail(
-                    &mut out,
-                    KppError::provider(
-                        "The provider's stream ended before the response was complete.",
-                    ),
-                );
-            }
+            self.release(&mut out);
+        }
+        if !self.inert && self.engine.open() {
+            self.fail(
+                &mut out,
+                KppError::provider("The provider's stream ended before the response was complete."),
+            );
+        }
+        self.inert = true;
+        out
+    }
+
+    fn flush(&mut self) -> Vec<StreamEvent> {
+        let mut out = Vec::new();
+        if !self.inert {
+            self.release(&mut out);
         }
         self.inert = true;
         out

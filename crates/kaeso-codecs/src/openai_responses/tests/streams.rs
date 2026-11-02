@@ -722,6 +722,31 @@ fn rewritten_tool_names_map_back_in_streams() {
     assert!(got.iter().any(|e| matches!(e, StreamEvent::BlockStart(BlockStart { block: BlockHeader::ToolCall(h), .. }) if h.name == "weather.lookup")));
 }
 
+#[test]
+fn a_stream_cut_after_response_created_releases_the_start_on_flush() {
+    let wire = String::from_utf8(fixture("streams", "text-basic-stream", "sse")).unwrap();
+    let created: String = wire.split_inclusive("\n\n").take(1).collect();
+    let mut dec = OpenAiResponses::stream_decoder(&gen_ctx());
+    assert!(
+        dec.feed(created.as_bytes()).is_empty(),
+        "the start waits for `response.in_progress`"
+    );
+    let held = dec.flush();
+    assert!(
+        matches!(held.as_slice(), [StreamEvent::ResponseStart(s)] if s.id == "resp_67c9fdcecf488190bdd9a0409de3a1ec07b8b0ad4e5eb654"),
+        "{held:?}"
+    );
+    assert!(dec.flush().is_empty());
+    assert!(dec.finish().is_empty(), "no error after a flush");
+
+    let mut dec = OpenAiResponses::stream_decoder(&gen_ctx());
+    dec.feed(wire.as_bytes());
+    assert!(
+        dec.flush().is_empty(),
+        "nothing is held after the last event"
+    );
+}
+
 mod split {
     use proptest::prelude::*;
 

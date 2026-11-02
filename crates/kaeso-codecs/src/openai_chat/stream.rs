@@ -1148,4 +1148,13 @@ impl StreamDecoder for ChatStreamDecoder {
         }
         out
     }
+
+    fn flush(&mut self) -> Vec<StreamEvent> {
+        let mut out = Vec::new();
+        if !self.inert {
+            self.release_all(&mut out);
+            self.inert = true;
+        }
+        out
+    }
 }

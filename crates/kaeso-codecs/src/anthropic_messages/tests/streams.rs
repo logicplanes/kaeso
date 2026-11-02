@@ -366,6 +366,18 @@ event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,
     );
 }
 
+#[test]
+fn an_anthropic_stream_holds_nothing_back_for_a_flush() {
+    let half: String = String::from_utf8(stream_fixture("tools-single"))
+        .unwrap()
+        .split_inclusive("\n\n")
+        .take(6)
+        .collect();
+    let mut dec = AnthropicMessages::stream_decoder(&stream_ctx());
+    assert!(!dec.feed(half.as_bytes()).is_empty());
+    assert!(dec.flush().is_empty());
+}
+
 fn chat_like_stream() -> Vec<StreamEvent> {
     let ex = || Extras::new(CHAT).with_field("system_fingerprint", raw("\"fp\""));
     let mut start = ResponseStart::new("chatcmpl-1", "gpt-5");
