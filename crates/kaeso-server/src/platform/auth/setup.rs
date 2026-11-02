@@ -50,7 +50,7 @@ pub struct SetupRequest {
 pub(crate) async fn hash_password(param: &str, password: SecretString) -> ApiResult<String> {
     kaeso_crypto::password::check_policy(&password)
         .map_err(|e| ApiError::invalid(param, e.to_string()))?;
-    tokio::task::spawn_blocking(move || kaeso_crypto::password::hash(&password))
+    crate::auth::passwords::hash(password)
         .await
         .map_err(ApiError::internal)?
         .map_err(ApiError::internal)

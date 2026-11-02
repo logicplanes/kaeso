@@ -9,7 +9,6 @@ use axum::middleware::Next;
 use axum::response::Response;
 use hyper::body::{Frame, SizeHint};
 use tokio::time::{Instant, Sleep};
-use tower_http::timeout::{TimeoutBody, TimeoutError};
 
 #[derive(Clone, Copy, Debug)]
 pub struct BodyWaits {
@@ -20,13 +19,15 @@ pub struct BodyWaits {
 pub async fn middleware(State(waits): State<BodyWaits>, req: Request, next: Next) -> Response {
     let deadline = Instant::now() + waits.whole_body;
     next.run(req.map(|body| {
-        let paced = Body::new(TimeoutBody::new(waits.between_frames, body));
-        if paced.is_end_stream() {
-            return paced;
+        if body.is_end_stream() {
+            return body;
         }
-        Body::new(Deadline {
-            body: paced,
-            deadline: Box::pin(tokio::time::sleep_until(deadline)),
+        Body::new(Paced {
+            body,
+            between_frames: waits.between_frames,
+            deadline,
+            waiting_since: None,
+            alarm: None,
         })
     }))
     .await
@@ -36,12 +37,42 @@ pub async fn middleware(State(waits): State<BodyWaits>, req: Request, next: Next
 #[error("the request body did not arrive before its deadline")]
 struct PastDeadline;
 
-struct Deadline {
+#[derive(Debug, thiserror::Error)]
+#[error("the request body paused for too long between two frames")]
+struct Paused;
+
+// One timer for both waits, armed only when the body has to wait and moved on lazily: tokio's
+// timer wheel sits behind one lock, and a timer per frame serialises the gateway under load.
+struct Paced {
     body: Body,
-    deadline: Pin<Box<Sleep>>,
+    between_frames: Duration,
+    deadline: Instant,
+    waiting_since: Option<Instant>,
+    alarm: Option<Pin<Box<Sleep>>>,
 }
 
-impl HttpBody for Deadline {
+impl Paced {
+    fn due(&self, waiting_since: Instant) -> Instant {
+        (waiting_since + self.between_frames).min(self.deadline)
+    }
+
+    fn overdue(&self, now: Instant) -> Option<axum::Error> {
+        if now >= self.deadline {
+            return Some(axum::Error::new(PastDeadline));
+        }
+        let since = self.waiting_since?;
+        (now >= self.due(since)).then(|| axum::Error::new(Paused))
+    }
+
+    fn alarm_rang(&mut self, cx: &mut Context<'_>, due: Instant) -> bool {
+        let alarm = self
+            .alarm
+            .get_or_insert_with(|| Box::pin(tokio::time::sleep_until(due)));
+        alarm.as_mut().poll(cx).is_ready()
+    }
+}
+
+impl HttpBody for Paced {
     type Data = Bytes;
     type Error = axum::Error;
 
@@ -49,10 +80,26 @@ impl HttpBody for Deadline {
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
     ) -> Poll<Option<Result<Frame<Bytes>, axum::Error>>> {
-        if self.deadline.as_mut().poll(cx).is_ready() {
-            return Poll::Ready(Some(Err(axum::Error::new(PastDeadline))));
+        let now = Instant::now();
+        if let Some(e) = self.overdue(now) {
+            return Poll::Ready(Some(Err(e)));
         }
-        Pin::new(&mut self.body).poll_frame(cx)
+        if let Poll::Ready(frame) = Pin::new(&mut self.body).poll_frame(cx) {
+            self.waiting_since = None;
+            return Poll::Ready(frame);
+        }
+        let since = *self.waiting_since.get_or_insert(now);
+        let due = self.due(since);
+        // A timer armed for an earlier wait rings early and only then moves on to this wait's end.
+        while self.alarm_rang(cx, due) {
+            if let Some(e) = self.overdue(Instant::now()) {
+                return Poll::Ready(Some(Err(e)));
+            }
+            if let Some(alarm) = self.alarm.as_mut() {
+                alarm.as_mut().reset(due);
+            }
+        }
+        Poll::Pending
     }
 
     fn is_end_stream(&self) -> bool {
@@ -67,7 +114,7 @@ impl HttpBody for Deadline {
 pub fn timed_out(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(e) = cause {
-        if e.is::<TimeoutError>() || e.is::<PastDeadline>() {
+        if e.is::<Paused>() || e.is::<PastDeadline>() {
             return true;
         }
         cause = e.source();

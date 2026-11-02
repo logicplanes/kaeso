@@ -3,10 +3,9 @@
 pub mod guard;
 
 use std::collections::HashMap;
-use std::collections::hash_map::Entry;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, PoisonError, RwLock};
 use std::task::{Context, Poll};
 use std::time::Duration;
 
@@ -126,7 +125,8 @@ fn secret_header(
 #[derive(Debug)]
 pub struct Upstream {
     connect_timeout: Duration,
-    origins: Mutex<HashMap<String, Origin>>,
+    origins: RwLock<Origins>,
+    building: tokio::sync::Mutex<()>,
     user_agent: String,
     roots: Vec<reqwest::Certificate>,
     reach: guard::Reach,
@@ -145,6 +145,63 @@ impl Origin {
         std::iter::once(&self.negotiated)
             .chain(&self.multiplexed)
             .any(|c| c.in_flight.load(Ordering::Relaxed) > 0)
+    }
+
+    fn lease(&self) -> Result<Lease, Missing> {
+        if !self.speaks_h2.load(Ordering::Relaxed) {
+            return Ok(Lease::take(&self.negotiated, &self.speaks_h2, false));
+        }
+        let loads = self
+            .multiplexed
+            .iter()
+            .map(|c| c.in_flight.load(Ordering::Relaxed));
+        match pick(loads) {
+            Pick::Use(i) => self
+                .multiplexed
+                .get(i)
+                .map(|c| Lease::take(c, &self.speaks_h2, true))
+                .ok_or(Missing::Multiplexed),
+            Pick::Open => Err(Missing::Multiplexed),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Missing {
+    Origin,
+    Multiplexed,
+}
+
+#[derive(Debug, Default)]
+struct Origins {
+    open: HashMap<String, Origin>,
+    guarded: HashMap<String, Origin>,
+}
+
+impl Origins {
+    fn of(&mut self, guarded: bool) -> &mut HashMap<String, Origin> {
+        if guarded {
+            &mut self.guarded
+        } else {
+            &mut self.open
+        }
+    }
+
+    fn get(&self, base: &str, guarded: bool) -> Option<&Origin> {
+        if guarded {
+            self.guarded.get(base)
+        } else {
+            self.open.get(base)
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.open.len() + self.guarded.len()
+    }
+
+    fn let_go_of_idle(&mut self) {
+        self.open.retain(|_, o| o.busy());
+        self.guarded.retain(|_, o| o.busy());
     }
 }
 
@@ -213,7 +270,8 @@ impl Upstream {
     pub fn new(connect_timeout: Duration, user_agent: impl Into<String>) -> Upstream {
         Upstream {
             connect_timeout,
-            origins: Mutex::new(HashMap::new()),
+            origins: RwLock::default(),
+            building: tokio::sync::Mutex::new(()),
             user_agent: user_agent.into(),
             roots: Vec::new(),
             reach: guard::Reach::public_only(),
@@ -290,41 +348,51 @@ impl Upstream {
         })
     }
 
-    fn lease(&self, base: &Url, guarded: bool) -> Result<Lease, UpstreamError> {
-        let reach = guarded.then(|| self.reach_for(base));
-        let key = if guarded {
-            format!("guarded {base}")
-        } else {
-            base.as_str().to_owned()
-        };
-        let mut origins = self.origins.lock().unwrap_or_else(PoisonError::into_inner);
-        if origins.len() >= MAX_IDLE_ORIGINS && !origins.contains_key(&key) {
-            origins.retain(|_, o| o.busy());
+    fn leased(&self, key: &str, guarded: bool) -> Result<Lease, Missing> {
+        let origins = self.origins.read().unwrap_or_else(PoisonError::into_inner);
+        origins
+            .get(key, guarded)
+            .map_or(Err(Missing::Origin), Origin::lease)
+    }
+
+    // Every provider call leases, so leasing only reads the map. Building a client reads the
+    // system's certificates; one call builds at a time while the others wait without a thread.
+    async fn lease(&self, base: &Url, guarded: bool) -> Result<Lease, UpstreamError> {
+        let key = base.as_str();
+        loop {
+            if let Ok(lease) = self.leased(key, guarded) {
+                return Ok(lease);
+            }
+            let _building = self.building.lock().await;
+            let missing = match self.leased(key, guarded) {
+                Ok(lease) => return Ok(lease),
+                Err(missing) => missing,
+            };
+            let reach = guarded.then(|| self.reach_for(base));
+            let fresh = self.connection(missing == Missing::Multiplexed, reach.as_ref())?;
+            let mut origins = self.origins.write().unwrap_or_else(PoisonError::into_inner);
+            match (missing, origins.of(guarded).get_mut(key)) {
+                (Missing::Multiplexed, Some(origin)) => {
+                    let lease = Lease::take(&fresh, &origin.speaks_h2, true);
+                    origin.multiplexed.push(fresh);
+                    return Ok(lease);
+                }
+                (Missing::Origin, None) => {
+                    if origins.len() >= MAX_IDLE_ORIGINS {
+                        origins.let_go_of_idle();
+                    }
+                    let origin = Origin {
+                        negotiated: fresh,
+                        multiplexed: Vec::new(),
+                        speaks_h2: Arc::new(AtomicBool::new(false)),
+                    };
+                    let lease = Lease::take(&origin.negotiated, &origin.speaks_h2, false);
+                    origins.of(guarded).insert(key.to_owned(), origin);
+                    return Ok(lease);
+                }
+                _ => {}
+            }
         }
-        let origin = match origins.entry(key) {
-            Entry::Occupied(e) => e.into_mut(),
-            Entry::Vacant(e) => e.insert(Origin {
-                negotiated: self.connection(false, reach.as_ref())?,
-                multiplexed: Vec::new(),
-                speaks_h2: Arc::new(AtomicBool::new(false)),
-            }),
-        };
-        if !origin.speaks_h2.load(Ordering::Relaxed) {
-            return Ok(Lease::take(&origin.negotiated, &origin.speaks_h2, false));
-        }
-        let loads = origin
-            .multiplexed
-            .iter()
-            .map(|c| c.in_flight.load(Ordering::Relaxed));
-        if let Pick::Use(i) = pick(loads)
-            && let Some(c) = origin.multiplexed.get(i)
-        {
-            return Ok(Lease::take(c, &origin.speaks_h2, true));
-        }
-        let c = self.connection(true, reach.as_ref())?;
-        let lease = Lease::take(&c, &origin.speaks_h2, true);
-        origin.multiplexed.push(c);
-        Ok(lease)
     }
 
     pub async fn send(&self, call: Call<'_>) -> Result<UpstreamResponse, UpstreamError> {
@@ -332,7 +400,7 @@ impl Upstream {
             guard::check_literal(call.base_url, &self.reach_for(call.base_url))
                 .map_err(UpstreamError::Refused)?;
         }
-        let lease = self.lease(call.base_url, call.guarded)?;
+        let lease = self.lease(call.base_url, call.guarded).await?;
         let url = join(call.base_url, &call.request.path);
         let method = reqwest::Method::from_bytes(call.request.method.as_bytes())
             .map_err(|_| UpstreamError::Method(call.request.method))?;
@@ -737,8 +805,8 @@ mod tests {
     }
 
     fn connection_of(upstream: &Upstream, base: &Url) -> (Arc<AtomicUsize>, Vec<Arc<AtomicUsize>>) {
-        let origins = upstream.origins.lock().unwrap();
-        let origin = &origins[base.as_str()];
+        let origins = upstream.origins.read().unwrap();
+        let origin = &origins.open[base.as_str()];
         (
             origin.negotiated.in_flight.clone(),
             origin
@@ -749,35 +817,60 @@ mod tests {
         )
     }
 
-    #[test]
-    fn idle_origins_are_let_go_once_there_are_many_and_busy_ones_are_kept() {
+    #[tokio::test]
+    async fn idle_origins_are_let_go_once_there_are_many_and_busy_ones_are_kept() {
         let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
         let busy = Url::parse("https://busy.example.com").unwrap();
-        let held = upstream.lease(&busy, true).unwrap();
+        let held = upstream.lease(&busy, true).await.unwrap();
         for i in 1..MAX_IDLE_ORIGINS {
             let idle = Url::parse(&format!("https://probe-{i}.example.com/v1")).unwrap();
-            drop(upstream.lease(&idle, true).unwrap());
+            drop(upstream.lease(&idle, true).await.unwrap());
         }
-        assert_eq!(upstream.origins.lock().unwrap().len(), MAX_IDLE_ORIGINS);
+        assert_eq!(upstream.origins.read().unwrap().len(), MAX_IDLE_ORIGINS);
         let next = Url::parse("https://next.example.com").unwrap();
-        drop(upstream.lease(&next, true).unwrap());
-        let origins = upstream.origins.lock().unwrap();
+        drop(upstream.lease(&next, true).await.unwrap());
+        let origins = upstream.origins.read().unwrap();
         assert_eq!(origins.len(), 2);
-        assert!(origins.contains_key(&format!("guarded {busy}")));
-        assert!(origins.contains_key(&format!("guarded {next}")));
+        assert!(origins.guarded.contains_key(busy.as_str()));
+        assert!(origins.guarded.contains_key(next.as_str()));
         drop(origins);
         drop(held);
     }
 
-    #[test]
-    fn an_origin_keeps_one_client_until_it_answers_over_http2() {
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn calls_that_reach_a_new_origin_together_share_one_client() {
+        let upstream = Arc::new(Upstream::new(Duration::from_secs(5), "kaeso-test"));
+        let base = Url::parse("https://together.example.com").unwrap();
+        let calls: Vec<_> = (0..32)
+            .map(|_| {
+                let (upstream, base) = (upstream.clone(), base.clone());
+                tokio::spawn(async move { upstream.lease(&base, false).await.unwrap() })
+            })
+            .collect();
+        let mut leases = Vec::new();
+        for call in calls {
+            leases.push(call.await.unwrap());
+        }
+        let (negotiated, multiplexed) = connection_of(&upstream, &base);
+        assert!(multiplexed.is_empty());
+        assert_eq!(negotiated.load(Ordering::Relaxed), 32);
+        assert!(
+            leases
+                .iter()
+                .all(|l| Arc::ptr_eq(&l.in_flight, &negotiated))
+        );
+    }
+
+    #[tokio::test]
+    async fn an_origin_keeps_one_client_until_it_answers_over_http2() {
         let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
         let a = Url::parse("https://a.example.com").unwrap();
         let b = Url::parse("http://127.0.0.1:9").unwrap();
-        let leases: Vec<_> = (0..STREAMS_PER_CONNECTION * 3)
-            .map(|_| upstream.lease(&a, false).unwrap())
-            .collect();
-        let plain = upstream.lease(&b, false).unwrap();
+        let mut leases = Vec::new();
+        for _ in 0..STREAMS_PER_CONNECTION * 3 {
+            leases.push(upstream.lease(&a, false).await.unwrap());
+        }
+        let plain = upstream.lease(&b, false).await.unwrap();
         let (negotiated, multiplexed) = connection_of(&upstream, &a);
         assert!(multiplexed.is_empty());
         assert_eq!(
@@ -796,17 +889,19 @@ mod tests {
         assert!(connection_of(&upstream, &b).1.is_empty());
     }
 
-    #[test]
-    fn streams_to_an_http2_origin_spread_over_more_connections_as_they_fill() {
+    #[tokio::test]
+    async fn streams_to_an_http2_origin_spread_over_more_connections_as_they_fill() {
         let upstream = Upstream::new(Duration::from_secs(5), "kaeso-test");
         let base = Url::parse("https://api.example.com").unwrap();
         upstream
             .lease(&base, false)
+            .await
             .unwrap()
             .answered(reqwest::Version::HTTP_2);
-        let mut leases: Vec<_> = (0..STREAMS_PER_CONNECTION)
-            .map(|_| upstream.lease(&base, false).unwrap())
-            .collect();
+        let mut leases = Vec::new();
+        for _ in 0..STREAMS_PER_CONNECTION {
+            leases.push(upstream.lease(&base, false).await.unwrap());
+        }
         let (negotiated, multiplexed) = connection_of(&upstream, &base);
         assert_eq!(negotiated.load(Ordering::Relaxed), 0);
         assert_eq!(multiplexed.len(), 1);
@@ -814,13 +909,13 @@ mod tests {
             multiplexed[0].load(Ordering::Relaxed),
             STREAMS_PER_CONNECTION
         );
-        leases.push(upstream.lease(&base, false).unwrap());
-        leases.push(upstream.lease(&base, false).unwrap());
+        leases.push(upstream.lease(&base, false).await.unwrap());
+        leases.push(upstream.lease(&base, false).await.unwrap());
         let (_, multiplexed) = connection_of(&upstream, &base);
         assert_eq!(multiplexed.len(), 2);
         assert_eq!(multiplexed[1].load(Ordering::Relaxed), 2);
         leases.truncate(10);
-        leases.push(upstream.lease(&base, false).unwrap());
+        leases.push(upstream.lease(&base, false).await.unwrap());
         assert_eq!(
             multiplexed
                 .iter()
@@ -833,7 +928,7 @@ mod tests {
             .build()
             .unwrap_err();
         leases[0].failed(&UpstreamError::Transfer(transport));
-        let probe = upstream.lease(&base, false).unwrap();
+        let probe = upstream.lease(&base, false).await.unwrap();
         assert!(Arc::ptr_eq(&probe.in_flight, &negotiated));
         assert_eq!(connection_of(&upstream, &base).1.len(), 2);
         drop(leases);
