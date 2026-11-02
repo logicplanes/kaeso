@@ -4,6 +4,14 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-11-02
+
+Kaeso 0.5.3 widens what the gateway accepts from Codex and Claude Code. Codex requests now reach Groq, Moonshot and Cohere models, and Claude Code requests reach OpenAI models, with the fields a provider refuses left out or adapted and named in response headers. Fresh installs start with KPMR's model data as of 2 November 2026, which removes `openai/gpt-5.2-chat` from OpenRouter, and running installs get the same data from KPMR on their own. There are no breaking changes in this release.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.5.2...v0.5.3](https://github.com/logicplanes/kaeso/compare/v0.5.2...v0.5.3)
+
 ### Changed
 
 #### Gateway
@@ -1088,7 +1096,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.3...HEAD
+[0.5.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.3
 [0.5.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.2
 [0.5.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.1
 [0.5.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.0
