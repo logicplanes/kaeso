@@ -193,7 +193,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 404 | Das Modell steht nicht im Katalog des Projekts, der Schlüssel oder sein Mitglied darf es nicht verwenden, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. Ein Modell, das der Schlüssel nicht verwenden darf, antwortet wie eines, das es nicht gibt, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 8 MiB. |
+| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB. |
 | 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
 | 500 | Kaeso kann den Anbieter-Schlüssel nicht entschlüsseln, oder der Anbieter des Modells ist in dieser Installation nicht verfügbar. |

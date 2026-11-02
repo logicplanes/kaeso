@@ -119,7 +119,7 @@ max_entry_size = "1MiB"
 memory_share = 50
 
 [body_limits]
-model_api = "8MiB"
+model_api = "32MiB"
 in_flight = "512MiB"
 platform_api = "1MiB"
 provider_response = "128MiB"
