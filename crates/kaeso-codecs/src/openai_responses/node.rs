@@ -91,16 +91,22 @@ impl Node {
     pub(crate) fn get(&self, key: &str) -> Option<Node> {
         match self {
             Node::Obj(entries) => entries.get(key).cloned(),
-            Node::Raw(r) => entries_of(r.as_raw())?
-                .into_iter()
-                .find(|(k, _)| k == key)
-                .map(|(_, v)| Node::raw_value(v)),
+            Node::Raw(r) => crate::wire::field_of(r.as_raw(), key).map(Node::raw_value),
             Node::Val(Value::Object(m)) => m.get(key).cloned().map(Node::Val),
             _ => None,
         }
     }
 
     pub(crate) fn get_str(&self, key: &str) -> Option<String> {
+        if let Node::Obj(entries) = self {
+            return match entries.get(key)? {
+                Node::Val(Value::String(s)) => Some(s.clone()),
+                child => match child.to_value().ok()? {
+                    Value::String(s) => Some(s),
+                    _ => None,
+                },
+            };
+        }
         match self.get(key)?.to_value().ok()? {
             Value::String(s) => Some(s),
             _ => None,
@@ -108,7 +114,15 @@ impl Node {
     }
 
     pub(crate) fn get_i64(&self, key: &str) -> Option<i64> {
-        self.get(key)?.to_value().ok()?.as_i64()
+        match self {
+            Node::Obj(entries) => entries.get(key)?.to_value().ok()?.as_i64(),
+            Node::Raw(r) => crate::wire::field_of(r.as_raw(), key)?
+                .get()
+                .parse::<Value>()
+                .ok()?
+                .as_i64(),
+            _ => self.get(key)?.to_value().ok()?.as_i64(),
+        }
     }
 
     pub(crate) fn elements(&self) -> Vec<Node> {

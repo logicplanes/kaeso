@@ -807,3 +807,47 @@ fn a_foreign_usage_report_between_deltas_only_updates_the_final_usage() {
     assert_eq!(message["stop_reason"], "end_turn");
     assert_eq!(message["usage"]["output_tokens"], 2);
 }
+
+mod plain_deltas {
+    use proptest::prelude::*;
+
+    use super::*;
+
+    fn encoded(block: BlockHeader, delta: Delta, form: Option<&str>) -> Vec<u8> {
+        let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+        let mut enc = AnthropicMessages::stream_encoder(&ctx);
+        let mut start = ResponseStart::new("msg_1", "claude-x");
+        start.extras = Extras::new(A);
+        let mut d = BlockDelta::new(0, delta);
+        d.extras = Extras::new(A);
+        if let Some(key) = form {
+            d.extras.form.insert(key.to_owned(), json!(true));
+        }
+        let mut out = Vec::new();
+        for e in [
+            StreamEvent::ResponseStart(start),
+            StreamEvent::BlockStart(BlockStart::new(0, block)),
+            StreamEvent::BlockDelta(d),
+        ] {
+            out.extend(enc.encode(&e).unwrap());
+        }
+        out
+    }
+
+    proptest! {
+        #[test]
+        fn a_delta_without_extras_is_written_as_the_full_path_writes_it(text in "\\PC*|[\\x00-\\x1f\"\\\\\u{2028}\u{1f600}a]{0,24}") {
+            for (block, delta) in [
+                (BlockHeader::Text, Delta::Text(text.clone())),
+                (BlockHeader::Refusal, Delta::Refusal(text.clone())),
+                (BlockHeader::ToolCall(ToolCallHeader::new("toolu_1", "f")), Delta::ToolArguments(text.clone())),
+                (BlockHeader::Reasoning(kaeso_kpp::ReasoningHeader::new(A)), Delta::ReasoningText(text.clone())),
+            ] {
+                prop_assert_eq!(
+                    encoded(block.clone(), delta.clone(), None),
+                    encoded(block, delta, Some("unrelated"))
+                );
+            }
+        }
+    }
+}
