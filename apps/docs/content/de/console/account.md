@@ -58,7 +58,7 @@ Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mi
 
 ## Andere Browser abmelden
 
-**Sitzungen** listet jeden Browser, in dem Sie angemeldet sind, und wie Sie sich angemeldet haben. **Beenden** meldet einen davon ab, und **Überall abmelden** meldet alle außer diesem ab.
+**Sitzungen** listet jeden Browser, in dem Sie angemeldet sind, und wie Sie sich angemeldet haben. **Beenden** meldet einen davon ab, und **Überall abmelden** meldet alle außer diesem ab. Das Audit-Log der Instanz verzeichnet beides als `user.sessions_revoke`, mit der Zahl der beendeten Sitzungen.
 
 Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 

@@ -99,7 +99,7 @@
   "format.audit.action.userPasswordReset": "Passwort zurückgesetzt",
   "format.audit.action.userReactivate": "Benutzer reaktiviert",
   "format.audit.action.userRecoveryCodesRegenerate": "Wiederherstellungscodes neu erzeugt",
-  "format.audit.action.userSessionsRevoke": "Alle Sitzungen beendet",
+  "format.audit.action.userSessionsRevoke": "Sitzungen beendet",
   "format.audit.action.userSignInConfirm": "Anmeldung per Single Sign-on bestätigt",
   "format.audit.action.userSignInLink": "Anmeldelink auf der Kommandozeile ausgegeben",
   "format.audit.action.userSignup": "Konto per Registrierung erstellt",
