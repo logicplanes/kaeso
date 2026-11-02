@@ -116,6 +116,10 @@ pub(super) fn accumulate(sse: &[u8]) -> Value {
     message
 }
 
+// An error event whose data is not an Anthropic error reaches Anthropic apps as one, as HTTP
+// errors in another shape do (`providers/vercel/errors/*.meta.json`), so it isn't replayed as sent.
+const REWRITTEN_ERRORS: [&str; 2] = ["error-event-not-json", "error-event-openai-shape"];
+
 #[test]
 fn every_stream_fixture_round_trips_under_every_chunking() {
     let mut n = 0;
@@ -133,9 +137,11 @@ fn every_stream_fixture_round_trips_under_every_chunking() {
             .iter()
             .filter(|e| matches!(e, StreamEvent::Error(_)))
             .count();
-        let expect_error = name == "error-overloaded-mid-stream";
+        let expect_error = name.starts_with("error-");
         assert_eq!(errors, usize::from(expect_error), "{name}: {whole:?}");
-        assert_sse_eq(&name, &bytes, &encode_stream(&whole));
+        if !REWRITTEN_ERRORS.contains(&name.as_str()) {
+            assert_sse_eq(&name, &bytes, &encode_stream(&whole));
+        }
         n += 1;
     }
     assert!(n >= 14, "{n}");
@@ -363,6 +369,65 @@ event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,
         !events
             .iter()
             .any(|e| matches!(e, StreamEvent::BlockStart(s) if !s.extras.form.is_empty()))
+    );
+}
+
+fn error_of(events: &[StreamEvent]) -> &kaeso_kpp::KppError {
+    match events.last() {
+        Some(StreamEvent::Error(e)) => e,
+        other => panic!("{other:?}"),
+    }
+}
+
+fn error_frame(out: &[u8]) -> Value {
+    let items = crate::sse::parse_all(out).unwrap();
+    let Some(crate::sse::SseItem::Event(ev)) = items.last() else {
+        panic!("{items:?}")
+    };
+    assert_eq!(ev.event.as_deref(), Some("error"));
+    serde_json::from_str(&ev.data).unwrap()
+}
+
+#[test]
+fn an_error_event_in_another_shape_keeps_the_providers_message() {
+    let vercel = "Rate limit exceeded for nvidia/nemotron-3.5-lightning-free for provider nvidia: this team's limit of 5 requests per minute (per region) was reached. Retry after 48s.";
+    let events = decode_stream_chunked(
+        &stream_fixture("error-event-openai-shape"),
+        0,
+        &stream_ctx(),
+    );
+    let err = error_of(&events);
+    assert_eq!(err.message, vercel);
+    assert_eq!(
+        err.kind,
+        kaeso_kpp::ErrorKind::ProviderError,
+        "`rate_limit_exceeded` is not an Anthropic type"
+    );
+    assert_eq!(
+        error_frame(&encode_stream(&events)),
+        json!({"type": "error", "error": {"type": "api_error", "message": vercel}})
+    );
+
+    let events = decode_stream_chunked(&stream_fixture("error-event-not-json"), 0, &stream_ctx());
+    let err = error_of(&events);
+    assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+    assert!(
+        err.message.ends_with("upstream request timeout"),
+        "{}",
+        err.message
+    );
+    assert_eq!(
+        error_frame(&encode_stream(&events))["error"]["message"],
+        err.message.as_str()
+    );
+
+    let anthropic_type = b"event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"model\":\"x\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n\
+event: error\ndata: {\"error\":{\"type\":\"overloaded_error\",\"message\":\"Overloaded\"}}\n\n";
+    let events = decode_stream_chunked(anthropic_type, 0, &stream_ctx());
+    let err = error_of(&events);
+    assert_eq!(
+        (err.kind.clone(), err.message.as_str()),
+        (kaeso_kpp::ErrorKind::Overloaded, "Overloaded")
     );
 }
 
