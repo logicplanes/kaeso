@@ -31,6 +31,8 @@ pub struct RequestProfile {
     pub stop_list: bool,
     pub partial_prefill: bool,
     pub thinking_switch: bool,
+    pub leading_system_only: bool,
+    pub replay_reasoning_as_read: bool,
     pub tool_schema_root: ToolSchemaRoot,
     pub tool_parameters: bool,
     pub refused_fields: &'static [&'static str],
@@ -88,6 +90,8 @@ impl RequestProfile {
         stop_list: false,
         partial_prefill: false,
         thinking_switch: false,
+        leading_system_only: false,
+        replay_reasoning_as_read: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
         tool_parameters: false,
         refused_fields: &[],
@@ -194,6 +198,18 @@ impl ChatProfile {
     #[must_use]
     pub const fn thinking_switch(mut self) -> Self {
         self.request.thinking_switch = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn leading_system_only(mut self) -> Self {
+        self.request.leading_system_only = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn replay_reasoning_as_read(mut self) -> Self {
+        self.request.replay_reasoning_as_read = true;
         self
     }
 

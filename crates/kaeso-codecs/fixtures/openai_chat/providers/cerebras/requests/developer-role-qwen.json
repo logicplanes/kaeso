@@ -1,0 +1,15 @@
+{
+  "model": "qwen-3.8-27b",
+  "messages": [
+    {
+      "role": "developer",
+      "content": "Answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "What is the capital of France?"
+    }
+  ],
+  "reasoning_effort": "none",
+  "max_completion_tokens": 100
+}

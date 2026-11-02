@@ -1521,3 +1521,31 @@ fn alibaba_models_speak_chat_completions_and_take_effort_levels_only_where_liste
     );
     kept("low", DialectId::OpenAiResponses, &effort);
 }
+
+#[test]
+fn cerebras_models_speak_chat_completions_with_kpmrs_prices_limits_and_effort_levels() {
+    let gpt_oss = eff(&entry("cerebras", "gpt-oss-120b"));
+    assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);
+    assert_eq!(gpt_oss.provider.chat().provider, "Cerebras");
+    assert_eq!(
+        (gpt_oss.fields.input_price, gpt_oss.fields.output_price),
+        (Some(dec!(0.35)), Some(dec!(0.75)))
+    );
+    assert_eq!(
+        (gpt_oss.fields.context_limit, gpt_oss.fields.output_limit),
+        (Some(131_072), Some(40_960))
+    );
+    assert_eq!(
+        effort_levels(&gpt_oss, DialectId::AnthropicMessages),
+        ["low", "medium", "high"]
+    );
+    kept("high", DialectId::OpenAiResponses, &gpt_oss);
+    refused("none", DialectId::OpenAiChat, &gpt_oss);
+    refused("minimal", DialectId::OpenAiChat, &gpt_oss);
+    let qwen = eff(&entry("cerebras", "qwen-3.8-27b"));
+    assert_eq!(
+        effort_levels(&qwen, DialectId::OpenAiChat),
+        ["none", "low", "medium", "high"]
+    );
+    kept("none", DialectId::OpenAiResponses, &qwen);
+}

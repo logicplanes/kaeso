@@ -108,7 +108,8 @@ struct OtherShape {
 }
 
 // Error bodies without OpenAI's `error` object: `{"object": "error", "message", "type", "param",
-// "code"}` (Mistral, vLLM), FastAPI's `detail` (Mistral's `HTTPValidationError`), a bare `message`.
+// "code"}` (Mistral, vLLM), the same fields without `object` (Cerebras), FastAPI's `detail`
+// (Mistral's `HTTPValidationError`), a bare `message`.
 fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
     let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_owned);
     if raw.get("error").is_some_and(|e| !e.is_null()) {
@@ -117,7 +118,8 @@ fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
     let object_error = raw
         .get("object")
         .and_then(Value::as_str)
-        .is_some_and(|o| o.eq_ignore_ascii_case("error"));
+        .is_some_and(|o| o.eq_ignore_ascii_case("error"))
+        || raw.get("type").is_some_and(Value::is_string);
     let (message, param) = match (object_error, raw.get("message"), raw.get("detail")) {
         (true, Some(Value::String(m)), _) => (m.trim().to_owned(), text("param")),
         (true, Some(nested), _) => validation(nested.get("detail")?, status)?,

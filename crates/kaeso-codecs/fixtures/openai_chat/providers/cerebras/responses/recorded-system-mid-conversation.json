@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-8a847cf6-444b-4162-9286-ec5db69c4175",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Rouge.",
+        "reasoning": "Need to respond in French, one short sentence.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793653287,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 138,
+    "completion_tokens": 23,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 10
+    },
+    "prompt_tokens": 115,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793653287.8226552,
+    "queue_time": 0.004766738000000003,
+    "prompt_time": 0.001870061,
+    "completion_time": 0.011459793,
+    "total_time": 0.021929025650024414
+  }
+}

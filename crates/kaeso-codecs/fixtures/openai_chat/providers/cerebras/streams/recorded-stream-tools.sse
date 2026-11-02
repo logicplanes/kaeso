@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"role":"assistant"},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"reasoning":"We"},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"reasoning":" need to call get_weather."},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"tool_calls":[{"function":{"name":"get_weather","arguments":""},"type":"function","id":"266055ab3","index":0}]},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"tool_calls":[{"function":{"arguments":"{\"city\":\"Paris\",\""},"type":"function","index":0}]},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{"tool_calls":[{"function":{"arguments":"unit\":\"celsius\"}"},"type":"function","index":0}]},"index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-09d6e961-cdfe-4f5a-9cc8-94ab3df7e57f","choices":[{"delta":{},"finish_reason":"tool_calls","index":0}],"created":1793652608,"model":"gpt-oss-120b","system_fingerprint":"fp_6fdb8c40f91e0c236df5","object":"chat.completion.chunk","usage":{"total_tokens":186,"completion_tokens":36,"completion_tokens_details":{"accepted_prediction_tokens":0,"rejected_prediction_tokens":0,"reasoning_tokens":7},"prompt_tokens":150,"prompt_tokens_details":{"cached_tokens":0}},"time_info":{"created":1793652608.1840072,"queue_time":0.003391966000000003,"prompt_time":0.002194228,"completion_time":0.02140323,"total_time":0.031109333038330078}}
+
+data: [DONE]
+

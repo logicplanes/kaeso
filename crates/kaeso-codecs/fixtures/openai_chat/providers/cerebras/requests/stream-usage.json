@@ -1,0 +1,19 @@
+{
+  "model": "qwen-3.8-27b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ],
+  "reasoning_effort": "none",
+  "max_completion_tokens": 100,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

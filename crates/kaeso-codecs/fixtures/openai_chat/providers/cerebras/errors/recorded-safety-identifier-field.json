@@ -1,0 +1,6 @@
+{
+  "message": "safety_identifier: property 'safety_identifier' is unsupported",
+  "type": "invalid_request_error",
+  "param": "validation_error",
+  "code": "wrong_api_format"
+}

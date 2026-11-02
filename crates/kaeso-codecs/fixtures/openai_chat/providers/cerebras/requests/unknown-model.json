@@ -1,0 +1,10 @@
+{
+  "model": "no-such-model",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Say hello in two words."
+    }
+  ],
+  "max_completion_tokens": 100
+}

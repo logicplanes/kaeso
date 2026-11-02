@@ -1,0 +1,47 @@
+{
+  "id": "chatcmpl-aa806c9c-512c-4489-90da-8fecf3aae7f7",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "reasoning": "We need to call get_weather.",
+        "tool_calls": [
+          {
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\",\"unit\":\"celsius\"}"
+            },
+            "type": "function",
+            "id": "4e80d65a6"
+          }
+        ],
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652378,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 186,
+    "completion_tokens": 36,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 7
+    },
+    "prompt_tokens": 150,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652378.514391,
+    "queue_time": 0.003645210999999999,
+    "prompt_time": 0.002528728,
+    "completion_time": 0.021248294,
+    "total_time": 0.02968454360961914
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "chatcmpl-af2759bd-947d-4c2b-b79d-c28fc4874425",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "The user is asking a simple arithmetic question: 2+2. The answer is 4.\n</think>\n\n4",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652521,
+  "model": "qwen-3.8-27b",
+  "system_fingerprint": "fp_2642a45f2f6e92f79b49",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 72,
+    "completion_tokens": 25,
+    "completion_tokens_details": {
+      "reasoning_tokens": 22
+    },
+    "prompt_tokens": 47,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "image_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652521.7935607,
+    "queue_time": 0.0002674190000000014,
+    "prompt_time": 0.002650755,
+    "completion_time": 0.009965224,
+    "total_time": 0.014517068862915039
+  }
+}

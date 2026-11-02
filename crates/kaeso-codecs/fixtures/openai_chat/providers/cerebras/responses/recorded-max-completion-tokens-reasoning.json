@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-08a16a7e-c7b2-4e94-a102-b5a5b55fec6c",
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "message": {
+        "reasoning": "The user asks: \"Explain why the sky is blue.\" Straightforward physics. Provide",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652435,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 94,
+    "completion_tokens": 20,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 17
+    },
+    "prompt_tokens": 74,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652435.7950833,
+    "queue_time": 0.003183445,
+    "prompt_time": 0.002463422,
+    "completion_time": 0.008633238,
+    "total_time": 0.019412517547607422
+  }
+}

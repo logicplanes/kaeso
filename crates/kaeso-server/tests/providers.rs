@@ -94,6 +94,12 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     );
     assert_eq!(alibaba["embeddings"], "openai_embeddings");
     assert_eq!(alibaba["key_prefix"], "sk-");
+    let cerebras = listed.iter().find(|p| p["id"] == "cerebras").unwrap();
+    assert_eq!(cerebras["name"], "Cerebras");
+    assert_eq!(cerebras["dialects"], json!(["openai_chat"]));
+    assert_eq!(cerebras["count_tokens"], Value::Null);
+    assert_eq!(cerebras["embeddings"], Value::Null);
+    assert_eq!(cerebras["key_prefix"], "csk-");
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

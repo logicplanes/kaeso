@@ -1,0 +1,38 @@
+{
+  "id": "chatcmpl-31157dd1-4c6b-4503-8714-7b26e9bd25b0",
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "1. Red  \n2. Blue  \n3. Green",
+        "reasoning": "User wants three colours as numbered list. Provide 1,2,3.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1793652478,
+  "model": "gpt-oss-120b",
+  "system_fingerprint": "fp_6fdb8c40f91e0c236df5",
+  "object": "chat.completion",
+  "usage": {
+    "total_tokens": 124,
+    "completion_tokens": 37,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0,
+      "reasoning_tokens": 16
+    },
+    "prompt_tokens": 87,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "time_info": {
+    "created": 1793652478.7982163,
+    "queue_time": 0.0030773250000000005,
+    "prompt_time": 0.00162769,
+    "completion_time": 0.014890757,
+    "total_time": 0.02277851104736328
+  }
+}

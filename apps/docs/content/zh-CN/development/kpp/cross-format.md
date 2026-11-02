@@ -273,7 +273,7 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体。�
 
 - **发往 Anthropic，来自 Anthropic Messages：** 原样发送，由 API 判断它们的位置是否合适、哪些模型支持它们。Claude Code 在每个请求中都会发送这类消息。
 - **发往 Anthropic，来自其他方言：** 文本并入下一个用户轮次，排在其工具结果之后；后面没有用户轮次时，并入最后一个用户轮次。线程切换模型（`<model_switch>`）或模式（`<collaboration_mode>`）时，Codex 会发送这类消息。Anthropic 只接受紧跟在用户轮次之后、紧接在助手轮次之前的系统消息，而且不是每个模型都支持（[对话中间的系统消息](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages)）。OpenAI 应用则可以把它们放在任何位置，通常放在它们引出的轮次之前。消息的字段与任何消息的字段经过同样的检查。开头的消息（位于任何用户或助手消息之前）并入系统提示词；其中大多数已由解码器作为系统提示词。若其后是最后一条助手消息（Anthropic 会把它当作预填充继续），文本则并入最后一个用户轮次。
-- **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。发往 Chat Completions 时，位于助手消息的工具调用与其结果之间的此类消息会移到结果之后，因为 Mistral 拒绝那里的系统消息（`Unexpected role 'tool' after role 'system'`）。
+- **发往 OpenAI：** 成为位置靠后的 `system` 或 `developer` 消息。发往 Chat Completions 时，位于助手消息的工具调用与其结果之间的此类消息会移到结果之后，因为 Mistral 拒绝那里的系统消息（`Unexpected role 'tool' after role 'system'`）。对于配置设置了 `leading_system_only()` 的 Chat Completions 服务商（例如 Cerebras），这些消息的文本改为并入下一个用户轮次，与 Anthropic 相同，因为那里 Qwen 的聊天模板拒绝第一轮之后的系统消息（[服务商配置](openai-chat-providers.md#服务商配置)）。
 
 ## 保活消息
 

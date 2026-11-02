@@ -1,0 +1,15 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Give a JSON object with one key, a, set to 1."
+    }
+  ],
+  "reasoning_effort": "low",
+  "max_completion_tokens": 300,
+  "response_format": {
+    "type": "json_object"
+  },
+  "stream": true
+}

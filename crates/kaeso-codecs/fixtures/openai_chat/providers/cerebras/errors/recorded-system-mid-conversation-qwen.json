@@ -1,0 +1,7 @@
+{
+  "message": "Failed to apply chat template to messages due to error: System message must be at the beginning.",
+  "type": "invalid_request_error",
+  "param": "messages",
+  "code": "wrong_api_format",
+  "id": ""
+}

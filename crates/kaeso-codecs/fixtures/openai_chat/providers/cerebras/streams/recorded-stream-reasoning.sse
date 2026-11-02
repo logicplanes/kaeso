@@ -1,0 +1,20 @@
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"role":"assistant"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":"We"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":" need answer user: \"What is 17 times 2"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":"3? Answer with the number.\" Need compute 17"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":"*23 = 391"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":". Final only number likely."},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"reasoning":" Ensure no extra.\n"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{"content":"\n\n391"},"index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk"}
+
+data: {"id":"chatcmpl-2597604b-79bb-414e-956a-60d9bfb4841c","choices":[{"delta":{},"finish_reason":"stop","index":0}],"created":1793652593,"model":"qwen-3.8-27b","system_fingerprint":"fp_2642a45f2f6e92f79b49","object":"chat.completion.chunk","usage":{"total_tokens":118,"completion_tokens":51,"completion_tokens_details":{"reasoning_tokens":46},"prompt_tokens":67,"prompt_tokens_details":{"cached_tokens":0,"image_tokens":0}},"time_info":{"created":1793652593.8606083,"queue_time":0.00045103800000000083,"prompt_time":0.002925007,"completion_time":0.026934825,"total_time":0.03188681602478027}}
+
+data: [DONE]
+
