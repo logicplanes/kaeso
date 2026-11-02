@@ -40,7 +40,7 @@ Um die Notizen selbst zu schreiben, setzen Sie Zeilen unter `[Unreleased]` in di
 
 Hat die Umgebung `release` des Repositorys das Secret `LOG_AI_KEY`, entwirft ein Modell den Abschnitt aus den gemergten Pull Requests. Der Workflow ruft es über die Kaeso-Installation des Maintainers auf. Das Modell liest jeden Pull Request so, wie er gemergt wurde: Betreff und Text des Squash-Commits oder die Commits eines auf andere Weise gemergten Pull Requests, jeweils ohne HTML-Kommentare. Den Titel eines verknüpften Issues sieht es nur, wenn dessen Autor Schreibrechte im Repository hat.
 
-Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Besteht der Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
+Ihre Zeilen unter `[Unreleased]` übernimmt es wörtlich. Danach prüft das Modell seinen Entwurf einmal als Redakteur gegen die Pull Requests: Aussagen, die sie nicht machen, weggelassene oder zusammengelegte Bedingungen und als Breaking bezeichnete Änderungen, die von niemandem ein Handeln verlangen. Der geprüfte Entwurf gilt, wenn er jede Prüfung besteht; sonst bleibt der erste. Besteht der erste Entwurf eine Prüfung nicht oder schlägt die Anfrage fehl, greift das Release auf die Titel zurück. Um die Notizen des nächsten Releases zu sehen, ohne eine Datei zu ändern:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev

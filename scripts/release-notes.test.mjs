@@ -7,6 +7,7 @@ import { notes, release } from "./changelog.mjs";
 import {
   CHANGELOG_URL,
   MODEL,
+  REVIEW,
   SCHEMA,
   SYSTEM,
   body,
@@ -160,8 +161,9 @@ test("valid notes are rendered as Markdown in the order of Keep a Changelog, wit
 
 test("the request streams the release's data to the configured model with structured output and no thinking settings", async () => {
   const { calls } = await run(answer(valid()));
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
   const [{ params, options }] = calls;
+  assert.equal(MODEL, "claude-sonnet-5-5");
   assert.equal(params.model, MODEL);
   assert.equal(params.max_tokens, 64000);
   assert.deepEqual(params.output_config, { effort: "high", format: { type: "json_schema", schema: SCHEMA } });
@@ -215,11 +217,11 @@ test("a refusal, a cut-off answer, an answer that isn't JSON and an API error fa
 test("notes that break the rules go back to the model once with the problems, and its corrected answer is rendered", async () => {
   const first = valid();
   first.sections[0].topics[0].entries[0].text = "x".repeat(801);
-  const replies = [answer(first), answer(valid())];
+  const replies = [answer(first), answer(valid()), answer(valid())];
   const { lines, notices, calls } = await run(() => replies.shift());
   assert.deepEqual(notices, []);
   assert.deepEqual(lines, expected);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   const [question, earlier, problems] = calls[1].params.messages;
   assert.deepEqual(question, calls[0].params.messages[0]);
   assert.deepEqual(earlier, { role: "assistant", content: JSON.stringify(first) });
@@ -240,6 +242,43 @@ test("notes that still break the rules after the correction fall back, after two
 test("the instructions ask for short entries and one entry per curated line and its pull request", () => {
   assert.match(SYSTEM, /at most 800 characters and usually under 400/);
   assert.match(SYSTEM, /A curated line and the pull request it describes are one entry, never two\./);
+});
+
+test("the instructions put accuracy first: only what the pull requests say, exact conditions, and breaking only when people must act", () => {
+  assert.match(SYSTEM, /State only what the pull requests say\./);
+  assert.match(SYSTEM, /Keep conditions exact\./);
+  assert.match(SYSTEM, /Never describe a test, CI or tooling change as a change to running installs/);
+  assert.match(SYSTEM, /A change is breaking only when its pull request is labelled breaking or its body says that people must change/);
+  assert.match(SYSTEM, /Never invent a step people must take\./);
+});
+
+test("valid notes go back to the model once for an editor's review against the pull requests, and the reviewed notes are rendered", async () => {
+  const reviewed = valid();
+  reviewed.sections[0].topics[0].entries[0].text = "Streams behind proxies stay open while the model thinks, with keep-alive events.";
+  const replies = [answer(valid()), answer(reviewed)];
+  const { lines, notices, calls } = await run(() => replies.shift());
+  assert.deepEqual(notices, []);
+  assert.equal(calls.length, 2);
+  const [question, draft, review] = calls[1].params.messages;
+  assert.deepEqual(question, calls[0].params.messages[0]);
+  assert.deepEqual(draft, { role: "assistant", content: JSON.stringify(valid()) });
+  assert.deepEqual(review, { role: "user", content: REVIEW });
+  assert.equal(calls[1].options.signal, calls[0].options.signal);
+  assert.ok(lines.includes(`- Streams behind proxies stay open while the model thinks, with keep-alive events. ([#11](${repo}/pull/11))`));
+});
+
+test("a review that fails or breaks the rules keeps the notes as first written, with a notice", async () => {
+  const failing = [answer(valid()), answer(valid(), "max_tokens")];
+  const failed = await run(() => failing.shift());
+  assert.deepEqual(failed.lines, expected);
+  assert.equal(failed.notices.length, 1);
+  assert.match(failed.notices[0][1], /stay as first written, since reviewing them failed: the model stopped with max_tokens/);
+  const broken = valid();
+  broken.sections.pop();
+  const breaking = [answer(valid()), answer(broken)];
+  const kept = await run(() => breaking.shift());
+  assert.deepEqual(kept.lines, expected);
+  assert.match(kept.notices[0][1], /stay as first written, since the reviewed ones break the rules: .*#14 appears 0 times/);
 });
 
 test("without a key nothing is sent and the notes fall back with a notice", async () => {

@@ -40,7 +40,7 @@ To write the notes yourself, put lines under `[Unreleased]` in `CHANGELOG.md` on
 
 When the repository's `release` environment has the secret `LOG_AI_KEY`, a model drafts the section from the merged pull requests. The workflow calls it through the maintainer's Kaeso install. The model reads each pull request as merged: the squash commit's subject and body, or the commits of a pull request merged another way, without their HTML comments. It sees a linked issue's title only when the issue's author can write to the repository.
 
-It keeps your lines under `[Unreleased]` as written. If the draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
+It keeps your lines under `[Unreleased]` as written. The model then reviews its draft once, as an editor, against the pull requests: claims they don't make, conditions dropped or merged, changes called breaking that people don't have to act on. The reviewed draft is used when it passes every check; otherwise the first draft stays. If the first draft fails a check or the request fails, the release falls back to the titles. To preview the notes of the next release without changing a file:
 
 ```bash
 pnpm release:notes --dry-run --since v{{version}} --head origin/dev
