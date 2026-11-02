@@ -27,7 +27,7 @@ import { catalogueQuery } from "~/api/queries/models";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
-import { utcDay } from "~/format/period";
+import { dayKey } from "~/format/zone";
 import { pickedDay, pickerDate } from "~/format/picked-day";
 import { showExportProgress } from "~/shell/export-job";
 import { ProjectHeader } from "~/shell/project-header";
@@ -270,7 +270,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             value={filters.from ? "custom" : (filters.range ?? "24h")}
             onValueChange={(v) =>
               v === "custom"
-                ? setSearch({ from: utcDay(new Date()), to: utcDay(new Date()), range: undefined })
+                ? setSearch({ from: dayKey(new Date()), to: dayKey(new Date()), range: undefined })
                 : setSearch({ range: ranges().find((r) => r.value === v && v !== "24h")?.value, from: undefined, to: undefined })
             }
             options={[...ranges(), { value: "custom", label: t("logs.range.custom", "Custom range") }]}
