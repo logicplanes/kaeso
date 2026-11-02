@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- Claude Code and Codex reach models that list no effort levels or don't reason, instead of getting an error. Kaeso leaves out the effort (`output_config.effort`, `reasoning.effort` or `reasoning_effort`) for a model without effort levels, and adaptive `thinking` for a model that doesn't reason, and names what it left out in the `kaeso-left-out` header. An effort the model's levels don't include, and enabled thinking or a budget for a model that doesn't reason, are still refused. ([#580](https://github.com/logicplanes/kaeso/pull/580))
+
 ## [0.5.1] - 2026-11-02
 
 This release fixes several ways that requests from coding agents failed when sent to models in another API format. Tool results with images now reach Chat Completions models, and Codex tool namespaces no longer repeat their descriptions. Anthropic, DeepSeek, Mistral and Groq targets now accept requests from OpenAI apps, Claude Code and MCP clients that failed against them before. A fresh install starts with KPMR's models and prices as of 1 November 2026.
