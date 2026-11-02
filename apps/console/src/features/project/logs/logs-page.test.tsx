@@ -1,5 +1,5 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
@@ -434,6 +434,21 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
+  it("starts a custom span on today in the install's time zone", async () => {
+    vi.setSystemTime(new Date("2026-10-14T20:00:00Z"));
+    onTestFinished(() => void vi.useRealTimers());
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo" }) });
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("combobox", { name: "Time range" }));
+    await user.click(await screen.findByRole("option", { name: "Custom range" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-10-15", to: "2026-10-15" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-14T15:00:00.000Z", to: "2026-10-15T15:00:00.000Z" }));
+  });
+
   it("opens a request from its row, steps with j and k, and closes it", async () => {
     signedIn();
     projectData();
@@ -607,8 +622,8 @@ describe("LogsPage", () => {
     expect(requests("GET", "orgs/:org/projects/:project/keys")).toHaveLength(0);
   });
 
-  it("narrows to the days picked in the calendar", async () => {
-    signedIn();
+  it("narrows to the days picked in the calendar, from midnight in the install's time zone", async () => {
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo" }) });
     projectData();
     logsData({ rows: [logRow()] });
     const { user, router } = await renderApp(projectPath("logs?from=2026-10-01&to=2026-10-03"));
@@ -624,7 +639,7 @@ describe("LogsPage", () => {
     await user.type(end, "2026-10-07");
     await user.click(within(dialog).getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-10-05", to: "2026-10-07" }));
-    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-05T00:00:00Z", to: "2026-10-08T00:00:00.000Z" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-04T15:00:00.000Z", to: "2026-10-07T15:00:00.000Z" }));
   });
 
   it("names a filter value it can't resolve by its id, and removes the status and streamed filters", async () => {

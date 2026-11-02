@@ -37,7 +37,7 @@ import { tRich } from "~/i18n/rich";
 import { docsPage } from "~/format/docs";
 import { common } from "~/i18n/common";
 import { fullDayLabel, utcDay } from "~/format/period";
-import { afterToday, DAY_PRESETS, pickedDay } from "~/format/picked-day";
+import { afterUtcToday, pickedDay, UTC_DAY_PRESETS } from "~/format/picked-day";
 import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
@@ -494,8 +494,8 @@ function DeleteLogsDialog({ org, onClose }: { org: string; onClose: () => void }
               aria-label={t("org.logging.period", "Period")}
               value={range}
               onValueChange={setRange}
-              presets={DAY_PRESETS}
-              disabledDays={(d) => afterToday(d)}
+              presets={UTC_DAY_PRESETS}
+              disabledDays={(d) => afterUtcToday(d)}
             />
           ),
         },

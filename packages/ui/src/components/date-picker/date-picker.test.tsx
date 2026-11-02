@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { setFormatTimeZone } from "../../format/index.js";
 import { DatePicker, DateRangePicker, type DateRange } from "./date-picker.js";
 import { describeInTimeZone, TIME_ZONES } from "../../../test/time-zone.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
@@ -312,6 +313,20 @@ describe("the typed ISO field and the calendar agree", () => {
   const ymd = (d: Date | null | undefined) => (d ? [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours()] : null);
   for (const tz of TIME_ZONES) {
     describeInTimeZone(tz, () => {
+      it("names a picked day as that day when dates are formatted in a zone behind the viewer's", async () => {
+        setFormatTimeZone("Pacific/Pago_Pago");
+        onTestFinished(() => setFormatTimeZone(undefined));
+        const { unmount } = render(<DatePicker aria-label="Expires" defaultValue={new Date(2026, 11, 20)} />);
+        expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("20 Dec 2026");
+        await userEvent.click(screen.getByRole("button", { description: "Expires" }));
+        await popoverLoaded();
+        await userEvent.click(screen.getByRole("button", { name: /December 22, 2026/ }));
+        expect(screen.getByRole("button", { description: "Expires" })).toHaveAccessibleName("22 Dec 2026");
+        unmount();
+        render(<DateRangePicker aria-label="Period" defaultValue={{ from: new Date(2026, 11, 20), to: undefined }} />);
+        expect(screen.getByRole("button", { description: "Period" })).toHaveAccessibleName("20 Dec 2026");
+      });
+
       it("shows a picked day as that day", async () => {
         const onChange = vi.fn();
         render(<DatePicker aria-label="Expires" defaultValue={new Date(2026, 11, 20)} onValueChange={onChange} />);
