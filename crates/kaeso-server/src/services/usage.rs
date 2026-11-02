@@ -31,48 +31,77 @@ type BatchKey = (
     String,
 );
 
+// Rows a flush took stay counted until PostgreSQL has them: a limit counter rebuilt while the
+// write is under way would otherwise miss them for the rest of its period.
 #[derive(Debug, Default)]
 pub struct Batch {
-    rows: Mutex<HashMap<BatchKey, UsageRow>>,
+    rows: Mutex<Rows>,
+}
+
+#[derive(Debug, Default)]
+struct Rows {
+    open: HashMap<BatchKey, UsageRow>,
+    flushing: HashMap<u64, Vec<UsageRow>>,
+    next: u64,
+}
+
+#[derive(Debug)]
+pub struct Taken {
+    id: u64,
+    pub rows: Vec<UsageRow>,
+}
+
+fn key_of(row: &UsageRow) -> BatchKey {
+    (
+        row.day,
+        row.project_id,
+        row.api_key_id,
+        row.user_id,
+        row.service_account_id,
+        row.provider.clone(),
+        row.model_id.clone(),
+        row.ingress_dialect.clone(),
+        row.egress_dialect.clone(),
+    )
+}
+
+fn add_to(open: &mut HashMap<BatchKey, UsageRow>, row: UsageRow) {
+    match open.get_mut(&key_of(&row)) {
+        Some(r) => merge(r, &row),
+        None => {
+            open.insert(key_of(&row), row);
+        }
+    }
 }
 
 impl Batch {
+    fn lock(&self) -> std::sync::MutexGuard<'_, Rows> {
+        self.rows.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     pub fn add(&self, row: UsageRow) {
-        let key = (
-            row.day,
-            row.project_id,
-            row.api_key_id,
-            row.user_id,
-            row.service_account_id,
-            row.provider.clone(),
-            row.model_id.clone(),
-            row.ingress_dialect.clone(),
-            row.egress_dialect.clone(),
-        );
-        let mut rows = self.rows.lock().unwrap_or_else(PoisonError::into_inner);
-        match rows.get_mut(&key) {
-            Some(r) => merge(r, &row),
-            None => {
-                rows.insert(key, row);
-            }
-        }
+        add_to(&mut self.lock().open, row);
     }
 
-    pub fn take(&self) -> Vec<UsageRow> {
-        let mut rows: Vec<UsageRow> = self
-            .rows
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .drain()
-            .map(|(_, r)| r)
-            .collect();
+    pub fn take(&self) -> Taken {
+        let mut state = self.lock();
+        let mut rows: Vec<UsageRow> = state.open.drain().map(|(_, r)| r).collect();
         rows.sort_by(|a, b| unique_key(a).cmp(&unique_key(b)));
-        rows
+        let id = state.next;
+        state.next = state.next.wrapping_add(1);
+        state.flushing.insert(id, rows.clone());
+        Taken { id, rows }
     }
 
-    pub fn restore(&self, rows: Vec<UsageRow>) {
+    pub fn written(&self, id: u64) {
+        self.lock().flushing.remove(&id);
+    }
+
+    pub fn restore(&self, id: u64, rows: Vec<UsageRow>) {
+        let mut state = self.lock();
+        state.flushing.remove(&id);
         for r in rows {
-            self.add(r);
+            add_to(&mut state.open, r);
         }
     }
 
@@ -83,8 +112,11 @@ impl Batch {
         model: Option<Uuid>,
         since: Option<Date>,
     ) -> (i64, Decimal, i64) {
-        let rows = self.rows.lock().unwrap_or_else(PoisonError::into_inner);
-        rows.values()
+        let state = self.lock();
+        state
+            .open
+            .values()
+            .chain(state.flushing.values().flatten())
             .filter(|r| r.project_id == project)
             .filter(|r| match subject {
                 Subject::Project(_) => true,
@@ -159,22 +191,26 @@ fn never_fits(e: &StoreError) -> bool {
 }
 
 pub async fn flush(state: &AppState) -> Result<usize, StoreError> {
-    let rows = state.usage.take();
-    let n = rows.len();
-    match store::add_usage(&state.pg, &rows).await {
-        Ok(()) => Ok(n),
+    let taken = state.usage.take();
+    let n = taken.rows.len();
+    match store::add_usage(&state.pg, &taken.rows).await {
+        Ok(()) => {
+            state.usage.written(taken.id);
+            Ok(n)
+        }
         Err(e) if e.is_unavailable() || e.is_conflict() => {
-            state.usage.restore(rows);
+            state.usage.restore(taken.id, taken.rows);
             Err(e)
         }
         Err(e) => {
             tracing::warn!(error = %e, rows = n, "cannot record usage in one batch; recording it row by row");
-            flush_rows(state, rows).await
+            flush_rows(state, taken).await
         }
     }
 }
 
-async fn flush_rows(state: &AppState, rows: Vec<UsageRow>) -> Result<usize, StoreError> {
+async fn flush_rows(state: &AppState, taken: Taken) -> Result<usize, StoreError> {
+    let Taken { id, rows } = taken;
     let mut written = 0;
     let mut rows = rows.into_iter();
     while let Some(row) = rows.next() {
@@ -194,11 +230,12 @@ async fn flush_rows(state: &AppState, rows: Vec<UsageRow>) -> Result<usize, Stor
             Err(e) => {
                 state
                     .usage
-                    .restore(std::iter::once(row).chain(rows).collect());
+                    .restore(id, std::iter::once(row).chain(rows).collect());
                 return Err(e);
             }
         }
     }
+    state.usage.written(id);
     Ok(written)
 }
 
@@ -474,6 +511,29 @@ mod tests {
     }
 
     #[test]
+    fn rows_being_written_still_count_until_they_are_written() {
+        let batch = Batch::default();
+        let project = Uuid::from_u128(1);
+        let pending = || {
+            batch
+                .pending(project, Subject::Project(project), None, None)
+                .0
+        };
+        batch.add(row(1, 1, "a"));
+        let first = batch.take();
+        assert_eq!(pending(), 2, "taken for a write that has not finished");
+        batch.add(row(1, 1, "a"));
+        assert_eq!(pending(), 4);
+        batch.restore(first.id, first.rows);
+        assert_eq!(pending(), 4, "a failed write is counted once");
+        let second = batch.take();
+        assert_eq!(second.rows.len(), 1);
+        assert_eq!(pending(), 4);
+        batch.written(second.id);
+        assert_eq!(pending(), 0);
+    }
+
+    #[test]
     fn batches_are_written_in_the_order_of_their_unique_key() {
         let batch = Batch::default();
         for (p, d, m) in [
@@ -487,6 +547,7 @@ mod tests {
         }
         let taken: Vec<(u128, u8, String, i64)> = batch
             .take()
+            .rows
             .into_iter()
             .map(|r| (r.project_id.as_u128(), r.day.day(), r.model_id, r.requests))
             .collect();
@@ -512,6 +573,7 @@ mod tests {
         });
         let taken: Vec<(String, i64)> = batch
             .take()
+            .rows
             .into_iter()
             .map(|r| (r.ingress_dialect, r.requests))
             .collect();
