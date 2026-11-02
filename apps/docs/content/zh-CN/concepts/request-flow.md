@@ -68,7 +68,7 @@ Kaeso 在项目目录中查找模型名称：先作为别名，再作为 `provid
 
 没有推理强度等级的模型则不会收到推理强度，不支持推理的模型不会收到自适应思考。回复的 `kaeso-left-out` 响应头会注明 Kaeso 省略的内容（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。
 
-以 OpenAI 格式发往 Claude 模型的请求不需要设置输出上限，Kaeso 会发送该模型自身的最大值。缺少 `max_tokens` 的 Messages 请求会得到 400，与 Anthropic 的做法相同。
+以 OpenAI 格式发往 Claude 模型的请求不需要设置输出上限，Kaeso 会发送该模型自身的最大值。缺少 `max_tokens` 的 Messages 请求会得到 400，与 Anthropic 的做法相同。来自其他格式、要求的输出超过模型能写出的上限的请求，会改为使用模型的最大值，回复的 `kaeso-adapted` 响应头会注明该字段，例如 `max_tokens`。例如，Claude Code 会向每个它不认识的模型请求 32,000 个 Token。
 
 ## 限额
 

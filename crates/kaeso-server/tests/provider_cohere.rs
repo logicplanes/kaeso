@@ -286,6 +286,24 @@ async fn claude_codes_thinking_and_effort_are_left_out_for_a_model_that_does_not
 }
 
 #[tokio::test]
+async fn claude_codes_output_limit_is_lowered_to_command_as() {
+    let env = env().await;
+    let mut body = messages(
+        COMMAND,
+        &format!(
+            "What is the capital of France? {}",
+            fixture("responses", "recorded-developer-role")
+        ),
+    );
+    body["max_tokens"] = json!(32000);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("max_tokens"));
+    let sent = sent_to_cohere(&env, "/v1/chat/completions", COMMAND);
+    assert_eq!(sent["max_completion_tokens"], 8000, "{sent}");
+}
+
+#[tokio::test]
 async fn fields_cohere_refuses_or_ignores_are_refused_before_anything_is_sent() {
     let env = env().await;
     for (field, value) in [
