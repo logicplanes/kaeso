@@ -94,6 +94,17 @@ pub async fn notify_deletion(
     state: &crate::state::AppState,
     ctx: &crate::platform::access::Ctx,
     org: &orgs::Org,
+) {
+    // The org is scheduled already, so a failure here mustn't turn the answer into an error.
+    if let Err(e) = send_deletion_notices(state, ctx, org).await {
+        tracing::error!(org = %OrgId::from_uuid(org.id), error = %e, "cannot send the deletion notices");
+    }
+}
+
+async fn send_deletion_notices(
+    state: &crate::state::AppState,
+    ctx: &crate::platform::access::Ctx,
+    org: &orgs::Org,
 ) -> Result<(), StoreError> {
     let name = match ctx.acting_user() {
         Some(u) => Some(
@@ -121,42 +132,15 @@ pub async fn notify_deletion(
         state.config.public_url,
         OrgId::from_uuid(org.id)
     );
-    let mut recipients: Vec<(uuid::Uuid, String)> = Vec::new();
-    let mut after = None;
-    loop {
-        let page = members::list_org(&state.pg, org.id, after, 500, None, None).await?;
-        after = page.last().map(|m| m.id);
-        recipients.extend(
-            page.iter()
-                .filter(|m| m.user_state == "active")
-                .filter_map(|m| Some((m.user_id, m.email.clone()?))),
-        );
-        if page.len() < 500 {
-            break;
-        }
-    }
-    let mut after = None;
-    loop {
-        let page =
-            kaeso_store::pg::users::list(&state.pg, after, 500, None, Some("active")).await?;
-        after = page.last().map(|u| u.id);
-        recipients.extend(
-            page.iter()
-                .filter(|u| u.is_instance_admin)
-                .filter_map(|u| Some((u.id, u.email.clone()?))),
-        );
-        if page.len() < 500 {
-            break;
-        }
-    }
-    recipients.sort_by_key(|(_, e)| e.to_lowercase());
-    recipients.dedup_by(|a, b| a.1.eq_ignore_ascii_case(&b.1));
-    for (user, to) in recipients {
-        let lang = mail_lang::of_user(&state.pg, user, None).await;
+    let mut recipients = members::members_and_instance_admins(&state.pg, org.id).await?;
+    recipients.sort_by_key(|r| r.email.to_lowercase());
+    recipients.dedup_by(|a, b| a.email.eq_ignore_ascii_case(&b.email));
+    for r in recipients {
+        let lang = mail_lang::of_user(&state.pg, r.user_id, None).await;
         state
             .mailer
             .send(kaeso_mail::templates::org_scheduled_for_deletion(
-                lang, &to, &org.name, by, due, zone, &url,
+                lang, &r.email, &org.name, by, due, zone, &url,
             ));
     }
     Ok(())
