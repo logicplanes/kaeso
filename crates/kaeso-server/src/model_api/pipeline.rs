@@ -114,8 +114,7 @@ impl Recording {
         let (done, charged) = tokio::sync::oneshot::channel();
         let (sink, state) = (self.sink.clone(), self.state.clone());
         self.state.in_flight.finish(async move {
-            sink.finish(&state, o).await;
-            let _ = done.send(());
+            sink.finish_charged(&state, o, done).await;
         });
         charged
     }

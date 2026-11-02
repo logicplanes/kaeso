@@ -313,20 +313,25 @@ impl Reserved {
         }
     }
 
-    async fn keep(&mut self, rec: &Recording) {
+    fn keep(&mut self, rec: &Recording) {
         let Some(due) = self.due else { return };
         let now = rec.state().clock.now();
         if now < due {
             return;
         }
         self.due = Some(now + RESERVATION_REFRESH);
-        if let Err(e) =
-            crate::services::limits::extend(rec.state(), rec.reservation(), &self.request_id).await
-        {
-            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
-                .increment(1);
-            tracing::warn!(error = %e, "cannot extend a stream's reservation under its limits");
-        }
+        // The chunk that is due goes on to the app while Valkey answers; an extend that lands
+        // after the charge finds no reservation left to move.
+        let (state, reservation) = (rec.state().clone(), rec.reservation().clone());
+        let request_id = self.request_id.clone();
+        rec.state().in_flight.spawn(async move {
+            if let Err(e) = crate::services::limits::extend(&state, &reservation, &request_id).await
+            {
+                metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                    .increment(1);
+                tracing::warn!(error = %e, "cannot extend a stream's reservation under its limits");
+            }
+        });
     }
 }
 
@@ -397,7 +402,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     break 'read;
                 }
                 next = chunks.next() => {
-                    reserved.keep(&rec).await;
+                    reserved.keep(&rec);
                     next
                 }
                 () = &mut quiet, if keepalive.interval.is_some() => {
@@ -407,7 +412,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                         quiet.as_mut().reset(due);
                         continue;
                     }
-                    reserved.keep(&rec).await;
+                    reserved.keep(&rec);
                     if !app.keepalive(encoder.keepalive()).await {
                         gone = true;
                         break 'read;
