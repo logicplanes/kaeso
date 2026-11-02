@@ -17,6 +17,7 @@ use axum::body::Bytes;
 use axum::extract::{OriginalUri, State};
 use axum::http::{Method, StatusCode};
 use axum::response::{IntoResponse, Response};
+use futures::StreamExt;
 use futures::future::BoxFuture;
 use kaeso_update::manifest::Service;
 use kaeso_update::protocol::{Job, JobState};
@@ -82,6 +83,8 @@ pub struct Daemon {
     pub fail_new_start: Option<String>,
     pub fail_removals: u32,
     pub fail_rename_back: bool,
+    pub hang: Vec<&'static str>,
+    pub stall_pull: bool,
 }
 
 pub fn index_of(service: Service) -> Vec<u8> {
@@ -562,6 +565,7 @@ pub struct World {
     pub verifier: Arc<Verifier>,
     pub dir: PathBuf,
     pub engine: Arc<Engine>,
+    pub docker_url: Url,
 }
 
 async fn serve(router: Router) -> Url {
@@ -635,6 +639,7 @@ impl World {
             verifier,
             dir,
             engine,
+            docker_url,
         }
     }
 
@@ -711,5 +716,28 @@ async fn daemon_handler(
     uri: OriginalUri,
     body: Bytes,
 ) -> Response {
+    let call = format!(
+        "{method} {}",
+        uri.path().strip_prefix("/v1.44/").unwrap_or("")
+    );
+    let (hang, stall) = {
+        let mut d = state.0.lock().unwrap();
+        let hang = d.hang.iter().any(|h| call.starts_with(h));
+        let stall = d.stall_pull && call == "POST images/create";
+        if hang || stall {
+            d.calls.push(call);
+        }
+        (hang, stall)
+    };
+    if hang {
+        std::future::pending::<()>().await;
+    }
+    if stall {
+        let first = futures::stream::once(async {
+            Ok::<_, std::io::Error>(Bytes::from_static(b"{\"status\":\"Pulling\"}\n"))
+        });
+        return axum::body::Body::from_stream(first.chain(futures::stream::pending()))
+            .into_response();
+    }
     daemon(state, method, uri, body).await
 }
