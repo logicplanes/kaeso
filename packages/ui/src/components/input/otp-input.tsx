@@ -15,8 +15,8 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_OTP_INPUT_VARIANTS = {
   size: {
-    md: { classes: "w-48 text-title", description: "48px cells (default); they shrink, square, when the row is narrower" },
-    sm: { classes: "w-40 text-title-sm", description: "40px cells" },
+    md: { classes: "h-48 text-title", description: "48px high, as tall as an xl input and button (default)" },
+    sm: { classes: "h-40 text-title-sm", description: "40px high" },
   },
 } as const;
 export const KAESO_OTP_INPUT_DEFAULT_VARIANTS = { size: "md" } as const;
@@ -91,7 +91,7 @@ export const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(function OTP
     pending.current = Math.min(digits.length >= length ? next.length : start + digits.length, next.length);
   };
   return (
-    <div className={cn("relative inline-flex max-w-full gap-8", className)} data-invalid={invalid || field?.invalid || undefined}>
+    <div className={cn("relative flex w-full max-w-auth gap-8", className)} data-invalid={invalid || field?.invalid || undefined}>
       {Array.from({ length }, (_, i) => {
         const char = current[i] ?? "";
         const isActive = i === caret;
@@ -103,7 +103,7 @@ export const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(function OTP
             }}
             aria-hidden
             className={cn(
-              "flex aspect-square min-w-0 shrink items-center justify-center rounded-cell-lg font-semibold tabular text-fg material-field transition-control",
+              "flex min-w-0 flex-1 items-center justify-center rounded-cell-lg font-semibold tabular text-fg material-field transition-control",
               KAESO_OTP_INPUT_VARIANTS.size[size].classes,
               i === 2 && length === 6 && "mr-8",
             )}
@@ -111,7 +111,7 @@ export const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(function OTP
             {...(disabled ? { "data-disabled": "" } : {})}
             {...(isActive ? { "data-focused": "" } : {})}
           >
-            {char || (isActive ? <span className="h-20 w-1 bg-fg forced-line" /> : null)}
+            {char || (isActive ? <span className="h-20 w-1 animate-caret bg-fg forced-line" /> : null)}
           </div>
         );
       })}

@@ -672,6 +672,11 @@
     opacity: var(--k-skeleton-low);
   }
 }
+@keyframes k-caret {
+  50% {
+    opacity: 0;
+  }
+}
 @keyframes k-spin {
   to {
     transform: rotate(360deg);
@@ -687,6 +692,9 @@
 }
 @utility animate-pulse-quiet {
   animation: k-pulse var(--k-skeleton-duration) var(--k-ease-pulse) infinite;
+}
+@utility animate-caret {
+  animation: k-caret 1s steps(1, end) infinite;
 }
 @utility animate-spin {
   animation: k-spin calc(var(--k-spinner-turn) / 3) linear infinite;

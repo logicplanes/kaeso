@@ -17,6 +17,17 @@ describe("OTPInput", () => {
     expect(input).toHaveValue("123456");
   });
 
+  it("shares the row's width between its cells, up to the sign-in column, with a blinking caret", () => {
+    const { container } = render(<OTPInput defaultValue="41" data-force="focus" />);
+    const row = container.firstElementChild;
+    expect(row).toHaveClass("flex", "w-full", "max-w-auth");
+    const cells = container.querySelectorAll("[aria-hidden]");
+    expect(cells).toHaveLength(6);
+    cells.forEach((cell) => expect(cell).toHaveClass("flex-1", "h-48"));
+    expect(cells[2]).toHaveClass("mr-8");
+    expect(cells[2]?.querySelector(".animate-caret")).not.toBeNull();
+  });
+
   it("shows the caret in the next empty cell while focused", async () => {
     const { container } = render(<OTPInput length={4} defaultValue="12" size="sm" />);
     const input = screen.getByRole("textbox");
