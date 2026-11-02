@@ -347,6 +347,117 @@ async fn a_key_asked_for_while_its_member_is_removed_is_refused() {
 }
 
 #[tokio::test]
+async fn a_key_asked_for_while_its_member_leaves_the_project_is_refused() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let (member, member_id) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "member@example.com", "role": "member" }),
+        "Member",
+    )
+    .await;
+    app.call(
+        Method::PATCH,
+        &format!("{base}/members/{member_id}"),
+        Some(json!({ "role": "developer" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let mut removal = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::members::delete_project(
+        &mut *removal,
+        common::uuid(&project),
+        common::uuid(&member_id),
+    )
+    .await
+    .unwrap();
+
+    let r = once_it_waits(
+        &app,
+        removal,
+        app.post(
+            &format!("{base}/keys"),
+            json!({ "name": "late" }),
+            Some(&member),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "No such project, or you cannot see it."
+    );
+    assert_eq!(
+        keys_of(&app, &owner, &base, &format!("user={member_id}")).await,
+        json!([])
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn deleting_an_account_archives_a_key_created_meanwhile() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let (dev, dev_id) = common::join(
+        &app,
+        &owner,
+        json!({ "email": "dev@example.com", "role": "developer" }),
+        "Dev",
+    )
+    .await;
+    let key = uuid::Uuid::now_v7();
+    let mut creating = app.state.pg.begin().await.unwrap();
+    sqlx::query("SELECT 1 FROM org_memberships WHERE org_id = $1 AND user_id = $2 FOR SHARE")
+        .bind(common::uuid(&owner.org_id))
+        .bind(common::uuid(&dev_id))
+        .fetch_one(&mut *creating)
+        .await
+        .unwrap();
+    kaeso_store::pg::keys::insert(
+        &mut *creating,
+        &kaeso_store::pg::keys::NewKey {
+            id: key,
+            org_id: common::uuid(&owner.org_id),
+            project_id: common::uuid(&project),
+            user_id: Some(common::uuid(&dev_id)),
+            service_account_id: None,
+            name: "late",
+            secret_hash: &[7; 32],
+            secret_prefix: "sk-kso-late",
+            secret_last4: "late",
+            inference: true,
+            platform: false,
+            expires_at: None,
+            created_by_kind: "user",
+            created_by_id: Some(common::uuid(&dev_id)),
+            rotated_from: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let r = once_it_waits(
+        &app,
+        creating,
+        app.call(Method::DELETE, "/me", None, Some(&dev)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NO_CONTENT, "{:?}", r.body);
+    let keys = keys_of(&app, &owner, &base, &format!("user={dev_id}")).await;
+    assert_eq!(keys.as_array().unwrap().len(), 1, "{keys:?}");
+    assert_eq!(keys[0]["state"], "archived");
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_key_asked_for_while_its_project_is_archived_is_refused() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;

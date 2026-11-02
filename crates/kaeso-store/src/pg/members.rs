@@ -158,15 +158,16 @@ pub async fn delete_org(
     org_id: Uuid,
     user_id: Uuid,
 ) -> Result<(), StoreError> {
+    // Org membership before project memberships, the order a new key's transaction holds them in.
     sqlx::query!(
-        "DELETE FROM project_memberships WHERE user_id = $2 AND project_id IN (SELECT id FROM projects WHERE org_id = $1)",
+        "DELETE FROM org_memberships WHERE org_id = $1 AND user_id = $2",
         org_id,
         user_id
     )
     .execute(&mut *db)
     .await?;
     sqlx::query!(
-        "DELETE FROM org_memberships WHERE org_id = $1 AND user_id = $2",
+        "DELETE FROM project_memberships WHERE user_id = $2 AND project_id IN (SELECT id FROM projects WHERE org_id = $1)",
         org_id,
         user_id
     )
@@ -179,15 +180,34 @@ pub async fn hold_org(
     db: impl PgExecutor<'_>,
     org_id: Uuid,
     user_id: Uuid,
-) -> Result<bool, StoreError> {
-    Ok(sqlx::query_scalar!(
-        "SELECT 1 AS \"one!\" FROM org_memberships WHERE org_id = $1 AND user_id = $2 FOR SHARE",
+) -> Result<Option<OrgMember>, StoreError> {
+    Ok(sqlx::query_as!(
+        OrgMember,
+        "SELECT m.id, m.org_id, m.user_id, u.email, u.name, u.state AS user_state, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", \
+         m.created_at, u.avatar FROM org_memberships m JOIN users u ON u.id = m.user_id \
+         LEFT JOIN org_roles r ON r.id = m.role_id WHERE m.org_id = $1 AND m.user_id = $2 FOR SHARE OF m",
         org_id,
         user_id
     )
     .fetch_optional(db)
-    .await?
-    .is_some())
+    .await?)
+}
+
+pub async fn hold_project(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<ProjectMember>, StoreError> {
+    Ok(sqlx::query_as!(
+        ProjectMember,
+        "SELECT m.id, m.project_id, m.user_id, u.email, u.name, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", m.created_at, u.avatar \
+         FROM project_memberships m JOIN users u ON u.id = m.user_id LEFT JOIN org_roles r ON r.id = m.role_id \
+         WHERE m.project_id = $1 AND m.user_id = $2 FOR SHARE OF m",
+        project_id,
+        user_id
+    )
+    .fetch_optional(db)
+    .await?)
 }
 
 pub async fn lock_owners(db: &mut sqlx::PgConnection, org_id: Uuid) -> Result<(), StoreError> {
@@ -473,15 +493,16 @@ pub async fn delete_all_of_user(
     db: &mut sqlx::PgConnection,
     user_id: Uuid,
 ) -> Result<(), StoreError> {
+    // Org memberships first, as in `delete_org`.
+    sqlx::query!("DELETE FROM org_memberships WHERE user_id = $1", user_id)
+        .execute(&mut *db)
+        .await?;
     sqlx::query!(
         "DELETE FROM project_memberships WHERE user_id = $1",
         user_id
     )
     .execute(&mut *db)
     .await?;
-    sqlx::query!("DELETE FROM org_memberships WHERE user_id = $1", user_id)
-        .execute(&mut *db)
-        .await?;
     Ok(())
 }
 

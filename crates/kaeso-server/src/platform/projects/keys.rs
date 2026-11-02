@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{ApiKeyId, CatalogueModelId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::keys::KeyKind;
-use kaeso_core::rights::{ProjectRight, ProjectRights, Right};
+use kaeso_core::rights::{ProjectRight, ProjectRights, Right, effective_project_rights};
 use kaeso_store::pg::keys::{self, KeyFilter, NewKey};
 use kaeso_store::pg::service_accounts;
 use secrecy::ExposeSecret;
@@ -11,9 +11,10 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::{KEYS_ARCHIVED, ensure_active};
-use crate::platform::access::{Caller, Ctx, denied};
+use crate::platform::access::{Caller, Ctx, denied, refused};
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
+use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::json::Body;
 use crate::platform::keys::{
     CreatedKey, ExpiryRequest, KeyAccess, KeyRotate, KeyView, creator_of, new_secret, project_max,
@@ -107,7 +108,7 @@ async fn create_key(
     let project = ctx.project()?;
     let (created_kind, created_id) = creator_of(ctx);
     let mut tx = state.pg.begin().await?;
-    hold_for_key(&mut tx, &project.project, user, service_account).await?;
+    hold_for_key(&mut tx, ctx, &project.project, user, service_account).await?;
     let key_limits = match &req.limits {
         Some(specs) => {
             super::limits::key_limits(state, &mut tx, project.project.id, id.uuid(), member, specs)
@@ -201,6 +202,7 @@ async fn create_key(
 // the key here, and one that comes later waits for it and archives it with the others.
 async fn hold_for_key(
     tx: &mut sqlx::PgConnection,
+    ctx: &Ctx,
     project: &kaeso_store::pg::projects::Project,
     user: Option<UserId>,
     service_account: Option<uuid::Uuid>,
@@ -208,10 +210,25 @@ async fn hold_for_key(
     if !kaeso_store::pg::projects::hold_active(&mut *tx, project.org_id, project.id).await? {
         return Err(ApiError::Conflict(KEYS_ARCHIVED.into()));
     }
-    if let Some(user) = user
-        && !kaeso_store::pg::members::hold_org(&mut *tx, project.org_id, user.uuid()).await?
-    {
-        return Err(ApiError::not_found("organization"));
+    if let Some(user) = user {
+        let org = kaeso_store::pg::members::hold_org(&mut *tx, project.org_id, user.uuid())
+            .await?
+            .ok_or_else(|| ApiError::not_found("organization"))?;
+        let own = kaeso_store::pg::members::hold_project(&mut *tx, project.id, user.uuid())
+            .await?
+            .map(|m| project_from_store(&m.grant()))
+            .transpose()?;
+        let rights = effective_project_rights(Some(&org_from_store(&org.grant())?), own.as_ref());
+        if rights.is_empty() {
+            return Err(ApiError::not_found("project"));
+        }
+        if !rights.contains(ProjectRight::KeysOwnCreate) {
+            return Err(refused(
+                &ctx.caller,
+                Right::Project(ProjectRight::KeysOwnCreate),
+                "project",
+            ));
+        }
     }
     if let Some(account) = service_account
         && !service_accounts::hold_active(&mut *tx, project.id, account).await?
