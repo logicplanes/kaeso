@@ -137,6 +137,9 @@ describe("AliasesTab", () => {
     await user.click(within(dialog).getByRole("button", { name: "Create alias" }));
     expect(await within(dialog).findByText("No such model in this project's catalogue.")).toBeInTheDocument();
     expect(name).not.toHaveAttribute("aria-invalid");
+    await user.click(within(dialog).getByRole("button", { name: "Target" }));
+    await user.click(await screen.findByRole("option", { name: /claude-haiku-4-5/ }));
+    expect(within(dialog).queryByText("No such model in this project's catalogue.")).not.toBeInTheDocument();
   });
 
   it("retargets an alias opened from its row, sending only what changed", async () => {
