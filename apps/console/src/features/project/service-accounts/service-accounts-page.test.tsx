@@ -154,6 +154,25 @@ describe("ServiceAccountsPage", () => {
     expect(await screen.findByRole("dialog", { name: "checkout-production" })).toBeInTheDocument();
   });
 
+  it("goes back to the name and says why when the name is refused", async () => {
+    signedIn();
+    projectData();
+    on("POST", ACCOUNTS, apiError(400, "invalid_request", "A name can't be longer than 100 characters.", { param: "name" }));
+    const { user } = await renderApp(projectPath("service-accounts?create=true"));
+
+    const dialog = await screen.findByRole("dialog", { name: /Create service account/ });
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "checkout-production{Enter}");
+    expect(await within(dialog).findByText("What can its keys do?")).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Create service account" }));
+
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await waitFor(() => expect(name).toHaveFocus());
+    expect(within(dialog).getByText("What uses it?")).toBeVisible();
+    expect(name).toHaveAccessibleDescription("A name can't be longer than 100 characters.");
+    await user.type(name, "s");
+    expect(within(dialog).queryByText("A name can't be longer than 100 characters.")).not.toBeInTheDocument();
+  });
+
   it("disables creating without the right and says who can give it", async () => {
     signedIn({ projectRights: without("service_accounts.create", "keys.all.view") });
     projectData();
@@ -237,6 +256,23 @@ describe("ServiceAccountSheet", () => {
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("Name saved")).toBeInTheDocument();
     expect(requests("PATCH", ACCOUNT).map((r) => r.body)).toEqual([{ name: "ci-release" }]);
+  });
+
+  it("says under the name why a new name is refused", async () => {
+    signedIn();
+    account();
+    on("PATCH", ACCOUNT, apiError(400, "invalid_request", "A name can't contain control characters.", { param: "name" }));
+    const { user } = await renderApp(projectPath("service-accounts?account=sa_deploy"));
+
+    const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
+    await user.click(await within(sheet).findByRole("button", { name: "Rename" }));
+    const input = within(sheet).getByRole("textbox", { name: "Name" });
+    await user.type(input, "-2");
+    await user.click(within(sheet).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(input).toHaveAccessibleDescription("A name can't contain control characters."));
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    await user.type(input, "x");
+    expect(within(sheet).queryByText("A name can't contain control characters.")).not.toBeInTheDocument();
   });
 
   it("changes the role of the service account", async () => {
