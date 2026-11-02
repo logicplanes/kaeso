@@ -523,6 +523,19 @@ fn redacted(mut err: KppError) -> KppError {
     err
 }
 
+// For large work that borrows what it needs and so can't move to a blocking thread: the worker
+// hands its other tasks to the rest of the runtime while it runs. A current-thread runtime, as
+// in tests, has nowhere to hand them, so the work runs in place there.
+pub(crate) fn in_place<T>(bytes: usize, work: impl FnOnce() -> T) -> T {
+    let shared = tokio::runtime::Handle::try_current()
+        .is_ok_and(|h| h.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread);
+    if bytes >= OFF_THREAD_BYTES && shared {
+        tokio::task::block_in_place(work)
+    } else {
+        work()
+    }
+}
+
 pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
 where
     T: Send + 'static,
@@ -1288,7 +1301,9 @@ async fn consult_cache(
         decided(rec, Verdict::Bypass);
         return Consulted::Skip;
     }
-    let slot = response_cache::slot(state, active, &request);
+    let slot = in_place(request.encoded.body.len(), || {
+        response_cache::slot(state, active, &request)
+    });
     if directive.read
         && let Some(stored) = response_cache::get(state, &slot).await
     {
@@ -1470,6 +1485,22 @@ mod tests {
     }
 
     use super::*;
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn large_work_in_place_runs_beside_the_other_tasks_of_its_worker() {
+        let other = tokio::spawn(async { 7 });
+        let done = in_place(OFF_THREAD_BYTES, || {
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            1
+        });
+        assert_eq!(done + other.await.unwrap(), 8);
+        assert_eq!(in_place(OFF_THREAD_BYTES - 1, || 2), 2);
+    }
+
+    #[tokio::test]
+    async fn work_in_place_runs_inline_without_other_workers() {
+        assert_eq!(in_place(usize::MAX, || 3), 3);
+    }
 
     #[test]
     fn the_providers_profiles_and_plan_reach_the_egress_context() {
