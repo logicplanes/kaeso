@@ -1329,3 +1329,40 @@ async fn a_request_keeps_the_content_decision_it_started_with() {
     let entry = &logs(&env, "").await["data"][0];
     assert_eq!(entry["has_content"], false, "{entry}");
 }
+
+#[tokio::test]
+async fn a_clickhouse_that_stops_answering_does_not_hold_the_log_writer() {
+    let silent = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", silent.local_addr().unwrap());
+    let held = tokio::spawn(async move {
+        let mut open = Vec::new();
+        while let Ok((socket, _)) = silent.accept().await {
+            open.push(socket);
+        }
+    });
+    let env = env(&[("KAESO_CLICKHOUSE_URL", &url)]).await;
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("claude-haiku-4-5", "Hello")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
+    let rows = env.app.state.logs.len();
+    assert!(rows > 0);
+    let started = std::time::Instant::now();
+    let written =
+        kaeso_server::services::logs::flush_within(&env.app.state, Duration::from_millis(300))
+            .await;
+    assert_eq!(written.unwrap(), 0);
+    assert!(started.elapsed() < Duration::from_secs(5));
+    assert_eq!(
+        env.app.state.logs.len(),
+        rows,
+        "the rows wait for the next write"
+    );
+    held.abort();
+}

@@ -19,6 +19,9 @@ use crate::model_api::hooks::{Outcome, Sink};
 use crate::state::AppState;
 
 const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
+// ClickHouse's client sets no timeouts of its own, so a stalled server would hold the writer, and
+// the batch it took, until the gateway restarts.
+const WRITE_DEADLINE: Duration = Duration::from_secs(60);
 
 struct Entry {
     seq: u64,
@@ -168,10 +171,18 @@ impl Buffer {
 }
 
 pub async fn flush_once(state: &AppState) -> Result<usize, StoreError> {
-    match flush_by(state, None).await {
+    flush_within(state, WRITE_DEADLINE).await
+}
+
+pub async fn flush_within(state: &AppState, wait: Duration) -> Result<usize, StoreError> {
+    match flush_by(state, Some(tokio::time::Instant::now() + wait)).await {
         Flushed::Wrote(n) => Ok(n),
         Flushed::Failed(e) => Err(e),
-        Flushed::OutOfTime => Ok(0),
+        Flushed::OutOfTime => {
+            metrics::counter!(crate::metrics::CLICKHOUSE_WRITE_FAILURES).increment(1);
+            tracing::warn!(waited = ?wait, rows = state.logs.len(), "ClickHouse did not take request logs in time; keeping them in memory");
+            Ok(0)
+        }
     }
 }
 
