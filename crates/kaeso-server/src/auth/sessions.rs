@@ -108,10 +108,9 @@ pub async fn authenticate(
     let Some(row) = state
         .caches
         .sessions
-        .get_or_load(
-            &key,
-            || async move { sessions::get_by_hash(&pg, &hash).await },
-        )
+        .get_or_refresh(&key, move || async move {
+            sessions::get_by_hash(&pg, &hash).await
+        })
         .await?
     else {
         return Ok(None);

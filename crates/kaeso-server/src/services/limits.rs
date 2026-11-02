@@ -299,7 +299,7 @@ pub async fn project_limits(
     let found = state
         .caches
         .project_limits
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             let rows = store::list(&pg, project).await?;
             rows.iter()
                 .map(store::LimitRow::limit)
