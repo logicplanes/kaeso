@@ -1459,6 +1459,112 @@ async fn requests_count_as_in_flight_for_as_long_as_their_model_may_take() {
 }
 
 #[tokio::test]
+async fn open_reservations_are_totalled_as_they_come_go_and_expire() {
+    use kaeso_server::model_api::hooks::{Admission, Caller, Limits};
+    let env = common::v1::env(None, None).await;
+    let state = &env.app.state;
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let (_, id) = key_of(&env, "totalled", json!({})).await;
+    let key: kaeso_core::id::ApiKeyId = id.parse().unwrap();
+    let budget = limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "total", "amount": 1 })).await;
+    let limit_id: kaeso_core::id::LimitId = budget["id"].as_str().unwrap().parse().unwrap();
+    let counter = state.valkey.key(&format!("lim:{}:total", limit_id.uuid()));
+    let admit = |at: time::OffsetDateTime| {
+        let admission = Admission {
+            request_id: kaeso_core::id::RequestId::new(),
+            caller: Caller {
+                org_id: org.uuid(),
+                project_id: project.uuid(),
+                key_id: Some(key.uuid()),
+                user_id: None,
+                service_account_id: None,
+            },
+            catalogue_model_id: uuid::Uuid::nil(),
+            kind: kaeso_kpp::RequestKind::Generate,
+            at,
+            timeout: Duration::from_secs(600),
+            worst: kaeso_core::limits::WorstCase {
+                tokens: 0,
+                nano_usd: 100_000_000,
+                bounded: true,
+            },
+            unpriced: None,
+        };
+        async move {
+            let limits = kaeso_server::services::limits::ValkeyLimits;
+            limits.admit(state, &admission).await.map(|_| ())
+        }
+    };
+    let valkey = &env.services.valkey;
+    let totals = || {
+        let reservations = format!("{counter}:r");
+        async move {
+            let mut conn = valkey.conn();
+            let fields: std::collections::HashMap<String, i64> = redis::cmd("HGETALL")
+                .arg(&reservations)
+                .query_async(&mut conn)
+                .await
+                .unwrap();
+            let summed: i64 = fields
+                .iter()
+                .filter(|(f, _)| !f.starts_with('#'))
+                .map(|(_, v)| v)
+                .sum();
+            (
+                fields.get("#held").copied(),
+                fields.get("#n").copied(),
+                summed,
+            )
+        }
+    };
+    use kaeso_core::clock::Clock;
+    let at = env.app.clock.now();
+
+    for _ in 0..10 {
+        assert_eq!(admit(at).await, Ok(()));
+    }
+    assert!(
+        admit(at).await.is_err(),
+        "ten reservations of $0.10 fill $1"
+    );
+    assert_eq!(
+        totals().await,
+        (Some(1_000_000_000), Some(10), 1_000_000_000)
+    );
+
+    let later = at + time::Duration::seconds(901);
+    assert_eq!(admit(later).await, Ok(()), "the first ten expired");
+    assert_eq!(totals().await, (Some(100_000_000), Some(1), 100_000_000));
+
+    let mut conn = env.services.valkey.conn();
+    let older = "written-by-an-older-release";
+    let _: () = redis::cmd("ZADD")
+        .arg(format!("{counter}:f"))
+        .arg(later.unix_timestamp() + 900)
+        .arg(older)
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    let _: () = redis::cmd("HSET")
+        .arg(format!("{counter}:r"))
+        .arg(older)
+        .arg(800_000_000)
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    assert_eq!(admit(later).await, Ok(()), "$0.90 of $1 held");
+    assert!(
+        admit(later).await.is_err(),
+        "the reservation the total missed still counts"
+    );
+    assert_eq!(
+        totals().await,
+        (Some(1_000_000_000), Some(3), 1_000_000_000)
+    );
+}
+
+#[tokio::test]
 async fn requests_are_refused_while_the_limits_cannot_be_loaded() {
     let env = common::v1::env(None, None).await;
     let ask = || {
@@ -1693,7 +1799,15 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     let gate = env.mock.gate();
     let mut long = capped(&format!("Long {}", gate.steps_marker()), 500);
     long["stream"] = json!(true);
-    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": worst(&long) + 100 })).await;
+    let budget = limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": worst(&long) + 100 })).await;
+    let budget: kaeso_core::id::LimitId = budget["id"].as_str().unwrap().parse().unwrap();
+    let reservations = env
+        .app
+        .state
+        .valkey
+        .key(&format!("lim:{}:total:f", budget.uuid()));
+    use kaeso_core::clock::Clock;
+    let started = env.app.clock.now().unix_timestamp();
     let req = axum::http::Request::builder()
         .uri("/v1/messages")
         .method("POST")
@@ -1710,6 +1824,27 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     env.app.clock.advance(time::Duration::seconds(ttl - 30));
     gate.step();
     assert!(body.frame().await.unwrap().unwrap().is_data());
+    let extended = started + 2 * ttl - 30;
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let mut conn = env.services.valkey.conn();
+        let scores: Vec<(String, i64)> = redis::cmd("ZRANGE")
+            .arg(&reservations)
+            .arg(0)
+            .arg(-1)
+            .arg("WITHSCORES")
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        if scores.iter().any(|(_, at)| *at >= extended) {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the reservation was never extended: {scores:?}"
+        );
+        tokio::task::yield_now().await;
+    }
     env.app.clock.advance(time::Duration::seconds(60));
     let refused = ask_capped(&env, &secret, 256).await;
     assert_eq!(
@@ -1728,6 +1863,50 @@ async fn a_long_stream_keeps_its_reservation_past_the_request_timeout() {
     }
     assert!(String::from_utf8(text).unwrap().contains("message_stop"));
     assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+}
+
+#[derive(Debug, Default)]
+struct ChargesButNeverLogs;
+
+impl kaeso_server::model_api::hooks::Sink for ChargesButNeverLogs {
+    fn finish<'a>(
+        &'a self,
+        _state: &'a kaeso_server::state::AppState,
+        _outcome: kaeso_server::model_api::hooks::Outcome,
+    ) -> futures::future::BoxFuture<'a, ()> {
+        Box::pin(std::future::pending())
+    }
+
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a kaeso_server::state::AppState,
+        outcome: kaeso_server::model_api::hooks::Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> futures::future::BoxFuture<'a, ()> {
+        Box::pin(async move {
+            kaeso_server::services::usage::account(state, &outcome).await;
+            let _ = charged.send(());
+            std::future::pending::<()>().await;
+        })
+    }
+}
+
+#[tokio::test]
+async fn a_reply_under_a_limit_ends_once_charged_without_waiting_for_its_log() {
+    let env = common::v1::env_sunk(std::sync::Arc::new(ChargesButNeverLogs), None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": 100_000 })).await;
+    for stream in [false, true] {
+        let mut body = capped("Hi", 64);
+        body["stream"] = json!(stream);
+        let answered = tokio::time::timeout(
+            Duration::from_secs(10),
+            call(&env, "/v1/messages", Some(&secret), true, Some(body)),
+        )
+        .await
+        .expect("the reply ends once it is charged");
+        assert_eq!(answered.status, StatusCode::OK, "stream: {stream}");
+    }
 }
 
 #[tokio::test]

@@ -27,6 +27,7 @@ import { api, data } from "~/api/client";
 import { toastApiError } from "~/api/toast-error";
 import type { BatchResult, Fields, Preview, SearchHit } from "~/api/generated/types";
 import { currentModelsQuery, modelPreviewQuery, modelSearchQuery } from "~/api/queries/models";
+import { projectCatalogue } from "~/api/queries/invalidation";
 import { offeredModelsQuery } from "~/api/queries/custom-providers";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgProviderKeys, useProviderOptions, useProviders } from "~/kaeso/providers";
@@ -99,7 +100,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   };
   const addable = current.data?.not_in_catalogue ?? 0;
 
-  const invalidates = [["orgs", org, "projects", project, "models"]];
+  const invalidates = projectCatalogue(org, project);
 
   const batch = useApiMutation({
     mutationFn: async (body: { all_current: true } | { model_ids: string[] }): Promise<BatchResult> =>
