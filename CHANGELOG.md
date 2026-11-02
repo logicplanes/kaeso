@@ -4,9 +4,26 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-02
+
+This release fixes several ways that requests from coding agents failed when sent to models in another API format. Tool results with images now reach Chat Completions models, and Codex tool namespaces no longer repeat their descriptions. Anthropic, DeepSeek, Mistral and Groq targets now accept requests from OpenAI apps, Claude Code and MCP clients that failed against them before. A fresh install starts with KPMR's models and prices as of 1 November 2026.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.5.0...v0.5.1](https://github.com/logicplanes/kaeso/compare/v0.5.0...v0.5.1)
+
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's models and prices as of 1 November 2026. The snapshot adds Ollama Cloud's MiMo V2.6 Flash and Pro, and changes OpenRouter's prices for five models, the output limit of GPT OSS 20B and Mistral Large 4's effort levels. ([#578](https://github.com/logicplanes/kaeso/pull/578))
+
 ### Fixed
 
-- Images and files a tool returns reach Chat Completions models in the user message after the tool results, instead of the whole request being refused, so Claude Code's Read and Codex's view_image work through DeepSeek, Mistral and OpenRouter. The tool message keeps the result's text and says that the rest follows, and the user message names the tool call before its images and files. ([#574](https://github.com/logicplanes/kaeso/pull/574))
+- Codex requests to models outside OpenAI now send each tool namespace's description once, in front of its first tool, instead of in front of every tool. MCP servers group many tools under one namespace, so the repeated text could push a single turn past Claude's 1M context window. ([#573](https://github.com/logicplanes/kaeso/pull/573))
+- Images and files a tool returns reach Chat Completions models in the user message after the tool results, instead of the whole request being refused, so Claude Code's Read and Codex's `view_image` work through DeepSeek, Mistral and OpenRouter. The tool message keeps the result's text and says that the rest follows, and the user message names the tool call before its images and files. ([#574](https://github.com/logicplanes/kaeso/pull/574))
+- Anthropic and DeepSeek refused tool schemas whose root has no `type: "object"`, and Mistral refused functions without `parameters`. Kaeso now writes `type: "object"` first in such roots for Anthropic and, through the ToolSchemaRoot::TypedObjectUnions profile setting, for DeepSeek, and Mistral's profile sends the empty object schema for a function without parameters. Requests from OpenAI apps and MCP clients no longer fail only because of the target. ([#575](https://github.com/logicplanes/kaeso/pull/575))
+- Kaeso sends the end user to Chat Completions providers as `safety_identifier`, which Groq rejects with a 400 error. Groq's profile now sends the id as `user` through the new `end_user_as_user()` setting, so Claude Code and other Anthropic apps no longer fail on Groq models. ([#576](https://github.com/logicplanes/kaeso/pull/576))
 
 ## [0.5.0] - 2026-10-31
 
@@ -1041,7 +1058,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.1
 [0.5.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.0
 [0.4.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.8
 [0.4.7]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.7
