@@ -370,6 +370,9 @@ fn may_enable(ctx: &Ctx, disabler: Option<&keys::Disabler>, holder: Holder) -> A
 const AGENT_CALLS_MODELS: &str =
     "An agent needs `api.request` in this project to create keys that call models.";
 
+// The replacement would start enabled, which would undo the disable without `may_enable`'s checks.
+pub(crate) const ROTATE_DISABLED: &str = "This key is disabled; enable it before you rotate it.";
+
 pub(crate) const PERSON_DISABLED: &str =
     "A person disabled this key, so only a person can enable it; use a console session.";
 
@@ -522,6 +525,9 @@ async fn replacement(
             "This key was rotated already; rotate the key that replaced it.".into(),
         ));
     }
+    if old.disabled_at.is_some() {
+        return Err(ApiError::Conflict(ROTATE_DISABLED.into()));
+    }
     let mut conn = state.pg.acquire().await?;
     let models = kaeso_store::pg::catalogue::access(
         &mut conn,
@@ -574,7 +580,8 @@ fn require_right(ctx: &Ctx, right: ProjectRight) -> ApiResult<()> {
     description = "Answers with the new key and its secret, shown once. The old key stops at \
     the end of the grace period, or at its own expiry if that is sooner, and links to the new \
     key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a \
-    key with platform access needs what creating one needs.",
+    key with platform access needs what creating one needs. A disabled key is refused until it is \
+    enabled.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("key" = ApiKeyId, Path)),
     request_body = KeyRotate,
@@ -628,7 +635,7 @@ pub async fn rotate(
     description = "Answers with the new key and its secret, shown once. The old key stops at \
     the end of the grace period, or at its own expiry if that is sooner, and links to the new \
     key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access \
-    needs what creating one needs.",
+    needs what creating one needs. A disabled key is refused until it is enabled.",
     tag = "projects",
     params(
         ("org" = OrgId, Path),

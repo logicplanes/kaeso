@@ -117,6 +117,7 @@
   "errors.keyArchived": "该密钥已归档，无法更改。",
   "errors.keyChangedMeanwhile": "该密钥已被更改，请刷新后重试。",
   "errors.keyRotatedAlready": "该密钥已轮换过，请轮换替换它的密钥。",
+  "errors.keyRotateDisabled": "该密钥已停用，请先启用再轮换。",
   "errors.onlyOwnerRotates": "只有密钥的所有者才能轮换它，新密钥以所有者的权限运行。",
   "errors.serviceAccountKeyRotatePath": "服务账号的密钥请通过 service-accounts/{account}/keys/{key}/rotate 轮换。",
   "errors.keyDisabledByPerson": "此密钥由某人停用，因此只有人可以启用它；请使用控制台会话。",

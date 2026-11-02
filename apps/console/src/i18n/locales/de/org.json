@@ -276,6 +276,7 @@
   "org.platformKeys.noneYet": "Noch keine Plattform-Schlüssel",
   "org.platformKeys.noneYetHint": "Einen für Skripte erstellen, die die Organisation über die Platform API verwalten.",
   "org.platformKeys.rotate": "Rotieren",
+  "org.platformKeys.rotateDisabled": "Aktivieren Sie den Schlüssel, bevor Sie ihn rotieren.",
   "org.platformKeys.rotateKey": "Schlüssel rotieren",
   "org.platformKeys.rotateTitle": "{name} rotieren",
   "org.platformKeys.rotated": "Plattform-Schlüssel rotiert",
