@@ -963,3 +963,77 @@ fn token_counts_for_claude_see_the_merged_tool() {
     let input = &tool_of(&sent, AUTOMATION_UPDATE)["input_schema"];
     assert!(input.get("oneOf").is_none(), "{input}");
 }
+
+fn deepseek(req: &Request) -> EgressCtx {
+    EgressCtx::new(req)
+        .with_provider("deepseek")
+        .with_chat_profile(
+            ChatProfile::compatible("DeepSeek").tool_schema_root(ToolSchemaRoot::TypedObjectUnions),
+        )
+}
+
+#[test]
+fn roots_without_a_type_reach_claude_and_deepseek_as_objects() {
+    let path = json!({"path": {"type": "string"}});
+    for (parameters, typed) in [
+        (json!({}), json!({"type": "object"})),
+        (
+            json!({"properties": path.clone(), "required": ["path"]}),
+            json!({"type": "object", "properties": path.clone(), "required": ["path"]}),
+        ),
+    ] {
+        let req = decode(C, &chat_tool("rename", parameters.clone()));
+        let (claude, adapted) = sent(A, &req, anthropic(&req));
+        assert_eq!(
+            schema(A, tool(A, &claude, "rename")),
+            &typed,
+            "{parameters}"
+        );
+        assert!(adapted.is_empty(), "{adapted:?}");
+        let (deepseek, adapted) = sent(C, &req, deepseek(&req));
+        assert_eq!(
+            schema(C, tool(C, &deepseek, "rename")),
+            &typed,
+            "{parameters}"
+        );
+        assert!(adapted.is_empty(), "{adapted:?}");
+        let (openai, _) = sent(C, &req, EgressCtx::new(&req));
+        assert_eq!(schema(C, tool(C, &openai, "rename")), &parameters);
+
+        let req = decode(A, &rename_tool(parameters.clone()));
+        let (claude, _) = sent(A, &req, anthropic(&req));
+        assert_eq!(
+            schema(A, tool(A, &claude, "rename")),
+            &typed,
+            "{parameters}"
+        );
+    }
+}
+
+#[test]
+fn deepseek_gets_a_union_of_objects_with_an_object_type_at_its_root() {
+    let union = json!({
+        "oneOf": [
+            {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
+            {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"]}
+        ]
+    });
+    let req = decode(C, &chat_tool("rename", union.clone()));
+    let (sent, adapted) = sent(C, &req, deepseek(&req));
+    let mut typed = json!({"type": "object"});
+    typed["oneOf"] = union["oneOf"].clone();
+    assert_eq!(schema(C, tool(C, &sent, "rename")), &typed);
+    assert!(adapted.is_empty(), "{adapted:?}");
+
+    let foreign = json!({"anyOf": [{"type": "string"}, {"type": "object", "properties": {"id": {"type": "string"}}}]});
+    let err = send(
+        C,
+        &decode(C, &chat_tool("rename", foreign)),
+        &mut deepseek(&req),
+    )
+    .unwrap_err();
+    assert_eq!(
+        err.unsupported_feature(),
+        Some("union at the root of a tool schema")
+    );
+}

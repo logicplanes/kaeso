@@ -643,3 +643,19 @@ fn a_thinking_switch_profile_turns_thinking_on_and_off_and_sends_a_budget_as_wri
     ));
     assert!(plain.get("enable_thinking").is_none(), "{plain}");
 }
+
+#[test]
+fn a_function_without_parameters_reaches_mistral_with_an_empty_object_schema() {
+    let req = chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "What time is it?"}],
+        "tools": [{"type": "function", "function": {"name": "now"}}]
+    }));
+    let function =
+        |profile: ChatProfile| encode_with(&req, profile).unwrap()["tools"][0]["function"].clone();
+    assert_eq!(
+        function(ChatProfile::compatible("Mistral").with_tool_parameters())["parameters"],
+        json!({"type": "object", "properties": {}})
+    );
+    assert!(function(ChatProfile::OPENAI).get("parameters").is_none());
+}

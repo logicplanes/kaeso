@@ -114,13 +114,16 @@ OpenAI Responses 的 `namespace` 工具把多个函数工具归在一个名称�
 
 ## 联合类型的工具 schema
 
-Anthropic 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有些应用会在根部放置 `oneOf`、`anyOf` 或 `allOf`：Codex Desktop 的 `automation_update` 工具（位于 `mcp__codex_app` 命名空间中）、由 Zod 的 `z.union` 或 `z.discriminatedUnion` 生成的 MCP 工具，以及根部为 `Union` 的 Pydantic 模型。对于这些目标，Kaeso 会把这样的根部合并为一个对象 schema。工具保留其名称，模型的调用按模型写出的样子返回给应用；应用会根据自己的 schema 校验参数。
+Anthropic、DeepSeek 和 SpaceX 只接受 schema 根部是对象的函数工具参数。有些应用会在根部放置 `oneOf`、`anyOf` 或 `allOf`：Codex Desktop 的 `automation_update` 工具（位于 `mcp__codex_app` 命名空间中）、由 Zod 的 `z.union` 或 `z.discriminatedUnion` 生成的 MCP 工具，以及根部为 `Union` 的 Pydantic 模型。对于这些目标，Kaeso 会把这样的根部合并为一个对象 schema。工具保留其名称，模型的调用按模型写出的样子返回给应用；应用会根据自己的 schema 校验参数。
 
 | 目标 | 接受的根部 | 来源 |
 | --- | --- | --- |
-| Anthropic | 根部没有 `oneOf`、`anyOf` 或 `allOf` 的对象 | [Messages API 参考](https://platform.claude.com/docs/en/api/messages/create)把 `input_schema` 的 `type` 定为 `"object"`；根部出现这三者中的任何一个时，Anthropic 会以 400 回应 `input_schema does not support oneOf, allOf, or anyOf at the top level`（2026-10-26 在 Codex Desktop 上实际看到）。 |
+| Anthropic | 根部带有 `type: "object"` 且没有 `oneOf`、`anyOf` 或 `allOf` 的对象 | [Messages API 参考](https://platform.claude.com/docs/en/api/messages/create)把 `input_schema` 的 `type` 定为 `"object"`；根部出现这三者中的任何一个时，Anthropic 会以 400 回应 `input_schema does not support oneOf, allOf, or anyOf at the top level`（2026-10-26 在 Codex Desktop 上实际看到）。 |
 | SpaceX，Responses 和 Chat Completions（`ToolSchemaRoot::ObjectUnions`） | 对象，或每个分支都是内联对象的 `oneOf` 或 `anyOf`；`allOf` 只能出现在对象根部 | xAI 的[函数调用指南](https://docs.x.ai/docs/guides/function-calling)中的 Tool Schema Reference，2026-10-26 阅读。2026-10-26 通过 Kaeso 网关实际验证：`$ref` 分支、`string` 分支以及既没有 `type: "object"` 也没有 `properties` 的 `allOf` 根部会被以 `invalid_client_tool_schema` 拒绝；由内联对象组成的联合会被接受，带有 `properties` 但没有 `type` 的 schema 在根部和分支中都会被 SpaceX 视为对象。 |
+| DeepSeek，Chat Completions（`ToolSchemaRoot::TypedObjectUnions`） | 与 SpaceX 相同，但根部带有 `type: "object"` | 2026-11-02 通过 Kaeso 网关实际检查：对于没有 `type` 的根部，例如 `{}`、`{"properties": …}` 或单独的 `oneOf` 或 `allOf`，DeepSeek 以 400 `schema must be a JSON Schema of 'type: "object"', got 'type: null'` 回应；在旁边加上 `type: "object"` 后，同样的根部会被接受。 |
 | OpenAI 和其他 Chat Completions 服务商 | 原样 | OpenAI 和 Mistral 会原样响应 Codex Desktop 的 `automation_update`（2026-10-26 实际看到），因此它们的配置保持 `ToolSchemaRoot::AsSent`。 |
+
+对于 Anthropic 和 DeepSeek，没有 `type` 的根部（例如 `{}` 或只有 `properties` 的根部）还会在最前面加上 `type: "object"`；Anthropic 对这样的根部回应 `input_schema.type: Field required`。工具的参数在每种格式中都是对象，因此 schema 接受的内容与之前完全相同，该工具也不会在 `kaeso-adapted` 中注明。
 
 合并方式：
 

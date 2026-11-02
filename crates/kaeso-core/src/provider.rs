@@ -266,7 +266,8 @@ pub const PROVIDERS: &[Provider] = &[
         chat: ChatProfile::compatible("DeepSeek")
             .max_tokens()
             .system_role()
-            .reasoning_fields(&["reasoning_content"]),
+            .reasoning_fields(&["reasoning_content"])
+            .tool_schema_root(ToolSchemaRoot::TypedObjectUnions),
         responses: ResponsesProfile::compatible("DeepSeek"),
         account: None,
     },
@@ -399,6 +400,7 @@ pub const PROVIDERS: &[Provider] = &[
             .without_prefill()
             .greedy_top_p()
             .thinking_parts()
+            .with_tool_parameters()
             .refusing(&[
                 "audio",
                 "function_call",
@@ -773,7 +775,7 @@ mod tests {
     }
 
     #[test]
-    fn only_spacex_merges_tool_schema_roots_in_both_formats() {
+    fn only_deepseek_and_spacex_take_less_than_any_tool_schema_root() {
         let merging: Vec<(&str, ToolSchemaRoot, ToolSchemaRoot)> = PROVIDERS
             .iter()
             .filter(|p| {
@@ -790,11 +792,18 @@ mod tests {
             .collect();
         assert_eq!(
             merging,
-            [(
-                "xai",
-                ToolSchemaRoot::ObjectUnions,
-                ToolSchemaRoot::ObjectUnions
-            )]
+            [
+                (
+                    "deepseek",
+                    ToolSchemaRoot::TypedObjectUnions,
+                    ToolSchemaRoot::AsSent
+                ),
+                (
+                    "xai",
+                    ToolSchemaRoot::ObjectUnions,
+                    ToolSchemaRoot::ObjectUnions
+                )
+            ]
         );
     }
 

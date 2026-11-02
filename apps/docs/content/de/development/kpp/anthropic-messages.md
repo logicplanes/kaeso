@@ -147,6 +147,7 @@ Was `encode_request` für eine KPP-Anfrage schreibt, die nicht aus Anthropic Mes
 | `text.verbosity` von OpenAI Responses | weggelassen | Keine Entsprechung; in `kaeso-left-out` genannt ([bedingte Einträge](cross-format.md#bedingte-einträge)). |
 | `namespace`-Tools von OpenAI Responses | ein Funktions-Tool je Tool im Namespace, namens `<namespace>__<name>` | [Tool-Namespaces](cross-format.md#tool-namespaces). |
 | Tool-Parameter mit `oneOf`, `anyOf` oder `allOf` an der Wurzel, aus jedem Dialekt | ein Objekt-Schema, seine Varianten am Ende der Beschreibung des Tools aufgeführt; in `kaeso-adapted` genannt | Anthropic lehnt diese Schlüsselwörter an der Wurzel von `input_schema` ab ([Tool-Schemas mit Union-Wurzel](cross-format.md#tool-schemas-mit-union-wurzel)). |
+| Tool-Parameter ohne `type` an der Wurzel, aus jedem Dialekt | `type: "object"` an erster Stelle ergänzt | Anthropic verlangt `type` in `input_schema`; Argumente sind in jedem Format ein Objekt ([Tool-Schemas mit Union-Wurzel](cross-format.md#tool-schemas-mit-union-wurzel)). |
 | fremde Extras, unbekannte Blöcke, Tools und Tool-Auswahlen, Zitate, fremde Datei-IDs | `Unsupported` | `cross::check_foreign` ([Anfragen](cross-format.md#anfragen)). |
 
 ## Antworten

@@ -114,13 +114,16 @@ An OpenAI Responses `namespace` tool groups function tools under a name. Codex g
 
 ## Union tool schemas
 
-Anthropic and SpaceX take a function tool's parameters only with an object at the root of the schema. Some apps put a `oneOf`, `anyOf` or `allOf` there: Codex Desktop's `automation_update` tool (in the `mcp__codex_app` namespace), MCP tools built from Zod's `z.union` or `z.discriminatedUnion`, and Pydantic models with a `Union` root. For these targets Kaeso merges such a root into one object schema. The tool keeps its name, and the model's calls go back to the app as the model wrote them; the app checks the arguments against its own schema.
+Anthropic, DeepSeek and SpaceX take a function tool's parameters only with an object at the root of the schema. Some apps put a `oneOf`, `anyOf` or `allOf` there: Codex Desktop's `automation_update` tool (in the `mcp__codex_app` namespace), MCP tools built from Zod's `z.union` or `z.discriminatedUnion`, and Pydantic models with a `Union` root. For these targets Kaeso merges such a root into one object schema. The tool keeps its name, and the model's calls go back to the app as the model wrote them; the app checks the arguments against its own schema.
 
 | Target | Root it takes | Source |
 | --- | --- | --- |
-| Anthropic | An object without `oneOf`, `anyOf` or `allOf` at the root | The [Messages API reference](https://platform.claude.com/docs/en/api/messages/create) gives `input_schema` the `type` `"object"`; Anthropic answers any of the three at the root with a 400, `input_schema does not support oneOf, allOf, or anyOf at the top level` (seen live from Codex Desktop on 2026-10-26). |
+| Anthropic | An object with `type: "object"` and without `oneOf`, `anyOf` or `allOf` at the root | The [Messages API reference](https://platform.claude.com/docs/en/api/messages/create) gives `input_schema` the `type` `"object"`; Anthropic answers any of the three at the root with a 400, `input_schema does not support oneOf, allOf, or anyOf at the top level` (seen live from Codex Desktop on 2026-10-26). |
 | SpaceX, Responses and Chat Completions (`ToolSchemaRoot::ObjectUnions`) | An object, or a `oneOf` or `anyOf` whose every branch is an inline object; `allOf` only on an object root | xAI's [function calling guide](https://docs.x.ai/docs/guides/function-calling), Tool Schema Reference, read 2026-10-26. Checked live through a Kaeso gateway on 2026-10-26: `$ref` branches, a `string` branch and an `allOf` root with neither `type: "object"` nor `properties` are refused with `invalid_client_tool_schema`; a union of inline objects is accepted, and SpaceX counts a schema with `properties` and no `type` as an object, at the root and in a branch. |
+| DeepSeek, Chat Completions (`ToolSchemaRoot::TypedObjectUnions`) | As SpaceX, with `type: "object"` at the root | Checked live through a Kaeso gateway on 2026-11-02: DeepSeek answers a root without `type`, such as `{}`, `{"properties": …}` or a bare `oneOf` or `allOf`, with 400 `schema must be a JSON Schema of 'type: "object"', got 'type: null'`, and takes the same roots with `type: "object"` beside them. |
 | OpenAI and the other Chat Completions providers | As sent | OpenAI and Mistral answer Codex Desktop's `automation_update` as sent (seen live on 2026-10-26), so their profiles keep `ToolSchemaRoot::AsSent`. |
+
+For Anthropic and DeepSeek, a root without `type`, such as `{}` or one with only `properties`, also gets `type: "object"`, first; Anthropic answers it with `input_schema.type: Field required`. A tool's arguments are an object in every format, so the schema still takes exactly what it took, and the tool isn't named in `kaeso-adapted`.
 
 The merge:
 
