@@ -4,6 +4,14 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-11-02
+
+Kaeso 0.5.4 fixes Claude Code requests to models whose output limit is below 32,000 tokens, which were refused before. Fresh installs start with KPMR model data as of 2 November 2026 and current prices for two OpenRouter models. Running installs get the same data from KPMR on their own. There are no breaking changes in this release.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.5.3...v0.5.4](https://github.com/logicplanes/kaeso/compare/v0.5.3...v0.5.4)
+
 ### Changed
 
 #### Gateway
@@ -12,7 +20,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ### Fixed
 
-- Claude Code reaches models whose output limit is below 32,000 tokens, such as Command A. Claude Code asks every model it doesn't know for 32,000, and providers such as Cohere refuse more than the model's maximum, so a request from another format that asks for more output than the model can write now gets the model's maximum, and the `kaeso-adapted` header names the app's field, such as `max_tokens`. Requests in the provider's own format are unchanged. ([#590](https://github.com/logicplanes/kaeso/pull/590))
+- Claude Code reaches models whose output limit is below 32,000 tokens, such as Command A. A request from another format that asks for more output than the model's maximum now gets that maximum, and `kaeso-adapted` names the app's field, such as `max_tokens`. Requests in the provider's own format are unchanged. ([#590](https://github.com/logicplanes/kaeso/pull/590))
 
 ## [0.5.3] - 2026-11-02
 
@@ -1106,7 +1114,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.3...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.4...HEAD
+[0.5.4]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.4
 [0.5.3]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.3
 [0.5.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.2
 [0.5.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.1
