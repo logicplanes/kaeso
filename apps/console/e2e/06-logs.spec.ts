@@ -7,7 +7,7 @@ const orgOf = (page: Page) => /\/orgs\/([^/]+)/.exec(new URL(page.url()).pathnam
 const projectOf = (page: Page) => /\/projects\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
 const rows = (page: Page) =>
   page
-    .getByRole("table", { name: "Requests" })
+    .getByRole("grid", { name: "Requests" })
     .getByRole("row")
     .filter({ hasNot: page.getByRole("columnheader"), has: page.locator("time") });
 

@@ -94,7 +94,7 @@ test("playground requests are in the request log with a Playground tag and filte
   await signInAsOwner(page);
   await page.goto(`/orgs/${org}/projects/${project}/logs`);
   const rows = page
-    .getByRole("table", { name: "Requests" })
+    .getByRole("grid", { name: "Requests" })
     .getByRole("row")
     .filter({ hasNot: page.getByRole("columnheader"), has: page.locator("time") });
   const empty = page.getByText("No requests in this range", { exact: true });

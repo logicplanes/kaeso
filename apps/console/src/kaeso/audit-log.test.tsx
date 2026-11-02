@@ -35,7 +35,7 @@ function orgLog(events = [created, old], rights: string[] = ALL_ORG_RIGHTS) {
   on("GET", ORG_LOG, paged(events));
 }
 
-const table = () => screen.findByRole("table", { name: "Audit log" });
+const table = () => screen.findByRole("grid", { name: "Audit log" });
 
 function installPicker() {
   const picker = vi.fn(async () => ({
@@ -217,7 +217,7 @@ describe("AuditLog", () => {
     on("GET", "orgs/:org/audit-log/:event", byAgent);
     const { user, router } = await renderApp(PATH);
     const row = () =>
-      within(screen.getByRole("table", { name: "Audit log" }))
+      within(screen.getByRole("grid", { name: "Audit log" }))
         .getAllByRole("row")
         .slice(1)[0] as HTMLElement;
     await table();

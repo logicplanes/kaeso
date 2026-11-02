@@ -19,12 +19,12 @@ test("users: one is invited, deactivated and reactivated", async ({ page }) => {
   await invite.getByRole("button", { name: "Send invitation" }).click();
   await expect(toastText(page, "Invitation sent to someone@example.com")).toBeVisible();
 
-  await page.getByRole("table", { name: "Users" }).getByText("Lin Park").click();
+  await page.getByRole("grid", { name: "Users" }).getByText("Lin Park").click();
   const sheet = page.getByRole("dialog", { name: "Lin Park" });
   await sheet.getByRole("button", { name: "Deactivate" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Deactivate" }).click();
   await expect(toastText(page, "Lin Park deactivated")).toBeVisible();
-  await expect(page.getByRole("table", { name: "Users" }).getByText("Deactivated")).toBeVisible();
+  await expect(page.getByRole("grid", { name: "Users" }).getByText("Deactivated")).toBeVisible();
   await sheet.getByRole("button", { name: "Reactivate" }).click();
   await expect(toastText(page, "Lin Park reactivated")).toBeVisible();
 });
@@ -95,5 +95,5 @@ test("system with its model data and the instance audit log", async ({ page }) =
 
   await page.locator(`nav[aria-label="Settings"] a[href="/settings/instance/audit-log"]`).click();
   await expect(page.getByRole("heading", { level: 1, name: "Audit log" })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Audit log" }).getByText("Instance settings changed").first()).toBeVisible();
+  await expect(page.getByRole("grid", { name: "Audit log" }).getByText("Instance settings changed").first()).toBeVisible();
 });

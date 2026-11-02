@@ -374,7 +374,7 @@ test("logging: retention is shortened, storage is listed, and a deletion is queu
 
 test("audit log: the changes above are recorded, filtered by action, and open with what they changed", async ({ page }) => {
   await openOrgSettings(page, "Audit log");
-  const grid = page.getByRole("table", { name: "Audit log" });
+  const grid = page.getByRole("grid", { name: "Audit log" });
   await expect(grid.getByText("Organization changed").first()).toBeVisible();
   await expect(grid.getByText("Custom provider deleted")).toBeVisible();
   await page.getByRole("combobox", { name: "Action" }).fill("Platform keys");
