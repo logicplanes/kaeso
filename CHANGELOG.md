@@ -4,6 +4,18 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 2 November 2026, 14:35 UTC: OpenRouter adds GLM 5.3 FlashX Legal, no longer lists Hermes 3 Llama 3.1 405B and 70B, and changes the price of Gemma 4 26B A4B. Running installs get the same data from KPMR on their own. ([#594](https://github.com/logicplanes/kaeso/pull/594))
+
+### Fixed
+
+#### UI library
+
+- The verification code cells fill their row up to the 400px sign-in column, at 48px high, so they line up with the Verify button on the sign-in page and with the fields around them in dialogs, instead of hugging the left edge; the caret in the empty cell blinks like a text field's. ([#593](https://github.com/logicplanes/kaeso/pull/593))
+
 ## [0.5.4] - 2026-11-02
 
 Kaeso 0.5.4 fixes Claude Code requests to models whose output limit is below 32,000 tokens, which were refused before. Fresh installs start with KPMR model data as of 2 November 2026 and current prices for two OpenRouter models. Running installs get the same data from KPMR on their own. There are no breaking changes in this release.
