@@ -497,6 +497,91 @@ async fn the_org_is_deleted_for_good_when_its_grace_period_ends() {
 }
 
 #[tokio::test]
+async fn the_deletion_notice_goes_to_active_members_and_instance_admins_once() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let org = owner.org_id.clone();
+    join(&app, &owner, "developer@example.com", "developer").await;
+    let gone = common::join(
+        &app,
+        &owner,
+        json!({ "email": "gone@example.com", "preset": "member" }),
+        "Gone",
+    )
+    .await
+    .1;
+    let other = app
+        .post("/me/orgs", json!({ "name": "Other" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let elsewhere = Owner {
+        cookie: owner.cookie.clone(),
+        user_id: owner.user_id.clone(),
+        org_id: other,
+    };
+    let admin = common::join(
+        &app,
+        &elsewhere,
+        json!({ "email": "admin@example.com", "preset": "member" }),
+        "Admin",
+    )
+    .await
+    .1;
+    common::join(
+        &app,
+        &elsewhere,
+        json!({ "email": "outsider@example.com", "preset": "member" }),
+        "Outsider",
+    )
+    .await;
+    app.call(
+        Method::PUT,
+        &format!("/instance/users/{admin}/instance-admin"),
+        Some(json!({ "is_instance_admin": true })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.post(
+        &format!("/instance/users/{gone}/deactivate"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let cookie = sign_in(&app, "owner@example.com").await;
+    schedule(&app, &org, &cookie).await;
+    let notices = |to: &str| {
+        app.mail
+            .to(to)
+            .iter()
+            .filter(|m| m.kind.as_str() == "org_scheduled_for_deletion")
+            .count()
+    };
+    let told = [
+        "owner@example.com",
+        "developer@example.com",
+        "admin@example.com",
+    ];
+    for to in told {
+        common::eventually(to, || async { notices(to) > 0 }).await;
+    }
+    for to in told {
+        assert_eq!(notices(to), 1, "{to}");
+    }
+    for to in ["gone@example.com", "outsider@example.com"] {
+        assert_eq!(notices(to), 0, "{to}");
+    }
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn instance_admins_sort_by_deletion_date_restore_and_delete_now() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
@@ -614,90 +699,5 @@ async fn instance_admins_sort_by_deletion_date_restore_and_delete_now() {
         names(&app.get("/instance/orgs?sort=deletion", &cookie).await),
         ["Acme", "Northwind", "Juniper Studio"]
     );
-    s.cleanup().await;
-}
-
-#[tokio::test]
-async fn the_deletion_notice_goes_to_active_members_and_instance_admins_once() {
-    let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
-    let org = owner.org_id.clone();
-    join(&app, &owner, "developer@example.com", "developer").await;
-    let gone = common::join(
-        &app,
-        &owner,
-        json!({ "email": "gone@example.com", "preset": "member" }),
-        "Gone",
-    )
-    .await
-    .1;
-    let other = app
-        .post("/me/orgs", json!({ "name": "Other" }), Some(&owner.cookie))
-        .await
-        .expect_status(StatusCode::CREATED)
-        .body["id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
-    let elsewhere = Owner {
-        cookie: owner.cookie.clone(),
-        user_id: owner.user_id.clone(),
-        org_id: other,
-    };
-    let admin = common::join(
-        &app,
-        &elsewhere,
-        json!({ "email": "admin@example.com", "preset": "member" }),
-        "Admin",
-    )
-    .await
-    .1;
-    common::join(
-        &app,
-        &elsewhere,
-        json!({ "email": "outsider@example.com", "preset": "member" }),
-        "Outsider",
-    )
-    .await;
-    app.call(
-        Method::PUT,
-        &format!("/instance/users/{admin}/instance-admin"),
-        Some(json!({ "is_instance_admin": true })),
-        Some(&owner.cookie),
-    )
-    .await
-    .expect_status(StatusCode::OK);
-    app.post(
-        &format!("/instance/users/{gone}/deactivate"),
-        json!({}),
-        Some(&owner.cookie),
-    )
-    .await
-    .expect_status(StatusCode::OK);
-
-    let cookie = sign_in(&app, "owner@example.com").await;
-    schedule(&app, &org, &cookie).await;
-    let notices = |to: &str| {
-        app.mail
-            .to(to)
-            .iter()
-            .filter(|m| m.kind.as_str() == "org_scheduled_for_deletion")
-            .count()
-    };
-    let told = [
-        "owner@example.com",
-        "developer@example.com",
-        "admin@example.com",
-    ];
-    for to in told {
-        common::eventually(to, || async { notices(to) > 0 }).await;
-    }
-    for to in told {
-        assert_eq!(notices(to), 1, "{to}");
-    }
-    for to in ["gone@example.com", "outsider@example.com"] {
-        assert_eq!(notices(to), 0, "{to}");
-    }
     s.cleanup().await;
 }
