@@ -11,7 +11,7 @@ use super::convert::{
     FORM_REFUSAL_PART, encode_file_part, encode_image_part, encode_refusal_part, encode_text_part,
     encode_tool_call, ext_nested, ext_with, is_tool_call_item, nested_keys, safe_tool_name, to_raw,
 };
-use super::profile::{ChatProfile, OutputLimit, ReplyReasoning, SeedField};
+use super::profile::{ChatProfile, EndUserField, OutputLimit, ReplyReasoning, SeedField};
 use super::request::{
     CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_N, FORM_REPLAYED,
     FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP, FORM_STREAM_FALSE,
@@ -79,7 +79,9 @@ pub(crate) fn encode_generate(
         w.n = Some(1);
     }
     if let Some(user) = req.user.as_ref().filter(|_| rules.end_user) {
-        if own && req.extras.form_flag(DIALECT, FORM_USER) {
+        if (own && req.extras.form_flag(DIALECT, FORM_USER))
+            || rules.end_user_field == EndUserField::User
+        {
             w.user = Some(user.clone());
         } else {
             w.safety_identifier = Some(user.clone());
@@ -254,6 +256,15 @@ fn apply_profile(
         if let Some(seed) = seed {
             out.extra.insert("random_seed".to_owned(), to_raw(&seed)?);
         }
+    }
+    if profile.request.end_user && profile.request.end_user_field == EndUserField::User {
+        // Groq refuses `safety_identifier` and takes one `user`: an app that sent both keys gets
+        // the id from `safety_identifier` there.
+        out.extra.shift_remove("user");
+        if out.known.user.is_some() {
+            out.verbatim.shift_remove("user");
+        }
+        rename_null(&mut out.verbatim, "safety_identifier", Some("user"));
     }
     if !profile.request.end_user {
         out.extra.shift_remove("user");
