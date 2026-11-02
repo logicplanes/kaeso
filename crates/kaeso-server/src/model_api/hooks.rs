@@ -156,6 +156,20 @@ impl Outcome {
 
 pub trait Sink: Send + Sync + std::fmt::Debug {
     fn finish<'a>(&'a self, state: &'a AppState, outcome: Outcome) -> BoxFuture<'a, ()>;
+
+    // A reply under a limit ends only once it is charged, so the app's next request sees the
+    // charge; a sink that charges first can let the reply end before the rest of its work.
+    fn finish_charged<'a>(
+        &'a self,
+        state: &'a AppState,
+        outcome: Outcome,
+        charged: tokio::sync::oneshot::Sender<()>,
+    ) -> BoxFuture<'a, ()> {
+        Box::pin(async move {
+            self.finish(state, outcome).await;
+            let _ = charged.send(());
+        })
+    }
 }
 
 #[derive(Debug, Default)]

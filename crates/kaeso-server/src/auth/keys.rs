@@ -135,12 +135,17 @@ async fn find<V, F, Fut>(
 ) -> Result<Option<Arc<V>>, LookupError>
 where
     V: Clone + serde::Serialize + serde::de::DeserializeOwned + Send + Sync + 'static,
-    F: FnOnce(PoolConnection<Postgres>, Vec<u8>) -> Fut,
-    Fut: Future<Output = Result<Option<V>, StoreError>>,
+    F: FnOnce(PoolConnection<Postgres>, Vec<u8>) -> Fut + Copy + Send + 'static,
+    Fut: Future<Output = Result<Option<V>, StoreError>> + Send + 'static,
 {
     let id = hex(hash);
     let matches = |v: &Arc<V>| secret::hashes_equal(hash_of(v), hash);
-    if let Some(v) = cache.cached(&id).await.filter(matches) {
+    let (pg, owned) = (state.pg.clone(), hash.to_vec());
+    let refresh = move || async move {
+        let conn = pg.acquire().await.map_err(StoreError::from)?;
+        load(conn, owned).await
+    };
+    if let Some(v) = cache.cached_or_refresh(&id, refresh).await.filter(matches) {
         return Ok(Some(v));
     }
     let unknown = format!("{name}:{id}");

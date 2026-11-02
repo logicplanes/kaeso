@@ -128,7 +128,7 @@ pub async fn active(state: &AppState, project: Uuid) -> Option<Active> {
     let found = state
         .caches
         .response_cache
-        .get_or_load(&project.to_string(), || async move {
+        .get_or_refresh(&project.to_string(), move || async move {
             store::settings(&pg, project)
                 .await
                 .map(|s| s.map(Cached::from))
