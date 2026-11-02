@@ -723,6 +723,30 @@ fn rewritten_tool_names_map_back_in_streams() {
 }
 
 #[test]
+fn responses_apps_get_their_own_tool_name_back_in_every_event() {
+    let mut ctx = gen_ctx();
+    ctx.tool_names
+        .insert("get_weather".into(), "weather.get".into());
+    let wire = fixture("streams", "function-call-stream", "sse");
+    let mut dec = OpenAiResponses::stream_decoder(&ctx);
+    let mut events = dec.feed(&wire);
+    events.extend(dec.finish());
+    let out = encode_stream(
+        &events,
+        &EncodeCtx::new(RequestKind::Generate, kaeso_kpp::StreamMode::on(true)),
+    );
+    let want = String::from_utf8(wire).unwrap().replace(
+        "\"type\":\"function_call\",\"status\":\"in_progress\",\"arguments\":\"\",\"call_id\":\"call_J1ojIrg6A5EKQZfjmjiTGjQV\",\"name\":\"get_weather\"",
+        "\"type\":\"function_call\",\"status\":\"in_progress\",\"arguments\":\"\",\"call_id\":\"call_J1ojIrg6A5EKQZfjmjiTGjQV\",\"name\":\"weather.get\"",
+    );
+    let want = want.replace(
+        "\"call_id\":\"call_J1ojIrg6A5EKQZfjmjiTGjQV\",\"name\":\"get_weather\"}",
+        "\"call_id\":\"call_J1ojIrg6A5EKQZfjmjiTGjQV\",\"name\":\"weather.get\"}",
+    );
+    assert_sse_eq("function-call-stream", want.as_bytes(), &out);
+}
+
+#[test]
 fn a_stream_cut_after_response_created_releases_the_start_on_flush() {
     let wire = String::from_utf8(fixture("streams", "text-basic-stream", "sse")).unwrap();
     let created: String = wire.split_inclusive("\n\n").take(1).collect();

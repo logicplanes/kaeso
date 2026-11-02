@@ -560,6 +560,33 @@ fn a_long_call_that_never_gets_an_id_is_released_whole_at_the_end() {
 }
 
 #[test]
+fn a_rewritten_name_in_a_later_chunk_reaches_chat_apps_as_the_apps_name() {
+    let mut ctx = ectx();
+    ctx.tool_names
+        .insert("get_weather".into(), "weather.get".into());
+    let wire = fixture("late-envelope-and-tool-header");
+    let mut decoder = OpenAiChat::stream_decoder(&ctx);
+    let mut events = decoder.feed(&wire);
+    events.extend(decoder.finish());
+    let out = encode(&events, false);
+    let want = String::from_utf8(wire)
+        .unwrap()
+        .replace("\"get_weather\"", "\"weather.get\"");
+    assert_sse_eq("late-envelope-and-tool-header", want.as_bytes(), &out);
+
+    let repeated = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"get_weather\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}\n\n\
+data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"get_weather\",\"arguments\":\"{}\"}}]},\"finish_reason\":null}]}\n\n\
+data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n\
+data: [DONE]\n\n";
+    let mut decoder = OpenAiChat::stream_decoder(&ctx);
+    let mut events = decoder.feed(repeated.as_bytes());
+    events.extend(decoder.finish());
+    let out = encode(&events, false);
+    let want = repeated.replace("\"get_weather\"", "\"weather.get\"");
+    assert_sse_eq("repeated name", want.as_bytes(), &out);
+}
+
+#[test]
 fn usage_is_hidden_when_the_app_did_not_ask() {
     let bytes = fixture("tools-single");
     let events = decode_whole(&bytes);

@@ -391,14 +391,6 @@ impl Decoder {
         if known.index != kpp {
             extras.form.insert(INDEX_FORM.into(), known.index.into());
         }
-        if let Some(default) = default_start_block(&wire_header, true) {
-            let actual: Value =
-                serde_json::from_str(cb.get()).map_err(|e| bad(&without_position(&e)))?;
-            if actual != default {
-                extras.form.insert(CONTENT_BLOCK_FORM.into(), actual);
-            }
-        }
-        framing(ev, ty, &mut extras);
         let header = match wire_header {
             BlockHeader::ToolCall(h) => BlockHeader::ToolCall(ToolCallHeader::new(
                 self.ctx.original_tool_id(&h.id),
@@ -406,6 +398,18 @@ impl Decoder {
             )),
             other => other,
         };
+        if let Some(default) = default_start_block(&header, true) {
+            let mut actual: Value =
+                serde_json::from_str(cb.get()).map_err(|e| bad(&without_position(&e)))?;
+            if let (BlockHeader::ToolCall(h), Value::Object(block)) = (&header, &mut actual) {
+                block.insert("id".into(), Value::from(h.id.as_str()));
+                block.insert("name".into(), Value::from(h.name.as_str()));
+            }
+            if actual != default {
+                extras.form.insert(CONTENT_BLOCK_FORM.into(), actual);
+            }
+        }
+        framing(ev, ty, &mut extras);
         let mut start = BlockStart::new(kpp, header);
         start.extras = extras;
         out.push(StreamEvent::BlockStart(start));

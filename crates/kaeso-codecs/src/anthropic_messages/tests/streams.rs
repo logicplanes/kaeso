@@ -372,6 +372,49 @@ event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,
     );
 }
 
+#[test]
+fn a_start_block_kept_whole_carries_the_apps_tool_name_and_id() {
+    let mut ctx = stream_ctx();
+    ctx.tool_names
+        .insert("get_weather".into(), "weather.get".into());
+    ctx.tool_ids.insert(
+        "toolu_01NRLabsLyVHZPKxbKvkfSMn".into(),
+        "call:weather".into(),
+    );
+    let wire = stream_fixture("tools-caller");
+    let events = decode_stream_chunked(&wire, 0, &ctx);
+    let start = events
+        .iter()
+        .find_map(|e| match e {
+            StreamEvent::BlockStart(s) if matches!(s.block, BlockHeader::ToolCall(_)) => Some(s),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(
+        start.block,
+        BlockHeader::ToolCall(ToolCallHeader::new("call:weather", "weather.get"))
+    );
+    assert_eq!(
+        start.extras.form_value(A, "content_block"),
+        Some(
+            &json!({"type": "tool_use", "id": "call:weather", "name": "weather.get", "caller": {"type": "direct"}, "input": {}})
+        )
+    );
+    let out = String::from_utf8(encode_stream(&events)).unwrap();
+    let want = String::from_utf8(wire)
+        .unwrap()
+        .replace("\"toolu_01NRLabsLyVHZPKxbKvkfSMn\"", "\"call:weather\"")
+        .replace("\"get_weather\"", "\"weather.get\"");
+    assert_sse_eq("tools-caller", want.as_bytes(), out.as_bytes());
+
+    let events = decode_stream_chunked(&stream_fixture("tools-caller"), 0, &stream_ctx());
+    assert_sse_eq(
+        "tools-caller",
+        &stream_fixture("tools-caller"),
+        &encode_stream(&events),
+    );
+}
+
 fn error_of(events: &[StreamEvent]) -> &kaeso_kpp::KppError {
     match events.last() {
         Some(StreamEvent::Error(e)) => e,
