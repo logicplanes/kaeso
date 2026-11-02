@@ -38,5 +38,5 @@ COPY --from=build --chmod=0555 /app/apps/console/dist /srv
 USER console
 RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 EXPOSE 3000
-HEALTHCHECK --interval=15s --timeout=3s --start-period=5s CMD ["wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --start-interval=1s CMD ["wget", "-qO-", "http://127.0.0.1:3000/healthz"]
 CMD ["/usr/local/bin/kaeso-console"]
