@@ -29,7 +29,7 @@ const columns = [
 const row = (name: string) => screen.getByText(name).closest<HTMLElement>("[role=row]")!;
 
 describe("DataTable keyboard model", () => {
-  it("is a table with one tab stop: header buttons and row controls stay out of the tab order", async () => {
+  it("is a grid with one tab stop: header buttons and row controls stay out of the tab order", async () => {
     const user = userEvent.setup();
     render(
       <>
@@ -37,9 +37,11 @@ describe("DataTable keyboard model", () => {
         <button type="button">After</button>
       </>,
     );
-    const table = screen.getByRole("table", { name: "Keys" });
-    expect(table).not.toHaveAttribute("aria-multiselectable");
-    expect(within(table).getAllByRole("cell").length).toBeGreaterThan(0);
+    const table = screen.getByRole("grid", { name: "Keys" });
+    expect(table).toHaveAttribute("aria-multiselectable", "true");
+    expect(within(table).getAllByRole("gridcell").length).toBeGreaterThan(0);
+    expect(within(table).queryAllByRole("cell")).toHaveLength(0);
+    expect(row("checkout-web")).toHaveAttribute("aria-selected", "false");
     await user.tab();
     expect(row("checkout-web")).toHaveFocus();
     await user.tab();
@@ -133,9 +135,24 @@ describe("DataTable keyboard model", () => {
     );
     expect(row("ci-runner")).toHaveAttribute("aria-current", "true");
     expect(row("ci-runner")).toHaveClass("bg-fill-2");
+    expect(screen.getByRole("grid", { name: "Keys" })).not.toHaveAttribute("aria-multiselectable");
+    expect(row("ci-runner")).not.toHaveAttribute("aria-selected");
     rerender(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} />);
     expect(screen.getByRole("table", { name: "Keys" })).toBeInTheDocument();
+    expect(within(screen.getByRole("table", { name: "Keys" })).getAllByRole("cell").length).toBeGreaterThan(0);
     expect(row("ci-runner")).not.toHaveAttribute("tabindex");
+  });
+
+  it("leaves a row closed when the click ends selecting its text, and opens it on a plain click", () => {
+    const onRowClick = vi.fn();
+    render(<DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} onRowClick={onRowClick} />);
+    window.getSelection()?.selectAllChildren(screen.getByText("ci-runner"));
+    fireEvent.click(screen.getByText("ci-runner"));
+    expect(window.getSelection()?.toString()).toBe("ci-runner");
+    expect(onRowClick).not.toHaveBeenCalled();
+    window.getSelection()?.removeAllRanges();
+    fireEvent.click(screen.getByText("ci-runner"));
+    expect(onRowClick).toHaveBeenCalledWith(rows[1]);
   });
 
   it("hovers a step past the selected fill on the panel and in a card", () => {
@@ -176,7 +193,7 @@ describe("DataTable keyboard model", () => {
 });
 
 describe("DataTable ranges and pages", () => {
-  const selected = () => screen.getAllByRole("row", { selected: true }).map((r) => within(r).getAllByRole("cell")[2]?.textContent);
+  const selected = () => screen.getAllByRole("row", { selected: true }).map((r) => within(r).getAllByRole("gridcell")[2]?.textContent);
   const table = () => <DataTable aria-label="Keys" data={rows} columns={columns} getRowId={(r) => r.id} selectable onRowClick={() => undefined} />;
 
   it("shrinks a range when Shift and an arrow turn back toward where it began", async () => {
@@ -223,7 +240,7 @@ describe("DataTable ranges and pages", () => {
       screen
         .getAllByRole("row")
         .slice(1)
-        .map((r) => within(r).getAllByRole("cell")[2]?.textContent),
+        .map((r) => within(r).getAllByRole("gridcell")[2]?.textContent),
     ).toEqual(["ci-runner", "checkout-web", "staging"]);
     row("staging").focus();
     await user.keyboard("{Shift>}{ArrowUp}{/Shift}");

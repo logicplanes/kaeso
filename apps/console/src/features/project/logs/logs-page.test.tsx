@@ -1,5 +1,5 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
@@ -10,7 +10,7 @@ import { renderApp } from "~/test/render";
 const LOGS = "orgs/:org/projects/:project/logs";
 const listQueries = () => requests("GET", LOGS).map((r) => Object.fromEntries(r.query));
 const lastQuery = () => listQueries().at(-1) ?? {};
-const requestsTable = () => screen.getByRole("table", { name: "Requests" });
+const requestsTable = () => screen.getByRole("grid", { name: "Requests" });
 
 describe("LogsPage", () => {
   it("lists requests with their model, outcome, tokens, key and sender", async () => {
@@ -104,7 +104,7 @@ describe("LogsPage", () => {
     await renderApp(projectPath("logs"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    const started = within(row).getAllByRole("cell")[0] as HTMLElement;
+    const started = within(row).getAllByRole("gridcell")[0] as HTMLElement;
     expect(within(started).getByText(/^\d{2}:\d{2}$/)).toBeInTheDocument();
     expect(within(started).getByText(/^\d{1,2} [A-Z][a-z]{2,3}$/)).toBeInTheDocument();
     expect(within(requestsTable()).getAllByRole("columnheader")[0]).toHaveTextContent(/^Started$/);
@@ -126,7 +126,7 @@ describe("LogsPage", () => {
     await renderApp(projectPath("logs?range=1h"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    const [started] = within(row).getAllByRole("cell");
+    const [started] = within(row).getAllByRole("gridcell");
     expect(started?.textContent).toMatch(/^\d{1,2}:\d{2}:\d{2}$/);
     vi.unstubAllGlobals();
   });
@@ -434,6 +434,21 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
+  it("starts a custom span on today in the install's time zone", async () => {
+    vi.setSystemTime(new Date("2026-10-14T20:00:00Z"));
+    onTestFinished(() => void vi.useRealTimers());
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo" }) });
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    await user.click(screen.getByRole("combobox", { name: "Time range" }));
+    await user.click(await screen.findByRole("option", { name: "Custom range" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-10-15", to: "2026-10-15" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-14T15:00:00.000Z", to: "2026-10-15T15:00:00.000Z" }));
+  });
+
   it("opens a request from its row, steps with j and k, and closes it", async () => {
     signedIn();
     projectData();
@@ -551,7 +566,7 @@ describe("LogsPage", () => {
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
     const model = within(row)
-      .getAllByRole("cell")
+      .getAllByRole("gridcell")
       .find((c) => c.textContent?.includes("gpt-5.4-mini")) as HTMLElement;
     expect(within(model).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
     expect(within(requestsTable()).queryByRole("columnheader", { name: /Provider/ })).not.toBeInTheDocument();
@@ -607,8 +622,8 @@ describe("LogsPage", () => {
     expect(requests("GET", "orgs/:org/projects/:project/keys")).toHaveLength(0);
   });
 
-  it("narrows to the days picked in the calendar", async () => {
-    signedIn();
+  it("narrows to the days picked in the calendar, from midnight in the install's time zone", async () => {
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo" }) });
     projectData();
     logsData({ rows: [logRow()] });
     const { user, router } = await renderApp(projectPath("logs?from=2026-10-01&to=2026-10-03"));
@@ -624,7 +639,7 @@ describe("LogsPage", () => {
     await user.type(end, "2026-10-07");
     await user.click(within(dialog).getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-10-05", to: "2026-10-07" }));
-    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-05T00:00:00Z", to: "2026-10-08T00:00:00.000Z" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-04T15:00:00.000Z", to: "2026-10-07T15:00:00.000Z" }));
   });
 
   it("names a filter value it can't resolve by its id, and removes the status and streamed filters", async () => {
@@ -682,6 +697,45 @@ describe("LogsPage", () => {
     seen(true);
     expect(await screen.findByRole("row", { name: /\/v1\/embeddings/ })).toBeInTheDocument();
     expect(listQueries().at(-1)).toMatchObject({ after: "cur_2" });
+    vi.unstubAllGlobals();
+  });
+
+  it("stops loading on its own after the next page fails, and Load more tries again", async () => {
+    const observers: { live: boolean }[] = [];
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        live = false;
+        constructor(public callback: IntersectionObserverCallback) {
+          observers.push(this);
+        }
+        observe() {
+          this.live = true;
+          queueMicrotask(() => this.live && this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver));
+        }
+        disconnect() {
+          this.live = false;
+        }
+      },
+    );
+    signedIn();
+    projectData();
+    let nextPage: Response | ReturnType<typeof listPage> = apiError(500, "internal", "The log store didn't answer.");
+    on("GET", LOGS, ({ query }: { query: URLSearchParams }) => (query.get("after") === "cur_2" ? nextPage : listPage([logRow()], "cur_2")));
+    const { user } = await renderApp(projectPath("logs"));
+    const nextPageAsked = () => listQueries().filter((q) => q.after === "cur_2").length;
+
+    expect(await notifications().findByText("The log store didn't answer.")).toBeInTheDocument();
+    const asked = nextPageAsked();
+    await act(async () => {});
+    expect(nextPageAsked()).toBe(asked);
+    expect(observers.filter((o) => o.live)).toHaveLength(0);
+    expect(screen.getByRole("row", { name: /\/v1\/chat\/completions/ })).toBeInTheDocument();
+
+    nextPage = listPage([logRow({ id: "req_0002", endpoint: "/v1/embeddings" })]);
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    expect(await screen.findByRole("row", { name: /\/v1\/embeddings/ })).toBeInTheDocument();
+    expect(nextPageAsked()).toBe(asked + 1);
     vi.unstubAllGlobals();
   });
 });
@@ -983,7 +1037,7 @@ describe("LogsPage on an install without request logs", () => {
     await renderApp(projectPath("logs"));
     expect(await screen.findByText("Request logs are off on this install")).toBeInTheDocument();
     expect(screen.getByText("Usage, limits and budgets still count every request.")).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Requests" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("grid", { name: "Requests" })).not.toBeInTheDocument();
     expect(requests("GET", LOGS)).toHaveLength(0);
   });
 });

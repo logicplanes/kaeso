@@ -56,7 +56,7 @@ describe("log settings", () => {
     await waitFor(() => expect(toggle()).not.toHaveAttribute("aria-busy"));
     const metadata = screen.getByRole("spinbutton", { name: "Metadata retention" });
     await user.clear(metadata);
-    await user.type(metadata, "60");
+    await user.type(metadata, "120");
     await user.click(save());
     await waitFor(() => expect(save()).toHaveAttribute("aria-busy", "true"));
     expect(toggle()).not.toHaveAttribute("aria-busy");
@@ -91,8 +91,91 @@ describe("log settings", () => {
     await user.clear(content);
     await user.type(content, "14");
     await user.click(saveContent());
+    const confirm = await screen.findByRole("alertdialog", { name: "Keep content for 14 days only?" });
+    await user.click(within(confirm).getByRole("button", { name: "Shorten and delete" }));
     expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
     expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ content_retention_days: 14 }]);
+  });
+
+  it("asks before shortening a retention, which deletes older entries at once", async () => {
+    signedIn();
+    on("GET", "orgs/:org/logs/settings", logSettings());
+    on("PATCH", "orgs/:org/logs/settings", ({ body }: { body: Record<string, number> }) => logSettings(body));
+    const { user } = await renderApp(PATH);
+    const metadata = await screen.findByRole("spinbutton", { name: "Metadata retention" });
+    await user.clear(metadata);
+    await user.type(metadata, "60");
+    await user.click(screen.getByRole("button", { name: "Save metadata retention" }));
+
+    let confirm = await screen.findByRole("alertdialog", { name: "Keep metadata for 60 days only?" });
+    expect(within(confirm).getByText("Log entries older than 60 days are deleted now, with their content; this can't be undone.")).toBeInTheDocument();
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(requests("PATCH", "orgs/:org/logs/settings")).toHaveLength(0);
+    expect(metadata).toHaveValue("60");
+
+    await user.click(screen.getByRole("button", { name: "Save metadata retention" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Keep metadata for 60 days only?" });
+    await user.click(within(confirm).getByRole("button", { name: "Shorten and delete" }));
+    expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ metadata_retention_days: 60 }]);
+  });
+
+  it("explains a shorter content retention in its own words and closes when it is refused", async () => {
+    signedIn();
+    on("GET", "orgs/:org/logs/settings", logSettings());
+    on("PATCH", "orgs/:org/logs/settings", apiError(409, "conflict", "A deletion is already running; try again later."));
+    const { user } = await renderApp(PATH);
+    const content = await screen.findByRole("spinbutton", { name: "Content retention" });
+    await user.clear(content);
+    await user.type(content, "1");
+    await user.click(screen.getByRole("button", { name: "Save content retention" }));
+
+    const confirm = await screen.findByRole("alertdialog", { name: "Keep content for 1 day only?" });
+    expect(within(confirm).getByText("Request and reply bodies older than 1 day are deleted now; this can't be undone.")).toBeInTheDocument();
+    await user.click(within(confirm).getByRole("button", { name: "Shorten and delete" }));
+    expect(await notifications().findByText("A deletion is already running; try again later.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(content).toHaveValue("1");
+  });
+
+  it("saves a longer retention without asking", async () => {
+    signedIn();
+    on("GET", "orgs/:org/logs/settings", logSettings());
+    on("PATCH", "orgs/:org/logs/settings", ({ body }: { body: Record<string, number> }) => logSettings(body));
+    const { user } = await renderApp(PATH);
+    const content = await screen.findByRole("spinbutton", { name: "Content retention" });
+    await user.clear(content);
+    await user.type(content, "60");
+    await user.click(screen.getByRole("button", { name: "Save content retention" }));
+    expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ content_retention_days: 60 }]);
+  });
+
+  it("keeps an unsaved edit of one retention while the other is saved", async () => {
+    signedIn();
+    let current = logSettings();
+    on("GET", "orgs/:org/logs/settings", () => current);
+    on("PATCH", "orgs/:org/logs/settings", ({ body }: { body: Record<string, number> }) => (current = logSettings({ ...current, ...body })));
+    const { user } = await renderApp(PATH);
+    const metadata = await screen.findByRole("spinbutton", { name: "Metadata retention" });
+    const content = screen.getByRole("spinbutton", { name: "Content retention" });
+    await user.clear(content);
+    await user.type(content, "45");
+    await user.clear(metadata);
+    await user.type(metadata, "120");
+    await user.click(screen.getByRole("button", { name: "Save metadata retention" }));
+    expect(await notifications().findByText("Retention saved")).toBeInTheDocument();
+    await waitFor(() => expect(requests("GET", "orgs/:org/logs/settings").length).toBeGreaterThan(1));
+
+    expect(screen.getByRole("spinbutton", { name: "Metadata retention" })).toHaveValue("120");
+    expect(screen.getByRole("spinbutton", { name: "Content retention" })).toHaveValue("45");
+    await user.click(screen.getByRole("button", { name: "Save content retention" }));
+    await waitFor(() =>
+      expect(requests("PATCH", "orgs/:org/logs/settings").map((r) => r.body)).toEqual([{ metadata_retention_days: 120 }, { content_retention_days: 45 }]),
+    );
   });
 
   it("locks the settings for people who can't manage them", async () => {

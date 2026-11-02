@@ -343,7 +343,8 @@ pub async fn retire(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE api_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() \
-         WHERE project_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+         WHERE project_id = $1 AND id = $2 AND archived_at IS NULL AND disabled_at IS NULL \
+         AND replaced_by IS NULL",
         project_id,
         id,
         replaced_by,
@@ -599,7 +600,8 @@ pub async fn retire_org(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE org_platform_keys SET replaced_by = $3, expires_at = LEAST(expires_at, $4), updated_at = now() \
-         WHERE org_id = $1 AND id = $2 AND archived_at IS NULL AND replaced_by IS NULL",
+         WHERE org_id = $1 AND id = $2 AND archived_at IS NULL AND disabled_at IS NULL \
+         AND replaced_by IS NULL",
         org_id,
         id,
         replaced_by,

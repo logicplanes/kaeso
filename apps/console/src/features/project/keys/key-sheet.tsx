@@ -136,6 +136,7 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
     manageRight,
     k.access === "inference" ? null : "keys.platform_access.grant",
   ].find((r): r is string => !!r && !rights.has(r));
+  const rotateBlocked = k.state === "disabled" ? t("keys.rotateDisabled", "Enable the key before you rotate it.") : rotateNeeds ? needs(rotateNeeds) : null;
 
   return (
     <div className="flex flex-col gap-24">
@@ -166,8 +167,8 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
               {rotatable && (
                 <Menu.Item
                   icon={icons.key}
-                  disabled={!!rotateNeeds}
-                  {...(rotateNeeds ? { description: needs(rotateNeeds) } : {})}
+                  disabled={!!rotateBlocked}
+                  {...(rotateBlocked ? { description: rotateBlocked } : {})}
                   onClick={() => setRotating(true)}
                 >
                   {t("keys.rotate", "Rotate")}

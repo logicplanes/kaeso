@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import { endOfDay } from "~/format/period";
+import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
 import type { LogEntryView, LogView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage } from "../paging";
@@ -26,8 +26,8 @@ export interface LogFilters {
 
 export function logsParams(f: LogFilters, now = Date.now()) {
   const custom = f.from && f.to ? { from: f.from, to: f.to } : null;
-  const from = custom ? `${custom.from}T00:00:00Z` : new Date(now - RANGE_MS[f.range ?? "24h"]).toISOString();
-  const to = custom ? endOfDay(custom.to) : undefined;
+  const from = custom ? dayStart(custom.from) : new Date(now - RANGE_MS[f.range ?? "24h"]).toISOString();
+  const to = custom ? dayEnd(custom.to) : undefined;
   return {
     from,
     ...(to ? { to } : {}),

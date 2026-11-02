@@ -702,8 +702,14 @@ impl ChatStreamDecoder {
             }
             events.push(StreamEvent::BlockDelta(d));
         }
+        // OpenRouter repeats the finish chunk, `content: ""` included, to carry the usage
+        // (`providers/openrouter/streams/recorded-free-stream.sse`); that is no new text block.
         let text = match text {
-            Some(t) if t.is_empty() && self.text.is_none() && self.reasons_first() => {
+            Some(t)
+                if t.is_empty()
+                    && self.text.is_none()
+                    && (self.reasons_first() || self.finished) =>
+            {
                 form.insert(FORM_EMPTY_TEXT.to_owned(), Value::Bool(true));
                 None
             }
@@ -1145,6 +1151,15 @@ impl StreamDecoder for ChatStreamDecoder {
                     "The provider's OpenAI Chat Completions stream ended before the response was complete.",
                 ),
             );
+        }
+        out
+    }
+
+    fn flush(&mut self) -> Vec<StreamEvent> {
+        let mut out = Vec::new();
+        if !self.inert {
+            self.release_all(&mut out);
+            self.inert = true;
         }
         out
     }

@@ -31,7 +31,7 @@ function orgs(list: InstanceOrgView[] = [NORTHWIND, CONTOSO, FABRIKAM, ORPHAN]) 
 }
 
 const orgQueries = () => requests("GET", "instance/orgs").map((r) => Object.fromEntries(r.query));
-const table = () => screen.getByRole("table", { name: "Organizations" });
+const table = () => screen.getByRole("grid", { name: "Organizations" });
 
 async function rowMenu(user: UserEvent, name: string) {
   await user.pointer({ keys: "[MouseRight]", target: await within(table()).findByText(name) });
@@ -114,9 +114,27 @@ describe("instance organizations list", () => {
     expect(screen.getByRole("button", { name: "State" }).closest('[role="columnheader"]')).toHaveAttribute("aria-sort", "ascending");
     await user.click(screen.getByRole("button", { name: "State" }));
     await waitFor(() => expect(new URLSearchParams(window.location.search).get("sort")).toBeNull());
-    await user.click(screen.getByRole("button", { name: "Name" }));
-    expect(screen.getByRole("button", { name: "Name" }).closest('[role="columnheader"]')).toHaveAttribute("aria-sort", "ascending");
-    expect(window.location.search).toBe("");
+    expect(screen.getByRole("button", { name: "State" }).closest('[role="columnheader"]')).toHaveAttribute("aria-sort", "none");
+  });
+
+  it("keeps the gateway's order, which the other columns can't change", async () => {
+    signedIn();
+    on("GET", "instance/orgs", ({ query }: { query: URLSearchParams }) =>
+      query.get("after") === "cur_2" ? paged([instanceOrg({ id: "org_alpine", name: "Alpine Ski House" })]) : paged([NORTHWIND, CONTOSO], "cur_2"),
+    );
+    const { user } = await renderApp(PATH);
+    await within(table()).findByText("Northwind Labs");
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    await within(table()).findByText("Alpine Ski House");
+
+    const rows = within(table()).getAllByRole("row").slice(1);
+    ["Northwind Labs", "Contoso", "Alpine Ski House"].forEach((name, i) => expect(rows[i]).toHaveTextContent(name));
+    for (const column of within(table())
+      .getAllByRole("columnheader")
+      .filter((h) => !h.textContent?.startsWith("State"))) {
+      expect(column).not.toHaveAttribute("aria-sort");
+      expect(within(column).queryByRole("button")).not.toBeInTheDocument();
+    }
   });
 
   it("orders by deletion date with the tabs beside the search", async () => {

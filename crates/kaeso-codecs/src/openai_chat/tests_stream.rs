@@ -431,6 +431,83 @@ fn rewritten_tool_names_are_mapped_back() {
     assert!(events.iter().any(|e| matches!(e, StreamEvent::BlockStart(BlockStart { block: BlockHeader::ToolCall(h), .. }) if h.name == "weather.get")));
 }
 
+fn first_events(bytes: &[u8], n: usize) -> Vec<u8> {
+    String::from_utf8(bytes.to_vec())
+        .unwrap()
+        .split_inclusive("\n\n")
+        .take(n)
+        .collect::<String>()
+        .into_bytes()
+}
+
+#[test]
+fn a_stream_cut_while_a_call_is_held_releases_the_call_on_flush() {
+    let wire = fixture("tool-header-after-arguments");
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    let fed = decoder.feed(&first_events(&wire, 4));
+    assert_eq!(kinds(&fed), ["start"], "the call waits for its id and name");
+    let held = decoder.flush();
+    assert_eq!(
+        kinds(&held),
+        ["block_start 0", "delta 0", "delta 0", "delta 0"]
+    );
+    let StreamEvent::BlockStart(BlockStart {
+        block: BlockHeader::ToolCall(call),
+        ..
+    }) = &held[0]
+    else {
+        panic!("{held:?}")
+    };
+    assert_eq!(call.id, "call_kaeso_chatcmpl6TnHeldToolCall0x1_0");
+    let args: String = held
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::ToolArguments(a),
+                ..
+            }) => Some(a.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(args, "{\"location\":");
+    assert!(decoder.flush().is_empty());
+    assert!(decoder.feed(&wire).is_empty(), "nothing after a flush");
+    assert!(decoder.finish().is_empty());
+
+    let mut decoder = OpenAiChat::stream_decoder(&ectx());
+    decoder.feed(&wire);
+    assert!(
+        decoder
+            .finish()
+            .iter()
+            .all(|e| !matches!(e, StreamEvent::Error(_)))
+    );
+    assert!(decoder.flush().is_empty(), "nothing is held after the end");
+}
+
+#[test]
+fn an_empty_chunk_after_the_finish_opens_no_block() {
+    let events = decode_whole(&fixture("providers/openrouter/recorded-free-stream"));
+    let first_stop = events
+        .iter()
+        .position(|e| matches!(e, StreamEvent::ResponseDelta(d) if d.stop.is_some()))
+        .unwrap();
+    let after: Vec<String> = kinds(&events[first_stop..])
+        .into_iter()
+        .filter(|k| k != "extra")
+        .collect();
+    assert_eq!(
+        after,
+        ["response_delta", "response_delta", "stop"],
+        "{events:?}"
+    );
+    let starts = events
+        .iter()
+        .filter(|e| matches!(e, StreamEvent::BlockStart(_)))
+        .count();
+    assert_eq!(starts, 1);
+}
+
 #[test]
 fn usage_is_hidden_when_the_app_did_not_ask() {
     let bytes = fixture("tools-single");

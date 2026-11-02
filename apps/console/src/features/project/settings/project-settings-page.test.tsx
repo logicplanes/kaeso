@@ -89,7 +89,7 @@ describe("project settings", () => {
     expect(requests("PATCH", PROJECT_URL).map((r) => r.body)).toEqual([{ name: "Checkout bot" }]);
   });
 
-  it("shows the API's message and keeps the typed name when the rename is refused", async () => {
+  it("shows the API's message under the name and keeps the typed name when the rename is refused", async () => {
     setUp();
     on("PATCH", PROJECT_URL, apiError(422, "invalid_request", "That name is taken.", { param: "name" }));
     const { user } = await renderApp(projectPath("settings"));
@@ -100,6 +100,11 @@ describe("project settings", () => {
     await user.click(saveName());
     expect((await notifications().findAllByText("That name is taken.")).length).toBeGreaterThan(0);
     expect(input).toHaveValue("Support triage");
+    expect(input).toHaveAccessibleDescription("That name is taken.");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    await user.type(input, "s");
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(input).not.toHaveAccessibleDescription("That name is taken.");
   });
 
   it("sends one rename when Enter is followed by leaving the field", async () => {

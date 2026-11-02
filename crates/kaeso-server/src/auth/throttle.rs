@@ -74,6 +74,32 @@ pub const METHODS_PER_IP: Throttle = Throttle {
     on_outage: Outage::Allow,
 };
 
+pub const AGENT_REGISTRATIONS_PER_IP: Throttle = Throttle {
+    name: "agent_register_ip",
+    limit: 20,
+    window: Duration::from_secs(60 * 60),
+    on_outage: Outage::Allow,
+};
+pub const AGENT_SIGN_INS_PER_IP: Throttle = Throttle {
+    name: "agent_authorize_ip",
+    limit: 30,
+    window: Duration::from_secs(15 * 60),
+    on_outage: Outage::Allow,
+};
+// Every agent refreshes its access token each hour, and agents behind one address share this.
+pub const AGENT_TOKENS_PER_IP: Throttle = Throttle {
+    name: "agent_token_ip",
+    limit: 120,
+    window: Duration::from_secs(15 * 60),
+    on_outage: Outage::Allow,
+};
+pub const AGENT_REVOCATIONS_PER_IP: Throttle = Throttle {
+    name: "agent_revoke_ip",
+    limit: 30,
+    window: Duration::from_secs(15 * 60),
+    on_outage: Outage::Allow,
+};
+
 fn key(state: &AppState, t: Throttle, subject: &str) -> String {
     state
         .valkey

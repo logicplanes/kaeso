@@ -27,6 +27,7 @@ import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { useProviderOptions, useProviders } from "~/kaeso/providers";
@@ -139,7 +140,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
-    invalidates: [["orgs", org, "projects", project, "models"]],
+    invalidates: projectCatalogue(org, project),
     onSuccess: (result) => {
       const first = result.failed[0];
       if (first) {

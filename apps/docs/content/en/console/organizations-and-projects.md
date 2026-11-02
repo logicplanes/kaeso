@@ -100,7 +100,7 @@ Under **General**, choose **Delete organization** and type the organization's na
 
 1. Every API key of the organization stops working at once, and Kaeso emails the members.
 2. For a grace period, 7 days unless the install sets another, the organization is read-only and every page shows a banner. An owner can still choose **Restore organization**.
-3. After the grace period, Kaeso deletes its projects, keys, provider keys, settings, usage and logs for good.
+3. After the grace period, Kaeso deletes its projects, keys, provider keys, settings, usage and logs for good. Once the grace period has ended, the organization can't be restored any more, even before Kaeso has finished deleting it.
 
 ## Read the audit log
 

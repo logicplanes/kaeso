@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.id AS \"user_id!\", u.email AS \"email!\" FROM org_memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = $1 AND u.state = 'active' AND u.email IS NOT NULL UNION SELECT id, email FROM users WHERE is_instance_admin AND state = 'active' AND email IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "email!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "92a94ed2c1248f73666ab3b2662567c54210c921f947f7344d24ed19c09d5ed5"
+}

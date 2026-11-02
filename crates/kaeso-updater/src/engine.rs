@@ -703,6 +703,22 @@ impl Engine {
         restarted_before: u64,
     ) -> Result<(), String> {
         let deadline = tokio::time::Instant::now() + timeout;
+        tokio::time::timeout_at(deadline, self.poll_health(id, patient, restarted_before))
+            .await
+            .unwrap_or_else(|_| {
+                Err(format!(
+                    "was not healthy within {} seconds",
+                    timeout.as_secs()
+                ))
+            })
+    }
+
+    async fn poll_health(
+        &self,
+        id: &str,
+        patient: bool,
+        restarted_before: u64,
+    ) -> Result<(), String> {
         let mut steady = 0;
         loop {
             match self.docker.inspect(id).await {
@@ -735,12 +751,6 @@ impl Engine {
                     }
                 }
                 Err(e) => tracing::debug!(error = %e, "cannot inspect the new container yet"),
-            }
-            if tokio::time::Instant::now() >= deadline {
-                return Err(format!(
-                    "was not healthy within {} seconds",
-                    timeout.as_secs()
-                ));
             }
             tokio::time::sleep(self.settings.poll).await;
         }
@@ -899,16 +909,23 @@ impl Engine {
 
     async fn docker_answers(&self) -> bool {
         let deadline = tokio::time::Instant::now() + self.settings.docker_wait;
-        loop {
-            match self.docker.version().await {
-                Ok(_) => return true,
-                Err(e) if tokio::time::Instant::now() >= deadline => {
-                    tracing::warn!(error = %e, "Docker does not answer");
-                    return false;
+        let mut last = None;
+        let answered = tokio::time::timeout_at(deadline, async {
+            loop {
+                match self.docker.version().await {
+                    Ok(_) => return,
+                    Err(e) => last = Some(e),
                 }
-                Err(_) => tokio::time::sleep(self.settings.poll).await,
+                tokio::time::sleep(self.settings.poll).await;
             }
+        })
+        .await
+        .is_ok();
+        if !answered {
+            let error = last.map_or_else(|| "timed out".to_owned(), |e| e.to_string());
+            tracing::warn!(%error, "Docker does not answer");
         }
+        answered
     }
 
     pub async fn recover(&self) {

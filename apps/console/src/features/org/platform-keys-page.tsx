@@ -113,8 +113,12 @@ export function PlatformKeysPage({ org }: { org: string }) {
               {!k.replaced_by && (
                 <Menu.Item
                   icon={icons.key}
-                  disabled={!canCreate}
-                  {...(canCreate ? {} : { description: needs("platform_keys.create") })}
+                  disabled={!canCreate || k.state === "disabled"}
+                  {...(k.state === "disabled"
+                    ? { description: t("org.platformKeys.rotateDisabled", "Enable the key before you rotate it.") }
+                    : canCreate
+                      ? {}
+                      : { description: needs("platform_keys.create") })}
                   onClick={() => setRotating(k)}
                 >
                   {t("org.platformKeys.rotate", "Rotate")}

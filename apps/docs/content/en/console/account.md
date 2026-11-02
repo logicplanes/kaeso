@@ -29,6 +29,8 @@ When an organization manages your account, its identity provider owns your addre
 
 Under **Security**, **Change password** sets a new password and signs out your other sessions. If you sign in only with links or single sign-on, you have no password, and **Set password** adds one.
 
+Your agents keep working after either. Tick **Also disconnect my agents** when someone else may have connected one to your account, such as when you change the password because it leaked; Kaeso then revokes every agent you authorized, and you connect yours again.
+
 ## Turn on two-factor authentication
 
 Two-factor authentication asks for a code from an authenticator app at every password sign-in and every sign-in link. Single sign-on doesn't ask for one; your identity provider checks you instead. An organization that requires two-factor authentication accepts a sign-in with a code. It also accepts a sign-in through its own identity provider, or through the provider of the organization that manages your account.
@@ -56,7 +58,7 @@ An organization's identity provider signs you in only once your account is linke
 
 ## Sign out other browsers
 
-**Sessions** lists every browser where you are signed in, and how you signed in. **End session** signs one out, and **Sign out everywhere** signs out all but this one.
+**Sessions** lists every browser where you are signed in, and how you signed in. **End session** signs one out, and **Sign out everywhere** signs out all but this one. The instance's audit log records both as `user.sessions_revoke`, with how many sessions ended.
 
 A session ends after 7 days without use, and after 30 days at most.
 
@@ -69,7 +71,7 @@ At the top, **Agents** shows the MCP server's address with the marks of Claude C
 - **Revoke** it, which signs it out at once;
 - read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
 
-An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
+An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. Changing your password ends it only when you choose **Also disconnect my agents**. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 
 ## Confirm a sensitive action
 

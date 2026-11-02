@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use indexmap::IndexMap;
 use kaeso_kpp::RawJson;
 use serde::ser::{SerializeMap, SerializeSeq};
@@ -121,6 +123,12 @@ impl Node {
     }
 
     pub(crate) fn expand(&mut self) {
+        if let Cow::Owned(node) = self.expanded() {
+            *self = node;
+        }
+    }
+
+    pub(crate) fn expanded(&self) -> Cow<'_, Node> {
         let expanded = match self {
             Node::Raw(r) => {
                 if let Some(entries) = entries_of(r.as_raw()) {
@@ -148,9 +156,7 @@ impl Node {
             }
             _ => None,
         };
-        if let Some(node) = expanded {
-            *self = node;
-        }
+        expanded.map_or(Cow::Borrowed(self), Cow::Owned)
     }
 
     pub(crate) fn to_value(&self) -> Result<Value, serde_json::Error> {
@@ -176,6 +182,13 @@ impl Node {
         let Some((first, rest)) = path.split_first() else {
             return self.to_value().ok();
         };
+        match self {
+            Node::Obj(entries) => return entries.get(*first)?.value_at(rest),
+            Node::Arr(items) => {
+                return items.get(first.parse::<usize>().ok()?)?.value_at(rest);
+            }
+            _ => {}
+        }
         let child = match self.get(first) {
             Some(c) => c,
             None => {

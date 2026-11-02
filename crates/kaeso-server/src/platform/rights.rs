@@ -348,11 +348,16 @@ pub async fn member(
     let visible = if sees_every_project(&ctx)? {
         None
     } else {
+        let selected = ctx
+            .agent()
+            .and_then(|a| a.grant.org(scope.org.id))
+            .and_then(|access| access.projects.only());
         Some(match ctx.acting_user() {
             Some(me) => members::projects_of_user(&state.pg, me.uuid())
                 .await?
                 .into_iter()
                 .filter(|p| p.org_id == scope.org.id)
+                .filter(|p| selected.as_ref().is_none_or(|s| s.contains(&p.project_id)))
                 .map(|p| p.project_id)
                 .collect::<Vec<_>>(),
             None => Vec::new(),

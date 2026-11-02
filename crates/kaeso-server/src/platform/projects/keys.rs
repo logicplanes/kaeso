@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::{ApiKeyId, CatalogueModelId, OrgId, ProjectId, ServiceAccountId, UserId};
 use kaeso_core::keys::KeyKind;
-use kaeso_core::rights::{ProjectRight, ProjectRights, Right};
+use kaeso_core::rights::{ProjectRight, ProjectRights, Right, effective_project_rights};
 use kaeso_store::pg::keys::{self, KeyFilter, NewKey};
 use kaeso_store::pg::service_accounts;
 use secrecy::ExposeSecret;
@@ -11,9 +11,10 @@ use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::{KEYS_ARCHIVED, ensure_active};
-use crate::platform::access::{Caller, Ctx, denied};
+use crate::platform::access::{Caller, Ctx, denied, refused};
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
+use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::json::Body;
 use crate::platform::keys::{
     CreatedKey, ExpiryRequest, KeyAccess, KeyRotate, KeyView, creator_of, new_secret, project_max,
@@ -107,6 +108,7 @@ async fn create_key(
     let project = ctx.project()?;
     let (created_kind, created_id) = creator_of(ctx);
     let mut tx = state.pg.begin().await?;
+    hold_for_key(&mut tx, ctx, &project.project, user, service_account).await?;
     let key_limits = match &req.limits {
         Some(specs) => {
             super::limits::key_limits(state, &mut tx, project.project.id, id.uuid(), member, specs)
@@ -194,6 +196,46 @@ async fn create_key(
             secret: secret.secret.expose_secret().to_owned(),
         }),
     ))
+}
+
+// The request's view of these rows can be stale: an archive or removal that commits first refuses
+// the key here, and one that comes later waits for it and archives it with the others.
+async fn hold_for_key(
+    tx: &mut sqlx::PgConnection,
+    ctx: &Ctx,
+    project: &kaeso_store::pg::projects::Project,
+    user: Option<UserId>,
+    service_account: Option<uuid::Uuid>,
+) -> ApiResult<()> {
+    if !kaeso_store::pg::projects::hold_active(&mut *tx, project.org_id, project.id).await? {
+        return Err(ApiError::Conflict(KEYS_ARCHIVED.into()));
+    }
+    if let Some(user) = user {
+        let org = kaeso_store::pg::members::hold_org(&mut *tx, project.org_id, user.uuid())
+            .await?
+            .ok_or_else(|| ApiError::not_found("organization"))?;
+        let own = kaeso_store::pg::members::hold_project(&mut *tx, project.id, user.uuid())
+            .await?
+            .map(|m| project_from_store(&m.grant()))
+            .transpose()?;
+        let rights = effective_project_rights(Some(&org_from_store(&org.grant())?), own.as_ref());
+        if rights.is_empty() {
+            return Err(ApiError::not_found("project"));
+        }
+        if !rights.contains(ProjectRight::KeysOwnCreate) {
+            return Err(refused(
+                &ctx.caller,
+                Right::Project(ProjectRight::KeysOwnCreate),
+                "project",
+            ));
+        }
+    }
+    if let Some(account) = service_account
+        && !service_accounts::hold_active(&mut *tx, project.id, account).await?
+    {
+        return Err(ApiError::not_found("active service account"));
+    }
+    Ok(())
 }
 
 #[utoipa::path(
@@ -370,6 +412,9 @@ fn may_enable(ctx: &Ctx, disabler: Option<&keys::Disabler>, holder: Holder) -> A
 const AGENT_CALLS_MODELS: &str =
     "An agent needs `api.request` in this project to create keys that call models.";
 
+// The replacement would start enabled, which would undo the disable without `may_enable`'s checks.
+pub(crate) const ROTATE_DISABLED: &str = "This key is disabled; enable it before you rotate it.";
+
 pub(crate) const PERSON_DISABLED: &str =
     "A person disabled this key, so only a person can enable it; use a console session.";
 
@@ -522,6 +567,9 @@ async fn replacement(
             "This key was rotated already; rotate the key that replaced it.".into(),
         ));
     }
+    if old.disabled_at.is_some() {
+        return Err(ApiError::Conflict(ROTATE_DISABLED.into()));
+    }
     let mut conn = state.pg.acquire().await?;
     let models = kaeso_store::pg::catalogue::access(
         &mut conn,
@@ -574,7 +622,8 @@ fn require_right(ctx: &Ctx, right: ProjectRight) -> ApiResult<()> {
     description = "Answers with the new key and its secret, shown once. The old key stops at \
     the end of the grace period, or at its own expiry if that is sooner, and links to the new \
     key in `replaced_by`. Rotating also needs `keys.own.manage` (or `keys.all.manage`), and a \
-    key with platform access needs what creating one needs.",
+    key with platform access needs what creating one needs. A disabled key is refused until it is \
+    enabled.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("key" = ApiKeyId, Path)),
     request_body = KeyRotate,
@@ -628,7 +677,7 @@ pub async fn rotate(
     description = "Answers with the new key and its secret, shown once. The old key stops at \
     the end of the grace period, or at its own expiry if that is sooner, and links to the new \
     key in `replaced_by`. Rotating also needs `keys.all.manage`, and a key with platform access \
-    needs what creating one needs.",
+    needs what creating one needs. A disabled key is refused until it is enabled.",
     tag = "projects",
     params(
         ("org" = OrgId, Path),

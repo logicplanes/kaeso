@@ -645,6 +645,38 @@ async fn an_app_that_closes_before_the_last_event_is_a_disconnect() {
 }
 
 #[tokio::test]
+async fn a_tool_call_the_decoder_held_back_is_logged_when_the_stream_breaks() {
+    let env = env_with_groq(&[]).await;
+    set_content_logging(&env, true).await;
+    let text = "Hi [mock:fixture=tool-header-after-arguments] [mock:cut]";
+    let r = send(
+        &env,
+        "/v1/chat/completions",
+        false,
+        streaming(chat("groq/openai/gpt-oss-20b", text)),
+    )
+    .await;
+    assert_eq!(r.status, 200);
+    assert!(!r.text().contains("tool_calls"), "{}", r.text());
+    let id = r.header("kaeso-request-id").unwrap().to_owned();
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(o.error_kind.as_deref(), Some("stream_interrupted"));
+    let reply = o.reply.as_ref().unwrap();
+    let calls: Vec<_> = reply
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            kaeso_kpp::Block::ToolCall(c) => Some(c),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(calls.len(), 1, "{reply:?}");
+    assert!(calls[0].arguments.get().contains("location"), "{reply:?}");
+    assert!(o.usage_estimated);
+    assert!(o.usage.unwrap().output_tokens >= 3);
+}
+
+#[tokio::test]
 async fn nothing_after_the_last_event_fails_a_stream() {
     use http_body_util::BodyExt;
     let cases: [(&str, &[(&str, &str)]); 3] = [
@@ -716,6 +748,95 @@ async fn a_request_body_that_stops_arriving_is_refused() {
         "The request body did not arrive in time; send it again."
     );
     assert!(started.elapsed() < Duration::from_secs(10));
+}
+
+#[tokio::test]
+async fn a_request_body_that_breaks_off_is_not_called_too_large() {
+    use axum::body::{Body, Bytes};
+    use axum::http::Request;
+    use tower::ServiceExt;
+    let env = env(&[]).await;
+    let broken = futures::stream::iter([
+        Ok(Bytes::from_static(b"{\"model\":")),
+        Err(std::io::Error::other("the connection was reset")),
+    ]);
+    let req = Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .body(Body::from_stream(broken))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), 400);
+    let id = resp.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let body = axum::body::to_bytes(resp.into_body(), 1 << 20)
+        .await
+        .unwrap();
+    let json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        json["error"]["message"],
+        "The request body broke off before it was complete; send it again."
+    );
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(o.error_kind.as_deref(), Some("invalid_request"));
+    assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
+async fn a_stream_its_app_stopped_reading_is_recorded_as_a_shutdown_when_kaeso_restarts() {
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let env = env(&[]).await;
+    let tag = "unread-at-shutdown";
+    let body = streaming(chat(
+        "claude-haiku-4-5",
+        &format!(
+            "Hi [mock:gen=8] [mock:tps=400000] [mock:endless] [mock:delta=4096] [mock:tag={tag}]"
+        ),
+    ));
+    let req = Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "application/json")
+        .body(Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    let id = resp.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    let mut unread = resp.into_body();
+    assert!(unread.frame().await.unwrap().unwrap().is_data());
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
+    while env.mock.text_sent(tag) < 1 << 20 {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "the mock stopped sending at {} bytes",
+            env.mock.text_sent(tag)
+        );
+        tokio::task::yield_now().await;
+    }
+    assert_eq!(
+        env.app.state.in_flight.end(Duration::from_secs(10)).await,
+        0
+    );
+    drop(unread);
+    let o = outcome(&env, |o| o.request_id.to_string() == id).await;
+    assert_eq!(
+        o.error_kind.as_deref(),
+        Some("shutdown"),
+        "{:?}",
+        o.error_message
+    );
+    assert_eq!(o.status, 503);
 }
 
 #[tokio::test]

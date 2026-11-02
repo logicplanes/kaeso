@@ -36,7 +36,7 @@ Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.
 
 ## Die Anfrage
 
-Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 8 MiB. Auf einen größeren antwortet Kaeso mit 413.
+Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 32 MiB. Auf einen größeren antwortet Kaeso mit 413.
 
 KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhält 400, wenn sie eines davon enthält:
 

@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { ALL_ORG_RIGHTS, ORG, membership, signedIn, whoAmI } from "~/test/fixtures";
 import { OTHER_USER, member, notifications, paged } from "~/test/fixtures/org";
 import { projectData, projectMember, projectPath } from "~/test/fixtures/project";
@@ -35,7 +35,7 @@ function orgLog(events = [created, old], rights: string[] = ALL_ORG_RIGHTS) {
   on("GET", ORG_LOG, paged(events));
 }
 
-const table = () => screen.findByRole("table", { name: "Audit log" });
+const table = () => screen.findByRole("grid", { name: "Audit log" });
 
 function installPicker() {
   const picker = vi.fn(async () => ({
@@ -217,7 +217,7 @@ describe("AuditLog", () => {
     on("GET", "orgs/:org/audit-log/:event", byAgent);
     const { user, router } = await renderApp(PATH);
     const row = () =>
-      within(screen.getByRole("table", { name: "Audit log" }))
+      within(screen.getByRole("grid", { name: "Audit log" }))
         .getAllByRole("row")
         .slice(1)[0] as HTMLElement;
     await table();
@@ -251,7 +251,7 @@ describe("AuditLog", () => {
 
     expect(await screen.findByText("No events match")).toBeInTheDocument();
     expect(screen.getByText("Remove a filter or widen the days.")).toBeInTheDocument();
-    expect(logQuery()).toContainEqual({ from: "2026-10-01T00:00:00Z", to: "2026-10-04T00:00:00.000Z", limit: "100" });
+    expect(logQuery()).toContainEqual({ from: "2026-10-01T00:00:00.000Z", to: "2026-10-04T00:00:00.000Z", limit: "100" });
 
     await user.click(screen.getByRole("combobox", { name: "Actor" }));
     await user.click(await screen.findByRole("option", { name: /Grace Hopper/ }));
@@ -275,6 +275,21 @@ describe("AuditLog", () => {
     await waitFor(() => expect(router.state.location.search).toMatchObject({ from: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) }));
     const { from, to } = router.state.location.search as { from: string; to: string };
     expect(to).toBe(from);
+  });
+
+  it("reads the picked days, and today, in the install's time zone", async () => {
+    vi.setSystemTime(new Date("2026-10-14T20:00:00Z"));
+    onTestFinished(() => void vi.useRealTimers());
+    orgLog([]);
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo", memberships: [membership({ rights: ALL_ORG_RIGHTS })] }) });
+    const { user, router } = await renderApp(`${PATH}?from=2026-10-01&to=2026-10-03`);
+
+    expect(await screen.findByText("No events match")).toBeInTheDocument();
+    expect(logQuery()).toContainEqual({ from: "2026-09-30T15:00:00.000Z", to: "2026-10-03T15:00:00.000Z", limit: "100" });
+    await user.click(screen.getByRole("button", { description: "Days" }));
+    await user.click(within(await screen.findByRole("dialog", { name: "Choose a date range" })).getByRole("option", { name: "Today" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ from: "2026-10-15", to: "2026-10-15" }));
+    await waitFor(() => expect(logQuery()).toContainEqual({ from: "2026-10-14T15:00:00.000Z", to: "2026-10-15T15:00:00.000Z", limit: "100" }));
   });
 
   it("lets the filters share each row on a phone and keeps them 160px wide beside each other", async () => {
@@ -506,6 +521,25 @@ describe("AuditLog", () => {
     await user.type(target, "key_web");
     await user.tab();
     await waitFor(() => expect(router.state.location.search).toMatchObject({ target: "key_web" }));
+  });
+
+  it("removes the target filter at once with Clear search or Escape", async () => {
+    orgLog();
+    const { user, router } = await renderApp(`${PATH}?target=key_web`);
+    const target = await screen.findByRole("searchbox", { name: "Target id" });
+    expect(target).toHaveValue("key_web");
+
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty("target"));
+    expect(target).toHaveValue("");
+    expect(target).toHaveFocus();
+    await waitFor(() => expect(logQuery().at(-1)).not.toHaveProperty("target"));
+
+    await user.type(target, "key_web{Enter}");
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ target: "key_web" }));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty("target"));
+    expect(target).toHaveValue("");
   });
 
   it("shows the export's progress and doesn't start a second one", async () => {

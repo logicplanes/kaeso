@@ -67,7 +67,8 @@ pub(super) struct Recording {
 
 impl Recording {
     pub(super) fn outcome(&mut self) -> &mut Outcome {
-        self.outcome.get_or_insert_with(blank_outcome)
+        self.outcome
+            .get_or_insert_with(|| blank_outcome(RequestId::new()))
     }
 
     pub(super) fn state(&self) -> &AppState {
@@ -114,8 +115,7 @@ impl Recording {
         let (done, charged) = tokio::sync::oneshot::channel();
         let (sink, state) = (self.sink.clone(), self.state.clone());
         self.state.in_flight.finish(async move {
-            sink.finish(&state, o).await;
-            let _ = done.send(());
+            sink.finish_charged(&state, o, done).await;
         });
         charged
     }
@@ -163,6 +163,17 @@ impl Drop for Recording {
     }
 }
 
+fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+    let mut cause = Some(error);
+    while let Some(e) = cause {
+        if e.is::<http_body_util::LengthLimitError>() {
+            return true;
+        }
+        cause = e.source();
+    }
+    false
+}
+
 pub(super) fn shutting_down() -> KppError {
     error(
         ErrorKind::ProviderError,
@@ -178,9 +189,9 @@ fn mark_cancelled(o: &mut Outcome) {
         Some("The app closed the connection before the reply was complete.".to_owned());
 }
 
-fn blank_outcome() -> Outcome {
+fn blank_outcome(request_id: RequestId) -> Outcome {
     Outcome {
-        request_id: RequestId::new(),
+        request_id,
         caller: None,
         source: Source::Api,
         ingress: DialectId::OpenAiChat,
@@ -280,8 +291,7 @@ pub async fn serve_with(
 ) -> Response {
     let _in_flight = state.in_flight.token();
     let now = state.clock.now();
-    let mut outcome = blank_outcome();
-    outcome.request_id = inc.request_id;
+    let mut outcome = blank_outcome(inc.request_id);
     outcome.ingress = inc.ingress;
     outcome.kind = inc.kind;
     outcome.source = inc.source;
@@ -303,9 +313,10 @@ pub async fn serve_with(
         held: None,
         keep_in_cache: None,
     };
+    let cut = state.in_flight.cut();
     let done = tokio::select! {
         done = run(&state, inc, &mut rec) => Some(done),
-        () = state.in_flight.cut() => None,
+        () = cut.cancelled() => None,
     };
     let Some(done) = done else {
         let failure = Failure::new(shutting_down(), Stage::Shutdown);
@@ -615,11 +626,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 400,
                 "The request body did not arrive in time; send it again.",
             )
-        } else {
+        } else if over_limit(&e) {
             error(
                 ErrorKind::RequestTooLarge,
                 413,
                 format!("The request body is larger than {limit} bytes."),
+            )
+        } else {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The request body broke off before it was complete; send it again.",
             )
         };
         Failure::new(refused, Stage::Request)
@@ -631,13 +648,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.request_body = Some(body.clone());
     }
     let request_bytes = body.len();
-    let scanned = body.clone();
-    let shape = off_thread(request_bytes, move || {
-        kaeso_codecs::limits::request_shape(ingress, &scanned)
+    let checked = off_thread(request_bytes, move || {
+        kaeso_codecs::limits::Checked::new(ingress, body)
     })
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
+    let shape = *checked.shape();
     let holder = caller
         .key_id
         .or(caller.user_id)
@@ -661,7 +678,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
-        dispatch::decode_request(ingress, kind, &body, &listed)
+        dispatch::decode_checked_request(kind, &checked, &listed)
     })
     .await
     .and_then(|r| r)

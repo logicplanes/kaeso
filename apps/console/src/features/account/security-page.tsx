@@ -118,16 +118,25 @@ function PasswordDialog({
 }) {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  const [revokeAgents, setRevokeAgents] = useState(false);
   const save = useApiMutation({
     mutationFn: async () =>
-      data(await api.POST("/platform/v1/me/password", { body: { new_password: next, ...(hasPassword ? { current_password: current } : {}) } })),
-    invalidates: [["me"], ["me", "sessions"]],
+      data(
+        await api.POST("/platform/v1/me/password", {
+          body: { new_password: next, ...(hasPassword ? { current_password: current } : {}), ...(revokeAgents ? { revoke_agents: true } : {}) },
+        }),
+      ),
+    invalidates: [["me"], ["me", "sessions"], ["me", "agents"]],
     onSuccess: () => {
       setOpen(false);
       toast.success(
-        hasPassword
-          ? t("account.passwordChanged", "Password changed; other sessions signed out")
-          : t("account.passwordSet", "Password set; other sessions signed out"),
+        revokeAgents
+          ? hasPassword
+            ? t("account.passwordChangedAgentsRevoked", "Password changed; other sessions and your agents signed out")
+            : t("account.passwordSetAgentsRevoked", "Password set; other sessions and your agents signed out")
+          : hasPassword
+            ? t("account.passwordChanged", "Password changed; other sessions signed out")
+            : t("account.passwordSet", "Password set; other sessions signed out"),
       );
     },
   });
@@ -172,6 +181,12 @@ function PasswordDialog({
           value={next}
           onChange={(e) => setNext(e.target.value)}
           error={fieldError(save.error, "new_password")}
+        />
+        <Checkbox
+          label={t("account.revokeAgents", "Also disconnect my agents")}
+          description={t("account.revokeAgentsHint", "Revokes every agent you authorized, in case someone else connected one to your account.")}
+          checked={revokeAgents}
+          onCheckedChange={setRevokeAgents}
         />
       </div>
     </Dialog>
