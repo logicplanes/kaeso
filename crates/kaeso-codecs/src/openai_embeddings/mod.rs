@@ -74,6 +74,16 @@ impl StreamDecoder for NoStreamDecoder {
     }
 }
 
+impl OpenAiEmbeddings {
+    pub(crate) fn decode_checked(
+        kind: RequestKind,
+        body: &[u8],
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
+        request::decode(kind, body, headers)
+    }
+}
+
 impl Codec for OpenAiEmbeddings {
     const DIALECT: DialectId = DIALECT;
 
@@ -83,7 +93,7 @@ impl Codec for OpenAiEmbeddings {
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
         crate::limits::request_shape(Self::DIALECT, body)?;
-        request::decode(kind, body, headers)
+        Self::decode_checked(kind, body, headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
