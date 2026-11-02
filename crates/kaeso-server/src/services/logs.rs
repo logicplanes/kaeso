@@ -260,16 +260,21 @@ pub async fn flush_all(state: &AppState, timeout: Duration) -> usize {
     written
 }
 
-pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
+pub fn spawn_writer(state: AppState, draining: CancellationToken, stop: CancellationToken) {
     if !state.request_logs() {
         return;
     }
     tokio::spawn(async move {
-        let interval = state.config.logs.flush_interval;
         loop {
+            let every = if draining.is_cancelled() {
+                crate::serve::SHUTDOWN_FLUSH_INTERVAL.min(state.config.logs.flush_interval)
+            } else {
+                state.config.logs.flush_interval
+            };
             tokio::select! {
-                () = shutdown.cancelled() => return,
-                () = tokio::time::sleep(interval) => {}
+                () = stop.cancelled() => return,
+                () = draining.cancelled(), if !draining.is_cancelled() => {}
+                () = tokio::time::sleep(every) => {}
                 () = state.logs.wake.notified() => {}
             }
             loop {
@@ -279,7 +284,7 @@ pub fn spawn_writer(state: AppState, shutdown: CancellationToken) {
                     Err(e) => {
                         tracing::warn!(error = %e, rows = state.logs.len(), "cannot write request logs; keeping them in memory");
                         tokio::select! {
-                            () = shutdown.cancelled() => return,
+                            () = stop.cancelled() => return,
                             () = tokio::time::sleep(WRITE_RETRY_WAIT) => {}
                         }
                         break;
