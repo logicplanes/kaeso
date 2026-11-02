@@ -60,7 +60,7 @@ test("the main flow works from the keyboard alone", async ({ page }) => {
   await page.keyboard.type("Request logs");
   await page.keyboard.press("Enter");
   await expect(page).toHaveTitle(/^Request logs · /);
-  const firstRow = page.getByRole("table", { name: "Requests" }).getByRole("row").nth(1);
+  const firstRow = page.getByRole("grid", { name: "Requests" }).getByRole("row").nth(1);
   await expect(async () => {
     await page.reload();
     await expect(firstRow.locator("time")).toBeVisible({ timeout: 2000 });
@@ -101,7 +101,7 @@ test("the shell, a list, a dialog and the inspector expose names and roles", asy
   await page.keyboard.press("Escape");
 
   await page.getByRole("link", { name: "Request logs" }).click();
-  await page.getByRole("table", { name: "Requests" }).getByRole("row").nth(1).click();
+  await page.getByRole("grid", { name: "Requests" }).getByRole("row").nth(1).click();
   const inspector = page.getByRole("dialog").filter({ has: page.getByRole("tab", { name: "Overview" }) });
   await expect(inspector.getByRole("tablist")).toBeVisible();
   for (const tab of ["Overview", "Request", "Reply", "Raw"]) await expect(inspector.getByRole("tab", { name: tab })).toBeVisible();

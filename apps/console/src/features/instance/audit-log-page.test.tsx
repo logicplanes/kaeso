@@ -55,7 +55,7 @@ function instanceAudit(events: AuditEventView[] = EVENTS, { listed = USERS, user
   );
 }
 
-const table = () => screen.getByRole("table", { name: "Audit log" });
+const table = () => screen.getByRole("grid", { name: "Audit log" });
 const row = (ip: string) => within(table()).getByText(ip).closest('[role="row"]') as HTMLElement;
 
 describe("instance audit log", () => {

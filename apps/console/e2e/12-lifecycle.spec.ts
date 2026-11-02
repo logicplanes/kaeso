@@ -46,13 +46,13 @@ test("a scheduled organization stays readable without refused requests, sorts fi
 
   await page.goto("/settings/instance/orgs");
   const state = page.getByRole("columnheader", { name: "State" });
-  await expect(page.getByRole("table", { name: "Organizations" }).getByText(OWNER.org)).toBeVisible();
+  await expect(page.getByRole("grid", { name: "Organizations" }).getByText(OWNER.org)).toBeVisible();
   await state.getByRole("button").click();
   await expect(page).toHaveURL(/\/settings\/instance\/orgs\?sort=deletion$/);
   await page.reload();
   await expect(state).toHaveAttribute("aria-sort", "ascending");
-  await expect(page.getByRole("table", { name: "Organizations" }).getByRole("row").nth(1)).toContainText(OWNER.org);
-  await expect(page.getByRole("table", { name: "Organizations" }).getByText(/^Deletion on /)).toBeVisible();
+  await expect(page.getByRole("grid", { name: "Organizations" }).getByRole("row").nth(1)).toContainText(OWNER.org);
+  await expect(page.getByRole("grid", { name: "Organizations" }).getByText(/^Deletion on /)).toBeVisible();
   await state.getByRole("button").click();
   await expect(page).toHaveURL(/\/settings\/instance\/orgs$/);
 
@@ -84,7 +84,7 @@ test("an instance admin deletes a scheduled organization now from the Organizati
   await expect(toastText(page, `${name} is scheduled for deletion`)).toBeVisible();
 
   await page.goto("/settings/instance/orgs?sort=deletion");
-  const table = page.getByRole("table", { name: "Organizations" });
+  const table = page.getByRole("grid", { name: "Organizations" });
   await table.getByRole("row").filter({ hasText: name }).click({ button: "right" });
   await expect(page.getByRole("menuitem", { name: "Restore organization" })).toBeVisible();
   await page.getByRole("menuitem", { name: "Delete now" }).click();

@@ -10,7 +10,7 @@ import { renderApp } from "~/test/render";
 const LOGS = "orgs/:org/projects/:project/logs";
 const listQueries = () => requests("GET", LOGS).map((r) => Object.fromEntries(r.query));
 const lastQuery = () => listQueries().at(-1) ?? {};
-const requestsTable = () => screen.getByRole("table", { name: "Requests" });
+const requestsTable = () => screen.getByRole("grid", { name: "Requests" });
 
 describe("LogsPage", () => {
   it("lists requests with their model, outcome, tokens, key and sender", async () => {
@@ -104,7 +104,7 @@ describe("LogsPage", () => {
     await renderApp(projectPath("logs"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    const started = within(row).getAllByRole("cell")[0] as HTMLElement;
+    const started = within(row).getAllByRole("gridcell")[0] as HTMLElement;
     expect(within(started).getByText(/^\d{2}:\d{2}$/)).toBeInTheDocument();
     expect(within(started).getByText(/^\d{1,2} [A-Z][a-z]{2,3}$/)).toBeInTheDocument();
     expect(within(requestsTable()).getAllByRole("columnheader")[0]).toHaveTextContent(/^Started$/);
@@ -126,7 +126,7 @@ describe("LogsPage", () => {
     await renderApp(projectPath("logs?range=1h"));
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
-    const [started] = within(row).getAllByRole("cell");
+    const [started] = within(row).getAllByRole("gridcell");
     expect(started?.textContent).toMatch(/^\d{1,2}:\d{2}:\d{2}$/);
     vi.unstubAllGlobals();
   });
@@ -551,7 +551,7 @@ describe("LogsPage", () => {
 
     const row = await screen.findByRole("row", { name: /200 OK/ });
     const model = within(row)
-      .getAllByRole("cell")
+      .getAllByRole("gridcell")
       .find((c) => c.textContent?.includes("gpt-5.4-mini")) as HTMLElement;
     expect(within(model).getByRole("img", { name: "OpenAI" })).toBeInTheDocument();
     expect(within(requestsTable()).queryByRole("columnheader", { name: /Provider/ })).not.toBeInTheDocument();
@@ -1022,7 +1022,7 @@ describe("LogsPage on an install without request logs", () => {
     await renderApp(projectPath("logs"));
     expect(await screen.findByText("Request logs are off on this install")).toBeInTheDocument();
     expect(screen.getByText("Usage, limits and budgets still count every request.")).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Requests" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("grid", { name: "Requests" })).not.toBeInTheDocument();
     expect(requests("GET", LOGS)).toHaveLength(0);
   });
 });

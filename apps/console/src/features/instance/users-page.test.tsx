@@ -20,7 +20,7 @@ function users(list: InstanceUserView[] = [ADA, GRACE, LINUS]) {
 }
 
 const userQueries = () => requests("GET", "instance/users").map((r) => Object.fromEntries(r.query));
-const table = () => screen.getByRole("table", { name: "Users" });
+const table = () => screen.getByRole("grid", { name: "Users" });
 
 async function openUser(u: InstanceUserView) {
   users();
@@ -79,7 +79,7 @@ describe("instance users list", () => {
     signedIn();
     users();
     await renderApp(PATH, { locale: "zh-CN" });
-    const row = (await within(await screen.findByRole("table", { name: "用户" })).findByText("Grace Hopper")).closest<HTMLElement>("[role=row]");
+    const row = (await within(await screen.findByRole("grid", { name: "用户" })).findByText("Grace Hopper")).closest<HTMLElement>("[role=row]");
     expect(row?.style.gridTemplateColumns.split(" ").at(-1)).toBe("160px");
   });
 
