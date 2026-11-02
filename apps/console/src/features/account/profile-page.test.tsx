@@ -236,11 +236,14 @@ describe("profile page", () => {
     expect(draw).toHaveBeenCalledWith(expect.anything(), 50, 0, 300, 300, 0, 0, 256, 256);
   });
 
-  it("deletes the account once the email is typed", async () => {
+  it("deletes the account once the email is typed and forgets what this browser kept of it", async () => {
     signedIn();
     on("GET", "me", me());
     on("DELETE", "me", noContent);
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    window.localStorage.setItem("kaeso:recent", JSON.stringify([{ kind: "key", id: "key_web", label: "checkout-web", href: "/" }]));
+    window.localStorage.setItem("kaeso:playground-draft:proj_checkout", "Where is order 4471?");
+    window.localStorage.setItem("kaeso:theme", "dark");
     const { user } = await renderApp("/settings/account/profile");
     await user.click(await screen.findByRole("button", { name: "Delete account" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Delete your account?" });
@@ -250,6 +253,9 @@ describe("profile page", () => {
     await user.click(confirm);
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/sign-in"));
     expect(requests("DELETE", "me")).toHaveLength(1);
+    expect(window.localStorage.getItem("kaeso:recent")).toBeNull();
+    expect(window.localStorage.getItem("kaeso:playground-draft:proj_checkout")).toBeNull();
+    expect(window.localStorage.getItem("kaeso:theme")).toBe("dark");
   });
 
   it("deletes an account without an email address without asking to type one", async () => {

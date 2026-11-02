@@ -1,11 +1,12 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn, withRights } from "~/test/fixtures";
+import { ORG, PROJECT, signedIn, withRights } from "~/test/fixtures";
 import { credential, fill, hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, preview, projectData, projectPath, searchHit } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import { remember } from "~/shell/session-memory";
+import { queryClient } from "~/query";
 
 const hits = () => [
   searchHit(),
@@ -33,6 +34,7 @@ async function pickProvider(user: Awaited<ReturnType<typeof open>>["user"], dial
 }
 
 const BATCH = "orgs/:org/projects/:project/models/batch";
+const PLAYGROUND_MODELS = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
 const MODELS = "orgs/:org/projects/:project/models";
 const SEARCH = "orgs/:org/projects/:project/models/search";
 const searches = () => requests("GET", SEARCH).map((r) => Object.fromEntries(r.query));
@@ -46,6 +48,7 @@ describe("AddModelsDialog", () => {
   it("adds the chosen models from KPMR and says which were already there", async () => {
     setUp();
     on("POST", BATCH, { added: [catalogueModel({ id: "cm_gpt5", model_id: "gpt-5" })], skipped: ["gpt-5-mini"] });
+    queryClient.setQueryData(PLAYGROUND_MODELS, []);
     const { user, dialog } = await open();
 
     expect(await within(dialog).findByText("gpt-5-mini")).toBeInTheDocument();
@@ -69,6 +72,7 @@ describe("AddModelsDialog", () => {
     expect(notifications().getByText("1 already in the catalogue")).toBeInTheDocument();
     expect(requests("POST", BATCH).map((r) => r.body)).toEqual([{ provider: "openai", model_ids: ["gpt-5", "gpt-5-mini"] }]);
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add models/ })).not.toBeInTheDocument());
+    expect(queryClient.getQueryState(PLAYGROUND_MODELS)?.isInvalidated).toBe(true);
   });
 
   it("starts on the first provider the gateway lists when the remembered one is gone", async () => {

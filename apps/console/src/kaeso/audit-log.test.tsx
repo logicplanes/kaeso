@@ -508,6 +508,25 @@ describe("AuditLog", () => {
     await waitFor(() => expect(router.state.location.search).toMatchObject({ target: "key_web" }));
   });
 
+  it("removes the target filter at once with Clear search or Escape", async () => {
+    orgLog();
+    const { user, router } = await renderApp(`${PATH}?target=key_web`);
+    const target = await screen.findByRole("searchbox", { name: "Target id" });
+    expect(target).toHaveValue("key_web");
+
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty("target"));
+    expect(target).toHaveValue("");
+    expect(target).toHaveFocus();
+    await waitFor(() => expect(logQuery().at(-1)).not.toHaveProperty("target"));
+
+    await user.type(target, "key_web{Enter}");
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ target: "key_web" }));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(router.state.location.search).not.toHaveProperty("target"));
+    expect(target).toHaveValue("");
+  });
+
   it("shows the export's progress and doesn't start a second one", async () => {
     orgLog();
     installPicker();

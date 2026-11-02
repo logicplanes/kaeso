@@ -10,6 +10,7 @@ import { useApiMutation } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
+import { forgetUserData } from "~/auth/user-data";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
@@ -238,6 +239,7 @@ function DeleteAccountDialog({ email, open, onOpenChange }: { email: string; ope
     },
     onSuccess: () => {
       queryClient.clear();
+      forgetUserData();
       window.location.assign("/sign-in");
     },
     onError: () => onOpenChange(false),
