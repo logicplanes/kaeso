@@ -164,6 +164,17 @@ impl Drop for Recording {
     }
 }
 
+fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+    let mut cause = Some(error);
+    while let Some(e) = cause {
+        if e.is::<http_body_util::LengthLimitError>() {
+            return true;
+        }
+        cause = e.source();
+    }
+    false
+}
+
 pub(super) fn shutting_down() -> KppError {
     error(
         ErrorKind::ProviderError,
@@ -616,11 +627,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 400,
                 "The request body did not arrive in time; send it again.",
             )
-        } else {
+        } else if over_limit(&e) {
             error(
                 ErrorKind::RequestTooLarge,
                 413,
                 format!("The request body is larger than {limit} bytes."),
+            )
+        } else {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The request body broke off before it was complete; send it again.",
             )
         };
         Failure::new(refused, Stage::Request)
