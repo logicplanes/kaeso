@@ -104,14 +104,16 @@ The release is created only when `release.json` and every image verify with `gh 
 `crates/kaeso-updater` is a small server on port 8081. `GET /healthz` needs no token; `GET /v1/status`, `POST /v1/updates` (`{ "id", "version" }`) and `GET /v1/updates/{id}` need `Authorization: Bearer` with the shared token. It runs one update at a time and keeps it in `/state/job.json`, written atomically after every change. An update runs these steps (`engine.rs`):
 
 1. **Verifying.** It downloads `release.json` and verifies it before anything else, then checks the running install against it ([the checks](#what-the-updater-checks)). It also checks that the local `compose.yaml` with the new image versions and digests equals the release's byte for byte, and keeps a copy in `/state`.
-2. **Downloading.** It pulls the three images by digest, and each image's version label must equal the release. It verifies the running release's `release.json` the same way and compares the migrations. When they differ, or that manifest can't be had, the update counts as migrating the database.
+2. **Downloading.** It pulls the three images by digest, and each image's version label must equal the release. It verifies the running release's `release.json` the same way and compares the migrations. When they differ, or that manifest can't be had, the update counts as migrating the database. A pull may take as long as the images need, and ends when Docker reports no progress for 2 minutes.
 3. **Switching.** It writes the maintenance flag. Then, for the console and then the gateway, it stops the container, renames it `…-previous`, and creates the new one from the old one's settings (`clone.rs`). Everything the old image brought is dropped, so the new image's environment, command and health check apply.
-4. **Migrating.** It waits for each health check: 2 minutes for the console and 10 for the gateway's migrations. A crash, a restart or a stopped container fails at once.
+4. **Migrating.** It waits for each health check: 2 minutes for the console and 10 for the gateway's migrations, including a Docker call still waiting at the end. A crash, a restart or a stopped container fails at once.
 5. **Online.** It writes the new versions and digests into `compose.yaml` when the file is still the one it checked, tags the images, removes the previous containers and clears the flag.
 
 A failure before the switch changes nothing (`failed`). A failure after it starts the previous containers again and waits for them (`rolled_back`, or `rollback_failed`).
 
 When the new gateway may already have migrated the database, nothing is restored: the new gateway and console stay, and the update ends `needs_attention`. The same holds when the maintenance flag or a `…-previous` container can't be removed. When `compose.yaml` can't be written, or changed during the update, the update still ends `succeeded`, with `compose_unwritable` or `compose_changed` as its reason.
+
+Every other Docker call has a limit of its own: 30 seconds to report the version, list, inspect, start or rename, the stop's grace period plus 15 seconds to stop, and 10 minutes to create, tag or remove.
 
 On start, the updater waits up to two minutes for Docker. It then finishes an update that was `online`, finishes one whose new gateway turns healthy, and rolls back any other.
 
