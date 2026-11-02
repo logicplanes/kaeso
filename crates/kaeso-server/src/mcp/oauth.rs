@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::net::IpAddr;
 
 use axum::Json;
 use axum::body::Bytes;
@@ -23,12 +24,21 @@ use crate::auth::agents::{
     ACCESS_LIFETIME, ACCESS_PREFIX, CODE_LIFETIME, CODE_PREFIX, REFRESH_PREFIX, REQUEST_LIFETIME,
     unused_too_long,
 };
+use crate::auth::key_failures;
+use crate::auth::throttle::{
+    self, AGENT_REGISTRATIONS_PER_IP, AGENT_REVOCATIONS_PER_IP, AGENT_SIGN_INS_PER_IP,
+    AGENT_TOKENS_PER_IP, Throttle,
+};
+use crate::http::client_ip::ClientIp;
 use crate::state::AppState;
 
 pub const SCOPE: &str = "kaeso";
 const MAX_REDIRECT_URIS: usize = 10;
 const MAX_URI_LEN: usize = 2000;
+const MAX_STATE_LEN: usize = 2000;
 const MAX_NAME: usize = 100;
+const MAX_UNUSED_CLIENTS: i64 = 1000;
+const MAX_REQUESTS_PER_CLIENT: i64 = 20;
 
 pub fn issuer(state: &AppState) -> String {
     state
@@ -75,6 +85,31 @@ fn store_failed(e: &StoreError) -> Response {
         "server_error",
         "Kaeso couldn't finish this step; try again shortly.",
     )
+}
+
+async fn limit(state: &AppState, ip: Option<IpAddr>, t: Throttle) -> Result<(), Response> {
+    throttle::hit(state, t, &key_failures::subject(ip))
+        .await
+        .map_err(|refused| match refused {
+            throttle::Refusal::Limited { retry_after } => {
+                let mut r = oauth_error(
+                    StatusCode::TOO_MANY_REQUESTS,
+                    "temporarily_unavailable",
+                    &format!(
+                        "Too many attempts from your address; try again in {}.",
+                        throttle::wait(retry_after)
+                    ),
+                );
+                r.headers_mut()
+                    .insert(header::RETRY_AFTER, HeaderValue::from(retry_after));
+                r
+            }
+            throttle::Refusal::Unavailable => oauth_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "temporarily_unavailable",
+                "Kaeso couldn't finish this step; try again shortly.",
+            ),
+        })
 }
 
 pub async fn protected_resource(State(state): State<AppState>) -> Response {
@@ -213,7 +248,14 @@ fn metadata_error(description: &str) -> Response {
     )
 }
 
-pub async fn register(State(state): State<AppState>, body: Bytes) -> Response {
+pub async fn register(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    body: Bytes,
+) -> Response {
+    if let Err(refused) = limit(&state, ip, AGENT_REGISTRATIONS_PER_IP).await {
+        return refused;
+    }
     let Ok(reg) = serde_json::from_slice::<Registration>(&body) else {
         return metadata_error("Send the client metadata as a JSON object.");
     };
@@ -262,7 +304,7 @@ pub async fn register(State(state): State<AppState>, body: Bytes) -> Response {
         software_version: clean(reg.software_version.as_deref(), MAX_NAME),
         created_at: now,
     };
-    if let Err(e) = agents::insert_client(&state.pg, &client).await {
+    if let Err(e) = insert_client(&state, &client).await {
         return store_failed(&e);
     }
     no_store(
@@ -280,6 +322,24 @@ pub async fn register(State(state): State<AppState>, body: Bytes) -> Response {
         )
             .into_response(),
     )
+}
+
+// Registration is open, so registrations no agent signed in with are capped; the oldest go first.
+async fn insert_client(state: &AppState, client: &Client) -> Result<(), StoreError> {
+    agents::insert_client(&state.pg, client).await?;
+    trim_clients(state, client.id).await
+}
+
+async fn trim_clients(state: &AppState, newest: Uuid) -> Result<(), StoreError> {
+    let dropped = agents::keep_unused_clients(&state.pg, MAX_UNUSED_CLIENTS, newest).await?;
+    if dropped > 0 {
+        tracing::warn!(
+            dropped,
+            kept = MAX_UNUSED_CLIENTS,
+            "too many agent registrations without a sign-in; the oldest were dropped"
+        );
+    }
+    Ok(())
 }
 
 fn params(raw: &str) -> HashMap<String, String> {
@@ -354,10 +414,69 @@ async fn reregister(
         },
     )
     .await?;
+    trim_clients(state, id.uuid()).await?;
     agents::get_client(&state.pg, id.uuid()).await
 }
 
-pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery) -> Response {
+// RFC 9700 section 4.11.2: registration is open, so a redirect URI is trusted with an error only
+// once someone approved an agent of its client; before that the console shows the error, and
+// the user's answer on the consent page goes back to the client.
+async fn refuse(
+    state: &AppState,
+    client: &Client,
+    redirect_uri: &str,
+    client_state: Option<&str>,
+    error: &str,
+) -> Response {
+    let trusted = receives_errors(redirect_uri)
+        && agents::approved(&state.pg, client.id)
+            .await
+            .inspect_err(|e| tracing::error!(error = %e, "an agent sign-in step failed"))
+            .unwrap_or(false);
+    if !trusted {
+        return console_error(state, error);
+    }
+    Redirect::to(&redirect_with_error(
+        state,
+        redirect_uri,
+        client_state,
+        error,
+    ))
+    .into_response()
+}
+
+fn request_error(state: &AppState, p: &HashMap<String, String>) -> Option<&'static str> {
+    let get = |k: &str| p.get(k).map(String::as_str).filter(|v| !v.is_empty());
+    if get("response_type") != Some("code") {
+        return Some("unsupported_response_type");
+    }
+    let challenge = get("code_challenge");
+    let s256 = get("code_challenge_method") == Some("S256");
+    if !s256 || !challenge.is_some_and(|c| c.len() == 43 && URL_SAFE_NO_PAD.decode(c).is_ok()) {
+        return Some("invalid_request");
+    }
+    if get("state").is_some_and(|s| s.len() > MAX_STATE_LEN) {
+        return Some("invalid_request");
+    }
+    if let Some(r) = get("resource")
+        && r.trim_end_matches('/') != resource(state)
+    {
+        return Some("invalid_target");
+    }
+    if get("scope").is_some_and(|s| s.split(' ').any(|s| !s.is_empty() && s != SCOPE)) {
+        return Some("invalid_scope");
+    }
+    None
+}
+
+pub async fn authorize(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    RawQuery(query): RawQuery,
+) -> Response {
+    if limit(&state, ip, AGENT_SIGN_INS_PER_IP).await.is_err() {
+        return console_error(&state, "temporarily_unavailable");
+    }
     let p = params(query.as_deref().unwrap_or_default());
     let get = |k: &str| p.get(k).map(String::as_str).filter(|v| !v.is_empty());
     let Some(client_id) = get("client_id").and_then(|c| c.parse::<AgentClientId>().ok()) else {
@@ -383,49 +502,18 @@ pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery)
         None if client.redirect_uris.len() == 1 => client.redirect_uris.concat(),
         _ => return console_error(&state, "invalid_redirect_uri"),
     };
-    let client_state = get("state");
-    let native = receives_errors(&redirect_uri);
-    let refuse = |error: &str| {
-        if !native {
-            return console_error(&state, error);
-        }
-        Redirect::to(&redirect_with_error(
-            &state,
-            &redirect_uri,
-            client_state,
-            error,
-        ))
-        .into_response()
-    };
-    if get("response_type") != Some("code") {
-        return refuse("unsupported_response_type");
+    let client_state = get("state").filter(|s| s.len() <= MAX_STATE_LEN);
+    if let Some(error) = request_error(&state, &p) {
+        return refuse(&state, &client, &redirect_uri, client_state, error).await;
     }
-    let challenge = match (get("code_challenge"), get("code_challenge_method")) {
-        (Some(c), Some("S256")) if c.len() == 43 && URL_SAFE_NO_PAD.decode(c).is_ok() => c,
-        _ => return refuse("invalid_request"),
-    };
-    if let Some(r) = get("resource")
-        && r.trim_end_matches('/') != resource(&state)
-    {
-        return refuse("invalid_target");
-    }
-    if get("scope").is_some_and(|s| s.split(' ').any(|s| !s.is_empty() && s != SCOPE)) {
-        return refuse("invalid_scope");
-    }
-    let now = state.clock.now();
     let token = random_token();
-    let stored = agents::insert_request(
-        &state.pg,
-        &NewRequest {
-            id: Uuid::now_v7(),
-            token_hash: &secret::hash(&token),
-            client_id: client.id,
-            redirect_uri: &redirect_uri,
-            state: client_state,
-            code_challenge: challenge,
-            now,
-            expires_at: now + REQUEST_LIFETIME,
-        },
+    let stored = store_request(
+        &state,
+        &client,
+        &redirect_uri,
+        client_state,
+        get("code_challenge").unwrap_or_default(),
+        &token,
     )
     .await;
     match stored {
@@ -434,9 +522,38 @@ pub async fn authorize(State(state): State<AppState>, RawQuery(query): RawQuery)
         ),
         Err(e) => {
             tracing::error!(error = %e, "an agent sign-in step failed");
-            refuse("server_error")
+            refuse(&state, &client, &redirect_uri, client_state, "server_error").await
         }
     }
+}
+
+// Any page can send a browser here, so each client keeps only its newest requests.
+async fn store_request(
+    state: &AppState,
+    client: &Client,
+    redirect_uri: &str,
+    client_state: Option<&str>,
+    challenge: &str,
+    token: &str,
+) -> Result<(), StoreError> {
+    let now = state.clock.now();
+    let id = Uuid::now_v7();
+    agents::insert_request(
+        &state.pg,
+        &NewRequest {
+            id,
+            token_hash: &secret::hash(token),
+            client_id: client.id,
+            redirect_uri,
+            state: client_state,
+            code_challenge: challenge,
+            now,
+            expires_at: now + REQUEST_LIFETIME,
+        },
+    )
+    .await?;
+    agents::keep_requests(&state.pg, client.id, MAX_REQUESTS_PER_CLIENT, id).await?;
+    Ok(())
 }
 
 pub async fn issue_code(
@@ -540,7 +657,15 @@ fn invalid_grant(description: &str) -> Response {
     oauth_error(StatusCode::BAD_REQUEST, "invalid_grant", description)
 }
 
-pub async fn token(State(state): State<AppState>, headers: HeaderMap, body: Bytes) -> Response {
+pub async fn token(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    if let Err(refused) = limit(&state, ip, AGENT_TOKENS_PER_IP).await {
+        return refused;
+    }
     let form = headers
         .get(header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
@@ -678,7 +803,14 @@ async fn check_grant(
     Ok(Ok(()))
 }
 
-pub async fn revoke(State(state): State<AppState>, body: Bytes) -> Response {
+pub async fn revoke(
+    State(state): State<AppState>,
+    ClientIp(ip): ClientIp,
+    body: Bytes,
+) -> Response {
+    if let Err(refused) = limit(&state, ip, AGENT_REVOCATIONS_PER_IP).await {
+        return refused;
+    }
     let p = params(&String::from_utf8_lossy(&body));
     let Some(token) = p.get("token").filter(|t| !t.is_empty()) else {
         return oauth_error(

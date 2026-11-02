@@ -16,7 +16,7 @@ use uuid::Uuid;
 use super::oauth;
 use super::tools::{self, Tool};
 use crate::auth::agents::{AgentCaller, Refusal};
-use crate::auth::keys::bearer;
+use crate::auth::keys::{LookupError, bearer};
 use crate::http::client_ip;
 use crate::services::agents::{known_model, usable};
 use crate::state::AppState;
@@ -148,7 +148,8 @@ pub async fn post(
     let Some(token) = token else {
         return challenge(&state, None, "Sign in to Kaeso first.");
     };
-    let agent = match crate::auth::agents::authenticate(&state, token).await {
+    let ip = client_address(&state, peer.map(|c| c.0), &headers);
+    let agent = match crate::auth::agents::authenticate(&state, token, ip).await {
         Ok(Ok(a)) => a,
         Ok(Err(refusal @ Refusal::NotAllowed)) => {
             return json_response(
@@ -157,7 +158,17 @@ pub async fn post(
             );
         }
         Ok(Err(refusal)) => return challenge(&state, Some("invalid_token"), refusal.message()),
-        Err(e) => {
+        Err(LookupError::Throttled(t)) => {
+            metrics::counter!(crate::metrics::AUTH_FAILURES, "method" => "agent", "reason" => "throttled").increment(1);
+            let mut r = json_response(
+                StatusCode::TOO_MANY_REQUESTS,
+                &json!({ "error": { "type": "rate_limited", "message": t.message() } }),
+            );
+            r.headers_mut()
+                .insert(header::RETRY_AFTER, HeaderValue::from(t.retry_after));
+            return r;
+        }
+        Err(LookupError::Store(e)) => {
             tracing::error!(error = %e, "an agent could not be signed in");
             return json_response(
                 StatusCode::SERVICE_UNAVAILABLE,
@@ -196,7 +207,6 @@ pub async fn post(
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_default();
-    let ip = client_address(&state, peer.map(|c| c.0), &headers);
     let ctx = Call {
         state: &state,
         platform: &platform,

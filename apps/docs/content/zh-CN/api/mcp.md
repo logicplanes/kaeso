@@ -243,6 +243,7 @@ sequenceDiagram
 | 403 | 实例不允许智能体，或 `Origin` 指向其他站点。 |
 | 405 | 对 `/mcp` 使用 `GET` 或 `DELETE`。 |
 | 413 | 请求体过大。 |
+| 429 | 来自您地址的未知令牌过多（[API 密钥限流](../self-hosting/configuration.md#api-密钥限流)）。`Retry-After` 说明何时可以重试。 |
 | 503 | Kaeso 无法访问其数据库。 |
 
 未知方法返回 JSON-RPC 错误 `-32601`，未知工具返回 `-32602`。失败的工具调用返回 200，带 `isError: true` 和文本 `<type>: <message>`。类型是 Platform API 的[错误类型](platform-api.md#错误)，缺少权限时为 `insufficient_rights`（[缺少权限](#缺少权限)）。
@@ -268,13 +269,15 @@ Kaeso 自己就是授权服务器。其颁发者是实例的公共 URL，例如 
 | `GET /.well-known/oauth-protected-resource/mcp` | 资源元数据：`/mcp` 的地址、作为其授权服务器的 Kaeso，以及 scope `kaeso`。也可通过 `/.well-known/oauth-protected-resource` 获取 |
 | `GET /.well-known/oauth-authorization-server` | 授权服务器元数据：下列端点、唯一的 PKCE 方法 `S256`、仅限公共客户端（`none`），以及每次重定向中的 `iss`（RFC 9207） |
 | `POST /oauth/register` | 注册客户端（RFC 7591），带 1 到 10 个重定向 URI，并返回其 `client_id`（`cli_…`）。重定向 URI 使用 HTTPS、任意端口的回环地址或私有 scheme |
-| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。`scope` 只能是 `kaeso`；如果发送 `resource`，它必须是 `/mcp` 的地址。被拒绝的请求会带着 `error` 返回环回地址或私有方案的重定向 URI；若是 HTTPS 地址，则改由控制台显示错误 |
+| `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。`scope` 只能是 `kaeso`；如果发送 `resource`，它必须是 `/mcp` 的地址；`state` 最多 2000 个字符。有人授权过该客户端的智能体之后，被拒绝的请求才会带着 `error` 返回环回地址或私有方案的重定向 URI；在此之前，以及对 HTTPS 地址，改由控制台显示错误 |
 | `POST /oauth/token` | 表单编码。`grant_type=authorization_code` 带 `code`、`client_id`、`redirect_uri` 和 `code_verifier`，或 `grant_type=refresh_token` 带 `refresh_token` 和 `client_id` |
 | `POST /oauth/revoke` | 表单编码的 `token`。结束该令牌所属的登录；对未知令牌也返回 200 |
 
 按照 RFC 8252 的规定，回环重定向 URI 每次登录都可以换端口。其主机和路径必须与注册时一致。
 
 智能体在重启后会保留其 `client_id`，但 Kaeso 会删除从未完成登录的注册，新数据库中也没有任何注册。当智能体使用 Kaeso 不认识的 `client_id` 和回环重定向 URI 登录时，Kaeso 会以该 ID 将其重新注册为“MCP client”，登录继续进行。您可以在授权页面上为它改名。对于其他重定向 URI，控制台会提示它不认识该智能体。
+
+任何人都可以注册客户端并发起登录，因此 Kaeso 对两者都有限制。每个地址每小时最多注册 20 个客户端，每 15 分钟最多发起 30 次登录、发送 120 次令牌请求和 30 次撤销请求。超出后，端点返回 429，带 `temporarily_unavailable` 和 `Retry-After`；`/oauth/authorize` 则打开控制台，请您稍后再试。Kaeso 最多保留 1000 个尚未完成登录的注册，最旧的先删除；每个客户端只保留最新的 20 个登录请求。未知的访问令牌计入 [API 密钥限流](../self-hosting/configuration.md#api-密钥限流)。
 
 ## 策略
 

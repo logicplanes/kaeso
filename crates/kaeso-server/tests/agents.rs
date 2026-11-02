@@ -585,9 +585,10 @@ async fn authorize_refuses_bad_requests_without_leaking_to_strangers() {
         ),
     ] {
         let r = authorize_url(&app, &bad).await;
-        let q = query_of(&location(&r));
-        assert_eq!(q["error"], error);
-        assert!(location(&r).starts_with(REDIRECT));
+        assert_eq!(
+            location(&r),
+            format!("https://kaeso.test/authorize#error={error}")
+        );
     }
     let bad_redirect = app
         .raw(
@@ -1604,4 +1605,251 @@ async fn orgs_joined_later_show_as_open_and_stay_open_after_a_save() {
     assert_eq!(saved.body["grant"], viewed.body["grant"]);
     let org = tool(&app, &a.access, "get_orgs_org", json!({ "org": later })).await;
     assert_eq!(org["isError"], false, "{org:?}");
+}
+
+fn from(peer: &str, mut req: Request<Body>) -> Request<Body> {
+    let addr = std::net::SocketAddr::new(peer.parse().unwrap(), 40000);
+    req.extensions_mut()
+        .insert(axum::extract::ConnectInfo(addr));
+    req
+}
+
+fn registration(redirect_uris: &[&str]) -> Request<Body> {
+    Request::builder()
+        .method(Method::POST)
+        .uri("/oauth/register")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            json!({ "client_name": "Stranger", "redirect_uris": redirect_uris }).to_string(),
+        ))
+        .unwrap()
+}
+
+#[tokio::test]
+async fn errors_go_back_to_an_agent_only_once_someone_approved_it() {
+    let (_s, app, owner) = setup().await;
+    let scheme = "com.example.agent:/oauth";
+    let stranger = app
+        .raw(registration(&[scheme, REDIRECT]))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let bad = |client: &str, redirect: &str| {
+        form(&[
+            ("client_id", client),
+            ("redirect_uri", redirect),
+            ("response_type", "x"),
+            ("state", "st4te"),
+        ])
+    };
+    for redirect in [scheme, REDIRECT] {
+        let r = authorize_url(&app, &bad(&stranger, redirect)).await;
+        assert_eq!(r.status, StatusCode::SEE_OTHER);
+        assert_eq!(
+            location(&r),
+            "https://kaeso.test/authorize#error=unsupported_response_type"
+        );
+    }
+    let long_state = "s".repeat(2001);
+    let r = authorize_url(
+        &app,
+        &form(&[
+            ("client_id", &stranger),
+            ("redirect_uri", REDIRECT),
+            ("response_type", "code"),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+            ("state", &long_state),
+        ]),
+    )
+    .await;
+    assert_eq!(
+        location(&r),
+        "https://kaeso.test/authorize#error=invalid_request"
+    );
+
+    let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let back = location(&authorize_url(&app, &bad(&a.client, REDIRECT)).await);
+    assert!(back.starts_with(REDIRECT), "{back}");
+    let q = query_of(&back);
+    assert_eq!(q["error"], "unsupported_response_type");
+    assert_eq!(q["state"], "st4te");
+    assert_eq!(q["iss"], "https://kaeso.test");
+    assert_eq!(
+        location(&authorize_url(&app, &bad(&stranger, REDIRECT)).await),
+        "https://kaeso.test/authorize#error=unsupported_response_type"
+    );
+
+    app.call(
+        Method::DELETE,
+        &format!("/me/agents/{}", a.agent),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert_eq!(
+        location(&authorize_url(&app, &bad(&a.client, REDIRECT)).await),
+        "https://kaeso.test/authorize#error=unsupported_response_type"
+    );
+}
+
+#[tokio::test]
+async fn each_address_gets_a_limited_number_of_registrations_sign_ins_and_token_calls() {
+    let (_s, app, _owner) = setup().await;
+    let flood = "203.0.113.60";
+    for n in 0..20 {
+        let r = app.raw(from(flood, registration(&[REDIRECT]))).await;
+        assert_eq!(r.status, StatusCode::CREATED, "{n}: {:?}", r.body);
+    }
+    let refused = app.raw(from(flood, registration(&[REDIRECT]))).await;
+    assert_eq!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(refused.body["error"], "temporarily_unavailable");
+    let description = refused.body["error_description"].as_str().unwrap();
+    assert!(
+        description.starts_with("Too many attempts from your address; try again in "),
+        "{description}"
+    );
+    let retry: u64 = refused.headers[header::RETRY_AFTER]
+        .to_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!((1..=3600).contains(&retry), "{retry}");
+    let other = app
+        .raw(from("198.51.100.60", registration(&[REDIRECT])))
+        .await;
+    assert_eq!(other.status, StatusCode::CREATED);
+
+    let client = other.body["client_id"].as_str().unwrap().to_owned();
+    let sign_in = || {
+        Request::builder()
+            .uri(format!(
+                "/oauth/authorize?{}",
+                form(&[
+                    ("response_type", "code"),
+                    ("client_id", &client),
+                    ("redirect_uri", REDIRECT),
+                    ("code_challenge", CHALLENGE),
+                    ("code_challenge_method", "S256"),
+                ])
+            ))
+            .body(Body::empty())
+            .unwrap()
+    };
+    for n in 0..30 {
+        let r = app.raw(from(flood, sign_in())).await;
+        assert!(location(&r).contains("#request="), "{n}: {}", location(&r));
+    }
+    assert_eq!(
+        location(&app.raw(from(flood, sign_in())).await),
+        "https://kaeso.test/authorize#error=temporarily_unavailable"
+    );
+    let elsewhere = app.raw(from("198.51.100.61", sign_in())).await;
+    assert!(location(&elsewhere).contains("#request="));
+
+    let token_call = |path: &str| {
+        Request::builder()
+            .method(Method::POST)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap()
+    };
+    for n in 0..120 {
+        let r = app.raw(from(flood, token_call("/oauth/token"))).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{n}: {:?}", r.body);
+    }
+    let r = app.raw(from(flood, token_call("/oauth/token"))).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(r.body["error"], "temporarily_unavailable");
+    for n in 0..30 {
+        let r = app.raw(from(flood, token_call("/oauth/revoke"))).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{n}: {:?}", r.body);
+    }
+    let r = app.raw(from(flood, token_call("/oauth/revoke"))).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
+    let r = app
+        .raw(from("198.51.100.62", token_call("/oauth/revoke")))
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn registrations_no_agent_signed_in_with_are_capped_oldest_first() {
+    let (_s, app, owner) = setup().await;
+    let web = "https://agent.example/cb";
+    let approved = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let oldest = app
+        .raw(from("198.51.100.70", registration(&[web])))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let now = app.state.clock.now();
+    sqlx::query(
+        "INSERT INTO agent_clients (id, name, redirect_uris, created_at) \
+         SELECT gen_random_uuid(), 'Flood', ARRAY['https://agent.example/cb'], \
+         $1 + n * interval '1 millisecond' FROM generate_series(1, 999) n",
+    )
+    .bind(now)
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+    app.clock.advance(time::Duration::seconds(5));
+    let newest = app
+        .raw(from("198.51.100.71", registration(&[web])))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["client_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let unused: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM agent_clients c \
+         WHERE NOT EXISTS (SELECT 1 FROM agents a WHERE a.client_id = c.id)",
+    )
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap();
+    assert_eq!(unused, 1000);
+    let open = |client: &str| {
+        form(&[
+            ("response_type", "code"),
+            ("client_id", client),
+            ("redirect_uri", web),
+            ("code_challenge", CHALLENGE),
+            ("code_challenge_method", "S256"),
+        ])
+    };
+    assert_eq!(
+        location(&authorize_url(&app, &open(&oldest)).await),
+        "https://kaeso.test/authorize#error=invalid_client"
+    );
+    assert!(location(&authorize_url(&app, &open(&newest)).await).contains("#request="));
+    request_token(&app, &approved.client).await;
+}
+
+#[tokio::test]
+async fn a_client_keeps_only_its_newest_sign_in_requests() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "Claude Code").await;
+    let first = request_token(&app, &client).await;
+    let mut last = first.clone();
+    for _ in 0..20 {
+        last = request_token(&app, &client).await;
+    }
+    let view = |request: &str| {
+        app.post(
+            "/me/agent-requests/view",
+            json!({ "request": request }),
+            Some(&owner.cookie),
+        )
+    };
+    assert_eq!(view(&first).await.status, StatusCode::NOT_FOUND);
+    view(&last).await.expect_status(StatusCode::OK);
 }
