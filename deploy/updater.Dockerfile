@@ -30,5 +30,5 @@ COPY --from=build --chmod=0555 /kaeso-updater /usr/local/bin/kaeso-updater
 COPY --from=build --chown=65532:65532 --chmod=0755 /dirs/ /
 USER nonroot:nonroot
 EXPOSE 8081
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 CMD ["/usr/local/bin/kaeso-updater", "healthcheck"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --start-interval=1s --retries=3 CMD ["/usr/local/bin/kaeso-updater", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/kaeso-updater"]

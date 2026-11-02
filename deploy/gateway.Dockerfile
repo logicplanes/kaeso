@@ -48,6 +48,6 @@ USER nonroot:nonroot
 # host's loopback reaches them; Compose publishes 9100 nowhere and Caddy never routes it.
 ENV KAESO_LISTEN=0.0.0.0:8080 KAESO_METRICS_LISTEN=0.0.0.0:9100
 EXPOSE 8080 9100
-HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 CMD ["/usr/local/bin/kaeso", "healthcheck"]
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --start-interval=1s --retries=3 CMD ["/usr/local/bin/kaeso", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/kaeso"]
 CMD ["serve"]
