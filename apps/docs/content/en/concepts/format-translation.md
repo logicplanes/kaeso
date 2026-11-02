@@ -38,7 +38,7 @@ KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat C
 - **Tool names and call ids.** When the target doesn't accept a name or id, Kaeso rewrites it in a fixed way and maps it back in the reply. Other characters become `_`, the name is cut to fit, and a hash of the original is added. OpenAI accepts up to 64 letters, digits, `_` and `-`, Anthropic up to 128.
 - **Structured output.** JSON schemas.
 - **Sampling.** Temperature, top P, maximum tokens and stop sequences, where the target has them. A value keeps its meaning but is written as the target writes it, so `1` can arrive as `1.0`.
-- **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`.
+- **The end user's id.** Anthropic's `metadata.user_id` and OpenAI's `safety_identifier`. OpenAI takes at most 128 characters and asks for a hash of the user's id, so a longer Anthropic id, such as Claude Code's, reaches it as its SHA-256 hash, which the reply's `kaeso-adapted` header names.
 - **Reasoning.** Efforts and thinking budgets convert into each other ([reasoning](#reasoning)).
 - **Streams.** Kaeso translates them event by event into the app's format.
 

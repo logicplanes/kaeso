@@ -3,6 +3,7 @@ use kaeso_kpp::{
 };
 
 use kaeso_codecs::cross::reasoning_map;
+use sha2::{Digest, Sha256};
 
 use super::Effective;
 
@@ -34,6 +35,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("format", _) => "response_format",
         ("messages", R) => "input",
         ("reasoning", A) => "thinking",
+        ("user", A) => "metadata.user_id",
         ("reasoning", R) => "reasoning",
         ("reasoning", _) => "reasoning_effort",
         (other, _) => other,
@@ -58,6 +60,7 @@ pub struct Plan {
     pub thinking_binding: Option<bool>,
     pub reasoning: Option<bool>,
     pub left_out: Vec<String>,
+    pub adapted: Vec<String>,
 }
 
 pub fn prepare(
@@ -95,10 +98,12 @@ pub fn prepare(
                 thinking_binding: None,
                 reasoning: None,
                 left_out: Vec::new(),
+                adapted: Vec::new(),
             })
         }
         Request::Generate(g) => {
             let left_out = leave_out_reasoning(g, ingress, eff);
+            let adapted = fit_end_user(g, ingress, eff);
             check_generation(g, ingress, eff)?;
             let dialect = eff.dialect;
             if dialect == DialectId::AnthropicMessages && g.sampling.max_output_tokens.is_none() {
@@ -113,6 +118,7 @@ pub fn prepare(
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
                 left_out,
+                adapted,
             })
         }
         Request::CountTokens(g) => {
@@ -124,6 +130,7 @@ pub fn prepare(
                 ));
             };
             let left_out = leave_out_reasoning(g, ingress, eff);
+            let adapted = fit_end_user(g, ingress, eff);
             check_generation(g, ingress, eff)?;
             Ok(Plan {
                 dialect,
@@ -131,6 +138,7 @@ pub fn prepare(
                 thinking_binding,
                 reasoning: eff.fields.reasoning,
                 left_out,
+                adapted,
             })
         }
         _ => Err(refuse(
@@ -176,6 +184,24 @@ fn leave_out_reasoning(
         g.reasoning = None;
     }
     left_out
+}
+
+// Anthropic's `metadata.user_id` may be longer than a provider takes, such as Claude Code's
+// 150 characters; OpenAI's spec asks for a hash of the user's id there anyway.
+fn fit_end_user(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let Some(limit) = eff.provider.end_user_limit() else {
+        return Vec::new();
+    };
+    match g.user.as_mut() {
+        Some(user) if ingress == DialectId::AnthropicMessages && user.chars().count() > limit => {
+            *user = Sha256::digest(user.as_bytes())
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect();
+            vec![app_param(ingress, "user").to_owned()]
+        }
+        _ => Vec::new(),
+    }
 }
 
 fn check_generation(
