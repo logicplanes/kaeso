@@ -25,6 +25,7 @@ use tokio_util::task::TaskTracker;
 use tower::ServiceExt;
 
 use crate::config::{Config, MailTransport, SmtpTls};
+use crate::http::connection_timer::ConnectionTimer;
 use crate::state::{AppState, Parts};
 
 #[derive(Debug, thiserror::Error)]
@@ -342,10 +343,7 @@ fn flatten(result: Result<std::io::Result<()>, tokio::task::JoinError>) -> std::
 
 fn connection_builder(header_read_timeout: Duration) -> Builder<TokioExecutor> {
     let mut builder = Builder::new(TokioExecutor::new());
-    builder
-        .http1()
-        .timer(TokioTimer::new())
-        .header_read_timeout(header_read_timeout);
+    builder.http1().header_read_timeout(header_read_timeout);
     builder
         .http2()
         .timer(TokioTimer::new())
@@ -442,6 +440,7 @@ async fn serve_connection(
     first_request_within: Duration,
     kill: CancellationToken,
 ) {
+    let (shutdown, kill) = (shutdown.child_token(), kill.child_token());
     let first_request = CancellationToken::new();
     let arrived = first_request.clone();
     let service = service_fn(move |request: axum::http::Request<Incoming>| {
@@ -453,6 +452,8 @@ async fn serve_connection(
             router.oneshot(request).await
         }
     });
+    let mut builder = Builder::clone(&builder);
+    builder.http1().timer(ConnectionTimer::default());
     let connection = builder.serve_connection(TokioIo::new(stream), service);
     let mut connection = std::pin::pin!(connection);
     let deadline = tokio::time::sleep(first_request_within);
