@@ -132,6 +132,7 @@ pub(crate) fn for_target<'a>(
             history::as_function_calls(&mut draft)?;
             place_system_for_chat(&mut draft, target);
             media_after_tool_results(&mut draft);
+            parallel_permission_left_out(&mut draft, &ctx.chat_profile);
         }
         DialectId::OpenAiResponses => {
             web_search::for_responses(&mut draft, profile)?;
@@ -460,5 +461,18 @@ fn cache_key_left_out(d: &mut Draft<'_>, target: DialectId, chat: &ChatProfile) 
     if from_responses && d.get().extras.fields.contains_key(OPENAI_CACHE_KEY) {
         d.edit().extras.fields.shift_remove(OPENAI_CACHE_KEY);
         d.leave_out(OPENAI_CACHE_KEY.to_owned());
+    }
+}
+
+const PARALLEL_TOOL_CALLS: &str = "parallel_tool_calls";
+
+// `parallel_tool_calls: true` only allows parallel calls, so a provider without the field
+// honours it; Codex sends it on every request, and refusing it would refuse all of Codex.
+fn parallel_permission_left_out(d: &mut Draft<'_>, chat: &ChatProfile) {
+    if d.get().parallel_tool_calls == Some(true)
+        && chat.request.refused_fields.contains(&PARALLEL_TOOL_CALLS)
+    {
+        d.edit().parallel_tool_calls = None;
+        d.leave_out(PARALLEL_TOOL_CALLS.to_owned());
     }
 }

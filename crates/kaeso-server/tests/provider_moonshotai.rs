@@ -282,6 +282,7 @@ async fn a_responses_app_gets_reasoning_before_the_tool_call() {
         Some(json!({
             "model": K26,
             "max_output_tokens": 400,
+            "parallel_tool_calls": true,
             "input": fixture("responses", "recorded-reasoning-tools"),
             "tools": [{
                 "type": "function", "name": "get_weather", "description": WEATHER,
@@ -301,7 +302,10 @@ async fn a_responses_app_gets_reasoning_before_the_tool_call() {
         .unwrap_or_else(|| panic!("{output}"));
     assert_eq!(call["name"], "get_weather");
     assert_eq!(call["arguments"], r#"{"city": "Paris"}"#);
-    assert_eq!(sent_to_moonshot(&env, K26)["max_completion_tokens"], 400);
+    assert_eq!(r.header("kaeso-left-out"), Some("parallel_tool_calls"));
+    let sent = sent_to_moonshot(&env, K26);
+    assert_eq!(sent["max_completion_tokens"], 400);
+    assert!(sent.get("parallel_tool_calls").is_none(), "{sent}");
 }
 
 #[tokio::test]

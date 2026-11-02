@@ -992,6 +992,32 @@ fn a_codex_cache_key_is_left_out_for_a_chat_provider_without_one() {
 }
 
 #[test]
+fn codexs_parallel_tool_calls_is_left_out_where_the_provider_refuses_the_field() {
+    let mut body = codex("codex-developer-resume");
+    assert_eq!(body["parallel_tool_calls"], true);
+    let moonshot = |req: &Request| {
+        EgressCtx::new(req)
+            .with_provider("moonshotai")
+            .with_chat_profile(
+                ChatProfile::compatible("Moonshot").refusing(&["parallel_tool_calls"]),
+            )
+    };
+    let req = decode(&body);
+    let (sent, left_out) = sent_with(C, &req, moonshot(&req));
+    assert!(sent.get("parallel_tool_calls").is_none(), "{sent}");
+    assert!(
+        left_out.iter().any(|l| l == "parallel_tool_calls"),
+        "{left_out:?}"
+    );
+    let (sent, _) = sent_with(C, &req, mistral(&req));
+    assert_eq!(sent["parallel_tool_calls"], true);
+    body["parallel_tool_calls"] = json!(false);
+    let req = decode(&body);
+    let err = send(C, &req, &mut moonshot(&req)).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("parallel_tool_calls"));
+}
+
+#[test]
 fn xai_gets_its_own_web_search_fields() {
     let mut body = codex("codex-developer-resume");
     body["tools"][1] = json!({

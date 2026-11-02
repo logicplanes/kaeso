@@ -30,7 +30,7 @@ nav: Chat 服务商
 | `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
 | `thinking_switch()` | 将请求的思考以 `enable_thinking` 发送：思考关闭或强度为 `none`、`minimal` 时为 `false`，并省略 `reasoning_effort`；其他情况为 `true`。没有强度的预算以 `thinking_budget` 发送，而不是映射成的强度；强度仍以 `reasoning_effort` 发送。Chat 应用自己发送的键保持不变。 | 服务商用自己的键开关思考；在模型默认不思考时，仅有 `reasoning_effort` 不会开启思考。开或关、预算和强度都原样到达服务商。 |
 | `greedy_top_p()` | 只要请求带有 `temperature: 0`，无论设置了什么 `top_p`，都发送 `top_p: 1`。 | 在 `temperature: 0` 下，模型总是选择可能性最高的 token，因此 `top_p` 不起作用，应用的值也没有损失；默认 `top_p` 更低的提供商在没有 `top_p: 1` 时会拒绝贪婪采样。 |
-| `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。 |
+| `refusing(fields)` | 如果请求体会包含其中某个顶层键，就拒绝该请求，例如 `` `logit_bias` is not supported by Example Cloud; remove it from the request. `` | extras 是语义字段，因此被拒绝，而不是丢弃。`parallel_tool_calls: true` 是例外：它只允许并行调用，而没有该字段的服务商本来就允许，因此会被省略，并在 `kaeso-left-out` 中注明。Codex 在每个请求中都会发送它。 |
 | `refusing_in_messages(fields)` | 对 system、user 和 assistant 消息中的键同样处理。不检查 tool 消息。 | 同上。 |
 
 Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`）：
@@ -158,7 +158,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `usage.cached_tokens`（与 `usage.prompt_tokens_details.cached_tokens` 并列）以及 `prompt_tokens_details.cache_write_tokens` | `Usage` | 缓存数量从 `prompt_tokens_details` 读取；顶层的副本保留在原始用量中。 |
 | `logprobs`、`top_logprobs`、`stop`、`seed`、`response_format`、`tool_choice`、`prediction`、`user`、`safety_identifier`、`prompt_cache_key`、消息中的 `name` | 发送 | Moonshot 接受这些字段。模型思考时，它对 `tool_choice: "required"` 返回 400（`errors/recorded-tool-choice-required-thinking`）。 |
 | `logit_bias`、`functions`、助手消息中的 `refusal` 内容部分 | 发送 | Moonshot 返回 400，应用会以自己的格式收到（`errors/recorded-logit-bias-refused`）。 |
-| `audio`、`metadata`、`modalities`、`parallel_tool_calls`、`service_tier`、`store`、`verbosity`、`web_search_options` | 拒绝 | Moonshot 返回 200 并忽略它们；配置在发送前拒绝它们。 |
+| `audio`、`metadata`、`modalities`、`parallel_tool_calls`、`service_tier`、`store`、`verbosity`、`web_search_options` | 拒绝 | Moonshot 返回 200 并忽略它们；配置在发送前拒绝它们。`parallel_tool_calls: true` 则会被省略（[服务商配置](#服务商配置)）。 |
 | OpenAI 格式的错误，带有 Moonshot 自己的 `type`，例如 `invalid_authentication_error`、`resource_not_found_error` 或 `rate_limit_reached_error` | `KppError` | 类型取决于状态码；根据 Moonshot 的错误页面，`exceeded_current_quota_error`（余额用尽时的 429）属于计费拒绝，`engine_overloaded_error`（429）属于过载（`errors/exceeded-current-quota`、`errors/engine-overloaded`）。速率限制消息中含有账户的组织和密钥 ID（`ak-…`）；网关会从每条服务商错误消息中去掉两者。 |
 | `GET /v1/models`：OpenAI 的列表，`owned_by: "moonshot"`，每个模型还带有 `context_length`、`supports_reasoning`、`reasoning`、`modalities` 等字段 | `ModelList`、extras | 错误的密钥会得到 401，因此模型检查能发现它。 |
 
