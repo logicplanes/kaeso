@@ -111,19 +111,19 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
 
   const base = useMemo(() => logs.data?.pages.flatMap((p) => p.data) ?? [], [logs.data]);
   const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
-  const { isFetchingNextPage, fetchNextPage } = logs;
+  const { isFetchingNextPage, isFetchNextPageError, fetchNextPage } = logs;
   const hasNextPage = logs.hasNextPage && !cut;
   const loadMore = useEffectEvent(() => void fetchNextPage());
   useEffect(() => {
     const more = scroller.current?.querySelector("nav");
-    if (!more || !hasNextPage || isFetchingNextPage) return;
+    if (!more || !hasNextPage || isFetchingNextPage || isFetchNextPageError) return;
     const seen = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && loadMore(), {
       root: scrollParentOf(scroller.current),
       rootMargin: "800px 0px",
     });
     seen.observe(more);
     return () => seen.disconnect();
-  }, [hasNextPage, isFetchingNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError]);
 
   const step = useEffectEvent((e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement).closest("input, textarea, [contenteditable], [role=combobox]")) return;
