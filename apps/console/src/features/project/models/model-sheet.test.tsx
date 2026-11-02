@@ -1,12 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
+import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { queryClient } from "~/query";
 
 const ONE_MODEL = "orgs/:org/projects/:project/models/:model";
+const PLAYGROUND_MODELS = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
 
 const sonnet = () =>
   catalogueModel({
@@ -361,6 +363,7 @@ describe("ModelSheet", () => {
 
   it("removes the model from the catalogue", async () => {
     setUp();
+    queryClient.setQueryData(PLAYGROUND_MODELS, []);
     on("DELETE", ONE_MODEL, () => undefined);
     const { user, router } = await renderApp(projectPath("models?model=cm_sonnet"));
 
@@ -373,6 +376,7 @@ describe("ModelSheet", () => {
     expect(await notifications().findByText("Model removed from the catalogue")).toBeInTheDocument();
     expect(requests("DELETE", ONE_MODEL).map((r) => [r.params.model, r.headers.get("if-match")])).toEqual([["cm_sonnet", '"1"']]);
     await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(queryClient.getQueryState(PLAYGROUND_MODELS)?.isInvalidated).toBe(true);
   });
 
   it("locks the overrides and removal without Manage models", async () => {

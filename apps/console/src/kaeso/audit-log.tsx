@@ -205,6 +205,10 @@ export function AuditLog({
             placeholder={t("kaeso.audit.targetId", "Target id")}
             value={target}
             onChange={(e) => setTarget(e.target.value)}
+            onClear={() => {
+              setTarget("");
+              set({ target: undefined, event: undefined });
+            }}
             onKeyDown={(e) => e.key === "Enter" && set({ target: target.trim() || undefined, event: undefined })}
             onBlur={() => target.trim() !== (filters.target ?? "") && set({ target: target.trim() || undefined, event: undefined })}
           />

@@ -17,6 +17,12 @@ const PER_EMBEDDING_BODY_BYTE: u64 = 20;
 const PER_ITEM: u64 = 4 * KIB;
 const PER_BLOCK: u64 = 2 * KIB;
 const PER_TOOL: u64 = KIB;
+// What a decoded request keeps once translating is done, measured on Anthropic Messages and
+// OpenAI Responses agent conversations of 20 to 900 items: 1.1 to 1.5 KiB per item and block
+// beyond their content. Charging the peaks instead held twice that for a stream's whole life.
+const KEPT_PER_ITEM: u64 = 3 * KIB / 2;
+const KEPT_PER_BLOCK: u64 = KIB;
+const KEPT_PER_TOOL: u64 = KIB;
 // A decoded embedding input holds each token id as a u32.
 const PER_TOKEN: u64 = 4;
 
@@ -28,11 +34,11 @@ fn count(n: usize) -> u64 {
     u64::try_from(n).unwrap_or(u64::MAX)
 }
 
-fn structure(shape: &RequestShape) -> u64 {
+fn structure(shape: &RequestShape, [item, block, tool]: [u64; 3]) -> u64 {
     count(shape.items)
-        .saturating_mul(PER_ITEM)
-        .saturating_add(count(shape.blocks).saturating_mul(PER_BLOCK))
-        .saturating_add(count(shape.tools).saturating_mul(PER_TOOL))
+        .saturating_mul(item)
+        .saturating_add(count(shape.blocks).saturating_mul(block))
+        .saturating_add(count(shape.tools).saturating_mul(tool))
 }
 
 // Decoding first reads every value as raw JSON, whitespace included, so translating is charged
@@ -45,13 +51,16 @@ pub fn estimate(kind: RequestKind, body_bytes: usize, shape: &RequestShape) -> u
     };
     count(body_bytes.max(shape.bytes))
         .saturating_mul(per_byte)
-        .saturating_add(structure(shape))
+        .saturating_add(structure(shape, [PER_ITEM, PER_BLOCK, PER_TOOL]))
 }
 
 pub fn decoded(shape: &RequestShape) -> u64 {
     count(shape.bytes)
         .saturating_add(count(shape.tokens).saturating_mul(PER_TOKEN))
-        .saturating_add(structure(shape))
+        .saturating_add(structure(
+            shape,
+            [KEPT_PER_ITEM, KEPT_PER_BLOCK, KEPT_PER_TOOL],
+        ))
 }
 
 type Holders = Arc<Mutex<HashMap<Uuid, Arc<Semaphore>>>>;
@@ -210,12 +219,12 @@ mod tests {
     fn a_decoded_request_keeps_its_content_and_every_counted_structure() {
         assert_eq!(
             decoded(&shape(1000, 2, 3, 1)),
-            1000 + 2 * 4096 + 3 * 2048 + 1024
+            1000 + 2 * 1536 + 3 * 1024 + 1024
         );
         assert_eq!(decoded(&shape(usize::MAX, 1, 0, 0)), u64::MAX);
         let mut ids = shape(2000, 1, 0, 0);
         ids.tokens = 1000;
-        assert_eq!(decoded(&ids), 2000 + 4 * 1000 + 4096);
+        assert_eq!(decoded(&ids), 2000 + 4 * 1000 + 1536);
     }
 
     #[test]
@@ -287,6 +296,29 @@ mod tests {
         drop(full);
         assert_eq!(budget.free(), 8 * KIB);
         assert!(budget.holders.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_key_that_gave_up_waiting_leaves_no_share_behind() {
+        let budget = Budget::with_wait(8 * KIB, Duration::ZERO);
+        let mut held = Vec::new();
+        for _ in 0..4 {
+            held.push(budget.hold(Uuid::now_v7(), 2 * KIB).await.unwrap());
+        }
+        assert!(
+            budget.hold(Uuid::now_v7(), KIB).await.is_err(),
+            "the budget is spent"
+        );
+        drop(held);
+        assert_eq!(budget.free(), 8 * KIB);
+        assert!(budget.holders.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_long_agent_conversation_is_charged_near_what_it_keeps() {
+        // 300 turns of a Claude Code session, 614 KiB of content: decoding keeps 2,506 KiB.
+        let kept = decoded(&shape(614 * 1024, 601, 1202, 40));
+        assert!((2506 * KIB..3 * 1024 * KIB).contains(&kept), "{kept}");
     }
 
     #[tokio::test]

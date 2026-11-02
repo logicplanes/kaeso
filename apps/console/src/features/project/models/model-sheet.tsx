@@ -7,6 +7,7 @@ import { api, data, ifMatch } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { catalogueModelQuery } from "~/api/queries/models";
+import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { dialectLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
@@ -21,11 +22,6 @@ import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
-
-const invalidates = (org: string, project: string) => [
-  ["orgs", org, "projects", project, "models"],
-  ["orgs", org, "projects", project, "aliases"],
-];
 
 export function ModelSheet({ org, project, modelId, onClose }: { org: string; project: string; modelId: string | undefined; onClose: () => void }) {
   return (
@@ -67,7 +63,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           body: { overrides: overrides },
         }),
       ),
-    invalidates: invalidates(org, project),
+    invalidates: projectCatalogue(org, project),
     onError: (error) => {
       if (error.status === 412) setEditing(null);
     },
@@ -238,7 +234,7 @@ function RemoveModelDialog({
         params: { path: { org, project, model: model.id }, header: ifMatch(model) },
       });
     },
-    invalidates: invalidates(org, project),
+    invalidates: projectCatalogue(org, project),
     onSuccess: () => {
       toast(t("models.removed", "Model removed from the catalogue"));
       onRemoved();

@@ -748,6 +748,7 @@ const messages = (): Rule[] => [
     ),
   ),
   rule("errors.modelApi.bodyTimeout", () => t("errors.modelApi.bodyTimeout", "The request body did not arrive in time; send it again.")),
+  rule("errors.modelApi.bodyBrokeOff", () => t("errors.modelApi.bodyBrokeOff", "The request body broke off before it was complete; send it again.")),
   rule("errors.modelApi.bodyTooLarge", (v) => t("errors.modelApi.bodyTooLarge", "The request body is larger than {limit} bytes.", v), { limit: "number" }),
   rule("errors.modelApi.streamOnly", () => t("errors.modelApi.streamOnly", "Only streamed requests are served here; send `stream: true`.")),
   rule("errors.modelApi.providerUnavailable", (v) => t("errors.modelApi.providerUnavailable", "The provider `{provider}` is not available.", v)),
