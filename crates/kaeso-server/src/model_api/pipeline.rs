@@ -631,13 +631,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         o.request_body = Some(body.clone());
     }
     let request_bytes = body.len();
-    let scanned = body.clone();
-    let shape = off_thread(request_bytes, move || {
-        kaeso_codecs::limits::request_shape(ingress, &scanned)
+    let checked = off_thread(request_bytes, move || {
+        kaeso_codecs::limits::Checked::new(ingress, body)
     })
     .await
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
+    let shape = *checked.shape();
     let holder = caller
         .key_id
         .or(caller.user_id)
@@ -661,7 +661,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     );
     let listed = header_list(&headers);
     let mut req = off_thread(request_bytes, move || {
-        dispatch::decode_request(ingress, kind, &body, &listed)
+        dispatch::decode_checked_request(kind, &checked, &listed)
     })
     .await
     .and_then(|r| r)

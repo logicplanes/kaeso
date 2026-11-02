@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use kaeso_codecs::limits::{
-    MAX_BLOCKS_PER_MESSAGE, MAX_EMBEDDING_INPUTS, MAX_MESSAGES, MAX_TOOLS, RequestShape,
+    Checked, MAX_BLOCKS_PER_MESSAGE, MAX_EMBEDDING_INPUTS, MAX_MESSAGES, MAX_TOOLS, RequestShape,
     request_shape,
 };
 use kaeso_codecs::{HeaderList, dispatch};
@@ -472,4 +472,43 @@ fn an_escaped_key_is_counted_like_the_key_it_spells() {
         repeated(r#"{"role":"user","content":"a"}"#, MAX_MESSAGES + 1)
     );
     assert_eq!(refused(C, &body).param.as_deref(), Some("messages"));
+}
+
+#[test]
+fn a_checked_body_decodes_as_the_codec_decodes_it_and_is_refused_alike() {
+    let fixtures = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures");
+    let mut compared = 0;
+    for dialect in [A, C, R, E] {
+        let kind = if dialect == E {
+            RequestKind::Embed
+        } else {
+            RequestKind::Generate
+        };
+        let dir = fixtures.join(dialect.as_str()).join("requests");
+        for entry in std::fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            if !name.ends_with(".json") || name.ends_with(".headers.json") {
+                continue;
+            }
+            let body = std::fs::read(&path).unwrap();
+            let headers = HeaderList::new().with("anthropic-version", "2023-06-01");
+            let direct = dispatch::decode_request(dialect, kind, &body, &headers);
+            let checked = Checked::new(dialect, &body[..])
+                .and_then(|c| dispatch::decode_checked_request(kind, &c, &headers));
+            assert_eq!(format!("{checked:?}"), format!("{direct:?}"), "{name}");
+            compared += 1;
+        }
+    }
+    assert!(compared > 50, "only {compared} fixtures");
+
+    let over = format!(
+        r#"{{"model":"m","tools":[{}]}}"#,
+        repeated(r#"{"name":"t","input_schema":{}}"#, MAX_TOOLS + 1)
+    );
+    let refused = Checked::new(A, over.as_bytes()).unwrap_err();
+    assert_eq!(refused, request_shape(A, over.as_bytes()).unwrap_err());
+    let checked = Checked::new(C, br#"{"model":"m","messages":[]}"#.to_vec()).unwrap();
+    assert_eq!((checked.dialect(), checked.shape().items), (C, 0));
+    assert_eq!(checked.into_body().len(), 27);
 }

@@ -90,6 +90,16 @@ impl crate::codec::sealed::Sealed for OpenAiChat {}
 impl crate::codec::sealed::Sealed for stream::ChatStreamDecoder {}
 impl crate::codec::sealed::Sealed for stream_encode::ChatStreamEncoder {}
 
+impl OpenAiChat {
+    pub(crate) fn decode_checked(
+        kind: RequestKind,
+        body: &[u8],
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
+        request::decode_request(kind, body, headers)
+    }
+}
+
 impl Codec for OpenAiChat {
     const DIALECT: DialectId = DIALECT;
 
@@ -99,7 +109,7 @@ impl Codec for OpenAiChat {
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
         crate::limits::request_shape(Self::DIALECT, body)?;
-        request::decode_request(kind, body, headers)
+        Self::decode_checked(kind, body, headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
