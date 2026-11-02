@@ -4,7 +4,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{SessionId, UserId};
 use kaeso_store::pg::tokens::{self, TokenKind};
-use kaeso_store::pg::{members, totp, users};
+use kaeso_store::pg::{agents, members, totp, users};
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -142,6 +142,10 @@ pub struct PasswordChange {
     #[doc = "The new password, 12 to 128 characters."]
     #[schema(value_type = String, format = Password, write_only)]
     pub new_password: SecretString,
+    #[doc = "Also revoke every agent the user authorized, for when someone else may\n\
+        have connected one. Agents keep working when it is `false`, the default."]
+    #[serde(default)]
+    pub revoke_agents: bool,
 }
 
 #[utoipa::path(
@@ -149,7 +153,8 @@ pub struct PasswordChange {
     path = "/me/password",
     summary = "Sets or changes the password. Ends every session of the user; the\n\
     caller gets a new session (new cookie). Without a current password (a\n\
-    user who signs in by sign-in link or SSO), a recent sign-in is needed.",
+    user who signs in by sign-in link or SSO), a recent sign-in is needed.\n\
+    With `revoke_agents`, the user's agents are revoked too.",
     tag = "me",
     request_body = PasswordChange,
     responses((status = 200, description = "Changed; a new session cookie is set.", body = crate::platform::auth::SignedIn))
@@ -199,10 +204,14 @@ pub async fn change_password(
     ] {
         tokens::retire_all(&mut *tx, kind, Some(user.id), ctx.now).await?;
     }
-    ctx.audit(None, Action::UserPasswordChange)
-        .target("user", user_id)
-        .write(&mut tx)
-        .await?;
+    let mut audit = ctx
+        .audit(None, Action::UserPasswordChange)
+        .target("user", user_id);
+    if req.revoke_agents {
+        let revoked = agents::revoke_of_user(&mut *tx, user.id, ctx.now).await?;
+        audit = audit.after(serde_json::json!({ "agents_revoked": revoked }));
+    }
+    audit.write(&mut tx).await?;
     tx.commit().await?;
     if let Some(email) = &user.email {
         let lang =

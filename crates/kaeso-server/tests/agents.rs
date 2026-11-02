@@ -1277,6 +1277,69 @@ async fn agents_stop_when_every_session_of_their_user_ends() {
 }
 
 #[tokio::test]
+async fn a_password_change_disconnects_agents_only_when_asked() {
+    let (s, app, owner) = setup().await;
+    let first = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+    let changed = app
+        .post(
+            "/me/password",
+            json!({ "current_password": common::PASSWORD, "new_password": "a second long passphrase" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let cookie = changed.cookie().unwrap();
+    assert_eq!(
+        mcp(&app, &first.access, "ping", json!({})).await.status,
+        StatusCode::OK,
+        "a plain password change keeps the agent"
+    );
+
+    let second = sign_in(&app, &cookie, builder(&owner.org_id)).await;
+    let changed = app
+        .post(
+            "/me/password",
+            json!({
+                "current_password": "a second long passphrase",
+                "new_password": "a third long passphrase",
+                "revoke_agents": true,
+            }),
+            Some(&cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let cookie = changed.cookie().unwrap();
+    assert!(stopped(&app, &first).await, "the first agent");
+    assert!(stopped(&app, &second).await, "the second agent");
+    let listed = app
+        .get("/me/agents", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(listed.body["data"], json!([]));
+    let who = app
+        .get("/auth/session", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        who.body["user"]["email"], "owner@example.com",
+        "the caller stays signed in"
+    );
+
+    let audit = app
+        .get("/instance/audit-log?action=user.password_change", &cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let afters: Vec<&Value> = audit.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| &e["after"])
+        .collect();
+    assert_eq!(afters, [&json!({ "agents_revoked": 2 }), &Value::Null]);
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn a_reused_code_ends_the_tokens_it_was_exchanged_for() {
     let (_s, app, owner) = setup().await;
     let client = register(&app, "Codex").await;

@@ -29,6 +29,8 @@ Verwaltet eine Organisation Ihr Konto, gehört Ihre Adresse ihrem Identitätsanb
 
 Unter **Sicherheit** setzt **Passwort ändern** ein neues Passwort und meldet Ihre anderen Sitzungen ab. Melden Sie sich nur mit Links oder Single Sign-on an, haben Sie kein Passwort, und **Passwort festlegen** fügt eines hinzu.
 
+Ihre Agenten arbeiten danach weiter. Wählen Sie **Auch meine Agenten trennen**, wenn jemand anderes einen mit Ihrem Konto verbunden haben könnte, etwa wenn Sie das Passwort ändern, weil es bekannt wurde; Kaeso widerruft dann jeden Agenten, den Sie autorisiert haben, und Sie verbinden Ihre neu.
+
 ## Zwei-Faktor-Authentifizierung einschalten
 
 Die Zwei-Faktor-Authentifizierung fragt bei jeder Anmeldung mit Passwort und mit jedem Anmeldelink nach einem Code aus einer Authenticator-App. Single Sign-on fragt nicht danach; dort prüft Sie Ihr Identitätsanbieter. Eine Organisation, die Zwei-Faktor-Authentifizierung verlangt, akzeptiert eine Anmeldung mit Code. Sie akzeptiert auch eine Anmeldung über ihren eigenen Identitätsanbieter oder über den Anbieter der Organisation, die Ihr Konto verwaltet.
@@ -69,7 +71,7 @@ Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Co
 - ihn **Widerrufen**, was ihn sofort abmeldet;
 - seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
 
-Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
+Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Eine Änderung des Passworts beendet ihn nur, wenn Sie **Auch meine Agenten trennen** wählen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 
 ## Sensible Aktion bestätigen
 
