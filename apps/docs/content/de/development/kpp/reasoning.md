@@ -52,6 +52,17 @@ Das Budget wird dann an die Regeln von Anthropic angepasst: mindestens 1.024 und
 
 Die erste Quelle ist das Enum `ReasoningEffort` von OpenAI in der OpenAPI-Spezifikation: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` und `max`, wobei nicht jedes Modell jeden Wert unterstützt. Die zweite ist die Seite [Extended Thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) von Anthropic. Dort steht, dass `budget_tokens` mindestens 1.024 und kleiner als `max_tokens` ist. Außerdem steht dort, dass es adaptives Thinking bei Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 und früheren Claude-4-Modellen nicht gibt.
 
+## Modelle ohne Aufwandsstufen
+
+Claude Code sendet `output_config.effort` und adaptives Denken, Codex sendet `reasoning.effort`, und zwar bei jeder Anfrage, ohne Schalter pro Modell. Lehnte das Gateway sie ab, wäre aus diesen Apps kein Modell ohne Aufwandsstufen nutzbar. Deshalb lässt das Gateway Folgendes weg, statt die Anfrage abzulehnen:
+
+- eine Aufwandsstufe außer `none` für ein Modell, dessen Katalogeintrag keine Aufwandsstufen nennt oder das kein Reasoning nutzt;
+- adaptives Denken für ein Modell, das kein Reasoning nutzt, denn adaptives Denken erlaubt einem Modell, ohne Denken zu antworten.
+
+Das Modell antwortet so, wie es ohne die Einstellung antworten würde. Jede weggelassene Einstellung nennt der Header `kaeso-left-out` der Antwort mit dem Feld der App, etwa `output_config.effort` oder `thinking`, ebenso das Log des Gateways; ein protokollierter Anfrage-Body behält die Einstellungen der App. Das Gateway tut das vor dem Kodieren, also auch innerhalb eines Formats.
+
+Eine Aufwandsstufe, die ein Modell mit Aufwandsstufen nicht nennt, lehnt das Gateway weiterhin ab, etwa `medium` für `kimi-k3`, denn eine benachbarte Stufe zu senden wäre geraten. Ebenso lehnt es `enabled`-Denken und ein Denk-Budget für ein Modell ab, das kein Reasoning nutzt.
+
 ## Lesbares Reasoning und Zusammenfassungen
 
 `reasoning.summary` und `reasoning.include_encrypted` sind über Dialekte hinweg Hinweise: Sie steuern nur, welches Reasoning zurückkommt, und werden daher weggelassen, wo das Ziel keine Entsprechung hat. Codex sendet beide bei jeder Anfrage.

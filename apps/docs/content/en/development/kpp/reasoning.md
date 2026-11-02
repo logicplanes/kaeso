@@ -52,6 +52,17 @@ The budget is then fitted to Anthropic's rules: at least 1,024 and less than `ma
 
 The first source is OpenAI's `ReasoningEffort` enum in the OpenAPI spec: `none`, `minimal`, `low`, `medium`, `high`, `xhigh` and `max`, though not every model supports every value. The second is Anthropic's [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) page. It says that `budget_tokens` is at least 1,024 and less than `max_tokens`. It also says that adaptive thinking doesn't exist on Claude Sonnet 4.5, Opus 4.5, Haiku 4.5 and earlier Claude 4 models.
 
+## Models without effort levels
+
+Claude Code sends `output_config.effort` and adaptive thinking, and Codex sends `reasoning.effort`, on every request, with no switch per model. Refusing them would make every model without effort levels unusable from these apps. So the gateway leaves out, instead of refusing:
+
+- an effort other than `none` for a model whose catalogue entry lists no effort levels or that doesn't reason;
+- adaptive thinking for a model that doesn't reason, because adaptive thinking lets a model answer without thinking.
+
+The model answers as it would without the setting. Each setting left out is named in the reply's `kaeso-left-out` header by the app's field, such as `output_config.effort` or `thinking`, and in the gateway's log; a logged request body keeps the app's settings. The gateway does this before encoding, so it applies within a format too.
+
+The gateway still refuses an effort that a model with effort levels doesn't list, such as `medium` for `kimi-k3`, since sending a neighbouring level would be a guess. It also refuses `enabled` thinking and a thinking budget for a model that doesn't reason.
+
 ## Readable reasoning and summaries
 
 `reasoning.summary` and `reasoning.include_encrypted` are hints across dialects: they only control which reasoning comes back, so they are dropped where the target has no equivalent. Codex sends both on every request.

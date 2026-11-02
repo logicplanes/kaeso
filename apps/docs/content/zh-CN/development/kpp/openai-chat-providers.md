@@ -89,7 +89,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | `max_completion_tokens`（请求） | `sampling.max_output_tokens` | SpaceX 只把它用于可见输出，不用于推理 token（Chat Completions 参考；`responses/recorded-max-completion-tokens-reasoning`：要求 20，可见 18 个、推理 271 个 token）。用量两者都计入，因此输出可能超过上限；在硬性预算和 Token 速率下，网关为 SpaceX 的推理模型（`PROVIDERS` 中的 `reasoning_beyond_output_limit`）预留模型自身的输出上限（[限额与预算](../../console/limits-and-budgets.md)）。 |
 | `usage.num_sources_used`、`cost_in_usd_ticks`、`prompt_tokens_details.text_tokens` 和 `image_tokens` | 用量的 `raw` | Token 数按上文的类型化字段处理。SpaceX 的 `completion_tokens` 不含推理，推理计入 `total_tokens`，因此输出为 `completion_tokens` 加 `reasoning_tokens`。 |
 | `{"error": "<message>"}`，400 时带有 `"code": "invalid-argument"` | `KppError` | 该字符串即为错误消息，应用以 OpenAI 错误格式和 SpaceX 的状态码收到它。密钥错误时返回 400，消息以 `Incorrect API key provided` 开头；SpaceX 的 `refused_key_messages` 列出了该消息，因此网关会报告密钥被拒绝。 |
-| 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。 |
+| 推理模型的 `presence_penalty`、不支持推理的模型的 `reasoning_effort` | | SpaceX 返回 400，应用会收到该错误。对于目录中标为不支持推理的模型，网关会省略推理强度（[没有推理强度等级的模型](reasoning.md#没有推理强度等级的模型)）。 |
 | `search_parameters`（请求） | extras | 实时搜索已弃用，SpaceX 返回 410；应用会收到这个 410。 |
 | 额外的模型字段（`aliases`、以美分计的每 1 亿 Token 价格、`capabilities.reasoning_effort`、图像的 `pricing`） | 模型 extras | |
 
@@ -216,7 +216,7 @@ Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connector
 |---|---|---|
 | `max_completion_tokens`、`seed`、`stop`、两种惩罚参数、`logprobs`、`tool_choice`（`auto`、`none`、`required`、指定函数）、`parallel_tool_calls`、带 JSON Schema 的 `response_format`、旧版 `functions`、预填的助手消息、视觉模型上的 `image_url` 部分 | 与 OpenAI 相同 | 录制于 `responses/`。指定函数的 `tool_choice` 以 `finish_reason: "tool_calls"` 回答；`tool_choice` 为 `allowed_tools` 时返回 400（`errors/recorded-allowed-tools`）。 |
 | `enable_thinking`、`thinking_budget`（请求） | `reasoning.mode`、`reasoning.budget_tokens` | 通过配置的 `thinking_switch`。QwenCloud 以 400 拒绝为 0 或超过 131072 的预算、不小于 `max_completion_tokens` 的预算、`kimi-k3` 上的 `thinking_budget`（`errors/recorded-thinking-budget-*`），以及只能思考的模型上的 `enable_thinking: false`（`errors/recorded-thinking-only-model-off`）。 |
-| `reasoning_effort` | `reasoning.effort` | 与 `enable_thinking: true` 一起发送给目录条目列出了强度级别的模型，例如 `qwen3.8-max` 和 `kimi-k3`；其他模型会在发送前拒绝强度。QwenCloud 自己也会检查取值（`errors/recorded-reasoning-effort-max`）。 |
+| `reasoning_effort` | `reasoning.effort` | 与 `enable_thinking: true` 一起发送给目录条目列出了强度级别的模型，例如 `qwen3.8-max` 和 `kimi-k3`；对于其他模型，网关会省略强度（[没有推理强度等级的模型](reasoning.md#没有推理强度等级的模型)）。QwenCloud 自己也会检查取值（`errors/recorded-reasoning-effort-max`）。 |
 | `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。思考块旁带有 `content: ""`，不会开启文本块。应用回传的思考以助手轮次上的 `reasoning_content` 发送给 QwenCloud，QwenCloud 会接受（`responses/recorded-reasoning-sent-back`）。 |
 | `max_tokens` | `max_output_tokens` | 只限制回答：开启思考时 `max_tokens: 50` 得到 453 个 completion token（`responses/recorded-max-tokens-beyond-reasoning`），而 `max_completion_tokens` 同时限制两者（`responses/recorded-max-completion-tokens-thinking`）。除非 Chat 应用写了 `max_tokens`，Kaeso 都发送 `max_completion_tokens`；预留花费时，对思考模型按模型的输出上限计算。 |
 | `usage.prompt_tokens_details.text_tokens`、`image_tokens`、`completion_tokens_details.text_tokens` | `raw` 用量 | QwenCloud 自己的 token 明细。 |

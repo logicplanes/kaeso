@@ -260,6 +260,32 @@ async fn reasoning_effort_reaches_cohere_only_as_none_or_high() {
 }
 
 #[tokio::test]
+async fn claude_codes_thinking_and_effort_are_left_out_for_a_model_that_does_not_reason() {
+    let env = env().await;
+    let mut body = messages(
+        COMMAND,
+        &format!(
+            "What is the capital of France? {}",
+            fixture("responses", "recorded-developer-role")
+        ),
+    );
+    body["thinking"] = json!({ "type": "adaptive", "display": "omitted" });
+    body["output_config"] = json!({ "effort": "high" });
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("output_config.effort, thinking")
+    );
+    assert_eq!(
+        r.json()["content"][0]["text"],
+        "The capital of France is Paris."
+    );
+    let sent = sent_to_cohere(&env, "/v1/chat/completions", COMMAND);
+    assert!(sent.get("reasoning_effort").is_none(), "{sent}");
+}
+
+#[tokio::test]
 async fn fields_cohere_refuses_or_ignores_are_refused_before_anything_is_sent() {
     let env = env().await;
     for (field, value) in [
