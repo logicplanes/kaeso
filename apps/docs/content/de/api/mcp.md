@@ -210,7 +210,7 @@ Jede Operation der Platform API, die ein Agent nutzen kann, ist ein Tool, benann
 - **Ergebnisse.** Ein Tool antwortet mit dem JSON der Platform API als Text und als `structuredContent`. Eine Antwort über 200 KB wird gekürzt; fordern Sie mit `limit` eine kleinere Seite an.
 - **Modell.** Jedes Tool nimmt `agent_model`, die Modellfamilie, auf der der Agent läuft: `claude`, `gpt`, `gemini`, `gemma`, `grok`, `llama`, `mistral`, `deepseek`, `qwen`, `kimi`, `glm`, `minimax`, `command`, `nova`, `phi`, `granite`, `jamba`, `ernie`, `hunyuan`, `doubao`, `yi`, `nemotron`, `olmo`, `sonar`, `reka` oder `unknown`. Kaeso speichert sie bei jedem Aufruf und zeigt den Namen der Familie neben dem Agenten; jeder andere Wert zählt als `unknown`. Bis zu seinem ersten Aufruf erscheint ein Agent als `unknown`.
 - **Hinweise.** Lesende Tools tragen `readOnlyHint`, löschende `destructiveHint`.
-- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten.
+- **Anweisungen.** Der Server weist den Agenten an, zuerst seine Organisationen mit `get_me_memberships` aufzulisten. Es listet nur die Organisationen und Projekte, die der Agent öffnen kann, ebenso die Rechte eines Mitglieds in `get_orgs_org_members_user_rights`.
 
 Diese Aktionen brauchen eine Konsolensitzung, daher hat kein Agent ein Tool dafür:
 

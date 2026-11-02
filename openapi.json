@@ -5336,7 +5336,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Every org and project the user belongs to.",
+        "summary": "Every org and project the user belongs to. An agent sees only the orgs\nand projects it can open.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.view`.",
         "operationId": "getMeMemberships",
         "responses": {
