@@ -493,7 +493,7 @@ async fn a_usage_row_postgres_refuses_never_blocks_the_others() {
         kaeso_server::services::usage::flush(state).await.unwrap(),
         1
     );
-    assert!(state.usage.take().is_empty());
+    assert!(state.usage.take().rows.is_empty());
     let recorded = postgres(&env).await;
     let recorded = *recorded.get("anthropic/claude-haiku-4-5").unwrap();
     assert_eq!(recorded.0, 1);
@@ -522,7 +522,7 @@ fn pending_usage_saturates_instead_of_overflowing() {
         None,
     );
     assert_eq!((tokens, requests), (i64::MAX, 2));
-    let rows = batch.take();
+    let rows = batch.take().rows;
     assert_eq!(rows.len(), 1);
     assert_eq!(rows.first().unwrap().input_tokens, i64::MAX);
 }
