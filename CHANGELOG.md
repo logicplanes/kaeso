@@ -4,15 +4,23 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-02
+
+Kaeso 0.5.2 lets Claude Code and Codex work with models that list no effort levels or don't reason, instead of failing those requests. Kaeso now leaves out the unsupported effort or adaptive thinking and reports it in the `kaeso-left-out` header, while an unsupported effort value or enabled thinking still returns an error. Fresh installs start with KPMR's models and prices as of 2 November 2026, and four DeepSeek models now refuse JSON schemas before sending. There are no breaking changes in this release.
+
+**Contributors:** @dvnold
+
+**Full changes:** [v0.5.1...v0.5.2](https://github.com/logicplanes/kaeso/compare/v0.5.1...v0.5.2)
+
 ### Changed
 
 #### Gateway
 
-- A fresh install starts with KPMR's models and prices as of 2 November 2026, which add OpenRouter's `openai/gpt-5.2-chat` and update the prices and limits of several OpenRouter models. DeepSeek's `deepseek-flash`, `deepseek-v4-pro`, `deepseek-v4-flash` and `deepseek-v4-flash-vision-exp` no longer list structured output: DeepSeek already answered every JSON schema with an error, so Kaeso now refuses one before sending and names `response_format`, and JSON mode (`json_object`) works as before. Nothing changes for apps, and running installs get the same data from KPMR on their own. ([#581](https://github.com/logicplanes/kaeso/pull/581))
+- A fresh install starts with KPMR's models and prices as of 2 November 2026, which add OpenRouter's `openai/gpt-5.2-chat` and update several OpenRouter prices and limits. `deepseek-flash`, `deepseek-v4-pro`, `deepseek-v4-flash` and `deepseek-v4-flash-vision-exp` no longer list structured output, so Kaeso refuses a JSON schema for them before sending and names `response_format`, while JSON mode (`json_object`) works as before. Running installs get the same data from KPMR on their own. ([#581](https://github.com/logicplanes/kaeso/pull/581))
 
 ### Fixed
 
-- Claude Code and Codex reach models that list no effort levels or don't reason, instead of getting an error. Kaeso leaves out the effort (`output_config.effort`, `reasoning.effort` or `reasoning_effort`) for a model without effort levels, and adaptive `thinking` for a model that doesn't reason, and names what it left out in the `kaeso-left-out` header. An effort the model's levels don't include, and enabled thinking or a budget for a model that doesn't reason, are still refused. ([#580](https://github.com/logicplanes/kaeso/pull/580))
+- Claude Code and Codex now reach models that list no effort levels or don't reason. Kaeso leaves out the effort (`output_config.effort`, `reasoning.effort` or `reasoning_effort`) or adaptive `thinking` that the model cannot use, and names it in the `kaeso-left-out` header. An effort outside the model's levels, and enabled thinking or a budget for a non-reasoning model, are still refused. ([#580](https://github.com/logicplanes/kaeso/pull/580))
 
 ## [0.5.1] - 2026-11-02
 
@@ -1068,7 +1076,8 @@ The first release of Kaeso, the open-source AI gateway you run yourself: the gat
 
 - A Release workflow that runs only from `prod`: it prepares the version changes and the changelog without write access to the repository, lets only jobs that run nothing but git push the release commit and the tag, syncs the release commit back to `dev`, and pins every action by commit SHA.
 
-[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/logicplanes/kaeso/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.2
 [0.5.1]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.1
 [0.5.0]: https://github.com/logicplanes/kaeso/releases/tag/v0.5.0
 [0.4.8]: https://github.com/logicplanes/kaeso/releases/tag/v0.4.8
