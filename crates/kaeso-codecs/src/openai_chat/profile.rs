@@ -30,6 +30,7 @@ pub struct RequestProfile {
     pub partial_prefill: bool,
     pub thinking_switch: bool,
     pub tool_schema_root: ToolSchemaRoot,
+    pub tool_parameters: bool,
     pub refused_fields: &'static [&'static str],
     pub refused_message_fields: &'static [&'static str],
 }
@@ -77,6 +78,7 @@ impl RequestProfile {
         partial_prefill: false,
         thinking_switch: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
+        tool_parameters: false,
         refused_fields: &[],
         refused_message_fields: &[],
     };
@@ -175,6 +177,12 @@ impl ChatProfile {
     #[must_use]
     pub const fn tool_schema_root(mut self, root: ToolSchemaRoot) -> Self {
         self.request.tool_schema_root = root;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_tool_parameters(mut self) -> Self {
+        self.request.tool_parameters = true;
         self
     }
 
