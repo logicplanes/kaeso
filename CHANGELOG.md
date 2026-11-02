@@ -4,6 +4,16 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Changed
+
+#### Gateway
+
+- A fresh install starts with KPMR's model data as of 2 November 2026, 12:30 UTC, with OpenRouter's current prices for DeepSeek V4.1 Flash 1017 and Gemma 4 26B A4B. Running installs get the same data from KPMR on their own. ([#591](https://github.com/logicplanes/kaeso/pull/591))
+
+### Fixed
+
+- Claude Code reaches models whose output limit is below 32,000 tokens, such as Command A. Claude Code asks every model it doesn't know for 32,000, and providers such as Cohere refuse more than the model's maximum, so a request from another format that asks for more output than the model can write now gets the model's maximum, and the `kaeso-adapted` header names the app's field, such as `max_tokens`. Requests in the provider's own format are unchanged. ([#590](https://github.com/logicplanes/kaeso/pull/590))
+
 ## [0.5.3] - 2026-11-02
 
 Kaeso 0.5.3 widens what the gateway accepts from Codex and Claude Code. Codex requests now reach Groq, Moonshot and Cohere models, and Claude Code requests reach OpenAI models, with the fields a provider refuses left out or adapted and named in response headers. Fresh installs start with KPMR's model data as of 2 November 2026, which removes `openai/gpt-5.2-chat` from OpenRouter, and running installs get the same data from KPMR on their own. There are no breaking changes in this release.
