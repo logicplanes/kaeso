@@ -249,6 +249,7 @@
   "errors.orgContentLoggingOff": "Die Organisation hat die Inhaltsprotokollierung aus; ein Projekt kann sie nicht einschalten.",
   "errors.orgMaxDays": "Die Organisation erlaubt höchstens {max} Tage.",
   "errors.orgNotScheduled": "Die Organisation ist nicht zur Löschung vorgemerkt.",
+  "errors.orgPastRestore": "Die Organisation wird endgültig gelöscht und lässt sich nicht mehr wiederherstellen.",
   "errors.orgReadOnly": "Diese Organisation ist zur Löschung vorgemerkt; darin lässt sich nichts ändern.",
   "errors.orgRequires2fa": "Diese Organisation verlangt Zwei-Faktor-Authentifizierung; einrichten und erneut anmelden.",
   "errors.orgRequires2faCannotOff": "Die Organisation {org} verlangt Zwei-Faktor-Authentifizierung; sie lässt sich nicht ausschalten.",

@@ -249,6 +249,7 @@
   "errors.orgContentLoggingOff": "组织已关闭内容日志，项目无法将其开启。",
   "errors.orgMaxDays": "该组织最多允许 {max} 天。",
   "errors.orgNotScheduled": "该组织未计划删除。",
+  "errors.orgPastRestore": "该组织正在被永久删除，已无法恢复。",
   "errors.orgReadOnly": "此组织已计划删除，其中的内容均无法更改。",
   "errors.orgRequires2fa": "此组织要求双重验证，请先设置，然后重新登录。",
   "errors.orgRequires2faCannotOff": "组织 {org} 要求双重验证，因此无法关闭。",

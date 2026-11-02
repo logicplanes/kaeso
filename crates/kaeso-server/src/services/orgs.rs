@@ -162,6 +162,10 @@ pub async fn notify_deletion(
     Ok(())
 }
 
+// Once due, the deletion job may already have deleted its logs, which a restore can't bring back.
+const PAST_RESTORE: &str =
+    "The organization is being deleted for good and can no longer be restored.";
+
 pub async fn restore(
     state: &crate::state::AppState,
     ctx: &crate::platform::access::Ctx,
@@ -176,6 +180,9 @@ pub async fn restore(
         return Err(ApiError::Conflict(
             "The organization is not scheduled for deletion.".into(),
         ));
+    }
+    if row.deletion_due_at.is_some_and(|d| d <= ctx.now) {
+        return Err(ApiError::Conflict(PAST_RESTORE.into()));
     }
     row.state = "active".into();
     row.deletion_due_at = None;
@@ -241,24 +248,22 @@ pub async fn purge(
     let due = |o: &orgs::Org| {
         o.state == "scheduled_for_deletion" && o.deletion_due_at.is_some_and(|d| d <= now)
     };
-    match orgs::get(&state.pg, org).await? {
-        Some(o) if due(&o) => {}
-        _ => return Ok(false),
-    }
+    let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
+    // The row stays locked until the org is gone, so a restore that started before the due date
+    // either commits first and stops this, or waits and finds nothing left to restore.
+    let Some(row) = orgs::get_for_update(&mut *tx, org).await?.filter(due) else {
+        return Ok(false);
+    };
     delete_logs(state, org).await?;
-    let counters: Vec<String> = kaeso_store::pg::limits::list_org(&state.pg, org)
+    let counters: Vec<String> = kaeso_store::pg::limits::list_org(&mut *tx, org)
         .await?
         .iter()
         .filter_map(|l| l.limit().ok())
         .map(|l| state.valkey.key(&l.counter(now)))
         .flat_map(|k| [format!("{k}:f"), k])
         .collect();
-    let projects = kaeso_store::pg::projects::ids_of_org(&state.pg, org).await?;
+    let projects = kaeso_store::pg::projects::ids_of_org(&mut *tx, org).await?;
     crate::services::keys::forget_org(state, org).await;
-    let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
-    let Some(row) = orgs::get_for_update(&mut *tx, org).await?.filter(due) else {
-        return Ok(false);
-    };
     orgs::delete_final(&mut tx, org).await?;
     crate::platform::audit::system_change(
         &mut tx,
