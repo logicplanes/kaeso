@@ -107,6 +107,7 @@ pub(crate) fn value_obj(value: Option<&Value>) -> Obj {
 struct ToolState {
     block: u32,
     id: String,
+    named: bool,
     unknown: bool,
     complete: bool,
 }
@@ -839,6 +840,7 @@ impl ChatStreamDecoder {
                     ToolState {
                         block,
                         id: known.id.clone().unwrap_or_default(),
+                        named: name.as_deref().is_some_and(|n| !n.is_empty()),
                         unknown,
                         complete,
                     },
@@ -933,13 +935,20 @@ impl ChatStreamDecoder {
         name: Option<&str>,
         events: &mut [StreamEvent],
     ) {
-        if self.tools.get(&index).is_none_or(|t| t.complete) {
+        let id = id.filter(|id| !id.is_empty());
+        let name = name.filter(|n| !n.is_empty());
+        // The search below walks every held event, so a delta that brings neither the missing id
+        // nor the name returns first; otherwise a call that never gets an id costs O(n²).
+        let adds =
+            |t: &ToolState| (id.is_some() && t.id.is_empty()) || (name.is_some() && !t.named);
+        if self
+            .tools
+            .get(&index)
+            .is_none_or(|t| t.complete || !adds(t))
+        {
             return;
         }
-        let id = id.filter(|id| !id.is_empty());
-        let name = name
-            .filter(|n| !n.is_empty())
-            .map(|n| self.tool_names.get(n).map_or(n, String::as_str).to_owned());
+        let name = name.map(|n| self.tool_names.get(n).map_or(n, String::as_str).to_owned());
         let mut complete = false;
         let queued = self.queue.iter_mut().flat_map(|h| h.events.iter_mut());
         for event in queued.chain(events.iter_mut()) {
@@ -986,6 +995,7 @@ impl ChatStreamDecoder {
             {
                 id.clone_into(&mut tool.id);
             }
+            tool.named |= name.is_some();
             tool.complete |= complete;
         }
     }
