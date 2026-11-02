@@ -557,3 +557,74 @@ async fn a_disabled_key_is_enabled_before_it_rotates() {
     assert_eq!(rotated["state"], "active");
     s.cleanup().await;
 }
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+#[tokio::test]
+async fn a_disable_during_a_rotation_stops_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = default_project(&app, &owner).await;
+    let base = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let old = created(
+        &app,
+        &format!("{base}/keys"),
+        json!({ "name": "laptop" }),
+        &owner.cookie,
+    )
+    .await["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut disabling = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::keys::set_disabled(
+        &mut *disabling,
+        common::uuid(&project),
+        common::uuid(&old),
+        Some(app.clock.now()),
+        kaeso_store::pg::keys::Actor {
+            kind: "user",
+            id: Some(common::uuid(&owner.user_id)),
+        },
+    )
+    .await
+    .unwrap();
+
+    let rotate = format!("{base}/keys/{old}/rotate");
+    let request = app.post(&rotate, json!({ "grace_hours": 0 }), Some(&owner.cookie));
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the rotation didn't wait for the disable: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    disabling.commit().await.unwrap();
+    let r = request.await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The key changed meanwhile; reload and try again."
+    );
+    let keys = app.get(&format!("{base}/keys"), &owner.cookie).await;
+    let states: Vec<(&str, &str)> = keys.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|k| (k["id"].as_str().unwrap(), k["state"].as_str().unwrap()))
+        .collect();
+    assert_eq!(states, [(old.as_str(), "disabled")]);
+    s.cleanup().await;
+}
