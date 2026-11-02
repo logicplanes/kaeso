@@ -71,6 +71,62 @@ async fn same_provider_calls_send_the_credential_and_only_kpp_output() {
 }
 
 #[tokio::test]
+async fn an_anthropic_end_user_id_longer_than_openai_takes_reaches_it_hashed() {
+    use sha2::{Digest, Sha256};
+    let env = env().await;
+    let id = format!(
+        r#"{{"device_id":"{}","account_uuid":"","session_id":"0193a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"}}"#,
+        "a".repeat(64)
+    );
+    let hashed: String = Sha256::digest(id.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let with_user = |model: &str, user: &str| {
+        let mut body = messages(model, "Hi");
+        body["metadata"] = json!({ "user_id": user });
+        body
+    };
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(with_user("openai/gpt-4o", &id)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("metadata.user_id"));
+    assert_eq!(env.mock.last().unwrap().json()["safety_identifier"], hashed);
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(with_user("openai/gpt-4o", "user-42")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), None);
+    assert_eq!(
+        env.mock.last().unwrap().json()["safety_identifier"],
+        "user-42"
+    );
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(with_user("claude-haiku-4-5", &id)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().json()["metadata"]["user_id"], id);
+}
+
+#[tokio::test]
 async fn apps_reach_the_other_provider_through_kpp() {
     let env = env().await;
     let r = call(
