@@ -368,3 +368,161 @@ async fn rate_limits_have_no_alerts() {
         "Rate limits have no alerts; leave `alert_thresholds` out."
     );
 }
+
+async fn until_a_lock_is_awaited(pool: &sqlx::PgPool) {
+    loop {
+        let waiting: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        if waiting > 0 {
+            return;
+        }
+        tokio::task::yield_now().await;
+    }
+}
+
+async fn once_it_waits(
+    app: &App,
+    held: sqlx::Transaction<'static, sqlx::Postgres>,
+    request: impl std::future::Future<Output = common::Resp>,
+) -> common::Resp {
+    tokio::pin!(request);
+    tokio::select! {
+        r = &mut request => panic!("the change did not wait for the owner lock: {:?}", r.body),
+        () = until_a_lock_is_awaited(&app.state.pg) => {}
+    }
+    held.commit().await.unwrap();
+    request.await
+}
+
+struct Transfer {
+    owner: common::Owner,
+    admin: String,
+    heir: (String, String),
+}
+
+async fn mid_transfer(app: &App) -> (Transfer, sqlx::Transaction<'static, sqlx::Postgres>) {
+    let owner = app.setup().await;
+    let (admin, _) = common::join(
+        app,
+        &owner,
+        json!({ "email": "admin@example.com", "role": "admin" }),
+        "Ada",
+    )
+    .await;
+    let heir = common::join(
+        app,
+        &owner,
+        json!({ "email": "heir@example.com", "role": "developer" }),
+        "Grace",
+    )
+    .await;
+    let org = common::uuid(&owner.org_id);
+    let preset = |p: &str| kaeso_store::pg::members::Grant {
+        preset: p.to_owned(),
+        ..Default::default()
+    };
+    let mut held = app.state.pg.begin().await.unwrap();
+    kaeso_store::pg::members::lock_owners(&mut held, org)
+        .await
+        .unwrap();
+    kaeso_store::pg::members::update_org(&mut *held, org, common::uuid(&heir.1), &preset("owner"))
+        .await
+        .unwrap();
+    kaeso_store::pg::members::update_org(
+        &mut *held,
+        org,
+        common::uuid(&owner.user_id),
+        &preset("admin"),
+    )
+    .await
+    .unwrap();
+    (Transfer { owner, admin, heir }, held)
+}
+
+async fn owner_ids(app: &App, t: &Transfer) -> Vec<String> {
+    let listed = app
+        .get(
+            &format!("/orgs/{}/members?role=owner", t.owner.org_id),
+            &t.heir.0,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["user"]["id"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn an_admin_cant_demote_someone_who_became_an_owner_meanwhile() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let (t, held) = mid_transfer(&app).await;
+    let path = format!("/orgs/{}/members/{}", t.owner.org_id, t.heir.1);
+    let r = once_it_waits(
+        &app,
+        held,
+        app.call(
+            Method::PATCH,
+            &path,
+            Some(json!({ "role": "member" })),
+            Some(&t.admin),
+        ),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Only owners can make someone an owner or change an owner's role."
+    );
+    assert_eq!(owner_ids(&app, &t).await, std::slice::from_ref(&t.heir.1));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_admin_cant_remove_someone_who_became_an_owner_meanwhile() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let (t, held) = mid_transfer(&app).await;
+    let path = format!("/orgs/{}/members/{}", t.owner.org_id, t.heir.1);
+    let r = once_it_waits(
+        &app,
+        held,
+        app.call(Method::DELETE, &path, None, Some(&t.admin)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Only owners can remove an owner."
+    );
+    assert_eq!(owner_ids(&app, &t).await, std::slice::from_ref(&t.heir.1));
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn someone_who_became_the_last_owner_meanwhile_cant_leave() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let (t, held) = mid_transfer(&app).await;
+    let path = format!("/me/memberships/{}", t.owner.org_id);
+    let r = once_it_waits(
+        &app,
+        held,
+        app.call(Method::DELETE, &path, None, Some(&t.heir.0)),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "You are this organization's last owner; transfer ownership before leaving."
+    );
+    assert_eq!(owner_ids(&app, &t).await, std::slice::from_ref(&t.heir.1));
+    s.cleanup().await;
+}

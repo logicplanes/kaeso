@@ -94,6 +94,24 @@ pub async fn get_org(
     .await?)
 }
 
+pub async fn lock_org(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<OrgMember>, StoreError> {
+    Ok(sqlx::query_as!(
+        OrgMember,
+        "SELECT m.id, m.org_id, m.user_id, u.email, u.name, u.state AS user_state, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", \
+         m.created_at, u.avatar FROM org_memberships m JOIN users u ON u.id = m.user_id \
+         LEFT JOIN org_roles r ON r.id = m.role_id WHERE m.org_id = $1 AND m.user_id = $2 \
+         FOR NO KEY UPDATE OF m",
+        org_id,
+        user_id
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
 pub async fn list_org(
     db: impl PgExecutor<'_>,
     org_id: Uuid,

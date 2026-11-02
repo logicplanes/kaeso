@@ -13,6 +13,7 @@ use crate::platform::auth::setup::validate_name;
 use crate::platform::cookies;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
+use crate::platform::orgs::members::{Removal, remove_member};
 use crate::platform::orgs::org::OrgView;
 use crate::platform::params::Path;
 use crate::services::accounts;
@@ -197,14 +198,11 @@ pub async fn leave(
                 e => e,
             })?;
     }
-    let membership = members::get_org(&state.pg, org.uuid(), me.uuid())
+    members::get_org(&state.pg, org.uuid(), me.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("membership"))?;
     crate::services::orgs::ensure_changeable(&state.pg, org.uuid()).await?;
-    let mut tx = state.pg.begin().await?;
-    lifecycle::ensure_can_leave(&mut tx, org.uuid(), me).await?;
-    tx.commit().await?;
-    crate::platform::orgs::members::remove_member(&state, &ctx, org, &membership).await?;
+    remove_member(&state, &ctx, org, me, Removal::Leaving).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
