@@ -177,7 +177,7 @@ pub async fn password(
         .and_then(|u| u.password_hash.clone())
         .unwrap_or_else(|| kaeso_crypto::password::dummy_hash().to_owned());
     let pw = req.password;
-    let matches = tokio::task::spawn_blocking(move || kaeso_crypto::password::verify(&pw, &stored))
+    let matches = crate::auth::passwords::verify(pw, stored)
         .await
         .map_err(ApiError::internal)?;
     let user = match user {

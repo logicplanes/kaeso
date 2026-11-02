@@ -150,7 +150,7 @@ async fn a_request_returns_its_translation_memory_before_the_provider_answers() 
         gate.wait_for(1).await;
         assert_eq!(
             state.translating.free(),
-            115 << 10,
+            122 << 10,
             "the open call keeps only its decoded request, its content, one message and one block, twice: once to encode the reply and once for the input counter"
         );
         let next = call(
@@ -254,13 +254,13 @@ async fn stalled_streams_of_padded_bodies_leave_the_translation_memory_to_everyo
     }
     assert_eq!(
         total - budget.free(),
-        13 * (13 << 10),
-        "each open stream keeps 13 KiB for its decoded request, one message and one block, and the request the input counter keeps, not its padding"
+        13 * (6 << 10),
+        "each open stream keeps 6 KiB for its decoded request, one message and one block, and the request the input counter keeps, not its padding"
     );
     assert_eq!(content_logging(true).await.status, StatusCode::OK);
     streams.push(open().await);
     assert!(
-        total - budget.free() >= 13 * (13 << 10) + body.len() as u64,
+        total - budget.free() >= 13 * (6 << 10) + body.len() as u64,
         "a body kept for its log is counted until it is logged"
     );
     let (victim, _) = new_key(&env, "victim").await;
@@ -338,13 +338,13 @@ async fn many_tiny_messages_keep_their_structure_while_the_provider_answers() {
     said.push(json!({ "role": "user", "content": "[mock:stall]" }));
     let body = serde_json::to_vec(&json!({ "model": "gpt-4o", "stream": true, "messages": said }))
         .unwrap();
-    let structure = 2 * 2_001 * (6 << 10);
+    let structure = 2 * 2_001 * (5 << 9);
     let content = 2 * body.len() as u64;
     let stream = open_stalled(&env, "/v1/chat/completions", body).await;
     let held = total - budget.free();
     assert!(
         (structure..structure + content + (1 << 10)).contains(&held),
-        "2,001 messages of one block each keep 6 KiB apiece besides their content, in the decoded request and in the request the input counter keeps: {held} bytes"
+        "2,001 messages of one block each keep 2.5 KiB apiece besides their content, in the decoded request and in the request the input counter keeps: {held} bytes"
     );
     drop(stream);
 }

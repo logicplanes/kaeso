@@ -14,6 +14,7 @@ pub mod platform;
 pub mod serve;
 pub mod services;
 pub mod setup;
+pub mod shard;
 pub mod state;
 pub mod telemetry;
 pub mod time_zone;
