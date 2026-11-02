@@ -270,7 +270,8 @@ pub async fn get(state: &AppState, slot: &Slot) -> Option<Stored> {
     if fields.is_empty() {
         return None;
     }
-    let stored = open(state, slot, fields);
+    let size = fields.values().map(Vec::len).sum();
+    let stored = crate::model_api::pipeline::in_place(size, || open(state, slot, fields));
     if stored.is_none() {
         tracing::warn!("a response cache entry cannot be read; the request goes to the provider");
     }
