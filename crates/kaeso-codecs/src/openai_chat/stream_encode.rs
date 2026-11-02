@@ -433,12 +433,25 @@ impl ChatStreamEncoder {
                 crate::sse::set_framing(&mut event, framing);
                 crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
             }
-            // What `write_item` writes for an event with only data, which compact JSON keeps on
-            // one line: serialized in place instead of through a string.
+            // What `write_item` writes for an event with only data, serialized in place. A raw
+            // value the provider split across `data:` lines keeps its line breaks, and only
+            // `write_item` splits those into lines of their own again.
             None => {
+                let begin = out.len();
                 out.extend_from_slice(b"data: ");
+                let json = out.len();
                 serde_json::to_writer(&mut out, &obj).map_err(internal)?;
-                out.extend_from_slice(b"\n\n");
+                if out
+                    .get(json..)
+                    .is_some_and(|written| written.iter().any(|b| matches!(b, b'\n' | b'\r')))
+                {
+                    out.truncate(begin);
+                    let data = serde_json::to_string(&obj).map_err(internal)?;
+                    let event = crate::sse::SseEvent::new(None, data);
+                    crate::sse::write_item(&mut out, &crate::sse::SseItem::Event(event));
+                } else {
+                    out.extend_from_slice(b"\n\n");
+                }
             }
         }
         Ok(out)

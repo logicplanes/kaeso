@@ -432,6 +432,26 @@ fn rewritten_tool_names_are_mapped_back() {
 }
 
 #[test]
+fn a_chunk_split_across_data_lines_reaches_chat_apps_as_whole_lines() {
+    let split = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"x_meta\":{\"a\":1,\n\
+data: \"b\":[2,\n\
+data: 3]},\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"},\"finish_reason\":null}]}\n\n\
+data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"created\":1,\"model\":\"m\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n\
+data: [DONE]\n\n";
+    let events = decode_whole(split.as_bytes());
+    assert!(
+        !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
+        "{events:?}"
+    );
+    let out = String::from_utf8(encode(&events, false)).unwrap();
+    assert!(
+        out.lines().all(|l| l.is_empty() || l.starts_with("data: ")),
+        "{out}"
+    );
+    assert_eq!(frames(&out.into_bytes()), frames(split.as_bytes()));
+}
+
+#[test]
 fn usage_is_hidden_when_the_app_did_not_ask() {
     let bytes = fixture("tools-single");
     let events = decode_whole(&bytes);
